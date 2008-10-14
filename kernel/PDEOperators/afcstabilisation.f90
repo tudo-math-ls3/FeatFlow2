@@ -44,31 +44,31 @@
 !#
 !# </purpose>
 !##############################################################################
-MODULE afcstabilisation
+module afcstabilisation
 
-  USE fsystem
-  USE genoutput
-  USE linearsystemscalar
-  USE linearsystemblock
-  USE paramlist
-  USE storage
-  USE triangulation
+  use fsystem
+  use genoutput
+  use linearsystemscalar
+  use linearsystemblock
+  use paramlist
+  use storage
+  use triangulation
 
-  IMPLICIT NONE
+  implicit none
   
-  PRIVATE
-  PUBLIC :: t_afcstab
-  PUBLIC :: afcstab_initFromParameterlist
-  PUBLIC :: afcstab_releaseStabilisation
-  PUBLIC :: afcstab_resizeStabilisation
-  PUBLIC :: afcstab_getbase_IsupdiagEdgeIdx
-  PUBLIC :: afcstab_getbase_IverticesAtEdge
-  PUBLIC :: afcstab_getbase_DcoeffsAtEdge
-  PUBLIC :: afcstab_getbase_IsubdiagEdgeIdx
-  PUBLIC :: afcstab_getbase_IsubdiagEdge
-  PUBLIC :: afcstab_generateSubdiagEdges
-  PUBLIC :: afcstab_generateExtSparsity
-  PUBLIC :: afcstab_limit
+  private
+  public :: t_afcstab
+  public :: afcstab_initFromParameterlist
+  public :: afcstab_releaseStabilisation
+  public :: afcstab_resizeStabilisation
+  public :: afcstab_getbase_IsupdiagEdgeIdx
+  public :: afcstab_getbase_IverticesAtEdge
+  public :: afcstab_getbase_DcoeffsAtEdge
+  public :: afcstab_getbase_IsubdiagEdgeIdx
+  public :: afcstab_getbase_IsubdiagEdge
+  public :: afcstab_generateSubdiagEdges
+  public :: afcstab_generateExtSparsity
+  public :: afcstab_limit
  
   ! *****************************************************************************
   ! *****************************************************************************
@@ -78,85 +78,85 @@ MODULE afcstabilisation
 !<constantblock description="Global format flags for AFC stabilisation">
 
   ! No stabilisation: use standard high-order Galerkin discretisation
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_GALERKIN        = 0
+  integer, parameter, public :: AFCSTAB_GALERKIN        = 0
   
   ! Stabilisation of discrete upwind type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_UPWIND          = 1
+  integer, parameter, public :: AFCSTAB_UPWIND          = 1
 
   ! Stabilisation of discrete maximum principle preserving 
   ! type for anisotropic diffusion operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_DMP             = 2
+  integer, parameter, public :: AFCSTAB_DMP             = 2
 
   ! Stabilisation of semi-implicit FEM-FCT type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT          = 10
+  integer, parameter, public :: AFCSTAB_FEMFCT          = 10
 
   ! Stabilisation of semi-explicit (classical) FEM-FCT type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_EXP      = 11
+  integer, parameter, public :: AFCSTAB_FEMFCT_EXP      = 11
 
   ! Stabilisation of linearised FEM-FCT type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMFCT_LIN      = 12
+  integer, parameter, public :: AFCSTAB_FEMFCT_LIN      = 12
   
   ! Stabilisation of FEM-TVD type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMTVD          = 20
+  integer, parameter, public :: AFCSTAB_FEMTVD          = 20
 
   ! Stabilisation of general purpose type for convection operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FEMGP           = 21
+  integer, parameter, public :: AFCSTAB_FEMGP           = 21
   
   ! Stabilisation of symmetric type for diffusion operators
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_SYMMETRIC       = 30
+  integer, parameter, public :: AFCSTAB_SYMMETRIC       = 30
   
 !</constantblock>
 
 !<constantblock description="Global format flags for dissipation">
 
   ! Employ scalar dissipation (default)
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_SCALARDISSIPATION = 1
+  integer, parameter, public :: AFCSTAB_SCALARDISSIPATION = 1
 
   ! Employ tensorial dissipation
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_TENSORDISSIPATION = 2
+  integer, parameter, public :: AFCSTAB_TENSORDISSIPATION = 2
 
 !</constantblock>
 
 !<constantblock description="Bitfield identifiers for state of stabilisation">
   
   ! Stabilisation is undefined
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_UNDEFINED       = 2**0
+  integer, parameter, public :: AFCSTAB_UNDEFINED       = 2**0
 
   ! Stabilisation has been initialised
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_INITIALISED     = 2**1
+  integer, parameter, public :: AFCSTAB_INITIALISED     = 2**1
 
   ! Edge-based structure generated: KEDGE
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_EDGESTRUCTURE   = 2**2
+  integer, parameter, public :: AFCSTAB_EDGESTRUCTURE   = 2**2
 
   ! Edge-based structure oriented: KEDGE
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_EDGEORIENTATION = 2**3
+  integer, parameter, public :: AFCSTAB_EDGEORIENTATION = 2**3
 
   ! Edge-based values computed from matrix: DEDGE
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_EDGEVALUES      = 2**4
+  integer, parameter, public :: AFCSTAB_EDGEVALUES      = 2**4
 
   ! Nodal antidiffusion: PP,PM
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_ANTIDIFFUSION   = 2**5
+  integer, parameter, public :: AFCSTAB_ANTIDIFFUSION   = 2**5
 
   ! Nodal upper/lower bounds: QP,QM
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_BOUNDS          = 2**6
+  integer, parameter, public :: AFCSTAB_BOUNDS          = 2**6
   
   ! Nodal correction factors computed: RP,RM
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_LIMITER         = 2**7
+  integer, parameter, public :: AFCSTAB_LIMITER         = 2**7
 
   ! Antidiffusive fluxes precomputed
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_FLUXES          = 2**8
+  integer, parameter, public :: AFCSTAB_FLUXES          = 2**8
   
   ! Subdiagonal edge-based structure generated
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_SUBDIAGONALEDGES= 2**9
+  integer, parameter, public :: AFCSTAB_SUBDIAGONALEDGES= 2**9
 !</constantblock>
 
 !<constantblock description="Global type of mass matrix treatment">
 
   ! Adopt the lumped-mass discretisation
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_LUMPEDMASS      = 0
+  integer, parameter, public :: AFCSTAB_LUMPEDMASS      = 0
 
   ! Adopt the consistent-mass discretisation
-  INTEGER, PARAMETER, PUBLIC :: AFCSTAB_CONSISTENTMASS  = 1
+  integer, parameter, public :: AFCSTAB_CONSISTENTMASS  = 1
 !</constantblock>
 !</constants>
 
@@ -168,75 +168,75 @@ MODULE afcstabilisation
 !<typeblock>
 
   ! data structure that holds all required information for stabilisation
-  TYPE t_afcstab
+  type t_afcstab
     
     ! Format Tag. Identifies the type of stabilisation
-    INTEGER :: ctypeAFCstabilisation                   = AFCSTAB_GALERKIN
+    integer :: ctypeAFCstabilisation                   = AFCSTAB_GALERKIN
 
     ! Format Tag. Specifies the type of dissipation
-    INTEGER :: idissipation                            = AFCSTAB_SCALARDISSIPATION
+    integer :: idissipation                            = AFCSTAB_SCALARDISSIPATION
 
     ! Format Tag: Specifies the stabilisation
-    INTEGER :: iSpec                                   = AFCSTAB_UNDEFINED
+    integer :: iSpec                                   = AFCSTAB_UNDEFINED
 
     ! Format Tag: Specifies whether an extended stencil should be
     ! created for the Jacobian matrix if required
     !   iextendedJacobian = 0 : use sparsity pattern of FE-matrix
     !   iextendedJacobian = 1 : extend sparsity pattern accordingly
-    INTEGER :: iextendedJacobian                       = 0
+    integer :: iextendedJacobian                       = 0
 
     ! Format Tag: Specifies whether the consistent mass matrix should
     ! be considered in the stabilisation procedure
     !   imass = 0 : neglect consistent mass matrix
     !   imass = 1 : consider consistent mass matrix
-    INTEGER :: imass                                   = 0
+    integer :: imass                                   = 0
 
     ! Is set to true, if the stabilisation structure is active,
     ! i.e. when all internal data structures should be assembled.
     ! If it is to false, then no internal data structres are assembled.
-    LOGICAL :: bisActive                               = .TRUE.
+    logical :: bisActive                               = .true.
 
     ! Number of equations of the sparsity pattern
-    INTEGER(PREC_VECIDX) :: NEQ                        = 0
+    integer(PREC_VECIDX) :: NEQ                        = 0
 
     ! Number of local variables; in general scalar solution vectors of
     ! size NEQ posses NEQ entries. However, scalar vectors can be interleaved,
     ! that is, each of the NEQ entries stores NVAR local variables. In this case,
     ! NEQ remains unmodified but NVAR>1 such that the physical length of the
     ! vector is NEQ*NVAR.
-    INTEGER :: NVAR                                    = 1
+    integer :: NVAR                                    = 1
 
     ! Number of edges of the sparsity pattern
-    INTEGER(PREC_VECIDX) :: NEDGE                      = 0
+    integer(PREC_VECIDX) :: NEDGE                      = 0
 
     ! Maximum number of edges adjacent to one vertex. 
     ! This corresponds to the maximum number of nonzero row entries.
-    INTEGER(PREC_VECIDX) :: NNVEDGE                    = 0
+    integer(PREC_VECIDX) :: NNVEDGE                    = 0
 
     ! Handle to index pointer for superdiagonal edge numbers
     ! INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: IsuperdiagonalEdgesIdx
     ! The numbers IsuperdiagonalEdgesIdx(i):IsuperdiagonalEdgesIdx(i+1)-1
     ! denote the edge numbers of the ith vertex which are located in
     ! the upper right triangular matrix.
-    INTEGER :: h_IsuperdiagonalEdgesIdx                    = ST_NOHANDLE
+    integer :: h_IsuperdiagonalEdgesIdx                    = ST_NOHANDLE
 
     ! Handle to vertices at edge structure
     ! INTEGER(PREC_MATIDX), DIMENSION(:,:), POINTER :: IverticesAtEdge
     ! IverticesAtEdge(1:2,1:NEDGE) : the two end-points of the edge
     ! IverticesAtEdge(3:4,1:NEDGE) : the two matrix position that
     !                                correspond to the edge
-    INTEGER :: h_IverticesAtEdge                       = ST_NOHANDLE
+    integer :: h_IverticesAtEdge                       = ST_NOHANDLE
 
     ! Handle to index pointer for subdiagonal edge numbers
     ! INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: IsubdiagonalEdgesIdx
-    INTEGER :: h_IsubdiagonalEdgesIdx                  = ST_NOHANDLE
+    integer :: h_IsubdiagonalEdgesIdx                  = ST_NOHANDLE
 
     ! Handle to the subdiagonal edge numbers
     ! INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: IsubdiagonalEdges
-    INTEGER :: h_IsubdiagonalEdges                     = ST_NOHANDLE
+    integer :: h_IsubdiagonalEdges                     = ST_NOHANDLE
 
     ! Handle to coefficient at edge structure
-    INTEGER :: h_DcoefficientsAtEdge                   = ST_NOHANDLE
+    integer :: h_DcoefficientsAtEdge                   = ST_NOHANDLE
 
     ! Flag whether or not the matrix is resorted.
     !  <0: Matrix is unsorted, sorting strategy is prepared in 
@@ -250,7 +250,7 @@ MODULE afcstabilisation
     ! matrix (+) or not (-).
     ! The value is usually one of the SSTRAT_xxxx constants from
     ! the module 'sortstrategy'.
-    INTEGER :: isortStrategy                           = 0
+    integer :: isortStrategy                           = 0
 
     ! Handle to renumbering strategy for resorting the matrix.
     ! The renumbering strategy is a vector
@@ -264,17 +264,17 @@ MODULE afcstabilisation
     !  p_IsortPermutation (NEQ+column in unsorted matrix) = column in sorted matrix.
     ! Whether or not the matrix is actually sorted depends on the
     ! flag isortStrategy!
-    INTEGER :: h_IsortPermutation                      = ST_NOHANDLE
+    integer :: h_IsortPermutation                      = ST_NOHANDLE
 
     ! Auxiliary nodal vectors; used internally
-    TYPE(t_vectorScalar), DIMENSION(:), POINTER :: RnodalVectors      => NULL()
+    type(t_vectorScalar), dimension(:), pointer :: RnodalVectors      => NULL()
 
     ! Auxiliary nodal block vectors; used internally
-    TYPE(t_vectorBlock), DIMENSION(:), POINTER  :: RnodalBlockVectors => NULL()
+    type(t_vectorBlock), dimension(:), pointer  :: RnodalBlockVectors => NULL()
 
     ! Auxiliary edge vectors; used internally
-    TYPE(t_vectorScalar), DIMENSION(:), POINTER :: RedgeVectors       => NULL()
-  END TYPE t_afcstab
+    type(t_vectorScalar), dimension(:), pointer :: RedgeVectors       => NULL()
+  end type t_afcstab
 !</typeblock>
 !</types>
 
@@ -282,18 +282,18 @@ MODULE afcstabilisation
   ! *****************************************************************************
   ! *****************************************************************************
 
-  INTERFACE afcstab_limit
-    MODULE PROCEDURE afcstab_limit_unbounded
-    MODULE PROCEDURE afcstab_limit_bounded
-  END INTERFACE
+  interface afcstab_limit
+    module procedure afcstab_limit_unbounded
+    module procedure afcstab_limit_bounded
+  end interface
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE afcstab_initFromParameterlist(rparlist, ssectionName, rafcstab)
+  subroutine afcstab_initFromParameterlist(rparlist, ssectionName, rafcstab)
 
 !<description>
     ! This subroutine creates a stabilisation structure and initializes
@@ -302,63 +302,63 @@ CONTAINS
 
 !<input>
     ! parameter list
-    TYPE(t_parlist), INTENT(IN)    :: rparlist
+    type(t_parlist), intent(IN)    :: rparlist
 
     ! Section name of the parameter list
-    CHARACTER(LEN=*), INTENT(IN)   :: ssectionName
+    character(LEN=*), intent(IN)   :: ssectionName
 !</input>
 
 !<inputoutput>
     ! Stabilisation structure
-    TYPE(t_afcstab), INTENT(INOUT) :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variable
-    INTEGER :: istabilisation
+    integer :: istabilisation
 
     ! Get type of stabilisation from parameter list
-    CALL parlst_getvalue_int(rparlist, ssectionName,&
+    call parlst_getvalue_int(rparlist, ssectionName,&
         "istabilisation", istabilisation)
     
     ! Check if stabilisation should be applied
-    IF (istabilisation .EQ. AFCSTAB_GALERKIN) THEN
+    if (istabilisation .eq. AFCSTAB_GALERKIN) then
       
-      RETURN   ! -> high-order Galerkin
+      return   ! -> high-order Galerkin
       
-    ELSEIF ((istabilisation .NE. AFCSTAB_UPWIND)    .AND. &
-        (    istabilisation .NE. AFCSTAB_FEMFCT)    .AND. &
-        (    istabilisation .NE. AFCSTAB_FEMFCT_EXP).AND. &
-        (    istabilisation .NE. AFCSTAB_FEMFCT_LIN).AND. &
-        (    istabilisation .NE. AFCSTAB_FEMTVD)    .AND. &
-        (    istabilisation .NE. AFCSTAB_FEMGP)     .AND. &
-        (    istabilisation .NE. AFCSTAB_DMP)       .AND. &
-        (    istabilisation .NE. AFCSTAB_SYMMETRIC)) THEN 
+    elseif ((istabilisation .ne. AFCSTAB_UPWIND)    .and. &
+        (    istabilisation .ne. AFCSTAB_FEMFCT)    .and. &
+        (    istabilisation .ne. AFCSTAB_FEMFCT_EXP).and. &
+        (    istabilisation .ne. AFCSTAB_FEMFCT_LIN).and. &
+        (    istabilisation .ne. AFCSTAB_FEMTVD)    .and. &
+        (    istabilisation .ne. AFCSTAB_FEMGP)     .and. &
+        (    istabilisation .ne. AFCSTAB_DMP)       .and. &
+        (    istabilisation .ne. AFCSTAB_SYMMETRIC)) then 
       
-      CALL output_line('Invalid AFC type!',&
+      call output_line('Invalid AFC type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_initFromParameterlist')
-      CALL sys_halt()
+      call sys_halt()
 
-    ELSE
+    else
       ! Set type of stabilisation
       rafcstab%iSpec                 = AFCSTAB_UNDEFINED
       rafcstab%ctypeAFCstabilisation = istabilisation
       
       ! Set additional parameters
-      CALL parlst_getvalue_int(rparlist, ssectionName,&
+      call parlst_getvalue_int(rparlist, ssectionName,&
           "iextendedJacobian", rafcstab%iextendedJacobian, 0)
-      CALL parlst_getvalue_int(rparlist, ssectionName,&
+      call parlst_getvalue_int(rparlist, ssectionName,&
           "idissipation", rafcstab%idissipation, AFCSTAB_SCALARDISSIPATION)
-      CALL parlst_getvalue_int(rparlist, ssectionName,&
+      call parlst_getvalue_int(rparlist, ssectionName,&
           "imass", rafcstab%imass, AFCSTAB_LUMPEDMASS)
-    END IF
-  END SUBROUTINE afcstab_initFromParameterlist
+    end if
+  end subroutine afcstab_initFromParameterlist
 
   !*****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE afcstab_releaseStabilisation(rafcstab)
+  subroutine afcstab_releaseStabilisation(rafcstab)
 
 !<description>
     ! This subroutine releases a stabilisation structure
@@ -366,24 +366,24 @@ CONTAINS
 
 !<inputoutput>
     ! Stabilisation structure
-    TYPE(t_afcstab), INTENT(INOUT) :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER :: i
+    integer :: i
 
     ! Free storage
-    IF (rafcstab%h_IsuperdiagonalEdgesIdx .NE. ST_NOHANDLE)&
-        CALL storage_free(rafcstab%h_IsuperdiagonalEdgesIdx)
-    IF (rafcstab%h_IverticesAtEdge .NE. ST_NOHANDLE)&
-        CALL storage_free(rafcstab%h_IverticesAtEdge)
-    IF (rafcstab%h_IsubdiagonalEdgesIdx .NE. ST_NOHANDLE)&
-        CALL storage_free(rafcstab%h_IsubdiagonalEdgesIdx)
-    IF (rafcstab%h_IsubdiagonalEdges .NE. ST_NOHANDLE)&
-        CALL storage_free(rafcstab%h_IsubdiagonalEdges)
-    IF (rafcstab%h_DcoefficientsAtEdge .NE. ST_NOHANDLE)&
-        CALL storage_free(rafcstab%h_DcoefficientsAtEdge)
+    if (rafcstab%h_IsuperdiagonalEdgesIdx .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IsuperdiagonalEdgesIdx)
+    if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IverticesAtEdge)
+    if (rafcstab%h_IsubdiagonalEdgesIdx .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IsubdiagonalEdgesIdx)
+    if (rafcstab%h_IsubdiagonalEdges .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IsubdiagonalEdges)
+    if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_DcoefficientsAtEdge)
     
     ! Reset atomic data
     rafcstab%ctypeAFCstabilisation = AFCSTAB_GALERKIN
@@ -398,38 +398,38 @@ CONTAINS
     rafcstab%h_IsortPermutation    = ST_NOHANDLE
 
     ! Release auxiliary nodal vectors
-    IF (ASSOCIATED(rafcstab%RnodalVectors)) THEN
-      DO i = LBOUND(rafcstab%RnodalVectors,1),&
-             UBOUND(rafcstab%RnodalVectors,1)
-        CALL lsyssc_releaseVector(rafcstab%RnodalVectors(i))
-      END DO
-      DEALLOCATE(rafcstab%RnodalVectors)
-    END IF
+    if (associated(rafcstab%RnodalVectors)) then
+      do i = lbound(rafcstab%RnodalVectors,1),&
+             ubound(rafcstab%RnodalVectors,1)
+        call lsyssc_releaseVector(rafcstab%RnodalVectors(i))
+      end do
+      deallocate(rafcstab%RnodalVectors)
+    end if
 
     ! Release auxiliary nodal block vectors
-    IF (ASSOCIATED(rafcstab%RnodalBlockVectors)) THEN
-      DO i = LBOUND(rafcstab%RnodalBlockVectors,1),&
-             UBOUND(rafcstab%RnodalBlockVectors,1)
-        CALL lsysbl_releaseVector(rafcstab%RnodalBlockVectors(i))
-      END DO
-      DEALLOCATE(rafcstab%RnodalBlockVectors)
-    END IF
+    if (associated(rafcstab%RnodalBlockVectors)) then
+      do i = lbound(rafcstab%RnodalBlockVectors,1),&
+             ubound(rafcstab%RnodalBlockVectors,1)
+        call lsysbl_releaseVector(rafcstab%RnodalBlockVectors(i))
+      end do
+      deallocate(rafcstab%RnodalBlockVectors)
+    end if
 
     ! Release auxiliary edge vectors
-    IF (ASSOCIATED(rafcstab%RedgeVectors)) THEN
-      DO i = LBOUND(rafcstab%RedgeVectors,1),&
-             UBOUND(rafcstab%RedgeVectors,1)
-        CALL lsyssc_releaseVector(rafcstab%RedgeVectors(i))
-      END DO
-      DEALLOCATE(rafcstab%RedgeVectors)
-    END IF
-  END SUBROUTINE afcstab_releaseStabilisation
+    if (associated(rafcstab%RedgeVectors)) then
+      do i = lbound(rafcstab%RedgeVectors,1),&
+             ubound(rafcstab%RedgeVectors,1)
+        call lsyssc_releaseVector(rafcstab%RedgeVectors(i))
+      end do
+      deallocate(rafcstab%RedgeVectors)
+    end if
+  end subroutine afcstab_releaseStabilisation
 
    !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE afcstab_resizeStabilisation(rafcstab, neq, nedge, nvar)
+  subroutine afcstab_resizeStabilisation(rafcstab, neq, nedge, nvar)
 
 !<description>
     ! This subroutine resizes all vectors of the stabilisation structure
@@ -440,116 +440,116 @@ CONTAINS
 
 !<input>
     ! number of equations
-    INTEGER(PREC_VECIDX), INTENT(IN) :: neq
+    integer(PREC_VECIDX), intent(IN) :: neq
 
     ! number of edges
-    INTEGER(PREC_VECIDX), INTENT(IN) :: nedge
+    integer(PREC_VECIDX), intent(IN) :: nedge
 
     ! OPTIONAL: number of local variables
-    INTEGER, INTENT(IN), OPTIONAL    :: nvar
+    integer, intent(IN), optional    :: nvar
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    TYPE(t_afcstab), INTENT(INOUT)   :: rafcstab
+    type(t_afcstab), intent(INOUT)   :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER :: i
+    integer :: i
 
     ! Check if dimension NVAR is correct
-    IF (PRESENT(nvar)) THEN
-      IF (rafcstab%NVAR .NE. nvar) THEN
-        CALL output_line('Invalid number of variables!',&
+    if (present(nvar)) then
+      if (rafcstab%NVAR .ne. nvar) then
+        call output_line('Invalid number of variables!',&
             OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabilisation')
-        CALL sys_halt()
-      END IF
-    END IF
+        call sys_halt()
+      end if
+    end if
 
     ! Resize nodal quantities
-    IF (rafcstab%NEQ .NE. neq) THEN
+    if (rafcstab%NEQ .ne. neq) then
 
       ! Set new number of nodes
       rafcstab%NEQ = neq
       
       ! Resize edge index vector
-      IF (rafcstab%h_IsuperdiagonalEdgesIdx .NE. ST_NOHANDLE) THEN
-        CALL storage_realloc('afcstab_resizeStabilisation',&
+      if (rafcstab%h_IsuperdiagonalEdgesIdx .ne. ST_NOHANDLE) then
+        call storage_realloc('afcstab_resizeStabilisation',&
             rafcstab%NEQ+1, rafcstab%h_IsuperdiagonalEdgesIdx,&
-            ST_NEWBLOCK_NOINIT, .FALSE.)
-      END IF
+            ST_NEWBLOCK_NOINIT, .false.)
+      end if
       
       ! Resize subdiagonal edge index vector
-      IF (rafcstab%h_IsubdiagonalEdgesIdx .NE. ST_NOHANDLE) THEN
-        CALL storage_realloc('afcstab_resizeStabilisation',&
+      if (rafcstab%h_IsubdiagonalEdgesIdx .ne. ST_NOHANDLE) then
+        call storage_realloc('afcstab_resizeStabilisation',&
             rafcstab%NEQ+1, rafcstab%h_IsubdiagonalEdgesIdx,&
-            ST_NEWBLOCK_NOINIT, .FALSE.)
-      END IF
+            ST_NEWBLOCK_NOINIT, .false.)
+      end if
 
       ! Resize auxiliary nodal vectors
-      IF(ASSOCIATED(rafcstab%RnodalVectors)) THEN
-        DO i = LBOUND(rafcstab%RnodalVectors,1),&
-               UBOUND(rafcstab%RnodalVectors,1)
-          CALL lsyssc_resizeVector(rafcstab%RnodalVectors(i),&
-              rafcstab%NEQ, .FALSE., .FALSE.)
-        END DO
-      END IF
+      if(associated(rafcstab%RnodalVectors)) then
+        do i = lbound(rafcstab%RnodalVectors,1),&
+               ubound(rafcstab%RnodalVectors,1)
+          call lsyssc_resizeVector(rafcstab%RnodalVectors(i),&
+              rafcstab%NEQ, .false., .false.)
+        end do
+      end if
 
       ! Resize auxiliary nodal vectors
-      IF(ASSOCIATED(rafcstab%RnodalBlockVectors)) THEN
-        DO i = LBOUND(rafcstab%RnodalBlockVectors,1),&
-               UBOUND(rafcstab%RnodalBlockVectors,1)
-          CALL lsysbl_resizeVectorBlock(rafcstab%RnodalBlockVectors(i),&
-              rafcstab%NEQ, .FALSE., .FALSE.)
-        END DO
-      END IF
-    END IF
+      if(associated(rafcstab%RnodalBlockVectors)) then
+        do i = lbound(rafcstab%RnodalBlockVectors,1),&
+               ubound(rafcstab%RnodalBlockVectors,1)
+          call lsysbl_resizeVectorBlock(rafcstab%RnodalBlockVectors(i),&
+              rafcstab%NEQ, .false., .false.)
+        end do
+      end if
+    end if
 
 
     ! Resize edge quantities
-    IF (rafcstab%NEDGE .NE. nedge) THEN
+    if (rafcstab%NEDGE .ne. nedge) then
 
       ! Set new number of edges
       rafcstab%NEDGE = nedge
 
       ! Resize array of edges
-      IF (rafcstab%h_IverticesAtEdge .NE. ST_NOHANDLE) THEN
-        CALL storage_realloc('afcstab_resizeStabilisation',&
+      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE) then
+        call storage_realloc('afcstab_resizeStabilisation',&
             rafcstab%NEDGE, rafcstab%h_IverticesAtEdge,&
-            ST_NEWBLOCK_NOINIT, .FALSE.)
-      END IF
+            ST_NEWBLOCK_NOINIT, .false.)
+      end if
 
       ! Resize array of subdiagonal edges
-      IF (rafcstab%h_IsubdiagonalEdges .NE. ST_NOHANDLE) THEN
-        CALL storage_realloc('afcstab_resizeStabilisation',&
+      if (rafcstab%h_IsubdiagonalEdges .ne. ST_NOHANDLE) then
+        call storage_realloc('afcstab_resizeStabilisation',&
             rafcstab%NEDGE, rafcstab%h_IsubdiagonalEdges,&
-            ST_NEWBLOCK_NOINIT, .FALSE.)
-      END IF
+            ST_NEWBLOCK_NOINIT, .false.)
+      end if
 
       ! Resize array of edge data
-      IF (rafcstab%h_DcoefficientsAtEdge .NE. ST_NOHANDLE) THEN
-        CALL storage_realloc('afcstab_resizeStabilisation',&
+      if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE) then
+        call storage_realloc('afcstab_resizeStabilisation',&
             rafcstab%NEDGE, rafcstab%h_DcoefficientsAtEdge,&
-            ST_NEWBLOCK_NOINIT, .FALSE.)
-      END IF
+            ST_NEWBLOCK_NOINIT, .false.)
+      end if
 
       ! Resize auxiliary edge vectors
-      IF(ASSOCIATED(rafcstab%RedgeVectors)) THEN
-        DO i = LBOUND(rafcstab%RedgeVectors,1),&
-               UBOUND(rafcstab%RedgeVectors,1)
-          CALL lsyssc_resizeVector(rafcstab%RedgeVectors(i),&
-              rafcstab%NEDGE, .FALSE., .FALSE.)
-        END DO
-      END IF
-    END IF
-  END SUBROUTINE afcstab_resizeStabilisation
+      if(associated(rafcstab%RedgeVectors)) then
+        do i = lbound(rafcstab%RedgeVectors,1),&
+               ubound(rafcstab%RedgeVectors,1)
+          call lsyssc_resizeVector(rafcstab%RedgeVectors(i),&
+              rafcstab%NEDGE, .false., .false.)
+        end do
+      end if
+    end if
+  end subroutine afcstab_resizeStabilisation
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+  subroutine afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
 
 !<description>
     ! Returns a pointer to the index pointer for vertices at edge structure
@@ -557,33 +557,33 @@ CONTAINS
 
 !<input>
     ! discrete operator
-    TYPE(t_afcstab), INTENT(IN) :: rafcstab
+    type(t_afcstab), intent(IN) :: rafcstab
 !</input>
 
 !<output>
     ! Pointer to the index pointer for superdiagonal edge numbers.
     ! NULL() if the discrete operator does not provide it.
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_IsuperdiagonalEdgesIdx
+    integer(PREC_VECIDX), dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
 !</output>
 !</subroutine>
 
     ! Do we have an edge separator at all?
-    IF ((rafcstab%h_IsuperdiagonalEdgesIdx .EQ. ST_NOHANDLE) .OR.&
-        (rafcstab%NEQ                  .EQ. 0)) THEN
-      NULLIFY(p_IsuperdiagonalEdgesIdx)
-      RETURN
-    END IF
+    if ((rafcstab%h_IsuperdiagonalEdgesIdx .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEQ                  .eq. 0)) then
+      nullify(p_IsuperdiagonalEdgesIdx)
+      return
+    end if
     
     ! Get the array
-    CALL storage_getbase_int(rafcstab%h_IsuperdiagonalEdgesIdx,&
+    call storage_getbase_int(rafcstab%h_IsuperdiagonalEdgesIdx,&
         p_IsuperdiagonalEdgesIdx,rafcstab%NEQ+1)
-  END SUBROUTINE afcstab_getbase_IsupdiagEdgeIdx
+  end subroutine afcstab_getbase_IsupdiagEdgeIdx
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+  subroutine afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
 !<description>
     ! Returns a pointer to the vertices at edge structure
@@ -591,33 +591,33 @@ CONTAINS
 
 !<input>
     ! discrete operator
-    TYPE(t_afcstab), INTENT(IN) :: rafcstab
+    type(t_afcstab), intent(IN) :: rafcstab
 !</input>
 
 !<output>
     ! Pointer to the vertices at edge structure
     ! NULL() if the discrete operator does not provide it.
-    INTEGER(PREC_MATIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
+    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IverticesAtEdge
 !</output>
 !</subroutine>
 
     ! Do we have an edge separator at all?
-    IF ((rafcstab%h_IverticesAtEdge .EQ. ST_NOHANDLE) .OR.&
-        (rafcstab%NEDGE             .EQ. 0)) THEN
-      NULLIFY(p_IverticesAtEdge)
-      RETURN
-    END IF
+    if ((rafcstab%h_IverticesAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE             .eq. 0)) then
+      nullify(p_IverticesAtEdge)
+      return
+    end if
     
     ! Get the array
-    CALL storage_getbase_int2D(rafcstab%h_IverticesAtEdge,&
+    call storage_getbase_int2D(rafcstab%h_IverticesAtEdge,&
         p_IverticesAtEdge,rafcstab%NEDGE)
-  END SUBROUTINE afcstab_getbase_IverticesAtEdge
+  end subroutine afcstab_getbase_IverticesAtEdge
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+  subroutine afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
 
 !<description>
     ! Returns a pointer to the index pointer for 
@@ -626,34 +626,34 @@ CONTAINS
 
 !<input>
     ! discrete operator
-    TYPE(t_afcstab), INTENT(IN) :: rafcstab
+    type(t_afcstab), intent(IN) :: rafcstab
 !</input>
 
 !<output>
     ! Pointer to the index pointer for 
     ! subdiagonal edge numbers
     ! NULL() if the discrete operator does not provide it.
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_IsubdiagonalEdgesIdx
+    integer(PREC_MATIDX), dimension(:), pointer :: p_IsubdiagonalEdgesIdx
 !</output>
 !</subroutine>
 
     ! Do we have an edge separator at all?
-    IF ((rafcstab%h_IsubdiagonalEdgesIdx .EQ. ST_NOHANDLE) .OR.&
-        (rafcstab%NEQ                    .EQ. 0)) THEN
-      NULLIFY(p_IsubdiagonalEdgesIdx)
-      RETURN
-    END IF
+    if ((rafcstab%h_IsubdiagonalEdgesIdx .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEQ                    .eq. 0)) then
+      nullify(p_IsubdiagonalEdgesIdx)
+      return
+    end if
     
     ! Get the array
-    CALL storage_getbase_int(rafcstab%h_IsubdiagonalEdgesIdx,&
+    call storage_getbase_int(rafcstab%h_IsubdiagonalEdgesIdx,&
         p_IsubdiagonalEdgesIdx,rafcstab%NEQ+1)
-  END SUBROUTINE afcstab_getbase_IsubdiagEdgeIdx
+  end subroutine afcstab_getbase_IsubdiagEdgeIdx
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagonalEdges)
+  subroutine afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagonalEdges)
 
 !<description>
     ! Returns a pointer to the subdiagonal edge number
@@ -661,33 +661,33 @@ CONTAINS
 
 !<input>
     ! discrete operator
-    TYPE(t_afcstab), INTENT(IN) :: rafcstab
+    type(t_afcstab), intent(IN) :: rafcstab
 !</input>
 
 !<output>
     ! Pointer to the subdiagonal edge numbers
     ! NULL() if the discrete operator does not provide it.
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_IsubdiagonalEdges
+    integer(PREC_MATIDX), dimension(:), pointer :: p_IsubdiagonalEdges
 !</output>
 !</subroutine>
 
     ! Do we have an edge separator at all?
-    IF ((rafcstab%h_IsubdiagonalEdges .EQ. ST_NOHANDLE) .OR.&
-        (rafcstab%NEDGE               .EQ. 0)) THEN
-      NULLIFY(p_IsubdiagonalEdges)
-      RETURN
-    END IF
+    if ((rafcstab%h_IsubdiagonalEdges .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE               .eq. 0)) then
+      nullify(p_IsubdiagonalEdges)
+      return
+    end if
     
     ! Get the array
-    CALL storage_getbase_int(rafcstab%h_IsubdiagonalEdges,&
+    call storage_getbase_int(rafcstab%h_IsubdiagonalEdges,&
         p_IsubdiagonalEdges,rafcstab%NEDGE)
-  END SUBROUTINE afcstab_getbase_IsubdiagEdge
+  end subroutine afcstab_getbase_IsubdiagEdge
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE afcstab_getbase_DcoeffsAtEdge(rafcstab,p_DcoefficientsAtEdge)
+  subroutine afcstab_getbase_DcoeffsAtEdge(rafcstab,p_DcoefficientsAtEdge)
 
 !<description>
     ! Returns a pointer to the double-valued edge data
@@ -695,33 +695,33 @@ CONTAINS
 
 !<input>
     ! discrete operator
-    TYPE(t_afcstab), INTENT(IN) :: rafcstab
+    type(t_afcstab), intent(IN) :: rafcstab
 !</input>
 
 !<output>
     ! Pointer to the double-valued edge data
     ! NULL() if the discrete operator does not provide it.
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DcoefficientsAtEdge
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
     ! Do we have an edge separator at all?
-    IF ((rafcstab%h_DcoefficientsAtEdge .EQ. ST_NOHANDLE) .OR.&
-        (rafcstab%NEDGE                .EQ. 0)) THEN
-      NULLIFY(p_DcoefficientsAtEdge)
-      RETURN
-    END IF
+    if ((rafcstab%h_DcoefficientsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE                .eq. 0)) then
+      nullify(p_DcoefficientsAtEdge)
+      return
+    end if
     
     ! Get the array
-    CALL storage_getbase_double2D(rafcstab%h_DcoefficientsAtEdge,&
+    call storage_getbase_double2D(rafcstab%h_DcoefficientsAtEdge,&
         p_DcoefficientsAtEdge,rafcstab%NEDGE)
-  END SUBROUTINE afcstab_getbase_DcoeffsAtEdge
+  end subroutine afcstab_getbase_DcoeffsAtEdge
 
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE afcstab_generateSubdiagEdges(rafcstab)
+  subroutine afcstab_generateSubdiagEdges(rafcstab)
 
 !<description>
     ! This subroutine generates the subdiagonal edge number
@@ -730,65 +730,65 @@ CONTAINS
 
 !<inputoutput>
     ! discrete operator
-    TYPE(t_afcstab), INTENT(INOUT) :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_MATIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER   :: p_IsuperdiagonalEdgesIdx
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER   :: p_IsubdiagonalEdges
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER   :: p_IsubdiagonalEdgesIdx
-    INTEGER(PREC_MATIDX) :: iedge,nedge,istor
-    INTEGER(PREC_VECIDX) :: ieq,jeq,neq
-    INTEGER(I32)         :: isize
+    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+    integer(PREC_VECIDX), dimension(:), pointer   :: p_IsuperdiagonalEdgesIdx
+    integer(PREC_MATIDX), dimension(:), pointer   :: p_IsubdiagonalEdges
+    integer(PREC_VECIDX), dimension(:), pointer   :: p_IsubdiagonalEdgesIdx
+    integer(PREC_MATIDX) :: iedge,nedge,istor
+    integer(PREC_VECIDX) :: ieq,jeq,neq
+    integer(I32)         :: isize
 
     ! Check if edge-based data structure is prepared
-    IF (IAND(rafcstab%iSpec,AFCSTAB_EDGESTRUCTURE) .EQ. 0) THEN
-      CALL output_line('Discrete operator does not provide required &
+    if (iand(rafcstab%iSpec,AFCSTAB_EDGESTRUCTURE) .eq. 0) then
+      call output_line('Discrete operator does not provide required &
           &edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
           'afcstab_generateSubdiagEdge')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! store dimensions of discrete operator
     neq   = rafcstab%NEQ
     nedge = rafcstab%NEDGE
 
     ! Allocate memory (if required)
-    IF (rafcstab%h_IsubdiagonalEdgesIdx .EQ. ST_NOHANDLE) THEN
-      CALL storage_new('afcstab_generateSubdiagEdges','IsubdiagonalEdgesIdx',&
+    if (rafcstab%h_IsubdiagonalEdgesIdx .eq. ST_NOHANDLE) then
+      call storage_new('afcstab_generateSubdiagEdges','IsubdiagonalEdgesIdx',&
           neq+1,ST_INT,rafcstab%h_IsubdiagonalEdgesIdx,ST_NEWBLOCK_ZERO)
-    ELSE
-      CALL storage_getsize(rafcstab%h_IsubdiagonalEdgesIdx,isize)
-      IF (isize < neq+1) THEN
-        CALL storage_realloc('afcstab_generateSubdiagEdges',neq+1,&
-            rafcstab%h_IsubdiagonalEdgesIdx,ST_NEWBLOCK_ZERO,.FALSE.)
-      ELSE
-        CALL storage_clear(rafcstab%h_IsubdiagonalEdgesIdx)
-      END IF
-    END IF
+    else
+      call storage_getsize(rafcstab%h_IsubdiagonalEdgesIdx,isize)
+      if (isize < neq+1) then
+        call storage_realloc('afcstab_generateSubdiagEdges',neq+1,&
+            rafcstab%h_IsubdiagonalEdgesIdx,ST_NEWBLOCK_ZERO,.false.)
+      else
+        call storage_clear(rafcstab%h_IsubdiagonalEdgesIdx)
+      end if
+    end if
 
-    IF (rafcstab%h_IsubdiagonalEdges .EQ. ST_NOHANDLE) THEN
-      CALL storage_new('afcstab_generateSubdiagEdges','IsubdiagonalEdges',&
+    if (rafcstab%h_IsubdiagonalEdges .eq. ST_NOHANDLE) then
+      call storage_new('afcstab_generateSubdiagEdges','IsubdiagonalEdges',&
           nedge,ST_INT,rafcstab%h_IsubdiagonalEdges,ST_NEWBLOCK_NOINIT)
-    ELSE
-      CALL storage_getsize(rafcstab%h_IsubdiagonalEdges,isize)
-      IF (isize < nedge) THEN
-        CALL storage_realloc('afcstab_generateSubdiagEdges',nedge,&
-            rafcstab%h_IsubdiagonalEdges,ST_NEWBLOCK_NOINIT,.FALSE.)
-      END IF
-    END IF
+    else
+      call storage_getsize(rafcstab%h_IsubdiagonalEdges,isize)
+      if (isize < nedge) then
+        call storage_realloc('afcstab_generateSubdiagEdges',nedge,&
+            rafcstab%h_IsubdiagonalEdges,ST_NEWBLOCK_NOINIT,.false.)
+      end if
+    end if
     
     ! Set pointers
-    CALL afcstab_getbase_IsupdiagEdgeIdx(rafcstab,p_IsuperdiagonalEdgesIdx)
-    CALL afcstab_getbase_IverticesAtEdge(rafcstab,p_IverticesAtEdge)
-    CALL afcstab_getbase_IsubdiagEdgeIdx(rafcstab,p_IsubdiagonalEdgesIdx)
-    CALL afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagonalEdges)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab,p_IsuperdiagonalEdgesIdx)
+    call afcstab_getbase_IverticesAtEdge(rafcstab,p_IverticesAtEdge)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab,p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagonalEdges)
     
     ! Count number of superdiagonal edges
-    DO ieq = 1, neq
-      DO iedge = p_IsuperdiagonalEdgesIdx(ieq),&
+    do ieq = 1, neq
+      do iedge = p_IsuperdiagonalEdgesIdx(ieq),&
                  p_IsuperdiagonalEdgesIdx(ieq+1)-1
 
         ! Determine that end-point of the edge which is not equal to IEQ
@@ -796,17 +796,17 @@ CONTAINS
 
         ! Increase number of edges connected to this point by one
         p_IsubdiagonalEdgesIdx(jeq) = p_IsubdiagonalEdgesIdx(jeq)+1
-      END DO
-    END DO
+      end do
+    end do
     
     ! Reshuffle pass 1.
-    DO ieq = 2, neq
+    do ieq = 2, neq
       
       
       p_IsubdiagonalEdgesIdx(ieq) = p_IsubdiagonalEdgesIdx(ieq) +&
           p_IsubdiagonalEdgesIdx(ieq-1)
       
-    END DO
+    end do
     p_IsubdiagonalEdgesIdx(neq+1) = p_IsubdiagonalEdgesIdx(neq+1) +&
         p_IsubdiagonalEdgesIdx(neq)
     
@@ -817,11 +817,11 @@ CONTAINS
 
     rafcstab%NNVEDGE = 0! p_IsuperdiagonalEdgesIdx(2) - p_IsuperdiagonalEdgesIdx(1)
 
-    DO ieq = 1, neq
+    do ieq = 1, neq
       
       ! For each equation, loop over the edges which are located in
       ! the upper right triangular matrix
-      DO iedge = p_IsuperdiagonalEdgesIdx(ieq),&
+      do iedge = p_IsuperdiagonalEdgesIdx(ieq),&
                  p_IsuperdiagonalEdgesIdx(ieq+1)-1
         
         ! Determine that end-point of the edge which is not equal to IEQ
@@ -833,30 +833,30 @@ CONTAINS
         p_IsubdiagonalEdgesIdx(jeq) = istor
         p_IsubdiagonalEdges(istor)  = iedge
 
-      END DO
+      end do
       
       ! Compute the maximum number of edges adjacent to one vertex
-      rafcstab%NNVEDGE = MAX(rafcstab%NNVEDGE,&
+      rafcstab%NNVEDGE = max(rafcstab%NNVEDGE,&
           p_IsuperdiagonalEdgesIdx(ieq+1) - p_IsuperdiagonalEdgesIdx(ieq) +&
           p_IsubdiagonalEdgesIdx(ieq+1) - p_IsubdiagonalEdgesIdx(ieq))
-    END DO
+    end do
     
     ! Reshuffle pass 2: Adjust the index vector which was tainted in
     ! the above loop
-    DO ieq = neq+1, 2, -1
+    do ieq = neq+1, 2, -1
       p_IsubdiagonalEdgesIdx(ieq) = p_IsubdiagonaledgesIdx(ieq-1)+1
-    END DO
+    end do
     p_IsubdiagonalEdgesIdx(1) = 1
 
     ! Set specifier for extended edge structure
-    rafcstab%iSpec = IOR(rafcstab%iSpec,AFCSTAB_SUBDIAGONALEDGES)
-  END SUBROUTINE afcstab_generateSubdiagEdges
+    rafcstab%iSpec = ior(rafcstab%iSpec,AFCSTAB_SUBDIAGONALEDGES)
+  end subroutine afcstab_generateSubdiagEdges
   
   !*****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE afcstab_generateExtSparsity(rmatrixSrc, rmatrixExtended)
+  subroutine afcstab_generateExtSparsity(rmatrixSrc, rmatrixExtended)
 
 !<description>
     ! This subroutine generates the extended sparsity pattern
@@ -873,28 +873,28 @@ CONTAINS
 !</description>
 
 !<input>
-    TYPE(t_matrixScalar), INTENT(IN)    :: rmatrixSrc
+    type(t_matrixScalar), intent(IN)    :: rmatrixSrc
 !</input>
 
 !<inputoutput>
-    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixExtended
+    type(t_matrixScalar), intent(INOUT) :: rmatrixExtended
 !</inputoutput>
 !</subroutine>
     
     ! Clear output matrix
-    CALL lsyssc_releaseMatrix(rmatrixExtended)
+    call lsyssc_releaseMatrix(rmatrixExtended)
     
     ! Compute Z=A*A and let the connectivity graph of Z be the
     ! extended sparsity pattern of the Jacobian matrix
-    CALL lsyssc_multMatMat(rmatrixSrc, rmatrixSrc,&
-        rmatrixExtended, .TRUE., .TRUE., .FALSE.)
-  END SUBROUTINE afcstab_generateExtSparsity
+    call lsyssc_multMatMat(rmatrixSrc, rmatrixSrc,&
+        rmatrixExtended, .true., .true., .false.)
+  end subroutine afcstab_generateExtSparsity
 
   !*****************************************************************************
 
 !<function>
   
-  ELEMENTAL FUNCTION afcstab_limit_unbounded(p, q, default) RESULT(r)
+  ELEMENTAL function afcstab_limit_unbounded(p, q, default) result(r)
 
 !<description>
     ! This function computes the ratio Q/P. If the denominator is
@@ -903,30 +903,30 @@ CONTAINS
 
 !<input>
     ! (de)nominator
-    REAL(DP), INTENT(IN) :: p,q
+    real(DP), intent(IN) :: p,q
 
     ! default value
-    REAL(DP), INTENT(IN) :: default
+    real(DP), intent(IN) :: default
 !</input>
 
 !<result>
     ! limited ratio
-    REAL(DP) :: r
+    real(DP) :: r
 !</result>
 !</function>
 
-    IF (p > SYS_EPSREAL) THEN
+    if (p > SYS_EPSREAL) then
       r = q/p
-    ELSE
+    else
       r = default
-    END IF
-  END FUNCTION afcstab_limit_unbounded
+    end if
+  end function afcstab_limit_unbounded
 
   !*****************************************************************************
 
 !<function>
   
-  ELEMENTAL FUNCTION afcstab_limit_bounded(p, q, default, dbound) RESULT(r)
+  ELEMENTAL function afcstab_limit_bounded(p, q, default, dbound) result(r)
 
 !<description>
     ! This function computes the limited ratio Q/P and bounds the
@@ -936,25 +936,25 @@ CONTAINS
 
 !<input>
     ! (de)nominator
-    REAL(DP), INTENT(IN) :: p,q
+    real(DP), intent(IN) :: p,q
     
     ! default value
-    REAL(DP), INTENT(IN) :: default
+    real(DP), intent(IN) :: default
 
     ! upper bound
-    REAL(DP), INTENT(IN) :: dbound
+    real(DP), intent(IN) :: dbound
 !</input>
 
 !<result>
     ! limited ratio
-    REAL(DP) :: r
+    real(DP) :: r
 !</result>
 !</function>
     
-    IF (p > SYS_EPSREAL) THEN
-      r = MIN(q/p, dbound)
-    ELSE
+    if (p > SYS_EPSREAL) then
+      r = min(q/p, dbound)
+    else
       r = default
-    END IF
-  END FUNCTION afcstab_limit_bounded
-END MODULE afcstabilisation
+    end if
+  end function afcstab_limit_bounded
+end module afcstabilisation

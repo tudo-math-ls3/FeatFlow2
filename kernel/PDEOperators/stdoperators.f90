@@ -21,21 +21,21 @@
 !# </purpose>
 !##############################################################################
 
-MODULE stdoperators
+module stdoperators
 
-  USE fsystem
-  USE linearsystemscalar
-  USE bilinearformevaluation
+  use fsystem
+  use linearsystemscalar
+  use bilinearformevaluation
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE stdop_assembleLaplaceMatrix (rmatrix,bclear,dalpha)
+  subroutine stdop_assembleLaplaceMatrix (rmatrix,bclear,dalpha)
   
 !<description>
   ! This routine assembles a Laplace matrix into rmatrix.
@@ -44,11 +44,11 @@ CONTAINS
 !<input>
   ! OPTIONAL: If set to TRUE (standard), the content of rmatrix is set to 0.0
   ! before assembling the matrix.
-  LOGICAL, INTENT(IN), OPTIONAL :: bclear
+  logical, intent(IN), optional :: bclear
   
   ! OPTIONAL: Constant coefficient in front of the matrix, which is multiplied
   ! to all entries. If not specified, 1.0 is assumed.
-  REAL(DP), INTENT(IN), OPTIONAL :: dalpha
+  real(DP), intent(IN), optional :: dalpha
 !</input>
 
 !<inputoutput>
@@ -59,22 +59,22 @@ CONTAINS
   ! If the array exist, the new entries of the Laplace operator overwrite
   ! the old entries (if bclear=true) or are added to the old entries 
   ! (if bclear=false).
-  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(INOUT) :: rmatrix
 !</inputoutput>
   
 !</subroutine>
 
     ! local variables
-    REAL(DP) :: dalpha1
-    LOGICAL :: bclear1
+    real(DP) :: dalpha1
+    logical :: bclear1
     
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform
+    type(t_bilinearForm) :: rform
     
-    bclear1 = .TRUE.
+    bclear1 = .true.
     dalpha1 = 1.0_DP
-    IF (PRESENT(bclear)) bclear1=bclear
-    IF (PRESENT(dalpha)) dalpha1=dalpha
+    if (present(bclear)) bclear1=bclear
+    if (present(dalpha)) dalpha1=dalpha
 
     ! For assembling of the entries, we need a bilinear form, 
     ! which first has to be set up manually.
@@ -88,22 +88,22 @@ CONTAINS
     rform%Idescriptors(2,2) = DER_DERIV_Y
 
     ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dalpha1
     rform%Dcoefficients(2)  = dalpha1
 
     ! Now we can build the matrix entries.
-    CALL bilf_buildMatrixScalar (rform,bclear1,rmatrix)
+    call bilf_buildMatrixScalar (rform,bclear1,rmatrix)
 
-  END SUBROUTINE
+  end subroutine
 
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE stdop_assembleLaplaceMatrix3D (rmatrix,bclear,dalpha)
+  subroutine stdop_assembleLaplaceMatrix3D (rmatrix,bclear,dalpha)
   
 !<description>
   ! This routine assembles a Laplace matrix into rmatrix.
@@ -112,11 +112,11 @@ CONTAINS
 !<input>
   ! OPTIONAL: If set to TRUE (standard), the content of rmatrix is set to 0.0
   ! before assembling the matrix.
-  LOGICAL, INTENT(IN), OPTIONAL :: bclear
+  logical, intent(IN), optional :: bclear
   
   ! OPTIONAL: Constant coefficient in front of the matrix, which is multiplied
   ! to all entries. If not specified, 1.0 is assumed.
-  REAL(DP), INTENT(IN), OPTIONAL :: dalpha
+  real(DP), intent(IN), optional :: dalpha
 !</input>
 
 !<inputoutput>
@@ -127,22 +127,22 @@ CONTAINS
   ! If the array exist, the new entries of the Laplace operator overwrite
   ! the old entries (if bclear=true) or are added to the old entries 
   ! (if bclear=false).
-  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(INOUT) :: rmatrix
 !</inputoutput>
   
 !</subroutine>
 
     ! local variables
-    REAL(DP) :: dalpha1
-    LOGICAL :: bclear1
+    real(DP) :: dalpha1
+    logical :: bclear1
     
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform
+    type(t_bilinearForm) :: rform
     
-    bclear1 = .TRUE.
+    bclear1 = .true.
     dalpha1 = 1.0_DP
-    IF (PRESENT(bclear)) bclear1=bclear
-    IF (PRESENT(dalpha)) dalpha1=dalpha
+    if (present(bclear)) bclear1=bclear
+    if (present(dalpha)) dalpha1=dalpha
 
     ! For assembling of the entries, we need a bilinear form, 
     ! which first has to be set up manually.
@@ -158,22 +158,22 @@ CONTAINS
     rform%Idescriptors(2,3) = DER_DERIV3D_Z
 
     ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dalpha1
     rform%Dcoefficients(2)  = dalpha1
     rform%Dcoefficients(3)  = dalpha1
 
     ! Now we can build the matrix entries.
-    CALL bilf_buildMatrixScalar (rform,bclear1,rmatrix)
+    call bilf_buildMatrixScalar (rform,bclear1,rmatrix)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE stdop_assembleSimpleMatrix (rmatrix,cderivTrial,cderivTest,dalpha,&
+  subroutine stdop_assembleSimpleMatrix (rmatrix,cderivTrial,cderivTest,dalpha,&
       bclear)
   
 !<description>
@@ -190,19 +190,19 @@ CONTAINS
 !<input>
   ! A derivative quantifier for the trial function. One of the DER_XXXX constants,
   ! e.g. DER_DERIV_X for X- or DER_DERIV_Y for Y-derivative.
-  INTEGER, INTENT(IN) :: cderivTrial
+  integer, intent(IN) :: cderivTrial
   
   ! A derivative quantifier for the test function. One of the DER_XXXX constants,
   ! e.g. DER_DERIV_X for X- or DER_DERIV_Y for Y-derivative.
-  INTEGER, INTENT(IN) :: cderivTest
+  integer, intent(IN) :: cderivTest
   
   ! Constant coefficient in front of the matrix, which is multiplied
   ! to all entries. If not specified, a value of 1.0 is assumed.
-  REAL(DP), INTENT(IN), OPTIONAL :: dalpha
+  real(DP), intent(IN), optional :: dalpha
   
   ! OPTIONAL: If set to TRUE (standard), the content of rmatrix is set to 0.0
   ! before assembling the matrix.
-  LOGICAL, INTENT(IN), OPTIONAL :: bclear
+  logical, intent(IN), optional :: bclear
 !</input>
 
 !<inputoutput>
@@ -213,22 +213,22 @@ CONTAINS
   ! If the array exist, the new entries of the Laplace operator overwrite
   ! the old entries (if bclear=true) or are added to the old entries 
   ! (if bclear=false).
-  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(INOUT) :: rmatrix
 !</inputoutput>
   
 !</subroutine>
 
     ! local variables
-    REAL(DP) :: dalpha1
-    LOGICAL :: bclear1
+    real(DP) :: dalpha1
+    logical :: bclear1
     
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform
+    type(t_bilinearForm) :: rform
     
-    bclear1 = .TRUE.
+    bclear1 = .true.
     dalpha1 = 1.0_DP
-    IF (PRESENT(bclear)) bclear1=bclear
-    IF (PRESENT(dalpha)) dalpha1=dalpha
+    if (present(bclear)) bclear1=bclear
+    if (present(dalpha)) dalpha1=dalpha
 
     ! Set up bilinear form for generating the mass matrix
     rform%itermCount = 1
@@ -236,13 +236,13 @@ CONTAINS
     rform%Idescriptors(2,1) = cderivTest
 
     ! We have constant coefficients:
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dalpha1
 
     ! Now we can build the matrix entries.
-    CALL bilf_buildMatrixScalar (rform,bclear1,rmatrix)
+    call bilf_buildMatrixScalar (rform,bclear1,rmatrix)
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

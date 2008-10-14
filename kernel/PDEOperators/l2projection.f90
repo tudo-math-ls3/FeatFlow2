@@ -17,14 +17,14 @@
 !# </purpose>
 !##############################################################################
 
-MODULE l2projection
+module l2projection
 
-  USE fsystem
-  USE linearalgebra
-  USE linearsystemscalar
-  USE linearformevaluation
+  use fsystem
+  use linearalgebra
+  use linearsystemscalar
+  use linearformevaluation
   
-  IMPLICIT NONE
+  implicit none
 
 !<types>
 
@@ -32,58 +32,58 @@ MODULE l2projection
 
   ! Configuration block for the function anevl_L2projectionByMass which carries
   ! out the $L_2$ projection of an analytically given function by defect correction.
-  TYPE t_configL2ProjectionByMass
+  type t_configL2ProjectionByMass
   
     ! Relative error criterium. Standard = $10^-{5}$.
     ! anevl_L2projectionByMass carries out the iteration until the relative as well
     ! the absolute error criterium is reached. 
     ! A value of 0.0 disables the check against the relative residuum.
-    REAL(DP) :: depsRel = 1.0E-5_DP
+    real(DP) :: depsRel = 1.0E-5_DP
 
     ! Absolute error criterium. Standard = $10^-{5}$.
     ! anevl_L2projectionByMass carries out the iteration until the relative as well
     ! the absolute error criterium is reached. 
     ! A value of 0.0 disables the check against the absolute residuum.
-    REAL(DP) :: depsAbs = 1.0E-5
+    real(DP) :: depsAbs = 1.0E-5
 
     ! Maximum iterations to be carried out. Standard = 10.
     ! The iteration stops prematurely if the number of iterations reaches this number.
-    INTEGER :: nmaxIterations = 10
+    integer :: nmaxIterations = 10
     
     ! Type of norm to use for measuring errors. Standard is LINALG_NORML2.
-    INTEGER :: cnorm = LINALG_NORML2
+    integer :: cnorm = LINALG_NORML2
     
     ! Damping parameter for the iteration. Standard = 1.0.
-    REAL(DP) :: domega = 1.0_DP
+    real(DP) :: domega = 1.0_DP
     
     ! Output: Returns the initial residuum.
     ! This value is only set if depsRel > 0; otherwise, the relative error is
     ! not computed and left to 1.0_DP.
-    REAL(DP) :: dinitResiduum = 0.0_DP
+    real(DP) :: dinitResiduum = 0.0_DP
 
     ! Output: Returns the final relative error.
     ! This value is only set if depsRel > 0; otherwise, the relative error is
     ! not computed.
-    REAL(DP) :: drelError = 0.0_DP
+    real(DP) :: drelError = 0.0_DP
 
     ! Output: Returns the final absolute error.
-    REAL(DP) :: dabsError = 0.0_DP
+    real(DP) :: dabsError = 0.0_DP
 
     ! Output: Returns the number of performed iterations
-    INTEGER :: iiterations = 0
-  END TYPE
+    integer :: iiterations = 0
+  end type
   
 !</typeblock>
 
 !</types>
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE l2prj_analytL2projectionByMass (rvector,rmatrixMass,rmatrixMassLumped,&
+  subroutine l2prj_analytL2projectionByMass (rvector,rmatrixMass,rmatrixMassLumped,&
       rvectorTemp1,rvectorTemp2,fcoeff_buildVectorSc_sim,rcollection,&
       rL2ProjectionConfig)
       
@@ -104,48 +104,48 @@ CONTAINS
 
 !<input>
   ! The consistent mass matrix of the FE space of rvector.
-  TYPE(t_matrixScalar), INTENT(IN) :: rmatrixMass
+  type(t_matrixScalar), intent(IN) :: rmatrixMass
   
   ! The lumped mass matrix of the FE space of rvector.
-  TYPE(t_matrixScalar), INTENT(IN) :: rmatrixMassLumped
+  type(t_matrixScalar), intent(IN) :: rmatrixMassLumped
 
   ! A callback routine for the function to be discretised. The callback routine
   ! has the same syntax as that for evaluating analytic functions for the 
   ! computation of RHS vectors.
-  INCLUDE 'intf_coefficientVectorSc.inc'
+  include 'intf_coefficientVectorSc.inc'
 
   ! OPTIONAL: A pointer to a collection structure. This structure is 
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
-  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
+  type(t_collection), intent(INOUT), target, optional :: rcollection
 
 !</input>
 
 !<inputoutput>
   ! A scalar vector that receives the $L_2$ projection of the function.
-  TYPE(t_vectorScalar), INTENT(INOUT) :: rvector
+  type(t_vectorScalar), intent(INOUT) :: rvector
 
   ! A temporary vector of the same size as rvector.
-  TYPE(t_vectorScalar), INTENT(INOUT) :: rvectorTemp1
+  type(t_vectorScalar), intent(INOUT) :: rvectorTemp1
 
   ! A second temporary vector of the same size as rvector.
-  TYPE(t_vectorScalar), INTENT(INOUT) :: rvectorTemp2
+  type(t_vectorScalar), intent(INOUT) :: rvectorTemp2
   
   ! OPTIONAL: A configuration block for the iteration.
   ! If not specified, the standard settings are used.
-  TYPE(t_configL2ProjectionByMass), INTENT(INOUT), OPTIONAL :: rL2ProjectionConfig
+  type(t_configL2ProjectionByMass), intent(INOUT), optional :: rL2ProjectionConfig
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_linearForm) :: rlinform
-    INTEGER :: iiteration
-    TYPE(t_configL2ProjectionByMass) :: rconfig    
-    REAL(DP) :: depsAbs, depsRel, dresInit
+    type(t_linearForm) :: rlinform
+    integer :: iiteration
+    type(t_configL2ProjectionByMass) :: rconfig    
+    real(DP) :: depsAbs, depsRel, dresInit
     
     ! Evaluate the optional arguments as far as possible
-    IF (PRESENT(rL2ProjectionConfig)) rconfig = rL2ProjectionConfig
+    if (present(rL2ProjectionConfig)) rconfig = rL2ProjectionConfig
     ! otherwise use the standard initialisation of that structure!
     
     ! We want to solve the system:
@@ -159,70 +159,70 @@ CONTAINS
     ! defect correction!
     !
     ! Clear the initial solution
-    CALL lsyssc_clearVector (rvector)
+    call lsyssc_clearVector (rvector)
 
     ! Assemble a RHS vector using the analytically given function in rtempVector1.
     
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
-    CALL linf_buildVectorScalar (&
-              rmatrixMass%p_rspatialDiscrTest,rlinform,.TRUE.,&
+    call linf_buildVectorScalar (&
+              rmatrixMass%p_rspatialDiscrTest,rlinform,.true.,&
               rvectorTemp1,fcoeff_buildVectorSc_sim,rcollection)
               
     ! This is also the initial defect because x=0!
-    CALL lsyssc_copyVector (rvectorTemp1,rvectorTemp2)
+    call lsyssc_copyVector (rvectorTemp1,rvectorTemp2)
               
     depsRel = rconfig%depsRel
     depsAbs = rconfig%depsAbs
     
     ! Probably calculate the initial residuum.
-    IF (rconfig%depsRel .NE. 0.0_DP) THEN
+    if (rconfig%depsRel .ne. 0.0_DP) then
       dresInit = lsyssc_vectorNorm (rvectorTemp2,rconfig%cnorm)
-      IF (dresInit .EQ. 0.0_DP) dresInit = 1.0_DP
+      if (dresInit .eq. 0.0_DP) dresInit = 1.0_DP
       rconfig%dinitResiduum = dresInit
-    ELSE
+    else
       ! Set dinitResiduum=1 and dEpsRel = depsAbs, so the relative
       ! and absolute error criterion is identical!
       depsRel = depsAbs
       dresInit = 1.0_DP
-    END IF
+    end if
 
     ! Now, let's start the iteration.
-    DO iiteration = 1,rconfig%nmaxIterations
+    do iiteration = 1,rconfig%nmaxIterations
     
       ! Multiply by the inverse of the lumped mass matrix:
       ! d := M_l^-1 d
-      CALL lsyssc_invertedDiagMatVec (rmatrixMassLumped,rvectorTemp2,1.0_DP,rvectorTemp2)
+      call lsyssc_invertedDiagMatVec (rmatrixMassLumped,rvectorTemp2,1.0_DP,rvectorTemp2)
     
       ! Add to the main vector:  x = x + omega*d
-      CALL lsyssc_vectorLinearComb (rvectorTemp2,rvector,rconfig%domega,1.0_DP)
+      call lsyssc_vectorLinearComb (rvectorTemp2,rvector,rconfig%domega,1.0_DP)
       
       ! Set up the defect: d := b-Mx
-      CALL lsyssc_copyVector (rvectorTemp1,rvectorTemp2)
-      CALL lsyssc_scalarMatVec (rmatrixMass, rvector, rvectorTemp2, -1.0_DP, 1.0_DP)
+      call lsyssc_copyVector (rvectorTemp1,rvectorTemp2)
+      call lsyssc_scalarMatVec (rmatrixMass, rvector, rvectorTemp2, -1.0_DP, 1.0_DP)
       
       ! Check norms?
-      IF ((rconfig%depsAbs .NE. 0.0_DP) .OR. (rconfig%depsRel .NE. 0.0_DP)) THEN
+      if ((rconfig%depsAbs .ne. 0.0_DP) .or. (rconfig%depsRel .ne. 0.0_DP)) then
       
         rconfig%dabsError = lsyssc_vectorNorm (rvectorTemp2,rconfig%cnorm)
         rconfig%drelError = rconfig%dabsError / dresInit
       
-        IF (((rconfig%dabsError .LE. depsAbs) .OR. (depsAbs .EQ. 0.0_DP)) .AND. &
-            (rconfig%dabsError .LE. depsRel*dresInit)) THEN
+        if (((rconfig%dabsError .le. depsAbs) .or. (depsAbs .eq. 0.0_DP)) .and. &
+            (rconfig%dabsError .le. depsRel*dresInit)) then
           ! Quit the loop
-          EXIT
-        END IF
+          exit
+        end if
         
-      END IF
+      end if
     
-    END DO
+    end do
 
     ! There is iiterations = niterations+1 if the loop is carried out completely!
-    rconfig%iiterations = MIN(iiteration,rconfig%nmaxIterations)
+    rconfig%iiterations = min(iiteration,rconfig%nmaxIterations)
     
     ! Return the configuration block
-    IF (PRESENT(rL2ProjectionConfig)) rL2ProjectionConfig = rconfig
+    if (present(rL2ProjectionConfig)) rL2ProjectionConfig = rconfig
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

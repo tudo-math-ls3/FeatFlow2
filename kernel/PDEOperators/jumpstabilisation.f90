@@ -82,14 +82,14 @@ contains
     ! At the moment, we only support a rather limited set of configurations:
     ! Matrix and vectors must all be double precision, matrix must be format 
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
-    if ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-        (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) then
+    if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
       call output_line ('Unsupported matrix format.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'jstab_calcUEOJumpStabilisation')
       call sys_halt()
     end if
 
-    if (rmatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) then
+    if (rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) then
       call output_line ('Unsupported discretisation.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'jstab_calcUEOJumpStabilisation')
       call sys_halt()
@@ -245,7 +245,7 @@ contains
   logical :: bconstViscosity
   
     ! Currently we support only constant viscosity
-    bconstViscosity = .TRUE.
+    bconstViscosity = .true.
 
     ! Get a pointer to the triangulation and discretisation.
     p_rtriangulation => rmatrixScalar%p_rspatialDiscrTest%p_rtriangulation
@@ -282,7 +282,7 @@ contains
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! Get the number of corner vertices of the element
-    if (NVE .NE. elem_igetNVE(rmatrixScalar%p_rspatialDiscrTrial%&
+    if (NVE .ne. elem_igetNVE(rmatrixScalar%p_rspatialDiscrTrial%&
         RelementDistr(1)%celement)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
@@ -352,27 +352,27 @@ contains
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
     ! Don't calculate coordinates on the reference element -- we do this manually.                    
-    cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
-    BderTrial = .FALSE.
-    BderTrial(DER_DERIV_X) = .TRUE.
-    BderTrial(DER_DERIV_Y) = .TRUE.
+    BderTrial = .false.
+    BderTrial(DER_DERIV_X) = .true.
+    BderTrial(DER_DERIV_Y) = .true.
 
-    BderTest = .FALSE.
-    BderTest(DER_DERIV_X) = .TRUE.
-    BderTest(DER_DERIV_Y) = .TRUE.
+    BderTest = .false.
+    BderTest(DER_DERIV_X) = .true.
+    BderTest(DER_DERIV_Y) = .true.
 
     ! We loop through all edges
     do IMT = 1,p_rtriangulation%NMT
     
       ! Check if we have 1 or 2 elements on the current edge
-      if (p_IelementsAtEdge (2,IMT) .EQ. 0) then
+      if (p_IelementsAtEdge (2,IMT) .eq. 0) then
       
         ! This only happens if we have a boundary edge.
         ! The boundary handling is... doing nothing! So we can skip
         ! the handling of that edge completely!
-        CYCLE
+        cycle
       
       end if
       
@@ -436,14 +436,14 @@ contains
         ! Do we have the DOF? 
         idof = IdofsTempl(IDOFE,IELcount)
         do JDOFE=1,ndof
-          if (Idofs(JDOFE) .EQ. idof) then
+          if (Idofs(JDOFE) .eq. idof) then
             ! Yes, we have it.
             ! That means, the local DOF idof has to be mapped to the
             ! local patch dof...
             IlocalDofRenum (IDOFE) = JDOFE
             
             ! Proceed with the next one.
-            CYCLE skiploop
+            cycle skiploop
           end if
         end do
         
@@ -479,7 +479,7 @@ contains
           
           do jcol = p_Kld(irow),p_Kld(irow+1)-1
             
-            if (p_Kcol(jcol) .EQ. Idofs(JDOFE)) then
+            if (p_Kcol(jcol) .eq. Idofs(JDOFE)) then
             
               ! Found! Put as destination pointer to Kentry
               Kentry (IDOFE*ndof+JDOFE) = jcol
@@ -488,7 +488,7 @@ contains
               Dentry (IDOFE*ndof+JDOFE) = 0.0_DP
               
               ! Jump out of the loop, proceed with next column
-              CYCLE trialspaceloop
+              cycle trialspaceloop
             
             end if
             
@@ -516,7 +516,7 @@ contains
         
         IEL = p_IelementsAtEdge(i,IMT)
         do iedge = 1,NVE
-          if (p_IedgesAtElement (iedge,IEL) .EQ. IMT) exit
+          if (p_IedgesAtElement (iedge,IEL) .eq. IMT) exit
         end do
         
         ! Copy the coordinates of the corresponding cubature points
@@ -592,13 +592,13 @@ contains
       ivt1 = p_IverticesAtEdge (1,IMT)
       ivt2 = p_IverticesAtEdge (2,IMT)
       dedgelength = &
-        SQRT ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
+        sqrt ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
             + (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2 )
       dedgeweight = 0.5_DP * dedgelength
       
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
-      dcoeff = MAX(dgammastar * dnu * dedgelength, &
+      dcoeff = max(dgammastar * dnu * dedgelength, &
                    dgamma * dedgelength**2)
       
       ! Now we have the values of the basis functions in all the cubature 
@@ -899,7 +899,7 @@ contains
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! Get the number of corner vertices of the element
-    if (NVE .NE. elem_igetNVE(p_relementDistribution%celement)) then
+    if (NVE .ne. elem_igetNVE(p_relementDistribution%celement)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'conv_ueoJumpStabil2d_double_uni')
       call sys_halt()
@@ -963,9 +963,9 @@ contains
             ncubp,3))
              
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
-    Bder = .FALSE.
-    Bder(DER_DERIV_X) = .TRUE.
-    Bder(DER_DERIV_Y) = .TRUE.
+    Bder = .false.
+    Bder(DER_DERIV_X) = .true.
+    Bder(DER_DERIV_Y) = .true.
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
@@ -973,18 +973,18 @@ contains
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
     ! Don't calculate coordinates on the reference element -- we do this manually.                    
-    cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! We loop through all edges
     do IMT = 1,p_rtriangulation%NMT
     
       ! Check if we have 1 or 2 elements on the current edge
-      if (p_IelementsAtEdge (2,IMT) .EQ. 0) then
+      if (p_IelementsAtEdge (2,IMT) .eq. 0) then
       
         ! This only happens if we have a boundary edge.
         ! The boundary handling is... doing nothing! So we can skip
         ! the handling of that edge completely!
-        CYCLE
+        cycle
       
       end if
       
@@ -1048,14 +1048,14 @@ contains
         ! Do we have the DOF? 
         idof = IdofsTempl(IDOFE,IELcount)
         do JDOFE=1,ndof
-          if (Idofs(JDOFE) .EQ. idof) then
+          if (Idofs(JDOFE) .eq. idof) then
             ! Yes, we have it.
             ! That means, the local DOF idof has to be mapped to the
             ! local patch dof...
             IlocalDofRenum (IDOFE) = JDOFE
             
             ! Proceed with the next one.
-            CYCLE skiploop
+            cycle skiploop
           end if
         end do
         
@@ -1091,7 +1091,7 @@ contains
           
           do jcol = p_Kld(irow),p_Kld(irow+1)-1
             
-            if (p_Kcol(jcol) .EQ. Idofs(JDOFE)) then
+            if (p_Kcol(jcol) .eq. Idofs(JDOFE)) then
             
               ! Found! Put as destination pointer to Kentry
               Kentry (IDOFE*ndof+JDOFE) = jcol
@@ -1100,7 +1100,7 @@ contains
               Dentry (IDOFE*ndof+JDOFE) = 0.0_DP
               
               ! Jump out of the loop, proceed with next column
-              CYCLE trialspaceloop
+              cycle trialspaceloop
             
             end if
             
@@ -1128,7 +1128,7 @@ contains
         
         IEL = p_IelementsAtEdge(i,IMT)
         do iedge = 1,NVE
-          if (p_IedgesAtElement (iedge,IEL) .EQ. IMT) exit
+          if (p_IedgesAtElement (iedge,IEL) .eq. IMT) exit
         end do
         
         ! Copy the coordinates of the corresponding cubature points
@@ -1204,13 +1204,13 @@ contains
       ivt1 = p_IverticesAtEdge (1,IMT)
       ivt2 = p_IverticesAtEdge (2,IMT)
       dedgelength = &
-        SQRT ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
+        sqrt ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
             + (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2 )
       dedgeweight = 0.5_DP * dedgelength
       
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
-      dcoeff = MAX(dgammastar * dnu * dedgelength, dgamma * dedgelength**2)
+      dcoeff = max(dgammastar * dnu * dedgelength, dgamma * dedgelength**2)
       
       ! Now we have the values of the basis functions in all the cubature 
       ! points.

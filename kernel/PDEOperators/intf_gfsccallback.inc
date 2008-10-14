@@ -3,38 +3,38 @@
 
 ! ***************************************************************************
 
-INTERFACE
+interface
 
 ! ***************************************************************************
 
 !<subroutine>
 
-PURE SUBROUTINE fcb_calcConvection(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, istatus)
+pure subroutine fcb_calcConvection(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, istatus)
 
 !<description>
     ! This subroutine computes the matrix coefficients $k_{ij}$ and $k_{ji}$
     ! resulting from the discretisation of the convective operator.
 !</description>
 
-USE fsystem
-USE dofmapping
+use fsystem
+use dofmapping
 
 !<input>
-  REAL(DP),               INTENT(IN)  :: u_i,u_j
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
-  INTEGER(PREC_DOFIDX),   INTENT(IN)  :: i,j
+  real(DP),               intent(IN)  :: u_i,u_j
+  real(DP), dimension(:), intent(IN)  :: C_ij,C_ji
+  integer(PREC_DOFIDX),   intent(IN)  :: i,j
 !</input>
 
 !<inputoutput>
-  INTEGER, INTENT(INOUT), OPTIONAL    :: istatus
+  integer, intent(INOUT), optional    :: istatus
 !</inputoutput>
 
 !<output>
-  REAL(DP), INTENT(OUT)               :: k_ij,k_ji
+  real(DP), intent(OUT)               :: k_ij,k_ji
 !</output>
 
 !</subroutine>
 
-END SUBROUTINE fcb_calcConvection
+end subroutine fcb_calcConvection
 
-END INTERFACE
+end interface

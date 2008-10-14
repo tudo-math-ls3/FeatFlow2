@@ -3,15 +3,15 @@
 
 ! ***************************************************************************
 
-INTERFACE
+interface
 
 ! ***************************************************************************
 
 !<subroutine>
 
-SUBROUTINE fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij, istatus)
+subroutine fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij, istatus)
 
-USE fsystem
+use fsystem
 
 !<description>
     ! This subroutine computes the characteristic transformation variables.
@@ -33,32 +33,32 @@ USE fsystem
 !</description>
 
 !<input>
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dweight
+  real(DP), dimension(:), intent(IN)  :: U_i,U_j
+  real(DP), dimension(:), intent(IN)  :: Dweight
 !</input>
 
 !<inputoutput>
-  INTEGER, INTENT(INOUT), OPTIONAL    :: istatus
+  integer, intent(INOUT), optional    :: istatus
 !</inputoutput>
 
 !<output>
-  REAL(DP), DIMENSION(:), INTENT(OUT)           :: W_ij
-  REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: Lbd_ij
-  REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: R_ij
-  REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: L_ij
+  real(DP), dimension(:), intent(OUT)           :: W_ij
+  real(DP), dimension(:), intent(OUT), optional :: Lbd_ij
+  real(DP), dimension(:), intent(OUT), optional :: R_ij
+  real(DP), dimension(:), intent(OUT), optional :: L_ij
 !</output>
 
 !</subroutine>
 
-END SUBROUTINE fcb_calcCharacteristics
+end subroutine fcb_calcCharacteristics
 
 ! ***************************************************************************
 
 !<subroutine>
 
-SUBROUTINE fcb_calcFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+subroutine fcb_calcFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
 
-USE fsystem
+use fsystem
 
 !<description>
     ! This subroutine computes the internodal fluxes.
@@ -75,60 +75,60 @@ USE fsystem
 !</description>
 
 !<input>
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
-  REAL(DP),               INTENT(IN)  :: dscale
+  real(DP), dimension(:), intent(IN)  :: U_i,U_j
+  real(DP), dimension(:), intent(IN)  :: C_ij,C_ji
+  real(DP),               intent(IN)  :: dscale
 !</input>
 
 !<inputoutput>
-  INTEGER, INTENT(INOUT), OPTIONAL    :: istatus
+  integer, intent(INOUT), optional    :: istatus
 !</inputoutput>
 
 !<output>
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: F_ij,F_ji
+  real(DP), dimension(:), intent(OUT) :: F_ij,F_ji
 !</output>
 
 !</subroutine>
 
-END SUBROUTINE fcb_calcFlux
+end subroutine fcb_calcFlux
 
 ! ***************************************************************************
 
 !<subroutine>
 
-SUBROUTINE fcb_calcRawFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, istatus)
+subroutine fcb_calcRawFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, istatus)
 
-USE fsystem
+use fsystem
 
 !<description>
     ! This subroutine computes the internodal fluxes.
 !</description>
 
 !<input>
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
-  REAL(DP),               INTENT(IN)  :: dscale
+  real(DP), dimension(:), intent(IN)  :: U_i,U_j
+  real(DP), dimension(:), intent(IN)  :: C_ij,C_ji
+  real(DP),               intent(IN)  :: dscale
 !</input>
 
 !<inputoutput>
-  INTEGER, INTENT(INOUT), OPTIONAL    :: istatus
+  integer, intent(INOUT), optional    :: istatus
 !</inputoutput>
 
 !<output>
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: F_ij
+  real(DP), dimension(:), intent(OUT) :: F_ij
 !</output>
 
 !</subroutine>
 
-END SUBROUTINE fcb_calcRawFlux
+end subroutine fcb_calcRawFlux
 
 ! ***************************************************************************
 
 !<subroutine>
 
-SUBROUTINE fcb_calcMatrix(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+subroutine fcb_calcMatrix(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
 
-USE fsystem
+use fsystem
 
 !<description>
     ! This subroutine computes the local matrices.
@@ -142,20 +142,20 @@ USE fsystem
 !</description>
 
 !<input>
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: U_i,U_j
-  REAL(DP), DIMENSION(:), INTENT(IN)  :: C_ij,C_ji
+  real(DP), dimension(:), intent(IN)  :: U_i,U_j
+  real(DP), dimension(:), intent(IN)  :: C_ij,C_ji
 !</input>
 
 !<inputoutput>
-  INTEGER, INTENT(INOUT), OPTIONAL    :: istatus
+  integer, intent(INOUT), optional    :: istatus
 !</inputoutput>
 
 !<outptu>
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: A_ij,S_ij
+  real(DP), dimension(:), intent(OUT) :: A_ij,S_ij
 !</output>
 
 !</subroutine>
 
-END SUBROUTINE fcb_calcMatrix
+end subroutine fcb_calcMatrix
 
-END INTERFACE
+end interface

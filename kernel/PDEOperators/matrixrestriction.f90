@@ -33,22 +33,22 @@
 !# </purpose>
 !##############################################################################
 
-MODULE matrixrestriction
+module matrixrestriction
 
-  USE fsystem
-  USE linearsystemscalar
-  USE matrixmodification
-  USE geometryaux
+  use fsystem
+  use linearsystemscalar
+  use matrixmodification
+  use geometryaux
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE mrest_matrixRestrictionEX3Y (rfineMatrix,rcoarseMatrix,&
+  subroutine mrest_matrixRestrictionEX3Y (rfineMatrix,rcoarseMatrix,&
                                           iARindicator, dARbound)
   
 !<description>
@@ -64,7 +64,7 @@ CONTAINS
 
 !<input>
   ! Fine grid matrix.
-  TYPE(t_matrixScalar), INTENT(IN) :: rfineMatrix
+  type(t_matrixScalar), intent(IN) :: rfineMatrix
   
   ! Aspect-ratio indicator. Configures when to rebuild a line of the
   ! coarse matrix by constant restriction.
@@ -72,99 +72,99 @@ CONTAINS
   !  =1: switch depending on aspect ratio of current element
   !  =2: switch depending on aspect ratio of current element
   !      and aspect ratio of neighbour element
-  INTEGER, INTENT(IN) :: iARindicator
+  integer, intent(IN) :: iARindicator
   
   ! Maximum allowed aspect ratio. Rows in the matrix corresponding
   ! to elements (i.e. a DOF's of an element) with an aspect ratio
   ! larger than dARbound are rebuild with the Galerkin approach
   ! by constant restriction.
-  REAL(DP), INTENT(IN) :: dARbound
+  real(DP), intent(IN) :: dARbound
   
 !</input>
 
 !<inputoutput>
   ! Coarse grid matrix to be modified.
-  TYPE(t_matrixScalar), INTENT(IN) :: rcoarseMatrix
+  type(t_matrixScalar), intent(IN) :: rcoarseMatrix
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(I32) :: i1,i2
-    INTEGER :: iedge,iedge1,iedge2,iedge4,jedge,jedge1,jedge2,jedge4
-    INTEGER(PREC_ELEMENTIDX) :: iel,iadj1,iadj2,iadj4,iel1,iel2,jadj2,jadj4,jel1,jel2
-    INTEGER(PREC_EDGEIDX) :: imid1,imid2,imid3,imid4,imid5
-    INTEGER(PREC_EDGEIDX) :: im1,im2,im3,im4,im5,im6,im7,im8,im9,im10,im11,im12
-    INTEGER(PREC_VERTEXIDX) :: nvt1,nvt2
-    INTEGER(PREC_MATIDX) :: ild
-    TYPE(t_triangulation), POINTER :: p_rtriaCoarse,p_rtriaFine
-    REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE2D) :: dcoords
-    REAL(DP), DIMENSION(0:TRIA_MAXNME2D) :: daspectRatio
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNME2D) :: Iiel
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(0:TRIA_MAXNME2D) :: ielAdjacent
-    REAL(DP) :: dval1,dval2,dval3,dval4,dval5
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
-    REAL(DP), DIMENSION(:,:), POINTER                 :: p_DvertexCoordsCoarse
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER    :: p_IedgesAtElementCoarse
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER    :: p_IedgesAtElementFine
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER   :: p_IverticesAtElementCoarse
+    integer(I32) :: i1,i2
+    integer :: iedge,iedge1,iedge2,iedge4,jedge,jedge1,jedge2,jedge4
+    integer(PREC_ELEMENTIDX) :: iel,iadj1,iadj2,iadj4,iel1,iel2,jadj2,jadj4,jel1,jel2
+    integer(PREC_EDGEIDX) :: imid1,imid2,imid3,imid4,imid5
+    integer(PREC_EDGEIDX) :: im1,im2,im3,im4,im5,im6,im7,im8,im9,im10,im11,im12
+    integer(PREC_VERTEXIDX) :: nvt1,nvt2
+    integer(PREC_MATIDX) :: ild
+    type(t_triangulation), pointer :: p_rtriaCoarse,p_rtriaFine
+    real(DP), dimension(NDIM2D,TRIA_MAXNVE2D) :: dcoords
+    real(DP), dimension(0:TRIA_MAXNME2D) :: daspectRatio
+    integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNME2D) :: Iiel
+    integer(PREC_ELEMENTIDX), dimension(0:TRIA_MAXNME2D) :: ielAdjacent
+    real(DP) :: dval1,dval2,dval3,dval4,dval5
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElementCoarse
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElementFine
+    real(DP), dimension(:,:), pointer                 :: p_DvertexCoordsCoarse
+    integer(PREC_EDGEIDX), dimension(:,:), pointer    :: p_IedgesAtElementCoarse
+    integer(PREC_EDGEIDX), dimension(:,:), pointer    :: p_IedgesAtElementFine
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer   :: p_IverticesAtElementCoarse
     
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER       :: p_KldCoarse,p_KldFine
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER       :: p_KdiagonalCoarse,p_KdiagonalFine
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER       :: p_KcolCoarse,p_KcolFine
-    REAL(DP), DIMENSION(:), POINTER                   :: p_DaCoarse,p_DaFine
-    REAL(DP) :: dv1,dv2,dv3,dv4,dv5,dv6,dv7,dv8,dv9,dv10,dv11,dv12
+    integer(PREC_MATIDX), dimension(:), pointer       :: p_KldCoarse,p_KldFine
+    integer(PREC_MATIDX), dimension(:), pointer       :: p_KdiagonalCoarse,p_KdiagonalFine
+    integer(PREC_VECIDX), dimension(:), pointer       :: p_KcolCoarse,p_KcolFine
+    real(DP), dimension(:), pointer                   :: p_DaCoarse,p_DaFine
+    real(DP) :: dv1,dv2,dv3,dv4,dv5,dv6,dv7,dv8,dv9,dv10,dv11,dv12
     
     ! No modification if the parameters are out of bounds!
-    IF (iARindicator .LE. 0) RETURN
-    IF (dARbound .LT. 0.0_DP) RETURN
+    if (iARindicator .le. 0) return
+    if (dARbound .lt. 0.0_DP) return
     
     ! At first some basic checks if we are able to complete our task at all.
     
-    IF ((rfineMatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .OR. &
-       (rcoarseMatrix%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
-      PRINT *,'mrest_matrixRestrictionEX3Y: Only format 9 matrices supported!'
-      CALL sys_halt()
-    END IF
+    if ((rfineMatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .or. &
+       (rcoarseMatrix%cmatrixFormat .ne. LSYSSC_MATRIX9)) then
+      print *,'mrest_matrixRestrictionEX3Y: Only format 9 matrices supported!'
+      call sys_halt()
+    end if
     
-    IF ((IAND(rfineMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) .OR. &
-        (IAND(rcoarseMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0)) THEN
-      PRINT *,'mrest_matrixRestrictionEX3Y: Matrix must not be transposed!'
-      CALL sys_halt()
-    END IF
+    if ((iand(rfineMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
+        (iand(rcoarseMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
+      print *,'mrest_matrixRestrictionEX3Y: Matrix must not be transposed!'
+      call sys_halt()
+    end if
     
-    IF ((rfineMatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
-        (rcoarseMatrix%p_rspatialDiscrTest%ccomplexity .NE. SPDISC_UNIFORM)) THEN
-      PRINT *,'mrest_matrixRestrictionEX3Y: Only uniform discretisation supported!'
-      CALL sys_halt()
-    END IF
+    if ((rfineMatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) .or. &
+        (rcoarseMatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM)) then
+      print *,'mrest_matrixRestrictionEX3Y: Only uniform discretisation supported!'
+      call sys_halt()
+    end if
 
-    IF ((rfineMatrix%cdataType .NE. ST_DOUBLE) .OR. &
-        (rcoarseMatrix%cdataType .NE. ST_DOUBLE)) THEN
-      PRINT *,'mrest_matrixRestrictionEX3Y: Only double precision matrices supported!'
-      CALL sys_halt()
-    END IF
+    if ((rfineMatrix%cdataType .ne. ST_DOUBLE) .or. &
+        (rcoarseMatrix%cdataType .ne. ST_DOUBLE)) then
+      print *,'mrest_matrixRestrictionEX3Y: Only double precision matrices supported!'
+      call sys_halt()
+    end if
     
-    IF ((rfineMatrix%isortStrategy .GT. 0) .OR. &
-        (rcoarseMatrix%isortStrategy .GT. 0)) THEN
-      PRINT *,'mrest_matrixRestrictionEX3Y: Sorted matrices not supported!'
-      CALL sys_halt()
-    END IF
+    if ((rfineMatrix%isortStrategy .gt. 0) .or. &
+        (rcoarseMatrix%isortStrategy .gt. 0)) then
+      print *,'mrest_matrixRestrictionEX3Y: Sorted matrices not supported!'
+      call sys_halt()
+    end if
 
-    IF ((rfineMatrix%dscaleFactor .NE. 1.0_DP) .OR. &
-        (rcoarseMatrix%dscaleFactor .NE. 1.0_DP)) THEN
-      PRINT *,'mrest_matrixRestrictionEX3Y: Scaled matrices not supported!'
-      CALL sys_halt()
-    END IF
+    if ((rfineMatrix%dscaleFactor .ne. 1.0_DP) .or. &
+        (rcoarseMatrix%dscaleFactor .ne. 1.0_DP)) then
+      print *,'mrest_matrixRestrictionEX3Y: Scaled matrices not supported!'
+      call sys_halt()
+    end if
 
     i1 = rfineMatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement
     i2 = rcoarseMatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement
-    IF ((elem_getPrimaryElement(i1) .NE. EL_Q1T) .OR. &
-        (elem_getPrimaryElement(i2) .NE. EL_Q1T)) THEN
-      PRINT *,'mrest_matrixRestrictionEX3Y: Only Q1~-discretisation supported!'
-      CALL sys_halt()
-    END IF
+    if ((elem_getPrimaryElement(i1) .ne. EL_Q1T) .or. &
+        (elem_getPrimaryElement(i2) .ne. EL_Q1T)) then
+      print *,'mrest_matrixRestrictionEX3Y: Only Q1~-discretisation supported!'
+      call sys_halt()
+    end if
 
     ! Looks good, so let's start.
     !
@@ -175,37 +175,37 @@ CONTAINS
     ! Fetch all the information we need from the triangulation and the matrices
     ! for easier access:
     
-    CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+    call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
-    CALL storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+    call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
                                p_IedgesAtElementCoarse)
 
-    CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+    call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
                                p_IneighboursAtElementFine)
-    CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+    call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
                                p_IedgesAtElementFine)
 
-    CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+    call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
                                p_IverticesAtElementCoarse)
                                
-    CALL storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
+    call storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
                                   p_DvertexCoordsCoarse)
 
-    CALL lsyssc_getbase_Kld (rcoarseMatrix,p_KldCoarse)
-    CALL lsyssc_getbase_Kcol (rcoarseMatrix,p_KcolCoarse)
-    CALL lsyssc_getbase_Kdiagonal (rcoarseMatrix,p_KdiagonalCoarse)
-    CALL lsyssc_getbase_double (rcoarseMatrix,p_DaCoarse)
-    CALL lsyssc_getbase_Kld (rfineMatrix,p_KldFine)
-    CALL lsyssc_getbase_Kcol (rfineMatrix,p_KcolFine)
-    CALL lsyssc_getbase_Kdiagonal (rfineMatrix,p_KdiagonalFine)
-    CALL lsyssc_getbase_double (rfineMatrix,p_DaFine)
+    call lsyssc_getbase_Kld (rcoarseMatrix,p_KldCoarse)
+    call lsyssc_getbase_Kcol (rcoarseMatrix,p_KcolCoarse)
+    call lsyssc_getbase_Kdiagonal (rcoarseMatrix,p_KdiagonalCoarse)
+    call lsyssc_getbase_double (rcoarseMatrix,p_DaCoarse)
+    call lsyssc_getbase_Kld (rfineMatrix,p_KldFine)
+    call lsyssc_getbase_Kcol (rfineMatrix,p_KcolFine)
+    call lsyssc_getbase_Kdiagonal (rfineMatrix,p_KdiagonalFine)
+    call lsyssc_getbase_double (rfineMatrix,p_DaFine)
     
     nvt1 = p_rtriaCoarse%NVT
     nvt2 = p_rtriaFine%NVT
     
     ! Loop through all elements of the coarse grid.
 
-    DO iel=1,p_rtriaCoarse%NEL
+    do iel=1,p_rtriaCoarse%NEL
 
       ! Get the numbers of the elements that are neighbours to our current coarse
       ! grid element:
@@ -234,22 +234,22 @@ CONTAINS
       dcoords = p_DvertexCoordsCoarse(:, &
                   p_IverticesAtElementCoarse(:,ielAdjacent(0)))
       daspectRatio(0) = gaux_getAspectRatio_quad2D (dcoords)
-      IF (daspectRatio(0) .LT. 1.0_DP) daspectRatio(0) = 1.0_DP/daspectRatio(0)
+      if (daspectRatio(0) .lt. 1.0_DP) daspectRatio(0) = 1.0_DP/daspectRatio(0)
 
       ! Get the aspect ratio of all the other neighbour elements - if they
       ! exist!
-      DO iedge=1,TRIA_MAXNME2D
-        IF (ielAdjacent(iedge) .NE. 0) THEN
+      do iedge=1,TRIA_MAXNME2D
+        if (ielAdjacent(iedge) .ne. 0) then
           ! Get the aspect ratio of the current coarse grid element;
           ! if necessary, calculate the reciprocal.
           dcoords = p_DvertexCoordsCoarse(:, &
                       p_IverticesAtElementCoarse(:,ielAdjacent(iedge)))
           daspectRatio(iedge) = gaux_getAspectRatio_quad2D (dcoords)
-          IF (daspectRatio(iedge) .LT. 1.0_DP) daspectRatio(iedge) = 1.0_DP/daspectRatio(iedge)
-        ELSE
+          if (daspectRatio(iedge) .lt. 1.0_DP) daspectRatio(iedge) = 1.0_DP/daspectRatio(iedge)
+        else
           daspectRatio(iedge) = 0.0_DP
-        END IF
-      END DO
+        end if
+      end do
 
       ! Get the elements on the fine grid that are inside of the
       ! current coarse grid element. We can easily fetch them because
@@ -279,7 +279,7 @@ CONTAINS
       ! Now loop through the four edges/corners of the element
       ! iel on the coarse grid:
 
-      edgeloop: DO iedge=1,4
+      edgeloop: do iedge=1,4
       
         ! We assign:
         !
@@ -290,8 +290,8 @@ CONTAINS
         !        sense on that element
 
         iedge1=iedge
-        iedge2=MOD(iedge1,4)+1
-        iedge4=MOD(iedge1+2,4)+1
+        iedge2=mod(iedge1,4)+1
+        iedge4=mod(iedge1+2,4)+1
 
         ! i.e. in the example with iedge=1:
         !
@@ -356,13 +356,13 @@ CONTAINS
         ! element, the matrix on that position is already modified, so we
         ! can skip the computation.
 
-        IF ((iadj1 .LT. iel) .AND. (iadj1 .NE. 0)) CYCLE edgeloop
+        if ((iadj1 .lt. iel) .and. (iadj1 .ne. 0)) cycle edgeloop
 
         ! In case a neighbour element exists and has a larger number,
         ! check the aspect ratio - of our current element as well as
         ! (if configured by the parameters) that of the neighbour element:
 
-        IF (iadj1.NE.0) THEN
+        if (iadj1.ne.0) then
 
           ! In case our current element (and probably our neighbour) has to
           ! big jump in the aspect ratio, the matrix does not have to be modified, 
@@ -370,24 +370,24 @@ CONTAINS
           !
           ! Both aspect ratios in-range?
 
-          IF ((daspectRatio(0) .LT. dARbound) .AND. &
-              (daspectRatio (iedge) .LT. dARbound)) CYCLE edgeloop      
+          if ((daspectRatio(0) .lt. dARbound) .and. &
+              (daspectRatio (iedge) .lt. dARbound)) cycle edgeloop      
         
           ! At least one element is out-of-bounds.
           ! Check if it's the current element and if the neighbour element
           ! is important or not.
 
-          IF ((iARindicator .EQ. 1) .AND. &
-              (daspectRatio(0) .LT. darbound)) CYCLE edgeloop
+          if ((iARindicator .eq. 1) .and. &
+              (daspectRatio(0) .lt. darbound)) cycle edgeloop
 
-        ELSE
+        else
       
           ! No neighbour. Only the aspect ratio of the current element
           ! decides on whether the matrix is modified or not. 
 
-          IF (daspectRatio(0) .LT. dARbound) CYCLE edgeloop
+          if (daspectRatio(0) .lt. dARbound) cycle edgeloop
 
-        ENDIF
+        endif
         
         ! Ok, we are in the case where the matrix must be modified
         ! because of too large anisotropy.
@@ -439,14 +439,14 @@ CONTAINS
         ! we have to calculate the DOF's on that neighbour element:
 
 
-        IF (iadj1.NE.0) THEN
+        if (iadj1.ne.0) then
       
           ! Loop through the four edges on the neighbour element
           ! to find the edge adjacent to our current element iel:
       
-          DO jedge=1,4
-            IF (p_IneighboursAtElementCoarse(jedge,iadj1).EQ.iel) EXIT
-          END DO  
+          do jedge=1,4
+            if (p_IneighboursAtElementCoarse(jedge,iadj1).eq.iel) exit
+          end do  
 
           !           4--------3
           !           |        |
@@ -468,8 +468,8 @@ CONTAINS
           ! As in the case of iel, calculate the DOF's on that element.
 
           jedge1=jedge
-          jedge2=MOD(jedge1,4)+1
-          jedge4=MOD(jedge1+2,4)+1
+          jedge2=mod(jedge1,4)+1
+          jedge4=mod(jedge1+2,4)+1
 
           ! As an example, consider jedge=jedge1=3.
           ! Then, we calculate the left and right edge jedge2 and jedge4
@@ -608,12 +608,12 @@ CONTAINS
           !       1==============+===============2  
 
 
-        ELSE
+        else
 
           ! In case there is no neighbour iadj1, set im8=0 to indicate that.
           im8 =0
           
-        END IF
+        end if
         
         ! Finally, the IMx variables now contain the numbers of the global 
         ! DOF's on the following edges:
@@ -652,18 +652,18 @@ CONTAINS
         ild = getXYindex (im1,im3,p_KcolFine,p_KldFine)
         dv1=p_DaFine(p_KdiagonalFine(im1))+p_DaFine(ild)
    
-        IF (im8.NE.0) THEN
+        if (im8.ne.0) then
           ild = getXYindex (im1,im8,p_KcolFine,p_KldFine)
           dv1=dv1+p_DaFine(ild)
-        END IF
+        end if
 
         ild = getXYindex (im2,im3,p_KcolFine,p_KldFine)
         dv2=p_DaFine(p_KdiagonalFine(im2))+p_DaFine(ild)
 
-        IF (im8.NE.0) THEN
+        if (im8.ne.0) then
           ild = getXYindex (im2,im8,p_KcolFine,p_KldFine)
           dv2=dv2+p_DaFine(ild)
-        END IF
+        end if
 
         ild = getXYindex (im3,im1,p_KcolFine,p_KldFine)
         dv3=p_DaFine(p_KdiagonalFine(im3))+p_DaFine(ild)
@@ -695,7 +695,7 @@ CONTAINS
         ild = getXYindex (im7,im3,p_KcolFine,p_KldFine)
         dv7=dv7+p_DaFine(ild)
 
-        IF (im8.NE.0) THEN
+        if (im8.ne.0) then
           ild = getXYindex (im8,im1,p_KcolFine,p_KldFine)
           dv8=p_DaFine(p_KdiagonalFine(im8))+p_DaFine(ild)
 
@@ -725,41 +725,41 @@ CONTAINS
 
           ild = getXYindex (im12,im1,p_KcolFine,p_KldFine)
           dv12=dv12+p_DaFine(ild)
-        ENDIF
+        endif
 
-        IF (iadj1.EQ.0) THEN
+        if (iadj1.eq.0) then
           dval1=1.0_DP/1.0_DP*(dv1+dv2+dv3)
-        ELSE
+        else
           dval1=1.0_DP/1.0_DP*(dv1+dv2+dv3+dv8)
-        ENDIF
+        endif
 
-        IF (iadj2.EQ.0) THEN
+        if (iadj2.eq.0) then
           dval2=1.0_DP/1.0_DP*(dv5+dv7)
-        ELSE
+        else
           dval2=1.0_DP/1.0_DP*(dv5+dv7)
-        ENDIF
+        endif
 
-        IF (iadj4.EQ.0) THEN
+        if (iadj4.eq.0) then
           dval3=1.0_DP/1.0_DP*(dv4+dv6)
-        ELSE
+        else
           dval3=1.0_DP/1.0_DP*(dv4+dv6)
-        ENDIF
+        endif
 
-        IF (iadj1.NE.0) THEN
+        if (iadj1.ne.0) then
 
-          IF (jadj2.EQ.0) THEN
+          if (jadj2.eq.0) then
             dval4=1.0_DP/1.0_DP*(dv10+dv12)
-          ELSE
+          else
             dval4=1.0_DP/1.0_DP*(dv10+dv12)
-          ENDIF
+          endif
 
-          IF (jadj4.EQ.0) THEN
+          if (jadj4.eq.0) then
             dval5=1.0_DP/1.0_DP*(dv9+dv11)
-          ELSE
+          else
             dval5=1.0_DP/1.0_DP*(dv9+dv11)
-          ENDIF
+          endif
 
-        ENDIF
+        endif
 
         ! Calculate the actual entries in the coarse grid matrix.
         ! First, clear the row imid1 in the matrix.
@@ -775,26 +775,26 @@ CONTAINS
         ild = getXYindex (imid3,imid1,p_KcolCoarse,p_KldCoarse)
         p_DaCoarse(ild)=dval3
 
-        IF (iadj1.NE.0) THEN
+        if (iadj1.ne.0) then
           ild = getXYindex (imid4,imid1,p_KcolCoarse,p_KldCoarse)
           p_DaCoarse(ild)=dval4
 
           ild = getXYindex (imid5,imid1,p_KcolCoarse,p_KldCoarse)
           p_DaCoarse(ild)=dval5
-        ENDIF
+        endif
         
         ! We finished with the current edge imid1. Switch to the
         ! next edge in counterclockwise sense and go on.
         
-      END DO edgeloop
+      end do edgeloop
 
       ! Current element finished. Proceed with next element
 
-    END DO
+    end do
 
     ! That's it.
     
-  CONTAINS
+  contains
 
     ! -----------------------------------------------------------------------
     ! Auxiliary routine: Get X/Y-Index
@@ -805,37 +805,37 @@ CONTAINS
     ! element directly.
     ! -----------------------------------------------------------------------
 
-    PURE INTEGER FUNCTION getXYindex (IX, IY, Kcol, Kld)
+    pure integer function getXYindex (IX, IY, Kcol, Kld)
 
       ! input: column number to search for
-      INTEGER(PREC_VECIDX), INTENT(IN) :: IX
+      integer(PREC_VECIDX), intent(IN) :: IX
 
       ! input: row number where to search
-      INTEGER(PREC_VECIDX), INTENT(IN) :: IY
+      integer(PREC_VECIDX), intent(IN) :: IY
 
       ! input: Column structure of the matrix
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol
+      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol
       
       ! input: Row structure of the matrix
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld
+      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld
     
       ! result: index of entry (ix,iy) in the matrix array.
       ! =-1, if the entry does not exist.
     
       ! local variables:
-      INTEGER(PREC_MATIDX) :: ild
-      INTEGER(PREC_VECIDX) :: icol
+      integer(PREC_MATIDX) :: ild
+      integer(PREC_VECIDX) :: icol
       
       ! Look through row IY:
 
-      DO ild=Kld(IY),Kld(IY+1)-1
+      do ild=Kld(IY),Kld(IY+1)-1
         icol=Kcol(ild)
         ! If there's column IX in this row we can stop here
-        IF (icol .EQ. IX) THEN
+        if (icol .eq. IX) then
           getXYindex = ild
-          RETURN
-        END IF
-      END DO
+          return
+        end if
+      end do
       
       ! Otherwise: error - this element does not exist in our matrix
       ! indicate that by returning -1. This will usually result in an 'array
@@ -843,8 +843,8 @@ CONTAINS
       
       getXYindex = -1
 
-    END FUNCTION
+    end function
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
