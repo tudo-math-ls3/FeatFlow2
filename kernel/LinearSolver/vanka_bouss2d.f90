@@ -101,114 +101,114 @@ implicit none
 !<typeblock>
   
   ! A structure that saves matrix pointers for the 2D-Boussinesq Vanka driver.
-  TYPE t_vankaPointerBouss2D
+  type t_vankaPointerBouss2D
     
     ! Pointer to the column structure of the velocity matrix A11/A22
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolA => NULL()
+    integer, dimension(:), pointer              :: p_KcolA => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11/A22
-    INTEGER, DIMENSION(:), POINTER              :: p_KldA => NULL()
+    integer, dimension(:), pointer              :: p_KldA => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11/A22
-    INTEGER, DIMENSION(:), POINTER              :: p_KdiagonalA => NULL()
+    integer, dimension(:), pointer              :: p_KdiagonalA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA11 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA11 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A22
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA22 => NULL()
 
     ! Pointer to the column structure of the matrix A12/A21
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolA12 => NULL()
+    integer, dimension(:), pointer              :: p_KcolA12 => NULL()
     
     ! Pointer to the row structure of the matrix A12/A21
-    INTEGER, DIMENSION(:), POINTER              :: p_KldA12 => NULL()
+    integer, dimension(:), pointer              :: p_KldA12 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A12
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA12 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA12 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A21
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA21 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA21 => NULL()
 
     ! Pointer to the column structure of the B/D-matrices.
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolB => NULL()
+    integer, dimension(:), pointer              :: p_KcolB => NULL()
     
     ! Pointer to the row structure of the B/D-matrices
-    INTEGER, DIMENSION(:), POINTER              :: p_KldB => NULL()
+    integer, dimension(:), pointer              :: p_KldB => NULL()
     
     ! Pointer to the entries of the B1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB1 => NULL()
 
     ! Pointer to the entries of the B2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB2 => NULL()
     
     ! Pointer to the entries of the D1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD1 => NULL()
 
     ! Pointer to the entries of the D2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD2 => NULL()
 
     ! Pointer to the column structure of the C-matrix.
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolC => NULL()
+    integer, dimension(:), pointer              :: p_KcolC => NULL()
     
     ! Pointer to the row structure of the C-matrix.
-    INTEGER, DIMENSION(:), POINTER              :: p_KldC => NULL()
+    integer, dimension(:), pointer              :: p_KldC => NULL()
     
     ! Pointer to diagonal entries in the C-matrix
-    INTEGER, DIMENSION(:), POINTER              :: p_KdiagonalC => NULL()
+    integer, dimension(:), pointer              :: p_KdiagonalC => NULL()
     
     ! Pointer to the entries of the C-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DC => NULL()
+    real(DP), dimension(:), pointer             :: p_DC => NULL()
 
     ! Pointer to the column structure of the M1/M2-matrices.
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolM => NULL()
+    integer, dimension(:), pointer              :: p_KcolM => NULL()
     
     ! Pointer to the row structure of the M1/M2-matrices
-    INTEGER, DIMENSION(:), POINTER              :: p_KldM => NULL()
+    integer, dimension(:), pointer              :: p_KldM => NULL()
     
     ! Pointer to the entries of the M1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DM1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DM1 => NULL()
 
     ! Pointer to the entries of the M2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DM2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DM2 => NULL()
 
     ! Pointer to the column structure of the M3-matrix.
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolM3 => NULL()
+    integer, dimension(:), pointer              :: p_KcolM3 => NULL()
     
     ! Pointer to the row structure of the M3-matrix.
-    INTEGER, DIMENSION(:), POINTER              :: p_KldM3 => NULL()
+    integer, dimension(:), pointer              :: p_KldM3 => NULL()
     
     ! Pointer to the entries of the M3-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DM3 => NULL()
+    real(DP), dimension(:), pointer             :: p_DM3 => NULL()
 
     ! Pointer to the column structure of the N-matrix.
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolN => NULL()
+    integer, dimension(:), pointer              :: p_KcolN => NULL()
     
     ! Pointer to the row structure of the N-matrix
-    INTEGER, DIMENSION(:), POINTER              :: p_KldN => NULL()
+    integer, dimension(:), pointer              :: p_KldN => NULL()
     
     ! Pointer to diagonal entries in the N-matrix
-    INTEGER, DIMENSION(:), POINTER              :: p_KdiagonalN => NULL()
+    integer, dimension(:), pointer              :: p_KdiagonalN => NULL()
     
     ! Pointer to the entries of the N-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DN => NULL()
+    real(DP), dimension(:), pointer             :: p_DN => NULL()
 
     ! Spatial discretisation structure for X-velocity
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrU => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => NULL()
     
     ! Spatial discretisation structure for Y-velocity
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrV => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => NULL()
     
     ! Spatial discretisation structure for pressure
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrP => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
     
     ! Spatial discretisation structure for temperature
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrT => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrT => NULL()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
-    REAL(DP), DIMENSION(4,4) :: Dmultipliers
+    real(DP), dimension(4,4) :: Dmultipliers
     
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -218,7 +218,7 @@ contains
 
 !<subroutine>
   
-  SUBROUTINE vanka_initBoussinesq2D (rmatrix,rvanka,csubtype)
+  subroutine vanka_initBoussinesq2D (rmatrix,rvanka,csubtype)
   
 !<description>
   ! Initialises the VANKA variant for 2D Boussinesq problems 
@@ -233,144 +233,144 @@ contains
 
 !<input>
   ! The system matrix of the linear system.
-  TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
+  type(t_matrixBlock), intent(IN), target :: rmatrix
 
   ! Desired subtype
-  INTEGER, INTENT(IN) :: csubtype  
+  integer, intent(IN) :: csubtype  
 !</input>
 
 !<inputoutput>
   ! t_vankaPointer2DSPNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerBouss2D), INTENT(INOUT) :: rvanka
+  type(t_vankaPointerBouss2D), intent(INOUT) :: rvanka
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: i,j
-    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscr
+    integer :: i,j
+    type(t_blockDiscretisation), pointer :: p_rblockDiscr
     
     ! Matrix must be 4x4.
-    IF (rmatrix%ndiagBlocks .NE. 4) THEN
-      CALL output_line ('System matrix is not 4x4.',&
+    if (rmatrix%ndiagBlocks .ne. 4) then
+      call output_line ('System matrix is not 4x4.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! TODO: Do more checks
     
     ! The structure of A(1,3) must be identical to A(3,1) and
     ! that of A(2,3) must be identical to A(3,2).
-    IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(3,1)%NA) .OR. &
-        (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
-      CALL output_line ('Structure of B1 and B1^T different!',&
+    if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(3,1)%NA) .or. &
+        (rmatrix%RmatrixBlock(1,3)%NEQ .ne. rmatrix%RmatrixBlock(3,1)%NCOLS)) then
+      call output_line ('Structure of B1 and B1^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
-        (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
-      CALL output_line ('Structure of B2 and B2^T different!',&
+    if ((rmatrix%RmatrixBlock(2,3)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .or. &
+        (rmatrix%RmatrixBlock(2,3)%NEQ .ne. rmatrix%RmatrixBlock(3,2)%NCOLS)) then
+      call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
-      CALL sys_halt()
-    END IF      
+      call sys_halt()
+    end if      
   
     ! Fill the output structure with data of the matrices.
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
         rvanka%p_DA11)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
         rvanka%p_DA22)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
         rvanka%p_DB1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),&
         rvanka%p_DB2)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),&
         rvanka%p_DD1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),&
         rvanka%p_DD2)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,4),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,4),&
         rvanka%p_DN)
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
         rvanka%p_KcolA)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
         rvanka%p_KldA )
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),&
         rvanka%p_KcolB)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
         rvanka%p_KldB)
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,4),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,4),&
         rvanka%p_KcolN)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,4), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,4), &
         rvanka%p_KldN)
-    IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
+    if (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+      call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
                               rvanka%p_KdiagonalA)
-    ELSE
+    else
       rvanka%p_KdiagonalA => rvanka%p_KldA
-    END IF
-    IF (rmatrix%RmatrixBlock(4,4)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(4,4), &
+    end if
+    if (rmatrix%RmatrixBlock(4,4)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+      call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(4,4), &
                               rvanka%p_KdiagonalN)
-    ELSE
+    else
       rvanka%p_KdiagonalN => rvanka%p_KldN
-    END IF
+    end if
     
     ! Are the A12/A21 matrices present?
-    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
+    if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
       
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
           rvanka%p_DA12 )
       
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
           rvanka%p_DA21 )
-    END IF
+    end if
     
     ! Is the C-Matrix present?
-    IF (lsysbl_isSubmatrixPresent(rmatrix,3,3)) THEN
+    if (lsysbl_isSubmatrixPresent(rmatrix,3,3)) then
     
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
           rvanka%p_DC)
 
-      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(3,3),&
+      call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(3,3),&
           rvanka%p_KcolC)
-      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,3), &
+      call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,3), &
           rvanka%p_KldC)
 
-      IF (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(3,3), &
+      if (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+        call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(3,3), &
                                 rvanka%p_KdiagonalC)
-      ELSE
+      else
         rvanka%p_KdiagonalC => rvanka%p_KldC
-      END IF
+      end if
     
-    END IF
+    end if
     
     ! Are the M1/M2 matrices present?
-    IF(lsysbl_isSubmatrixPresent(rmatrix,1,4)) THEN
+    if(lsysbl_isSubmatrixPresent(rmatrix,1,4)) then
     
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),&
           rvanka%p_DM1)
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,4),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,4),&
           rvanka%p_DM2)
 
-      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),&
+      call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),&
           rvanka%p_KcolM)
-      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,4), &
+      call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,4), &
           rvanka%p_KldM)
           
-    END IF
+    end if
     
     ! Is the M3-Matrix present?
-    IF(lsysbl_isSubmatrixPresent(rmatrix,3,4)) THEN
+    if(lsysbl_isSubmatrixPresent(rmatrix,3,4)) then
 
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,4),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,4),&
           rvanka%p_DM3)
           
-      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(3,4),&
+      call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(3,4),&
           rvanka%p_KcolM3)
-      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,4), &
+      call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,4), &
           rvanka%p_KldM3)
     
-    END IF
+    end if
 
     ! Get the multiplication factors of the submatrices.
     rvanka%Dmultipliers(1:4,1:4) = &
@@ -379,11 +379,11 @@ contains
     ! Get the block discretisation structure from the matrix.
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
     
-    IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
-      CALL output_line ('No discretisation!',&
+    if (.not. associated(p_rblockDiscr)) then
+      call output_line ('No discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Get the discretisation structure of U,V,P and T from the block
     ! discretisation structure.
@@ -392,34 +392,34 @@ contains
     rvanka%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
     rvanka%p_rspatialDiscrT => p_rblockDiscr%RspatialDiscr(4)
     
-    IF (rvanka%p_rspatialDiscrU%inumFESpaces .NE. &
-        rvanka%p_rspatialDiscrV%inumFESpaces) THEN
-      CALL output_line (&
+    if (rvanka%p_rspatialDiscrU%inumFESpaces .ne. &
+        rvanka%p_rspatialDiscrV%inumFESpaces) then
+      call output_line (&
           'Discretisation structures of X- and Y-velocity incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rvanka%p_rspatialDiscrP%inumFESpaces .NE. 1) .AND. &
-        (rvanka%p_rspatialDiscrP%inumFESpaces .NE. &
-          rvanka%p_rspatialDiscrU%inumFESpaces)) THEN
+    if ((rvanka%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
+        (rvanka%p_rspatialDiscrP%inumFESpaces .ne. &
+          rvanka%p_rspatialDiscrU%inumFESpaces)) then
       ! Either there must be only one element type for the pressure, or there one
       ! pressure element distribution for every velocity element distribution!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
-      CALL output_line (&
+      call output_line (&
           'Discretisation structures of velocity and pressure incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_Boussinesq2D (rvanka2DBouss,rvector,rrhs,domega,csubtype)
+  subroutine vanka_Boussinesq2D (rvanka2DBouss,rvector,rrhs,domega,csubtype)
   
 !<description>
   ! This routine applies the VANKA variant for 2D Boussinesq problems
@@ -439,39 +439,39 @@ contains
 
 !<input>
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_BOUSS2D_xxxx constants, e.g. VANKATP_BOUSS2D_DIAG.
-  INTEGER :: csubtype
+  integer :: csubtype
   
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(INOUT)         :: rvector
+  type(t_vectorBlock), intent(INOUT)         :: rvector
 
   ! t_vanka structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerBouss2D), INTENT(INOUT) :: rvanka2DBouss
+  type(t_vankaPointerBouss2D), intent(INOUT) :: rvanka2DBouss
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: ielementdist
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementList
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrU
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrV
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrP
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrT
+    integer :: ielementdist
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+    type(t_elementDistribution), pointer :: p_relementDistrU
+    type(t_elementDistribution), pointer :: p_relementDistrV
+    type(t_elementDistribution), pointer :: p_relementDistrP
+    type(t_elementDistribution), pointer :: p_relementDistrT
     
     ! 2D Boussinesq problem.
 
     ! Loop through the element distributions of the velocity.
-    DO ielementdist = 1,rvanka2DBouss%p_rspatialDiscrU%inumFESpaces
+    do ielementdist = 1,rvanka2DBouss%p_rspatialDiscrU%inumFESpaces
     
       ! Get the corresponding element distributions of U, V and P.
       p_relementDistrU => &
@@ -483,68 +483,68 @@ contains
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
-      IF (rvanka2DBouss%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
+      if (rvanka2DBouss%p_rspatialDiscrP%inumFESpaces .gt. 1) then
         p_relementDistrP => &
             rvanka2DBouss%p_rspatialDiscrP%RelementDistr(ielementdist)
-      ELSE
+      else
         p_relementDistrP => &
             rvanka2DBouss%p_rspatialDiscrP%RelementDistr(1)
-      END IF
+      end if
       
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as 'primary' element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
-      CALL storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
+      call storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
       
       ! Which element combination do we have now?
-      IF ((elem_getPrimaryElement(p_relementDistrU%celement) .EQ. EL_Q1T) .AND. &
-          (elem_getPrimaryElement(p_relementDistrV%celement) .EQ. EL_Q1T) .AND. &
-          (elem_getPrimaryElement(p_relementDistrP%celement) .EQ. EL_Q0) .AND. &
-          (elem_getPrimaryElement(p_relementDistrT%celement) .EQ. EL_Q1)) THEN
+      if ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_Q0) .and. &
+          (elem_getPrimaryElement(p_relementDistrT%celement) .eq. EL_Q1)) then
         ! Q1~/Q1~/Q0/Q1 discretisation
         
         ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
-        SELECT CASE (csubtype)
-        CASE (VANKATP_BOUSS2D_DIAG)
+        select case (csubtype)
+        case (VANKATP_BOUSS2D_DIAG)
           ! Call the jacobi-style vanka
-          CALL vanka_BS2D_Q1TQ0Q1_js(rvanka2DBouss, &
+          call vanka_BS2D_Q1TQ0Q1_js(rvanka2DBouss, &
                   rvector, rrhs, domega, p_IelementList)
 
-        CASE (VANKATP_BOUSS2D_FULL)
-          IF (.NOT. ASSOCIATED(rvanka2DBouss%p_DA12)) THEN
+        case (VANKATP_BOUSS2D_FULL)
+          if (.not. associated(rvanka2DBouss%p_DA12)) then
             ! Call the block-diagonal vanka
-            CALL vanka_BS2D_Q1TQ0Q1_bd(rvanka2DBouss, &
+            call vanka_BS2D_Q1TQ0Q1_bd(rvanka2DBouss, &
                   rvector, rrhs, domega, p_IelementList)
-          ELSE
+          else
             ! Call the fully coupled vanka
-            CALL vanka_BS2D_Q1TQ0Q1_fc(rvanka2DBouss, &
+            call vanka_BS2D_Q1TQ0Q1_fc(rvanka2DBouss, &
                   rvector, rrhs, domega, p_IelementList)
-          END IF
+          end if
         
-        CASE DEFAULT
-          CALL output_line (&
+        case DEFAULT
+          call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_Boussinesq2D')
-          CALL sys_halt()  
+          call sys_halt()  
         
-        END SELECT
+        end select
     
-      ELSE
-        CALL output_line (&
+      else
+        call output_line (&
             'Unsupported discretisation!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_Boussinesq2D')
-        CALL sys_halt()
+        call sys_halt()
         
-      END IF
+      end if
       
-    END DO
+    end do
       
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
-  SUBROUTINE vanka_BS2D_Q1TQ0Q1_js(rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_BS2D_Q1TQ0Q1_js(rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -556,21 +556,21 @@ contains
 
 !<input>
   ! t_vankaPointerBouss2D structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerBouss2D), INTENT(IN) :: rvanka
+  type(t_vankaPointerBouss2D), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER, DIMENSION(:), INTENT(IN)       :: IelementList
+  integer, dimension(:), intent(IN)       :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -637,10 +637,10 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(4), p_DrhsT)
     
     ! Let's assume we do not have the optional matrices
-    bHaveA12 = .FALSE.
-    bHaveC = .FALSE.
-    bHaveM = .FALSE.
-    bHaveM3 = .FALSE.
+    bHaveA12 = .false.
+    bHaveC = .false.
+    bHaveM = .false.
+    bHaveM3 = .false.
     
     ! Get the pointers from the vanka structure
     p_KldA => rvanka%p_KldA
@@ -660,7 +660,7 @@ contains
     p_DN => rvanka%p_DN
     
     if(associated(rvanka%p_DA12)) then
-      bHaveA12 = .TRUE.
+      bHaveA12 = .true.
       p_KldA12 => rvanka%p_KldA12
       p_KcolA12 => rvanka%p_KcolA12
       p_DA12 => rvanka%p_DA12
@@ -668,15 +668,15 @@ contains
     end if
     
     if(associated(rvanka%p_DC)) then
-      bHaveC = .TRUE.
+      bHaveC = .true.
       p_KldC => rvanka%p_KldC
       p_KcolC => rvanka%p_KcolC
       p_KdiagC => rvanka%p_KdiagonalC
       p_DC => rvanka%p_DC
     end if
     
-    if(associated(rvanka%p_DM1)) THEN
-      bHaveM = .TRUE.
+    if(associated(rvanka%p_DM1)) then
+      bHaveM = .true.
       p_KldM => rvanka%p_KldM
       p_KcolM => rvanka%p_KcolM
       p_DM1 => rvanka%p_DM1
@@ -684,7 +684,7 @@ contains
     end if
     
     if(associated(rvanka%p_DM3)) then
-      bHaveM3 = .TRUE.
+      bHaveM3 = .true.
       p_KldM3 => rvanka%p_KldM3
       p_KcolM3 => rvanka%p_KcolM3
       p_DM3 => rvanka%p_DM3
@@ -703,7 +703,7 @@ contains
     ! In the following if-tree we will take care of the most common combinations,
     ! and if none of them fits, there is an else-case which can take care of any
     ! combination - but it's a bit slower.
-    if((.NOT. bHaveA12) .AND. (.NOT. bHaveC) .AND. bHaveM .AND. (.NOT. bHaveM3)) then
+    if((.not. bHaveA12) .and. (.not. bHaveC) .and. bHaveM .and. (.not. bHaveM3)) then
       ! Only M1/M2 are present
       do ielidx=1, size(IelementList)
       
@@ -1529,7 +1529,7 @@ contains
 
   ! ***************************************************************************
   
-  SUBROUTINE vanka_BS2D_Q1TQ0Q1_bd(rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_BS2D_Q1TQ0Q1_bd(rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -1541,21 +1541,21 @@ contains
 
 !<input>
   ! t_vankaPointerBouss2D structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerBouss2D), INTENT(IN) :: rvanka
+  type(t_vankaPointerBouss2D), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER, DIMENSION(:), INTENT(IN)       :: IelementList
+  integer, dimension(:), intent(IN)       :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -1624,9 +1624,9 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(4), p_DrhsT)
     
     ! Let's assume we do not have the optional matrices
-    bHaveC = .FALSE.
-    bHaveM = .FALSE.
-    bHaveM3 = .FALSE.
+    bHaveC = .false.
+    bHaveM = .false.
+    bHaveM3 = .false.
     
     ! Get the pointers from the vanka structure
     p_KldA => rvanka%p_KldA
@@ -1646,7 +1646,7 @@ contains
     p_DN => rvanka%p_DN
     
     if(associated(rvanka%p_DC)) then
-      bHaveC = .TRUE.
+      bHaveC = .true.
       p_KldC => rvanka%p_KldC
       p_KcolC => rvanka%p_KcolC
       p_KdiagC => rvanka%p_KdiagonalC
@@ -1662,7 +1662,7 @@ contains
     end if
     
     if(associated(rvanka%p_DM3)) then
-      bHaveM3 = .TRUE.
+      bHaveM3 = .true.
       p_KldM3 => rvanka%p_KldM3
       p_KcolM3 => rvanka%p_KcolM3
       p_DM3 => rvanka%p_DM3
@@ -2534,11 +2534,11 @@ contains
       end do ! ielidx
     end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
-  SUBROUTINE vanka_BS2D_Q1TQ0Q1_fc(rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_BS2D_Q1TQ0Q1_fc(rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -2550,21 +2550,21 @@ contains
 
 !<input>
   ! t_vankaPointerBouss2D structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerBouss2D), INTENT(IN) :: rvanka
+  type(t_vankaPointerBouss2D), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER, DIMENSION(:), INTENT(IN)       :: IelementList
+  integer, dimension(:), intent(IN)       :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -2625,9 +2625,9 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(4), p_DrhsT)
     
     ! Let's assume we do not have the optional matrices
-    bHaveC = .FALSE.
-    bHaveM = .FALSE.
-    bHaveM3 = .FALSE.
+    bHaveC = .false.
+    bHaveM = .false.
+    bHaveM3 = .false.
     
     ! Get the pointers from the vanka structure
     p_KldA => rvanka%p_KldA
@@ -2649,7 +2649,7 @@ contains
     p_DN => rvanka%p_DN
     
     if(associated(rvanka%p_DC)) then
-      bHaveC = .TRUE.
+      bHaveC = .true.
       p_KldC => rvanka%p_KldC
       p_KcolC => rvanka%p_KcolC
       p_DC => rvanka%p_DC
@@ -2664,7 +2664,7 @@ contains
     end if
     
     if(associated(rvanka%p_DM3)) then
-      bHaveM3 = .TRUE.
+      bHaveM3 = .true.
       p_KldM3 => rvanka%p_KldM3
       p_KcolM3 => rvanka%p_KcolM3
       p_DM3 => rvanka%p_DM3
@@ -2674,7 +2674,7 @@ contains
     Dmult = rvanka%Dmultipliers
     
     ! So we start with a loop over all elements in the list
-    DO ielidx=1, SIZE(IelementList)
+    do ielidx=1, size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)

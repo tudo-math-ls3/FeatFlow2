@@ -161,42 +161,42 @@
 !# </purpose>
 !##############################################################################
 
-MODULE vanka
+module vanka
 
-  USE fsystem
-  USE linearsystemscalar
-  USE linearsystemblock
-  USE genoutput
-  USE vanka_aux
+  use fsystem
+  use linearsystemscalar
+  use linearsystemblock
+  use genoutput
+  use vanka_aux
   
   use vanka_navst2d
   use vanka_bouss2d
 
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
 !<constantblock description="Identifiers for the different problem classes that can be handled by VANKA">
 
   ! General VANKA
-  INTEGER, PARAMETER :: VANKAPC_GENERAL        = 0
+  integer, parameter :: VANKAPC_GENERAL        = 0
 
   ! 2D Navier Stokes problem
-  INTEGER, PARAMETER :: VANKAPC_2DNAVIERSTOKES = 1
+  integer, parameter :: VANKAPC_2DNAVIERSTOKES = 1
 
   ! 2D Navier Stokes optimal control problem
-  INTEGER, PARAMETER :: VANKAPC_2DNAVIERSTOKESOPTC = 2
+  integer, parameter :: VANKAPC_2DNAVIERSTOKESOPTC = 2
 
   ! 3D Navier Stokes problem
-  INTEGER, PARAMETER :: VANKAPC_3DNAVIERSTOKES = 3
+  integer, parameter :: VANKAPC_3DNAVIERSTOKES = 3
   
   ! --------------------- NEW IMPLEMENTATION ---------------------
   
   ! 2D Navier-Stokes problem
-  INTEGER, PARAMETER :: VANKAPC_NAVIERSTOKES2D = 10
+  integer, parameter :: VANKAPC_NAVIERSTOKES2D = 10
   
   ! 2D Boussinesq problem
-  INTEGER, PARAMETER :: VANKAPC_BOUSSINESQ2D = 11
+  integer, parameter :: VANKAPC_BOUSSINESQ2D = 11
 
 !</constantblock>
 
@@ -204,25 +204,25 @@ MODULE vanka
 !<constantblock description="Identifiers for the different VANKA subtypes. Which one is supported depends on the problem class.">
 
   ! Standard VANKA, most suitable for the corresponding situation
-  INTEGER, PARAMETER :: VANKATP_STANDARD  = 0
+  integer, parameter :: VANKATP_STANDARD  = 0
 
   ! Diagonal-type VANKA
-  INTEGER, PARAMETER :: VANKATP_DIAGONAL  = 0
+  integer, parameter :: VANKATP_DIAGONAL  = 0
 
   ! 'Full' VANKA
-  INTEGER, PARAMETER :: VANKATP_FULL      = 1
+  integer, parameter :: VANKATP_FULL      = 1
 
   ! 'Full' VANKA for optimal control problems, primal equation processing
-  INTEGER, PARAMETER :: VANKATP_FULLOPTC_PRIMAL = 2
+  integer, parameter :: VANKATP_FULLOPTC_PRIMAL = 2
 
   ! 'Full' VANKA for optimal control problems, dual equation processing
-  INTEGER, PARAMETER :: VANKATP_FULLOPTC_DUAL   = 3
+  integer, parameter :: VANKATP_FULLOPTC_DUAL   = 3
 
   ! 'Diagonal' VANKA for optimal control problems
-  INTEGER, PARAMETER :: VANKATP_DIAGOPTC        = 4
+  integer, parameter :: VANKATP_DIAGOPTC        = 4
 
   ! Diagonal-type VANKA, solution based
-  INTEGER, PARAMETER :: VANKATP_DIAGONAL_SOLBASED = 5
+  integer, parameter :: VANKATP_DIAGONAL_SOLBASED = 5
 
 !</constantblock>
 
@@ -238,26 +238,26 @@ MODULE vanka
   ! the VANKA preconditioner(s) to specify the matrices to handle.
   
   
-  TYPE t_matrixPointer79Vanka
+  type t_matrixPointer79Vanka
     ! Is set to FALSE if the matrix does not exist/is empty.
     ! In this case, the pointers below are undefined!
-    LOGICAL :: bexists
+    logical :: bexists
     
     ! TRUE if the matrix is saved transposed
-    LOGICAL :: btransposed
+    logical :: btransposed
     
     ! The scaling factor of the matrix; from the matrix structure.
-    REAL(DP) :: dscaleFactor
+    real(DP) :: dscaleFactor
   
     ! Pointer to the data - currently only double precision 
-    REAL(DP), DIMENSION(:), POINTER :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     
     ! Pointer to the column structure
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
     
     ! Pointer to the row structure
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-  END TYPE
+    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  end type
   
 !</typeblock>
 
@@ -267,39 +267,39 @@ MODULE vanka
   ! This is initialised by vanka_initGeneralVanka and released by
   ! vanka_doneGeneralVanka.
   
-  TYPE t_vankaGeneral
+  type t_vankaGeneral
   
     ! Number of blocks in the global matrix
-    INTEGER                                              :: nblocks
+    integer                                              :: nblocks
     
     ! Pointer to the block matrix
-    TYPE(t_matrixBlock), POINTER                         :: p_rmatrix
+    type(t_matrixBlock), pointer                         :: p_rmatrix
   
     ! Pointers to t_matrixPointer79Vanka structures specifying
     ! the submatrices and their properties.
-    TYPE(t_matrixPointer79Vanka), DIMENSION(:,:),POINTER :: p_Rmatrices
+    type(t_matrixPointer79Vanka), dimension(:,:),pointer :: p_Rmatrices
     
     ! Maximum number of local DOF's.
-    INTEGER(PREC_DOFIDX)                              :: nmaxLocalDOFs
+    integer(PREC_DOFIDX)                              :: nmaxLocalDOFs
     
     ! Total number of local DOF's
-    INTEGER                                           :: ndofsPerElement
+    integer                                           :: ndofsPerElement
 
     ! Number of local DOF's in the element distributions of all blocks.
     ! Note that this VANKA supports only uniform discretisations, so
     ! each entry corresponds to one block in the solution vector.
-    INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_InDofsLocal => NULL()
+    integer(PREC_DOFIDX), dimension(:), pointer :: p_InDofsLocal => NULL()
     
     ! Offset indices of the blocks in the solution vector. IblockOffset(i)
     ! points to the beginning of the i'th block of the solution vector.
-    INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_IblockOffset => NULL()
+    integer(PREC_DOFIDX), dimension(:), pointer :: p_IblockOffset => NULL()
     
     ! Temporary array that saves the DOF's that are in processing when
     ! looping over an element set.
     ! DIMENSION(nmaxLocalDOFs,VANKA_NELEMSIM,nblocks)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), POINTER :: p_IelementDOFs => NULL()
+    integer(PREC_DOFIDX), dimension(:,:,:), pointer :: p_IelementDOFs => NULL()
 
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -308,87 +308,87 @@ MODULE vanka
   ! A structure that saves matrix pointers for the 2D-Navier-Stokes
   ! VANKA method for Navier-Stokes systems.
   
-  TYPE t_vankaPointer2DNavSt
+  type t_vankaPointer2DNavSt
     ! Pointer to the column structure of the velocity matrix A11 and A22
     ! A11 and A22 must have the same structure.
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA => NULL()
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22.
     ! They must have the same structure.
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA => NULL()
+    real(DP), dimension(:), pointer             :: p_DA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A22 or NULL
     ! A11=A22.
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA22 => NULL()
 
     ! Pointer to the column structure of the velocity matrix A11 and A22
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12 => NULL()
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12 => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12 => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA12 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA12 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A12 or NULL
     ! if not present
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA12 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA12 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A21 or NULL
     ! if not present
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA21 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA21 => NULL()
 
     ! Pointer to the column structure of the B/D-matrices.
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB => NULL()
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB => NULL()
     
     ! Pointer to the row structure of the B/D-matrices
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB => NULL()
     
     ! Pointer to the entries of the B1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB1 => NULL()
 
     ! Pointer to the entries of the B2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB2 => NULL()
     
     ! Pointer to the entries of the D1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD1 => NULL()
 
     ! Pointer to the entries of the D2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD2 => NULL()
 
     ! Pointer to the matrix entries of the pressure identity matrix A33
     ! (if it exists).
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA33 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA33 => NULL()
 
     ! Pointer to diagonal entries of A33
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA33 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33 => NULL()
 
     ! Spatial discretisation structure for X-velocity
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrU => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => NULL()
     
     ! Spatial discretisation structure for Y-velocity
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrV => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => NULL()
     
     ! Spatial discretisation structure for pressure
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrP => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
     ! (-> Not used in the current implementation! Although it's easy to include
     ! that into VANKA, some further speed analysis has to be done to make
     ! sure there's not too much speed impact when using these!)
-    REAL(DP), DIMENSION(3,3) :: Dmultipliers
+    real(DP), dimension(3,3) :: Dmultipliers
     
     ! A temporary vector for solution based VANKA variants.
     ! Undefined if not needed.
-    TYPE(t_vectorBlock) :: rtempVector
+    type(t_vectorBlock) :: rtempVector
     
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -397,147 +397,147 @@ MODULE vanka
   ! A structure that saves matrix pointers for the 2D-Navier-Stokes
   ! VANKA method for Navier-Stokes optimal control systems.
   
-  TYPE t_vankaPointer2DNavStOptC
+  type t_vankaPointer2DNavStOptC
     ! Pointer to the column structure of the velocity matrix A11 and A22
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA11 => NULL()
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA11 => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA11 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA11 => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA11 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA11 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA11 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA11 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A22 or NULL
     ! if not present
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA22 => NULL()
 
     ! Pointer to the column structure of the velocity matrix A11 and A22
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12 => NULL()
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12 => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12 => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA12 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA12 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A12 or NULL
     ! if not present
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA12 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA12 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A21 or NULL
     ! if not present
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA21 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA21 => NULL()
 
 
     ! Pointer to the matrix entries of the velocity matrix A44
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA44 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA44 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A55
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA55 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA55 => NULL()
 
 
     ! Pointer to the matrix entries of the pressure identity matrix A33
     ! (if it exists).
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA33 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA33 => NULL()
 
     ! Pointer to diagonal entries of A33
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA33 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33 => NULL()
 
     ! Pointer to the matrix entries of the pressure identity matrix A66
     ! (if it exists).
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA66 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA66 => NULL()
 
     ! Pointer to diagonal entries of A66
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA66 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA66 => NULL()
 
 
     ! Pointer to the column structure of the matrix A45 and A54
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA45 => NULL()
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA45 => NULL()
     
     ! Pointer to the row structure of the matrix A45 and A54
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA45 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA45 => NULL()
     
     ! Pointer to diagonal entries in the matrix A45 and A54
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA45 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA45 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A45 or NULL
     ! if not present
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA45 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA45 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A54 or NULL
     ! if not present
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA54 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA54 => NULL()
 
 
     ! Pointer to the column structure of the mass matrix
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolM => NULL()
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolM => NULL()
     
     ! Pointer to the row structure of the mass matrix
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldM => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldM => NULL()
     
     ! Pointer to diagonal entries in the mass matrix
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalM => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalM => NULL()
 
     ! Pointer to the matrix entries of the mass matrix at position
     ! (1,4) and (2,5) in the pimal system, or NULL if not present.
     ! Has the same structure as the mass matrix.
-    REAL(DP), DIMENSION(:), POINTER             :: p_DM14 => NULL()
+    real(DP), dimension(:), pointer             :: p_DM14 => NULL()
 
     ! Pointer to the coupling system at position (4,1), or NULL if not present
     ! Has the same structure as the mass matrix.
-    REAL(DP), DIMENSION(:), POINTER             :: p_DR41 => NULL()
+    real(DP), dimension(:), pointer             :: p_DR41 => NULL()
 
     ! Pointer to the coupling system at position (5,2), or NULL if not present
     ! Has the same structure as the mass matrix.
-    REAL(DP), DIMENSION(:), POINTER             :: p_DR52 => NULL()
+    real(DP), dimension(:), pointer             :: p_DR52 => NULL()
 
     ! Pointer to the coupling system at position (4,2), or NULL if not present
     ! Has the same structure as the mass matrix.
-    REAL(DP), DIMENSION(:), POINTER             :: p_DR42 => NULL()
+    real(DP), dimension(:), pointer             :: p_DR42 => NULL()
 
     ! Pointer to the coupling system at position (5,1), or NULL if not present
     ! Has the same structure as the mass matrix.
-    REAL(DP), DIMENSION(:), POINTER             :: p_DR51 => NULL()
+    real(DP), dimension(:), pointer             :: p_DR51 => NULL()
 
 
     ! Pointer to the column structure of the B/D-matrices.
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB => NULL()
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB => NULL()
     
     ! Pointer to the row structure of the B/D-matrices
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB => NULL()
     
     ! Pointer to the entries of the B1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB1 => NULL()
 
     ! Pointer to the entries of the B2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB2 => NULL()
     
     ! Pointer to the entries of the D1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD1 => NULL()
 
     ! Pointer to the entries of the D2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD2 => NULL()
     
 
     ! Spatial discretisation structure for X-velocity
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrU => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => NULL()
     
     ! Spatial discretisation structure for Y-velocity
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrV => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => NULL()
     
     ! Spatial discretisation structure for pressure
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrP => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
     ! (-> Not used in the current implementation! Although it's easy to include
     ! that into VANKA, some further speed analysis has to be done to make
     ! sure there's not too much speed impact when using these!)
-    REAL(DP), DIMENSION(6,6) :: Dmultipliers
+    real(DP), dimension(6,6) :: Dmultipliers
     
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -546,28 +546,28 @@ MODULE vanka
   ! A structure that saves matrix pointers for the 3D-Navier-Stokes
   ! VANKA method for Navier-Stokes systems.
   
-  TYPE t_vankaPointer3DNavSt
+  type t_vankaPointer3DNavSt
     ! Pointer to the column structure of the velocity matrix A11, A22 and A33
     ! A11, A22 and A33 must have the same structure.
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA => NULL()
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11, A22 and A33.
     ! They must have the same structure.
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11, A22 and A33
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA => NULL()
+    real(DP), dimension(:), pointer             :: p_DA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A22 or NULL
     ! if A11=A22.
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA22 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A33 or NULL
     ! if A11=A33.
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA33 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA33 => NULL()
 
 !    ! Pointer to the column structure of the velocity matrix A12 and A21
 !    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12 => NULL()
@@ -587,55 +587,55 @@ MODULE vanka
 !    REAL(DP), DIMENSION(:), POINTER             :: p_DA21 => NULL()
 
     ! Pointer to the column structure of the B/D-matrices.
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB => NULL()
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB => NULL()
     
     ! Pointer to the row structure of the B/D-matrices
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB => NULL()
     
     ! Pointer to the entries of the B1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB1 => NULL()
 
     ! Pointer to the entries of the B2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB2 => NULL()
     
     ! Pointer to the entries of the B3-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB3 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB3 => NULL()
 
     ! Pointer to the entries of the D1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD1 => NULL()
 
     ! Pointer to the entries of the D2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD2 => NULL()
 
     ! Pointer to the entries of the D3-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD3 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD3 => NULL()
 
     ! Pointer to the matrix entries of the pressure identity matrix A44
     ! (if it exists).
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA44 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA44 => NULL()
 
     ! Pointer to diagonal entries of A33
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA44 => NULL()
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA44 => NULL()
 
     ! Spatial discretisation structure for X-velocity
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrU => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => NULL()
     
     ! Spatial discretisation structure for Y-velocity
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrV => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => NULL()
     
     ! Spatial discretisation structure for Z-velocity
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrW => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrW => NULL()
 
     ! Spatial discretisation structure for pressure
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrP => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
     ! (-> Not used in the current implementation! Although it's easy to include
     ! that into VANKA, some further speed analysis has to be done to make
     ! sure there's not too much speed impact when using these!)
-    REAL(DP), DIMENSION(4,4) :: Dmultipliers
+    real(DP), dimension(4,4) :: Dmultipliers
     
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -643,52 +643,52 @@ MODULE vanka
   
   ! A structure that represents a general VANKA configuration.
   
-  TYPE t_vanka
+  type t_vanka
   
     ! The problem class, the VANKA should be applient to. One of the
     ! VANKAPC_xxxx constants, e.g. VANKAPC_2DNAVIERSTOKES.
     ! This constants decides where in the t_vankaXXXX structures below
     ! the actual data about the VANKA can be found.
-    INTEGER :: cproblemClass
+    integer :: cproblemClass
   
     ! The subtype of VANKA that should handle the above problem class.
     ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
-    INTEGER :: csubtype
+    integer :: csubtype
     
     ! This flag is set in the init-routine of VANKA and indicates whether
     ! an extended version of VANKA must be called that supports scaled
     ! matrices or a diagonal matrix in the pressure block.
     ! =0: standard type. =1: extended version
-    INTEGER :: csubsubtype = 0
+    integer :: csubsubtype = 0
     
     ! Configuration block with parameters for the general VANKA;
     ! only vaid if if cproblemClassVanka==VANKAPC_GENERAL.
-    TYPE(t_vankaGeneral) :: rvankaGeneral
+    type(t_vankaGeneral) :: rvankaGeneral
     
     ! Configuration block with parameters for the 2D Navier-Stokes VANKA;
     ! only vaid if if cproblemClassVanka==VANKAPC_2DNAVIERSTOKES.
-    TYPE(t_vankaPointer2DNavSt) :: rvanka2DNavSt
+    type(t_vankaPointer2DNavSt) :: rvanka2DNavSt
     
     ! Configuration block with parameters for the 2D Navier-Stokes VANKA
     ! for optimal control problems;
     ! only vaid if if cproblemClassVanka==VANKAPC_2DNAVIERSTOKESOPTC.
-    TYPE(t_vankaPointer2DNavStOptC) :: rvanka2DNavStOptC
+    type(t_vankaPointer2DNavStOptC) :: rvanka2DNavStOptC
     
     ! Configuration block with parameters for the 3D Navier-Stokes VANKA;
     ! only vaid if if cproblemClassVanka==VANKAPC_3DNAVIERSTOKES.
-    TYPE(t_vankaPointer3DNavSt) :: rvanka3DNavSt
+    type(t_vankaPointer3DNavSt) :: rvanka3DNavSt
     
     ! -------------------- NEW IMPLEMENTATION --------------------
     
     ! Configuration block with parameters for the 2D Navier-Stokes VANKA;
     ! only vaid if if cproblemClassVanka==VANKAPC_NAVIERSTOKES2D.
-    TYPE(t_vankaPointerNavSt2D) :: rvankaNavSt2D
+    type(t_vankaPointerNavSt2D) :: rvankaNavSt2D
 
     ! Configuration block with parameters for the 2D Boussinesq VANKA;
     ! only vaid if if cproblemClassVanka==VANKAPC_BOUSSINESQ2D.
-    TYPE(t_vankaPointerBouss2D) :: rvankaBouss2D
+    type(t_vankaPointerBouss2D) :: rvankaBouss2D
 
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -698,12 +698,12 @@ MODULE vanka
 !<constantblock description="Constants defining the blocking of element sets in VANKA">
 
   ! Number of elements to handle simultaneously in general VANKA
-  INTEGER :: VANKA_NELEMSIM   = 1000
+  integer :: VANKA_NELEMSIM   = 1000
   
 !</constantblock>
 !</constants>
 
-CONTAINS
+contains
 
   ! ***************************************************************************
   ! General VANKA for conformal discretisations.
@@ -716,7 +716,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_initConformal (rmatrix,rvanka,cproblemClass,csubtype)
+  subroutine vanka_initConformal (rmatrix,rvanka,cproblemClass,csubtype)
   
 !<description>
   ! Initialises the VANKA for conformal discretisations.
@@ -731,40 +731,40 @@ CONTAINS
 
 !<input>
   ! The system matrix of the linear system.
-  TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
+  type(t_matrixBlock), intent(IN), target :: rmatrix
   
   ! The problem class that should be handled with this VANKA. One of the
   ! VANKAPC_xxxx constants, e.g. VANKAPC_2DNAVIERSTOKES
-  INTEGER, INTENT(IN) :: cproblemClass
+  integer, intent(IN) :: cproblemClass
   
   ! The VANKA solver subtype that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
-  INTEGER, INTENT(IN) :: csubtype
+  integer, intent(IN) :: csubtype
 !</input>
 
 !<output>
   ! t_vanka structure that saves algorithm-specific parameters.
-  TYPE(t_vanka), INTENT(OUT) :: rvanka
+  type(t_vanka), intent(OUT) :: rvanka
 !</output>
 
 !</subroutine>
 
-    SELECT CASE (cproblemClass)
-    CASE (VANKAPC_GENERAL)
+    select case (cproblemClass)
+    case (VANKAPC_GENERAL)
       ! General VANKA
-      CALL vanka_initGeneralVanka (rmatrix,rvanka%rvankaGeneral)    
+      call vanka_initGeneralVanka (rmatrix,rvanka%rvankaGeneral)    
     
-    CASE (VANKAPC_2DNAVIERSTOKES)
+    case (VANKAPC_2DNAVIERSTOKES)
       ! Vanka for 2D Navier-Stokes problems
-      CALL vanka_init2DNavierStokes (rmatrix,rvanka,csubtype)
+      call vanka_init2DNavierStokes (rmatrix,rvanka,csubtype)
 
-    CASE (VANKAPC_2DNAVIERSTOKESOPTC)
+    case (VANKAPC_2DNAVIERSTOKESOPTC)
       ! Vanka for 2D Navier-Stokes optimal control problems
-      CALL vanka_init2DNavierStokesOptC (rmatrix,rvanka)
+      call vanka_init2DNavierStokesOptC (rmatrix,rvanka)
 
-    CASE (VANKAPC_3DNAVIERSTOKES)
+    case (VANKAPC_3DNAVIERSTOKES)
       ! Vanka for 3D Navier-Stokes problems
-      CALL vanka_init3DNavierStokes (rmatrix,rvanka)
+      call vanka_init3DNavierStokes (rmatrix,rvanka)
     
     ! -------------------- NEW IMPLEMENTATION --------------------
       
@@ -772,23 +772,23 @@ CONTAINS
       ! Vanka for 2D Navier-Stokes problems
       call vanka_initNavierStokes2D(rmatrix,rvanka%rvankaNavSt2D,csubtype)
     
-    CASE (VANKAPC_BOUSSINESQ2D)
+    case (VANKAPC_BOUSSINESQ2D)
       ! Vanka for 2D Boussinesq problems
-      CALL vanka_initBoussinesq2D (rmatrix,rvanka%rvankaBouss2D,csubtype)
+      call vanka_initBoussinesq2D (rmatrix,rvanka%rvankaBouss2D,csubtype)
 
-    END SELECT
+    end select
     
     ! Initialise general data in the VANKA structure.
     rvanka%cproblemClass = cproblemClass
     rvanka%csubtype = csubtype
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vanka_doneConformal (rvanka)
+  subroutine vanka_doneConformal (rvanka)
 
 !<description>
   ! This routine cleans up a general VANKA solver. All memory allocated in
@@ -797,30 +797,30 @@ CONTAINS
   
 !<inputoutput>
   ! The VANKA structure to be cleaned up.
-  TYPE(t_vanka), INTENT(INOUT)       :: rvanka
+  type(t_vanka), intent(INOUT)       :: rvanka
 !</inputoutput>
 
 !</subroutine>
 
     ! Type of VANKA?
-    SELECT CASE (rvanka%cproblemClass)
-    CASE (VANKAPC_2DNAVIERSTOKES)
+    select case (rvanka%cproblemClass)
+    case (VANKAPC_2DNAVIERSTOKES)
       ! Vanka for 2D Navier-Stokes problems
-      CALL vanka_done2DNavierStokes (rvanka%rvanka2DNavSt)
-    CASE (VANKAPC_GENERAL)
+      call vanka_done2DNavierStokes (rvanka%rvanka2DNavSt)
+    case (VANKAPC_GENERAL)
       ! Release data of the general VANKA
-      CALL vanka_doneGeneralVanka (rvanka%rvankaGeneral)
+      call vanka_doneGeneralVanka (rvanka%rvankaGeneral)
       
     ! ELSE: nothing to do.
-    END SELECT
+    end select
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_conformal (rvanka, rvector, rrhs, domega)
+  subroutine vanka_conformal (rvanka, rvector, rrhs, domega)
   
 !<description>
   ! This routine applies the VANKA algorithm to the system $Ax=b$.
@@ -842,66 +842,66 @@ CONTAINS
 
 !<input>
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 !</input>
 
 !<inputoutput>
   ! t_vanka structure that saves algorithm-specific parameters.
-  TYPE(t_vanka), INTENT(INOUT) :: rvanka
+  type(t_vanka), intent(INOUT) :: rvanka
 
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(INOUT)      :: rvector
+  type(t_vectorBlock), intent(INOUT)      :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! Which type of VANKA should be used?
-    SELECT CASE (rvanka%cproblemClass)
-    CASE (VANKAPC_GENERAL)
+    select case (rvanka%cproblemClass)
+    case (VANKAPC_GENERAL)
       ! Use the general VANKA. This one handles the element distributions
       ! internally, so afterwards we can jump out of the loop without handling
       ! the other element distributions.
       
-      CALL vanka_general (rvanka%rvankaGeneral, rvector, rrhs, domega)
+      call vanka_general (rvanka%rvankaGeneral, rvector, rrhs, domega)
       
-    CASE (VANKAPC_2DNAVIERSTOKES)
+    case (VANKAPC_2DNAVIERSTOKES)
       ! 2D Navier Stokes problem.
-      CALL vanka_2DNavierStokes (rvanka%rvanka2DNavSt, rvector, rrhs, domega,&
+      call vanka_2DNavierStokes (rvanka%rvanka2DNavSt, rvector, rrhs, domega,&
           rvanka%csubtype,rvanka%csubsubtype)
 
-    CASE (VANKAPC_2DNAVIERSTOKESOPTC)
+    case (VANKAPC_2DNAVIERSTOKESOPTC)
       ! 2D Navier Stokes problem.
-      CALL vanka_2DNavierStokesOptC (rvanka%rvanka2DNavStOptC, rvector, rrhs, domega,&
+      call vanka_2DNavierStokesOptC (rvanka%rvanka2DNavStOptC, rvector, rrhs, domega,&
           rvanka%csubtype)
 
-    CASE (VANKAPC_3DNAVIERSTOKES)
+    case (VANKAPC_3DNAVIERSTOKES)
       ! 3D Navier Stokes problem.
-      CALL vanka_3DNavierStokes (rvanka%rvanka3DNavSt, rvector, rrhs, domega,&
+      call vanka_3DNavierStokes (rvanka%rvanka3DNavSt, rvector, rrhs, domega,&
           rvanka%csubtype,rvanka%csubsubtype)
     
     ! ---------------------- NEW IMPLEMENTATION ----------------------
     
     case (VANKAPC_NAVIERSTOKES2D)
       ! 2D Navier-Stokes problem.
-      CALL vanka_NavierStokes2D (rvanka%rvankaNavSt2D, rvector, rrhs, domega,&
+      call vanka_NavierStokes2D (rvanka%rvankaNavSt2D, rvector, rrhs, domega,&
           rvanka%csubtype)
       
-    CASE (VANKAPC_BOUSSINESQ2D)
+    case (VANKAPC_BOUSSINESQ2D)
       ! 2D Boussinesq problem.
-      CALL vanka_Boussinesq2D (rvanka%rvankaBouss2D, rvector, rrhs, domega,&
+      call vanka_Boussinesq2D (rvanka%rvankaBouss2D, rvector, rrhs, domega,&
           rvanka%csubtype)
 
-    CASE DEFAULT
-      CALL output_line ('Unknown VANKA problem class!',&
+    case DEFAULT
+      call output_line ('Unknown VANKA problem class!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_conformal')
-      CALL sys_halt()  
+      call sys_halt()  
       
-    END SELECT
+    end select
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! GENERAL VANKA! Supports (non-transposed) matrices of any kind and size.
@@ -909,7 +909,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vanka_initGeneralVanka (rmatrix,rvankaGeneral)
+  subroutine vanka_initGeneralVanka (rmatrix,rvankaGeneral)
 
 !<description>
   ! This routine initialises the general VANKA solver and allocates
@@ -921,20 +921,20 @@ CONTAINS
   ! Remark: VANKA saves a pointer to this matrix, so the structure must exist
   !  until the system is solved! (Usually this points to the system matrix in
   !  the corresponding solver structure of the underlying linear solver...)
-  TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
+  type(t_matrixBlock), intent(IN), target :: rmatrix
 !</input>
   
 !<output>
   ! VANKA spiecific structure. Contains internal data and allocated memory.
-  TYPE(t_vankaGeneral), INTENT(OUT)       :: rvankaGeneral
+  type(t_vankaGeneral), intent(OUT)       :: rvankaGeneral
 !</output>
 
 !</subroutine>
 
     ! local variables
-    LOGICAL :: bfirst
-    INTEGER :: nblocks,i,j,nmaxLocalDOFs,ndofsPerElement
-    TYPE(t_spatialDiscretisation), POINTER            :: p_rdiscretisation
+    logical :: bfirst
+    integer :: nblocks,i,j,nmaxLocalDOFs,ndofsPerElement
+    type(t_spatialDiscretisation), pointer            :: p_rdiscretisation
     
     nblocks = rmatrix%ndiagBlocks
     nmaxLocalDOFs = 0
@@ -942,10 +942,10 @@ CONTAINS
     
     ! Allocate memory for the matrix structures
     rvankaGeneral%nblocks = nblocks
-    ALLOCATE(rvankaGeneral%p_Rmatrices(nblocks,nblocks))
+    allocate(rvankaGeneral%p_Rmatrices(nblocks,nblocks))
     
-    ALLOCATE(rvankaGeneral%p_InDofsLocal(rmatrix%ndiagBlocks))
-    ALLOCATE(rvankaGeneral%p_IblockOffset(rmatrix%ndiagBlocks+1))
+    allocate(rvankaGeneral%p_InDofsLocal(rmatrix%ndiagBlocks))
+    allocate(rvankaGeneral%p_IblockOffset(rmatrix%ndiagBlocks+1))
     
     ! This type of VANKA only supports a uniform discretisation
     ! and matrix format 7 or 9. Transposed matrices are not allowed.
@@ -960,47 +960,47 @@ CONTAINS
     ! Offset position of the first block is = 0.
     rvankaGeneral%p_IblockOffset(1) = 0
     
-    DO i=1,nblocks
+    do i=1,nblocks
     
       ! Note this block as 'not processed'
-      bfirst = .TRUE.
+      bfirst = .true.
       
       ! Loop through the rows of the current matrix column.
-      DO j=1,nblocks
-        IF (lsysbl_isSubmatrixPresent(rmatrix,j,i)) THEN
+      do j=1,nblocks
+        if (lsysbl_isSubmatrixPresent(rmatrix,j,i)) then
           ! Get a/the discretisation structure of the current block/matrix column
           p_rdiscretisation => rmatrix%RmatrixBlock(j,i)%p_rspatialDiscrTrial
           
-          IF ((p_rdiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .AND. &
-              (p_rdiscretisation%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
-            CALL output_line (&
+          if ((p_rdiscretisation%ccomplexity .ne. SPDISC_UNIFORM) .and. &
+              (p_rdiscretisation%ccomplexity .ne. SPDISC_CONFORMAL)) then
+            call output_line (&
                 'General VANKA supports only uniform and conformal discretisations!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_initGeneralVanka')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
           
-          IF ((rmatrix%RmatrixBlock(j,i)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
-              (rmatrix%RmatrixBlock(j,i)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
-            CALL output_line (&
+          if ((rmatrix%RmatrixBlock(j,i)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+              (rmatrix%RmatrixBlock(j,i)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
+            call output_line (&
                 'General VANKA supports only matrix structure 7 and 9!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_initGeneralVanka')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
           
-          rvankaGeneral%p_Rmatrices(j,i)%bexists = .TRUE.
+          rvankaGeneral%p_Rmatrices(j,i)%bexists = .true.
           rvankaGeneral%p_Rmatrices(j,i)%dscaleFactor = &
             rmatrix%RmatrixBlock(j,i)%dscaleFactor
           rvankaGeneral%p_Rmatrices(j,i)%btransposed = &
-            IAND(rmatrix%RmatrixBlock(j,i)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0
+            iand(rmatrix%RmatrixBlock(j,i)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0
             
-          CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(j,i),&
+          call lsyssc_getbase_double (rmatrix%RmatrixBlock(j,i),&
                                       rvankaGeneral%p_Rmatrices(j,i)%p_DA)
-          CALL lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(j,i),&
+          call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(j,i),&
                                     rvankaGeneral%p_Rmatrices(j,i)%p_Kcol)
-          CALL lsyssc_getbase_Kld (rmatrix%RmatrixBlock(j,i),&
+          call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(j,i),&
                                    rvankaGeneral%p_Rmatrices(j,i)%p_Kld)
                                     
-          IF (bfirst) THEN
+          if (bfirst) then
             ! This block has not yet been processed.
             !
             ! Get the NEQ of the current block and save it as offset position
@@ -1015,21 +1015,21 @@ CONTAINS
                                                 RelementDistr(1)%celement)
             
             ! Calculate the maximum number of local DOF's
-            nmaxLocalDOFs = MAX(nmaxLocalDOFs,rvankaGeneral%p_InDofsLocal(i))
+            nmaxLocalDOFs = max(nmaxLocalDOFs,rvankaGeneral%p_InDofsLocal(i))
             
             ! Calculate the total number of local DOF's
             ndofsPerElement = ndofsPerElement + rvankaGeneral%p_InDofsLocal(i)
             
-            bfirst = .FALSE.
+            bfirst = .false.
           
-          END IF
+          end if
           
-        ELSE
-          rvankaGeneral%p_Rmatrices(j,i)%bexists = .FALSE.
-        END IF
+        else
+          rvankaGeneral%p_Rmatrices(j,i)%bexists = .false.
+        end if
         
-      END DO
-    END DO
+      end do
+    end do
 
     ! Save the max. and total number of local DOF's
     rvankaGeneral%nmaxLocalDOFs = nmaxLocalDOFs
@@ -1037,18 +1037,18 @@ CONTAINS
     
     ! We know the maximum number of DOF's now. For the later loop over the 
     ! elements, allocate memory for storing the DOF's of an element set.
-    ALLOCATE(rvankaGeneral%p_IelementDOFs(nmaxLocalDOFs,VANKA_NELEMSIM,nblocks))
+    allocate(rvankaGeneral%p_IelementDOFs(nmaxLocalDOFs,VANKA_NELEMSIM,nblocks))
     
     ! Remember the matrix
     rvankaGeneral%p_rmatrix => rmatrix
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vanka_doneGeneralVanka (rvankaGeneral)
+  subroutine vanka_doneGeneralVanka (rvankaGeneral)
 
 !<description>
   ! This routine cleans up a general VANKA solver. All memory allocated in
@@ -1057,32 +1057,32 @@ CONTAINS
   
 !<inputoutput>
   ! The general-VANKA structure to be cleaned up.
-  TYPE(t_vankaGeneral), INTENT(INOUT)       :: rvankaGeneral
+  type(t_vankaGeneral), intent(INOUT)       :: rvankaGeneral
 !</inputoutput>
 
 !</subroutine>
 
     ! Release memory allocated in the init-routine
     
-    IF (ASSOCIATED(rvankaGeneral%p_IelementDOFs)) &
-      DEALLOCATE(rvankaGeneral%p_IelementDOFs)
+    if (associated(rvankaGeneral%p_IelementDOFs)) &
+      deallocate(rvankaGeneral%p_IelementDOFs)
     
-    IF (ASSOCIATED(rvankaGeneral%p_InDofsLocal)) &
-      DEALLOCATE(rvankaGeneral%p_InDofsLocal)
+    if (associated(rvankaGeneral%p_InDofsLocal)) &
+      deallocate(rvankaGeneral%p_InDofsLocal)
       
-    IF (ASSOCIATED(rvankaGeneral%p_IblockOffset)) &
-      DEALLOCATE(rvankaGeneral%p_IblockOffset)
+    if (associated(rvankaGeneral%p_IblockOffset)) &
+      deallocate(rvankaGeneral%p_IblockOffset)
 
-    IF (ASSOCIATED(rvankaGeneral%p_Rmatrices)) &
-      DEALLOCATE(rvankaGeneral%p_Rmatrices)
+    if (associated(rvankaGeneral%p_Rmatrices)) &
+      deallocate(rvankaGeneral%p_Rmatrices)
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vanka_general (rvankaGeneral, rvector, rrhs, domega)
+  subroutine vanka_general (rvankaGeneral, rvector, rrhs, domega)
 
 !<description>
   ! This routine applies the general-VANKA algorithm to the system $Ax=b$.
@@ -1094,113 +1094,113 @@ CONTAINS
 !<input>
   
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The general-VANKA structure. Must have been initialised with 
   ! vanka_initGeneralVanka before.
-  TYPE(t_vankaGeneral), INTENT(INOUT)     :: rvankaGeneral
+  type(t_vankaGeneral), intent(INOUT)     :: rvankaGeneral
 
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,j
-  INTEGER(PREC_ELEMENTIDX) :: IELmax, IELset, iel, ieldistr
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementList
-  REAL(DP), DIMENSION(:), POINTER                 :: p_Drhs,p_Dvector
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER     :: p_Ipermutation
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+  integer :: i,j
+  integer(PREC_ELEMENTIDX) :: IELmax, IELset, iel, ieldistr
+  integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+  real(DP), dimension(:), pointer                 :: p_Drhs,p_Dvector
+  integer(PREC_VECIDX), dimension(:), pointer     :: p_Ipermutation
+  type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     
   ! Saved matrix and the vector(s) must be compatible!
-  CALL lsysbl_isMatrixCompatible(rvector,rvankaGeneral%p_rmatrix)
-  CALL lsysbl_isVectorCompatible(rvector,rrhs)
+  call lsysbl_isMatrixCompatible(rvector,rvankaGeneral%p_rmatrix)
+  call lsysbl_isVectorCompatible(rvector,rrhs)
     
   ! Get the data arrays of the vector/rhs
-  CALL lsysbl_getbase_double (rvector,p_Dvector)
-  CALL lsysbl_getbase_double (rrhs,p_Drhs)
+  call lsysbl_getbase_double (rvector,p_Dvector)
+  call lsysbl_getbase_double (rrhs,p_Drhs)
   
   ! Get the discretisation structure that tells us which elements form
   ! element groups...
   p_rdiscretisation => rvector%RvectorBlock(1)%p_rspatialDiscr
   
   ! Loop over the element distributions/groups
-  DO ieldistr = 1,p_rdiscretisation%inumFEspaces
+  do ieldistr = 1,p_rdiscretisation%inumFEspaces
   
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions.
-    CALL storage_getbase_int (p_rdiscretisation% &
+    call storage_getbase_int (p_rdiscretisation% &
                               RelementDistr(ieldistr)%h_IelementList, &
                               p_IelementList)
       
     ! Loop over the elements - blockwise.
-    DO IELset = 1, SIZE(p_IelementList), VANKA_NELEMSIM
+    do IELset = 1, size(p_IelementList), VANKA_NELEMSIM
     
       ! We always handle LINF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most VANKA_NELEMSIM
       ! elements simultaneously.
-      IELmax = MIN(SIZE(p_IelementList),IELset-1+VANKA_NELEMSIM)
+      IELmax = min(size(p_IelementList),IELset-1+VANKA_NELEMSIM)
     
       ! Loop over the blocks in the block vector to get the DOF's everywhere.
       
-      DO i=1,rvector%nblocks
+      do i=1,rvector%nblocks
 
         ! Calculate the global DOF's of all blocks.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our VANKA_NELEMSIM elements simultaneously.
-        CALL dof_locGlobMapping_mult(rvector%RvectorBlock(i)%p_rspatialDiscr,&
+        call dof_locGlobMapping_mult(rvector%RvectorBlock(i)%p_rspatialDiscr,&
                                      p_IelementList(IELset:IELmax), &
                                      rvankaGeneral%p_IelementDOFs(:,:,i))
 
         ! If the vector is sorted, push the DOF's through the permutation to get
         ! the actual DOF's.
-        IF (rvector%RvectorBlock(i)%isortStrategy .GT. 0) THEN
+        if (rvector%RvectorBlock(i)%isortStrategy .gt. 0) then
         
-          CALL storage_getbase_int(rvector%RvectorBlock(i)%h_IsortPermutation,&
+          call storage_getbase_int(rvector%RvectorBlock(i)%h_IsortPermutation,&
                                   p_Ipermutation)
 
-          DO iel=1,IELmax-IELset+1
-            DO j=1,rvankaGeneral%p_InDofsLocal(i)
+          do iel=1,IELmax-IELset+1
+            do j=1,rvankaGeneral%p_InDofsLocal(i)
               ! We are not resorting the vector but determining the 'sorted'
               ! DOF's - this needs the 2nd half of the permutation.
               rvankaGeneral%p_IelementDOFs(j,iel,i) = &
                  p_Ipermutation(rvankaGeneral%p_IelementDOFs(j,iel,i) &
                 +rvector%RvectorBlock(i)%NEQ)
-            END DO
-          END DO
-        END IF
+            end do
+          end do
+        end if
       
-      END DO  
+      end do  
     
       ! Now, IdofsTotal contains all DOF's on each element, over all discretisations.
       !
       ! Call the actual VANKA to process the DOF's on each element.
-      CALL vanka_general_double_mat79 (p_Dvector, p_Drhs, domega, &
+      call vanka_general_double_mat79 (p_Dvector, p_Drhs, domega, &
           rvankaGeneral%p_Rmatrices,IELmax-IELset+1_PREC_ELEMENTIDX,&
           rvankaGeneral%p_IblockOffset,rvankaGeneral%nblocks,&
           rvankaGeneral%p_InDofsLocal,rvankaGeneral%ndofsPerElement,&
           rvankaGeneral%p_IelementDOFs)
                    
-    END DO
+    end do
     
-  END DO ! ieldistr
+  end do ! ieldistr
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vanka_general_double_mat79 (Dvector, Drhs, domega, Rmatrices,&
+  subroutine vanka_general_double_mat79 (Dvector, Drhs, domega, Rmatrices,&
              nelements,IblockOffset,nblocks,InDofsLocal,ndofsPerElement,&
              IelementDofs)
 
@@ -1213,43 +1213,43 @@ CONTAINS
 
 !<input>
   ! The (block) RHS vector, given as one large array.
-  REAL(DP), DIMENSION(:), INTENT(IN)             :: Drhs
+  real(DP), dimension(:), intent(IN)             :: Drhs
   
   ! A relaxation parameter. Standard = 1.0_DP.
-  REAL(DP), INTENT(IN)                           :: domega
+  real(DP), intent(IN)                           :: domega
   
   ! A list of matrices to handle; directly specified by pointers
   ! to the substructures (data/columns/rows).
-  TYPE(t_matrixPointer79Vanka), DIMENSION(:,:),&
-                                INTENT(IN)       :: Rmatrices
+  type(t_matrixPointer79Vanka), dimension(:,:),&
+                                intent(IN)       :: Rmatrices
 
   ! Number of elements that should be processed in this sweep.
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN)           :: nelements
+  integer(PREC_ELEMENTIDX), intent(IN)           :: nelements
   
   ! Number of blocks in the vectors
-  INTEGER, INTENT(IN)                            :: nblocks
+  integer, intent(IN)                            :: nblocks
   
   ! Offset position of the blocks in the vector.
   ! Block i starts at position IblockOffset(i)+1 in Dvector / Drhs.
   ! IblockOffset(nblocks+1) gives the number of equations in Dvector/Drhs.
-  INTEGER(PREC_DOFIDX), DIMENSION(MAX(nblocks,1)+1), INTENT(IN) :: IblockOffset
+  integer(PREC_DOFIDX), dimension(max(nblocks,1)+1), intent(IN) :: IblockOffset
   
   ! Number of local DOF's in each block.
-  INTEGER(PREC_DOFIDX), DIMENSION(nblocks), INTENT(IN)   :: InDofsLocal
+  integer(PREC_DOFIDX), dimension(nblocks), intent(IN)   :: InDofsLocal
   
   ! Total number of local DOF's per element
-  INTEGER, INTENT(IN)                                    :: ndofsPerElement
+  integer, intent(IN)                                    :: ndofsPerElement
   
   ! List of DOF's on every element for every block.
   ! DIMENSION(nmaxDOFs,nelements,nblocks)
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), INTENT(IN)     :: IelementDOFs
+  integer(PREC_DOFIDX), dimension(:,:,:), intent(IN)     :: IelementDOFs
   
 !</input>
 
 !<inputoutput>
   ! The initial (block) solution vector. Is overwritten by the new (block) 
   ! solution vector.
-  REAL(DP), DIMENSION(:), INTENT(INOUT) :: Dvector
+  real(DP), dimension(:), intent(INOUT) :: Dvector
 !</inputoutput>
 
 !</subroutine>
@@ -1378,44 +1378,44 @@ CONTAINS
     ! end loop
 
     ! local variables
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER, DIMENSION(MAX(nblocks,1)+1) :: IlocalIndex
-    INTEGER(PREC_DOFIDX), DIMENSION(ndofsPerElement) :: IlocalDOF,IglobalDOF
-    INTEGER :: i,j,k,iidx,iminiDOF
-    INTEGER(PREC_VECIDX) :: irow,idof
-    INTEGER(PREC_MATIDX) :: icol
+    integer(PREC_ELEMENTIDX) :: iel
+    integer, dimension(max(nblocks,1)+1) :: IlocalIndex
+    integer(PREC_DOFIDX), dimension(ndofsPerElement) :: IlocalDOF,IglobalDOF
+    integer :: i,j,k,iidx,iminiDOF
+    integer(PREC_VECIDX) :: irow,idof
+    integer(PREC_MATIDX) :: icol
     
     ! Memory for our local system; let's hope it's not too big :)
-    REAL(DP), DIMENSION(ndofsPerElement,ndofsPerElement) :: Daa
-    REAL(DP), DIMENSION(ndofsPerElement)                 :: Dff
-    REAL(DP) :: dscale
-    INTEGER(I32), DIMENSION(ndofsPerElement) :: Ipiv
-    INTEGER(I32) :: iinfo
+    real(DP), dimension(ndofsPerElement,ndofsPerElement) :: Daa
+    real(DP), dimension(ndofsPerElement)                 :: Dff
+    real(DP) :: dscale
+    integer(I32), dimension(ndofsPerElement) :: Ipiv
+    integer(I32) :: iinfo
     
     ! Quickly check the matrices if one of them is saved transposed.
     ! VANKA does not support transposed matrices; would kill computational
     ! time, as we cannot extract columns from a structure-9 matrix with
     ! reasonable effort!
-    DO i=1,SIZE(Rmatrices,1)
-      DO j=1,SIZE(Rmatrices,2)
-        IF (Rmatrices(i,j)%bexists .AND. Rmatrices(i,j)%btransposed) THEN
-          CALL output_line (&
+    do i=1,size(Rmatrices,1)
+      do j=1,size(Rmatrices,2)
+        if (Rmatrices(i,j)%bexists .and. Rmatrices(i,j)%btransposed) then
+          call output_line (&
               'General VANKA does not support transposed matrices!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_general_double_mat79')
-          CALL sys_halt()
-        END IF 
-      END DO ! j
-    END DO ! i
+          call sys_halt()
+        end if 
+      end do ! j
+    end do ! i
         
     ! Build an index pointer for accessing local DOF's
     IlocalIndex(1) = 0
-    DO i=2,nblocks+1
+    do i=2,nblocks+1
       IlocalIndex(i) = IlocalIndex(i-1)+InDOFsLocal(i-1)
-    END DO
+    end do
         
     ! Ok, let's start with the loop over the elements in the given
     ! element list.
-    DO iel = 1,nelements
+    do iel = 1,nelements
     
       ! IelementDOFs (.,iel,.) gives now for every block in the system
       ! the DOF's on this element.
@@ -1423,8 +1423,8 @@ CONTAINS
       ! First copy the RHS entries of f to f~.
       
       iidx = 1
-      DO i=1,nblocks
-        DO j=1,InDOFsLocal(i)
+      do i=1,nblocks
+        do j=1,InDOFsLocal(i)
           iidx = IlocalIndex(i)+j
           
           ! Get the DOF on the element:
@@ -1437,8 +1437,8 @@ CONTAINS
           IglobalDOF(iidx) = idof+IblockOffset(i)
           
           Dff(iidx) = Drhs(IglobalDOF(iidx))
-        END DO
-      END DO
+        end do
+      end do
       
       ! Compute  ff := ff - A x  for the local unknowns
       ! to build the local residuum Dff = f~-A~x.
@@ -1448,14 +1448,14 @@ CONTAINS
       Daa = 0
       
       ! Loop through the rows of the block matrix
-      DO i=1,SIZE(Rmatrices,1)
+      do i=1,size(Rmatrices,1)
         
         ! Loop through the columns of the block matrix
-        DO j=1,SIZE(Rmatrices,2)
+        do j=1,size(Rmatrices,2)
         
           ! Is there a matrix saved at this position?
-          IF (Rmatrices(i,j)%bexists .AND. &
-              Rmatrices(i,j)%dscaleFactor .NE. 0.0_DP) THEN
+          if (Rmatrices(i,j)%bexists .and. &
+              Rmatrices(i,j)%dscaleFactor .ne. 0.0_DP) then
 
             dscale = Rmatrices(i,j)%dscaleFactor
         
@@ -1480,7 +1480,7 @@ CONTAINS
             iidx = IlocalIndex(j)
 
             ! Loop through the DOF's that correspond to this block:
-            DO irow = IlocalIndex(i)+1,IlocalIndex(i+1)
+            do irow = IlocalIndex(i)+1,IlocalIndex(i+1)
               
               ! Get the actual DOF, relative to this block.
               ! This is the row of the matrix that must be multiplied by x
@@ -1488,7 +1488,7 @@ CONTAINS
               idof = IlocalDOF(irow)
               
               ! Loop through the row of the matrix to its contribution to "b-Ax".
-              DO k = Rmatrices(i,j)%p_Kld(idof) , Rmatrices(i,j)%p_Kld(idof+1)-1
+              do k = Rmatrices(i,j)%p_Kld(idof) , Rmatrices(i,j)%p_Kld(idof+1)-1
 
                 ! Get the column number in the global matrix. This gives
                 ! the global DOF = number of the element in x that must be multiplied
@@ -1505,28 +1505,28 @@ CONTAINS
                 ! Loop through the DOF's corresponding to column j of the block system.
                 ! In the above example, this checks only the two DOF's corresponding
                 ! to a?3 and a?4.
-                DO iminiDOF = 1,InDOFsLocal(j)
-                  IF (icol .EQ. IglobalDOF(iidx+iminiDOF)) THEN
+                do iminiDOF = 1,InDOFsLocal(j)
+                  if (icol .eq. IglobalDOF(iidx+iminiDOF)) then
                     ! Yes. Get the matrix entry, write it to the local matrix
                     Daa(irow,iidx+iminiDOF) = dscale*Rmatrices(i,j)%p_Da(k)
-                    EXIT
-                  END IF
-                END DO ! idof
+                    exit
+                  end if
+                end do ! idof
                 
-              END DO ! k
+              end do ! k
             
-            END DO ! irow
+            end do ! irow
                         
-          END IF ! exists
+          end if ! exists
         
-        END DO ! j
+        end do ! j
         
-      END DO ! i
+      end do ! i
       
       ! Ok, we now have our local matrix and our local defect vector d~.
       ! Apply LAPACK to the local system to solve C^{-1} d~.
       
-      CALL DGETRF( ndofsPerElement, ndofsPerElement, Daa, ndofsPerElement, &
+      call DGETRF( ndofsPerElement, ndofsPerElement, Daa, ndofsPerElement, &
                    Ipiv, iinfo )
                   
       ! Note: It may happen that the matrix is singular!
@@ -1551,26 +1551,26 @@ CONTAINS
       ! no contribution in the preconditioned defect to correct the
       ! pressure entries of x.
                    
-      IF (iinfo .EQ. 0) THEN
-        CALL DGETRS('N', ndofsPerElement, 1, Daa, ndofsPerElement, &
+      if (iinfo .eq. 0) then
+        call DGETRS('N', ndofsPerElement, 1, Daa, ndofsPerElement, &
                     Ipiv, Dff, ndofsPerElement, iinfo )
-        IF (iinfo .EQ. 0) THEN
+        if (iinfo .eq. 0) then
           
           ! Dff is in-situ replaced by the solution - the preconditioned
           ! defect. Add this to our original solution vector to complete
           ! the 'local' defect-correction.
           
-          DO i=1,ndofsPerElement
+          do i=1,ndofsPerElement
             j = IglobalDOF(i)
             Dvector(j) = Dvector(j) + domega*Dff(i)
-          END DO
+          end do
         
-        END IF
-      END IF
+        end if
+      end if
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
 ! *****************************************************************************
 ! Problem class: VANKA variants for 2D Navier-Stokes problems
@@ -1578,7 +1578,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_init2DNavierStokes (rmatrix,rvanka,csubtype)
+  subroutine vanka_init2DNavierStokes (rmatrix,rvanka,csubtype)
   
 !<description>
   ! Initialises the VANKA variant for 2D Navier-Stokes problems 
@@ -1593,184 +1593,184 @@ CONTAINS
 
 !<input>
   ! The system matrix of the linear system.
-  TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
+  type(t_matrixBlock), intent(IN), target :: rmatrix
 
   ! Desired subtype
-  INTEGER, INTENT(IN) :: csubtype  
+  integer, intent(IN) :: csubtype  
 !</input>
 
 !<inputoutput>
   ! t_vankaPointer2DSPNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vanka), INTENT(INOUT) :: rvanka
+  type(t_vanka), intent(INOUT) :: rvanka
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: i,j
-    LOGICAL :: bextended
-    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscr
+    integer :: i,j
+    logical :: bextended
+    type(t_blockDiscretisation), pointer :: p_rblockDiscr
     
-    bextended = .FALSE.
+    bextended = .false.
     
     ! Matrix must be 3x3.
-    IF (rmatrix%ndiagBlocks .NE. 3) THEN
-      CALL output_line ('System matrix is not 3x3.',&
+    if (rmatrix%ndiagBlocks .ne. 3) then
+      call output_line ('System matrix is not 3x3.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(3,:) must be (virtually) transposed. All matrices must be double precision.
-    DO i=1,3
-      DO j=1,3
+    do i=1,3
+      do j=1,3
       
-        IF (lsysbl_isSubmatrixPresent(rmatrix,i,j)) THEN
+        if (lsysbl_isSubmatrixPresent(rmatrix,i,j)) then
         
-          IF (i .LE. 2) THEN
-            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .NE. 0) THEN
-              CALL output_line ('Transposed submatrices not supported.',&
+          if (i .le. 2) then
+            if (iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .ne. 0) then
+              call output_line ('Transposed submatrices not supported.',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-              CALL sys_halt()
-            END IF
-          ELSE
-            IF ((i .LE. 2) .AND. &
-               (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .EQ. 0)) THEN
-              CALL output_line ('B1/B2 submatrices must be virtually',&
+              call sys_halt()
+            end if
+          else
+            if ((i .le. 2) .and. &
+               (iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .eq. 0)) then
+              call output_line ('B1/B2 submatrices must be virtually',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-              CALL output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
+              call output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-              CALL sys_halt()
-            END IF
-          END IF
+              call sys_halt()
+            end if
+          end if
           
-          IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
-            CALL output_line ('Only format 7 and 9 matrices supported.',&
+          if ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX7) .and. &
+              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX9)) then
+            call output_line ('Only format 7 and 9 matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
-          IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
-            CALL output_line ('Only double precision matrices supported.',&
+          if (rmatrix%RmatrixBlock(i,j)%cdataType .ne. ST_DOUBLE) then
+            call output_line ('Only double precision matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
           ! For scaled matrices, we have to use an extended sub-version of VANKA.
-          IF ((rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 0.0_DP)) THEN
-            bextended = .TRUE.  
-          END IF
+          if ((rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 1.0_DP) .and. &
+              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 0.0_DP)) then
+            bextended = .true.  
+          end if
           
-          IF ((i .eq. j) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) ) THEN
-            bextended = .TRUE. 
-          END IF
+          if ((i .eq. j) .and. &
+              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 1.0_DP) ) then
+            bextended = .true. 
+          end if
           
-        END IF ! neq != 0
-      END DO
-    END DO
+        end if ! neq != 0
+      end do
+    end do
     
     ! The structure of A(1,3) must be identical to A(3,1) and
     ! that of A(2,3) must be identical to A(3,2).
-    IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(3,1)%NA) .OR. &
-        (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
-      CALL output_line ('Structure of B1 and B1^T different!',&
+    if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(3,1)%NA) .or. &
+        (rmatrix%RmatrixBlock(1,3)%NEQ .ne. rmatrix%RmatrixBlock(3,1)%NCOLS)) then
+      call output_line ('Structure of B1 and B1^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
-        (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
-      CALL output_line ('Structure of B2 and B2^T different!',&
+    if ((rmatrix%RmatrixBlock(2,3)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .or. &
+        (rmatrix%RmatrixBlock(2,3)%NEQ .ne. rmatrix%RmatrixBlock(3,2)%NCOLS)) then
+      call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-      CALL sys_halt()
-    END IF      
+      call sys_halt()
+    end if      
   
     ! Fill the output structure with data of the matrices.
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
         rvanka%rvanka2DNavSt%p_DA )
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
         rvanka%rvanka2DNavSt%p_DB1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),&
         rvanka%rvanka2DNavSt%p_DB2)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),&
         rvanka%rvanka2DNavSt%p_DD1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),&
         rvanka%rvanka2DNavSt%p_DD2)
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),&
         rvanka%rvanka2DNavSt%p_KcolB)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
         rvanka%rvanka2DNavSt%p_KldB )
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
         rvanka%rvanka2DNavSt%p_KcolA)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
         rvanka%rvanka2DNavSt%p_KldA )
-    IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
+    if (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+      call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
                               rvanka%rvanka2DNavSt%p_KdiagonalA)
-    ELSE
+    else
       rvanka%rvanka2DNavSt%p_KdiagonalA => rvanka%rvanka2DNavSt%p_KldA
-    END IF
+    end if
     
-    IF (lsysbl_isSubmatrixPresent(rmatrix,3,3)) THEN
+    if (lsysbl_isSubmatrixPresent(rmatrix,3,3)) then
     
       ! The matrix must be of format 7 or 9.
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
           rvanka%rvanka2DNavSt%p_DA33 )
 
-      IF (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(3,3), &
+      if (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+        call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(3,3), &
                                 rvanka%rvanka2DNavSt%p_KdiagonalA33)
-      ELSE
-        CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,3), &
+      else
+        call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,3), &
                                 rvanka%rvanka2DNavSt%p_KdiagonalA33)
-      END IF
+      end if
 
       ! The presence of A(3,3) forces the extended VANKA to be used
-      bextended = .TRUE.
+      bextended = .true.
 
-    END IF
+    end if
     
-    IF (bextended) rvanka%csubsubtype = 1
+    if (bextended) rvanka%csubsubtype = 1
     
     ! What is with A22? Is it the same as A11?
-    IF (.NOT. lsyssc_isMatrixContentShared (&
-        rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)) ) THEN
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
+    if (.not. lsyssc_isMatrixContentShared (&
+        rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)) ) then
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
           rvanka%rvanka2DNavSt%p_DA22 )
-    END IF
+    end if
     
     ! What is with A12 and A21? Do they exist? With a scale factor = 1.0?
-    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
-        (rmatrix%RmatrixBlock(1,2)%dscaleFactor .EQ. 1.0_DP)) THEN
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
+    if (lsysbl_isSubmatrixPresent(rmatrix,1,2) .and. &
+        (rmatrix%RmatrixBlock(1,2)%dscaleFactor .eq. 1.0_DP)) then
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
           rvanka%rvanka2DNavSt%p_DA12 )
           
-      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,2),&
+      call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,2),&
           rvanka%rvanka2DNavSt%p_KcolA12)
-      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
+      call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
           rvanka%rvanka2DNavSt%p_KldA12 )
           
       ! Get the structure. It's assumed that A12 and A21 have the same!
-      IF (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
+      if (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+        call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
                                 rvanka%rvanka2DNavSt%p_KdiagonalA12)
-      ELSE
+      else
         rvanka%rvanka2DNavSt%p_KdiagonalA12 => rvanka%rvanka2DNavSt%p_KldA12
-      END IF
+      end if
       
-      IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) THEN
-        CALL output_line ('If A12 is given, A21 must also be given!',&
+      if (.not. lsysbl_isSubmatrixPresent(rmatrix,2,1)) then
+        call output_line ('If A12 is given, A21 must also be given!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesO')
-        CALL sys_halt()
-      END IF
+        call sys_halt()
+      end if
       
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
           rvanka%rvanka2DNavSt%p_DA21 )
-    END IF
+    end if
 
     ! Get the multiplication factors of the submatrices.
     rvanka%rvanka2DNavSt%Dmultipliers(1:3,1:3) = &
@@ -1779,11 +1779,11 @@ CONTAINS
     ! Get the block discretisation structure from the matrix.
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
     
-    IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
-      CALL output_line ('No discretisation!',&
+    if (.not. associated(p_rblockDiscr)) then
+      call output_line ('No discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Get the discretisation structure of U,V and P from the block
     ! discretisation structure.
@@ -1791,39 +1791,39 @@ CONTAINS
     rvanka%rvanka2DNavSt%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(2)
     rvanka%rvanka2DNavSt%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
     
-    IF (rvanka%rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .NE. &
-        rvanka%rvanka2DNavSt%p_rspatialDiscrV%inumFESpaces) THEN
-      CALL output_line (&
+    if (rvanka%rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .ne. &
+        rvanka%rvanka2DNavSt%p_rspatialDiscrV%inumFESpaces) then
+      call output_line (&
           'Discretisation structures of X- and Y-velocity incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rvanka%rvanka2DNavSt%p_rspatialDiscrP%inumFESpaces .NE. 1) .AND. &
-        (rvanka%rvanka2DNavSt%p_rspatialDiscrP%inumFESpaces .NE. &
-          rvanka%rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces)) THEN
+    if ((rvanka%rvanka2DNavSt%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
+        (rvanka%rvanka2DNavSt%p_rspatialDiscrP%inumFESpaces .ne. &
+          rvanka%rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces)) then
       ! Either there must be only one element type for the pressure, or there one
       ! pressure element distribution for every velocity element distribution!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
-      CALL output_line (&
+      call output_line (&
           'Discretisation structures of velocity and pressure incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Solution based VANKA variants need an additional temp vector
-    IF (csubtype .EQ. VANKATP_DIAGONAL_SOLBASED) then
-      CALL lsysbl_createVecBlockIndMat (rmatrix,rvanka%rvanka2DNavSt%rtempVector, .false.)
-    END IF
+    if (csubtype .eq. VANKATP_DIAGONAL_SOLBASED) then
+      call lsysbl_createVecBlockIndMat (rmatrix,rvanka%rvanka2DNavSt%rtempVector, .false.)
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_done2DNavierStokes (rvanka2DNavSt)
+  subroutine vanka_done2DNavierStokes (rvanka2DNavSt)
   
 !<description>
   ! Releases any memory allocated in rvanka2DNavSt.
@@ -1831,22 +1831,22 @@ CONTAINS
 
 !<inputoutput>
   ! t_vanka structure that to be cleaned up.
-  TYPE(t_vankaPointer2DNavSt), INTENT(INOUT) :: rvanka2DNavSt
+  type(t_vankaPointer2DNavSt), intent(INOUT) :: rvanka2DNavSt
 !</inputoutput>
 
 !</subroutine>
 
-    IF (rvanka2DNavSt%rtempVector%NEQ .NE. 0) THEN
-      CALL lsysbl_releaseVector (rvanka2DNavSt%rtempVector)
-    END IF
+    if (rvanka2DNavSt%rtempVector%NEQ .ne. 0) then
+      call lsysbl_releaseVector (rvanka2DNavSt%rtempVector)
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DNavierStokes (rvanka2DNavSt, rvector, rrhs, domega, &
+  subroutine vanka_2DNavierStokes (rvanka2DNavSt, rvector, rrhs, domega, &
       csubtype, csubsubtype)
   
 !<description>
@@ -1867,43 +1867,43 @@ CONTAINS
 
 !<input>
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
-  INTEGER :: csubtype
+  integer :: csubtype
 
   ! The sub-subtype of VANKA that should handle the above problem class.
   ! =0: use standard VANKA. =1: use extended VANKA (e.g. with different 
   !     multipliers in the matrices)
-  INTEGER :: csubsubtype
+  integer :: csubsubtype
   
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(INOUT)         :: rvector
+  type(t_vectorBlock), intent(INOUT)         :: rvector
 
   ! t_vanka structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(INOUT) :: rvanka2DNavSt
+  type(t_vankaPointer2DNavSt), intent(INOUT) :: rvanka2DNavSt
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: ielementdist
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementList
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrU
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrV
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrP 
+    integer :: ielementdist
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+    type(t_elementDistribution), pointer :: p_relementDistrU
+    type(t_elementDistribution), pointer :: p_relementDistrV
+    type(t_elementDistribution), pointer :: p_relementDistrP 
     
     ! 2D Navier Stokes problem.
 
     ! Loop through the element distributions of the velocity.
-    DO ielementdist = 1,rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces
+    do ielementdist = 1,rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces
     
       ! Get the corresponding element distributions of U, V and P.
       p_relementDistrU => &
@@ -1913,177 +1913,177 @@ CONTAINS
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
-      IF (rvanka2DNavSt%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
+      if (rvanka2DNavSt%p_rspatialDiscrP%inumFESpaces .gt. 1) then
         p_relementDistrP => &
             rvanka2DNavSt%p_rspatialDiscrP%RelementDistr(ielementdist)
-      ELSE
+      else
         p_relementDistrP => &
             rvanka2DNavSt%p_rspatialDiscrP%RelementDistr(1)
-      END IF
+      end if
       
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as 'primary' element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
-      CALL storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
+      call storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
       
       ! Which element combination do we have now?
-      IF ((elem_getPrimaryElement(p_relementDistrU%celement) .EQ. EL_Q1T) .AND. &
-          (elem_getPrimaryElement(p_relementDistrV%celement) .EQ. EL_Q1T) .AND. &
-          (elem_getPrimaryElement(p_relementDistrP%celement) .EQ. EL_Q0)) THEN
+      if ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_Q0)) then
         ! Q1~/Q1~/Q0 discretisation
         
         ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
-        SELECT CASE (csubtype)
-        CASE (VANKATP_DIAGONAL)
+        select case (csubtype)
+        case (VANKATP_DIAGONAL)
           ! Diagonal VANKA; check if A12 exists.
-          IF (.NOT. ASSOCIATED(rvanka2DNavSt%p_DA12)) THEN
+          if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
-            IF (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
               ! Uniform discretisation
-              CALL vanka_2DSPQ1TQ0simple (rvanka2DNavSt, &
+              call vanka_2DSPQ1TQ0simple (rvanka2DNavSt, &
                   rvector, rrhs, domega)
-            ELSE
+            else
               ! Conformal discretisation
-              CALL vanka_2DSPQ1TQ0simpleConf (rvanka2DNavSt, &
+              call vanka_2DSPQ1TQ0simpleConf (rvanka2DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            END IF
-          ELSE
+            end if
+          else
             ! Apply the conformal VANKA that allows different matrices
             ! in A11, A12, A21 and A22!
-            CALL vanka_2DSPQ1TQ0simpleCoupConf (rvanka2DNavSt, &
+            call vanka_2DSPQ1TQ0simpleCoupConf (rvanka2DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-          END IF
+          end if
           
-        CASE (VANKATP_DIAGONAL_SOLBASED)
+        case (VANKATP_DIAGONAL_SOLBASED)
           ! Diagonal VANKA. Solution based if possible. Check if A12 exists.
-          IF (.NOT. ASSOCIATED(rvanka2DNavSt%p_DA12)) THEN
+          if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
-            IF (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
               ! Uniform discretisation
-              CALL vanka_2DSPQ1TQ0simpleSol (rvanka2DNavSt, &
+              call vanka_2DSPQ1TQ0simpleSol (rvanka2DNavSt, &
                   rvector, rrhs, domega,rvanka2DNavSt%rtempVector)
-            ELSE
+            else
               ! Conformal discretisation
-              CALL vanka_2DSPQ1TQ0simpleConf (rvanka2DNavSt, &
+              call vanka_2DSPQ1TQ0simpleConf (rvanka2DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            END IF
-          ELSE
+            end if
+          else
             ! Apply the conformal VANKA that allows different matrices
             ! in A11, A12, A21 and A22!
-            CALL vanka_2DSPQ1TQ0simpleCoupConf (rvanka2DNavSt, &
+            call vanka_2DSPQ1TQ0simpleCoupConf (rvanka2DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-          END IF
+          end if
 
-        CASE (VANKATP_FULL)
+        case (VANKATP_FULL)
           ! Full VANKA; check if A12 exists.
-          IF (.NOT. ASSOCIATED(rvanka2DNavSt%p_DA12)) THEN
+          if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
             ! Note: Up to now, there is no 'full' variant -- has to be implemented!
-            IF (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
               ! uniform discretisation;
               ! here, use the same as for the general conformal discretisation.
               ! Could be speeded up by introducing another variant...
-              CALL vanka_2DSPQ1TQ0fullConf (rvanka2DNavSt, &
+              call vanka_2DSPQ1TQ0fullConf (rvanka2DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            ELSE
+            else
               ! Conformal discretisation
-              CALL vanka_2DSPQ1TQ0fullConf (rvanka2DNavSt, &
+              call vanka_2DSPQ1TQ0fullConf (rvanka2DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            END IF
-          ELSE
+            end if
+          else
             ! Apply the conformal VANKA that allows different matrices
             ! in A11, A12, A21 and A22!
             ! If we have multiplication factors, we even have to use an extended
             ! version of this.
-            IF (csubsubtype .EQ. 0) THEN
-              CALL vanka_2DSPQ1TQ0fullCoupConf (rvanka2DNavSt, &
+            if (csubsubtype .eq. 0) then
+              call vanka_2DSPQ1TQ0fullCoupConf (rvanka2DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            ELSE
-              CALL vanka_2DNSQ1TQ0fullCoupConfExt (rvanka2DNavSt, &
+            else
+              call vanka_2DNSQ1TQ0fullCoupConfExt (rvanka2DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            END IF
-          END IF
+            end if
+          end if
        
-        CASE DEFAULT
-          CALL output_line (&
+        case DEFAULT
+          call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokes')
-          CALL sys_halt()  
+          call sys_halt()  
         
-        END SELECT
+        end select
         
-      ELSE IF &
-        ((elem_getPrimaryElement(p_relementDistrU%celement) .EQ. EL_Q2) .AND.&
-          (elem_getPrimaryElement(p_relementDistrV%celement) .EQ. EL_Q2) .AND.&
-          (elem_getPrimaryElement(p_relementDistrP%celement) .EQ. EL_QP1)) THEN
+      else if &
+        ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_Q2) .and.&
+          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_Q2) .and.&
+          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_QP1)) then
         ! Q2/Q2/QP1 discretisation
         
         ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
-        SELECT CASE (csubtype)
-        CASE (VANKATP_DIAGONAL)
+        select case (csubtype)
+        case (VANKATP_DIAGONAL)
           ! Diagonal VANKA; check if A12 exists.
-          IF (.NOT. ASSOCIATED(rvanka2DNavSt%p_DA12)) THEN
+          if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
-            IF (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
               ! Uniform discretisation
-              CALL vanka_2DSPQ2QP1simple (rvanka2DNavSt, &
+              call vanka_2DSPQ2QP1simple (rvanka2DNavSt, &
                   rvector, rrhs, domega)
-            ELSE
+            else
               ! Conformal discretisation
-              CALL vanka_2DSPQ2QP1simpleConf (rvanka2DNavSt, &
+              call vanka_2DSPQ2QP1simpleConf (rvanka2DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            END IF
-          ELSE
+            end if
+          else
             ! Apply the conformal VANKA that allows different matrices
             ! in A11, A12, A21 and A22!
-            CALL output_line (&
+            call output_line (&
                 'VANKA has no support for A12 and A21!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokes')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
           
-        CASE (VANKATP_FULL)
+        case (VANKATP_FULL)
           ! Full VANKA; check if A12 exists.
-          IF (.NOT. ASSOCIATED(rvanka2DNavSt%p_DA12)) THEN
+          if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
-            IF (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
               ! Uniform discretisation
-              CALL vanka_2DSPQ2QP1full (rvanka2DNavSt, &
+              call vanka_2DSPQ2QP1full (rvanka2DNavSt, &
                   rvector, rrhs, domega)
-            ELSE
+            else
               ! Conformal discretisation
-              CALL vanka_2DSPQ2QP1fullConf (rvanka2DNavSt, &
+              call vanka_2DSPQ2QP1fullConf (rvanka2DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            END IF
-          ELSE
+            end if
+          else
             ! Apply the conformal VANKA that allows different matrices
             ! in A11, A12, A21 and A22!
-            CALL output_line (&
+            call output_line (&
                 'VANKA has no support for A12 and A21!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokes')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
           
-        CASE DEFAULT
-          CALL output_line (&
+        case DEFAULT
+          call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokes')
-          CALL sys_halt()  
+          call sys_halt()  
           
-        END SELECT
+        end select
           
-      ELSE
-        CALL output_line (&
+      else
+        call output_line (&
             'Unsupported discretisation!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokes')
-        CALL sys_halt()
+        call sys_halt()
         
-      END IF
+      end if
       
-    END DO
+    end do
       
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! 2D Navier-Stokes VANKA, simple diagonal version.
@@ -2103,7 +2103,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_init2DSPQ1TQ0simple (rmatrix,rvanka)
+  subroutine vanka_init2DSPQ1TQ0simple (rmatrix,rvanka)
   
 !<description>
   ! Checks if the "2D-Navier-Stokes-Q1T-Q0" VANKA variant can be applied to
@@ -2113,116 +2113,116 @@ CONTAINS
 
 !<input>
   ! The system matrix of the linear system.
-  TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+  type(t_matrixBlock), intent(IN) :: rmatrix
 !</input>
 
 !<output>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(OUT) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(OUT) :: rvanka
 !</output>
 
 !</subroutine>
 
-    INTEGER :: i,j
+    integer :: i,j
 
     ! Matrix must be 3x3.
-    IF (rmatrix%ndiagBlocks .NE. 3) THEN
-      CALL output_line (&
+    if (rmatrix%ndiagBlocks .ne. 3) then
+      call output_line (&
           'System matrix is not 3x3.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_check2DSPQ1TQ0')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(3,:) must be (virtually) transposed. All matrices must be double precision.
-    DO i=1,3
-      DO j=1,3
+    do i=1,3
+      do j=1,3
       
-        IF (lsysbl_isSubmatrixPresent(rmatrix,i,j)) THEN
+        if (lsysbl_isSubmatrixPresent(rmatrix,i,j)) then
         
-          IF (i .LE. 2) THEN
-            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .NE. 0) THEN
-              CALL output_line ('Transposed submatrices not supported.',&
+          if (i .le. 2) then
+            if (iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .ne. 0) then
+              call output_line ('Transposed submatrices not supported.',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DSPQ1TQ0simple')
-              CALL sys_halt()
-            END IF
-          ELSE
-            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .EQ. 0) THEN
-              CALL output_line ('B1/B2 submatrices must be virtually '//&
+              call sys_halt()
+            end if
+          else
+            if (iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .eq. 0) then
+              call output_line ('B1/B2 submatrices must be virtually '//&
                   'transposed (LSYSSC_MSPEC_TRANSPOSED)',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DSPQ1TQ0simple')
-              CALL sys_halt()
-            END IF
-          END IF
+              call sys_halt()
+            end if
+          end if
           
-          IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
-            CALL output_line ('Only format 7 and 9 matrices supported.',&
+          if ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX7) .and. &
+              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX9)) then
+            call output_line ('Only format 7 and 9 matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DSPQ1TQ0simple')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
-          IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
-            CALL output_line ('Only double precision matrices supported.',&
+          if (rmatrix%RmatrixBlock(i,j)%cdataType .ne. ST_DOUBLE) then
+            call output_line ('Only double precision matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DSPQ1TQ0simple')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
-          IF (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) THEN
-            CALL output_line ('Scaled matrices not supported.',&
+          if (rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 1.0_DP) then
+            call output_line ('Scaled matrices not supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DSPQ1TQ0simple')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
           
-        END IF ! neq != 0
-      END DO
-    END DO
+        end if ! neq != 0
+      end do
+    end do
     
     ! The structure of A(1,3) must be identical to A(3,1) and
     ! that of A(2,3) must be identical to A(3,2).
-    IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(3,1)%NA) .OR. &
-        (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
-      CALL output_line ('Structure of B1 and B1^T different!',&
+    if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(3,1)%NA) .or. &
+        (rmatrix%RmatrixBlock(1,3)%NEQ .ne. rmatrix%RmatrixBlock(3,1)%NCOLS)) then
+      call output_line ('Structure of B1 and B1^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DSPQ1TQ0simple')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
-        (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
-      CALL output_line ('Structure of B2 and B2^T different!',&
+    if ((rmatrix%RmatrixBlock(2,3)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .or. &
+        (rmatrix%RmatrixBlock(2,3)%NEQ .ne. rmatrix%RmatrixBlock(3,2)%NCOLS)) then
+      call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DSPQ1TQ0simple')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Fill the output structure with data of the matrices.
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),rvanka%p_DA )
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),rvanka%p_DB1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),rvanka%p_DB2)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),rvanka%p_DD1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),rvanka%p_DD2)
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),rvanka%p_KcolB)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), rvanka%p_KldB )
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),rvanka%p_KcolA)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), rvanka%p_KldA )
-    IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),rvanka%p_DA )
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),rvanka%p_DB1)
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),rvanka%p_DB2)
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),rvanka%p_DD1)
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),rvanka%p_DD2)
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),rvanka%p_KcolB)
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), rvanka%p_KldB )
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),rvanka%p_KcolA)
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), rvanka%p_KldA )
+    if (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+      call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
                                rvanka%p_KdiagonalA)
-    ELSE
+    else
       rvanka%p_KdiagonalA => rvanka%p_KldA
-    END IF
+    end if
     
     ! Get the multiplication factors of the submatrices
     rvanka%Dmultipliers(:,:) = rmatrix%RmatrixBlock(1:3,1:3)%dscaleFactor
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DSPQ1TQ0simple (rvanka, rvector, rrhs, domega)
+  subroutine vanka_2DSPQ1TQ0simple (rvanka, rvector, rrhs, domega)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -2235,53 +2235,53 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,j
-    INTEGER, PARAMETER :: lofsv = 4
-    INTEGER, PARAMETER :: lofsp = 8
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer :: ia1,ia2,ib1,ib2,ia,ib,j
+    integer, parameter :: lofsv = 4
+    integer, parameter :: lofsp = 8
+    real(DP) :: daux
     !REAL(DP), DIMENSION(3,3) :: Dmult
     
     ! Local arrays for informations about one element
-    REAL(DP), DIMENSION(4) :: AA,BB1,BB2,DD1,DD2
-    REAL(DP), DIMENSION(9) :: FF,UU
-    INTEGER(PREC_VECIDX), DIMENSION(4) :: idofGlobal
+    real(DP), dimension(4) :: AA,BB1,BB2,DD1,DD2
+    real(DP), dimension(9) :: FF,UU
+    integer(PREC_VECIDX), dimension(4) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -2302,10 +2302,10 @@ CONTAINS
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -2373,7 +2373,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements
 
-    DO iel=1,NEL
+    do iel=1,NEL
     
       ! We now have the element
       !                                      U3/V3
@@ -2389,7 +2389,7 @@ CONTAINS
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
 
       ! Loop over all 4 U-nodes of that element.
-      DO inode=1,4
+      do inode=1,4
       
         ! Set idof to the DOF that belongs to our edge inode:
         idof = p_IedgesAtElement(inode,iel)
@@ -2481,7 +2481,7 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
@@ -2491,13 +2491,13 @@ CONTAINS
           !daux = Dmult(1,1)*p_DA(ia)
           !FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           !FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
-        END DO
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
@@ -2506,7 +2506,7 @@ CONTAINS
           ! For support of scaled matrices, use the following lines; currently switched off.
           !FF(inode)       = FF(inode)      -Dmult(1,3)*p_DB1(ib)*daux
           !FF(inode+lofsv) = FF(inode+lofsv)-Dmult(2,3)*p_DB2(ib)*daux
-        END DO
+        end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
         ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -2528,8 +2528,8 @@ CONTAINS
         ! Either two (if the velocity DOF is an edge with two neighbouring
         ! elements) or one (if the velocity DOF is at an edge on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+        do ib = ib1,ib2
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
           
@@ -2560,11 +2560,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -2602,31 +2602,31 @@ CONTAINS
       ! y := C^{-1} d~ by applying a Schur complement approach. For this purpose,
       ! call the element update routine that calculates the update vector y.
       
-      CALL vanka_getcorr_2DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,DD1,DD2)
+      call vanka_getcorr_2DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,DD1,DD2)
     
       ! Ok, we got the update vector UU. Incorporate this now into our
       ! solution vector with the update formula
       !
       !  x_{n+1} = x_n + domega * y!
       
-      DO inode=1,4
+      do inode=1,4
         p_Dvector(idofGlobal(inode)) &
           = p_Dvector(idofGlobal(inode)) + domega * UU(inode)
         p_Dvector(idofGlobal(inode)+ioffsetv) &
           = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * UU(inode+lofsv)
-      END DO
+      end do
       
       p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + domega * UU(1+lofsp)
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DSPQ1TQ0simpleSol (rvanka, rvector, rrhs, domega, rtempVector)
+  subroutine vanka_2DSPQ1TQ0simpleSol (rvanka, rvector, rrhs, domega, rtempVector)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -2642,56 +2642,56 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(INOUT)         :: rvector
+  type(t_vectorBlock), intent(INOUT)         :: rvector
   
   ! A temporary vector in the size and structure of rvector
-  TYPE(t_vectorBlock), INTENT(INOUT)         :: rtempVector
+  type(t_vectorBlock), intent(INOUT)         :: rtempVector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,j
-    INTEGER, PARAMETER :: lofsv = 4
-    INTEGER, PARAMETER :: lofsp = 8
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer :: ia1,ia2,ib1,ib2,ia,ib,j
+    integer, parameter :: lofsv = 4
+    integer, parameter :: lofsp = 8
+    real(DP) :: daux
     !REAL(DP), DIMENSION(3,3) :: Dmult
     
     ! Local arrays for informations about one element
-    REAL(DP), DIMENSION(4) :: AA,BB1,BB2,DD1,DD2
-    REAL(DP), DIMENSION(9) :: FF,UU
-    INTEGER(PREC_VECIDX), DIMENSION(4) :: idofGlobal
+    real(DP), dimension(4) :: AA,BB1,BB2,DD1,DD2
+    real(DP), dimension(9) :: FF,UU
+    integer(PREC_VECIDX), dimension(4) :: idofGlobal
     
     ! WARNING: DOCUMENTATION PARTIALLY WRONG AND INCOMPLETE!
     ! Preconditioner was build from FEAT1 in a quick-and-dirty way...
@@ -2715,13 +2715,13 @@ CONTAINS
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Backup the solution vector
-    CALL lsysbl_copyVector (rvector,rtempVector)
+    call lsysbl_copyVector (rvector,rtempVector)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -2789,7 +2789,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements
 
-    DO iel=1,NEL
+    do iel=1,NEL
     
       ! We now have the element
       !                                      U3/V3
@@ -2805,7 +2805,7 @@ CONTAINS
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
 
       ! Loop over all 4 U-nodes of that element.
-      DO inode=1,4
+      do inode=1,4
       
         ! Set idof to the DOF that belongs to our edge inode:
         idof = p_IedgesAtElement(inode,iel)
@@ -2897,7 +2897,7 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
@@ -2907,7 +2907,7 @@ CONTAINS
           !daux = Dmult(1,1)*p_DA(ia)
           !FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           !FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
-        END DO
+        end do
         
         ! The diagonal entry was also subtracted, but this is not
         ! desired in this approach. We therefore revert the subtraction
@@ -2920,9 +2920,9 @@ CONTAINS
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
 
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           ! Subtract contributions from the RHS which don't belong to our element.
-          IF (p_KcolB(ib) .NE. IEL) THEN 
+          if (p_KcolB(ib) .ne. IEL) then 
           
             J = p_KcolB(ib)
             daux = p_Dvector(j+ioffsetp)
@@ -2933,7 +2933,7 @@ CONTAINS
             !FF(inode)       = FF(inode)      -Dmult(1,3)*p_DB1(ib)*daux
             !FF(inode+lofsv) = FF(inode+lofsv)-Dmult(2,3)*p_DB2(ib)*daux
           
-          ELSE
+          else
           
             ! Get the entries in the B-matrices
             BB1(inode) = p_DB1(ib)
@@ -2965,10 +2965,10 @@ CONTAINS
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
             ! EXIT
-          END IF
-        END DO ! ib
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -3006,32 +3006,32 @@ CONTAINS
       ! y := C^{-1} d~ by applying a Schur complement approach. For this purpose,
       ! call the element update routine that calculates the update vector y.
       
-      CALL vanka_getcorr_2DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,DD1,DD2)
+      call vanka_getcorr_2DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,DD1,DD2)
     
       ! Ok, we got the update vector UU. Incorporate this now into our
       ! solution vector with the update formula
       !
       !  x_{n+1} = x_n + domega * y!
       
-      DO inode=1,4
+      do inode=1,4
         p_Dvector(idofGlobal(inode)) = UU(inode)
         p_Dvector(idofGlobal(inode)+ioffsetv) = UU(inode+lofsv)
-      END DO
+      end do
       
       p_Dvector(iel+ioffsetp) = UU(1+lofsp)
     
-    END DO ! iel
+    end do ! iel
     
     ! The final vector is a mean between the old and the new vector.
-    CALL lsysbl_vectorLinearComb (rtempVector,rvector,1.0_DP-domega,domega)
+    call lsysbl_vectorLinearComb (rtempVector,rvector,1.0_DP-domega,domega)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DSPQ1TQ0simpleConf (rvanka, rvector, rrhs, domega,IelementList)
+  subroutine vanka_2DSPQ1TQ0simpleConf (rvanka, rvector, rrhs, domega,IelementList)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -3049,55 +3049,55 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,j
-    INTEGER, PARAMETER :: lofsv = 4
-    INTEGER, PARAMETER :: lofsp = 8
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer :: ia1,ia2,ib1,ib2,ia,ib,j
+    integer, parameter :: lofsv = 4
+    integer, parameter :: lofsp = 8
+    real(DP) :: daux
     
     ! Local arrays for informations about one element
-    REAL(DP), DIMENSION(4) :: AA,BB1,BB2,DD1,DD2
-    REAL(DP), DIMENSION(9) :: FF,UU
-    INTEGER(PREC_VECIDX), DIMENSION(4) :: idofGlobal
+    real(DP), dimension(4) :: AA,BB1,BB2,DD1,DD2
+    real(DP), dimension(9) :: FF,UU
+    integer(PREC_VECIDX), dimension(4) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -3115,10 +3115,10 @@ CONTAINS
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -3186,7 +3186,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements in the list
 
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -3205,7 +3205,7 @@ CONTAINS
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
 
       ! Loop over all 4 U-nodes of that element.
-      DO inode=1,4
+      do inode=1,4
       
         ! Set idof to the DOF that belongs to our edge inode:
         idof = p_IedgesAtElement(inode,iel)
@@ -3292,23 +3292,23 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
-        END DO
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
-        END DO
+        end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
         ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -3330,8 +3330,8 @@ CONTAINS
         ! Either two (if the velocity DOF is an edge with two neighbouring
         ! elements) or one (if the velocity DOF is at an edge on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+        do ib = ib1,ib2
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
           
@@ -3356,11 +3356,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -3398,31 +3398,31 @@ CONTAINS
       ! y := C^{-1} d~ by applying a Schur complement approach. For this purpose,
       ! call the element update routine that calculates the update vector y.
       
-      CALL vanka_getcorr_2DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,DD1,DD2)
+      call vanka_getcorr_2DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,DD1,DD2)
     
       ! Ok, we got the update vector UU. Incorporate this now into our
       ! solution vector with the update formula
       !
       !  x_{n+1} = x_n + domega * y!
       
-      DO inode=1,4
+      do inode=1,4
         p_Dvector(idofGlobal(inode)) &
           = p_Dvector(idofGlobal(inode)) + domega * UU(inode)
         p_Dvector(idofGlobal(inode)+ioffsetv) &
           = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * UU(inode+lofsv)
-      END DO
+      end do
       
       p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + domega * UU(1+lofsp)
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE vanka_getcorr_2DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,DD1,DD2)
+  pure subroutine vanka_getcorr_2DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,DD1,DD2)
   
 !<description>
   ! This routine solves a 9x9 Jacobi-type Schur complement system for two 
@@ -3433,41 +3433,41 @@ CONTAINS
 
 !<input>
   ! Diagonal elements of the local system matrix.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: AA
+  real(DP), dimension(4), intent(IN) :: AA
   
   ! Entries in the submatrix B1.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: BB1
+  real(DP), dimension(4), intent(IN) :: BB1
 
   ! Entries in the submatrix B2.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: BB2
+  real(DP), dimension(4), intent(IN) :: BB2
   
   ! Entries in the submatrix D1.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: DD1
+  real(DP), dimension(4), intent(IN) :: DD1
 
   ! Entries in the submatrix D2.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: DD2
+  real(DP), dimension(4), intent(IN) :: DD2
 
   ! Local RHS vector; FF(1..4)=X-velocity, FF(5..8)=Y-velocity,
   ! FF(9)=pressure.
-  REAL(DP), DIMENSION(9), INTENT(IN) :: FF
+  real(DP), dimension(9), intent(IN) :: FF
 !</input>
 
 !<output>
   ! Update vector u with Cu=FF. UU(1..4)=X-velocity, UU(5..8)=Y-velocity,
   ! UU(9)=pressure.
-  REAL(DP), DIMENSION(9), INTENT(OUT) :: UU
+  real(DP), dimension(9), intent(OUT) :: UU
 !</output>
 
 !</subroutine>
 
     ! local variables
 
-    INTEGER :: inode
-    REAL(DP) :: PP,dpres
-    REAL(DP), DIMENSION(9) :: AI,dff
+    integer :: inode
+    real(DP) :: PP,dpres
+    real(DP), dimension(9) :: AI,dff
     
-    INTEGER, PARAMETER :: lofsv = 4
-    INTEGER, PARAMETER :: lofsp = 8
+    integer, parameter :: lofsv = 4
+    integer, parameter :: lofsp = 8
 
     ! This routine uses a Schur-complement approach to solve the
     ! system Cu=FF with
@@ -3520,20 +3520,20 @@ CONTAINS
     !
     ! Here it goes...
 
-    DO inode=1,4
+    do inode=1,4
     
       ! Quick check if everything is ok - we don't want to divide by 0.
-      IF (AA(inode)*AA(inode) .LT. 1E-20_DP) THEN
+      if (AA(inode)*AA(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
-        RETURN
-      END IF
+        return
+      end if
 
       ! AI(.) saves the diagonal matrix S^-1:
     
       AI(inode)=1E0_DP/AA(inode)
         
-    END DO
+    end do
 
     ! Factorization loop
     !
@@ -3559,12 +3559,12 @@ CONTAINS
     dpres = 0.0_DP
     dff = FF
       
-    DO inode = 1,4
+    do inode = 1,4
       dpres        = dpres &
                    - AI(inode)*(DD1(inode)*BB1(inode)+DD2(inode)*BB2(inode))
       dff(1+lofsp) = dff(1+lofsp) &
                    - AI(inode)*(DD1(inode)*dff(inode)+DD2(inode)*dff(inode+lofsv))
-    END DO
+    end do
 
     ! Solution "loop"
     !
@@ -3572,11 +3572,11 @@ CONTAINS
     ! nodes, which implies B=0 and thus leads to DP=0!
     ! (Happens inside of fictitious boundary objects e.g.)
 
-    IF (dpres*dpres .LT. 1E-20_DP)  THEN
+    if (dpres*dpres .lt. 1E-20_DP)  then
       ! Set the update vector to 0, cancel.
       UU = 0.0_DP
-      RETURN
-    ENDIF
+      return
+    endif
       
     ! At first we calculate the pressure on element IEL,
     ! which is simply given by multiplying FFP with the
@@ -3592,18 +3592,18 @@ CONTAINS
     !
     ! locally on the current cell:
       
-    DO inode=1,4
+    do inode=1,4
       UU(inode)       = AI(inode)*(dff(inode)-BB1(inode)*PP)
       UU(inode+lofsv) = AI(inode)*(dff(inode+lofsv)-BB2(inode)*PP)
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE vanka_getcorr_2DSPQ1TQ0simple2 (UU,FF,AA1,AA2,BB1,BB2,DD1,DD2,di)
+  pure subroutine vanka_getcorr_2DSPQ1TQ0simple2 (UU,FF,AA1,AA2,BB1,BB2,DD1,DD2,di)
   
 !<description>
   ! This routine solves a 9x9 Jacobi-type Schur complement system for two 
@@ -3617,49 +3617,49 @@ CONTAINS
 
 !<input>
   ! Diagonal elements of the local system matrix A11
-  REAL(DP), DIMENSION(4), INTENT(IN) :: AA1
+  real(DP), dimension(4), intent(IN) :: AA1
 
   ! Diagonal elements of the local system matrix A22
-  REAL(DP), DIMENSION(4), INTENT(IN) :: AA2
+  real(DP), dimension(4), intent(IN) :: AA2
   
   ! Entries in the submatrix B1.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: BB1
+  real(DP), dimension(4), intent(IN) :: BB1
 
   ! Entries in the submatrix B2.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: BB2
+  real(DP), dimension(4), intent(IN) :: BB2
   
   ! Entries in the submatrix D1.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: DD1
+  real(DP), dimension(4), intent(IN) :: DD1
 
   ! Entries in the submatrix D2.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: DD2
+  real(DP), dimension(4), intent(IN) :: DD2
   
   ! Entry in the submatrix I (usually =0).
   ! This is the matrix in the diagonal block of the pressure, which is usually
   ! zero in saddle point problems.
-  REAL(DP), INTENT(IN) :: di
+  real(DP), intent(IN) :: di
   
   ! Local RHS vector; FF(1..4)=X-velocity, FF(5..8)=Y-velocity,
   ! FF(9)=pressure.
-  REAL(DP), DIMENSION(9), INTENT(IN) :: FF
+  real(DP), dimension(9), intent(IN) :: FF
 !</input>
 
 !<output>
   ! Update vector u with Cu=FF. UU(1..4)=X-velocity, UU(5..8)=Y-velocity,
   ! UU(9)=pressure.
-  REAL(DP), DIMENSION(9), INTENT(OUT) :: UU
+  real(DP), dimension(9), intent(OUT) :: UU
 !</output>
 
 !</subroutine>
 
     ! local variables
 
-    INTEGER :: inode
-    REAL(DP) :: PP,dpres
-    REAL(DP), DIMENSION(9) :: AI1,AI2,dff
+    integer :: inode
+    real(DP) :: PP,dpres
+    real(DP), dimension(9) :: AI1,AI2,dff
     
-    INTEGER, PARAMETER :: lofsv = 4
-    INTEGER, PARAMETER :: lofsp = 8
+    integer, parameter :: lofsv = 4
+    integer, parameter :: lofsp = 8
 
     ! This routine uses a Schur-complement approach to solve the
     ! system Cu=FF with
@@ -3712,27 +3712,27 @@ CONTAINS
     !
     ! Here it goes...
 
-    DO inode=1,4
+    do inode=1,4
     
       ! Quick check if everything is ok - we don't want to divide by 0.
-      IF (AA1(inode)*AA1(inode) .LT. 1E-20_DP) THEN
+      if (AA1(inode)*AA1(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
-        RETURN
-      END IF
+        return
+      end if
 
-      IF (AA2(inode)*AA2(inode) .LT. 1E-20_DP) THEN
+      if (AA2(inode)*AA2(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
-        RETURN
-      END IF
+        return
+      end if
 
       ! AI(.) saves the diagonal matrix S^-1:
     
       AI1(inode)=1E0_DP/AA1(inode)
       AI2(inode)=1E0_DP/AA2(inode)
         
-    END DO
+    end do
 
     ! Factorization loop
     !
@@ -3758,14 +3758,14 @@ CONTAINS
     dpres = di
     dff = FF
       
-    DO inode = 1,4
+    do inode = 1,4
       dpres        = dpres &
                    - AI1(inode)*DD1(inode)*BB1(inode) &
                    - AI2(inode)*DD2(inode)*BB2(inode)
       dff(1+lofsp) = dff(1+lofsp) &
                    - AI1(inode)*DD1(inode)*dff(inode) &
                    - AI2(inode)*DD2(inode)*dff(inode+lofsv)
-    END DO
+    end do
 
     ! Solution "loop"
     !
@@ -3773,11 +3773,11 @@ CONTAINS
     ! nodes, which implies B=0 and thus leads to DP=0!
     ! (Happens inside of fictitious boundary objects e.g.)
 
-    IF (dpres*dpres .LT. 1E-20_DP)  THEN
+    if (dpres*dpres .lt. 1E-20_DP)  then
       ! Set the update vector to 0, cancel.
       UU = 0.0_DP
-      RETURN
-    ENDIF
+      return
+    endif
       
     ! At first we calculate the pressure on element IEL,
     ! which is simply given by multiplying FFP with the
@@ -3793,12 +3793,12 @@ CONTAINS
     !
     ! locally on the current cell:
       
-    DO inode=1,4
+    do inode=1,4
       UU(inode)       = AI1(inode)*(dff(inode)-BB1(inode)*PP)
       UU(inode+lofsv) = AI2(inode)*(dff(inode+lofsv)-BB2(inode)*PP)
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! 2D Navier-Stokes VANKA, simple diagonal version for fully coupled
@@ -3819,7 +3819,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DSPQ1TQ0simpleCoupConf (rvanka, rvector, rrhs, domega,IelementList)
+  subroutine vanka_2DSPQ1TQ0simpleCoupConf (rvanka, rvector, rrhs, domega,IelementList)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -3838,57 +3838,57 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12,p_KdiagonalA12
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA,p_DA12,p_DA21,p_DA22
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12,p_KdiagonalA12
+    real(DP), dimension(:), pointer             :: p_DA,p_DA12,p_DA21,p_DA22
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,j
-    INTEGER, PARAMETER :: lofsv = 4
-    INTEGER, PARAMETER :: lofsp = 8
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer :: ia1,ia2,ib1,ib2,ia,ib,j
+    integer, parameter :: lofsv = 4
+    integer, parameter :: lofsp = 8
+    real(DP) :: daux
     
     ! Local arrays for informations about one element
-    REAL(DP), DIMENSION(2*4) :: AA,BB1,BB2,DD1,DD2
-    REAL(DP), DIMENSION(9) :: FF,UU
-    INTEGER(PREC_VECIDX), DIMENSION(4) :: idofGlobal
+    real(DP), dimension(2*4) :: AA,BB1,BB2,DD1,DD2
+    real(DP), dimension(9) :: FF,UU
+    integer(PREC_VECIDX), dimension(4) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -3917,10 +3917,10 @@ CONTAINS
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -3988,7 +3988,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements in the list
 
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -4007,7 +4007,7 @@ CONTAINS
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
 
       ! Loop over all 4 U-nodes of that element.
-      DO inode=1,4
+      do inode=1,4
       
         ! Set idof to the DOF that belongs to our edge inode:
         idof = p_IedgesAtElement(inode,iel)
@@ -4095,32 +4095,32 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           FF(inode)       = FF(inode)      -p_DA(ia)*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DA22(ia)*p_Dvector(J+ioffsetv)
-        END DO
+        end do
         
         ! Tackle 'offdiagonal' matrices A12 and A21
         
         ia1 = p_KldA12(idof)
         ia2 = p_KldA12(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA12(ia)
           FF(inode)       = FF(inode)      -p_DA12(ia)*p_Dvector(J+ioffsetv)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DA21(ia)*p_Dvector(J)
-        END DO
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
-        END DO
+        end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
         ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -4142,8 +4142,8 @@ CONTAINS
         ! Either two (if the velocity DOF is an edge with two neighbouring
         ! elements) or one (if the velocity DOF is at an edge on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+        do ib = ib1,ib2
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
           
@@ -4168,11 +4168,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -4210,31 +4210,31 @@ CONTAINS
       ! y := C^{-1} d~ by applying a Schur complement approach. For this purpose,
       ! call the element update routine that calculates the update vector y.
       
-      CALL vanka_getcorr_2DSPQ1TQ0CPsimple (UU,FF,AA,BB1,BB2,DD1,DD2)
+      call vanka_getcorr_2DSPQ1TQ0CPsimple (UU,FF,AA,BB1,BB2,DD1,DD2)
     
       ! Ok, we got the update vector UU. Incorporate this now into our
       ! solution vector with the update formula
       !
       !  x_{n+1} = x_n + domega * y!
       
-      DO inode=1,4
+      do inode=1,4
         p_Dvector(idofGlobal(inode)) &
           = p_Dvector(idofGlobal(inode)) + domega * UU(inode)
         p_Dvector(idofGlobal(inode)+ioffsetv) &
           = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * UU(inode+lofsv)
-      END DO
+      end do
       
       p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + domega * UU(1+lofsp)
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE vanka_getcorr_2DSPQ1TQ0CPsimple (UU,FF,AA,BB1,BB2,DD1,DD2)
+  pure subroutine vanka_getcorr_2DSPQ1TQ0CPsimple (UU,FF,AA,BB1,BB2,DD1,DD2)
   
 !<description>
   ! This routine solves a 9x9 Jacobi-type Schur complement system for two 
@@ -4245,41 +4245,41 @@ CONTAINS
 
 !<input>
   ! Diagonal elements of the local system matrix. (Blocks A11 and A22)
-  REAL(DP), DIMENSION(2*4), INTENT(IN) :: AA
+  real(DP), dimension(2*4), intent(IN) :: AA
   
   ! Entries in the submatrix B1.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: BB1
+  real(DP), dimension(4), intent(IN) :: BB1
 
   ! Entries in the submatrix B2.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: BB2
+  real(DP), dimension(4), intent(IN) :: BB2
   
   ! Entries in the submatrix D1.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: DD1
+  real(DP), dimension(4), intent(IN) :: DD1
 
   ! Entries in the submatrix D2.
-  REAL(DP), DIMENSION(4), INTENT(IN) :: DD2
+  real(DP), dimension(4), intent(IN) :: DD2
 
   ! Local RHS vector; FF(1..4)=X-velocity, FF(5..8)=Y-velocity,
   ! FF(9)=pressure.
-  REAL(DP), DIMENSION(9), INTENT(IN) :: FF
+  real(DP), dimension(9), intent(IN) :: FF
 !</input>
 
 !<output>
   ! Update vector u with Cu=FF. UU(1..4)=X-velocity, UU(5..8)=Y-velocity,
   ! UU(9)=pressure.
-  REAL(DP), DIMENSION(9), INTENT(OUT) :: UU
+  real(DP), dimension(9), intent(OUT) :: UU
 !</output>
 
 !</subroutine>
 
     ! local variables
 
-    INTEGER :: inode
-    REAL(DP) :: PP,dpres
-    REAL(DP), DIMENSION(9) :: AI,dff
+    integer :: inode
+    real(DP) :: PP,dpres
+    real(DP), dimension(9) :: AI,dff
     
-    INTEGER, PARAMETER :: lofsv = 4
-    INTEGER, PARAMETER :: lofsp = 8
+    integer, parameter :: lofsv = 4
+    integer, parameter :: lofsp = 8
 
     ! This routine uses a Schur-complement approach to solve the
     ! system Cu=FF with
@@ -4332,20 +4332,20 @@ CONTAINS
     !
     ! Here it goes...
 
-    DO inode=1,8
+    do inode=1,8
     
       ! Quick check if everything is ok - we don't want to divide by 0.
-      IF (AA(inode)*AA(inode) .LT. 1E-20_DP) THEN
+      if (AA(inode)*AA(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
-        RETURN
-      END IF
+        return
+      end if
 
       ! AI(.) saves the diagonal matrix S^-1:
     
       AI(inode)=1E0_DP/AA(inode)
         
-    END DO
+    end do
 
     ! Factorization loop
     !
@@ -4371,14 +4371,14 @@ CONTAINS
     dpres = 0.0_DP
     dff = FF
       
-    DO inode = 1,4
+    do inode = 1,4
       dpres        = dpres &
                    - AI(inode)  *(DD1(inode)*BB1(inode)) &
                    - AI(inode+4)*(DD2(inode)*BB2(inode))
       dff(1+lofsp) = dff(1+lofsp) &
                    - AI(inode)  *(DD1(inode)*dff(inode)) &
                    - AI(inode+4)*(DD2(inode)*dff(inode+lofsv))
-    END DO
+    end do
 
     ! Solution "loop"
     !
@@ -4386,11 +4386,11 @@ CONTAINS
     ! nodes, which implies B=0 and thus leads to DP=0!
     ! (Happens inside of fictitious boundary objects e.g.)
 
-    IF (dpres*dpres .LT. 1E-20_DP)  THEN
+    if (dpres*dpres .lt. 1E-20_DP)  then
       ! Set the update vector to 0, cancel.
       UU = 0.0_DP
-      RETURN
-    ENDIF
+      return
+    endif
       
     ! At first we calculate the pressure on element IEL,
     ! which is simply given by multiplying FFP with the
@@ -4406,12 +4406,12 @@ CONTAINS
     !
     ! locally on the current cell:
       
-    DO inode=1,4
+    do inode=1,4
       UU(inode)       = AI(inode)*(dff(inode)-BB1(inode)*PP)
       UU(inode+lofsv) = AI(inode+4)*(dff(inode+lofsv)-BB2(inode)*PP)
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! 2D Navier-Stokes VANKA, 'full' version.
@@ -4431,7 +4431,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DSPQ1TQ0fullConf (rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_2DSPQ1TQ0fullConf (rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised full local system VANKA algorithm for
@@ -4449,61 +4449,61 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    INTEGER, PARAMETER :: nnvel = 4      ! Q1T = 4 DOF's per velocity
-    INTEGER, PARAMETER :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
-    INTEGER, PARAMETER :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
-    REAL(DP), DIMENSION(nnld,nnld) :: AA
-    REAL(DP), DIMENSION(nnld) :: FF
+    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    real(DP), dimension(nnld,nnld) :: AA
+    real(DP), dimension(nnld) :: FF
     
     ! LAPACK temporary space
-    INTEGER :: Ipiv(nnld),ilapackInfo
+    integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,k
-    INTEGER, PARAMETER :: lofsv = nnvel
-    INTEGER, PARAMETER :: lofsp = 2*nnvel
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
+    integer :: ia1,ia2,ib1,ib2,ia,ib,k
+    integer, parameter :: lofsv = nnvel
+    integer, parameter :: lofsp = 2*nnvel
+    real(DP) :: daux
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -4521,10 +4521,10 @@ CONTAINS
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -4592,7 +4592,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements in the list
 
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -4621,7 +4621,7 @@ CONTAINS
       IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
-      DO inode=1,nnvel
+      do inode=1,nnvel
       
         ! Get the DOF we have to tackle:
         idof = IdofGlobal(inode)
@@ -4702,7 +4702,7 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
@@ -4710,25 +4710,25 @@ CONTAINS
           
           ! Whereever we find a DOF that couples to another DOF on the 
           ! same element, we put that to both A-blocks of our local matrix.
-          DO k=1,nnvel
-            IF (j .EQ. IdofGlobal(k)) THEN
+          do k=1,nnvel
+            if (j .eq. IdofGlobal(k)) then
               AA (inode,k) = daux
               AA (inode+nnvel,k+nnvel) = daux
-              EXIT
-            END IF
-          END DO          
-        END DO
+              exit
+            end if
+          end do          
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
-        END DO
+        end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
         ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -4750,8 +4750,8 @@ CONTAINS
         ! Either two (if the velocity DOF is an edge with two neighbouring
         ! elements) or one (if the velocity DOF is at an edge on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+        do ib = ib1,ib2
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
             
@@ -4776,11 +4776,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -4820,38 +4820,38 @@ CONTAINS
       !CALL DGETRS('N', nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo )
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
-      CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
       
-      IF (ilapackInfo .EQ. 0) THEN
+      if (ilapackInfo .eq. 0) then
       
         ! Ok, we got the update vector in FF. Incorporate this now into our
         ! solution vector with the update formula
         !
         !  x_{n+1} = x_n + domega * y!
         
-        DO inode=1,nnvel
+        do inode=1,nnvel
           p_Dvector(idofGlobal(inode)) &
             = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
           p_Dvector(idofGlobal(inode)+ioffsetv) &
             = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-        END DO
+        end do
         
         p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                   domega * FF(1+lofsp)
-      ELSE IF (ilapackInfo .LT. 0) THEN
+      else if (ilapackInfo .lt. 0) then
 
-        CALL output_line (&
+        call output_line (&
             'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DSPQ1TQ0fullConf')
 
-      END IF
+      end if
       ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
       ! coarse grid with all boundaries = Dirichlet.
       ! In this case, nothing must be changed in the vector!
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! 2D Navier-Stokes VANKA, 'full' version for fully coupled systems.
@@ -4871,7 +4871,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DSPQ1TQ0fullCoupConf (rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_2DSPQ1TQ0fullCoupConf (rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised full local system VANKA algorithm for
@@ -4890,63 +4890,63 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA,p_DA12,p_DA21,p_DA22
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12,p_KdiagonalA12
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA,p_DA12,p_DA21,p_DA22
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12,p_KdiagonalA12
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    INTEGER, PARAMETER :: nnvel = 4      ! Q1T = 4 DOF's per velocity
-    INTEGER, PARAMETER :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
-    INTEGER, PARAMETER :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
-    REAL(DP), DIMENSION(nnld,nnld) :: AA
-    REAL(DP), DIMENSION(nnld) :: FF
+    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    real(DP), dimension(nnld,nnld) :: AA
+    real(DP), dimension(nnld) :: FF
     
     ! LAPACK temporary space
-    INTEGER :: Ipiv(nnld),ilapackInfo
+    integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,k
-    INTEGER, PARAMETER :: lofsv = nnvel
-    INTEGER, PARAMETER :: lofsp = 2*nnvel
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
+    integer :: ia1,ia2,ib1,ib2,ia,ib,k
+    integer, parameter :: lofsv = nnvel
+    integer, parameter :: lofsp = 2*nnvel
+    real(DP) :: daux
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -4974,10 +4974,10 @@ CONTAINS
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -5045,7 +5045,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements in the list
 
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -5074,7 +5074,7 @@ CONTAINS
       IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
-      DO inode=1,nnvel
+      do inode=1,nnvel
       
         ! Get the DOF we have to tackle:
         idof = IdofGlobal(inode)
@@ -5156,52 +5156,52 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           FF(inode)       = FF(inode)      -p_DA(ia)*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DA22(ia)*p_Dvector(J+ioffsetv)
           
           ! Whereever we find a DOF that couples to another DOF on the 
           ! same element, we put that to both A-blocks of our local matrix.
-          DO k=1,nnvel
-            IF (j .EQ. IdofGlobal(k)) THEN
+          do k=1,nnvel
+            if (j .eq. IdofGlobal(k)) then
               AA (inode,k) = p_DA(ia)
               AA (inode+nnvel,k+nnvel) = p_DA22(ia)
-              EXIT
-            END IF
-          END DO          
-        END DO
+              exit
+            end if
+          end do          
+        end do
 
         ! Handle the 'off-diagonal' matrices A12 and A21
         
         ia1 = p_KldA12(idof)
         ia2 = p_KldA12(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA12(ia)
           FF(inode)       = FF(inode)      -p_DA12(ia)*p_Dvector(J+ioffsetv)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DA21(ia)*p_Dvector(J)
           
           ! Whereever we find a DOF that couples to another DOF on the 
           ! same element, we put that to both A-blocks of our local matrix.
-          DO k=1,nnvel
-            IF (j .EQ. IdofGlobal(k)) THEN
+          do k=1,nnvel
+            if (j .eq. IdofGlobal(k)) then
               AA (inode,k+nnvel) = p_DA12(ia)
               AA (inode+nnvel,k) = p_DA21(ia)
-              EXIT
-            END IF
-          END DO          
-        END DO
+              exit
+            end if
+          end do          
+        end do
                 
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
-        END DO
+        end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
         ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -5223,8 +5223,8 @@ CONTAINS
         ! Either two (if the velocity DOF is an edge with two neighbouring
         ! elements) or one (if the velocity DOF is at an edge on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+        do ib = ib1,ib2
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
             
@@ -5249,11 +5249,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -5293,40 +5293,40 @@ CONTAINS
       !CALL DGETRS('N', nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo )
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
-      CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
       
-      IF (ilapackInfo .EQ. 0) THEN
+      if (ilapackInfo .eq. 0) then
       
         ! Ok, we got the update vector in FF. Incorporate this now into our
         ! solution vector with the update formula
         !
         !  x_{n+1} = x_n + domega * y!
         
-        DO inode=1,nnvel
+        do inode=1,nnvel
           p_Dvector(idofGlobal(inode)) &
             = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
           p_Dvector(idofGlobal(inode)+ioffsetv) &
             = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-        END DO
+        end do
         
         p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                   domega * FF(1+lofsp)
                                  
-      ELSE IF (ilapackInfo .LT. 0) THEN
+      else if (ilapackInfo .lt. 0) then
       
-        CALL output_line (&
+        call output_line (&
             'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DSPQ1TQ0fullCoupConf')
         
-      END IF
+      end if
 
       ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
       ! coarse grid with all boundaries = Dirichlet.
       ! In this case, nothing must be changed in the vector!
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! 2D Navier-Stokes VANKA, simple diagonal and full version.
@@ -5346,7 +5346,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DSPQ2QP1simple (rvanka, rvector, rrhs, domega)
+  subroutine vanka_2DSPQ2QP1simple (rvanka, rvector, rrhs, domega)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -5359,61 +5359,61 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
-    INTEGER(PREC_EDGEIDX)    :: NMT
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_VERTEXIDX)   :: NVT
+    integer(PREC_EDGEIDX)    :: NMT
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    INTEGER, PARAMETER :: nnvel = 9      ! Q2 = 9 DOF's per velocity
-    INTEGER, PARAMETER :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
-    INTEGER, PARAMETER :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
-    REAL(DP), DIMENSION(nnld,nnld) :: AA
-    REAL(DP), DIMENSION(nnld) :: FF
+    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
+    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    real(DP), dimension(nnld,nnld) :: AA
+    real(DP), dimension(nnld) :: FF
     
     ! LAPACK temporary space
-    INTEGER :: Ipiv(nnld),ilapackInfo
+    integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,j,isubdof
-    INTEGER, PARAMETER :: lofsv = nnvel
-    INTEGER, PARAMETER :: lofsp = 2*nnvel
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer :: ia1,ia2,ib1,ib2,ia,ib,j,isubdof
+    integer, parameter :: lofsv = nnvel
+    integer, parameter :: lofsp = 2*nnvel
+    real(DP) :: daux
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -5433,12 +5433,12 @@ CONTAINS
     NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
     NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -5506,7 +5506,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements
 
-    DO iel=1,NEL
+    do iel=1,NEL
     
       ! Clear the 'local system matrix'.
       AA(:,:) = 0.0_DP
@@ -5536,7 +5536,7 @@ CONTAINS
       IdofGlobal(9)   = NVT+NMT+iel
 
       ! Loop over all 9 U-nodes of that element.
-      DO inode=1,nnvel
+      do inode=1,nnvel
       
         ! Get the DOF we have to tackle:
         idof = IdofGlobal(inode)
@@ -5635,23 +5635,23 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
-        END DO
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
-        END DO
+        end do
         
         ! In the next loop we have to determine the local B1, B2, D1 and D2.
         ! We have to find in the B-matrices the column that corresponds
@@ -5679,19 +5679,19 @@ CONTAINS
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
         
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
         
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+          if (p_KcolB(ib) .eq. IEL) then
             isubdof = 1
-          ELSE IF (p_KcolB(ib) .EQ. IEL+NEL) THEN
+          else if (p_KcolB(ib) .eq. IEL+NEL) then
             isubdof = 2
-          ELSE IF (p_KcolB(ib) .EQ. IEL+NEL*2) THEN
+          else if (p_KcolB(ib) .eq. IEL+NEL*2) then
             isubdof = 3
-          ELSE
+          else
             ! Cycle the loop - the entry belongs to another 
             ! element, not to the current one
-            CYCLE
-          END IF
+            cycle
+          end if
           
           J = p_KcolB(ib)
           
@@ -5713,9 +5713,9 @@ CONTAINS
           FF(isubdof+lofsp) = FF(isubdof+lofsp) &
                       - AA(2*nnvel+isubdof,inode)*p_Dvector(idof) &
                       - AA(2*nnvel+isubdof,inode+nnvel)*p_Dvector(idof+ioffsetv)
-        END DO ! ib
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -5755,21 +5755,21 @@ CONTAINS
       !CALL DGETRS('N', nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo )
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
-      CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
       
-      IF (ilapackInfo .EQ. 0) THEN
+      if (ilapackInfo .eq. 0) then
       
         ! Ok, we got the update vector in FF. Incorporate this now into our
         ! solution vector with the update formula
         !
         !  x_{n+1} = x_n + domega * y!
         
-        DO inode=1,nnvel
+        do inode=1,nnvel
           p_Dvector(idofGlobal(inode)) &
             = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
           p_Dvector(idofGlobal(inode)+ioffsetv) &
             = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-        END DO
+        end do
         
         p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                   domega * FF(1+lofsp)
@@ -5777,27 +5777,27 @@ CONTAINS
                                       domega * FF(2+lofsp)
         p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
                                         domega * FF(3+lofsp)
-      ELSE IF (ilapackInfo .LT. 0) THEN
+      else if (ilapackInfo .lt. 0) then
         
-        CALL output_line (&
+        call output_line (&
             'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DSPQ2QP1simple')
         
-      END IF
+      end if
 
       ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
       ! coarse grid with all boundaries = Dirichlet.
       ! In this case, nothing must be changed in the vector!
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DSPQ2QP1simpleConf (rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_2DSPQ2QP1simpleConf (rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -5815,64 +5815,64 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
-    INTEGER(PREC_EDGEIDX)    :: NMT
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_VERTEXIDX)   :: NVT
+    integer(PREC_EDGEIDX)    :: NMT
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    INTEGER, PARAMETER :: nnvel = 9      ! Q2 = 9 DOF's per velocity
-    INTEGER, PARAMETER :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
-    INTEGER, PARAMETER :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
-    REAL(DP), DIMENSION(nnld,nnld) :: AA
-    REAL(DP), DIMENSION(nnld) :: FF
+    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
+    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    real(DP), dimension(nnld,nnld) :: AA
+    real(DP), dimension(nnld) :: FF
     
     ! LAPACK temporary space
-    INTEGER :: Ipiv(nnld),ilapackInfo
+    integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,j,isubdof
-    INTEGER, PARAMETER :: lofsv = nnvel
-    INTEGER, PARAMETER :: lofsp = 2*nnvel
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer :: ia1,ia2,ib1,ib2,ia,ib,j,isubdof
+    integer, parameter :: lofsv = nnvel
+    integer, parameter :: lofsp = 2*nnvel
+    real(DP) :: daux
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -5892,12 +5892,12 @@ CONTAINS
     NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
     NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -5965,7 +5965,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements in the list
 
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -5998,7 +5998,7 @@ CONTAINS
       IdofGlobal(9)   = NVT+NMT+iel
 
       ! Loop over all 9 U-nodes of that element.
-      DO inode=1,nnvel
+      do inode=1,nnvel
       
         ! Get the DOF we have to tackle:
         idof = IdofGlobal(inode)
@@ -6097,23 +6097,23 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
-        END DO
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
-        END DO
+        end do
         
         ! In the next loop we have to determine the local B1, B2, D1 and D2.
         ! We have to find in the B-matrices the column that corresponds
@@ -6141,19 +6141,19 @@ CONTAINS
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
         
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
         
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+          if (p_KcolB(ib) .eq. IEL) then
             isubdof = 1
-          ELSE IF (p_KcolB(ib) .EQ. IEL+NEL) THEN
+          else if (p_KcolB(ib) .eq. IEL+NEL) then
             isubdof = 2
-          ELSE IF (p_KcolB(ib) .EQ. IEL+NEL*2) THEN
+          else if (p_KcolB(ib) .eq. IEL+NEL*2) then
             isubdof = 3
-          ELSE
+          else
             ! Cycle the loop - the entry belongs to another 
             ! element, not to the current one
-            CYCLE
-          END IF
+            cycle
+          end if
           
           J = p_KcolB(ib)
           
@@ -6175,9 +6175,9 @@ CONTAINS
           FF(isubdof+lofsp) = FF(isubdof+lofsp) &
                       - AA(2*nnvel+isubdof,inode)*p_Dvector(idof) &
                       - AA(2*nnvel+isubdof,inode+nnvel)*p_Dvector(idof+ioffsetv)
-        END DO ! ib
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -6217,21 +6217,21 @@ CONTAINS
       !CALL DGETRS('N', nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo )
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
-      CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
       
-      IF (ilapackInfo .EQ. 0) THEN
+      if (ilapackInfo .eq. 0) then
       
         ! Ok, we got the update vector in FF. Incorporate this now into our
         ! solution vector with the update formula
         !
         !  x_{n+1} = x_n + domega * y!
         
-        DO inode=1,nnvel
+        do inode=1,nnvel
           p_Dvector(idofGlobal(inode)) &
             = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
           p_Dvector(idofGlobal(inode)+ioffsetv) &
             = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-        END DO
+        end do
         
         p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                   domega * FF(1+lofsp)
@@ -6240,27 +6240,27 @@ CONTAINS
         p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
                                         domega * FF(3+lofsp)
                                         
-      ELSE IF (ilapackInfo .LT. 0) THEN
+      else if (ilapackInfo .lt. 0) then
         
-        CALL output_line (&
+        call output_line (&
             'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DSPQ2QP1simpleConf')
         
-      END IF
+      end if
 
       ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
       ! coarse grid with all boundaries = Dirichlet.
       ! In this case, nothing must be changed in the vector!
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DSPQ2QP1full (rvanka, rvector, rrhs, domega)
+  subroutine vanka_2DSPQ2QP1full (rvanka, rvector, rrhs, domega)
   
 !<description>
   ! This routine applies the specialised full local system VANKA algorithm for
@@ -6273,61 +6273,61 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
-    INTEGER(PREC_EDGEIDX)    :: NMT
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_VERTEXIDX)   :: NVT
+    integer(PREC_EDGEIDX)    :: NMT
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    INTEGER, PARAMETER :: nnvel = 9      ! Q2 = 9 DOF's per velocity
-    INTEGER, PARAMETER :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
-    INTEGER, PARAMETER :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
-    REAL(DP), DIMENSION(nnld,nnld) :: AA
-    REAL(DP), DIMENSION(nnld) :: FF
+    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
+    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    real(DP), dimension(nnld,nnld) :: AA
+    real(DP), dimension(nnld) :: FF
     
     ! LAPACK temporary space
-    INTEGER :: Ipiv(nnld),ilapackInfo
+    integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,isubdof,k
-    INTEGER, PARAMETER :: lofsv = nnvel
-    INTEGER, PARAMETER :: lofsp = 2*nnvel
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
+    integer :: ia1,ia2,ib1,ib2,ia,ib,isubdof,k
+    integer, parameter :: lofsv = nnvel
+    integer, parameter :: lofsp = 2*nnvel
+    real(DP) :: daux
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -6347,12 +6347,12 @@ CONTAINS
     NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
     NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -6420,7 +6420,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements
 
-    DO iel=1,NEL
+    do iel=1,NEL
     
       ! Clear the 'local system matrix'.
       AA(:,:) = 0.0_DP
@@ -6450,7 +6450,7 @@ CONTAINS
       IdofGlobal(9)   = NVT+NMT+iel
 
       ! Loop over all 9 U-nodes of that element.
-      DO inode=1,nnvel
+      do inode=1,nnvel
       
         ! Get the DOF we have to tackle:
         idof = IdofGlobal(inode)
@@ -6544,7 +6544,7 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
@@ -6552,25 +6552,25 @@ CONTAINS
           
           ! Whereever we find a DOF that couples to another DOF on the 
           ! same element, we put that to both A-blocks of our local matrix.
-          DO k=1,nnvel
-            IF (j .EQ. IdofGlobal(k)) THEN
+          do k=1,nnvel
+            if (j .eq. IdofGlobal(k)) then
               AA (inode,k) = daux
               AA (inode+nnvel,k+nnvel) = daux
-              EXIT
-            END IF
-          END DO          
-        END DO
+              exit
+            end if
+          end do          
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
-        END DO
+        end do
         
         ! In the next loop we have to determine the local B1, B2, D1 and D2.
         ! We have to find in the B-matrices the column that corresponds
@@ -6598,19 +6598,19 @@ CONTAINS
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
         
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
         
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+          if (p_KcolB(ib) .eq. IEL) then
             isubdof = 1
-          ELSE IF (p_KcolB(ib) .EQ. IEL+NEL) THEN
+          else if (p_KcolB(ib) .eq. IEL+NEL) then
             isubdof = 2
-          ELSE IF (p_KcolB(ib) .EQ. IEL+NEL*2) THEN
+          else if (p_KcolB(ib) .eq. IEL+NEL*2) then
             isubdof = 3
-          ELSE
+          else
             ! Cycle the loop - the entry belongs to another 
             ! element, not to the current one
-            CYCLE
-          END IF
+            cycle
+          end if
           
           J = p_KcolB(ib)
           
@@ -6632,9 +6632,9 @@ CONTAINS
           FF(isubdof+lofsp) = FF(isubdof+lofsp) &
                       - AA(2*nnvel+isubdof,inode)*p_Dvector(idof) &
                       - AA(2*nnvel+isubdof,inode+nnvel)*p_Dvector(idof+ioffsetv)
-        END DO ! ib
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -6674,21 +6674,21 @@ CONTAINS
       !CALL DGETRS('N', nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo )
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
-      CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
 
-      IF (ilapackInfo .EQ. 0) THEN
+      if (ilapackInfo .eq. 0) then
       
         ! Ok, we got the update vector in FF. Incorporate this now into our
         ! solution vector with the update formula
         !
         !  x_{n+1} = x_n + domega * y!
         
-        DO inode=1,nnvel
+        do inode=1,nnvel
           p_Dvector(idofGlobal(inode)) &
             = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
           p_Dvector(idofGlobal(inode)+ioffsetv) &
             = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-        END DO
+        end do
         
         p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                   domega * FF(1+lofsp)
@@ -6696,27 +6696,27 @@ CONTAINS
                                       domega * FF(2+lofsp)
         p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
                                         domega * FF(3+lofsp)
-      ELSE IF (ilapackInfo .LT. 0) THEN
+      else if (ilapackInfo .lt. 0) then
         
-        CALL output_line (&
+        call output_line (&
             'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DSPQ2QP1full')
         
-      END IF
+      end if
 
       ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
       ! coarse grid with all boundaries = Dirichlet.
       ! In this case, nothing must be changed in the vector!
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DSPQ2QP1fullConf (rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_2DSPQ2QP1fullConf (rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised full local system VANKA algorithm for
@@ -6734,64 +6734,64 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_VERTEXIDX)   :: NVT
-    INTEGER(PREC_EDGEIDX)    :: NMT
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_VERTEXIDX)   :: NVT
+    integer(PREC_EDGEIDX)    :: NMT
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    INTEGER, PARAMETER :: nnvel = 9      ! Q2 = 9 DOF's per velocity
-    INTEGER, PARAMETER :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
-    INTEGER, PARAMETER :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
-    REAL(DP), DIMENSION(nnld,nnld) :: AA
-    REAL(DP), DIMENSION(nnld) :: FF
+    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
+    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    real(DP), dimension(nnld,nnld) :: AA
+    real(DP), dimension(nnld) :: FF
     
     ! LAPACK temporary space
-    INTEGER :: Ipiv(nnld),ilapackInfo
+    integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,isubdof,k
-    INTEGER, PARAMETER :: lofsv = nnvel
-    INTEGER, PARAMETER :: lofsp = 2*nnvel
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
+    integer :: ia1,ia2,ib1,ib2,ia,ib,isubdof,k
+    integer, parameter :: lofsv = nnvel
+    integer, parameter :: lofsp = 2*nnvel
+    real(DP) :: daux
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -6811,12 +6811,12 @@ CONTAINS
     NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
     NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -6884,7 +6884,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements in the list
 
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -6917,7 +6917,7 @@ CONTAINS
       IdofGlobal(9)   = NVT+NMT+iel
 
       ! Loop over all 9 U-nodes of that element.
-      DO inode=1,nnvel
+      do inode=1,nnvel
       
         ! Get the DOF we have to tackle:
         idof = IdofGlobal(inode)
@@ -7011,7 +7011,7 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
@@ -7019,25 +7019,25 @@ CONTAINS
           
           ! Whereever we find a DOF that couples to another DOF on the 
           ! same element, we put that to both A-blocks of our local matrix.
-          DO k=1,nnvel
-            IF (j .EQ. IdofGlobal(k)) THEN
+          do k=1,nnvel
+            if (j .eq. IdofGlobal(k)) then
               AA (inode,k) = daux
               AA (inode+nnvel,k+nnvel) = daux
-              EXIT
-            END IF
-          END DO          
-        END DO
+              exit
+            end if
+          end do          
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
-        END DO
+        end do
         
         ! In the next loop we have to determine the local B1, B2, D1 and D2.
         ! We have to find in the B-matrices the column that corresponds
@@ -7065,19 +7065,19 @@ CONTAINS
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
         
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
         
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+          if (p_KcolB(ib) .eq. IEL) then
             isubdof = 1
-          ELSE IF (p_KcolB(ib) .EQ. IEL+NEL) THEN
+          else if (p_KcolB(ib) .eq. IEL+NEL) then
             isubdof = 2
-          ELSE IF (p_KcolB(ib) .EQ. IEL+NEL*2) THEN
+          else if (p_KcolB(ib) .eq. IEL+NEL*2) then
             isubdof = 3
-          ELSE
+          else
             ! Cycle the loop - the entry belongs to another 
             ! element, not to the current one
-            CYCLE
-          END IF
+            cycle
+          end if
           
           J = p_KcolB(ib)
           
@@ -7099,9 +7099,9 @@ CONTAINS
           FF(isubdof+lofsp) = FF(isubdof+lofsp) &
                       - AA(2*nnvel+isubdof,inode)*p_Dvector(idof) &
                       - AA(2*nnvel+isubdof,inode+nnvel)*p_Dvector(idof+ioffsetv)
-        END DO ! ib
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -7141,21 +7141,21 @@ CONTAINS
       !CALL DGETRS('N', nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo )
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
-      CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
       
-      IF (ilapackInfo .EQ. 0) THEN
+      if (ilapackInfo .eq. 0) then
       
         ! Ok, we got the update vector in FF. Incorporate this now into our
         ! solution vector with the update formula
         !
         !  x_{n+1} = x_n + domega * y!
         
-        DO inode=1,nnvel
+        do inode=1,nnvel
           p_Dvector(idofGlobal(inode)) &
             = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
           p_Dvector(idofGlobal(inode)+ioffsetv) &
             = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-        END DO
+        end do
         
         p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                   domega * FF(1+lofsp)
@@ -7163,21 +7163,21 @@ CONTAINS
                                       domega * FF(2+lofsp)
         p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
                                         domega * FF(3+lofsp)
-      ELSE IF (ilapackInfo .LT. 0) THEN
+      else if (ilapackInfo .lt. 0) then
         
-        CALL output_line (&
+        call output_line (&
             'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DSPQ2QP1fullConf')
         
-      END IF
+      end if
 
       ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
       ! coarse grid with all boundaries = Dirichlet.
       ! In this case, nothing must be changed in the vector!
 
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! 2D VANKA, 'full' version for fully coupled Navier-Stokes.
@@ -7203,7 +7203,7 @@ CONTAINS
 
 !<subroutine>
              
-  SUBROUTINE vanka_2DNSQ1TQ0fullCoupConfExt (rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_2DNSQ1TQ0fullCoupConfExt (rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised full local system VANKA algorithm for
@@ -7221,69 +7221,69 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA11
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA11
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA11,p_DA12,p_DA21,p_DA22
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
-    REAL(DP), DIMENSION(:), POINTER             :: p_Da33
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA33
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA11
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA11
+    real(DP), dimension(:), pointer             :: p_DA11,p_DA12,p_DA21,p_DA22
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer             :: p_Da33
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    INTEGER, PARAMETER :: nnvel = 4      ! Q1T = 4 DOF's per velocity
-    INTEGER, PARAMETER :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
-    INTEGER, PARAMETER :: nnld = 2*nnvel + nnpressure
-    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
-    REAL(DP), DIMENSION(nnld,nnld) :: AA
-    REAL(DP), DIMENSION(nnld) :: FF
+    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
+    integer, parameter :: nnld = 2*nnvel + nnpressure
+    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    real(DP), dimension(nnld,nnld) :: AA
+    real(DP), dimension(nnld) :: FF
     
     ! Offsets of the 'local' solution parts in the 'local' solution vector
-    INTEGER, PARAMETER :: lofsu = 0
-    INTEGER, PARAMETER :: lofsv = nnvel
-    INTEGER, PARAMETER :: lofsp = 2*nnvel
+    integer, parameter :: lofsu = 0
+    integer, parameter :: lofsv = nnvel
+    integer, parameter :: lofsp = 2*nnvel
     
     ! LAPACK temporary space
-    INTEGER :: Ipiv(nnld),ilapackInfo
+    integer :: Ipiv(nnld),ilapackInfo
     
     ! Offset information in arrays.
-    INTEGER(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
+    integer(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
     
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,k
-    REAL(DP) :: daux
+    integer :: ia1,ia2,ib1,ib2,ia,ib,k
+    real(DP) :: daux
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -7293,22 +7293,22 @@ CONTAINS
     p_KldA11 => rvanka%p_KldA
     p_DA11 => rvanka%p_DA
     p_DA22 => rvanka%p_DA22
-    IF (.NOT. ASSOCIATED(p_DA22)) p_DA22 => p_DA11
+    if (.not. associated(p_DA22)) p_DA22 => p_DA11
 
     ! Structure of A12 is assumed to be the same as A21.
     ! Get A12 and A21 -- except for if the multipliers are =0, then
     ! we switch them off by nullifying the pointers.
-    IF (rvanka%Dmultipliers(1,2) .NE. 0.0_DP) THEN
+    if (rvanka%Dmultipliers(1,2) .ne. 0.0_DP) then
       p_KcolA12 => rvanka%p_KcolA12
       p_KldA12 => rvanka%p_KldA12
       p_DA12 => rvanka%p_DA12
       p_DA21 => rvanka%p_DA21
-    ELSE
-      NULLIFY(p_KcolA12)
-      NULLIFY(p_KldA12) 
-      NULLIFY(p_DA12 )
-      NULLIFY(p_DA21 )
-    END IF
+    else
+      nullify(p_KcolA12)
+      nullify(p_KldA12) 
+      nullify(p_DA12 )
+      nullify(p_DA21 )
+    end if
     
     p_KcolB => rvanka%p_KcolB
     p_KldB => rvanka%p_KldB
@@ -7318,20 +7318,20 @@ CONTAINS
     p_DD2 => rvanka%p_DD2
     
     ! Diagonal submatrices A33 and A66 (if they exist)
-    IF (rvanka%Dmultipliers(3,3) .NE. 0.0_DP) THEN
+    if (rvanka%Dmultipliers(3,3) .ne. 0.0_DP) then
       p_Da33 => rvanka%p_DA33
       p_KdiagonalA33 => rvanka%p_KdiagonalA33
-    ELSE
-      NULLIFY(p_Da33)
-      NULLIFY(p_KdiagonalA33)
-    END IF
+    else
+      nullify(p_Da33)
+      nullify(p_KdiagonalA33)
+    end if
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetu = 0
@@ -7400,7 +7400,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements in the list
 
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -7430,7 +7430,7 @@ CONTAINS
       IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
-      DO inode=1,nnvel
+      do inode=1,nnvel
       
         ! Get the DOF we have to tackle:
         idof = IdofGlobal(inode)
@@ -7508,7 +7508,7 @@ CONTAINS
         
         ia1 = p_KldA11(idof)
         ia2 = p_KldA11(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           ! Calculate:
           !
           !   ( du  ) = ( du  ) - ( A11  .   .   ) ( u  )
@@ -7525,21 +7525,21 @@ CONTAINS
 
           ! Whereever we find a DOF that couples to another DOF on the 
           ! same element, we put that to both A-blocks of our local matrix.
-          DO k=1,nnvel
-            IF (j .EQ. IdofGlobal(k)) THEN
+          do k=1,nnvel
+            if (j .eq. IdofGlobal(k)) then
               AA (inode+lofsu,k+lofsu) = p_DA11(ia)*rvanka%Dmultipliers(1,1)
               AA (inode+lofsv,k+lofsv) = p_DA22(ia)*rvanka%Dmultipliers(2,2)
-              EXIT
-            END IF
-          END DO          
-        END DO
+              exit
+            end if
+          end do          
+        end do
 
         ! Handle the 'off-diagonal' matrices A12 and A21
         
-        IF (ASSOCIATED(p_KldA12)) THEN
+        if (associated(p_KldA12)) then
           ia1 = p_KldA12(idof)
           ia2 = p_KldA12(idof+1)-1
-          DO ia = ia1,ia2
+          do ia = ia1,ia2
             ! Calculate:
             !
             !   ( du  ) = ( du  ) - (  .  A12  .  ) ( u  )
@@ -7554,19 +7554,19 @@ CONTAINS
             
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
-            DO k=1,nnvel
-              IF (j .EQ. IdofGlobal(k)) THEN
+            do k=1,nnvel
+              if (j .eq. IdofGlobal(k)) then
                 AA (inode+lofsu,k+lofsv) = p_DA12(ia)*rvanka%Dmultipliers(1,2)
                 AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanka%Dmultipliers(2,1)
-                EXIT
-              END IF
-            END DO          
-          END DO
-        END IF
+                exit
+              end if
+            end do          
+          end do
+        end if
         
         ! Process A33 if it exists
                 
-        IF (ASSOCIATED(p_KdiagonalA33)) THEN
+        if (associated(p_KdiagonalA33)) then
 
           ! Calculate:
           !
@@ -7581,13 +7581,13 @@ CONTAINS
                       - daux*p_DA33(p_KdiagonalA33(IEL))*p_Dvector(IEL+ioffsetp)
           AA(1+lofsp,1+lofsp) = daux*p_DA33(p_KdiagonalA33(IEL))
 
-        END IF
+        end if
                 
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           ! Calculate:
           !
           !   ( du  ) = ( du  ) - (  .   .  B1   ) ( u  )
@@ -7601,7 +7601,7 @@ CONTAINS
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanka%Dmultipliers(2,3)
 
           ! Don't incorporate the B-matrices into AA yet; this will come later!
-        END DO
+        end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
         ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -7623,7 +7623,7 @@ CONTAINS
         ! Either two (if the velocity DOF is an edge with two neighbouring
         ! elements) or one (if the velocity DOF is at an edge on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
         
           ! Calculate:
           !
@@ -7637,7 +7637,7 @@ CONTAINS
           !   (  .   .  B2   ) 
           !   ( D1  D2   .   ) 
 
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
             
@@ -7663,11 +7663,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -7684,41 +7684,41 @@ CONTAINS
       ! solve the local system AA dd = FF for dd. The local defect dd is then
       ! added back to the global solution vector.
       
-      CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
       
-      IF (ilapackInfo .EQ. 0) THEN
+      if (ilapackInfo .eq. 0) then
         
         ! Ok, we got the update vector in FF. Incorporate this now into our
         ! solution vector with the update formula
         !
         !  x_{n+1} = x_n + domega * y
         
-        DO inode=1,nnvel
+        do inode=1,nnvel
           ! Update of the primal velocity vectors
           p_Dvector(idofGlobal(inode)+ioffsetu) &
             = p_Dvector(idofGlobal(inode)+ioffsetu) + domega * FF(inode+lofsu)
           p_Dvector(idofGlobal(inode)+ioffsetv) &
             = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-        END DO
+        end do
         
         p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                   domega * FF(1+lofsp)
       
-      ELSE IF (ilapackInfo .LT. 0) THEN
+      else if (ilapackInfo .lt. 0) then
         
-        CALL output_line (&
+        call output_line (&
             'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNSSQ1TQ0fullCoupConf')
         
-      END IF
+      end if
 
       ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
       ! coarse grid with all boundaries = Dirichlet.
       ! In this case, nothing must be changed in the vector!
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
 ! *****************************************************************************
 ! Problem class: VANKA for STEADY OPTIMAL CONTROL PROBLEMS
@@ -7726,7 +7726,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_init2DNavierStokesOptC (rmatrix,rvanka)
+  subroutine vanka_init2DNavierStokesOptC (rmatrix,rvanka)
   
 !<description>
   ! Initialises the VANKA variant for 2D Navier-Stokes problems 
@@ -7741,342 +7741,342 @@ CONTAINS
 
 !<input>
   ! The system matrix of the linear system.
-  TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
+  type(t_matrixBlock), intent(IN), target :: rmatrix
   !</input>
 
 !<inputoutput>
   ! t_vankaPointer2DSPNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vanka), INTENT(INOUT) :: rvanka
+  type(t_vanka), intent(INOUT) :: rvanka
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: i,j
-    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscr
+    integer :: i,j
+    type(t_blockDiscretisation), pointer :: p_rblockDiscr
     
     ! Matrix must be 6x6.
-    IF (rmatrix%ndiagBlocks .NE. 6) THEN
-      CALL output_line ('System matrix is not 6x6.',&
+    if (rmatrix%ndiagBlocks .ne. 6) then
+      call output_line ('System matrix is not 6x6.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! A(1:2,1:3), A(4:5,4:6) must not be virtually transposed and of format 9.
     ! A(3,:),A(6,:) must be (virtually) transposed. All matrices must be double precision.
-    DO i=1,6
-      DO j=1,6
+    do i=1,6
+      do j=1,6
       
-        IF (lsysbl_isSubmatrixPresent (rmatrix,i,j)) THEN
+        if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) then
         
-          IF ( ((i .GE. 1) .AND. (i .LE. 2)) .OR. &
-               ((i .GE. 4) .AND. (i .LE. 5)) ) THEN
-            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .NE. 0) THEN
-              CALL output_line ('Transposed submatrices not supported.',&
+          if ( ((i .ge. 1) .and. (i .le. 2)) .or. &
+               ((i .ge. 4) .and. (i .le. 5)) ) then
+            if (iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .ne. 0) then
+              call output_line ('Transposed submatrices not supported.',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-              CALL sys_halt()
-            END IF
-          ELSE
-            IF ((i .NE. j) .AND. &
-                (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                 .EQ. 0)) THEN
-              CALL output_line ('B1/B2 submatrices must be virtually',&
+              call sys_halt()
+            end if
+          else
+            if ((i .ne. j) .and. &
+                (iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                 .eq. 0)) then
+              call output_line ('B1/B2 submatrices must be virtually',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-              CALL output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
+              call output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-              CALL sys_halt()
-            END IF
-          END IF
+              call sys_halt()
+            end if
+          end if
           
-          IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
-            CALL output_line ('Only format 7 and 9 matrices supported.',&
+          if ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX7) .and. &
+              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX9)) then
+            call output_line ('Only format 7 and 9 matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
-          IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
-            CALL output_line ('Only double precision matrices supported.',&
+          if (rmatrix%RmatrixBlock(i,j)%cdataType .ne. ST_DOUBLE) then
+            call output_line ('Only double precision matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
-        END IF ! neq != 0
-      END DO
-    END DO
+        end if ! neq != 0
+      end do
+    end do
     
     ! The structure of A(1,3) must be identical to A(3,1) and
     ! that of A(2,3) must be identical to A(3,2).
-    IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(3,1)%NA) .OR. &
-        (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
-      CALL output_line ('Structure of B1 and B1^T different!',&
+    if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(3,1)%NA) .or. &
+        (rmatrix%RmatrixBlock(1,3)%NEQ .ne. rmatrix%RmatrixBlock(3,1)%NCOLS)) then
+      call output_line ('Structure of B1 and B1^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
-        (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
-      CALL output_line ('Structure of B2 and B2^T different!',&
+    if ((rmatrix%RmatrixBlock(2,3)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .or. &
+        (rmatrix%RmatrixBlock(2,3)%NEQ .ne. rmatrix%RmatrixBlock(3,2)%NCOLS)) then
+      call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF      
+      call sys_halt()
+    end if      
   
     ! The structure of A(4,6) must be identical to A(6,4) and
     ! that of A(5,6) must be identical to A(6,5).
-    IF ((rmatrix%RmatrixBlock(4,6)%NA .NE. rmatrix%RmatrixBlock(6,4)%NA) .OR. &
-        (rmatrix%RmatrixBlock(4,6)%NEQ .NE. rmatrix%RmatrixBlock(6,4)%NCOLS)) THEN
-      CALL output_line ('Structure of B1 and B1^T different!',&
+    if ((rmatrix%RmatrixBlock(4,6)%NA .ne. rmatrix%RmatrixBlock(6,4)%NA) .or. &
+        (rmatrix%RmatrixBlock(4,6)%NEQ .ne. rmatrix%RmatrixBlock(6,4)%NCOLS)) then
+      call output_line ('Structure of B1 and B1^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Primal and dual B- and D-matrices must share the same data.
     ! The matrices may be switched off by dscaleFactor=0, but they must have the
     ! same data arrays! Just for 'efficiency'...
-    IF ((rmatrix%RmatrixBlock(5,6)%NA .NE. rmatrix%RmatrixBlock(6,5)%NA) .OR. &
-        (rmatrix%RmatrixBlock(5,6)%NEQ .NE. rmatrix%RmatrixBlock(6,5)%NCOLS)) THEN
-      CALL output_line ('Structure of B2 and B2^T different!',&
+    if ((rmatrix%RmatrixBlock(5,6)%NA .ne. rmatrix%RmatrixBlock(6,5)%NA) .or. &
+        (rmatrix%RmatrixBlock(5,6)%NEQ .ne. rmatrix%RmatrixBlock(6,5)%NCOLS)) then
+      call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF      
+      call sys_halt()
+    end if      
     
-    IF (.NOT. lsyssc_isMatrixContentShared( &
-        rmatrix%RmatrixBlock(1,3),rmatrix%RmatrixBlock(4,6))) THEN
-      CALL output_line ('Content of primal and dual B1-matrix not shared!',&
+    if (.not. lsyssc_isMatrixContentShared( &
+        rmatrix%RmatrixBlock(1,3),rmatrix%RmatrixBlock(4,6))) then
+      call output_line ('Content of primal and dual B1-matrix not shared!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (.NOT. lsyssc_isMatrixContentShared( &
-        rmatrix%RmatrixBlock(2,3),rmatrix%RmatrixBlock(5,6))) THEN
-      CALL output_line ('Content of primal and dual B2-matrix not shared!',&
+    if (.not. lsyssc_isMatrixContentShared( &
+        rmatrix%RmatrixBlock(2,3),rmatrix%RmatrixBlock(5,6))) then
+      call output_line ('Content of primal and dual B2-matrix not shared!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
   
-    IF (.NOT. lsyssc_isMatrixContentShared( &
-        rmatrix%RmatrixBlock(3,1),rmatrix%RmatrixBlock(6,4))) THEN
-      CALL output_line ('Content of primal and dual D1-matrix not shared!',&
+    if (.not. lsyssc_isMatrixContentShared( &
+        rmatrix%RmatrixBlock(3,1),rmatrix%RmatrixBlock(6,4))) then
+      call output_line ('Content of primal and dual D1-matrix not shared!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (.NOT. lsyssc_isMatrixContentShared( &
-        rmatrix%RmatrixBlock(3,2),rmatrix%RmatrixBlock(6,5))) THEN
-      CALL output_line ('Content of primal and dual D2-matrix not shared!',&
+    if (.not. lsyssc_isMatrixContentShared( &
+        rmatrix%RmatrixBlock(3,2),rmatrix%RmatrixBlock(6,5))) then
+      call output_line ('Content of primal and dual D2-matrix not shared!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
   
     ! Fill the output structure with data of the matrices.
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
         rvanka%rvanka2DNavStOptC%p_DB1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),&
         rvanka%rvanka2DNavStOptC%p_DB2)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),&
         rvanka%rvanka2DNavStOptC%p_DD1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),&
         rvanka%rvanka2DNavStOptC%p_DD2)
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),&
         rvanka%rvanka2DNavStOptC%p_KcolB)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
         rvanka%rvanka2DNavStOptC%p_KldB )
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
         rvanka%rvanka2DNavStOptC%p_KcolA11)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
         rvanka%rvanka2DNavStOptC%p_KldA11 )
-    IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
+    if (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+      call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
                               rvanka%rvanka2DNavStOptC%p_KdiagonalA11)
-    ELSE
+    else
       rvanka%rvanka2DNavStOptC%p_KdiagonalA11 => rvanka%rvanka2DNavStOptC%p_KldA11
-    END IF
+    end if
     
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
         rvanka%rvanka2DNavStOptC%p_DA11 )
 
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
         rvanka%rvanka2DNavStOptC%p_DA22 )
     
     ! What is with A12 and A21? Do they exist? With a scale factor = 1.0?
-    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
+    if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
           rvanka%rvanka2DNavStOptC%p_DA12 )
           
-      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,2),&
+      call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,2),&
           rvanka%rvanka2DNavStOptC%p_KcolA12)
-      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
+      call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
           rvanka%rvanka2DNavStOptC%p_KldA12 )
           
       ! Get the structure. It's assumed that A12 and A21 have the same!
-      IF (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
+      if (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+        call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
                                 rvanka%rvanka2DNavStOptC%p_KdiagonalA12)
-      ELSE
+      else
         rvanka%rvanka2DNavStOptC%p_KdiagonalA12 => rvanka%rvanka2DNavStOptC%p_KldA12
-      END IF
+      end if
       
-      IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) THEN
-        CALL output_line ('If A12 is given, A21 must also be given!',&
+      if (.not. lsysbl_isSubmatrixPresent(rmatrix,2,1)) then
+        call output_line ('If A12 is given, A21 must also be given!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-        CALL sys_halt()
-      END IF
+        call sys_halt()
+      end if
       
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
           rvanka%rvanka2DNavStOptC%p_DA21 )
-    END IF
+    end if
     
     ! Now we come to the dual equation -> A(4:6,4:6).
     ! We assume that A44 and A55 has the same structure as A11 and A22.
     
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,4),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,4),&
         rvanka%rvanka2DNavStOptC%p_DA44 )
 
     ! What is with A55? Is it the same as A44?
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(5,5),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(5,5),&
         rvanka%rvanka2DNavStOptC%p_DA55 )
   
     ! What is with A12 and A21? Do they exist? With a scale factor != 0.0?
-    IF (lsysbl_isSubmatrixPresent(rmatrix,4,5)) THEN
+    if (lsysbl_isSubmatrixPresent(rmatrix,4,5)) then
 
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,5),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,5),&
           rvanka%rvanka2DNavStOptC%p_DA45 )
           
-      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,5),&
+      call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,5),&
           rvanka%rvanka2DNavStOptC%p_KcolA45)
-      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,5), &
+      call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,5), &
           rvanka%rvanka2DNavStOptC%p_KldA45 )
           
       ! Get the structure. It's assumed that A12 and A21 have the same!
-      IF (rmatrix%RmatrixBlock(4,5)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(4,5), &
+      if (rmatrix%RmatrixBlock(4,5)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+        call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(4,5), &
                                 rvanka%rvanka2DNavStOptC%p_KdiagonalA45)
-      ELSE
+      else
         rvanka%rvanka2DNavStOptC%p_KdiagonalA45 => rvanka%rvanka2DNavStOptC%p_KldA45
-      END IF
+      end if
       
-      IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,5,4)) THEN
-        CALL output_line ('If A45 is given, A54 must also be given!',&
+      if (.not. lsysbl_isSubmatrixPresent(rmatrix,5,4)) then
+        call output_line ('If A45 is given, A54 must also be given!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-        CALL sys_halt()
-      END IF
+        call sys_halt()
+      end if
       
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(5,4),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(5,4),&
           rvanka%rvanka2DNavStOptC%p_DA54 )
-    END IF    
+    end if    
     
     ! Is there an identity matrix present at A(3,3) and/or A(6,6)?
-    IF (lsysbl_isSubmatrixPresent(rmatrix,3,3)) THEN
+    if (lsysbl_isSubmatrixPresent(rmatrix,3,3)) then
       ! The matrix must be of format 9.
-      IF (rmatrix%RmatrixBlock(3,3)%dscaleFactor .NE. 0.0_DP) THEN
-        CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
+      if (rmatrix%RmatrixBlock(3,3)%dscaleFactor .ne. 0.0_DP) then
+        call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
             rvanka%rvanka2DNavStOptC%p_DA33 )
 
-        IF (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-          CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(3,3), &
+        if (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+          call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(3,3), &
                                   rvanka%rvanka2DNavStOptC%p_KdiagonalA33)
-        ELSE
-          CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,3), &
+        else
+          call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,3), &
                                   rvanka%rvanka2DNavStOptC%p_KdiagonalA33)
-        END IF
+        end if
 
-      END IF
-    END IF
+      end if
+    end if
 
-    IF (lsysbl_isSubmatrixPresent(rmatrix,6,6)) THEN
-      IF (rmatrix%RmatrixBlock(6,6)%dscaleFactor .NE. 0.0_DP) THEN
-        CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(6,6),&
+    if (lsysbl_isSubmatrixPresent(rmatrix,6,6)) then
+      if (rmatrix%RmatrixBlock(6,6)%dscaleFactor .ne. 0.0_DP) then
+        call lsyssc_getbase_double(rmatrix%RmatrixBlock(6,6),&
             rvanka%rvanka2DNavStOptC%p_DA66 )
 
-        IF (rmatrix%RmatrixBlock(6,6)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-          CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(6,6), &
+        if (rmatrix%RmatrixBlock(6,6)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+          call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(6,6), &
                                   rvanka%rvanka2DNavStOptC%p_KdiagonalA66)
-        ELSE
-          CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(6,6), &
+        else
+          call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(6,6), &
                                   rvanka%rvanka2DNavStOptC%p_KdiagonalA66)
-        END IF
-      END IF
-    END IF
+        end if
+      end if
+    end if
     
     ! Get the mass matrix/matrices -- if they are present.
     ! It's assumed that all mass matrices are the same except for their
     ! multiplication factors!
-    IF (lsysbl_isSubmatrixPresent (rmatrix,1,4)) THEN
-      IF (rmatrix%RmatrixBlock(1,4)%cmatrixFormat .EQ. LSYSSC_MATRIXD) THEN
-        CALL output_line ('Lumped mass matrices not supported!',&
+    if (lsysbl_isSubmatrixPresent (rmatrix,1,4)) then
+      if (rmatrix%RmatrixBlock(1,4)%cmatrixFormat .eq. LSYSSC_MATRIXD) then
+        call output_line ('Lumped mass matrices not supported!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-        CALL sys_halt()
-      END IF
+        call sys_halt()
+      end if
       
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),&
           rvanka%rvanka2DNavStOptC%p_DM14 )
           
-      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),&
+      call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),&
           rvanka%rvanka2DNavStOptC%p_KcolM)
-      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,4), &
+      call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,4), &
           rvanka%rvanka2DNavStOptC%p_KldM )
           
-      IF (rmatrix%RmatrixBlock(1,4)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,4), &
+      if (rmatrix%RmatrixBlock(1,4)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+        call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,4), &
                                 rvanka%rvanka2DNavStOptC%p_KdiagonalM)
-      ELSE
+      else
         rvanka%rvanka2DNavStOptC%p_KdiagonalM => rvanka%rvanka2DNavStOptC%p_KldM
-      END IF
+      end if
       
-    END IF
+    end if
 
     ! Get the coupling matrix from the primal to the dual system. 
     ! This may be the mass matrix or a completely decoupled matrix.
     ! In all cases, the submatrices have the same structure as the mass
     ! matrix, so if the structure of the mass matrix is not yet set,
     ! we have to fetch it!
-    IF (lsysbl_isSubmatrixPresent (rmatrix,4,1)) THEN
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,1),&
+    if (lsysbl_isSubmatrixPresent (rmatrix,4,1)) then
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,1),&
           rvanka%rvanka2DNavStOptC%p_DR41 )
 
-      IF (.NOT. ASSOCIATED(rvanka%rvanka2DNavStOptC%p_KcolM)) THEN
-        CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,1),&
+      if (.not. associated(rvanka%rvanka2DNavStOptC%p_KcolM)) then
+        call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,1),&
             rvanka%rvanka2DNavStOptC%p_KcolM)
-        CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,1), &
+        call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,1), &
             rvanka%rvanka2DNavStOptC%p_KldM )
-      END IF
-    END IF
+      end if
+    end if
 
-    IF (lsysbl_isSubmatrixPresent (rmatrix,4,2)) THEN
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,2),&
+    if (lsysbl_isSubmatrixPresent (rmatrix,4,2)) then
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,2),&
           rvanka%rvanka2DNavStOptC%p_DR42 )
 
-      IF (.NOT. ASSOCIATED(rvanka%rvanka2DNavStOptC%p_KcolM)) THEN
-        CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,2),&
+      if (.not. associated(rvanka%rvanka2DNavStOptC%p_KcolM)) then
+        call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,2),&
             rvanka%rvanka2DNavStOptC%p_KcolM)
-        CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,2), &
+        call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,2), &
             rvanka%rvanka2DNavStOptC%p_KldM )
-      END IF
-    END IF
+      end if
+    end if
 
-    IF (lsysbl_isSubmatrixPresent (rmatrix,5,1)) THEN
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(5,1),&
+    if (lsysbl_isSubmatrixPresent (rmatrix,5,1)) then
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(5,1),&
           rvanka%rvanka2DNavStOptC%p_DR51 )
 
-      IF (.NOT. ASSOCIATED(rvanka%rvanka2DNavStOptC%p_KcolM)) THEN
-        CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(5,1),&
+      if (.not. associated(rvanka%rvanka2DNavStOptC%p_KcolM)) then
+        call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(5,1),&
             rvanka%rvanka2DNavStOptC%p_KcolM)
-        CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(5,1), &
+        call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(5,1), &
             rvanka%rvanka2DNavStOptC%p_KldM )
-      END IF
-    END IF
+      end if
+    end if
 
-    IF (lsysbl_isSubmatrixPresent (rmatrix,5,2)) THEN
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(5,2),&
+    if (lsysbl_isSubmatrixPresent (rmatrix,5,2)) then
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(5,2),&
           rvanka%rvanka2DNavStOptC%p_DR52 )
 
-      IF (.NOT. ASSOCIATED(rvanka%rvanka2DNavStOptC%p_KcolM)) THEN
-        CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(5,2),&
+      if (.not. associated(rvanka%rvanka2DNavStOptC%p_KcolM)) then
+        call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(5,2),&
             rvanka%rvanka2DNavStOptC%p_KcolM)
-        CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(5,2), &
+        call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(5,2), &
             rvanka%rvanka2DNavStOptC%p_KldM )
-      END IF
-    END IF
+      end if
+    end if
 
     ! Get the multiplication factors of the submatrices.
     ! (-> for a later implementation; currently, the multipliers are not used!)
@@ -8086,11 +8086,11 @@ CONTAINS
     ! Get the block discretisation structure from the matrix.
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
     
-    IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
-      CALL output_line ('No discretisation!',&
+    if (.not. associated(p_rblockDiscr)) then
+      call output_line ('No discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Get the discretisation structure of U,V and P from the block
     ! discretisation structure.
@@ -8100,34 +8100,34 @@ CONTAINS
     rvanka%rvanka2DNavStOptC%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(2)
     rvanka%rvanka2DNavStOptC%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
     
-    IF (rvanka%rvanka2DNavStOptC%p_rspatialDiscrU%inumFESpaces .NE. &
-        rvanka%rvanka2DNavStOptC%p_rspatialDiscrV%inumFESpaces) THEN
-      CALL output_line (&
+    if (rvanka%rvanka2DNavStOptC%p_rspatialDiscrU%inumFESpaces .ne. &
+        rvanka%rvanka2DNavStOptC%p_rspatialDiscrV%inumFESpaces) then
+      call output_line (&
           'Discretisation structures of X- and Y-velocity incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rvanka%rvanka2DNavStOptC%p_rspatialDiscrP%inumFESpaces .NE. 1) .AND. &
-        (rvanka%rvanka2DNavStOptC%p_rspatialDiscrP%inumFESpaces .NE. &
-          rvanka%rvanka2DNavStOptC%p_rspatialDiscrU%inumFESpaces)) THEN
+    if ((rvanka%rvanka2DNavStOptC%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
+        (rvanka%rvanka2DNavStOptC%p_rspatialDiscrP%inumFESpaces .ne. &
+          rvanka%rvanka2DNavStOptC%p_rspatialDiscrU%inumFESpaces)) then
       ! Either there must be only one element type for the pressure, or there one
       ! pressure element distribution for every velocity element distribution!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
-      CALL output_line (&
+      call output_line (&
           'Discretisation structures of velocity and pressure incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DNavierStokesOptC (rvanka2DNavStOptC, rvector, rrhs, domega, csubtype)
+  subroutine vanka_2DNavierStokesOptC (rvanka2DNavStOptC, rvector, rrhs, domega, csubtype)
   
 !<description>
   ! This routine applies the VANKA variant for 2D Navier-Stokes 
@@ -8147,38 +8147,38 @@ CONTAINS
 
 !<input>
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
-  INTEGER :: csubtype
+  integer :: csubtype
   
 !</input>
 
 !<inputoutput>
   ! t_vanka structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavStOptC), INTENT(INOUT) :: rvanka2DNavStOptC
+  type(t_vankaPointer2DNavStOptC), intent(INOUT) :: rvanka2DNavStOptC
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: ielementdist
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementList
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrU
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrV
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrP 
+    integer :: ielementdist
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+    type(t_elementDistribution), pointer :: p_relementDistrU
+    type(t_elementDistribution), pointer :: p_relementDistrV
+    type(t_elementDistribution), pointer :: p_relementDistrP 
     
     ! 2D Navier Stokes problem.
 
     ! Loop through the element distributions of the velocity.
-    DO ielementdist = 1,rvanka2DNavStOptC%p_rspatialDiscrU%inumFESpaces
+    do ielementdist = 1,rvanka2DNavStOptC%p_rspatialDiscrU%inumFESpaces
     
       ! Get the corresponding element distributions of U, V and P.
       p_relementDistrU => &
@@ -8188,70 +8188,70 @@ CONTAINS
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
-      IF (rvanka2DNavStOptC%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
+      if (rvanka2DNavStOptC%p_rspatialDiscrP%inumFESpaces .gt. 1) then
         p_relementDistrP => &
             rvanka2DNavStOptC%p_rspatialDiscrP%RelementDistr(ielementdist)
-      ELSE
+      else
         p_relementDistrP => &
             rvanka2DNavStOptC%p_rspatialDiscrP%RelementDistr(1)
-      END IF
+      end if
       
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as 'primary' element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
-      CALL storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
+      call storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
       
       ! Which element combination do we have now?
-      IF ((elem_getPrimaryElement(p_relementDistrU%celement) .EQ. EL_Q1T) .AND. &
-          (elem_getPrimaryElement(p_relementDistrV%celement) .EQ. EL_Q1T) .AND. &
-          (elem_getPrimaryElement(p_relementDistrP%celement) .EQ. EL_Q0)) THEN
+      if ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_Q0)) then
         
         ! Q1~/Q1~/Q0 discretisation
         
-        SELECT CASE (csubtype)
+        select case (csubtype)
         
-        CASE (VANKATP_FULLOPTC_PRIMAL)
+        case (VANKATP_FULLOPTC_PRIMAL)
 
           ! Apply the conformal VANKA that allows different matrices
           ! in A11, A12, A21 and A22!
-          CALL vanka_2DNSSOCQ1TQ0fullCoupCfFB (rvanka2DNavStOptC, &
+          call vanka_2DNSSOCQ1TQ0fullCoupCfFB (rvanka2DNavStOptC, &
               rvector, rrhs, domega,p_IelementList,1)
               
-        CASE (VANKATP_FULLOPTC_DUAL)
+        case (VANKATP_FULLOPTC_DUAL)
                 
           ! Apply the conformal VANKA that allows different matrices
           ! in A11, A12, A21 and A22!
-          CALL vanka_2DNSSOCQ1TQ0fullCoupCfFB (rvanka2DNavStOptC, &
+          call vanka_2DNSSOCQ1TQ0fullCoupCfFB (rvanka2DNavStOptC, &
               rvector, rrhs, domega,p_IelementList,2)
 
-        CASE (VANKATP_DIAGOPTC)
+        case (VANKATP_DIAGOPTC)
         
           ! Apply the conformal diagonal VANKA that allows different 
           ! matrices in A11, A22, A33 and A44!
-          CALL vanka_2DNSSOCQ1TQ0diagCoupConf (rvanka2DNavStOptC, &
+          call vanka_2DNSSOCQ1TQ0diagCoupConf (rvanka2DNavStOptC, &
               rvector, rrhs, domega,p_IelementList)
               
-        CASE DEFAULT
+        case DEFAULT
         
           ! Apply the conformal VANKA that allows different matrices
           ! in A11, A12, A21 and A22!
-          CALL vanka_2DNSSOCQ1TQ0fullCoupConf (rvanka2DNavStOptC, &
+          call vanka_2DNSSOCQ1TQ0fullCoupConf (rvanka2DNavStOptC, &
               rvector, rrhs, domega,p_IelementList)
 
-        END SELECT          
+        end select          
 
-      ELSE
+      else
 
-        CALL output_line ('Unsupported discretisation.',&
+        call output_line ('Unsupported discretisation.',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokesOptC')
-        CALL sys_halt()
+        call sys_halt()
         
-      END IF
+      end if
       
-    END DO
+    end do
       
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! 2D VANKA, 'diagonal' version for fully coupled Navier-Stokes systems with
@@ -8281,7 +8281,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DNSSOCQ1TQ0diagCoupConf (rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_2DNSSOCQ1TQ0diagCoupConf (rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised full local system VANKA algorithm for
@@ -8300,65 +8300,65 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavStOptC), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavStOptC), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
-    REAL(DP) :: dmult11,dmult22,dmult44,dmult55
-    REAL(DP) :: dmultb1,dmultb2,dmultb3,dmultb4
-    REAL(DP) :: dmultd1,dmultd2,dmultd3,dmultd4
-    REAL(DP) :: dmult33,dmult66
-    REAL(DP) :: di1,di2
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
+    real(DP) :: dmult11,dmult22,dmult44,dmult55
+    real(DP) :: dmultb1,dmultb2,dmultb3,dmultb4
+    real(DP) :: dmultd1,dmultd2,dmultd3,dmultd4
+    real(DP) :: dmult33,dmult66
+    real(DP) :: di1,di2
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA11,p_Da22,p_Da44,p_Da55
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1,p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB3,p_DB4
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1,p_DD2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD3,p_DD4
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA33,p_DA66
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA33,p_KdiagonalA66
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA11,p_Da22,p_Da44,p_Da55
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1,p_DB2
+    real(DP), dimension(:), pointer             :: p_DB3,p_DB4
+    real(DP), dimension(:), pointer             :: p_DD1,p_DD2
+    real(DP), dimension(:), pointer             :: p_DD3,p_DD4
+    real(DP), dimension(:), pointer             :: p_DA33,p_DA66
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp
-    INTEGER(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,j
-    INTEGER, PARAMETER :: lofsv = 4
-    INTEGER, PARAMETER :: lofsp = 8
-    REAL(DP) :: daux1,daux2,daux3,daux4
+    integer(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp
+    integer(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
+    integer :: ia1,ia2,ib1,ib2,ia,ib,j
+    integer, parameter :: lofsv = 4
+    integer, parameter :: lofsp = 8
+    real(DP) :: daux1,daux2,daux3,daux4
     
     ! Local arrays for informations about one element -- for primal and dual space.
-    REAL(DP), DIMENSION(4) :: AA11,AA22,BB1,BB2,DD1,DD2
-    REAL(DP), DIMENSION(9) :: FFp,UUp
-    REAL(DP), DIMENSION(4) :: AA33,AA44,BB3,BB4,DD3,DD4
-    REAL(DP), DIMENSION(9) :: FFd,UUd
-    INTEGER(PREC_VECIDX), DIMENSION(4) :: idofGlobal
+    real(DP), dimension(4) :: AA11,AA22,BB1,BB2,DD1,DD2
+    real(DP), dimension(9) :: FFp,UUp
+    real(DP), dimension(4) :: AA33,AA44,BB3,BB4,DD3,DD4
+    real(DP), dimension(9) :: FFd,UUd
+    integer(PREC_VECIDX), dimension(4) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -8405,10 +8405,10 @@ CONTAINS
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the solution components
     ioffsetu = 0
@@ -8480,7 +8480,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements in the list
 
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -8500,7 +8500,7 @@ CONTAINS
       FFd(1+lofsp) = p_Drhs(iel+ioffsetxi)
 
       ! Loop over all 4 U-nodes of that element.
-      DO inode=1,4
+      do inode=1,4
       
         ! Set idof to the DOF that belongs to our edge inode:
         idof = p_IedgesAtElement(inode,iel)
@@ -8594,7 +8594,7 @@ CONTAINS
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux1 = dmult11*p_DA11(ia)
           daux2 = dmult22*p_DA22(ia)
@@ -8606,13 +8606,13 @@ CONTAINS
 
           FFd(inode)       = FFd(inode)      -daux3*p_Dvector(J+ioffsetl1)
           FFd(inode+lofsv) = FFd(inode+lofsv)-daux4*p_Dvector(J+ioffsetl2)
-        END DO
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux1 = p_Dvector(j+ioffsetp)
           daux2 = p_Dvector(j+ioffsetxi)
@@ -8622,7 +8622,7 @@ CONTAINS
 
           FFd(inode)       = FFd(inode)      -dmultb3*p_DB3(ib)*daux2
           FFd(inode+lofsv) = FFd(inode+lofsv)-dmultb4*p_DB4(ib)*daux2
-        END DO
+        end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
         ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -8644,8 +8644,8 @@ CONTAINS
         ! Either two (if the velocity DOF is an edge with two neighbouring
         ! elements) or one (if the velocity DOF is at an edge on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+        do ib = ib1,ib2
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
           
@@ -8680,11 +8680,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
       
       ! If we have blocks at A33 or A66, get the corresponding elements.
       ! We need the IF-commands here as the arrays p_DaXX/p_KdiagonalXX may 
@@ -8693,13 +8693,13 @@ CONTAINS
       di1 = 0.0_DP
       di2 = 0.0_DP
 
-      IF (dmult33 .NE. 0.0_DP) THEN
+      if (dmult33 .ne. 0.0_DP) then
         di1 = dmult33*p_DA33(p_KdiagonalA33(iel))
-      END IF
+      end if
 
-      IF (dmult66 .NE. 0.0_DP) THEN
+      if (dmult66 .ne. 0.0_DP) then
         di2 = dmult66*p_DA66(p_KdiagonalA66(iel))
-      END IF
+      end if
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -8737,15 +8737,15 @@ CONTAINS
       ! y := C^{-1} d~ by applying a Schur complement approach. For this purpose,
       ! call the element update routine that calculates the update vector y.
       
-      CALL vanka_getcorr_2DSPQ1TQ0simple2 (UUp,FFp,AA11,AA22,BB1,BB2,DD1,DD2,di1)
-      CALL vanka_getcorr_2DSPQ1TQ0simple2 (UUd,FFd,AA33,AA33,BB3,BB4,DD3,DD4,di2)
+      call vanka_getcorr_2DSPQ1TQ0simple2 (UUp,FFp,AA11,AA22,BB1,BB2,DD1,DD2,di1)
+      call vanka_getcorr_2DSPQ1TQ0simple2 (UUd,FFd,AA33,AA33,BB3,BB4,DD3,DD4,di2)
     
       ! Ok, we got the update vector UU. Incorporate this now into our
       ! solution vector with the update formula
       !
       !  x_{n+1} = x_n + domega * y!
       
-      DO inode=1,4
+      do inode=1,4
         p_Dvector(idofGlobal(inode)+ioffsetu) &
           = p_Dvector(idofGlobal(inode)+ioffsetu) + domega * UUp(inode)
         p_Dvector(idofGlobal(inode)+ioffsetv) &
@@ -8755,15 +8755,15 @@ CONTAINS
           = p_Dvector(idofGlobal(inode)+ioffsetl1) + domega * UUd(inode)
         p_Dvector(idofGlobal(inode)+ioffsetl2) &
           = p_Dvector(idofGlobal(inode)+ioffsetl2) + domega * UUd(inode+lofsv)
-      END DO
+      end do
       
       p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + domega * UUp(1+lofsp)
 
       p_Dvector(iel+ioffsetxi) = p_Dvector(iel+ioffsetxi) + domega * UUd(1+lofsp)
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! 2D VANKA, 'full' version for fully coupled Navier-Stokes systems with
@@ -8793,7 +8793,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DNSSOCQ1TQ0fullCoupConf (rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_2DNSSOCQ1TQ0fullCoupConf (rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised full local system VANKA algorithm for
@@ -8812,86 +8812,86 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavStOptC), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavStOptC), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA11
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA11
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA11,p_DA12,p_DA21,p_DA22
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA45
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA45
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA44,p_DA45,p_DA54,p_DA55
-    REAL(DP), DIMENSION(:), POINTER             :: p_DR41,p_DR52,p_DR51,p_DR42
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolM
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldM
-    REAL(DP), DIMENSION(:), POINTER             :: p_DM
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
-    REAL(DP), DIMENSION(:), POINTER             :: p_Da33,p_Da66
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA33,p_KdiagonalA66
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA11
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA11
+    real(DP), dimension(:), pointer             :: p_DA11,p_DA12,p_DA21,p_DA22
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA45
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA45
+    real(DP), dimension(:), pointer             :: p_DA44,p_DA45,p_DA54,p_DA55
+    real(DP), dimension(:), pointer             :: p_DR41,p_DR52,p_DR51,p_DR42
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolM
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldM
+    real(DP), dimension(:), pointer             :: p_DM
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer             :: p_Da33,p_Da66
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    INTEGER, PARAMETER :: nnvel = 4      ! Q1T = 4 DOF's per velocity
-    INTEGER, PARAMETER :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
-    INTEGER, PARAMETER :: nndualvel = 4      ! Q1T = 4 DOF's per dual velocity
-    INTEGER, PARAMETER :: nndualpressure = 1 ! QQ0 = 1 DOF's per dual pressure
-    INTEGER, PARAMETER :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF's per element
-    INTEGER, PARAMETER :: nnld = 2*nnprimal
-    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
-    REAL(DP), DIMENSION(nnld,nnld) :: AA
-    REAL(DP), DIMENSION(nnld) :: FF
+    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
+    integer, parameter :: nndualvel = 4      ! Q1T = 4 DOF's per dual velocity
+    integer, parameter :: nndualpressure = 1 ! QQ0 = 1 DOF's per dual pressure
+    integer, parameter :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF's per element
+    integer, parameter :: nnld = 2*nnprimal
+    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    real(DP), dimension(nnld,nnld) :: AA
+    real(DP), dimension(nnld) :: FF
     
     ! Offsets of the 'local' solution parts in the 'local' solution vector
-    INTEGER, PARAMETER :: lofsu = 0
-    INTEGER, PARAMETER :: lofsv = nnvel
-    INTEGER, PARAMETER :: lofsp = 2*nnvel
-    INTEGER, PARAMETER :: lofsl1 = 2*nnvel+1
-    INTEGER, PARAMETER :: lofsl2 = 2*nnvel+1+nnvel
-    INTEGER, PARAMETER :: lofsxi = 2*nnvel+1+2*nnvel
+    integer, parameter :: lofsu = 0
+    integer, parameter :: lofsv = nnvel
+    integer, parameter :: lofsp = 2*nnvel
+    integer, parameter :: lofsl1 = 2*nnvel+1
+    integer, parameter :: lofsl2 = 2*nnvel+1+nnvel
+    integer, parameter :: lofsxi = 2*nnvel+1+2*nnvel
     
     ! LAPACK temporary space
-    INTEGER :: Ipiv(nnld),ilapackInfo
+    integer :: Ipiv(nnld),ilapackInfo
     
     ! Offset information in arrays.
     ! Primal variables
-    INTEGER(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
+    integer(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
     
     ! Dual variables
-    INTEGER(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
+    integer(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
     
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,k
-    REAL(DP) :: daux,daux2
+    integer :: ia1,ia2,ib1,ib2,ia,ib,k
+    real(DP) :: daux,daux2
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -8905,17 +8905,17 @@ CONTAINS
     ! Structure of A12 is assumed to be the same as A21.
     ! Get A12 and A21 -- except for if the multipliers are =0, then
     ! we switch them off by nullifying the pointers.
-    IF (rvanka%Dmultipliers(1,2) .NE. 0.0_DP) THEN
+    if (rvanka%Dmultipliers(1,2) .ne. 0.0_DP) then
       p_KcolA12 => rvanka%p_KcolA12
       p_KldA12 => rvanka%p_KldA12
       p_DA12 => rvanka%p_DA12
       p_DA21 => rvanka%p_DA21
-    ELSE
-      NULLIFY(p_KcolA12)
-      NULLIFY(p_KldA12) 
-      NULLIFY(p_DA12 )
-      NULLIFY(p_DA21 )
-    END IF
+    else
+      nullify(p_KcolA12)
+      nullify(p_KldA12) 
+      nullify(p_DA12 )
+      nullify(p_DA21 )
+    end if
     
     p_KcolB => rvanka%p_KcolB
     p_KldB => rvanka%p_KldB
@@ -8949,28 +8949,28 @@ CONTAINS
     p_DR52 => rvanka%p_DR52
     
     ! Diagonal submatrices A33 and A66 (if they exist)
-    IF (rvanka%Dmultipliers(3,3) .NE. 0.0_DP) THEN
+    if (rvanka%Dmultipliers(3,3) .ne. 0.0_DP) then
       p_Da33 => rvanka%p_DA33
       p_KdiagonalA33 => rvanka%p_KdiagonalA33
-    ELSE
-      NULLIFY(p_Da33)
-      NULLIFY(p_KdiagonalA33)
-    END IF
+    else
+      nullify(p_Da33)
+      nullify(p_KdiagonalA33)
+    end if
     
-    IF (rvanka%Dmultipliers(6,6) .NE. 0.0_DP) THEN
+    if (rvanka%Dmultipliers(6,6) .ne. 0.0_DP) then
       p_Da66 => rvanka%p_DA66
       p_KdiagonalA66 => rvanka%p_KdiagonalA66
-    ELSE
-      NULLIFY(p_Da66)
-      NULLIFY(p_KdiagonalA66)
-    END IF
+    else
+      nullify(p_Da66)
+      nullify(p_KdiagonalA66)
+    end if
 
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetu = 0
@@ -9045,7 +9045,7 @@ CONTAINS
     !
     ! So we start with a loop over all elements in the list
 
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -9078,7 +9078,7 @@ CONTAINS
       IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
-      DO inode=1,nnvel
+      do inode=1,nnvel
       
         ! Get the DOF we have to tackle:
         idof = IdofGlobal(inode)
@@ -9170,7 +9170,7 @@ CONTAINS
         
         ia1 = p_KldA11(idof)
         ia2 = p_KldA11(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           ! Calculate:
           !
           !   ( du  ) = ( du  ) - ( A11  .   .   .   .   .  ) ( u  )
@@ -9196,24 +9196,24 @@ CONTAINS
           
           ! Whereever we find a DOF that couples to another DOF on the 
           ! same element, we put that to both A-blocks of our local matrix.
-          DO k=1,nnvel
-            IF (j .EQ. IdofGlobal(k)) THEN
+          do k=1,nnvel
+            if (j .eq. IdofGlobal(k)) then
               AA (inode+lofsu,k+lofsu) = p_DA11(ia)*rvanka%Dmultipliers(1,1)
               AA (inode+lofsv,k+lofsv) = p_DA22(ia)*rvanka%Dmultipliers(2,2)
               
               AA (inode+lofsl1,k+lofsl1) = p_DA44(ia)*rvanka%Dmultipliers(4,4)
               AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)*rvanka%Dmultipliers(5,5)
-              EXIT
-            END IF
-          END DO          
-        END DO
+              exit
+            end if
+          end do          
+        end do
 
         ! Handle the 'off-diagonal' matrices A12 and A21
         
-        IF (ASSOCIATED(p_KldA12)) THEN
+        if (associated(p_KldA12)) then
           ia1 = p_KldA12(idof)
           ia2 = p_KldA12(idof+1)-1
-          DO ia = ia1,ia2
+          do ia = ia1,ia2
             ! Calculate:
             !
             !   ( du  ) = ( du  ) - (  .  A12  .   .   .   .  ) ( u  )
@@ -9231,21 +9231,21 @@ CONTAINS
             
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
-            DO k=1,nnvel
-              IF (j .EQ. IdofGlobal(k)) THEN
+            do k=1,nnvel
+              if (j .eq. IdofGlobal(k)) then
                 AA (inode+lofsu,k+lofsv) = p_DA12(ia)*rvanka%Dmultipliers(1,2)
                 AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanka%Dmultipliers(2,1)
-                EXIT
-              END IF
-            END DO          
-          END DO
-        END IF
+                exit
+              end if
+            end do          
+          end do
+        end if
         
         ! Handle the 'off-diagonal' matrices A45 and A54 if they exist
-        IF (ASSOCIATED(p_KldA45)) THEN
+        if (associated(p_KldA45)) then
           ia1 = p_KldA45(idof)
           ia2 = p_KldA45(idof+1)-1
-          DO ia = ia1,ia2
+          do ia = ia1,ia2
             ! Calculate:
             !
             !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
@@ -9263,19 +9263,19 @@ CONTAINS
             
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
-            DO k=1,nnvel
-              IF (j .EQ. IdofGlobal(k)) THEN
+            do k=1,nnvel
+              if (j .eq. IdofGlobal(k)) then
                 AA (inode+lofsl1,k+lofsl2) = p_DA45(ia)*rvanka%Dmultipliers(4,5)
                 AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)*rvanka%Dmultipliers(5,4)
-                EXIT
-              END IF
-            END DO          
-          END DO
-        END IF
+                exit
+              end if
+            end do          
+          end do
+        end if
                 
         ! Process A33 if it exists
                 
-        IF (ASSOCIATED(p_KdiagonalA33)) THEN
+        if (associated(p_KdiagonalA33)) then
 
           ! Calculate:
           !
@@ -9293,11 +9293,11 @@ CONTAINS
                       - daux*p_DA33(p_KdiagonalA33(IEL))*p_Dvector(IEL+ioffsetp)
           AA(1+lofsp,1+lofsp) = daux*p_DA33(p_KdiagonalA33(IEL))
 
-        END IF
+        end if
                 
         ! Process A66 if it exists
                 
-        IF (ASSOCIATED(p_KdiagonalA66)) THEN
+        if (associated(p_KdiagonalA66)) then
 
           ! Calculate:
           !
@@ -9315,13 +9315,13 @@ CONTAINS
                        - daux*p_DA66(p_KdiagonalA66(IEL))*p_Dvector(IEL+ioffsetxi)
           AA(1+lofsxi,1+lofsxi) = daux*p_DA66(p_KdiagonalA66(IEL))
 
-        END IF
+        end if
                 
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           ! Calculate:
           !
           !   ( du  ) = ( du  ) - (  .   .  B1   .   .   .  ) ( u  )
@@ -9344,10 +9344,10 @@ CONTAINS
           FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2 * rvanka%Dmultipliers(5,6)
           
           ! Don't incorporate the B-matrices into AA yet; this will come later!
-        END DO
+        end do
         
         ! The mass matrix defect.
-        IF (ASSOCIATED(p_DM)) THEN
+        if (associated(p_DM)) then
           ! We assume: multiplier of A(1,4) = multiplier of A(2,5)
           daux = rvanka%Dmultipliers(1,4)
           
@@ -9356,7 +9356,7 @@ CONTAINS
           
           ia1 = p_KldM(idof)
           ia2 = p_KldM(idof+1)-1
-          DO ia = ia1,ia2
+          do ia = ia1,ia2
 
             J = p_KcolM(ia)
 
@@ -9374,25 +9374,25 @@ CONTAINS
 
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
-            DO k=1,nnvel
-              IF (j .EQ. IdofGlobal(k)) THEN
+            do k=1,nnvel
+              if (j .eq. IdofGlobal(k)) then
                 AA (inode+lofsu,k+lofsl1) = daux*p_DM(ia)
                 AA (inode+lofsv,k+lofsl2) = daux*p_DM(ia)
-                EXIT
-              END IF
-            END DO          
-          END DO
-        END IF
+                exit
+              end if
+            end do          
+          end do
+        end if
 
         ! The defect in the coupling matrix from the primal to the dual system
-        IF (ASSOCIATED(p_DR41)) THEN
+        if (associated(p_DR41)) then
           ! Get the multipliers
           daux = rvanka%Dmultipliers(4,1)
           daux2 = rvanka%Dmultipliers(5,2)
           
           ia1 = p_KldM(idof)
           ia2 = p_KldM(idof+1)-1
-          DO ia = ia1,ia2
+          do ia = ia1,ia2
 
             J = p_KcolM(ia)
 
@@ -9410,24 +9410,24 @@ CONTAINS
             
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
-            DO k=1,nnvel
-              IF (j .EQ. IdofGlobal(k)) THEN
+            do k=1,nnvel
+              if (j .eq. IdofGlobal(k)) then
                 AA (inode+lofsl1,k+lofsu) = daux*p_DR41(ia)
                 AA (inode+lofsl2,k+lofsv) = daux2*p_DR52(ia)
-                EXIT
-              END IF
-            END DO          
-          END DO
-        END IF
+                exit
+              end if
+            end do          
+          end do
+        end if
 
-        IF (ASSOCIATED(p_DR51)) THEN
+        if (associated(p_DR51)) then
           ! Get the multipliers
           daux = rvanka%Dmultipliers(5,1)
           daux2 = rvanka%Dmultipliers(4,2)
           
           ia1 = p_KldM(idof)
           ia2 = p_KldM(idof+1)-1
-          DO ia = ia1,ia2
+          do ia = ia1,ia2
 
             J = p_KcolM(ia)
 
@@ -9445,15 +9445,15 @@ CONTAINS
             
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
-            DO k=1,nnvel
-              IF (j .EQ. IdofGlobal(k)) THEN
+            do k=1,nnvel
+              if (j .eq. IdofGlobal(k)) then
                 AA (inode+lofsl2,k+lofsu) = daux*p_DR51(ia)
                 AA (inode+lofsl1,k+lofsv) = daux2*p_DR42(ia)
-                EXIT
-              END IF
-            END DO          
-          END DO
-        END IF
+                exit
+              end if
+            end do          
+          end do
+        end if
         
         ! THe next loop will determine the local B1, B2, D1 and D2.
         ! We have to find in the B-matrices the column that corresponds
@@ -9474,7 +9474,7 @@ CONTAINS
         ! Either two (if the velocity DOF is an edge with two neighbouring
         ! elements) or one (if the velocity DOF is at an edge on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
         
           ! Calculate:
           !
@@ -9494,7 +9494,7 @@ CONTAINS
           !   (  .   .   .   .   .  B2  ) 
           !   (  .   .   .  D1  D2   .  ) 
 
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
             
@@ -9532,11 +9532,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -9553,16 +9553,16 @@ CONTAINS
       ! solve the local system AA dd = FF for dd. The local defect dd is then
       ! added back to the global solution vector.
       
-      CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
       
-      IF (ilapackInfo .EQ. 0) THEN
+      if (ilapackInfo .eq. 0) then
         
         ! Ok, we got the update vector in FF. Incorporate this now into our
         ! solution vector with the update formula
         !
         !  x_{n+1} = x_n + domega * y
         
-        DO inode=1,nnvel
+        do inode=1,nnvel
           ! Update of the primal velocity vectors
           p_Dvector(idofGlobal(inode)+ioffsetu) &
             = p_Dvector(idofGlobal(inode)+ioffsetu) + domega * FF(inode+lofsu)
@@ -9574,7 +9574,7 @@ CONTAINS
             = p_Dvector(idofGlobal(inode)+ioffsetl1) + domega * FF(inode+lofsl1)
           p_Dvector(idofGlobal(inode)+ioffsetl2) &
             = p_Dvector(idofGlobal(inode)+ioffsetl2) + domega * FF(inode+lofsl2)
-        END DO
+        end do
         
         p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                   domega * FF(1+lofsp)
@@ -9582,21 +9582,21 @@ CONTAINS
         p_Dvector(iel+ioffsetxi) = p_Dvector(iel+ioffsetxi) + &
                                   domega * FF(1+lofsxi)
       
-      ELSE IF (ilapackInfo .LT. 0) THEN
+      else if (ilapackInfo .lt. 0) then
         
-        CALL output_line (&
+        call output_line (&
             'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNSSOCQ1TQ0fullCoupConf')
         
-      END IF
+      end if
 
       ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
       ! coarse grid with all boundaries = Dirichlet.
       ! In this case, nothing must be changed in the vector!
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! 2D VANKA, 'full' version for fully coupled Navier-Stokes systems with
@@ -9654,7 +9654,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_2DNSSOCQ1TQ0fullCoupCfFB (rvanka, rvector, rrhs, domega, IelementList,&
+  subroutine vanka_2DNSSOCQ1TQ0fullCoupCfFB (rvanka, rvector, rrhs, domega, IelementList,&
       csystemPart)
   
 !<description>
@@ -9674,93 +9674,93 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer2DNavStOptC), INTENT(IN) :: rvanka
+  type(t_vankaPointer2DNavStOptC), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 
   ! Identifier for the part of the equation, where VANKA should be
   ! applied.
   ! =0: apply VANKA to the whole primal-dual-coupled system
   ! =1: apply VANKA only to the primal system, take the dual one as constant
   ! =2: apply VANKA only to the dual system, take the primal one as constant
-  INTEGER, INTENT(IN) :: csystemPart
+  integer, intent(IN) :: csystemPart
   
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA11
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA11
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA11,p_DA12,p_DA21,p_DA22
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA45
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA45
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA44,p_DA45,p_DA54,p_DA55
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolM
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldM
-    REAL(DP), DIMENSION(:), POINTER             :: p_DM
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
-    REAL(DP), DIMENSION(:), POINTER             :: p_Da33,p_Da66
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA33,p_KdiagonalA66
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA11
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA11
+    real(DP), dimension(:), pointer             :: p_DA11,p_DA12,p_DA21,p_DA22
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA45
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA45
+    real(DP), dimension(:), pointer             :: p_DA44,p_DA45,p_DA54,p_DA55
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolM
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldM
+    real(DP), dimension(:), pointer             :: p_DM
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer             :: p_Da33,p_Da66
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    INTEGER, PARAMETER :: nnvel = 4      ! Q1T = 4 DOF's per velocity
-    INTEGER, PARAMETER :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
-    INTEGER, PARAMETER :: nndualvel = 4      ! Q1T = 4 DOF's per dual velocity
-    INTEGER, PARAMETER :: nndualpressure = 1 ! QQ0 = 1 DOF's per dual pressure
-    INTEGER, PARAMETER :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF's per element
-    INTEGER, PARAMETER :: nnld = 2*nnprimal
-    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
-    REAL(DP), DIMENSION(nnld,nnld) :: AA
-    REAL(DP), DIMENSION(nnld) :: FF
+    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
+    integer, parameter :: nndualvel = 4      ! Q1T = 4 DOF's per dual velocity
+    integer, parameter :: nndualpressure = 1 ! QQ0 = 1 DOF's per dual pressure
+    integer, parameter :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF's per element
+    integer, parameter :: nnld = 2*nnprimal
+    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    real(DP), dimension(nnld,nnld) :: AA
+    real(DP), dimension(nnld) :: FF
     
     ! Offsets of the 'local' solution parts in the 'local' solution vector
-    INTEGER, PARAMETER :: lofsu = 0
-    INTEGER, PARAMETER :: lofsv = nnvel
-    INTEGER, PARAMETER :: lofsp = 2*nnvel
-    INTEGER, PARAMETER :: lofsl1 = 2*nnvel+1
-    INTEGER, PARAMETER :: lofsl2 = 2*nnvel+1+nnvel
-    INTEGER, PARAMETER :: lofsxi = 2*nnvel+1+2*nnvel
+    integer, parameter :: lofsu = 0
+    integer, parameter :: lofsv = nnvel
+    integer, parameter :: lofsp = 2*nnvel
+    integer, parameter :: lofsl1 = 2*nnvel+1
+    integer, parameter :: lofsl2 = 2*nnvel+1+nnvel
+    integer, parameter :: lofsxi = 2*nnvel+1+2*nnvel
     
     ! LAPACK temporary space
-    INTEGER :: Ipiv(nnld),ilapackInfo
+    integer :: Ipiv(nnld),ilapackInfo
     
     ! Offset information in arrays.
     ! Primal variables
-    INTEGER(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
+    integer(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
     
     ! Dual variables
-    INTEGER(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
+    integer(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
     
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,k
-    REAL(DP) :: daux,daux2
+    integer :: ia1,ia2,ib1,ib2,ia,ib,k
+    real(DP) :: daux,daux2
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -9774,17 +9774,17 @@ CONTAINS
     ! Structure of A12 is assumed to be the same as A21.
     ! Get A12 and A21 -- except for if the multipliers are =0, then
     ! we switch them off by nullifying the pointers.
-    IF (rvanka%Dmultipliers(1,2) .NE. 0.0_DP) THEN
+    if (rvanka%Dmultipliers(1,2) .ne. 0.0_DP) then
       p_KcolA12 => rvanka%p_KcolA12
       p_KldA12 => rvanka%p_KldA12
       p_DA12 => rvanka%p_DA12
       p_DA21 => rvanka%p_DA21
-    ELSE
-      NULLIFY(p_KcolA12)
-      NULLIFY(p_KldA12) 
-      NULLIFY(p_DA12 )
-      NULLIFY(p_DA21 )
-    END IF
+    else
+      nullify(p_KcolA12)
+      nullify(p_KldA12) 
+      nullify(p_DA12 )
+      nullify(p_DA21 )
+    end if
     
     p_KcolB => rvanka%p_KcolB
     p_KldB => rvanka%p_KldB
@@ -9810,28 +9810,28 @@ CONTAINS
     p_DM => rvanka%p_DM14
     
     ! Diagonal submatrices A33 and A66 (if they exist)
-    IF (rvanka%Dmultipliers(3,3) .NE. 0.0_DP) THEN
+    if (rvanka%Dmultipliers(3,3) .ne. 0.0_DP) then
       p_Da33 => rvanka%p_DA33
       p_KdiagonalA33 => rvanka%p_KdiagonalA33
-    ELSE
-      NULLIFY(p_Da33)
-      NULLIFY(p_KdiagonalA33)
-    END IF
+    else
+      nullify(p_Da33)
+      nullify(p_KdiagonalA33)
+    end if
     
-    IF (rvanka%Dmultipliers(6,6) .NE. 0.0_DP) THEN
+    if (rvanka%Dmultipliers(6,6) .ne. 0.0_DP) then
       p_Da66 => rvanka%p_DA66
       p_KdiagonalA66 => rvanka%p_KdiagonalA66
-    ELSE
-      NULLIFY(p_Da66)
-      NULLIFY(p_KdiagonalA66)
-    END IF
+    else
+      nullify(p_Da66)
+      nullify(p_KdiagonalA66)
+    end if
 
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetu = 0
@@ -9906,12 +9906,12 @@ CONTAINS
     !
     ! So we start with a loop over all elements in the list
 
-    SELECT CASE (csystemPart)
+    select case (csystemPart)
     ! -------------------------------------------------------------------------
-    CASE (0)
+    case (0)
       ! VANKA applied to full 18x18 system
 
-      DO ielidx=1,SIZE(IelementList)
+      do ielidx=1,size(IelementList)
       
         ! Get the element number which is to be processed.
         iel = IelementList(ielidx)
@@ -9944,7 +9944,7 @@ CONTAINS
         IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
         ! Loop over all U-nodes of that element.
-        DO inode=1,nnvel
+        do inode=1,nnvel
         
           ! Get the DOF we have to tackle:
           idof = IdofGlobal(inode)
@@ -10036,7 +10036,7 @@ CONTAINS
           
           ia1 = p_KldA11(idof)
           ia2 = p_KldA11(idof+1)-1
-          DO ia = ia1,ia2
+          do ia = ia1,ia2
             ! Calculate:
             !
             !   ( du  ) = ( du  ) - ( A11  .   .   .   .   .  ) ( u  )
@@ -10062,24 +10062,24 @@ CONTAINS
             
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
-            DO k=1,nnvel
-              IF (j .EQ. IdofGlobal(k)) THEN
+            do k=1,nnvel
+              if (j .eq. IdofGlobal(k)) then
                 AA (inode+lofsu,k+lofsu) = p_DA11(ia)*rvanka%Dmultipliers(1,1)
                 AA (inode+lofsv,k+lofsv) = p_DA22(ia)*rvanka%Dmultipliers(2,2)
                 
                 AA (inode+lofsl1,k+lofsl1) = p_DA44(ia)*rvanka%Dmultipliers(4,4)
                 AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)*rvanka%Dmultipliers(5,5)
-                EXIT
-              END IF
-            END DO          
-          END DO
+                exit
+              end if
+            end do          
+          end do
 
           ! Handle the 'off-diagonal' matrices A12 and A21
           
-          IF (ASSOCIATED(p_KldA12)) THEN
+          if (associated(p_KldA12)) then
             ia1 = p_KldA12(idof)
             ia2 = p_KldA12(idof+1)-1
-            DO ia = ia1,ia2
+            do ia = ia1,ia2
               ! Calculate:
               !
               !   ( du  ) = ( du  ) - (  .  A12  .   .   .   .  ) ( u  )
@@ -10097,21 +10097,21 @@ CONTAINS
               
               ! Whereever we find a DOF that couples to another DOF on the 
               ! same element, we put that to both A-blocks of our local matrix.
-              DO k=1,nnvel
-                IF (j .EQ. IdofGlobal(k)) THEN
+              do k=1,nnvel
+                if (j .eq. IdofGlobal(k)) then
                   AA (inode+lofsu,k+lofsv) = p_DA12(ia)*rvanka%Dmultipliers(1,2)
                   AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanka%Dmultipliers(2,1)
-                  EXIT
-                END IF
-              END DO          
-            END DO
-          END IF
+                  exit
+                end if
+              end do          
+            end do
+          end if
           
           ! Handle the 'off-diagonal' matrices A45 and A54 if they exist
-          IF (ASSOCIATED(p_KldA45)) THEN
+          if (associated(p_KldA45)) then
             ia1 = p_KldA45(idof)
             ia2 = p_KldA45(idof+1)-1
-            DO ia = ia1,ia2
+            do ia = ia1,ia2
               ! Calculate:
               !
               !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
@@ -10129,19 +10129,19 @@ CONTAINS
               
               ! Whereever we find a DOF that couples to another DOF on the 
               ! same element, we put that to both A-blocks of our local matrix.
-              DO k=1,nnvel
-                IF (j .EQ. IdofGlobal(k)) THEN
+              do k=1,nnvel
+                if (j .eq. IdofGlobal(k)) then
                   AA (inode+lofsl1,k+lofsl2) = p_DA45(ia)*rvanka%Dmultipliers(4,5)
                   AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)*rvanka%Dmultipliers(5,4)
-                  EXIT
-                END IF
-              END DO          
-            END DO
-          END IF
+                  exit
+                end if
+              end do          
+            end do
+          end if
                   
           ! Process A33 if it exists
                   
-          IF (ASSOCIATED(p_KdiagonalA33)) THEN
+          if (associated(p_KdiagonalA33)) then
 
             ! Calculate:
             !
@@ -10159,11 +10159,11 @@ CONTAINS
                         - daux*p_DA33(p_KdiagonalA33(IEL))*p_Dvector(IEL+ioffsetp)
             AA(1+lofsp,1+lofsp) = daux*p_DA33(p_KdiagonalA33(IEL))
 
-          END IF
+          end if
                   
           ! Process A66 if it exists
                   
-          IF (ASSOCIATED(p_KdiagonalA66)) THEN
+          if (associated(p_KdiagonalA66)) then
 
             ! Calculate:
             !
@@ -10181,13 +10181,13 @@ CONTAINS
                         - daux*p_DA66(p_KdiagonalA66(IEL))*p_Dvector(IEL+ioffsetxi)
             AA(1+lofsxi,1+lofsxi) = daux*p_DA66(p_KdiagonalA66(IEL))
 
-          END IF
+          end if
                   
           ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
           
           ib1=p_KldB(idof)
           ib2=p_KldB(idof+1)-1
-          DO ib = ib1,ib2
+          do ib = ib1,ib2
             ! Calculate:
             !
             !   ( du  ) = ( du  ) - (  .   .  B1   .   .   .  ) ( u  )
@@ -10210,10 +10210,10 @@ CONTAINS
             FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2 * rvanka%Dmultipliers(5,6)
             
             ! Don't incorporate the B-matrices into AA yet; this will come later!
-          END DO
+          end do
           
           ! The mass matrix defect.
-          IF (ASSOCIATED(p_KldM)) THEN
+          if (associated(p_KldM)) then
             ! We assume: multiplier of A(1,4) = multiplier of A(2,5)
             daux = rvanka%Dmultipliers(1,4)
             
@@ -10222,7 +10222,7 @@ CONTAINS
             
             ia1 = p_KldM(idof)
             ia2 = p_KldM(idof+1)-1
-            DO ia = ia1,ia2
+            do ia = ia1,ia2
 
               J = p_KcolM(ia)
 
@@ -10243,8 +10243,8 @@ CONTAINS
               
               ! Whereever we find a DOF that couples to another DOF on the 
               ! same element, we put that to both A-blocks of our local matrix.
-              DO k=1,nnvel
-                IF (j .EQ. IdofGlobal(k)) THEN
+              do k=1,nnvel
+                if (j .eq. IdofGlobal(k)) then
                   AA (inode+lofsu,k+lofsl1) = daux*p_DM(ia)
                   AA (inode+lofsv,k+lofsl2) = daux*p_DM(ia)
                   
@@ -10252,11 +10252,11 @@ CONTAINS
                   AA (inode+lofsl2,k+lofsv) = daux2*p_DM(ia)
                   ! AA (k+lofsl1,inode+lofsu) = daux2*p_DM(ia)
                   ! AA (k+lofsl2,inode+lofsv) = daux2*p_DM(ia)
-                  EXIT
-                END IF
-              END DO          
-            END DO
-          END IF
+                  exit
+                end if
+              end do          
+            end do
+          end if
           
           ! Ok, up to now, all loops are clean and vectoriseable. Now the only
           ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -10278,7 +10278,7 @@ CONTAINS
           ! Either two (if the velocity DOF is an edge with two neighbouring
           ! elements) or one (if the velocity DOF is at an edge on the boundary
           ! and there is no neighbour).
-          DO ib = ib1,ib2
+          do ib = ib1,ib2
           
             ! Calculate:
             !
@@ -10298,7 +10298,7 @@ CONTAINS
             !   (  .   .   .   .   .  B2  ) 
             !   (  .   .   .  D1  D2   .  ) 
 
-            IF (p_KcolB(ib) .EQ. IEL) THEN
+            if (p_KcolB(ib) .eq. IEL) then
             
               J = p_KcolB(ib)
               
@@ -10336,11 +10336,11 @@ CONTAINS
             
               ! Quit the loop - the other possible entry belongs to another 
               ! element, not to the current one
-              EXIT
-            END IF
-          END DO ! ib
+              exit
+            end if
+          end do ! ib
           
-        END DO ! inode
+        end do ! inode
       
         ! Now we make a defect-correction approach for this system:
         !
@@ -10357,16 +10357,16 @@ CONTAINS
         ! solve the local system AA dd = FF for dd. The local defect dd is then
         ! added back to the global solution vector.
         
-        CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+        call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
         
-        IF (ilapackInfo .EQ. 0) THEN
+        if (ilapackInfo .eq. 0) then
           
           ! Ok, we got the update vector in FF. Incorporate this now into our
           ! solution vector with the update formula
           !
           !  x_{n+1} = x_n + domega * y
           
-          DO inode=1,nnvel
+          do inode=1,nnvel
             ! Update of the primal velocity vectors
             p_Dvector(idofGlobal(inode)+ioffsetu) &
               = p_Dvector(idofGlobal(inode)+ioffsetu) + domega * FF(inode+lofsu)
@@ -10378,7 +10378,7 @@ CONTAINS
               = p_Dvector(idofGlobal(inode)+ioffsetl1) + domega * FF(inode+lofsl1)
             p_Dvector(idofGlobal(inode)+ioffsetl2) &
               = p_Dvector(idofGlobal(inode)+ioffsetl2) + domega * FF(inode+lofsl2)
-          END DO
+          end do
           
           p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                     domega * FF(1+lofsp)
@@ -10386,35 +10386,35 @@ CONTAINS
           p_Dvector(iel+ioffsetxi) = p_Dvector(iel+ioffsetxi) + &
                                     domega * FF(1+lofsxi)
         
-        ELSE IF (ilapackInfo .LT. 0) THEN
+        else if (ilapackInfo .lt. 0) then
           
-          CALL output_line (&
+          call output_line (&
               'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNSSOCQ1TQ0fullCoupCfFB')
           
-        END IF
+        end if
 
         ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
         ! coarse grid with all boundaries = Dirichlet.
         ! In this case, nothing must be changed in the vector!
       
-      END DO ! iel
+      end do ! iel
 
     ! -------------------------------------------------------------------------      
-    CASE (1)
+    case (1)
       ! VANKA applied to 9x9 primal system
 
-      DO ielidx=1,SIZE(IelementList)
+      do ielidx=1,size(IelementList)
       
         ! Get the element number which is to be processed.
         iel = IelementList(ielidx)
       
         ! Clear the 'primal local system matrix'.
-        DO ib=1,nnprimal
-          DO ia=1,nnprimal
+        do ib=1,nnprimal
+          do ia=1,nnprimal
             AA(ia,ib) = 0.0_DP
-          END DO
-        END DO
+          end do
+        end do
         
         ! We now have the element
         !                                               
@@ -10438,7 +10438,7 @@ CONTAINS
         IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
         ! Loop over all U-nodes of that element.
-        DO inode=1,nnvel
+        do inode=1,nnvel
         
           ! Get the DOF we have to tackle:
           idof = IdofGlobal(inode)
@@ -10469,7 +10469,7 @@ CONTAINS
           
           ia1 = p_KldA11(idof)
           ia2 = p_KldA11(idof+1)-1
-          DO ia = ia1,ia2
+          do ia = ia1,ia2
             ! Calculate:
             !
             !   ( du  ) = ( du  ) - ( A11  .   .   .   .   .  ) ( u  )
@@ -10489,21 +10489,21 @@ CONTAINS
 
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
-            DO k=1,nnvel
-              IF (j .EQ. IdofGlobal(k)) THEN
+            do k=1,nnvel
+              if (j .eq. IdofGlobal(k)) then
                 AA (inode+lofsu,k+lofsu) = p_DA11(ia)*rvanka%Dmultipliers(1,1)
                 AA (inode+lofsv,k+lofsv) = p_DA22(ia)*rvanka%Dmultipliers(2,2)
-                EXIT
-              END IF
-            END DO          
-          END DO
+                exit
+              end if
+            end do          
+          end do
 
           ! Handle the 'off-diagonal' matrices A12 and A21
           
-          IF (ASSOCIATED(p_KldA12)) THEN
+          if (associated(p_KldA12)) then
             ia1 = p_KldA12(idof)
             ia2 = p_KldA12(idof+1)-1
-            DO ia = ia1,ia2
+            do ia = ia1,ia2
               ! Calculate:
               !
               !   ( du  ) = ( du  ) - (  .  A12  .   .   .   .  ) ( u  )
@@ -10521,19 +10521,19 @@ CONTAINS
               
               ! Whereever we find a DOF that couples to another DOF on the 
               ! same element, we put that to both A-blocks of our local matrix.
-              DO k=1,nnvel
-                IF (j .EQ. IdofGlobal(k)) THEN
+              do k=1,nnvel
+                if (j .eq. IdofGlobal(k)) then
                   AA (inode+lofsu,k+lofsv) = p_DA12(ia)*rvanka%Dmultipliers(1,2)
                   AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanka%Dmultipliers(2,1)
-                  EXIT
-                END IF
-              END DO          
-            END DO
-          END IF
+                  exit
+                end if
+              end do          
+            end do
+          end if
           
           ! Process A33 if it exists
                   
-          IF (ASSOCIATED(p_KdiagonalA33)) THEN
+          if (associated(p_KdiagonalA33)) then
 
             ! Calculate:
             !
@@ -10551,13 +10551,13 @@ CONTAINS
                         - daux*p_DA33(p_KdiagonalA33(IEL))*p_Dvector(IEL+ioffsetp)
             AA(1+lofsp,1+lofsp) = daux*p_DA33(p_KdiagonalA33(IEL))
 
-          END IF
+          end if
                   
           ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
           
           ib1=p_KldB(idof)
           ib2=p_KldB(idof+1)-1
-          DO ib = ib1,ib2
+          do ib = ib1,ib2
             ! Calculate:
             !
             !   ( du  ) = ( du  ) - (  .   .  B1   .   .   .  ) ( u  )
@@ -10575,16 +10575,16 @@ CONTAINS
             FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanka%Dmultipliers(2,3)
 
             ! Don't incorporate the B-matrices into AA yet; this will come later!
-          END DO
+          end do
           
           ! The mass matrix defect.
-          IF (ASSOCIATED(p_KldM)) THEN
+          if (associated(p_KldM)) then
             ! We assume: multiplier of A(1,4) = multiplier of A(2,5)
             daux = rvanka%Dmultipliers(1,4)
             
             ia1 = p_KldM(idof)
             ia2 = p_KldM(idof+1)-1
-            DO ia = ia1,ia2
+            do ia = ia1,ia2
 
               J = p_KcolM(ia)
 
@@ -10602,15 +10602,15 @@ CONTAINS
 
               ! Whereever we find a DOF that couples to another DOF on the 
               ! same element, we put that to both A-blocks of our local matrix.
-              DO k=1,nnvel
-                IF (j .EQ. IdofGlobal(k)) THEN
+              do k=1,nnvel
+                if (j .eq. IdofGlobal(k)) then
                   AA (inode+lofsu,k+lofsl1) = daux*p_DM(ia)
                   AA (inode+lofsv,k+lofsl2) = daux*p_DM(ia)
-                  EXIT
-                END IF
-              END DO          
-            END DO
-          END IF
+                  exit
+                end if
+              end do          
+            end do
+          end if
           
           ! Ok, up to now, all loops are clean and vectoriseable. Now the only
           ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -10632,7 +10632,7 @@ CONTAINS
           ! Either two (if the velocity DOF is an edge with two neighbouring
           ! elements) or one (if the velocity DOF is at an edge on the boundary
           ! and there is no neighbour).
-          DO ib = ib1,ib2
+          do ib = ib1,ib2
           
             ! Calculate:
             !
@@ -10652,7 +10652,7 @@ CONTAINS
             !   (  .   .   .   .   .   .  ) 
             !   (  .   .   .   .   .   .  ) 
 
-            IF (p_KcolB(ib) .EQ. IEL) THEN
+            if (p_KcolB(ib) .eq. IEL) then
             
               J = p_KcolB(ib)
               
@@ -10678,11 +10678,11 @@ CONTAINS
             
               ! Quit the loop - the other possible entry belongs to another 
               ! element, not to the current one
-              EXIT
-            END IF
-          END DO ! ib
+              exit
+            end if
+          end do ! ib
           
-        END DO ! inode
+        end do ! inode
       
         ! Now we make a defect-correction approach for this system:
         !
@@ -10703,56 +10703,56 @@ CONTAINS
         ! 9x9 subsystem of the complete 18x18 system. Lapack can handle this
         ! using the 'leading dimension'...
         
-        CALL DGESV (nnprimal, 1, AA, nnld, Ipiv, FF(1:nnprimal), nnprimal, ilapackInfo)
+        call DGESV (nnprimal, 1, AA, nnld, Ipiv, FF(1:nnprimal), nnprimal, ilapackInfo)
         
-        IF (ilapackInfo .EQ. 0) THEN
+        if (ilapackInfo .eq. 0) then
           
           ! Ok, we got the update vector in FF. Incorporate this now into our
           ! solution vector with the update formula
           !
           !  x_{n+1} = x_n + domega * y
           
-          DO inode=1,nnvel
+          do inode=1,nnvel
             ! Update of the primal velocity vectors
             p_Dvector(idofGlobal(inode)+ioffsetu) &
               = p_Dvector(idofGlobal(inode)+ioffsetu) + domega * FF(inode+lofsu)
             p_Dvector(idofGlobal(inode)+ioffsetv) &
               = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
 
-          END DO
+          end do
           
           p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                     domega * FF(1+lofsp)
 
-        ELSE IF (ilapackInfo .LT. 0) THEN
+        else if (ilapackInfo .lt. 0) then
           
-          CALL output_line (&
+          call output_line (&
               'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNSSOCQ1TQ0fullCoupCfFB')
           
-        END IF
+        end if
 
         ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
         ! coarse grid with all boundaries = Dirichlet.
         ! In this case, nothing must be changed in the vector!
       
-      END DO ! iel
+      end do ! iel
   
     ! -------------------------------------------------------------------------
-    CASE (2)
+    case (2)
       ! VANKA applied to 9x9 dual system
 
-      DO ielidx=1,SIZE(IelementList)
+      do ielidx=1,size(IelementList)
       
         ! Get the element number which is to be processed.
         iel = IelementList(ielidx)
       
         ! Clear the 'dual local system matrix'.
-        DO ib=nnprimal+1,2*nnprimal
-          DO ia=nnprimal+1,2*nnprimal
+        do ib=nnprimal+1,2*nnprimal
+          do ia=nnprimal+1,2*nnprimal
             AA(ia,ib) = 0.0_DP
-          END DO
-        END DO
+          end do
+        end do
         
         ! We now have the element
         !                                               
@@ -10776,7 +10776,7 @@ CONTAINS
         IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
         ! Loop over all U-nodes of that element.
-        DO inode=1,nnvel
+        do inode=1,nnvel
         
           ! Get the DOF we have to tackle:
           idof = IdofGlobal(inode)
@@ -10803,7 +10803,7 @@ CONTAINS
           
           ia1 = p_KldA11(idof)
           ia2 = p_KldA11(idof+1)-1
-          DO ia = ia1,ia2
+          do ia = ia1,ia2
             ! Calculate:
             !
             !                                                   ( u  )
@@ -10823,21 +10823,21 @@ CONTAINS
             
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
-            DO k=1,nnvel
-              IF (j .EQ. IdofGlobal(k)) THEN
+            do k=1,nnvel
+              if (j .eq. IdofGlobal(k)) then
                 AA (inode+lofsl1,k+lofsl1) = p_DA44(ia)*rvanka%Dmultipliers(4,4)
                 AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)*rvanka%Dmultipliers(5,5)
-                EXIT
-              END IF
-            END DO          
-          END DO
+                exit
+              end if
+            end do          
+          end do
 
 
           ! Handle the 'off-diagonal' matrices A45 and A54 if they exist
-          IF (ASSOCIATED(p_KldA45)) THEN
+          if (associated(p_KldA45)) then
             ia1 = p_KldA45(idof)
             ia2 = p_KldA45(idof+1)-1
-            DO ia = ia1,ia2
+            do ia = ia1,ia2
               ! Calculate:
               !
               !                                                   ( u  )
@@ -10855,19 +10855,19 @@ CONTAINS
               
               ! Whereever we find a DOF that couples to another DOF on the 
               ! same element, we put that to both A-blocks of our local matrix.
-              DO k=1,nnvel
-                IF (j .EQ. IdofGlobal(k)) THEN
+              do k=1,nnvel
+                if (j .eq. IdofGlobal(k)) then
                   AA (inode+lofsl1,k+lofsl2) = p_DA45(ia)*rvanka%Dmultipliers(4,5)
                   AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)*rvanka%Dmultipliers(5,4)
-                  EXIT
-                END IF
-              END DO          
-            END DO
-          END IF
+                  exit
+                end if
+              end do          
+            end do
+          end if
                   
           ! Process A66 if it exists
                   
-          IF (ASSOCIATED(p_KdiagonalA66)) THEN
+          if (associated(p_KdiagonalA66)) then
 
             ! Calculate:
             !
@@ -10885,13 +10885,13 @@ CONTAINS
                         - daux*p_DA66(p_KdiagonalA66(IEL))*p_Dvector(IEL+ioffsetxi)
             AA(1+lofsxi,1+lofsxi) = daux*p_DA66(p_KdiagonalA66(IEL))
 
-          END IF
+          end if
                   
           ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
           
           ib1=p_KldB(idof)
           ib2=p_KldB(idof+1)-1
-          DO ib = ib1,ib2
+          do ib = ib1,ib2
             ! Calculate:
             !
             !                                                   ( u  )
@@ -10909,16 +10909,16 @@ CONTAINS
             FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2 * rvanka%Dmultipliers(5,6)
             
             ! Don't incorporate the B-matrices into AA yet; this will come later!
-          END DO
+          end do
           
           ! The mass matrix defect.
-          IF (ASSOCIATED(p_KldM)) THEN
+          if (associated(p_KldM)) then
             ! We assume: multiplier of A(4,1) = multiplier of A(5,2)
             daux2 = rvanka%Dmultipliers(4,1)
             
             ia1 = p_KldM(idof)
             ia2 = p_KldM(idof+1)-1
-            DO ia = ia1,ia2
+            do ia = ia1,ia2
 
               J = p_KcolM(ia)
 
@@ -10936,15 +10936,15 @@ CONTAINS
               
               ! Whereever we find a DOF that couples to another DOF on the 
               ! same element, we put that to both A-blocks of our local matrix.
-              DO k=1,nnvel
-                IF (j .EQ. IdofGlobal(k)) THEN
+              do k=1,nnvel
+                if (j .eq. IdofGlobal(k)) then
                   AA (inode+lofsl1,k+lofsu) = daux2*p_DM(ia)
                   AA (inode+lofsl2,k+lofsv) = daux2*p_DM(ia)
-                  EXIT
-                END IF
-              END DO          
-            END DO
-          END IF
+                  exit
+                end if
+              end do          
+            end do
+          end if
           
           ! Ok, up to now, all loops are clean and vectoriseable. Now the only
           ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -10966,7 +10966,7 @@ CONTAINS
           ! Either two (if the velocity DOF is an edge with two neighbouring
           ! elements) or one (if the velocity DOF is at an edge on the boundary
           ! and there is no neighbour).
-          DO ib = ib1,ib2
+          do ib = ib1,ib2
           
             ! Calculate:
             !
@@ -10986,7 +10986,7 @@ CONTAINS
             !   (  .   .   .   .   .  B2  ) 
             !   (  .   .   .  D1  D2   .  ) 
 
-            IF (p_KcolB(ib) .EQ. IEL) THEN
+            if (p_KcolB(ib) .eq. IEL) then
             
               J = p_KcolB(ib)
               
@@ -11012,11 +11012,11 @@ CONTAINS
             
               ! Quit the loop - the other possible entry belongs to another 
               ! element, not to the current one
-              EXIT
-            END IF
-          END DO ! ib
+              exit
+            end if
+          end do ! ib
           
-        END DO ! inode
+        end do ! inode
       
         ! Now we make a defect-correction approach for this system:
         !
@@ -11040,44 +11040,44 @@ CONTAINS
         ! Note that we explicitely using the fact that AA(10+i*18,j) = AA(10,i+j),
         ! so LAPACK will really work on the submatrix A(10:18,10:18) !
         
-        CALL DGESV (nnprimal, 1, AA(nnprimal+1,nnprimal+1), nnld, &
+        call DGESV (nnprimal, 1, AA(nnprimal+1,nnprimal+1), nnld, &
             Ipiv, FF(nnprimal+1), nnprimal, ilapackInfo)
         
-        IF (ilapackInfo .EQ. 0) THEN
+        if (ilapackInfo .eq. 0) then
           
           ! Ok, we got the update vector in FF. Incorporate this now into our
           ! solution vector with the update formula
           !
           !  x_{n+1} = x_n + domega * y
           
-          DO inode=1,nnvel
+          do inode=1,nnvel
             ! Update of the dual velocity vectors
             p_Dvector(idofGlobal(inode)+ioffsetl1) &
               = p_Dvector(idofGlobal(inode)+ioffsetl1) + domega * FF(inode+lofsl1)
             p_Dvector(idofGlobal(inode)+ioffsetl2) &
               = p_Dvector(idofGlobal(inode)+ioffsetl2) + domega * FF(inode+lofsl2)
-          END DO
+          end do
           
           p_Dvector(iel+ioffsetxi) = p_Dvector(iel+ioffsetxi) + &
                                     domega * FF(1+lofsxi)
         
-        ELSE IF (ilapackInfo .LT. 0) THEN
+        else if (ilapackInfo .lt. 0) then
           
-          CALL output_line (&
+          call output_line (&
               'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNSSOCQ1TQ0fullCoupCfFB')
           
-        END IF
+        end if
 
         ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
         ! coarse grid with all boundaries = Dirichlet.
         ! In this case, nothing must be changed in the vector!
       
-      END DO ! iel
+      end do ! iel
 
-    END SELECT
+    end select
 
-  END SUBROUTINE
+  end subroutine
 
 ! *****************************************************************************
 ! Problem class: VANKA variants for 3D Navier-Stokes problems
@@ -11085,7 +11085,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_init3DNavierStokes (rmatrix,rvanka)
+  subroutine vanka_init3DNavierStokes (rmatrix,rvanka)
   
 !<description>
   ! Initialises the VANKA variant for 3D Navier-Stokes problems 
@@ -11099,170 +11099,170 @@ CONTAINS
 
 !<input>
   ! The system matrix of the linear system.
-  TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
+  type(t_matrixBlock), intent(IN), target :: rmatrix
   !</input>
 
 !<inputoutput>
   ! t_vankaPointer3DSPNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vanka), INTENT(INOUT) :: rvanka
+  type(t_vanka), intent(INOUT) :: rvanka
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: i,j
-    LOGICAL :: bextended
-    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscr
+    integer :: i,j
+    logical :: bextended
+    type(t_blockDiscretisation), pointer :: p_rblockDiscr
     
-    bextended = .FALSE.
+    bextended = .false.
     
     ! Matrix must be 4x4.
-    IF (rmatrix%ndiagBlocks .NE. 4) THEN
-      CALL output_line ('System matrix is not 4x4.',&
+    if (rmatrix%ndiagBlocks .ne. 4) then
+      call output_line ('System matrix is not 4x4.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(4,:) must be (virtually) transposed. All matrices must be double precision.
-    DO i=1,4
-      DO j=1,4
+    do i=1,4
+      do j=1,4
       
-        IF (lsysbl_isSubmatrixPresent(rmatrix,i,j)) THEN
+        if (lsysbl_isSubmatrixPresent(rmatrix,i,j)) then
         
-          IF (i .LE. 3) THEN
-            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .NE. 0) THEN
-              CALL output_line ('Transposed submatrices not supported.',&
+          if (i .le. 3) then
+            if (iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .ne. 0) then
+              call output_line ('Transposed submatrices not supported.',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-              CALL sys_halt()
-            END IF
-          ELSE
-            IF ((i .LE. 3) .AND. &
-               (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .EQ. 0)) THEN
-              CALL output_line ('B1/B2/B3 submatrices must be virtually',&
+              call sys_halt()
+            end if
+          else
+            if ((i .le. 3) .and. &
+               (iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .eq. 0)) then
+              call output_line ('B1/B2/B3 submatrices must be virtually',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-              CALL output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
+              call output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-              CALL sys_halt()
-            END IF
-          END IF
+              call sys_halt()
+            end if
+          end if
           
-          IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
-            CALL output_line ('Only format 7 and 9 matrices supported.',&
+          if ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX7) .and. &
+              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX9)) then
+            call output_line ('Only format 7 and 9 matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
-          IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
-            CALL output_line ('Only double precision matrices supported.',&
+          if (rmatrix%RmatrixBlock(i,j)%cdataType .ne. ST_DOUBLE) then
+            call output_line ('Only double precision matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
           ! For scaled matrices, we have to use an extended sub-version of VANKA.
-          IF ((rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 0.0_DP)) THEN
-            bextended = .TRUE.  
-          END IF
+          if ((rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 1.0_DP) .and. &
+              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 0.0_DP)) then
+            bextended = .true.  
+          end if
           
-          IF ((i .eq. j) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) ) THEN
-            bextended = .TRUE. 
-          END IF
+          if ((i .eq. j) .and. &
+              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 1.0_DP) ) then
+            bextended = .true. 
+          end if
           
-        END IF ! neq != 0
-      END DO
-    END DO
+        end if ! neq != 0
+      end do
+    end do
     
     ! The structure of A(1,3) must be identical to A(3,1) and
     ! that of A(2,3) must be identical to A(3,2).
-    IF ((rmatrix%RmatrixBlock(1,4)%NA .NE. rmatrix%RmatrixBlock(4,1)%NA) .OR. &
-        (rmatrix%RmatrixBlock(1,4)%NEQ .NE. rmatrix%RmatrixBlock(4,1)%NCOLS)) THEN
-      CALL output_line ('Structure of B1 and B1^T different!',&
+    if ((rmatrix%RmatrixBlock(1,4)%NA .ne. rmatrix%RmatrixBlock(4,1)%NA) .or. &
+        (rmatrix%RmatrixBlock(1,4)%NEQ .ne. rmatrix%RmatrixBlock(4,1)%NCOLS)) then
+      call output_line ('Structure of B1 and B1^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rmatrix%RmatrixBlock(2,4)%NA .NE. rmatrix%RmatrixBlock(4,2)%NA) .OR. &
-        (rmatrix%RmatrixBlock(2,4)%NEQ .NE. rmatrix%RmatrixBlock(4,2)%NCOLS)) THEN
-      CALL output_line ('Structure of B2 and B2^T different!',&
+    if ((rmatrix%RmatrixBlock(2,4)%NA .ne. rmatrix%RmatrixBlock(4,2)%NA) .or. &
+        (rmatrix%RmatrixBlock(2,4)%NEQ .ne. rmatrix%RmatrixBlock(4,2)%NCOLS)) then
+      call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-      CALL sys_halt()
-    END IF      
+      call sys_halt()
+    end if      
   
-    IF ((rmatrix%RmatrixBlock(3,4)%NA .NE. rmatrix%RmatrixBlock(4,3)%NA) .OR. &
-        (rmatrix%RmatrixBlock(3,4)%NEQ .NE. rmatrix%RmatrixBlock(4,3)%NCOLS)) THEN
-      CALL output_line ('Structure of B3 and B3^T different!',&
+    if ((rmatrix%RmatrixBlock(3,4)%NA .ne. rmatrix%RmatrixBlock(4,3)%NA) .or. &
+        (rmatrix%RmatrixBlock(3,4)%NEQ .ne. rmatrix%RmatrixBlock(4,3)%NCOLS)) then
+      call output_line ('Structure of B3 and B3^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-      CALL sys_halt()
-    END IF      
+      call sys_halt()
+    end if      
 
     ! Fill the output structure with data of the matrices.
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
         rvanka%rvanka3DNavSt%p_DA )
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),&
         rvanka%rvanka3DNavSt%p_DB1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,4),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,4),&
         rvanka%rvanka3DNavSt%p_DB2)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,4),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,4),&
         rvanka%rvanka3DNavSt%p_DB3)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,1),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,1),&
         rvanka%rvanka3DNavSt%p_DD1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,2),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,2),&
         rvanka%rvanka3DNavSt%p_DD2)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,3),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,3),&
         rvanka%rvanka3DNavSt%p_DD3)
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),&
         rvanka%rvanka3DNavSt%p_KcolB)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,4), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,4), &
         rvanka%rvanka3DNavSt%p_KldB )
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
         rvanka%rvanka3DNavSt%p_KcolA)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
         rvanka%rvanka3DNavSt%p_KldA )
-    IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
+    if (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+      call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
                               rvanka%rvanka3DNavSt%p_KdiagonalA)
-    ELSE
+    else
       rvanka%rvanka3DNavSt%p_KdiagonalA => rvanka%rvanka3DNavSt%p_KldA
-    END IF
+    end if
     
-    IF (lsysbl_isSubmatrixPresent(rmatrix,4,4)) THEN
+    if (lsysbl_isSubmatrixPresent(rmatrix,4,4)) then
     
       ! The matrix must be of format 7 or 9.
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,4),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,4),&
           rvanka%rvanka3DNavSt%p_DA44 )
 
-      IF (rmatrix%RmatrixBlock(4,4)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(4,4), &
+      if (rmatrix%RmatrixBlock(4,4)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+        call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(4,4), &
                                 rvanka%rvanka3DNavSt%p_KdiagonalA44)
-      ELSE
-        CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,4), &
+      else
+        call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,4), &
                                 rvanka%rvanka3DNavSt%p_KdiagonalA44)
-      END IF
+      end if
 
       ! The presence of A(4,4) forces the extended VANKA to be used
-      bextended = .TRUE.
+      bextended = .true.
 
-    END IF
+    end if
     
-    IF (bextended) rvanka%csubsubtype = 1
+    if (bextended) rvanka%csubsubtype = 1
     
     ! What is with A22? Is it the same as A11?
-    IF (.NOT. lsyssc_isMatrixContentShared (&
-        rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)) ) THEN
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
+    if (.not. lsyssc_isMatrixContentShared (&
+        rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)) ) then
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
           rvanka%rvanka3DNavSt%p_DA22 )
-    END IF
+    end if
     
     ! What is with A33? Is it the same as A11?
-    IF (.NOT. lsyssc_isMatrixContentShared (&
-        rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(3,3)) ) THEN
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
+    if (.not. lsyssc_isMatrixContentShared (&
+        rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(3,3)) ) then
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
           rvanka%rvanka3DNavSt%p_DA33 )
-    END IF
+    end if
 
     ! What is with A12 and A21? Do they exist? With a scale factor = 1.0?
 !    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
@@ -11300,11 +11300,11 @@ CONTAINS
     ! Get the block discretisation structure from the matrix.
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
     
-    IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
-      CALL output_line ('No discretisation!',&
+    if (.not. associated(p_rblockDiscr)) then
+      call output_line ('No discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Get the discretisation structure of U,V,W and P from the block
     ! discretisation structure.
@@ -11313,36 +11313,36 @@ CONTAINS
     rvanka%rvanka3DNavSt%p_rspatialDiscrW => p_rblockDiscr%RspatialDiscr(3)
     rvanka%rvanka3DNavSt%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(4)
     
-    IF ((rvanka%rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .NE. &
-         rvanka%rvanka3DNavSt%p_rspatialDiscrV%inumFESpaces) .OR. &
-        (rvanka%rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .NE. &
-         rvanka%rvanka3DNavSt%p_rspatialDiscrW%inumFESpaces)) THEN
-      CALL output_line (&
+    if ((rvanka%rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .ne. &
+         rvanka%rvanka3DNavSt%p_rspatialDiscrV%inumFESpaces) .or. &
+        (rvanka%rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .ne. &
+         rvanka%rvanka3DNavSt%p_rspatialDiscrW%inumFESpaces)) then
+      call output_line (&
           'Discretisation structures of X-, Y- and Z-velocity incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rvanka%rvanka3DNavSt%p_rspatialDiscrP%inumFESpaces .NE. 1) .AND. &
-        (rvanka%rvanka3DNavSt%p_rspatialDiscrP%inumFESpaces .NE. &
-         rvanka%rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces)) THEN
+    if ((rvanka%rvanka3DNavSt%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
+        (rvanka%rvanka3DNavSt%p_rspatialDiscrP%inumFESpaces .ne. &
+         rvanka%rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces)) then
       ! Either there must be only one element type for the pressure, or there one
       ! pressure element distribution for every velocity element distribution!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
-      CALL output_line (&
+      call output_line (&
           'Discretisation structures of velocity and pressure incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_3DNavierStokes (rvanka3DNavSt, rvector, rrhs, domega, &
+  subroutine vanka_3DNavierStokes (rvanka3DNavSt, rvector, rrhs, domega, &
       csubtype, csubsubtype)
   
 !<description>
@@ -11363,44 +11363,44 @@ CONTAINS
 
 !<input>
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
-  INTEGER :: csubtype
+  integer :: csubtype
 
   ! The sub-subtype of VANKA that should handle the above problem class.
   ! =0: use standard VANKA. =1: use extended VANKA (e.g. with different 
   !     multipliers in the matrices)
-  INTEGER :: csubsubtype
+  integer :: csubsubtype
   
 !</input>
 
 !<inputoutput>
   ! t_vanka structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer3DNavSt), INTENT(INOUT) :: rvanka3DNavSt
+  type(t_vankaPointer3DNavSt), intent(INOUT) :: rvanka3DNavSt
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: ielementdist
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementList
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrU
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrV
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrW
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrP 
+    integer :: ielementdist
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+    type(t_elementDistribution), pointer :: p_relementDistrU
+    type(t_elementDistribution), pointer :: p_relementDistrV
+    type(t_elementDistribution), pointer :: p_relementDistrW
+    type(t_elementDistribution), pointer :: p_relementDistrP 
     
     ! 3D Navier Stokes problem.
 
     ! Loop through the element distributions of the velocity.
-    DO ielementdist = 1,rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces
+    do ielementdist = 1,rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces
     
       ! Get the corresponding element distributions of U, V, W and P.
       p_relementDistrU => &
@@ -11412,42 +11412,42 @@ CONTAINS
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
-      IF (rvanka3DNavSt%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
+      if (rvanka3DNavSt%p_rspatialDiscrP%inumFESpaces .gt. 1) then
         p_relementDistrP => &
             rvanka3DNavSt%p_rspatialDiscrP%RelementDistr(ielementdist)
-      ELSE
+      else
         p_relementDistrP => &
             rvanka3DNavSt%p_rspatialDiscrP%RelementDistr(1)
-      END IF
+      end if
       
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as 'primary' element list
       ! and assume that it coincides to that of the Y- and Z-velocity (and to that
       ! of the pressure).
-      CALL storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
+      call storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
       
       ! Which element combination do we have now?
-      IF ((elem_getPrimaryElement(p_relementDistrU%celement) .EQ. EL_Q1T_3D) .AND. &
-          (elem_getPrimaryElement(p_relementDistrV%celement) .EQ. EL_Q1T_3D) .AND. &
-          (elem_getPrimaryElement(p_relementDistrW%celement) .EQ. EL_Q1T_3D) .AND. &
-          (elem_getPrimaryElement(p_relementDistrP%celement) .EQ. EL_Q0_3D)) THEN
+      if ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_Q1T_3D) .and. &
+          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_Q1T_3D) .and. &
+          (elem_getPrimaryElement(p_relementDistrW%celement) .eq. EL_Q1T_3D) .and. &
+          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_Q0_3D)) then
         ! Q1~/Q1~/Q1~/Q0 discretisation
         
         ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
-        SELECT CASE (csubtype)
-        CASE (VANKATP_DIAGONAL)
+        select case (csubtype)
+        case (VANKATP_DIAGONAL)
 !          ! Diagonal VANKA; check if A12 exists.
 !          IF (.NOT. ASSOCIATED(rvanka3DNavSt%p_DA12)) THEN
             ! Call the VANKA subsolver to apply VANKA to our current element list.
-            IF (rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+            if (rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
               ! Uniform discretisation
-              CALL vanka_3DSPQ1TQ0simple (rvanka3DNavSt, &
+              call vanka_3DSPQ1TQ0simple (rvanka3DNavSt, &
                   rvector, rrhs, domega)
-            ELSE
+            else
               ! Conformal discretisation
-              CALL vanka_3DSPQ1TQ0simpleConf (rvanka3DNavSt, &
+              call vanka_3DSPQ1TQ0simpleConf (rvanka3DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            END IF
+            end if
 !          ELSE
 !            ! Apply the conformal VANKA that allows different matrices
 !            ! in A11, A12, A21 and A22!
@@ -11455,22 +11455,22 @@ CONTAINS
 !                  rvector, rrhs, domega,p_IelementList)
 !          END IF
           
-        CASE (VANKATP_FULL)
+        case (VANKATP_FULL)
 !          ! Full VANKA; check if A12 exists.
 !          IF (.NOT. ASSOCIATED(rvanka3DNavSt%p_DA12)) THEN
             ! Call the VANKA subsolver to apply VANKA to our current element list.
             ! Note: Up to now, there is no 'full' variant -- has to be implemented!
-            IF (rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+            if (rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
               ! uniform discretisation;
               ! here, use the same as for the general conformal discretisation.
               ! Could be speeded up by introducing another variant...
-              CALL vanka_3DSPQ1TQ0fullConf (rvanka3DNavSt, &
+              call vanka_3DSPQ1TQ0fullConf (rvanka3DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            ELSE
+            else
               ! Conformal discretisation
-              CALL vanka_3DSPQ1TQ0fullConf (rvanka3DNavSt, &
+              call vanka_3DSPQ1TQ0fullConf (rvanka3DNavSt, &
                   rvector, rrhs, domega,p_IelementList)
-            END IF
+            end if
 !          ELSE
 !            ! Apply the conformal VANKA that allows different matrices
 !            ! in A11, A12, A21 and A22!
@@ -11485,25 +11485,25 @@ CONTAINS
 !            END IF
 !          END IF
         
-        CASE DEFAULT
-          CALL output_line (&
+        case DEFAULT
+          call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_3DNavierStokes')
-          CALL sys_halt()  
+          call sys_halt()  
         
-        END SELECT
+        end select
         
-      ELSE
-        CALL output_line (&
+      else
+        call output_line (&
             'Unsupported discretisation!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_3DNavierStokes')
-        CALL sys_halt()
+        call sys_halt()
         
-      END IF
+      end if
       
-    END DO
+    end do
       
-  END SUBROUTINE
+  end subroutine
   
   ! ***************************************************************************
   ! 3D Navier-Stokes VANKA, simple diagonal version.
@@ -11524,7 +11524,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_init3DSPQ1TQ0simple (rmatrix,rvanka)
+  subroutine vanka_init3DSPQ1TQ0simple (rmatrix,rvanka)
   
 !<description>
   ! Checks if the "3D-Navier-Stokes-Q1T-Q0" VANKA variant can be applied to
@@ -11534,125 +11534,125 @@ CONTAINS
 
 !<input>
   ! The system matrix of the linear system.
-  TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+  type(t_matrixBlock), intent(IN) :: rmatrix
 !</input>
 
 !<output>
   ! t_vankaPointer3DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer3DNavSt), INTENT(OUT) :: rvanka
+  type(t_vankaPointer3DNavSt), intent(OUT) :: rvanka
 !</output>
 
 !</subroutine>
 
-    INTEGER :: i,j
+    integer :: i,j
 
     ! Matrix must be 4x4.
-    IF (rmatrix%ndiagBlocks .NE. 4) THEN
-      CALL output_line (&
+    if (rmatrix%ndiagBlocks .ne. 4) then
+      call output_line (&
           'System matrix is not 4x4.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_check3DSPQ1TQ0')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(4,:) must be (virtually) transposed. All matrices must be double precision.
-    DO i=1,4
-      DO j=1,4
+    do i=1,4
+      do j=1,4
       
-        IF (lsysbl_isSubmatrixPresent(rmatrix,i,j)) THEN
+        if (lsysbl_isSubmatrixPresent(rmatrix,i,j)) then
         
-          IF (i .LE. 3) THEN
-            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .NE. 0) THEN
-              CALL output_line ('Transposed submatrices not supported.',&
+          if (i .le. 3) then
+            if (iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .ne. 0) then
+              call output_line ('Transposed submatrices not supported.',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DSPQ1TQ0simple')
-              CALL sys_halt()
-            END IF
-          ELSE
-            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .EQ. 0) THEN
-              CALL output_line ('B1/B2/B3 submatrices must be virtually '//&
+              call sys_halt()
+            end if
+          else
+            if (iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .eq. 0) then
+              call output_line ('B1/B2/B3 submatrices must be virtually '//&
                   'transposed (LSYSSC_MSPEC_TRANSPOSED)',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DSPQ1TQ0simple')
-              CALL sys_halt()
-            END IF
-          END IF
+              call sys_halt()
+            end if
+          end if
           
-          IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
-            CALL output_line ('Only format 7 and 9 matrices supported.',&
+          if ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX7) .and. &
+              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX9)) then
+            call output_line ('Only format 7 and 9 matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DSPQ1TQ0simple')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
-          IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
-            CALL output_line ('Only double precision matrices supported.',&
+          if (rmatrix%RmatrixBlock(i,j)%cdataType .ne. ST_DOUBLE) then
+            call output_line ('Only double precision matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DSPQ1TQ0simple')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
 
-          IF (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) THEN
-            CALL output_line ('Scaled matrices not supported.',&
+          if (rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 1.0_DP) then
+            call output_line ('Scaled matrices not supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DSPQ1TQ0simple')
-            CALL sys_halt()
-          END IF
+            call sys_halt()
+          end if
           
-        END IF ! neq != 0
-      END DO
-    END DO
+        end if ! neq != 0
+      end do
+    end do
     
     ! The structure of A(1,4) must be identical to A(4,1) and
     ! that of A(2,4) must be identical to A(4,2).
-    IF ((rmatrix%RmatrixBlock(1,4)%NA .NE. rmatrix%RmatrixBlock(4,1)%NA) .OR. &
-        (rmatrix%RmatrixBlock(1,4)%NEQ .NE. rmatrix%RmatrixBlock(4,1)%NCOLS)) THEN
-      CALL output_line ('Structure of B1 and B1^T different!',&
+    if ((rmatrix%RmatrixBlock(1,4)%NA .ne. rmatrix%RmatrixBlock(4,1)%NA) .or. &
+        (rmatrix%RmatrixBlock(1,4)%NEQ .ne. rmatrix%RmatrixBlock(4,1)%NCOLS)) then
+      call output_line ('Structure of B1 and B1^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DSPQ1TQ0simple')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rmatrix%RmatrixBlock(2,4)%NA .NE. rmatrix%RmatrixBlock(4,2)%NA) .OR. &
-        (rmatrix%RmatrixBlock(2,4)%NEQ .NE. rmatrix%RmatrixBlock(4,2)%NCOLS)) THEN
-      CALL output_line ('Structure of B2 and B2^T different!',&
+    if ((rmatrix%RmatrixBlock(2,4)%NA .ne. rmatrix%RmatrixBlock(4,2)%NA) .or. &
+        (rmatrix%RmatrixBlock(2,4)%NEQ .ne. rmatrix%RmatrixBlock(4,2)%NCOLS)) then
+      call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DSPQ1TQ0simple')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    IF ((rmatrix%RmatrixBlock(3,4)%NA .NE. rmatrix%RmatrixBlock(4,3)%NA) .OR. &
-        (rmatrix%RmatrixBlock(3,4)%NEQ .NE. rmatrix%RmatrixBlock(4,3)%NCOLS)) THEN
-      CALL output_line ('Structure of B3 and B3^T different!',&
+    if ((rmatrix%RmatrixBlock(3,4)%NA .ne. rmatrix%RmatrixBlock(4,3)%NA) .or. &
+        (rmatrix%RmatrixBlock(3,4)%NEQ .ne. rmatrix%RmatrixBlock(4,3)%NCOLS)) then
+      call output_line ('Structure of B3 and B3^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DSPQ1TQ0simple')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
     ! Fill the output structure with data of the matrices.
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),rvanka%p_DA )
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),rvanka%p_DB1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,4),rvanka%p_DB2)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,4),rvanka%p_DB3)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,1),rvanka%p_DD1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,2),rvanka%p_DD2)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,3),rvanka%p_DD3)
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),rvanka%p_KcolB)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,4), rvanka%p_KldB )
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),rvanka%p_KcolA)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), rvanka%p_KldA )
-    IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),rvanka%p_DA )
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),rvanka%p_DB1)
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,4),rvanka%p_DB2)
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,4),rvanka%p_DB3)
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,1),rvanka%p_DD1)
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,2),rvanka%p_DD2)
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(4,3),rvanka%p_DD3)
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),rvanka%p_KcolB)
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,4), rvanka%p_KldB )
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),rvanka%p_KcolA)
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), rvanka%p_KldA )
+    if (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+      call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
                                rvanka%p_KdiagonalA)
-    ELSE
+    else
       rvanka%p_KdiagonalA => rvanka%p_KldA
-    END IF
+    end if
     
     ! Get the multiplication factors of the submatrices
     rvanka%Dmultipliers(:,:) = rmatrix%RmatrixBlock(1:4,1:4)%dscaleFactor
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_3DSPQ1TQ0simple (rvanka, rvector, rrhs, domega)
+  subroutine vanka_3DSPQ1TQ0simple (rvanka, rvector, rrhs, domega)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -11665,56 +11665,56 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer3DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer3DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer3DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB3
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD3
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DB3
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer             :: p_DD3
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_FACEIDX), DIMENSION(:,:), POINTER :: p_IfacesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_FACEIDX), dimension(:,:), pointer :: p_IfacesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetw,ioffsetp
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,j
-    INTEGER, PARAMETER :: lofsv = 6
-    INTEGER, PARAMETER :: lofsw = 12
-    INTEGER, PARAMETER :: lofsp = 18
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetw,ioffsetp
+    integer :: ia1,ia2,ib1,ib2,ia,ib,j
+    integer, parameter :: lofsv = 6
+    integer, parameter :: lofsw = 12
+    integer, parameter :: lofsp = 18
+    real(DP) :: daux
     !REAL(DP), DIMENSION(6,6) :: Dmult
     
     ! Local arrays for informations about one element
-    REAL(DP), DIMENSION(6) :: AA,BB1,BB2,BB3,DD1,DD2,DD3
-    REAL(DP), DIMENSION(19) :: FF,UU
-    INTEGER(PREC_VECIDX), DIMENSION(6) :: idofGlobal
+    real(DP), dimension(6) :: AA,BB1,BB2,BB3,DD1,DD2,DD3
+    real(DP), dimension(19) :: FF,UU
+    integer(PREC_VECIDX), dimension(6) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -11736,10 +11736,10 @@ CONTAINS
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd, 3rd and 4th component of the solution
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -11754,13 +11754,13 @@ CONTAINS
     ! that is implemented below, scroll up to the 2D version.
 
     ! So we start with a loop over all elements
-    DO iel=1,NEL
+    do iel=1,NEL
     
       ! Fetch the pressure P on the current element into FFP
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
 
       ! Loop over all 6 U-nodes of that element.
-      DO inode=1,6
+      do inode=1,6
       
         ! Set idof to the DOF that belongs to our face node:
         idof = p_IfacesAtElement(inode,iel)
@@ -11787,7 +11787,7 @@ CONTAINS
         ! At first build: fi = fi-Aui
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
@@ -11799,12 +11799,12 @@ CONTAINS
           !FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           !FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
           !FF(inode+lofsw) = FF(inode+lofsw)-daux*p_Dvector(J+ioffsetw)
-        END DO
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
@@ -11815,7 +11815,7 @@ CONTAINS
           !FF(inode)       = FF(inode)      -Dmult(1,4)*p_DB1(ib)*daux
           !FF(inode+lofsv) = FF(inode+lofsv)-Dmult(2,4)*p_DB2(ib)*daux
           !FF(inode+lofsw) = FF(inode+lofsw)-Dmult(3,4)*p_DB3(ib)*daux
-        END DO
+        end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
         ! somehow 'unclean' loop to determine the local BX and DX.
@@ -11829,8 +11829,8 @@ CONTAINS
         ! Either two (if the velocity DOF is an face with two neighbouring
         ! elements) or one (if the velocity DOF is at an face on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+        do ib = ib1,ib2
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
           
@@ -11866,11 +11866,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -11908,33 +11908,33 @@ CONTAINS
       ! y := C^{-1} d~ by applying a Schur complement approach. For this purpose,
       ! call the element update routine that calculates the update vector y.
       
-      CALL vanka_getcorr_3DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,BB3,DD1,DD2,DD3)
+      call vanka_getcorr_3DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,BB3,DD1,DD2,DD3)
     
       ! Ok, we got the update vector UU. Incorporate this now into our
       ! solution vector with the update formula
       !
       !  x_{n+1} = x_n + domega * y!
       
-      DO inode=1,6
+      do inode=1,6
         p_Dvector(idofGlobal(inode)) &
           = p_Dvector(idofGlobal(inode)) + domega * UU(inode)
         p_Dvector(idofGlobal(inode)+ioffsetv) &
           = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * UU(inode+lofsv)
         p_Dvector(idofGlobal(inode)+ioffsetw) &
           = p_Dvector(idofGlobal(inode)+ioffsetw) + domega * UU(inode+lofsw)
-      END DO
+      end do
       
       p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + domega * UU(1+lofsp)
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_3DSPQ1TQ0simpleConf (rvanka, rvector, rrhs, domega,IelementList)
+  subroutine vanka_3DSPQ1TQ0simpleConf (rvanka, rvector, rrhs, domega,IelementList)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -11952,58 +11952,58 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer3DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer3DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer3DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB3
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD3
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DB3
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer             :: p_DD3
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_FACEIDX), DIMENSION(:,:), POINTER :: p_IfacesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_FACEIDX), dimension(:,:), pointer :: p_IfacesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetw,ioffsetp
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,j
-    INTEGER, PARAMETER :: lofsv = 6
-    INTEGER, PARAMETER :: lofsw = 12
-    INTEGER, PARAMETER :: lofsp = 18
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetw,ioffsetp
+    integer :: ia1,ia2,ib1,ib2,ia,ib,j
+    integer, parameter :: lofsv = 6
+    integer, parameter :: lofsw = 12
+    integer, parameter :: lofsp = 18
+    real(DP) :: daux
     
     ! Local arrays for informations about one element
-    REAL(DP), DIMENSION(6) :: AA,BB1,BB2,BB3,DD1,DD2,DD3
-    REAL(DP), DIMENSION(19) :: FF,UU
-    INTEGER(PREC_VECIDX), DIMENSION(6) :: idofGlobal
+    real(DP), dimension(6) :: AA,BB1,BB2,BB3,DD1,DD2,DD3
+    real(DP), dimension(19) :: FF,UU
+    integer(PREC_VECIDX), dimension(6) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -12025,10 +12025,10 @@ CONTAINS
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd, 3rd and 4th component of the solution
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -12043,7 +12043,7 @@ CONTAINS
     ! that is implemented below, scroll up to the 2D version.
 
     ! So we start with a loop over all elements
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -12052,7 +12052,7 @@ CONTAINS
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
 
       ! Loop over all 6 U-nodes of that element.
-      DO inode=1,6
+      do inode=1,6
       
         ! Set idof to the DOF that belongs to our face node:
         idof = p_IfacesAtElement(inode,iel)
@@ -12079,7 +12079,7 @@ CONTAINS
         ! At first build: fi = fi-Aui
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
@@ -12091,12 +12091,12 @@ CONTAINS
           !FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           !FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
           !FF(inode+lofsw) = FF(inode+lofsw)-daux*p_Dvector(J+ioffsetw)
-        END DO
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
@@ -12107,7 +12107,7 @@ CONTAINS
           !FF(inode)       = FF(inode)      -Dmult(1,4)*p_DB1(ib)*daux
           !FF(inode+lofsv) = FF(inode+lofsv)-Dmult(2,4)*p_DB2(ib)*daux
           !FF(inode+lofsw) = FF(inode+lofsw)-Dmult(3,4)*p_DB3(ib)*daux
-        END DO
+        end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
         ! somehow 'unclean' loop to determine the local BX and DX.
@@ -12121,8 +12121,8 @@ CONTAINS
         ! Either two (if the velocity DOF is an face with two neighbouring
         ! elements) or one (if the velocity DOF is at an face on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+        do ib = ib1,ib2
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
           
@@ -12158,11 +12158,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
           
       ! Now we make a defect-correction approach for this system:
       !
@@ -12200,33 +12200,33 @@ CONTAINS
       ! y := C^{-1} d~ by applying a Schur complement approach. For this purpose,
       ! call the element update routine that calculates the update vector y.
       
-      CALL vanka_getcorr_3DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,BB3,DD1,DD2,DD3)
+      call vanka_getcorr_3DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,BB3,DD1,DD2,DD3)
     
       ! Ok, we got the update vector UU. Incorporate this now into our
       ! solution vector with the update formula
       !
       !  x_{n+1} = x_n + domega * y!
       
-      DO inode=1,6
+      do inode=1,6
         p_Dvector(idofGlobal(inode)) &
           = p_Dvector(idofGlobal(inode)) + domega * UU(inode)
         p_Dvector(idofGlobal(inode)+ioffsetv) &
           = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * UU(inode+lofsv)
         p_Dvector(idofGlobal(inode)+ioffsetw) &
           = p_Dvector(idofGlobal(inode)+ioffsetw) + domega * UU(inode+lofsw)
-      END DO
+      end do
       
       p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + domega * UU(1+lofsp)
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
   ! ************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE vanka_getcorr_3DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,BB3,DD1,DD2,DD3)
+  pure subroutine vanka_getcorr_3DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,BB3,DD1,DD2,DD3)
   
 !<description>
   ! This routine solves a 19x19 Jacobi-type Schur complement system for three 
@@ -12237,48 +12237,48 @@ CONTAINS
 
 !<input>
   ! Diagonal elements of the local system matrix.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: AA
+  real(DP), dimension(6), intent(IN) :: AA
   
   ! Entries in the submatrix B1.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: BB1
+  real(DP), dimension(6), intent(IN) :: BB1
 
   ! Entries in the submatrix B2.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: BB2
+  real(DP), dimension(6), intent(IN) :: BB2
 
   ! Entries in the submatrix B3.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: BB3
+  real(DP), dimension(6), intent(IN) :: BB3
   
   ! Entries in the submatrix D1.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: DD1
+  real(DP), dimension(6), intent(IN) :: DD1
 
   ! Entries in the submatrix D2.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: DD2
+  real(DP), dimension(6), intent(IN) :: DD2
 
   ! Entries in the submatrix D3.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: DD3
+  real(DP), dimension(6), intent(IN) :: DD3
 
   ! Local RHS vector; FF(1..6)=X-velocity, FF(7..12)=Y-velocity,
   ! FF(13..18)=Y-velocity, FF(19)=pressure.
-  REAL(DP), DIMENSION(19), INTENT(IN) :: FF
+  real(DP), dimension(19), intent(IN) :: FF
 !</input>
 
 !<output>
   ! Update vector u with Cu=FF. UU(1..6)=X-velocity, UU(7..12)=Y-velocity,
   ! UU(13..18)=Y-velocity, UU(19)=pressure.
-  REAL(DP), DIMENSION(19), INTENT(OUT) :: UU
+  real(DP), dimension(19), intent(OUT) :: UU
 !</output>
 
 !</subroutine>
 
     ! local variables
 
-    INTEGER :: inode
-    REAL(DP) :: PP,dpres
-    REAL(DP), DIMENSION(19) :: AI,dff
+    integer :: inode
+    real(DP) :: PP,dpres
+    real(DP), dimension(19) :: AI,dff
     
-    INTEGER, PARAMETER :: lofsv = 6
-    INTEGER, PARAMETER :: lofsw = 12
-    INTEGER, PARAMETER :: lofsp = 18
+    integer, parameter :: lofsv = 6
+    integer, parameter :: lofsw = 12
+    integer, parameter :: lofsp = 18
 
     ! This routine uses a Schur-complement approach to solve the
     ! system Cu=FF with
@@ -12321,19 +12321,19 @@ CONTAINS
     !
     ! Here it goes...
 
-    DO inode=1,6
+    do inode=1,6
     
       ! Quick check if everything is ok - we don't want to divide by 0.
-      IF (AA(inode)*AA(inode) .LT. 1E-20_DP) THEN
+      if (AA(inode)*AA(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
-        RETURN
-      END IF
+        return
+      end if
 
       ! AI(.) saves the diagonal matrix S^-1:
       AI(inode)=1.0_DP/AA(inode)
         
-    END DO
+    end do
 
     ! Factorization loop
     !
@@ -12359,7 +12359,7 @@ CONTAINS
     dpres = 0.0_DP
     dff = FF
       
-    DO inode = 1,6
+    do inode = 1,6
       dpres        = dpres - AI(inode)*( &
                      DD1(inode)*BB1(inode)+ &
                      DD2(inode)*BB2(inode)+ &
@@ -12368,7 +12368,7 @@ CONTAINS
                      DD1(inode)*dff(inode)+ &
                      DD2(inode)*dff(inode+lofsv)+ &
                      DD3(inode)*dff(inode+lofsw))
-    END DO
+    end do
 
     ! Solution "loop"
     !
@@ -12376,11 +12376,11 @@ CONTAINS
     ! nodes, which implies B=0 and thus leads to DP=0!
     ! (Happens inside of fictitious boundary objects e.g.)
 
-    IF (dpres*dpres .LT. 1E-20_DP)  THEN
+    if (dpres*dpres .lt. 1E-20_DP)  then
       ! Set the update vector to 0, cancel.
       UU = 0.0_DP
-      RETURN
-    ENDIF
+      return
+    endif
       
     ! At first we calculate the pressure on element IEL,
     ! which is simply given by multiplying FFP with the
@@ -12396,19 +12396,19 @@ CONTAINS
     !
     ! locally on the current cell:
       
-    DO inode=1,6
+    do inode=1,6
       UU(inode)       = AI(inode)*(dff(inode)-BB1(inode)*PP)
       UU(inode+lofsv) = AI(inode)*(dff(inode+lofsv)-BB2(inode)*PP)
       UU(inode+lofsw) = AI(inode)*(dff(inode+lofsw)-BB3(inode)*PP)
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE vanka_getcorr_3DSPQ1TQ0simple2 (UU,FF,AA1,AA2,AA3,&
+  pure subroutine vanka_getcorr_3DSPQ1TQ0simple2 (UU,FF,AA1,AA2,AA3,&
                                           BB1,BB2,BB3,DD1,DD2,DD3,di)
   
 !<description>
@@ -12423,59 +12423,59 @@ CONTAINS
 
 !<input>
   ! Diagonal elements of the local system matrix A11
-  REAL(DP), DIMENSION(6), INTENT(IN) :: AA1
+  real(DP), dimension(6), intent(IN) :: AA1
 
   ! Diagonal elements of the local system matrix A22
-  REAL(DP), DIMENSION(6), INTENT(IN) :: AA2
+  real(DP), dimension(6), intent(IN) :: AA2
   
   ! Diagonal elements of the local system matrix A33
-  REAL(DP), DIMENSION(6), INTENT(IN) :: AA3
+  real(DP), dimension(6), intent(IN) :: AA3
 
   ! Entries in the submatrix B1.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: BB1
+  real(DP), dimension(6), intent(IN) :: BB1
 
   ! Entries in the submatrix B2.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: BB2
+  real(DP), dimension(6), intent(IN) :: BB2
   
   ! Entries in the submatrix B3.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: BB3
+  real(DP), dimension(6), intent(IN) :: BB3
 
   ! Entries in the submatrix D1.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: DD1
+  real(DP), dimension(6), intent(IN) :: DD1
 
   ! Entries in the submatrix D2.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: DD2
+  real(DP), dimension(6), intent(IN) :: DD2
 
   ! Entries in the submatrix D3.
-  REAL(DP), DIMENSION(6), INTENT(IN) :: DD3
+  real(DP), dimension(6), intent(IN) :: DD3
   
   ! Entry in the submatrix I (usually =0).
   ! This is the matrix in the diagonal block of the pressure, which is usually
   ! zero in saddle point problems.
-  REAL(DP), INTENT(IN) :: di
+  real(DP), intent(IN) :: di
   
   ! Local RHS vector; FF(1..6)=X-velocity, FF(7..12)=Y-velocity,
   ! FF(13..18)=Y-velocity, FF(19)=pressure.
-  REAL(DP), DIMENSION(19), INTENT(IN) :: FF
+  real(DP), dimension(19), intent(IN) :: FF
 !</input>
 
 !<output>
   ! Update vector u with Cu=FF. UU(1..6)=X-velocity, UU(7..12)=Y-velocity,
   ! UU(13..18)=Y-velocity, UU(19)=pressure.
-  REAL(DP), DIMENSION(19), INTENT(OUT) :: UU
+  real(DP), dimension(19), intent(OUT) :: UU
 !</output>
 
 !</subroutine>
 
     ! local variables
 
-    INTEGER :: inode
-    REAL(DP) :: PP,dpres
-    REAL(DP), DIMENSION(19) :: AI1,AI2,AI3,dff
+    integer :: inode
+    real(DP) :: PP,dpres
+    real(DP), dimension(19) :: AI1,AI2,AI3,dff
     
-    INTEGER, PARAMETER :: lofsv = 6
-    INTEGER, PARAMETER :: lofsw = 12
-    INTEGER, PARAMETER :: lofsp = 18
+    integer, parameter :: lofsv = 6
+    integer, parameter :: lofsw = 12
+    integer, parameter :: lofsp = 18
 
     ! This routine uses a Schur-complement approach to solve the
     ! system Cu=FF with
@@ -12518,33 +12518,33 @@ CONTAINS
     !
     ! Here it goes...
 
-    DO inode=1,6
+    do inode=1,6
     
       ! Quick check if everything is ok - we don't want to divide by 0.
-      IF (AA1(inode)*AA1(inode) .LT. 1E-20_DP) THEN
+      if (AA1(inode)*AA1(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
-        RETURN
-      END IF
+        return
+      end if
 
-      IF (AA2(inode)*AA2(inode) .LT. 1E-20_DP) THEN
+      if (AA2(inode)*AA2(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
-        RETURN
-      END IF
+        return
+      end if
 
-      IF (AA3(inode)*AA3(inode) .LT. 1E-20_DP) THEN
+      if (AA3(inode)*AA3(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
-        RETURN
-      END IF
+        return
+      end if
 
       ! AI(.) saves the diagonal matrix S^-1:
       AI1(inode)=1.0_DP/AA1(inode)
       AI2(inode)=1.0_DP/AA2(inode)
       AI3(inode)=1.0_DP/AA3(inode)
         
-    END DO
+    end do
 
     ! Factorization loop
     !
@@ -12570,7 +12570,7 @@ CONTAINS
     dpres = di
     dff = FF
       
-    DO inode = 1,6
+    do inode = 1,6
       dpres        = dpres &
                    - AI1(inode)*DD1(inode)*BB1(inode) &
                    - AI2(inode)*DD2(inode)*BB2(inode) &
@@ -12580,7 +12580,7 @@ CONTAINS
                    - AI1(inode)*DD1(inode)*dff(inode) &
                    - AI2(inode)*DD2(inode)*dff(inode+lofsv) &
                    - AI3(inode)*DD3(inode)*dff(inode+lofsw)
-    END DO
+    end do
 
     ! Solution "loop"
     !
@@ -12588,11 +12588,11 @@ CONTAINS
     ! nodes, which implies B=0 and thus leads to DP=0!
     ! (Happens inside of fictitious boundary objects e.g.)
 
-    IF (dpres*dpres .LT. 1E-20_DP)  THEN
+    if (dpres*dpres .lt. 1E-20_DP)  then
       ! Set the update vector to 0, cancel.
       UU = 0.0_DP
-      RETURN
-    ENDIF
+      return
+    endif
       
     ! At first we calculate the pressure on element IEL,
     ! which is simply given by multiplying FFP with the
@@ -12608,13 +12608,13 @@ CONTAINS
     !
     ! locally on the current cell:
       
-    DO inode=1,6
+    do inode=1,6
       UU(inode)       = AI1(inode)*(dff(inode)-BB1(inode)*PP)
       UU(inode+lofsv) = AI2(inode)*(dff(inode+lofsv)-BB2(inode)*PP)
       UU(inode+lofsw) = AI3(inode)*(dff(inode+lofsw)-BB3(inode)*PP)
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   ! 3D Navier-Stokes VANKA, 'full' version.
@@ -12635,7 +12635,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanka_3DSPQ1TQ0fullConf (rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_3DSPQ1TQ0fullConf (rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised full local system VANKA algorithm for
@@ -12653,64 +12653,64 @@ CONTAINS
 
 !<input>
   ! t_vankaPointer3DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointer3DNavSt), INTENT(IN) :: rvanka
+  type(t_vankaPointer3DNavSt), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local vairables
-    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
-    INTEGER :: inode,idof
+    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: inode,idof
     
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA,p_KdiagonalA
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB3
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD3
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA
+    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
+    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DB3
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer             :: p_DD3
     
     ! Triangulation information
-    INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_FACEIDX), DIMENSION(:,:), POINTER :: p_IfacesAtElement
-    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    integer(PREC_ELEMENTIDX) :: NEL
+    integer(PREC_FACEIDX), dimension(:,:), pointer :: p_IfacesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    INTEGER, PARAMETER :: nnvel = 6      ! Q1T = 6 DOF's per velocity
-    INTEGER, PARAMETER :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
-    INTEGER, PARAMETER :: nnld = 3*nnvel+nnpressure
-    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
-    REAL(DP), DIMENSION(nnld,nnld) :: AA
-    REAL(DP), DIMENSION(nnld) :: FF
+    integer, parameter :: nnvel = 6      ! Q1T = 6 DOF's per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
+    integer, parameter :: nnld = 3*nnvel+nnpressure
+    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    real(DP), dimension(nnld,nnld) :: AA
+    real(DP), dimension(nnld) :: FF
     
     ! LAPACK temporary space
-    INTEGER :: Ipiv(nnld),ilapackInfo
+    integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    INTEGER(PREC_VECIDX)     :: ioffsetv,ioffsetw,ioffsetp,j
-    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,k
-    INTEGER, PARAMETER :: lofsv = nnvel
-    INTEGER, PARAMETER :: lofsw = 2*nnvel
-    INTEGER, PARAMETER :: lofsp = 3*nnvel
-    REAL(DP) :: daux
+    integer(PREC_VECIDX)     :: ioffsetv,ioffsetw,ioffsetp,j
+    integer :: ia1,ia2,ib1,ib2,ia,ib,k
+    integer, parameter :: lofsv = nnvel
+    integer, parameter :: lofsw = 2*nnvel
+    integer, parameter :: lofsp = 3*nnvel
+    real(DP) :: daux
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -12729,10 +12729,10 @@ CONTAINS
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
-    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
+    call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
                                 p_rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
-    CALL lsysbl_getbase_double (rvector,p_Dvector)
-    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    call lsysbl_getbase_double (rvector,p_Dvector)
+    call lsysbl_getbase_double (rrhs,p_Drhs)
     
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
@@ -12744,7 +12744,7 @@ CONTAINS
     !=======================================================================
 
     ! So we start with a loop over all elements in the list
-    DO ielidx=1,SIZE(IelementList)
+    do ielidx=1,size(IelementList)
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
@@ -12764,7 +12764,7 @@ CONTAINS
       IdofGlobal(1:6) = p_IfacesAtElement(1:6,iel)
 
       ! Loop over all U-nodes of that element.
-      DO inode=1,nnvel
+      do inode=1,nnvel
       
         ! Get the DOF we have to tackle:
         idof = IdofGlobal(inode)
@@ -12779,7 +12779,7 @@ CONTAINS
         ! At first build: fi = fi-Aui
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
-        DO ia = ia1,ia2
+        do ia = ia1,ia2
           J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
@@ -12788,26 +12788,26 @@ CONTAINS
           
           ! Whereever we find a DOF that couples to another DOF on the 
           ! same element, we put that to all A-blocks of our local matrix.
-          DO k=1,nnvel
-            IF (j .EQ. IdofGlobal(k)) THEN
+          do k=1,nnvel
+            if (j .eq. IdofGlobal(k)) then
               AA (inode,k) = daux
               AA (inode+lofsv,k+lofsv) = daux
               AA (inode+lofsw,k+lofsw) = daux
-              EXIT
-            END IF
-          END DO          
-        END DO
+              exit
+            end if
+          end do          
+        end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
-        DO ib = ib1,ib2
+        do ib = ib1,ib2
           J = p_KcolB(ib)
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
           FF(inode+lofsw) = FF(inode+lofsw)-p_DB3(ib)*daux
-        END DO
+        end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
         ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
@@ -12821,8 +12821,8 @@ CONTAINS
         ! Either two (if the velocity DOF is an face with two neighbouring
         ! elements) or one (if the velocity DOF is at an face on the boundary
         ! and there is no neighbour).
-        DO ib = ib1,ib2
-          IF (p_KcolB(ib) .EQ. IEL) THEN
+        do ib = ib1,ib2
+          if (p_KcolB(ib) .eq. IEL) then
           
             J = p_KcolB(ib)
             
@@ -12850,11 +12850,11 @@ CONTAINS
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
-            EXIT
-          END IF
-        END DO ! ib
+            exit
+          end if
+        end do ! ib
         
-      END DO ! inode
+      end do ! inode
     
       ! Now we make a defect-correction approach for this system:
       !
@@ -12894,39 +12894,39 @@ CONTAINS
       !CALL DGETRS('N', nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo )
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
-      CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
       
-      IF (ilapackInfo .EQ. 0) THEN
+      if (ilapackInfo .eq. 0) then
       
         ! Ok, we got the update vector in FF. Incorporate this now into our
         ! solution vector with the update formula
         !
         !  x_{n+1} = x_n + domega * y!
         
-        DO inode=1,nnvel
+        do inode=1,nnvel
           p_Dvector(idofGlobal(inode)) &
             = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
           p_Dvector(idofGlobal(inode)+ioffsetv) &
             = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
           p_Dvector(idofGlobal(inode)+ioffsetw) &
             = p_Dvector(idofGlobal(inode)+ioffsetw) + domega * FF(inode+lofsw)
-        END DO
+        end do
         
         p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
                                   domega * FF(1+lofsp)
-      ELSE IF (ilapackInfo .LT. 0) THEN
+      else if (ilapackInfo .lt. 0) then
 
-        CALL output_line (&
+        call output_line (&
             'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_3DSPQ1TQ0fullConf')
 
-      END IF
+      end if
       ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
       ! coarse grid with all boundaries = Dirichlet.
       ! In this case, nothing must be changed in the vector!
     
-    END DO ! iel
+    end do ! iel
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE 
+end module 
