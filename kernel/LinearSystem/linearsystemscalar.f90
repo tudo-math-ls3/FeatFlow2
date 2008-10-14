@@ -3339,7 +3339,7 @@ contains
     ! By what do we multiply now? The matrix itself or its transposed?
     if (bvirt_trans .eqv. btrans) then
       
-      ! We are multiplying by te matrix itself. Now is the matrix virtually
+      ! We are multiplying by the matrix itself. Now is the matrix virtually
       ! transposed?
       if(bvirt_trans) then
         ! Yes, so exchange NEQ with NCOLS
@@ -3451,7 +3451,16 @@ contains
       end select
       
     else
-      ! Transposed matrix
+      ! We are multiplying by the transposed matrix. Now is the matrix virtually
+      ! transposed?
+      if(bvirt_trans) then
+        ! Yes, so exchange NEQ with NCOLS
+        NEQ   = rmatrix%NCOLS
+      else
+        ! No, so simply copy NEQ
+        NEQ   = rmatrix%NEQ
+      end if
+
       ! Select the right MV multiplication routine from the matrix format
       select case (rmatrix%cmatrixFormat)
       
@@ -4171,9 +4180,11 @@ contains
         
         do irow = 1, NEQ
         
+          dtmp = cx*p_Dx(irow)
+          
           do ia = p_Kld(irow), p_Kld(irow+1)-1
             icol = p_Kcol(ia)
-            p_Dy(icol) = p_Dy(icol) + cx*p_DA(ia)*p_Dx(irow)
+            p_Dy(icol) = p_Dy(icol) + p_DA(ia)*dtmp
           end do
           
         end do
