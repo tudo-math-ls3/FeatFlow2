@@ -121,6 +121,12 @@ iMass              = 1
 # Type of lumping of the mass matrix. 0=usual lumping,1=diagonal lumping
 iMassLumpType      = 0
 
+# Construction of the divergence/gradient (B-) matrices.
+# =0: Create gradient matrix by weak derivative integral (standard, div=B^T)
+# =1: Create gradient matrix by strong derivative integral (div!=B^T).
+#     Only possible for non-constant pressure functions (e.g. Q2/QP1 discretisation)
+istrongDerivativeBmatrix = 0
+
 # cubature formula for Mass matrix
 
 scubMass           = G4X4
