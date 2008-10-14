@@ -54,9 +54,9 @@ MODULE ccbasic
     TYPE(t_matrixScalar) :: rmatrixTemplateFEM
 
     ! A template FEM matrix that defines the structure of gradient
-    ! matrices (B1/B2) matrices. The matrix contains only a stucture, no content.
+    ! matrices (B1/B2). The matrix contains only a stucture, no content.
     TYPE(t_matrixScalar) :: rmatrixTemplateGradient
-    
+
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar) :: rmatrixStokes
     
@@ -65,6 +65,14 @@ MODULE ccbasic
 
     ! B2-matrix for that specific level. 
     TYPE(t_matrixScalar) :: rmatrixB2
+    
+    ! D1-matrix for that specific level. This usually coincides with B1^T.
+    ! Note that this matrix is saved 'virtually transposed'!
+    TYPE(t_matrixScalar) :: rmatrixD1
+
+    ! B2^T-matrix for that specific level. This usually coincides with B2^T.
+    ! Note that this matrix is saved 'virtually transposed'!
+    TYPE(t_matrixScalar) :: rmatrixD2
 
     ! Temporary vector in the size of the RHS/solution vector on that level.
     TYPE(t_vectorBlock) :: rtempVector

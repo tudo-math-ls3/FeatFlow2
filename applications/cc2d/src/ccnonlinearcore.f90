@@ -350,21 +350,17 @@ MODULE ccnonlinearcore
     ! nonlinear iteration.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixVelocityCoupling21 => NULL()
     
-    ! Pointer to a B1^T-matrix.
-    ! This pointer may point to NULL(). In this case, B1^T is created
-    ! by 'virtually transposing' the B1 matrix.
+    ! Divergence matrix D1. This usually coincides with B1^T.
     !
     ! Note: This information is automatically created when the preconditioner
     ! is initialised! The main application does not have to initialise it!
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixB1T => NULL()
+    TYPE(t_matrixScalar) :: rmatrixD1
 
-    ! Pointer to a B2-matrix.
-    ! This pointer may point to NULL(). In this case, B2^T is created
-    ! by 'virtually transposing' the B2 matrix.
+    ! Divergence matrix D2. This usually coincides with B2^T.
     !
     ! Note: This information is automatically created when the preconditioner
     ! is initialised! The main application does not have to initialise it!
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixB2T => NULL()
+    TYPE(t_matrixScalar) :: rmatrixD2
 
   END TYPE
 
@@ -549,10 +545,10 @@ CONTAINS
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1
       rnonlinearCCMatrix%p_rmatrixB2 => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2
-      rnonlinearCCMatrix%p_rmatrixB1T => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1T
-      rnonlinearCCMatrix%p_rmatrixB2T => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2T
+      rnonlinearCCMatrix%p_rmatrixD1 => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD1
+      rnonlinearCCMatrix%p_rmatrixD2 => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
       rnonlinearCCMatrix%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
 
@@ -746,6 +742,10 @@ CONTAINS
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1
       rnonlinearCCMatrix%p_rmatrixB2 => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2
+      rnonlinearCCMatrix%p_rmatrixD1 => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD1
+      rnonlinearCCMatrix%p_rmatrixD2 => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
       rnonlinearCCMatrix%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
 
@@ -1241,10 +1241,10 @@ CONTAINS
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1
           rnonlinearCCMatrix%p_rmatrixB2 => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2
-          rnonlinearCCMatrix%p_rmatrixB1T => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1T
-          rnonlinearCCMatrix%p_rmatrixB2T => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2T
+          rnonlinearCCMatrix%p_rmatrixD1 => &
+              rnonlinearIteration%RcoreEquation(ilev)%rmatrixD1
+          rnonlinearCCMatrix%p_rmatrixD2 => &
+              rnonlinearIteration%RcoreEquation(ilev)%rmatrixD2
           rnonlinearCCMatrix%p_rmatrixMass => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
 

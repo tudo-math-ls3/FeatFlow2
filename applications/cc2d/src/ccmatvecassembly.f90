@@ -215,12 +215,12 @@ MODULE ccmatvecassembly
     ! Pointer to a B1^T-matrix.
     ! This pointer may point to NULL(). In this case, B1^T is created
     ! by 'virtually transposing' the B1 matrix.
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixB1T => NULL()
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixD1 => NULL()
 
     ! Pointer to a B2-matrix.
     ! This pointer may point to NULL(). In this case, B2^T is created
     ! by 'virtually transposing' the B2 matrix.
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixB2T => NULL()
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixD2 => NULL()
 
     ! Pointer to a Mass matrix.
     ! May point to NULL() during matrix creation.
@@ -437,7 +437,7 @@ CONTAINS
       LOGICAL :: bdecoupled, bfulltensor
 
       ! A pointer to the system matrix and the RHS/solution vectors.
-      TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM,p_rmatrixTemplateGradient
+      TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM
 
       ! A pointer to the discretisation structure with the data.
       TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
@@ -461,19 +461,6 @@ CONTAINS
         p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rmatrixStokes
       IF (.NOT. ASSOCIATED(p_rmatrixTemplateFEM)) THEN
         CALL output_line ('Cannot set up A matrices in system matrix!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
-        CALL sys_halt()
-      END IF
-
-      ! In the global system, there are two gradient matrices B1 and B2.
-      ! Get a pointer to the template structure for these.
-      ! If there is no pointer, try to get use a pointer to one of these
-      ! matrices directly.
-      p_rmatrixTemplateGradient => rnonlinearCCMatrix%p_rmatrixTemplateGradient
-      IF (.NOT. ASSOCIATED(p_rmatrixTemplateGradient)) &
-        p_rmatrixTemplateGradient => rnonlinearCCMatrix%p_rmatrixB1
-      IF (.NOT. ASSOCIATED(p_rmatrixTemplateGradient)) THEN
-        CALL output_line ('Cannot set up B matrices in system matrix!', &
             OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
         CALL sys_halt()
       END IF
@@ -591,31 +578,15 @@ CONTAINS
                                     rmatrix%RmatrixBlock(2,3),&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         
-      ! Now, prepare B1^T and B2^T. Are these matrices given?
-      !
-      ! If yes, take the given matrices. If not, create them by
-      ! 'virtually transposing' B1 and B2 (i.e. they share the same
-      ! data as B1 and B2 but hate the 'transpose'-flag set).
+      ! Now, prepare D1 and D2.
       
-      IF (ASSOCIATED(rnonlinearCCMatrix%p_rmatrixB1T)) THEN
-        CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1T, &
-                                      rmatrix%RmatrixBlock(3,1),&
-                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      ELSE
-        CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
-                                      rmatrix%RmatrixBlock(3,1),&
-                                      LSYSSC_TR_VIRTUAL)
-      END IF
+      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1, &
+                                    rmatrix%RmatrixBlock(3,1),&
+                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-      IF (ASSOCIATED(rnonlinearCCMatrix%p_rmatrixB2T)) THEN
-        CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2T, &
-                                      rmatrix%RmatrixBlock(3,2),&
-                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      ELSE
-        CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
-                                      rmatrix%RmatrixBlock(3,2),&
-                                      LSYSSC_TR_VIRTUAL)
-      END IF
+      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2, &
+                                    rmatrix%RmatrixBlock(3,2),&
+                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
       ! That's it, all submatrices are basically set up.
       !
@@ -1043,35 +1014,17 @@ CONTAINS
                                     rmatrix%RmatrixBlock(2,3),&
                                     idubStructure,idubContent)
       
-      ! Now, prepare B1^T and B2^T. Are these matrices given?
-      !
-      ! If yes, take the given matrices. If not, create them by
-      ! 'virtually transposing' B1 and B2 (i.e. they share the same
-      ! data as B1 and B2 but hate the 'transpose'-flag set).
-      !
-      ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
-      ! memory if necessary.
-      IF (ASSOCIATED(rnonlinearCCMatrix%p_rmatrixB1T)) THEN
-        CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1T, &
-                                      rmatrix%RmatrixBlock(3,1),&
-                                      idubStructure,idubContent)
-      ELSE
-        CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
-                                      rmatrix%RmatrixBlock(3,1),&
-                                      LSYSSC_TR_VIRTUAL)
-      END IF
+      ! Now, prepare B1^T and B2^T. These matrices always share
+      ! their data with the 'template' matrices as the data in these
+      ! matrices is usually not overwritten by boundary conditions...
+      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1, &
+                                    rmatrix%RmatrixBlock(3,1),&
+                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-      IF (ASSOCIATED(rnonlinearCCMatrix%p_rmatrixB2T)) THEN
-        CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2T, &
-                                      rmatrix%RmatrixBlock(3,2),&
-                                      idubStructure,idubContent)
-      ELSE
-        CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
-                                      rmatrix%RmatrixBlock(3,2),&
-                                      LSYSSC_TR_VIRTUAL)
-      END IF
-
-
+      CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2, &
+                                    rmatrix%RmatrixBlock(3,2),&
+                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+                                    
     END SUBROUTINE
 
   END SUBROUTINE
@@ -1169,13 +1122,10 @@ CONTAINS
     CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2,&
         rmatrix%RmatrixBlock(2,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-    CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
-                                  rmatrix%RmatrixBlock(3,1),&
-                                  LSYSSC_TR_VIRTUAL)
-
-    CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
-                                  rmatrix%RmatrixBlock(3,2),&
-                                  LSYSSC_TR_VIRTUAL)
+    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1,&
+        rmatrix%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2,&
+        rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
     ! Update the structural information of the block matrix, as we manually
     ! changed the submatrices:

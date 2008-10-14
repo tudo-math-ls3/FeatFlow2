@@ -189,6 +189,8 @@ CONTAINS
     rnonlinearCCMatrix%p_rmatrixStokes => rlevelInfo%rmatrixStokes
     rnonlinearCCMatrix%p_rmatrixB1 => rlevelInfo%rmatrixB1
     rnonlinearCCMatrix%p_rmatrixB2 => rlevelInfo%rmatrixB2
+    rnonlinearCCMatrix%p_rmatrixD1 => rlevelInfo%rmatrixD1
+    rnonlinearCCMatrix%p_rmatrixD2 => rlevelInfo%rmatrixD2
     rnonlinearCCMatrix%p_rmatrixMass => rlevelInfo%rmatrixMass
 
     CALL cc_assembleMatrix (CCMASM_ALLOCMEM,cmatrixType,&
@@ -290,6 +292,16 @@ CONTAINS
         
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixB2 => &
         rproblem%RlevelInfo(ilevel)%rmatrixB2
+
+      ! The D1/D2 matrices are created by hand and not as pointers.
+      ! This allows us to modify them if necessary.
+      call lsyssc_duplicateMatrix (rproblem%RlevelInfo(ilevel)%rmatrixD1,&
+          rnonlinearIteration%RcoreEquation(ilevel)%rmatrixD1,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      call lsyssc_duplicateMatrix (rproblem%RlevelInfo(ilevel)%rmatrixD2,&
+          rnonlinearIteration%RcoreEquation(ilevel)%rmatrixD2,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixMass => &
         rproblem%RlevelInfo(ilevel)%rmatrixMass
@@ -1018,29 +1030,35 @@ CONTAINS
           END SELECT
           
           IF (btranspose) THEN
-            ! Allocate memory for B1^T and B2^T and transpose B1 and B2.
-            IF (.NOT. ASSOCIATED(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)) THEN
-              ALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)
-            ELSE
-              CALL lsyssc_releaseMatrix(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)
-            END IF
-            CALL lsyssc_transposeMatrix (&
-                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1,&
-                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T,LSYSSC_TR_ALL)
-
-            IF (.NOT. ASSOCIATED(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)) THEN
-              ALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)
-            ELSE
-              CALL lsyssc_releaseMatrix(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)
-            END IF
-            CALL lsyssc_transposeMatrix (&
-                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2,&
-                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T,LSYSSC_TR_ALL)
-                
+            ! Check if B1^T and B2^T are virtually transposed saved. If that's
+            ! the case, create real-transposed matrices from them.
+            if (iand(rnonlinearIteration%RcoreEquation(i)%rmatrixD1%imatrixSpec,&
+                LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+            
+              ! Transpose back and re-transpose; this allocates memory.
+              call lsyssc_transposeMatrixInSitu(&
+                  rnonlinearIteration%RcoreEquation(i)%rmatrixD1,LSYSSC_TR_VIRTUAL)
+              call lsyssc_transposeMatrixInSitu(&
+                  rnonlinearIteration%RcoreEquation(i)%rmatrixD1,LSYSSC_TR_ALL)
+            
+            end if
+            
+            ! The same for B2:
+            if (iand(rnonlinearIteration%RcoreEquation(i)%rmatrixD2%imatrixSpec,&
+                LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+            
+              ! Transpose back and re-transpose; this allocates memory.
+              call lsyssc_transposeMatrixInSitu(&
+                  rnonlinearIteration%RcoreEquation(i)%rmatrixD2,LSYSSC_TR_VIRTUAL)
+              call lsyssc_transposeMatrixInSitu(&
+                  rnonlinearIteration%RcoreEquation(i)%rmatrixD2,LSYSSC_TR_ALL)
+            
+            end if
+            
             ! B1^T and B2^T have the same structure, release unnecessary memory.
             CALL lsyssc_duplicateMatrix (&
-                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T,&
-                rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T,&
+                rnonlinearIteration%RcoreEquation(i)%rmatrixD1,&
+                rnonlinearIteration%RcoreEquation(i)%rmatrixD2,&
                 LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
           END IF
 
@@ -1142,15 +1160,9 @@ CONTAINS
         DEALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
         
         ! Also release B1^T and B2^T everywhere where they exist.
-        IF (ASSOCIATED(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)) THEN
-          CALL lsyssc_releaseMatrix (rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)
-          DEALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB1T)
-        END IF
-
-        IF (ASSOCIATED(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)) THEN
-          CALL lsyssc_releaseMatrix (rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)
-          DEALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixB2T)
-        END IF
+        CALL lsyssc_releaseMatrix (rnonlinearIteration%RcoreEquation(i)%rmatrixD1)
+        CALL lsyssc_releaseMatrix (rnonlinearIteration%RcoreEquation(i)%rmatrixD2)
+        
       END DO
       
       ! Release the temporary vector(s)

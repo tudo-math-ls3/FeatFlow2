@@ -569,7 +569,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,cmatBuildType
+  INTEGER :: i,cmatBuildType,istrongDerivativeBmatrix
   
     ! A pointer to the system matrix and the RHS/solution vectors.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
@@ -577,6 +577,9 @@ CONTAINS
     
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+  
+    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
   
     ! When the jump stabilisation is used, we have to create an extended
     ! matrix stencil!
@@ -655,18 +658,43 @@ CONTAINS
       !
       ! Don't create a content array yet, it will be created by 
       ! the assembly routines later.
+      ! Allocate memory for the entries; don't initialise the memory.
       
       CALL lsyssc_duplicateMatrix (p_rmatrixTemplateGradient,&
-                  rproblem%RlevelInfo(i)%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+          rproblem%RlevelInfo(i)%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                   
       CALL lsyssc_duplicateMatrix (p_rmatrixTemplateGradient,&
-                  rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+          rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
-      ! Allocate memory for the entries; don't initialise the memory.
       CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
                                            LSYSSC_SETM_UNDEFINED)
+                                           
       CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
                                            LSYSSC_SETM_UNDEFINED)
+
+      ! Set up memory for the divergence matrices B1^T and B2^T.
+      ! Virtually transpose B1/B2 and probably allocate memory, depending on what
+      ! we need. This gives us the divergence matrices D1 and D2.
+      call lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
+          rproblem%RlevelInfo(i)%rmatrixD1,LSYSSC_TR_VIRTUAL)
+
+      call lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
+          rproblem%RlevelInfo(i)%rmatrixD2,LSYSSC_TR_VIRTUAL)
+
+      if (istrongDerivativeBmatrix .eq. 1) then
+
+        ! Allocate new memory for the entries of D1 and D2.
+        
+        call lsyssc_releaseMatrixContent(rproblem%RlevelInfo(i)%rmatrixD1)
+        call lsyssc_releaseMatrixContent(rproblem%RlevelInfo(i)%rmatrixD2)
+
+        CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixD1,&
+            LSYSSC_SETM_UNDEFINED)
+                                            
+        CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixD2,&
+            LSYSSC_SETM_UNDEFINED)
+
+      end if
 
       ! -----------------------------------------------------------------------
       ! Temporary vectors
@@ -691,6 +719,7 @@ CONTAINS
     ! Initialise the vectors with 0.
     CALL lsysbl_createVecBlockByDiscr (&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rrhs,.TRUE.)
+        
     CALL lsysbl_createVecBlockByDiscr (&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rvector,.TRUE.)
 
@@ -723,7 +752,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: j
+    INTEGER :: j,istrongDerivativeBmatrix
 
     ! A pointer to the Stokes and mass matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes,p_rmatrixMass
@@ -733,6 +762,9 @@ CONTAINS
     
     ! Structure for the bilinear form for assembling Stokes,...
     ! TYPE(t_bilinearForm) :: rform
+
+    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
 
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
@@ -751,9 +783,9 @@ CONTAINS
     
     ! The global system looks as follows:
     !
-    !    ( A         B1 )
-    !    (      A    B2 )
-    !    ( B1^T B2^T    )
+    !    ( A         B1 )   ( A         B1 )
+    !    (      A    B2 ) = (      A    B2 )
+    !    ( B1^T B2^T    )   ( D1   D2      )
     !
     ! with A = L + nonlinear Convection. We compute in advance
     ! a standard Stokes matrix L which can be added later to the
@@ -797,14 +829,64 @@ CONTAINS
     CALL stdop_assembleLaplaceMatrix (p_rmatrixStokes,.TRUE.,rproblem%dnu)
     
     ! In the global system, there are two coupling matrices B1 and B2.
-    !
-    ! Build the first pressure matrix B1.
-    CALL stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB1,&
-        DER_FUNC,DER_DERIV_X,-1.0_DP)
+    ! These are build either as "int p grad(phi)" (standard case)
+    ! or as "int grad(p) phi" (special case, only for nonconstant pressure).
+    
+    if (istrongDerivativeBmatrix .eq. 0) then
 
-    ! Build the second pressure matrix B2.
-    CALL stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB2,&
-        DER_FUNC,DER_DERIV_Y,-1.0_DP)
+      ! Standard case.
+    
+      ! Build the first pressure matrix B1.
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB1,&
+          DER_FUNC,DER_DERIV_X,-1.0_DP)
+
+      ! Build the second pressure matrix B2.
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB2,&
+          DER_FUNC,DER_DERIV_Y,-1.0_DP)
+      
+      ! Set up the matrices D1 and D2.
+      ! For that purpose, virtually transpose B1/B2.
+      call lsyssc_transposeMatrix (rlevelInfo%rmatrixB1,&
+          rlevelInfo%rmatrixD1,LSYSSC_TR_VIRTUAL)
+
+      call lsyssc_transposeMatrix (rlevelInfo%rmatrixB2,&
+          rlevelInfo%rmatrixD2,LSYSSC_TR_VIRTUAL)
+          
+    else if (istrongDerivativeBmatrix .eq. 1) then
+    
+      ! Special case for nonconstant pressure.
+    
+      ! Build the first pressure matrix B1.
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB1,&
+          DER_DERIV_X,DER_FUNC,1.0_DP)
+
+      ! Build the second pressure matrix B2.
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB2,&
+          DER_DERIV_Y,DER_FUNC,1.0_DP)
+      
+      ! Virtually transpose D1 and D2 so that we can set them up.
+      ! They are saved virtually transposed at the moment, so doing that again
+      ! will give us non-transposed matrices.
+      call lsyssc_transposeMatrixInSitu (rlevelInfo%rmatrixD1,&
+          LSYSSC_TR_VIRTUAL)
+
+      call lsyssc_transposeMatrixInSitu (rlevelInfo%rmatrixD2,&
+          LSYSSC_TR_VIRTUAL)
+      
+      ! Build the first divergence matrix D1^T
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixD1,&
+          DER_FUNC,DER_DERIV_X,-1.0_DP)
+
+      ! Build the second divergence matrix D2^T
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixD2,&
+          DER_FUNC,DER_DERIV_Y,-1.0_DP)
+          
+      ! Ok, finally return their state to 'virtually transposed'.
+      call lsyssc_transposeMatrixInSitu (rlevelInfo%rmatrixD1,LSYSSC_TR_VIRTUAL)
+
+      call lsyssc_transposeMatrixInSitu (rlevelInfo%rmatrixD2,LSYSSC_TR_VIRTUAL)
+    
+    end if
                                 
     ! -----------------------------------------------------------------------
     ! Time-dependent problem
