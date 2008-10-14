@@ -6266,7 +6266,7 @@ contains
     ! Use them to calculate the derivative in the cubature point
     ! on the real element. 
   
-    dxj = 0.25_DP/ddetj
+    dxj = 1.0_DP/ddetj
     
     ! X-derivatives on current element
     ! Dbas(1,DER_DERIV_X) = 0
