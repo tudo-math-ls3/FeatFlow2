@@ -2605,7 +2605,7 @@ contains
     
     ! Oops...
     if (iunit .eq. -1) then
-      CALL output_line ('Error opening .INI file: '//trim(sfilename), &
+      call output_line ('Error opening .INI file: '//trim(sfilename), &
           OU_CLASS_ERROR,OU_MODE_STD,'parlst_readfromsinglefile')
       call sys_halt()
     end if

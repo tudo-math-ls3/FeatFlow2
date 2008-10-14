@@ -4744,7 +4744,7 @@ contains
         
       case (2)
         call storage_getsize (istoragehandle,Isize2D,rstorageheap)
-        if (ANY(p_rnode%Isize .ne. Isize2D)) then
+        if (any(p_rnode%Isize .ne. Isize2D)) then
           call output_line ('Data array has the wrong size!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
           call sys_halt()
@@ -4932,7 +4932,7 @@ contains
     case (2)
       ! 2D storage block
       call storage_getsize (istoragehandle, Isize2D, rstorageheap)
-      if (ANY(p_rnode%Isize .ne. Isize2D)) then
+      if (any(p_rnode%Isize .ne. Isize2D)) then
         call output_line ('Data array has the wrong size!', &
                            OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
         call sys_halt()

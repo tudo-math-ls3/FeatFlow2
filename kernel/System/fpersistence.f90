@@ -729,7 +729,7 @@ contains
 
         ! Read content of UUID from data file
         call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                                   iunit, bformatted=.FALSE.)
+                                   iunit, bformatted=.false.)
         read(iunit, err=2) rfpdbDataItem%Ilbounds,&
                            rfpdbDataItem%Iubounds
         close(iunit)        
@@ -753,7 +753,7 @@ contains
 
         ! Read content of handle from data file
         call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                                   iunit, bformatted=.FALSE.)
+                                   iunit, bformatted=.false.)
         read(iunit, err=2) rfpdbDataItem%Ilbounds,&
                            rfpdbDataItem%Iubounds
         close(iunit)
@@ -1834,7 +1834,7 @@ contains
 
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                               iunit, bformatted=.FALSE.)
+                               iunit, bformatted=.false.)
     read(iunit, err=1) Ilbounds, Iubounds, p_Fsingle
     close(iunit)
 
@@ -1901,7 +1901,7 @@ contains
 
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                               iunit, bformatted=.FALSE.)
+                               iunit, bformatted=.false.)
     read(iunit, err=1) Ilbounds, Iubounds, p_Ddouble
     close(iunit)
 
@@ -1968,7 +1968,7 @@ contains
 
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                               iunit, bformatted=.FALSE.)
+                               iunit, bformatted=.false.)
     read(iunit, err=1) Ilbounds, Iubounds, p_Iinteger
     close(iunit)
 
@@ -2035,7 +2035,7 @@ contains
 
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                               iunit, bformatted=.FALSE.)
+                               iunit, bformatted=.false.)
     read(iunit, err=1) Ilbounds, Iubounds, p_Blogical
     close(iunit)
 
@@ -2102,7 +2102,7 @@ contains
 
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                               iunit, bformatted=.FALSE.)
+                               iunit, bformatted=.false.)
     read(iunit, err=1) Ilbounds, Iubounds, p_Schar
     close(iunit)
 
@@ -2172,7 +2172,7 @@ contains
 
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                               iunit, bformatted=.FALSE.)
+                               iunit, bformatted=.false.)
     read(iunit, err=1) Ilbounds, Iubounds, p_Fsingle
     close(iunit)
 
@@ -2242,7 +2242,7 @@ contains
 
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                               iunit, bformatted=.FALSE.)
+                               iunit, bformatted=.false.)
     read(iunit, err=1) Ilbounds, Iubounds, p_Ddouble
     close(iunit)
 
@@ -2312,7 +2312,7 @@ contains
 
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                               iunit, bformatted=.FALSE.)
+                               iunit, bformatted=.false.)
     read(iunit, err=1) Ilbounds, Iubounds, p_Iinteger
     close(iunit)
 
@@ -2382,7 +2382,7 @@ contains
 
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                               iunit, bformatted=.FALSE.)
+                               iunit, bformatted=.false.)
     read(iunit, err=1) Ilbounds, Iubounds, p_Blogical
     close(iunit)
 
@@ -2452,7 +2452,7 @@ contains
 
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
-                               iunit, bformatted=.FALSE.)
+                               iunit, bformatted=.false.)
     read(iunit, err=1) Ilbounds, Iubounds, p_Schar
     close(iunit)
 

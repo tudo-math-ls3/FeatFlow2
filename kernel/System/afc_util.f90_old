@@ -1,87 +1,87 @@
 
 ! Utility routines for the FEM-FCT solver
 
-MODULE afc_util
+module afc_util
 
-  USE fsystem
+  use fsystem
 
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
   ! Associate a pointer with a Feat2D array
   
-  FUNCTION feat_htpdouble(n,handle) RESULT(p)
-    INTEGER, INTENT(IN) :: n,handle
-    REAL(DP), DIMENSION(:), POINTER :: p
-    INCLUDE 'cmem.inc'
+  function feat_htpdouble(n,handle) result(p)
+    integer, intent(IN) :: n,handle
+    real(DP), dimension(:), pointer :: p
+    include 'cmem.inc'
     
     p => feat_vr(n,DWORK(L(handle)))
     
-  END FUNCTION
+  end function
 
-  FUNCTION feat_htpdouble2D(n,m,handle) RESULT(p)
-    INTEGER, INTENT(IN) :: n,m,handle
-    REAL(DP), DIMENSION(:,:), POINTER :: p
-    INCLUDE 'cmem.inc'
+  function feat_htpdouble2D(n,m,handle) result(p)
+    integer, intent(IN) :: n,m,handle
+    real(DP), dimension(:,:), pointer :: p
+    include 'cmem.inc'
     
     p => feat_mr(n,m,DWORK(L(handle)))
     
-  END FUNCTION
+  end function
 
-  FUNCTION feat_htpint(n,handle) RESULT(p)
-    INTEGER, INTENT(IN) :: n,handle
-    INTEGER(INT), DIMENSION(:), POINTER :: p
-    INCLUDE 'cmem.inc'
+  function feat_htpint(n,handle) result(p)
+    integer, intent(IN) :: n,handle
+    integer(INT), dimension(:), pointer :: p
+    include 'cmem.inc'
     
     p => feat_vi(n,KWORK(L(handle)))
     
-  END FUNCTION
+  end function
 
-  FUNCTION feat_htpint2D(n,m,handle) RESULT(p)
-    INTEGER, INTENT(IN) :: n,m,handle
-    INTEGER(INT), DIMENSION(:,:), POINTER :: p
-    INCLUDE 'cmem.inc'
+  function feat_htpint2D(n,m,handle) result(p)
+    integer, intent(IN) :: n,m,handle
+    integer(INT), dimension(:,:), pointer :: p
+    include 'cmem.inc'
     
     p => feat_mi(n,m,KWORK(L(handle)))
     
-  END FUNCTION
+  end function
   
 
-  FUNCTION feat_vr(n,arr) RESULT(p)
-    INTEGER, INTENT(IN) :: n
-    REAL(DP), DIMENSION(n), TARGET :: arr
-    REAL(DP), DIMENSION(:), POINTER :: p
+  function feat_vr(n,arr) result(p)
+    integer, intent(IN) :: n
+    real(DP), dimension(n), target :: arr
+    real(DP), dimension(:), pointer :: p
 
     p => arr
 
-  END FUNCTION feat_vr
+  end function feat_vr
 
-  FUNCTION feat_mr(n,m,arr) RESULT(p)
-    INTEGER, INTENT(IN) :: n,m
-    REAL(DP), DIMENSION(n,m), TARGET :: arr
-    REAL(DP), DIMENSION(:,:), POINTER :: p
-
-    p => arr
-
-  END FUNCTION feat_mr
-
-  FUNCTION feat_vi(n,arr) RESULT(p)
-    INTEGER, INTENT(IN) :: n
-    INTEGER, DIMENSION(n), TARGET :: arr
-    INTEGER, DIMENSION(:), POINTER :: p
+  function feat_mr(n,m,arr) result(p)
+    integer, intent(IN) :: n,m
+    real(DP), dimension(n,m), target :: arr
+    real(DP), dimension(:,:), pointer :: p
 
     p => arr
 
-  END FUNCTION feat_vi
+  end function feat_mr
 
-  FUNCTION feat_mi(n,m,arr) RESULT(p)
-    INTEGER, INTENT(IN) :: n,m
-    INTEGER, DIMENSION(n,m), TARGET :: arr
-    INTEGER, DIMENSION(:,:), POINTER :: p
+  function feat_vi(n,arr) result(p)
+    integer, intent(IN) :: n
+    integer, dimension(n), target :: arr
+    integer, dimension(:), pointer :: p
 
     p => arr
 
-  END FUNCTION feat_mi
+  end function feat_vi
 
-END MODULE afc_util
+  function feat_mi(n,m,arr) result(p)
+    integer, intent(IN) :: n,m
+    integer, dimension(n,m), target :: arr
+    integer, dimension(:,:), pointer :: p
+
+    p => arr
+
+  end function feat_mi
+
+end module afc_util
