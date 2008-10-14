@@ -4164,6 +4164,11 @@ contains
       call lsyssc_getbase_double (rx,p_Dx)
       call lsyssc_getbase_double (ry,p_Dy)
       
+      ! We have to perform matrix*vector + vector.
+      ! What we actually calculate here is:
+      !    y  =  cx * A^t * x  +  ( cy * y )
+      !       =  ( (cx * x^t) * A)  +  (cy * y^t)^t.
+      
       ! Unfortunately, if cy != 1, then we need to scale y now.
       if(cy .eq. 0.0_DP) then
         ! Clear y
