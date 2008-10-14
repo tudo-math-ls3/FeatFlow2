@@ -9,28 +9,28 @@
 !# </purpose>
 !##############################################################################
 
-MODULE prolrest_aux
+module prolrest_aux
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE vec_filterByEps(Dvector, deps)
+  pure subroutine vec_filterByEps(Dvector, deps)
   
 !<description>
   ! This routine filters all vector entries which are below a specified
@@ -41,41 +41,41 @@ CONTAINS
   ! OPTIONAL: A threshold parameter. All vector entries whose absolute value
   ! drops below the threshold will be set to zero. If not specified,
   ! 100*SYS_EPSREAL is used.
-  REAL(DP), OPTIONAL, INTENT(IN) :: deps
+  real(DP), optional, intent(IN) :: deps
 !</input>
 
 !<inputoutput>
   ! The vector that is to be filtered.
-  REAL(DP), DIMENSION(:), INTENT(INOUT) :: Dvector
+  real(DP), dimension(:), intent(INOUT) :: Dvector
 !</inputoutput>
 
 !<subroutine>
 
   ! local variables
-  INTEGER :: i
-  REAL(DP) :: dthreshold
+  integer :: i
+  real(DP) :: dthreshold
   
     ! Is eps specified?
-    IF (PRESENT(deps)) THEN
+    if (present(deps)) then
       dthreshold = deps
-    ELSE
+    else
       dthreshold = 100.0_DP * SYS_EPSREAL
-    END IF
+    end if
     
     ! Do through the vector
-    DO i = LBOUND(Dvector,1), UBOUND(Dvector,1)
-      IF(ABS(Dvector(i)) .LE. dthreshold) Dvector(i) = 0.0_DP
-    END DO
+    do i = lbound(Dvector,1), ubound(Dvector,1)
+      if(abs(Dvector(i)) .le. dthreshold) Dvector(i) = 0.0_DP
+    end do
     
     ! That's it
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE mat_densify(Da, rmatrix)
+  subroutine mat_densify(Da, rmatrix)
 
 !<description>
   ! This routine densifies a type 7/9 sparse matrix, i.e. copies the matrix
@@ -114,7 +114,7 @@ CONTAINS
       end do ! j
     end do ! i
   
-  END subroutine
+  end subroutine
 
   ! ***************************************************************************
 
@@ -147,7 +147,7 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE mat_filterByEps(Da, deps)
+  pure subroutine mat_filterByEps(Da, deps)
   
 !<description>
   ! This routine filters all matrix entries which are below a specified
@@ -158,37 +158,37 @@ CONTAINS
   ! OPTIONAL: A threshold parameter. All matrix entries whose absolute value
   ! drops below the threshold will be set to zero. If not specified,
   ! 100*SYS_EPSREAL is used.
-  REAL(DP), OPTIONAL, INTENT(IN) :: deps
+  real(DP), optional, intent(IN) :: deps
 !</input>
 
 !<inputoutput>
   ! The matrix that is to be filtered.
-  REAL(DP), DIMENSION(:,:), INTENT(INOUT) :: Da
+  real(DP), dimension(:,:), intent(INOUT) :: Da
 !</inputoutput>
 
 !<subroutine>
 
   ! local variables
-  INTEGER :: i,j
-  REAL(DP) :: dthreshold
+  integer :: i,j
+  real(DP) :: dthreshold
   
     ! Is eps specified?
-    IF (PRESENT(deps)) THEN
+    if (present(deps)) then
       dthreshold = deps
-    ELSE
+    else
       dthreshold = 100.0_DP * SYS_EPSREAL
-    END IF
+    end if
     
     ! Do through the vector
-    DO i = LBOUND(Da,1), UBOUND(Da,1)
-      DO j = LBOUND(Da,2), UBOUND(Da,2)
-        IF(ABS(Da(i,j)) .LE. dthreshold) Da(i,j) = 0.0_DP
-      END DO
-    END DO
+    do i = lbound(Da,1), ubound(Da,1)
+      do j = lbound(Da,2), ubound(Da,2)
+        if(abs(Da(i,j)) .le. dthreshold) Da(i,j) = 0.0_DP
+      end do
+    end do
     
     ! That's it
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
@@ -219,16 +219,16 @@ CONTAINS
   ! Local variables
   type(t_vectorBlock) :: rvecC, rvecF
   type(t_vectorScalar) :: rtmp
-  TYPE(t_interlevelProjectionBlock) :: rproj
+  type(t_interlevelProjectionBlock) :: rproj
   real(DP), dimension(:), pointer :: p_DvecC, p_DvecF
   integer :: i,j,m,n
   
     ! Create the projection structure
-    CALL mlprj_initProjectionDiscr(rproj, rdiscrF)
+    call mlprj_initProjectionDiscr(rproj, rdiscrF)
     
     ! Create two block vectors
-    CALL lsysbl_createVecBlockByDiscr(rdiscrC, rvecC)
-    CALL lsysbl_createVecBlockByDiscr(rdiscrF, rvecF)
+    call lsysbl_createVecBlockByDiscr(rdiscrC, rvecC)
+    call lsysbl_createVecBlockByDiscr(rdiscrF, rvecF)
     
     ! Get the data arrays
     call storage_getbase_double(rvecC%h_Ddata, p_DvecC)
@@ -240,7 +240,7 @@ CONTAINS
     
     ! Create temporary vector
     i = mlprj_getTempMemoryVec (rproj,rvecC,rvecF)
-    CALL lsyssc_createVector (rtmp,i,.FALSE.)
+    call lsyssc_createVector (rtmp,i,.false.)
     
     ! Calculate prolongation matrix
     Dprol = 0.0_DP
@@ -253,7 +253,7 @@ CONTAINS
       p_DvecC(i) = 1.0_DP
       
       ! Prolongate vector
-      CALL mlprj_performProlongation(rproj, rvecC, rvecF, rtmp)
+      call mlprj_performProlongation(rproj, rvecC, rvecF, rtmp)
       
       ! Store result
       do j = 1, n
@@ -262,16 +262,16 @@ CONTAINS
     end do
 
     ! Release temporary vector
-    IF(rtmp%NEQ .gt. 0) then
-      CALL lsyssc_releaseVector(rtmp)
+    if(rtmp%NEQ .gt. 0) then
+      call lsyssc_releaseVector(rtmp)
     end if
     
     ! Release the vectors
-    CALL lsysbl_releaseVector(rvecF)
-    CALL lsysbl_releaseVector(rvecC)
+    call lsysbl_releaseVector(rvecF)
+    call lsysbl_releaseVector(rvecC)
     
     ! Release the projection structure
-    CALL mlprj_doneProjection(rproj)
+    call mlprj_doneProjection(rproj)
     
     ! That's it
 
@@ -306,16 +306,16 @@ CONTAINS
   ! Local variables
   type(t_vectorBlock) :: rvecC, rvecF
   type(t_vectorScalar) :: rtmp
-  TYPE(t_interlevelProjectionBlock) :: rproj
+  type(t_interlevelProjectionBlock) :: rproj
   real(DP), dimension(:), pointer :: p_DvecC, p_DvecF
   integer :: i,j,m,n
   
     ! Create the projection structure
-    CALL mlprj_initProjectionDiscr(rproj, rdiscrF)
+    call mlprj_initProjectionDiscr(rproj, rdiscrF)
     
     ! Create two block vectors
-    CALL lsysbl_createVecBlockByDiscr(rdiscrC, rvecC)
-    CALL lsysbl_createVecBlockByDiscr(rdiscrF, rvecF)
+    call lsysbl_createVecBlockByDiscr(rdiscrC, rvecC)
+    call lsysbl_createVecBlockByDiscr(rdiscrF, rvecF)
     
     ! Get the data arrays
     call storage_getbase_double(rvecC%h_Ddata, p_DvecC)
@@ -327,7 +327,7 @@ CONTAINS
     
     ! Create temporary vector
     i = mlprj_getTempMemoryVec (rproj,rvecC,rvecF)
-    CALL lsyssc_createVector (rtmp,i,.FALSE.)
+    call lsyssc_createVector (rtmp,i,.false.)
 
     ! Calculate restriction matrix
     Drest = 0.0_DP
@@ -340,7 +340,7 @@ CONTAINS
       p_DvecF(i) = 1.0_DP
       
       ! restrict vector
-      CALL mlprj_performRestriction(rproj, rvecC, rvecF, rtmp)
+      call mlprj_performRestriction(rproj, rvecC, rvecF, rtmp)
       
       ! Store result
       do j = 1, m
@@ -349,16 +349,16 @@ CONTAINS
     end do
       
     ! Release temporary vector
-    IF(rtmp%NEQ .gt. 0) then
-      CALL lsyssc_releaseVector(rtmp)
+    if(rtmp%NEQ .gt. 0) then
+      call lsyssc_releaseVector(rtmp)
     end if
     
     ! Release the vectors
-    CALL lsysbl_releaseVector(rvecF)
-    CALL lsysbl_releaseVector(rvecC)
+    call lsysbl_releaseVector(rvecF)
+    call lsysbl_releaseVector(rvecC)
     
     ! Release the projection structure
-    CALL mlprj_doneProjection(rproj)
+    call mlprj_doneProjection(rproj)
     
     ! That's it
 
@@ -393,16 +393,16 @@ CONTAINS
   ! Local variables
   type(t_vectorBlock) :: rvecC, rvecF
   type(t_vectorScalar) :: rtmp
-  TYPE(t_interlevelProjectionBlock) :: rproj
+  type(t_interlevelProjectionBlock) :: rproj
   real(DP), dimension(:), pointer :: p_DvecC, p_DvecF
   integer :: i,j,m,n
   
     ! Create the projection structure
-    CALL mlprj_initProjectionDiscr(rproj, rdiscrF)
+    call mlprj_initProjectionDiscr(rproj, rdiscrF)
     
     ! Create two block vectors
-    CALL lsysbl_createVecBlockByDiscr(rdiscrC, rvecC)
-    CALL lsysbl_createVecBlockByDiscr(rdiscrF, rvecF)
+    call lsysbl_createVecBlockByDiscr(rdiscrC, rvecC)
+    call lsysbl_createVecBlockByDiscr(rdiscrF, rvecF)
     
     ! Get the data arrays
     call storage_getbase_double(rvecC%h_Ddata, p_DvecC)
@@ -414,7 +414,7 @@ CONTAINS
     
     ! Create temporary vector
     i = mlprj_getTempMemoryVec (rproj,rvecC,rvecF)
-    CALL lsyssc_createVector (rtmp,i,.FALSE.)
+    call lsyssc_createVector (rtmp,i,.false.)
 
     ! Calculate interpolation matrix
     Dinterp = 0.0_DP
@@ -427,7 +427,7 @@ CONTAINS
       p_DvecF(i) = 1.0_DP
       
       ! interpolate vector
-      CALL mlprj_performInterpolation(rproj, rvecC, rvecF, rtmp)
+      call mlprj_performInterpolation(rproj, rvecC, rvecF, rtmp)
       
       ! Store result
       do j = 1, m
@@ -436,16 +436,16 @@ CONTAINS
     end do
 
     ! Release temporary vector
-    IF(rtmp%NEQ .gt. 0) then
-      CALL lsyssc_releaseVector(rtmp)
+    if(rtmp%NEQ .gt. 0) then
+      call lsyssc_releaseVector(rtmp)
     end if
     
     ! Release the vectors
-    CALL lsysbl_releaseVector(rvecF)
-    CALL lsysbl_releaseVector(rvecC)
+    call lsysbl_releaseVector(rvecF)
+    call lsysbl_releaseVector(rvecC)
     
     ! Release the projection structure
-    CALL mlprj_doneProjection(rproj)
+    call mlprj_doneProjection(rproj)
     
     ! That's it
 
@@ -455,16 +455,16 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE procRHS_One (rdiscretisation,rform, &
+  subroutine procRHS_One (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -481,35 +481,35 @@ CONTAINS
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! The linear form which is currently to be evaluated:
-    TYPE(t_linearForm), INTENT(IN)                              :: rform
+    type(t_linearForm), intent(IN)                              :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
   
@@ -518,7 +518,7 @@ CONTAINS
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
@@ -526,22 +526,22 @@ CONTAINS
     !    u(x,y) = 1
     Dcoefficients (1,:,:) = 1.0_DP
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE procRHS_Q2_2D (rdiscretisation,rform, &
+  subroutine procRHS_Q2_2D (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -558,35 +558,35 @@ CONTAINS
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! The linear form which is currently to be evaluated:
-    TYPE(t_linearForm), INTENT(IN)                              :: rform
+    type(t_linearForm), intent(IN)                              :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
   
@@ -595,7 +595,7 @@ CONTAINS
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
@@ -604,22 +604,22 @@ CONTAINS
     Dcoefficients (1,:,:) = 16.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
                               Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE procRHS_Sin_2D (rdiscretisation,rform, &
+  subroutine procRHS_Sin_2D (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -636,35 +636,35 @@ CONTAINS
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! The linear form which is currently to be evaluated:
-    TYPE(t_linearForm), INTENT(IN)                              :: rform
+    type(t_linearForm), intent(IN)                              :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    integer, intent(IN)                                         :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
   
@@ -673,14 +673,14 @@ CONTAINS
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
   !</subroutine>
 
     !    u(x,y) = sin(pi*x)*(sin(pi*y)
-    Dcoefficients (1,:,:) = SIN(SYS_PI * Dpoints(1,:,:))*SIN(SYS_PI * Dpoints(2,:,:))
+    Dcoefficients (1,:,:) = sin(SYS_PI * Dpoints(1,:,:))*sin(SYS_PI * Dpoints(2,:,:))
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
