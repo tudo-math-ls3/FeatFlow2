@@ -27,43 +27,43 @@
 !# </purpose>
 !##############################################################################
 
-MODULE triasearch
+module triasearch
 
-  USE triangulation
-  USE geometryaux
+  use triangulation
+  use geometryaux
   
-  IMPLICIT NONE
+  implicit none
 
   ! ***************************************************************************
   ! ***************************************************************************
   ! ***************************************************************************
 
-  INTERFACE tsrch_getElem_BruteForce
-    MODULE PROCEDURE tsrch_getElem_BruteForce_dir
-    MODULE PROCEDURE tsrch_getElem_BruteForce_ind
-  END INTERFACE
+  interface tsrch_getElem_BruteForce
+    module procedure tsrch_getElem_BruteForce_dir
+    module procedure tsrch_getElem_BruteForce_ind
+  end interface
 
-  INTERFACE tsrch_getNearestElem_BruteForce
-    MODULE PROCEDURE tsrch_getNearestMPElem_BF_dir
-    MODULE PROCEDURE tsrch_getNearestMPElem_BF_ind
-  END INTERFACE
+  interface tsrch_getNearestElem_BruteForce
+    module procedure tsrch_getNearestMPElem_BF_dir
+    module procedure tsrch_getNearestMPElem_BF_ind
+  end interface
 
-  INTERFACE tsrch_getElem_raytrace2D
-    MODULE PROCEDURE tsrch_getElem_raytrace2d_dir
-    MODULE PROCEDURE tsrch_getElem_raytrace2d_ind
-  END INTERFACE
+  interface tsrch_getElem_raytrace2D
+    module procedure tsrch_getElem_raytrace2d_dir
+    module procedure tsrch_getElem_raytrace2d_ind
+  end interface
 
   ! ***************************************************************************
   ! ***************************************************************************
   ! ***************************************************************************
 
-CONTAINS
+contains
 
 !************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE tsrch_getElem_BruteForce_dir (&
+  pure subroutine tsrch_getElem_BruteForce_dir (&
       Dpoint,DvertexCoords,IverticesAtElement,iel)
   
 !<description>
@@ -74,65 +74,65 @@ CONTAINS
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  real(DP), dimension(:), intent(IN) :: Dpoint
   
   ! Vertex coordinates of the triangulation
-  REAL(DP), DIMENSION(:,:), INTENT(IN) :: DvertexCoords
+  real(DP), dimension(:,:), intent(IN) :: DvertexCoords
   
   ! Vertices Adjacent to the elements in the triangulation.
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
 !</input>
   
 !<output>
   ! Number of the element containing the point Dpoint.
   ! =0 if no element contains the point.
-  INTEGER(PREC_ELEMENTIDX), INTENT(OUT) :: iel
+  integer(PREC_ELEMENTIDX), intent(OUT) :: iel
 !</output>
   
 !</subroutine>
     
     ! local variables
-    REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE) :: Dcorners
-    LOGICAL :: binside
+    real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcorners
+    logical :: binside
   
-    SELECT CASE (UBOUND(Dpoint,1))
-    CASE (NDIM2D) 
+    select case (ubound(Dpoint,1))
+    case (NDIM2D) 
       
       ! Loop through all elements. Check if the element contains the point.
       ! If yes, quit.
-      DO iel=1,UBOUND(IverticesAtElement,2)
+      do iel=1,ubound(IverticesAtElement,2)
       
         ! Triangular or quad element?
-        IF (IverticesAtElement(4,iel) .NE. 0) THEN
+        if (IverticesAtElement(4,iel) .ne. 0) then
           ! Fetch the coordinates of the element
           Dcorners(1:2,1:4) = DvertexCoords(1:2,IverticesAtElement(1:4,iel))
           
           ! Check if the point is inside. If yes, quit.
-          CALL gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),Dcorners,binside)
-          IF (binside) RETURN
-        ELSE
+          call gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),Dcorners,binside)
+          if (binside) return
+        else
           ! Fetch the coordinates of the element
           Dcorners(1:2,1:3) = DvertexCoords(1:2,IverticesAtElement(1:3,iel))
           
           ! Check if the point is inside. If yes, quit.
-          CALL gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),Dcorners,binside)
-          IF (binside) RETURN
-        END IF
+          call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),Dcorners,binside)
+          if (binside) return
+        end if
       
-      END DO
+      end do
       
-    END SELECT
+    end select
   
     ! No element found
     iel = 0
   
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE tsrch_getElem_BruteForce_ind (Dpoint,rtriangulation,iel)
+  subroutine tsrch_getElem_BruteForce_ind (Dpoint,rtriangulation,iel)
   
 !<description>
   ! Find an element in the triangulation containing the point Dpoint.
@@ -142,36 +142,36 @@ CONTAINS
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  real(DP), dimension(:), intent(IN) :: Dpoint
   
   ! Triangulation structure.
-  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  type(t_triangulation), intent(IN) :: rtriangulation
 !</input>
   
 !<output>
   ! Number of the element containing the point Dpoint.
   ! =0 if no element contains the point.
-  INTEGER(PREC_ELEMENTIDX), INTENT(OUT) :: iel
+  integer(PREC_ELEMENTIDX), intent(OUT) :: iel
 !</output>
   
 !</subroutine>
     
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
 
-    CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
-    CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
     
-    CALL tsrch_getElem_BruteForce_dir (Dpoint,p_DvertexCoords,p_IverticesAtElement,iel)
+    call tsrch_getElem_BruteForce_dir (Dpoint,p_DvertexCoords,p_IverticesAtElement,iel)
   
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************
 
 !<subroutine>
 
-  PURE SUBROUTINE tsrch_getNearestMPElem_BF_dir (&
+  pure subroutine tsrch_getNearestMPElem_BF_dir (&
       Dpoint,DvertexCoords,IverticesAtElement,iel)
   
 !<description>
@@ -183,66 +183,66 @@ CONTAINS
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  real(DP), dimension(:), intent(IN) :: Dpoint
   
   ! Vertex coordinates of the triangulation
-  REAL(DP), DIMENSION(:,:), INTENT(IN) :: DvertexCoords
+  real(DP), dimension(:,:), intent(IN) :: DvertexCoords
   
   ! Vertices Adjacent to the elements in the triangulation.
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
 !</input>
   
 !<output>
   ! Number of the element which midpoint is closest to Dpoint.
-  INTEGER(PREC_ELEMENTIDX), INTENT(OUT) :: iel
+  integer(PREC_ELEMENTIDX), intent(OUT) :: iel
 !</output>
   
 !</subroutine>
     
     ! local variables
-    REAL(DP), DIMENSION(UBOUND(DvertexCoords,1)) :: Dmidpoint
-    INTEGER :: ive
-    INTEGER(PREC_ELEMENTIDX) :: ielcur
-    REAL(DP) :: ddist,dmindist
+    real(DP), dimension(ubound(DvertexCoords,1)) :: Dmidpoint
+    integer :: ive
+    integer(PREC_ELEMENTIDX) :: ielcur
+    real(DP) :: ddist,dmindist
   
-    SELECT CASE (UBOUND(Dpoint,1))
-    CASE (NDIM2D) 
+    select case (ubound(Dpoint,1))
+    case (NDIM2D) 
       
       dmindist = -1.0_DP
       
       ! Loop through all elements. 
-      DO ielcur=1,UBOUND(IverticesAtElement,2)
+      do ielcur=1,ubound(IverticesAtElement,2)
       
         ! Get the element midpoint
         Dmidpoint(:) = 0.0_DP
-        DO ive = 1,UBOUND(IverticesAtElement,1)
-          IF (IverticesAtElement(ive,ielcur) .EQ. 0) EXIT ! Triangle in a quad mesh
+        do ive = 1,ubound(IverticesAtElement,1)
+          if (IverticesAtElement(ive,ielcur) .eq. 0) exit ! Triangle in a quad mesh
           Dmidpoint(:) = Dmidpoint(:) + &
             DvertexCoords(:,IverticesAtElement(ive,ielcur))
-        END DO
-        Dmidpoint(:) = Dmidpoint(:) / REAL(ive-1,DP)
+        end do
+        Dmidpoint(:) = Dmidpoint(:) / real(ive-1,DP)
         
         ! Get the distance
-        ddist = SQRT((Dmidpoint(1)-Dpoint(1))**2 + &
+        ddist = sqrt((Dmidpoint(1)-Dpoint(1))**2 + &
                 (Dmidpoint(2)-Dpoint(2))**2)
         
         ! Chech if the distance is smaller than the current one.
-        IF ((dmindist .LT. 0.0_DP) .OR. (ddist .LT. dmindist)) THEN 
+        if ((dmindist .lt. 0.0_DP) .or. (ddist .lt. dmindist)) then 
           dmindist = ddist
           iel = ielcur
-        END IF
+        end if
         
-      END DO
+      end do
       
-    END SELECT
+    end select
   
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE tsrch_getNearestMPElem_BF_ind (Dpoint,rtriangulation,iel)
+  subroutine tsrch_getNearestMPElem_BF_ind (Dpoint,rtriangulation,iel)
   
 !<description>
   ! Searches for an element in the triangulation which element midpoint
@@ -253,39 +253,39 @@ CONTAINS
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  real(DP), dimension(:), intent(IN) :: Dpoint
   
   ! Triangulation structure.
-  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  type(t_triangulation), intent(IN) :: rtriangulation
 !</input>
   
 !<output>
   ! Number of the element containing the point Dpoint.
   ! =0 if no element contains the point.
-  INTEGER(PREC_ELEMENTIDX), INTENT(OUT) :: iel
+  integer(PREC_ELEMENTIDX), intent(OUT) :: iel
 !</output>
   
 !</subroutine>
     
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
 
-    CALL storage_getbase_double2d (&
+    call storage_getbase_double2d (&
         rtriangulation%h_DvertexCoords,p_DvertexCoords)
-    CALL storage_getbase_int2d (&
+    call storage_getbase_int2d (&
         rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
     
-    CALL tsrch_getNearestMPElem_BF_dir (&
+    call tsrch_getNearestMPElem_BF_dir (&
         Dpoint,p_DvertexCoords,p_IverticesAtElement,iel)
   
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE tsrch_getElem_raytrace2D_dir (&
+  subroutine tsrch_getElem_raytrace2D_dir (&
       Dpoint,rtriangulation,iel, &
       DvertexCoords,IverticesAtElement,IedgesAtElement,IneighboursAtElement,&
       iresult,ilastElement,ilastEdge,imaxIterations)
@@ -298,25 +298,25 @@ CONTAINS
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  real(DP), dimension(:), intent(IN) :: Dpoint
   
   ! Triangulation structure.
-  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  type(t_triangulation), intent(IN) :: rtriangulation
   
   ! OPTIONAL: Maximum number of cell layers to pass. Default value is 100.
-  INTEGER, INTENT(IN), OPTIONAL :: imaxIterations
+  integer, intent(IN), optional :: imaxIterations
 
   ! Vertex coordinates of the mesh
-  REAL(DP), DIMENSION(:,:) :: DvertexCoords
+  real(DP), dimension(:,:) :: DvertexCoords
   
   ! Vertices adjacent to an element in the mesh
-  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:) :: IverticesAtElement
+  integer(PREC_VERTEXIDX), dimension(:,:) :: IverticesAtElement
   
   ! Edges adjacent to an element in the mesh
-  INTEGER(PREC_EDGEIDX), DIMENSION(:,:) :: IedgesAtElement
+  integer(PREC_EDGEIDX), dimension(:,:) :: IedgesAtElement
   
   ! Neighbours around an element in the mesh
-  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:) :: IneighboursAtElement
+  integer(PREC_ELEMENTIDX), dimension(:,:) :: IneighboursAtElement
 
 !</input>
 
@@ -325,7 +325,7 @@ CONTAINS
   !           =0: Choose element automatically.
   ! On output: Number of the element containing the point Dpoint.
   !            =0 if the element was not found.
-  INTEGER(PREC_ELEMENTIDX), INTENT(INOUT) :: iel
+  integer(PREC_ELEMENTIDX), intent(INOUT) :: iel
 !</inputoutput>
   
 !<output>
@@ -333,7 +333,7 @@ CONTAINS
   ! =1 : The element was found successfully.
   ! =0 : The raytracing search broke down inside of the domain. 
   ! =-1: The search broke down because the domain was left.
-  INTEGER, INTENT(OUT), OPTIONAL :: iresult
+  integer, intent(OUT), optional :: iresult
   
   ! OPTIONAL: Last analysed element.
   ! If iresult= 1: ilastElement = iel
@@ -341,62 +341,62 @@ CONTAINS
   !                was stopped.
   ! If iresult=-1: Number of the element through which the
   !                domain was left. 
-  INTEGER, INTENT(OUT), OPTIONAL :: ilastElement
+  integer, intent(OUT), optional :: ilastElement
 
   ! OPTIONAL: Number of the last analysed edge. Range 1..NMT.
   ! If iresult= 1: ilastEdge=0
   ! If iresult= 0: Number of the last analysed edge before the search
   !                was stopped.
   ! If iresult=-1: Number of the edge through which the domain was left. 
-  INTEGER, INTENT(OUT), OPTIONAL :: ilastEdge
+  integer, intent(OUT), optional :: ilastEdge
 !</output>
   
 !</subroutine>
     
-    INTEGER :: imaxIter,ite
-    INTEGER(PREC_ELEMENTIDX) :: ielold
-    REAL(DP), DIMENSION(2,4) :: DcornerCoords
-    INTEGER :: ive,nnve
-    LOGICAL :: bcheck
-    REAL(DP) :: dxmid,dymid
-    REAL(DP) :: dx1,dy1,dx2,dy2
-    INTEGER, DIMENSION(4), PARAMETER :: Inext = (/2,3,4,1/)
+    integer :: imaxIter,ite
+    integer(PREC_ELEMENTIDX) :: ielold
+    real(DP), dimension(2,4) :: DcornerCoords
+    integer :: ive,nnve
+    logical :: bcheck
+    real(DP) :: dxmid,dymid
+    real(DP) :: dx1,dy1,dx2,dy2
+    integer, dimension(4), parameter :: Inext = (/2,3,4,1/)
     
     ! Maximum number of iterations
     imaxIter = 100
-    IF (PRESENT(imaxIterations)) imaxIter = imaxIterations
+    if (present(imaxIterations)) imaxIter = imaxIterations
 
     ! Start element. If the start element is not known, we start at 1.
-    IF (iel .LE. 0) iel = 1
+    if (iel .le. 0) iel = 1
   
     ielold = iel
     
-    nnve = UBOUND(IverticesAtElement,1)
+    nnve = ubound(IverticesAtElement,1)
     
     ! If the point is in element iel, we are immediately done.
     
-    DO ive = 1,nnve
-      IF (IverticesAtElement(ive,iel) .EQ. 0) EXIT ! Triangle in a quad mesh
+    do ive = 1,nnve
+      if (IverticesAtElement(ive,iel) .eq. 0) exit ! Triangle in a quad mesh
       DcornerCoords(1,ive) = DvertexCoords(1,IverticesAtElement(ive,iel))
       DcornerCoords(2,ive) = DvertexCoords(2,IverticesAtElement(ive,iel))
-    END DO
-    IF (ive .EQ. TRIA_NVETRI2D+1) THEN
-      CALL gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
-    ELSE
-      CALL gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
-    END IF
+    end do
+    if (ive .eq. TRIA_NVETRI2D+1) then
+      call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
+    else
+      call gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
+    end if
     
-    IF (bcheck) THEN
-      IF (PRESENT(iresult)) iresult = 1
-      IF (PRESENT(ilastElement)) ilastElement = iel
-      IF (PRESENT(ilastEdge)) ilastEdge = 0
-      RETURN
-    END IF
+    if (bcheck) then
+      if (present(iresult)) iresult = 1
+      if (present(ilastElement)) ilastElement = iel
+      if (present(ilastEdge)) ilastEdge = 0
+      return
+    end if
     
     ! We restrict our raytracing search to imaxIter neighbour cells;
     ! let's hope a point is not moved more than imaxIter elements in 
     ! one step...
-    ieliteration: DO ite = 1,imaxIter
+    ieliteration: do ite = 1,imaxIter
     
       ! Calculate a point inside of the element. We start the ray from there.
       ! For simplicity (assuming convexity of the element) we take half the
@@ -407,12 +407,12 @@ CONTAINS
                         DvertexCoords(2,IverticesAtElement(3,iel)) )
                         
       ! Check all edges to find an intersection point:
-      DO ive = 1,nnve
+      do ive = 1,nnve
       
-        IF (IverticesAtElement(ive,iel) .EQ. 0) EXIT ! Triangle in a quad mesh
+        if (IverticesAtElement(ive,iel) .eq. 0) exit ! Triangle in a quad mesh
         
         ! Don't jump back to the old element
-        IF (IneighboursAtElement(ive,iel) .NE. ielold) THEN
+        if (IneighboursAtElement(ive,iel) .ne. ielold) then
           
           ! Calculate point of intersection the edge ive.
           ! (The use of Inext saves one division by avoiding MOD)
@@ -421,10 +421,10 @@ CONTAINS
           dx2 = DvertexCoords(1,IverticesAtElement(Inext(ive),iel))
           dy2 = DvertexCoords(2,IverticesAtElement(Inext(ive),iel))
           
-          CALL gaux_isIntersection_line2D (dx1,dy1,dx2,dy2,dxmid,dymid,&
+          call gaux_isIntersection_line2D (dx1,dy1,dx2,dy2,dxmid,dymid,&
               Dpoint(1),Dpoint(2),bcheck)
           
-          IF (bcheck) THEN
+          if (bcheck) then
           
             ! Go on searching in the neighbour element
             ielold = iel
@@ -434,48 +434,48 @@ CONTAINS
             ! The caller can use IEL to find out the information
             ! about the boundary where the domain was left...
             
-            IF (IneighboursAtElement(ive,iel) .EQ. 0) THEN
+            if (IneighboursAtElement(ive,iel) .eq. 0) then
             
-              IF (PRESENT(iresult)) iresult = -1
-              IF (PRESENT(ilastElement)) ilastElement = iel
-              IF (PRESENT(ilastEdge)) THEN
+              if (present(iresult)) iresult = -1
+              if (present(ilastElement)) ilastElement = iel
+              if (present(ilastEdge)) then
                 ilastEdge = IedgesAtElement(ive,iel)
-              END IF
+              end if
               
               iel = 0
-              RETURN
+              return
             
-            END IF
+            end if
             
             ! Continue with the next element
             iel = IneighboursAtElement(ive,iel)
-            CYCLE ieliteration
+            cycle ieliteration
             
-          END IF
+          end if
           
-        END IF
+        end if
         
-      END DO 
+      end do 
     
       ! No face was found through which we could left the element.
       ! So the element contains the whole line (dxmid,dymid)->(dx,dy) --
       ! and so indeed the point (dx,dy)! That's it.
       ! iel already has the element number, we only have to set the optional
       ! argiments.
-      IF (PRESENT(iresult)) iresult = 0
-      IF (PRESENT(ilastElement)) ilastElement = ielold
-      IF (PRESENT(ilastEdge)) ilastEdge = 0
-      RETURN
+      if (present(iresult)) iresult = 0
+      if (present(ilastElement)) ilastElement = ielold
+      if (present(ilastEdge)) ilastEdge = 0
+      return
     
-    END DO ieliteration
+    end do ieliteration
   
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE tsrch_getElem_raytrace2D_ind (&
+  subroutine tsrch_getElem_raytrace2D_ind (&
       Dpoint,rtriangulation,iel, iresult,ilastElement,ilastEdge,imaxIterations)
   
 !<description>
@@ -486,13 +486,13 @@ CONTAINS
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  real(DP), dimension(:), intent(IN) :: Dpoint
   
   ! Triangulation structure.
-  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  type(t_triangulation), intent(IN) :: rtriangulation
   
   ! OPTIONAL: Maximum number of cell layers to pass. Default value is 100.
-  INTEGER, INTENT(IN), OPTIONAL :: imaxIterations
+  integer, intent(IN), optional :: imaxIterations
 !</input>
 
 !<inputoutput>
@@ -500,7 +500,7 @@ CONTAINS
   !           =0: Choose element automatically.
   ! On output: Number of the element containing the point Dpoint.
   !            =0 if the element was not found.
-  INTEGER(PREC_ELEMENTIDX), INTENT(INOUT) :: iel
+  integer(PREC_ELEMENTIDX), intent(INOUT) :: iel
 !</inputoutput>
   
 !<output>
@@ -508,7 +508,7 @@ CONTAINS
   ! =1 : The element was found successfully.
   ! =0 : The raytracing search broke down inside of the domain. 
   ! =-1: The search broke down because the domain was left.
-  INTEGER, INTENT(OUT), OPTIONAL :: iresult
+  integer, intent(OUT), optional :: iresult
   
   ! OPTIONAL: Last analysed element.
   ! If iresult= 1: ilastElement = iel
@@ -516,45 +516,45 @@ CONTAINS
   !                was stopped.
   ! If iresult=-1: Number of the element through which the
   !                domain was left. 
-  INTEGER, INTENT(OUT), OPTIONAL :: ilastElement
+  integer, intent(OUT), optional :: ilastElement
 
   ! OPTIONAL: Number of the last analysed edge. Range 1..NMT.
   ! If iresult= 1: ilastEdge=0
   ! If iresult= 0: Number of the last analysed edge before the search
   !                was stopped.
   ! If iresult=-1: Number of the edge through which the domain was left. 
-  INTEGER, INTENT(OUT), OPTIONAL :: ilastEdge
+  integer, intent(OUT), optional :: ilastEdge
 !</output>
   
 !</subroutine>
     
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
     
     ! Get triangulation arrays
-    CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
+    call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
         p_DvertexCoords)
-    CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
+    call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
         p_IverticesAtElement)
-    CALL storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
+    call storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
         p_IneighboursAtElement)
-    CALL storage_getbase_int2d (rtriangulation%h_IedgesAtElement,&
+    call storage_getbase_int2d (rtriangulation%h_IedgesAtElement,&
         p_IedgesAtElement)
 
-    CALL tsrch_getElem_raytrace2D_dir (&
+    call tsrch_getElem_raytrace2D_dir (&
         Dpoint,rtriangulation,iel, &
         p_DvertexCoords,p_IverticesAtElement,p_IedgesAtElement,p_IneighboursAtElement,&
         iresult,ilastElement,ilastEdge,imaxIterations)    
     
-  END SUBROUTINE
+  end subroutine
 
 !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE tsrch_getElem_hierarch (Dpoint,Rtriangulation,iel)
+  subroutine tsrch_getElem_hierarch (Dpoint,Rtriangulation,iel)
   
 !<description>
   ! Find an element in the triangulation containing the point Dpoint.
@@ -567,38 +567,38 @@ CONTAINS
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  real(DP), dimension(:), intent(IN) :: Dpoint
   
   ! A sequence of triangulation structures that should stem from starndard
   ! 2-level-ordered refinement. 
-  TYPE(t_triangulation), DIMENSION(:), INTENT(IN) :: Rtriangulation
+  type(t_triangulation), dimension(:), intent(IN) :: Rtriangulation
 !</input>
 
 !<inputoutput>
   ! Number of the element on the finest mesh containing the point Dpoint.
   ! =0 if the element was not found.
-  INTEGER(PREC_ELEMENTIDX), INTENT(OUT) :: iel
+  integer(PREC_ELEMENTIDX), intent(OUT) :: iel
 !</inputoutput>
   
 !</subroutine>
 
-    INTEGER :: ilev
+    integer :: ilev
     
     iel = 0
     
-    DO ilev = 1,SIZE(Rtriangulation)
+    do ilev = 1,size(Rtriangulation)
       
       ! Try to make a raytracing search on the current level.
-      SELECT CASE (Rtriangulation(1)%ndim)
-      CASE (NDIM2D)
-        CALL tsrch_getElem_raytrace2D (&
+      select case (Rtriangulation(1)%ndim)
+      case (NDIM2D)
+        call tsrch_getElem_raytrace2D (&
             Dpoint,Rtriangulation(1),iel)
-      END SELECT
+      end select
         
-      IF (iel .LE. 0) THEN
+      if (iel .le. 0) then
         ! Oops, raytracing failed.
         ! Then start an exhaustive search through all elements.
-        CALL tsrch_getElem_BruteForce_ind (Dpoint,Rtriangulation(ilev),iel)
+        call tsrch_getElem_BruteForce_ind (Dpoint,Rtriangulation(ilev),iel)
         
         ! iel may be zero after that, as in "circle" domains it 
         ! may happen that the point on the higher level is in the domain 
@@ -606,7 +606,7 @@ CONTAINS
         ! Let's hope that the domain is somehow convex so that
         ! raytracing works in the next sweep...
         
-      END IF
+      end if
 
       ! Note: In the next sweep, we start raytracing at element iel which
       ! was calculated on the coarse mesh. In usual 2-level ordered meshes,
@@ -616,9 +616,9 @@ CONTAINS
       ! If other refinement strategies are used, let's hope element iel on 
       ! the fine grid is nearby Dpoint, so raytracing is not too expensive...
     
-    END DO
+    end do
     
-  END SUBROUTINE
+  end subroutine
 
 
-END MODULE
+end module

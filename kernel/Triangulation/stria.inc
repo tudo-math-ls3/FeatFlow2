@@ -411,65 +411,65 @@
 ! structria.f.
 !***********************************************************************
 
-      INTEGER ONEL,ONVT,ONMT,ONVE,ONVEL,ONBCT,ONVBD,ONANT,OTRIFL,OLVBDI
-      INTEGER ONVPED,ONVEDT,ONIELV,ONIEVT,OIPRMFL,ONDIM
-      INTEGER OLCORVG,OLCORMG,OLVERT,OLMID,OLADJ,OLVEL,OLMEL,OLNPR,OLMM
-      INTEGER OLVBD,OLEBD,OLBCT,OLVBDP,OLMBDP,OLMBD,OLXNPR,OLEAN
-      INTEGER OLMBDI,OLAREA,OIDPFLG,OLFBVT,OLFBMT,ONFBVT,ONFBMT,OTRIUD
+      integer ONEL,ONVT,ONMT,ONVE,ONVEL,ONBCT,ONVBD,ONANT,OTRIFL,OLVBDI
+      integer ONVPED,ONVEDT,ONIELV,ONIEVT,OIPRMFL,ONDIM
+      integer OLCORVG,OLCORMG,OLVERT,OLMID,OLADJ,OLVEL,OLMEL,OLNPR,OLMM
+      integer OLVBD,OLEBD,OLBCT,OLVBDP,OLMBDP,OLMBD,OLXNPR,OLEAN
+      integer OLMBDI,OLAREA,OIDPFLG,OLFBVT,OLFBMT,ONFBVT,ONFBMT,OTRIUD
      
-      INTEGER SZTRIA
+      integer SZTRIA
 
-      PARAMETER (OTRIFL  =  1)
-      PARAMETER (OIDPFLG =  2)
-      PARAMETER (OIPRMFL =  3)
+      parameter (OTRIFL  =  1)
+      parameter (OIDPFLG =  2)
+      parameter (OIPRMFL =  3)
 
-      PARAMETER (ONDIM   =  5)
-      PARAMETER (ONEL    =  6)
-      PARAMETER (ONVT    =  7)
-      PARAMETER (ONMT    =  8)
-      PARAMETER (ONVE    =  9)
-      PARAMETER (ONVEL   = 10)
-      PARAMETER (ONBCT   = 11)
-      PARAMETER (ONVBD   = 12)
-      PARAMETER (ONVPED  = 13)
-      PARAMETER (ONVEDT  = 14)
-      PARAMETER (ONIELV  = 15)
-      PARAMETER (ONIEVT  = 16)
-      PARAMETER (ONANT   = 17)
+      parameter (ONDIM   =  5)
+      parameter (ONEL    =  6)
+      parameter (ONVT    =  7)
+      parameter (ONMT    =  8)
+      parameter (ONVE    =  9)
+      parameter (ONVEL   = 10)
+      parameter (ONBCT   = 11)
+      parameter (ONVBD   = 12)
+      parameter (ONVPED  = 13)
+      parameter (ONVEDT  = 14)
+      parameter (ONIELV  = 15)
+      parameter (ONIEVT  = 16)
+      parameter (ONANT   = 17)
       
-      PARAMETER (ONFBVT  = 18)
-      PARAMETER (ONFBMT  = 19)
+      parameter (ONFBVT  = 18)
+      parameter (ONFBMT  = 19)
     
 ! Indices 22..29 reserved for future use
     
-      PARAMETER (OLCORVG =  30)
-      PARAMETER (OLCORMG =  31)
-      PARAMETER (OLVERT  =  32)
-      PARAMETER (OLMID   =  33)
-      PARAMETER (OLADJ   =  34)
-      PARAMETER (OLVEL   =  35)
-      PARAMETER (OLMEL   =  36)
-      PARAMETER (OLNPR   =  37)
-      PARAMETER (OLMM    =  38)
-      PARAMETER (OLVBD   =  39)
-      PARAMETER (OLEBD   =  40)
-      PARAMETER (OLBCT   =  41)
-      PARAMETER (OLVBDP  =  42)
-      PARAMETER (OLMBDP  =  43)
-      PARAMETER (OLMBD   =  44)
-      PARAMETER (OLXNPR  =  45)
-      PARAMETER (OLEAN   =  46)
-      PARAMETER (OLVBDI  =  47)
-      PARAMETER (OLMBDI  =  48)
-      PARAMETER (OLAREA  =  49)
+      parameter (OLCORVG =  30)
+      parameter (OLCORMG =  31)
+      parameter (OLVERT  =  32)
+      parameter (OLMID   =  33)
+      parameter (OLADJ   =  34)
+      parameter (OLVEL   =  35)
+      parameter (OLMEL   =  36)
+      parameter (OLNPR   =  37)
+      parameter (OLMM    =  38)
+      parameter (OLVBD   =  39)
+      parameter (OLEBD   =  40)
+      parameter (OLBCT   =  41)
+      parameter (OLVBDP  =  42)
+      parameter (OLMBDP  =  43)
+      parameter (OLMBD   =  44)
+      parameter (OLXNPR  =  45)
+      parameter (OLEAN   =  46)
+      parameter (OLVBDI  =  47)
+      parameter (OLMBDI  =  48)
+      parameter (OLAREA  =  49)
       
-      PARAMETER (OLFBVT  =  50)
-      PARAMETER (OLFBMT  =  51)
+      parameter (OLFBVT  =  50)
+      parameter (OLFBMT  =  51)
       
 ! Indices 54..64 reserved for future use
 ! Indices 65..96 user-defineable.
 
-      PARAMETER (OTRIUD  =  65)
+      parameter (OTRIUD  =  65)
       
-      PARAMETER (SZTRIA  =  96)
+      parameter (SZTRIA  =  96)
 

@@ -14,19 +14,19 @@
 !# </purpose>
 !##############################################################################
 
-MODULE meshmodification
+module meshmodification
 
-  USE triangulation
+  use triangulation
 
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE meshmod_disturbMesh (rtriangulation,damount,InodalProperty)
+  subroutine meshmod_disturbMesh (rtriangulation,damount,InodalProperty)
   
 !<description>
   ! Applies stochastical grid disturbance to a given mesh. damount is a
@@ -39,7 +39,7 @@ CONTAINS
 !<input>
   ! Amount of stochastical grid disturbance to be applied to rtriangulation.
   ! Range 0..1; e.g. 0.2 = 20%.
-  REAL(DP), INTENT(IN) :: damount
+  real(DP), intent(IN) :: damount
   
   ! OPTIONAL: Nodal property of the points, specifying which points should
   ! be disturbed and which not.
@@ -48,50 +48,50 @@ CONTAINS
   ! If not specified, the nodal property array from rtriangulation is used,
   ! thus all points in the inner are disturbed while all points on the
   ! boundary are kept as they are.
-  INTEGER(I32), DIMENSION(:), INTENT(IN), OPTIONAL, TARGET :: InodalProperty
+  integer(I32), dimension(:), intent(IN), optional, target :: InodalProperty
 !</input>
 
 !<inputoutput>
   ! Mesh whose grid points should be disturbed.
   ! THe grid point coordinates are modified by this routine.
-  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+  type(t_triangulation), intent(INOUT) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
-    REAL(DP) :: dh,dhdist
-    INTEGER(PREC_VERTEXIDX) :: ivt
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer(I32), dimension(:), pointer :: p_InodalProperty
+    real(DP) :: dh,dhdist
+    integer(PREC_VERTEXIDX) :: ivt
 
     ! Mesh width
-    dh = 1.0_DP/(SQRT(REAL(rtriangulation%NVT,DP))-1.0_DP)
+    dh = 1.0_DP/(sqrt(real(rtriangulation%NVT,DP))-1.0_DP)
     
     ! Amount of distortion
     dhdist = damount * dh
     
     ! Get arrays for coordinates / boundary definition
-    CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
+    call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
         p_DvertexCoords)
-    IF (PRESENT(InodalProperty)) THEN
+    if (present(InodalProperty)) then
       p_InodalProperty => InodalProperty
-    ELSE
-      CALL storage_getbase_int (rtriangulation%h_InodalProperty,&
+    else
+      call storage_getbase_int (rtriangulation%h_InodalProperty,&
           p_InodalProperty)
-    END IF
+    end if
     
     ! Loop over the vertices and disturb them
-    DO ivt = 1,rtriangulation%NVT
+    do ivt = 1,rtriangulation%NVT
     
       ! Only modify inner points.
-      IF (p_InodalProperty(ivt) .EQ. 0) THEN
+      if (p_InodalProperty(ivt) .eq. 0) then
         p_DvertexCoords(:,ivt) = &
-          p_DvertexCoords(:,ivt) + REAL((-1)**MOD(ivt,17),DP)*dhdist
-      END IF
+          p_DvertexCoords(:,ivt) + real((-1)**mod(ivt,17),DP)*dhdist
+      end if
     
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
