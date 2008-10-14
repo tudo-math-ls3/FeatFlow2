@@ -27,45 +27,45 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmedium_method2
+module cc2dmedium_method2
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE statistics
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use statistics
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
-  USE cc2dmediumm2init
-  USE cc2dmediumm2boundary
-  USE cc2dmediumm2discretisation
-  USE cc2dmediumm2postprocessing
-  USE cc2dmediumm2stationary
+  use cc2dmediumm2basic
+  use cc2dmediumm2init
+  use cc2dmediumm2boundary
+  use cc2dmediumm2discretisation
+  use cc2dmediumm2postprocessing
+  use cc2dmediumm2stationary
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc2dmedium2_getLogFiles (slogfile,serrorfile)
+  subroutine cc2dmedium2_getLogFiles (slogfile,serrorfile)
   
 !<description>
   ! Temporarily reads the output DAT file to get the names of the output
@@ -74,42 +74,42 @@ CONTAINS
 
 !<output>
   ! Name of the message log file.
-  CHARACTER(LEN=*), INTENT(OUT) :: slogfile
+  character(LEN=*), intent(OUT) :: slogfile
   
   ! Name of the error log file.
-  CHARACTER(LEN=*), INTENT(OUT) :: serrorfile
+  character(LEN=*), intent(OUT) :: serrorfile
 !</output>
 
 !</subroutine>
 
-    TYPE(t_parlist) :: rparlist
-    CHARACTER(LEN=SYS_STRLEN) :: sstring
+    type(t_parlist) :: rparlist
+    character(LEN=SYS_STRLEN) :: sstring
 
     ! Init parameter list that accepts parameters for output files
-    CALL parlst_init (rparlist)
+    call parlst_init (rparlist)
 
     ! Read parameters that configure the output
-    CALL parlst_readfromfile (rparlist, './data/output.dat')
+    call parlst_readfromfile (rparlist, './data/output.dat')
     
     ! Now the real initialisation of the output including log file stuff!
-    CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
                                 'smsgLog',sstring,'')
-    READ(sstring,*) slogfile
+    read(sstring,*) slogfile
 
-    CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
                                 'serrorLog',sstring,'')
-    READ(sstring,*) serrorfile
+    read(sstring,*) serrorfile
     
     ! That temporary parameter list is not needed anymore.
-    CALL parlst_done (rparlist)
+    call parlst_done (rparlist)
     
-    END SUBROUTINE
+    end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc2dmedium2_getDAT (rparamList)
+  subroutine cc2dmedium2_getDAT (rparamList)
   
 !<description>
   ! Reads in all DAT files into the parameter list rparlist
@@ -119,29 +119,29 @@ CONTAINS
   ! The parameter list where the values of the DAT files should be stored.
   ! The structure must have been initialised, the parameters are just added
   ! to the list.
-  TYPE(t_parlist), INTENT(INOUT) :: rparamList
+  type(t_parlist), intent(INOUT) :: rparamList
 !</inputoutput>
 
 !</subroutine>
 
     ! Each 'readfromfile' command adds the parameter of the specified file 
     ! to the parameter list.
-    CALL parlst_readfromfile (rparamList, './data/discretisation.dat')
-    CALL parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')
-    CALL parlst_readfromfile (rparamList, './data/nonlinsol_cc2d.dat')
-    CALL parlst_readfromfile (rparamList, './data/output.dat')
-    CALL parlst_readfromfile (rparamList, './data/paramtriang.dat')
-    CALL parlst_readfromfile (rparamList, './data/bdconditions.dat')
-    CALL parlst_readfromfile (rparamList, './data/timediscr.dat')
-    CALL parlst_readfromfile (rparamList, './data/postprocessing.dat')
+    call parlst_readfromfile (rparamList, './data/discretisation.dat')
+    call parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')
+    call parlst_readfromfile (rparamList, './data/nonlinsol_cc2d.dat')
+    call parlst_readfromfile (rparamList, './data/output.dat')
+    call parlst_readfromfile (rparamList, './data/paramtriang.dat')
+    call parlst_readfromfile (rparamList, './data/bdconditions.dat')
+    call parlst_readfromfile (rparamList, './data/timediscr.dat')
+    call parlst_readfromfile (rparamList, './data/postprocessing.dat')
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc2dmedium2
+  subroutine cc2dmedium2
   
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
@@ -168,273 +168,273 @@ CONTAINS
 !</subroutine>
 
     ! A problem structure for our problem
-    TYPE(t_problem), POINTER :: p_rproblem
+    type(t_problem), pointer :: p_rproblem
     
     ! A structure for the solution vector and the RHS vector of the problem.
-    TYPE(t_vectorBlock) :: rvector,rrhs
+    type(t_vectorBlock) :: rvector,rrhs
     
     ! A structure for the postprocessing.
-    TYPE(t_c2d2postprocessing) :: rpostprocessing
+    type(t_c2d2postprocessing) :: rpostprocessing
     
     ! Timer objects for stopping time
-    TYPE(t_timer) :: rtimerTotal
-    TYPE(t_timer) :: rtimerGridGeneration
-    TYPE(t_timer) :: rtimerMatrixGeneration
-    TYPE(t_timer) :: rtimerSolver
+    type(t_timer) :: rtimerTotal
+    type(t_timer) :: rtimerGridGeneration
+    type(t_timer) :: rtimerMatrixGeneration
+    type(t_timer) :: rtimerSolver
     
-    INTEGER :: i
+    integer :: i
     
     ! Ok, let's start. 
     
     ! Initialise the timers by zero:
-    CALL stat_clearTimer(rtimerTotal)
-    CALL stat_clearTimer(rtimerGridGeneration)
-    CALL stat_clearTimer(rtimerMatrixGeneration)
-    CALL stat_clearTimer(rtimerSolver)
+    call stat_clearTimer(rtimerTotal)
+    call stat_clearTimer(rtimerGridGeneration)
+    call stat_clearTimer(rtimerMatrixGeneration)
+    call stat_clearTimer(rtimerSolver)
 
     ! Start the timer
-    CALL stat_startTimer(rtimerTotal)
+    call stat_startTimer(rtimerTotal)
     
     ! Allocate memory fo rthe problem structure -- it's rather large!
-    ALLOCATE (p_rproblem)
+    allocate (p_rproblem)
     
     ! Initialise the collection
-    CALL collct_init (p_rproblem%rcollection)
-    DO i=1,NNLEV
-      CALL collct_addlevel_all (p_rproblem%rcollection)
-    END DO
+    call collct_init (p_rproblem%rcollection)
+    do i=1,NNLEV
+      call collct_addlevel_all (p_rproblem%rcollection)
+    end do
     
     ! Initialise the parameter list object. This creates an empty parameter list.
-    CALL parlst_init (p_rproblem%rparamList)
+    call parlst_init (p_rproblem%rparamList)
     
     ! Add the parameter list to the collection so that the parameters
     ! from the DAT/INI files are available everywhere where we have the   
     ! collection.
-    CALL collct_setvalue_parlst(p_rproblem%rcollection,'INI',&
-                                p_rproblem%rparamList,.TRUE.)
+    call collct_setvalue_parlst(p_rproblem%rcollection,'INI',&
+                                p_rproblem%rparamList,.true.)
 
     ! Read parameters from the INI/DAT files into the parameter list. 
-    CALL cc2dmedium2_getDAT (p_rproblem%rparamList)
+    call cc2dmedium2_getDAT (p_rproblem%rparamList)
     
     ! Ok, parameters are read in.
     ! Get the output levels during the initialisation phase and during the program.
-    CALL c2d2_initOutput (p_rproblem)
+    call c2d2_initOutput (p_rproblem)
     
     ! Print the configuration to the terminal
-    IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
-      CALL output_line ('Parameters:')
-      CALL parlst_info (p_rproblem%rparamList)
-    END IF
+    if (p_rproblem%MSHOW_Initialisation .ge. 2) then
+      call output_line ('Parameters:')
+      call parlst_info (p_rproblem%rparamList)
+    end if
     
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
-    CALL c2d2_initParameters (p_rproblem)
+    call c2d2_initParameters (p_rproblem)
     
     ! So now the different steps - one after the other.
     !
     ! Initialisation
     !
     ! Parametrisation & Triangulation
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising parametrisation / triangulation...')
-    END IF
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising parametrisation / triangulation...')
+    end if
     
-    CALL stat_startTimer(rtimerGridGeneration)
+    call stat_startTimer(rtimerGridGeneration)
     
-    CALL c2d2_initParamTriang (p_rproblem)
+    call c2d2_initParamTriang (p_rproblem)
     
-    CALL stat_stopTimer(rtimerGridGeneration)
-    CALL output_lbrk ()
-    CALL output_line ("Time for mesh generation: "//&
-      TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+    call stat_stopTimer(rtimerGridGeneration)
+    call output_lbrk ()
+    call output_line ("Time for mesh generation: "//&
+      trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
     
     ! Print mesh information
-    IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
-      CALL output_lbrk ()
-      CALL output_line ('Mesh statistics:')
-      CALL output_lbrk ()
-      DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
-        CALL tria_infoStatistics (p_rproblem%RlevelInfo(i)%rtriangulation,&
-            i .EQ. p_rproblem%NLMIN,i)
-      END DO
-    END IF
+    if (p_rproblem%MSHOW_Initialisation .ge. 2) then
+      call output_lbrk ()
+      call output_line ('Mesh statistics:')
+      call output_lbrk ()
+      do i=p_rproblem%NLMIN,p_rproblem%NLMAX
+        call tria_infoStatistics (p_rproblem%RlevelInfo(i)%rtriangulation,&
+            i .eq. p_rproblem%NLMIN,i)
+      end do
+    end if
     
     ! Discretisation
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising discretisation...')
-    END IF
-    CALL c2d2_initDiscretisation (p_rproblem)    
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising discretisation...')
+    end if
+    call c2d2_initDiscretisation (p_rproblem)    
 
-    IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
-      CALL output_lbrk ()
-      CALL output_line ('Discretisation statistics:')
-      DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
-        CALL output_lbrk ()
-        CALL output_line ('Level '//sys_siL(i,5))
-        CALL dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%p_rdiscretisation,.FALSE.)
-      END DO
-    END IF
+    if (p_rproblem%MSHOW_Initialisation .ge. 2) then
+      call output_lbrk ()
+      call output_line ('Discretisation statistics:')
+      do i=p_rproblem%NLMIN,p_rproblem%NLMAX
+        call output_lbrk ()
+        call output_line ('Level '//sys_siL(i,5))
+        call dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%p_rdiscretisation,.false.)
+      end do
+    end if
     
     ! And all the other stuff...
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising postprocessing...')
-    END IF
-    CALL c2d2_initPostprocessing (p_rproblem,rpostprocessing)
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising postprocessing...')
+    end if
+    call c2d2_initPostprocessing (p_rproblem,rpostprocessing)
     
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising matrices/vectors...')
-    END IF
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising matrices/vectors...')
+    end if
     
-    CALL stat_startTimer(rtimerMatrixGeneration)
+    call stat_startTimer(rtimerMatrixGeneration)
     
-    CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
+    call c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
     
-    CALL stat_stopTimer(rtimerMatrixGeneration)
-    CALL output_lbrk ()
-    CALL output_line ("Time for matrix initialisation: "//&
-      TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+    call stat_stopTimer(rtimerMatrixGeneration)
+    call output_lbrk ()
+    call output_line ("Time for matrix initialisation: "//&
+      trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
 
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising analytic boundary conditions...')
-    END IF
-    CALL c2d2_initAnalyticBC (p_rproblem)   
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising analytic boundary conditions...')
+    end if
+    call c2d2_initAnalyticBC (p_rproblem)   
 
     ! On all levels, generate the static matrices used as templates
     ! for the system matrix (Laplace, B, Mass,...)
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Generating basic matrices...')
-    END IF
-    CALL c2d2_generateBasicMatrices (p_rproblem)
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Generating basic matrices...')
+    end if
+    call c2d2_generateBasicMatrices (p_rproblem)
 
     ! Create the solution vector -- zero or read from file.
-    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-      CALL output_separator (OU_SEP_MINUS)
-      CALL output_line('Initialising initial solution vector...')
-    END IF
-    CALL c2d2_initInitialSolution (p_rproblem,rvector)
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising initial solution vector...')
+    end if
+    call c2d2_initInitialSolution (p_rproblem,rvector)
 
     ! Now choose the algorithm. Stationary or time-dependent simulation?
-    IF (p_rproblem%itimedependence .EQ. 0) THEN
+    if (p_rproblem%itimedependence .eq. 0) then
     
       ! Stationary simulation
       !
       ! Generate the RHS vector.
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Generating RHS vector...')
-      END IF
-      CALL c2d2_generateBasicRHS (p_rproblem,rrhs)
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Generating RHS vector...')
+      end if
+      call c2d2_generateBasicRHS (p_rproblem,rrhs)
       
       ! Generate discrete boundary conditions
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Generating discrete boundary conditions...')
-      END IF
-      CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Generating discrete boundary conditions...')
+      end if
+      call c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
 
       ! Implementation of boundary conditions
-      CALL c2d2_implementBC (p_rproblem,rvector,rrhs,.TRUE.,.TRUE.)
+      call c2d2_implementBC (p_rproblem,rvector,rrhs,.true.,.true.)
     
       ! Solve the problem
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Invoking stationary solver...')
-        CALL output_separator (OU_SEP_MINUS)
-      END IF
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Invoking stationary solver...')
+        call output_separator (OU_SEP_MINUS)
+      end if
       
-      CALL stat_startTimer(rtimerSolver)
+      call stat_startTimer(rtimerSolver)
       
-      CALL c2d2_solve (p_rproblem,rvector,rrhs)
+      call c2d2_solve (p_rproblem,rvector,rrhs)
       
-      CALL stat_stopTimer(rtimerSolver)
+      call stat_stopTimer(rtimerSolver)
     
       ! Postprocessing
-      CALL c2d2_postprocessingStationary (p_rproblem,rvector,rpostprocessing)
+      call c2d2_postprocessingStationary (p_rproblem,rvector,rpostprocessing)
       
-    ELSE
+    else
     
       ! Time dependent simulation with explicit time stepping.
       !
       ! Generate the RHS vector for the first time step.
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Generating RHS vector...')
-      END IF
-      CALL c2d2_generateBasicRHS (p_rproblem,rrhs)
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Generating RHS vector...')
+      end if
+      call c2d2_generateBasicRHS (p_rproblem,rrhs)
       
       ! Initialise the boundary conditions, but 
       ! don't implement any boundary conditions as the nonstationary solver
       ! doesn't like this.
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Generating discrete boundary conditions of first time step...')
-      END IF
-      CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Generating discrete boundary conditions of first time step...')
+      end if
+      call c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
       
       ! Call the nonstationary solver to solve the problem.
-      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
-        CALL output_separator (OU_SEP_MINUS)
-        CALL output_line('Invoking nonstationary solver...')
-        CALL output_separator (OU_SEP_MINUS)
-      END IF
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Invoking nonstationary solver...')
+        call output_separator (OU_SEP_MINUS)
+      end if
       
-      CALL stat_startTimer(rtimerSolver)
+      call stat_startTimer(rtimerSolver)
       
-      CALL c2d2_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
+      call c2d2_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
       
-      CALL stat_stopTimer(rtimerSolver)
+      call stat_stopTimer(rtimerSolver)
       
-    END IF
+    end if
     
     ! (Probably) write final solution vector
-    CALL c2d2_writeSolution (p_rproblem,rvector)
+    call c2d2_writeSolution (p_rproblem,rvector)
     
     ! Cleanup
-    CALL c2d2_doneMatVec (p_rproblem,rvector,rrhs)
-    CALL c2d2_doneBC (p_rproblem)
-    CALL c2d2_doneDiscretisation (p_rproblem)
-    CALL c2d2_donepostprocessing (rpostprocessing)    
-    CALL c2d2_doneParamTriang (p_rproblem)
+    call c2d2_doneMatVec (p_rproblem,rvector,rrhs)
+    call c2d2_doneBC (p_rproblem)
+    call c2d2_doneDiscretisation (p_rproblem)
+    call c2d2_donepostprocessing (rpostprocessing)    
+    call c2d2_doneParamTriang (p_rproblem)
     
     ! Release parameters from the DAT/INI files from the problem structure.
-    CALL c2d2_doneParameters (p_rproblem)
+    call c2d2_doneParameters (p_rproblem)
 
     ! Release the parameter list
-    CALL collct_deleteValue (p_rproblem%rcollection,'INI')
-    CALL parlst_done (p_rproblem%rparamList)
+    call collct_deleteValue (p_rproblem%rcollection,'INI')
+    call parlst_done (p_rproblem%rparamList)
     
     ! Print some statistical data about the collection - anything forgotten?
-    CALL output_lbrk ()
-    CALL output_line ('Remaining collection statistics:')
-    CALL output_line ('--------------------------------')
-    CALL output_lbrk ()
-    CALL collct_printStatistics (p_rproblem%rcollection)
+    call output_lbrk ()
+    call output_line ('Remaining collection statistics:')
+    call output_line ('--------------------------------')
+    call output_lbrk ()
+    call collct_printStatistics (p_rproblem%rcollection)
     
     ! Finally release the collection and the problem structure.
-    CALL collct_done (p_rproblem%rcollection)
+    call collct_done (p_rproblem%rcollection)
     
-    DEALLOCATE(p_rproblem)
+    deallocate(p_rproblem)
     
     ! Stop the timer
-    CALL stat_stopTimer(rtimerTotal)
+    call stat_stopTimer(rtimerTotal)
     
     ! Print the time for the total computation
-    CALL output_lbrk ()
-    CALL output_line ("Time for initial mesh generation:       "//&
-        TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
-    CALL output_line ("Time for initial matrix initialisation: "//&
-      TRIM(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
-    CALL output_line ("Total Time for solver:                  "//&
-      TRIM(sys_sdL(rtimerSolver%delapsedReal,10)))
-    CALL output_line ("Total time:                             "//&
-        TRIM(sys_sdL(rtimerTotal%delapsedReal,10)))
+    call output_lbrk ()
+    call output_line ("Time for initial mesh generation:       "//&
+        trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+    call output_line ("Time for initial matrix initialisation: "//&
+      trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+    call output_line ("Total Time for solver:                  "//&
+      trim(sys_sdL(rtimerSolver%delapsedReal,10)))
+    call output_line ("Total time:                             "//&
+        trim(sys_sdL(rtimerTotal%delapsedReal,10)))
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

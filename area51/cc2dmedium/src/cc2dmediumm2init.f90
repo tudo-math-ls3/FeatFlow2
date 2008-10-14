@@ -22,40 +22,40 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmediumm2init
+module cc2dmediumm2init
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
-  USE cc2dmediumm2nonstationary
+  use cc2dmediumm2basic
+  use cc2dmediumm2nonstationary
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initOutput (rproblem)
+  subroutine c2d2_initOutput (rproblem)
   
 !<description>
   ! Initialises basic output settings based on the parameters in the DAT file.
@@ -63,26 +63,26 @@ CONTAINS
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.
-    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
                               'MSHOW_Initialisation',rproblem%MSHOW_Initialisation,2)
 
-    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
                               'MT_OutputLevel',rproblem%MT_OutputLevel,2)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initParameters (rproblem)
+  subroutine c2d2_initParameters (rproblem)
   
 !<description>
   ! Initialises the structure rproblem with data from the initialisation
@@ -95,36 +95,36 @@ CONTAINS
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
-    REAL(DP) :: dnu,d1
-    INTEGER :: ilvmin,ilvmax,i1
+    real(DP) :: dnu,d1
+    integer :: ilvmin,ilvmax,i1
 
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.
-    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
                               'MSHOW_Initialisation',rproblem%MSHOW_Initialisation,2)
 
-    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
                               'MT_OutputLevel',rproblem%MT_OutputLevel,2)
 
     ! Get the viscosity parameter, save it to the problem structure
     ! as well as into the collection.
     ! Note that the parameter in the DAT file is 1/nu !
-    CALL parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'RE',dnu,1000.0_DP)
 
     dnu = 1E0_DP/dnu
     rproblem%dnu = dnu
     
     ! By default, X- and Y-velocity matrix are coupled.
-    rproblem%bdecoupledXY = .FALSE.
+    rproblem%bdecoupledXY = .false.
     
     ! Add the (global) viscosity parameter
-    CALL collct_setvalue_real(rproblem%rcollection,'NU',dnu,.TRUE.)
+    call collct_setvalue_real(rproblem%rcollection,'NU',dnu,.true.)
 
     ! Get min/max level from the parameter file.
     !
@@ -132,52 +132,52 @@ CONTAINS
     ! the solution process.
     ! ilvmax receives the level where we want to solve.
     
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'NLMIN',ilvmin,2)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'NLMAX',ilvmax,4)
 
     ! Initialise the level in the problem structure
     rproblem%NLMIN = ilvmin
     rproblem%NLMAX = ilvmax
 
-    CALL collct_setvalue_int (rproblem%rcollection,'NLMIN',ilvmin,.TRUE.)
-    CALL collct_setvalue_int (rproblem%rcollection,'NLMAX',ilvmax,.TRUE.)
+    call collct_setvalue_int (rproblem%rcollection,'NLMIN',ilvmin,.true.)
+    call collct_setvalue_int (rproblem%rcollection,'NLMAX',ilvmax,.true.)
     
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iEquation',i1,0)
     rproblem%iequation = i1
 
     ! Type of subproblem (gradient tensor, deformation tensor,...)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'isubEquation',i1,0)
     rproblem%isubEquation = i1
 
     ! Stabilisation of nonlinearity
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iUpwind',i1,0)
-    CALL collct_setvalue_int( rproblem%rcollection,'IUPWIND',i1,.TRUE.)
+    call collct_setvalue_int( rproblem%rcollection,'IUPWIND',i1,.true.)
 
-    CALL parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'dUpsam',d1,0.0_DP)
-    CALL collct_setvalue_real (rproblem%rcollection,'UPSAM',d1,.TRUE.)
+    call collct_setvalue_real (rproblem%rcollection,'UPSAM',d1,.true.)
 
     ! Type of boundary conditions
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iBoundary',rproblem%iboundary,0)
 
     ! Time dependence
-    CALL c2d2_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
+    call c2d2_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
         rproblem%rparamList)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneParameters (rproblem)
+  subroutine c2d2_doneParameters (rproblem)
   
 !<description>
   ! Cleans up parameters read from the DAT files. Removes all references to
@@ -187,32 +187,32 @@ CONTAINS
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
     ! Remove information about stabilisation
-    CALL collct_deleteValue(rproblem%rcollection,'UPSAM')
-    CALL collct_deleteValue(rproblem%rcollection,'IUPWIND')
+    call collct_deleteValue(rproblem%rcollection,'UPSAM')
+    call collct_deleteValue(rproblem%rcollection,'IUPWIND')
 
     ! Remove type of problem to discretise
-    CALL collct_deleteValue(rproblem%rcollection,'ISTOKES')
+    call collct_deleteValue(rproblem%rcollection,'ISTOKES')
 
     ! Remove min/max level from the collection
-    CALL collct_deleteValue(rproblem%rcollection,'NLMAX')
-    CALL collct_deleteValue(rproblem%rcollection,'NLMIN')
+    call collct_deleteValue(rproblem%rcollection,'NLMAX')
+    call collct_deleteValue(rproblem%rcollection,'NLMIN')
 
     ! Remove the viscosity parameter
-    CALL collct_deletevalue(rproblem%rcollection,'NU')
+    call collct_deletevalue(rproblem%rcollection,'NU')
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initParamTriang (rproblem)
+  subroutine c2d2_initParamTriang (rproblem)
   
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
@@ -223,17 +223,17 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,ilvmin,ilvmax
+  integer :: i,ilvmin,ilvmax
   
     ! Variable for a filename:  
-    CHARACTER(LEN=SYS_STRLEN) :: sString
-    CHARACTER(LEN=SYS_STRLEN) :: sPRMFile, sTRIFile
+    character(LEN=SYS_STRLEN) :: sString
+    character(LEN=SYS_STRLEN) :: sPRMFile, sTRIFile
 
     ! Get min/max level from the parameter file.
     !
@@ -241,48 +241,48 @@ CONTAINS
     ! the solution process.
     ! ilvmax receives the level where we want to solve.
     
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'NLMIN',ilvmin,2)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'NLMAX',ilvmax,4)
     
     ! Get the .prm and the .tri file from the parameter list.
     ! note that parlst_getvalue_string returns us exactly what stands
     ! in the parameter file, so we have to apply READ to get rid of
     ! probable ''!
-    CALL parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
+    call parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
                                  'sParametrisation',sString)
-    READ (sString,*) sPRMFile
+    read (sString,*) sPRMFile
                               
-    CALL parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
+    call parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
                                  'sMesh',sString)
-    READ (sString,*) sTRIFile
+    read (sString,*) sTRIFile
     
     ! Read in the parametrisation of the boundary and save it to rboundary.
     ! Set p_rboundary to NULL() to create a new structure.
-    NULLIFY(rproblem%p_rboundary)
-    CALL boundary_read_prm(rproblem%p_rboundary, sPrmFile)
+    nullify(rproblem%p_rboundary)
+    call boundary_read_prm(rproblem%p_rboundary, sPrmFile)
         
     ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &
+    call tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &
         sTRIFile, rproblem%p_rboundary)
 
     ! Refine the mesh up to the minimum level
-    CALL tria_quickRefine2LevelOrdering(rproblem%NLMIN-1,&
+    call tria_quickRefine2LevelOrdering(rproblem%NLMIN-1,&
         rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%p_rboundary)
 
     ! Create information about adjacencies and everything one needs from
     ! a triangulation. Afterwards, we have the coarse mesh.
-    CALL tria_initStandardMeshFromRaw (&
+    call tria_initStandardMeshFromRaw (&
         rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%p_rboundary)
     
     ! Now, refine to level up to nlmax.
-    DO i=rproblem%NLMIN+1,rproblem%NLMAX
-      CALL tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
+    do i=rproblem%NLMIN+1,rproblem%NLMAX
+      call tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
           rproblem%RlevelInfo(i)%rtriangulation, rproblem%p_rboundary)
-      CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
+      call tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
           rproblem%p_rboundary)
-    END DO
+    end do
     
     ! Compress the level hierarchy.
     ! Share the vertex coordinates of all levels, so the coarse grid coordinates
@@ -290,18 +290,18 @@ CONTAINS
     ! 1.) Save some memory
     ! 2.) Every change in the fine grid coordinates also affects the coarse
     !     grid coordinates and vice versa.
-    DO i=rproblem%NLMAX-1,rproblem%NLMIN,-1
-      CALL tria_compress2LevelOrdHierarchy (rproblem%RlevelInfo(i+1)%rtriangulation,&
+    do i=rproblem%NLMAX-1,rproblem%NLMIN,-1
+      call tria_compress2LevelOrdHierarchy (rproblem%RlevelInfo(i+1)%rtriangulation,&
           rproblem%RlevelInfo(i)%rtriangulation)
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneParamTriang (rproblem)
+  subroutine c2d2_doneParamTriang (rproblem)
   
 !<description>
   ! Releases the triangulation and parametrisation from the heap.
@@ -309,22 +309,22 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  integer :: i
 
     ! Release the triangulation on all levels
-    DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      CALL tria_done (rproblem%RlevelInfo(i)%rtriangulation)
-    END DO
+    do i=rproblem%NLMAX,rproblem%NLMIN,-1
+      call tria_done (rproblem%RlevelInfo(i)%rtriangulation)
+    end do
     
     ! Finally release the domain.
-    CALL boundary_release (rproblem%p_rboundary)
+    call boundary_release (rproblem%p_rboundary)
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

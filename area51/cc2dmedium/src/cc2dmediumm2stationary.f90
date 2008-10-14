@@ -12,45 +12,45 @@
 !# </purpose>
 !##############################################################################
 
-MODULE cc2dmediumm2stationary
+module cc2dmediumm2stationary
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE linearsolverautoinitialise
-  USE matrixrestriction
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use linearsolverautoinitialise
+  use matrixrestriction
   
-  USE collection
-  USE convection
+  use collection
+  use convection
     
-  USE cc2dmediumm2basic
-  USE cc2dmedium_callback
+  use cc2dmediumm2basic
+  use cc2dmedium_callback
   
-  USE cc2dmediumm2nonlinearcore
-  USE cc2dmediumm2nonlinearcoreinit
+  use cc2dmediumm2nonlinearcore
+  use cc2dmediumm2nonlinearcoreinit
   
-  IMPLICIT NONE
+  implicit none
 
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_solve (rproblem,rvector,rrhs)
+  subroutine c2d2_solve (rproblem,rvector,rrhs)
   
 !<description>
   ! Solves the given problem by applying a nonlinear solver with a preconditioner
@@ -68,65 +68,65 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 
   ! The solution vector which is to be used as initial vector for the nonlinear
   ! iteration. After the iteration, this is replaced by the new solution vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 
 !<input>
   ! The right-hand-side vector to use in the equation
-  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+  type(t_vectorBlock), intent(IN) :: rrhs
 !</input>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
+    type(t_ccNonlinearIteration) :: rnonlinearIteration
 
     ! The nonlinear solver configuration
-    TYPE(t_nlsolNode) :: rnlSol
+    type(t_nlsolNode) :: rnlSol
     
     ! Initialise the nonlinear solver node rnlSol with parameters from
     ! the INI/DAT files.
-    CALL c2d2_getNonlinearSolver (rnlSol, rproblem%rparamList, 'CC2D-NONLINEAR')
+    call c2d2_getNonlinearSolver (rnlSol, rproblem%rparamList, 'CC2D-NONLINEAR')
 
     ! Initialise the nonlinear loop. This is to prepare everything for
     ! or callback routines that are called from the nonlinear solver.
     ! The preconditioner in that structure is initialised later.
-    CALL c2d2_initNonlinearLoop (&
+    call c2d2_initNonlinearLoop (&
         rproblem,rproblem%NLMIN,rproblem%NLMAX,rvector,rrhs,&
         rnonlinearIteration,'CC2D-NONLINEAR')
         
     ! Set up all the weights in the core equation according to the current timestep.
     rnonlinearIteration%dalpha = 0.0_DP
     rnonlinearIteration%dtheta = 1.0_DP
-    rnonlinearIteration%dgamma = REAL(1-rproblem%iequation,DP)
+    rnonlinearIteration%dgamma = real(1-rproblem%iequation,DP)
     rnonlinearIteration%deta   = 1.0_DP
     rnonlinearIteration%dtau   = 1.0_DP
 
     ! Initialise the preconditioner for the nonlinear iteration
-    CALL c2d2_initPreconditioner (rproblem,&
+    call c2d2_initPreconditioner (rproblem,&
         rnonlinearIteration,rvector,rrhs)
 
     ! Call the nonlinear solver to solve the core equation.
-    CALL c2d2_solveCoreEquation (rnlSol,rnonlinearIteration,&
+    call c2d2_solveCoreEquation (rnlSol,rnonlinearIteration,&
         rvector,rrhs,rproblem%rcollection)             
              
     ! Release the preconditioner
-    CALL c2d2_releasePreconditioner (rnonlinearIteration)
+    call c2d2_releasePreconditioner (rnonlinearIteration)
     
     ! Release parameters of the nonlinear loop, final clean up
-    CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
+    call c2d2_doneNonlinearLoop (rnonlinearIteration)
              
-    CALL output_lbrk()
-    CALL output_line ('Nonlinear solver statistics')
-    CALL output_line ('---------------------------')
-    CALL output_line ('Intial defect: '//TRIM(sys_sdEL(rnlSol%DinitialDefect(1),15)))
-    CALL output_line ('Final defect:  '//TRIM(sys_sdEL(rnlSol%DfinalDefect(1),15)))
-    CALL output_line ('#Iterations:   '//TRIM(sys_siL(rnlSol%iiterations,10)))
+    call output_lbrk()
+    call output_line ('Nonlinear solver statistics')
+    call output_line ('---------------------------')
+    call output_line ('Intial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)))
+    call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)))
+    call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)))
     
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
