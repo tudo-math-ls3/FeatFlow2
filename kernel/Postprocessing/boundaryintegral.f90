@@ -24,31 +24,31 @@
 !# </purpose>
 !#########################################################################
 
-MODULE boundaryintegral
+module boundaryintegral
 
-  USE fsystem
-  USE storage
-  USE boundary
-  USE cubature
-  USE triangulation
-  USE linearsystemscalar
-  USE linearsystemblock
-  USE spatialdiscretisation
-  USE domainintegration
-  USE collection
-  USE feevaluation
+  use fsystem
+  use storage
+  use boundary
+  use cubature
+  use triangulation
+  use linearsystemscalar
+  use linearsystemblock
+  use spatialdiscretisation
+  use domainintegration
+  use collection
+  use feevaluation
 
-  IMPLICIT NONE
+  implicit none
 
-  PRIVATE :: ffunctionFEevaluation2D,ffunctionNormalDeriv2D
+  private :: ffunctionFEevaluation2D,ffunctionNormalDeriv2D
 
-CONTAINS
+contains
 
   !****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE bdint_integral2D (rboundary,rtriangulation,ccubType,&
+  subroutine bdint_integral2D (rboundary,rtriangulation,ccubType,&
       ffunction,dvalue,rboundaryRegion,rcollection)
 
 !<description>
@@ -64,80 +64,80 @@ CONTAINS
 
 !<input>
   ! A boundary object that specifies the analytical boundary of the domain.
-  TYPE(t_boundary), INTENT(IN) :: rboundary
+  type(t_boundary), intent(IN) :: rboundary
   
   ! A triangulation object that specifies the mesh in the domain.
-  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  type(t_triangulation), intent(IN) :: rtriangulation
 
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  INTEGER, INTENT(IN) :: ccubType
+  integer, intent(IN) :: ccubType
   
   ! A callback function that provides the analytical reference 
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
-  INCLUDE 'intf_functionScBoundary2D.inc'
+  include 'intf_functionScBoundary2D.inc'
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
   ! the whole boundary.
-  TYPE(t_boundaryRegion), INTENT(IN), OPTIONAL :: rboundaryRegion
+  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
-  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  type(t_collection), intent(IN), target, optional :: rcollection
 !</input>
 
 !<output>
   ! The calculated value of the integral.
-  REAL(DP), INTENT(OUT) :: dvalue
+  real(DP), intent(OUT) :: dvalue
 !</output>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_collection), POINTER :: p_rcollection
-    TYPE(t_boundaryRegion) :: rboundaryReg
-    REAL(DP) :: dlocalValue
-    INTEGER :: ibdc
+    type(t_collection), pointer :: p_rcollection
+    type(t_boundaryRegion) :: rboundaryReg
+    real(DP) :: dlocalValue
+    integer :: ibdc
     
     ! Let p_rcollection point to rcollection - or NULL if it's not
     ! given.
-    IF (PRESENT(rcollection)) THEN
+    if (present(rcollection)) then
       p_rcollection => rcollection
-    ELSE
+    else
       p_rcollection => NULL()
-    END IF
+    end if
     
-    IF (rtriangulation%ndim .NE. NDIM2D) THEN
-      PRINT *,'pperr_scalarBoundary2D: Only 2D discretisations allowed.'
-      CALL sys_halt()
-    END IF
+    if (rtriangulation%ndim .ne. NDIM2D) then
+      print *,'pperr_scalarBoundary2D: Only 2D discretisations allowed.'
+      call sys_halt()
+    end if
 
     ! If the boundary region is specified, call pperr_scalarBoundary2d_conf
     ! for that boundary region. Otherwise, call pperr_scalarBoundary2d_conf
     ! for all possible boundary regions and sum up the errors.
-    IF (PRESENT(rboundaryRegion)) THEN
-      CALL bdint_integral2D_conf (rboundary,rtriangulation,ccubType,&
+    if (present(rboundaryRegion)) then
+      call bdint_integral2D_conf (rboundary,rtriangulation,ccubType,&
         ffunction,dvalue,rboundaryRegion,p_rcollection)
-    ELSE
+    else
       dvalue = 0.0_DP
       ! Create a boundary region for each boundary component and call
       ! the calculation routine for that.
-      DO ibdc=1,boundary_igetNBoundComp(rboundary)
-        CALL boundary_createRegion (rboundary, ibdc, 0, rboundaryReg)
-        CALL bdint_integral2D_conf (rboundary,rtriangulation,ccubType,&
+      do ibdc=1,boundary_igetNBoundComp(rboundary)
+        call boundary_createRegion (rboundary, ibdc, 0, rboundaryReg)
+        call bdint_integral2D_conf (rboundary,rtriangulation,ccubType,&
           ffunction,dlocalValue,rboundaryReg,p_rcollection)
         dvalue = dvalue + dlocalValue
-      END DO
-    END IF
+      end do
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE bdint_integral2D_conf (rboundary,rtriangulation,ccubType,&
+  subroutine bdint_integral2D_conf (rboundary,rtriangulation,ccubType,&
       ffunction,dvalue,rboundaryRegion,rcollection)
 
 !<description>
@@ -148,83 +148,83 @@ CONTAINS
 
 !<input>
   ! A boundary object that specifies the analytical boundary of the domain.
-  TYPE(t_boundary), INTENT(IN) :: rboundary
+  type(t_boundary), intent(IN) :: rboundary
   
   ! A triangulation object that specifies the mesh in the domain.
-  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  type(t_triangulation), intent(IN) :: rtriangulation
   
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  INTEGER, INTENT(IN)                      :: ccubType
+  integer, intent(IN)                      :: ccubType
 
   ! A t_boundaryRegion specifying the boundary region where
   ! to calculate. 
-  TYPE(t_boundaryRegion), INTENT(IN), OPTIONAL :: rboundaryRegion
+  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
 
   ! A callback function that provides the analytical reference 
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
-  INCLUDE 'intf_functionScBoundary2D.inc'
+  include 'intf_functionScBoundary2D.inc'
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+  type(t_collection), intent(INOUT), optional      :: rcollection
 !</input>
 
 !<output>
   ! The calculated value of the integral.
-  REAL(DP), INTENT(OUT) :: dvalue
+  real(DP), intent(OUT) :: dvalue
 !</output>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(I32), DIMENSION(:), ALLOCATABLE :: IelementOrientation
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE :: Ielements
-    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DedgePosition
+    integer(I32), dimension(:), allocatable :: IelementOrientation
+    integer(PREC_ELEMENTIDX), dimension(:), allocatable :: Ielements
+    real(DP), dimension(:,:), allocatable :: DedgePosition
     
-    INTEGER :: ibdc,ibdcoffset,iedge,ilocaledge,nve
-    INTEGER(PREC_ELEMENTIDX) :: NEL,NELbdc,iel
-    INTEGER(I32) :: ctrafoType
+    integer :: ibdc,ibdcoffset,iedge,ilocaledge,nve
+    integer(PREC_ELEMENTIDX) :: NEL,NELbdc,iel
+    integer(I32) :: ctrafoType
     
     ! The triangulation structure - to shorten some things...
-    INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
-    INTEGER(PREC_EDGEIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundary
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtBoundary
-    REAL(DP), DIMENSION(:), POINTER :: p_DedgeParameterValue
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordinates
-    REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
-    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    integer(I32), dimension(:), pointer :: p_IboundaryCpIdx
+    integer(PREC_EDGEIDX), dimension(:), pointer :: p_IedgesAtBoundary
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtBoundary
+    real(DP), dimension(:), pointer :: p_DedgeParameterValue
+    real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtElement
 
     ! Arrays for cubature points
-    REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi1D
-    REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dxi2D,Dpoints,DpointsRef
-    REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega1D
-    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dvalues
-    REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE) :: Dcoord
-    INTEGER :: ncubp,ipoint
-    INTEGER(I32) :: icoordSystem
-    REAL(DP) :: dlen,dpar1,dpar2
+    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
+    real(DP), dimension(:,:,:), allocatable :: Dxi2D,Dpoints,DpointsRef
+    real(DP), dimension(CUB_MAXCUBP) :: Domega1D
+    real(DP), dimension(:,:), allocatable :: Dvalues
+    real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcoord
+    integer :: ncubp,ipoint
+    integer(I32) :: icoordSystem
+    real(DP) :: dlen,dpar1,dpar2
 
-    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DpointPar
+    real(DP), dimension(:,:), allocatable :: DpointPar
     
     ! Get some pointers and arrays for quicker access
     
-    CALL storage_getbase_int (rtriangulation%h_IboundaryCpIdx,&
+    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx,&
         p_IboundaryCpIdx)
-    CALL storage_getbase_int (rtriangulation%h_IedgesAtBoundary,&
+    call storage_getbase_int (rtriangulation%h_IedgesAtBoundary,&
         p_IedgesAtBoundary)
-    CALL storage_getbase_int (rtriangulation%h_IelementsAtBoundary,&
+    call storage_getbase_int (rtriangulation%h_IelementsAtBoundary,&
         p_IelementsAtBoundary)
-    CALL storage_getbase_int2d (rtriangulation%h_IedgesAtElement,&
+    call storage_getbase_int2d (rtriangulation%h_IedgesAtElement,&
         p_IedgesAtElement)
-    CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
+    call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
         p_IverticesAtElement)
-    CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
+    call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
         p_DvertexCoordinates)
-    CALL storage_getbase_double (rtriangulation%h_DedgeParameterValue,&
+    call storage_getbase_double (rtriangulation%h_DedgeParameterValue,&
         p_DedgeParameterValue)
-    CALL storage_getbase_double (rtriangulation%h_DvertexParameterValue,&
+    call storage_getbase_double (rtriangulation%h_DvertexParameterValue,&
         p_DvertexParameterValue)
         
     ! Boundary component?
@@ -239,30 +239,30 @@ CONTAINS
     ! In a first step, we figure out the elements on the boundary and their
     ! orientation. Allocate arrays that are large enough to hold
     ! even all elements on the boundary if necessary.
-    ALLOCATE(Ielements(NELbdc), IelementOrientation(NELbdc))
+    allocate(Ielements(NELbdc), IelementOrientation(NELbdc))
     
     ! Allocate an array saving the start- and end-parameter values
     ! of the edges on the boundary.
-    ALLOCATE(DedgePosition(2,NELbdc))
+    allocate(DedgePosition(2,NELbdc))
     
     ! Loop through the edges on the boundary component ibdc.
     ! If the edge is inside, remember the element number and figure out
     ! the orientation of the edge.
     ! NEL counts the total number of elements in the region.
     NEL = 0
-    DO iedge = 1,NELbdc
-      IF (boundary_isInRegion(rboundaryRegion,ibdc,&
-          p_DedgeParameterValue(iedge))) THEN
+    do iedge = 1,NELbdc
+      if (boundary_isInRegion(rboundaryRegion,ibdc,&
+          p_DedgeParameterValue(iedge))) then
         NEL = NEL + 1
         
         ! Element number
         Ielements(NEL) = p_IelementsAtBoundary(iedge)
         
         ! Element orientation; i.e. the local number of the boundary edge 
-        DO ilocaledge = 1,UBOUND(p_IedgesAtElement,1)
-          IF (p_IedgesAtElement(ilocaledge,p_IelementsAtBoundary(iedge)) .EQ. &
-              p_IedgesAtBoundary(iedge)) EXIT
-        END DO
+        do ilocaledge = 1,ubound(p_IedgesAtElement,1)
+          if (p_IedgesAtElement(ilocaledge,p_IelementsAtBoundary(iedge)) .eq. &
+              p_IedgesAtBoundary(iedge)) exit
+        end do
         IelementOrientation(NEL) = ilocaledge
         
         ! Save the start parameter value of the edge -- in length
@@ -271,11 +271,11 @@ CONTAINS
         
         ! Save the end parameter value. Be careful: The last edge
         ! must be treated differently!
-        IF (iedge .NE. NELbdc) THEN
+        if (iedge .ne. NELbdc) then
           dpar2 = p_DvertexParameterValue(iedge+1)
-        ELSE
+        else
           dpar2 = boundary_dgetMaxParVal(rboundary,ibdc)
-        END IF
+        end if
         
         DedgePosition(1,NEL) = &
           boundary_convertParameter(rboundary, &
@@ -285,113 +285,113 @@ CONTAINS
           boundary_convertParameter(rboundary, &
             ibdc, dpar2, rboundaryRegion%cparType, BDR_PAR_LENGTH)
          
-      END IF
-    END DO
+      end if
+    end do
     
     ! Get the parameter values of the 1D cubature formula
     ! as well as the number of cubature points ncubp
-    CALL cub_getCubPoints(ccubType, ncubp, Dxi1D, Domega1D)
+    call cub_getCubPoints(ccubType, ncubp, Dxi1D, Domega1D)
     
     ! Map the 1D cubature points to the edges in 2D.
-    ALLOCATE(Dxi2D(ncubp,NDIM2D+1,NEL))
+    allocate(Dxi2D(ncubp,NDIM2D+1,NEL))
 
     ! The type of the coordinate system may change with every element.
     ! So we may have to switch... ItrialElements in the discretisation
     ! structure informs us about the element type.
-    DO iel = 1,NEL
+    do iel = 1,NEL
     
       ! How many vertices are on the current element?
-      nve = UBOUND(p_IverticesAtElement,1)
-      DO WHILE (p_IverticesAtElement(nve,iel) .EQ. 0) 
+      nve = ubound(p_IverticesAtElement,1)
+      do while (p_IverticesAtElement(nve,iel) .eq. 0) 
         nve = nve-1
-      END DO
+      end do
       
-      SELECT CASE (nve)
-      CASE (3)
+      select case (nve)
+      case (3)
         ! Coordinates of cubature points on triangles are given in
         ! barycentric coordinates.
         icoordSystem = TRAFO_CS_BARY2DTRI
-      CASE (4)
+      case (4)
         ! Coordinates of cubature points on triangles are given in
         ! standard coordinates on the reference element
         icoordSystem = TRAFO_CS_REF2DQUAD
-      END SELECT
+      end select
       
-      CALL trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(iel), &
+      call trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(iel), &
           ncubp, Dxi1D, Dxi2D(:,:,iel))
-    END DO
+    end do
     
     ! Transpose the coordinate array such that we get coordinates
     ! we can work with.
-    ALLOCATE(DpointsRef(NDIM2D+1,ncubp,NEL))
-    DO iel=1,NEL
-      DpointsRef(:,:,iel) = TRANSPOSE(Dxi2D(:,:,iel))
-    END DO
+    allocate(DpointsRef(NDIM2D+1,ncubp,NEL))
+    do iel=1,NEL
+      DpointsRef(:,:,iel) = transpose(Dxi2D(:,:,iel))
+    end do
     
     ! Dxi2D is not needed anymore.
-    DEALLOCATE(Dxi2D)
+    deallocate(Dxi2D)
     
     ! Calculate the coordinates of the points on world coordinates
-    ALLOCATE(Dpoints(ncubp,NDIM2D+1,NEL))
+    allocate(Dpoints(ncubp,NDIM2D+1,NEL))
     
     ! Transformation can be different for all elements
-    DO iel = 1,NEL
+    do iel = 1,NEL
 
       ! Get the points forming the element
-      DO ipoint = 1,UBOUND(p_IverticesAtElement,1)
+      do ipoint = 1,ubound(p_IverticesAtElement,1)
         Dcoord(1,ipoint) = &
             p_DvertexCoordinates(1,p_IverticesAtElement(ipoint,iel))
         Dcoord(2,ipoint) = &
             p_DvertexCoordinates(2,p_IverticesAtElement(ipoint,iel))
-      END DO
+      end do
 
       ! Transform the cubature points
-      DO ipoint = 1,ncubp
+      do ipoint = 1,ncubp
 
         ! How many vertices are on the current element?
-        nve = UBOUND(p_IverticesAtElement,1)
-        DO WHILE (p_IverticesAtElement(nve,iel) .EQ. 0) 
+        nve = ubound(p_IverticesAtElement,1)
+        do while (p_IverticesAtElement(nve,iel) .eq. 0) 
           nve = nve-1
-        END DO
+        end do
         
-        SELECT CASE (nve)
-        CASE (3)
+        select case (nve)
+        case (3)
           ! Coordinates of cubature points on triangles are given in
           ! barycentric coordinates, 2D.
           ctrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
-        CASE (4)
+        case (4)
           ! Coordinates of cubature points on triangles are given in
           ! standard coordinates on the reference element, 2D.
           ctrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
-        END SELECT
+        end select
       
-        CALL trafo_calcRealCoords (ctrafoType,Dcoord,&
+        call trafo_calcRealCoords (ctrafoType,Dcoord,&
             DpointsRef(:,ipoint,iel),Dpoints(:,ipoint,iel))
-      END DO
-    END DO
+      end do
+    end do
     
     ! Calculate the parameter values of the points on the boundary
-    ALLOCATE (DpointPar(ncubp,NEL))
-    DO iel=1,NEL
-      DO ipoint = 1,ncubp
+    allocate (DpointPar(ncubp,NEL))
+    do iel=1,NEL
+      do ipoint = 1,ncubp
         ! Dxi1D is in [-1,1] while the current edge has parmeter values
         ! [DedgePosition(1),DedgePosition(2)]. So do a linear
         ! transformation to transform Dxi1D into that interval, this 
         ! gives the parameter values in length parametrisation
-        CALL mprim_linearRescale(Dxi1D(ipoint,1),-1.0_DP,1.0_DP,&
+        call mprim_linearRescale(Dxi1D(ipoint,1),-1.0_DP,1.0_DP,&
             DedgePosition(1,iel),DedgePosition(2,iel),DpointPar(ipoint,iel))
-      END DO
-    END DO
+      end do
+    end do
     
     ! So Dxi2 defines the coordinates on the reference element for all
     ! elements. Generally said, we have to evaluate the function in these
     ! points now. For that purpose, we call ffunction!
     
-    ALLOCATE (Dvalues(ncubp,NEL))
+    allocate (Dvalues(ncubp,NEL))
     Dvalues = 0.0_DP
     
     ! Evaluate the function on the boundary
-    CALL ffunction (DpointsRef, Dpoints, rboundaryRegion%iboundCompIdx,&
+    call ffunction (DpointsRef, Dpoints, rboundaryRegion%iboundCompIdx,&
         DpointPar,Ielements(1:NEL), Dvalues(:,:),rcollection)
           
     ! Now, Dvalues1 contains in Dvalues1(:,:,1) the term
@@ -403,7 +403,7 @@ CONTAINS
     !  it doesn't matter if we have u_h or -u_h there!)
     
     dvalue = 0.0_DP
-    DO iel = 1,NEL
+    do iel = 1,NEL
     
       ! Get the length of the edge. Let's use the parameter values
       ! on the boundary for that purpose; this is a more general
@@ -415,28 +415,28 @@ CONTAINS
       ! the unit inverval [-1,1] has length 2.
       dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
     
-      DO ipoint = 1,ncubp
+      do ipoint = 1,ncubp
         dvalue = dvalue + dlen * Domega1D(ipoint) * (Dvalues(ipoint,iel)**2)
-      END DO
-    END DO
+      end do
+    end do
     
-    DEALLOCATE(DpointPar)
-    DEALLOCATE(Dvalues)  
+    deallocate(DpointPar)
+    deallocate(Dvalues)  
       
     ! Release memory
 
-    DEALLOCATE(Dpoints)
+    deallocate(Dpoints)
       
-    DEALLOCATE(DedgePosition)
-    DEALLOCATE(Ielements, IelementOrientation)
+    deallocate(DedgePosition)
+    deallocate(Ielements, IelementOrientation)
     
-  END SUBROUTINE
+  end subroutine
   
   !****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE bdint_scalarBoundaryInt2D (rvectorScalar,ccubType,&
+  subroutine bdint_scalarBoundaryInt2D (rvectorScalar,ccubType,&
       dvalue,rboundaryRegion)
 
 !<description>
@@ -450,58 +450,58 @@ CONTAINS
 
 !<input>
   ! A scalar FE function to compute a boundary integral of.
-  TYPE(t_vectorScalar), INTENT(IN) :: rvectorScalar
+  type(t_vectorScalar), intent(IN) :: rvectorScalar
 
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  INTEGER, INTENT(IN) :: ccubType
+  integer, intent(IN) :: ccubType
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
   ! the whole boundary.
-  TYPE(t_boundaryRegion), INTENT(IN), OPTIONAL :: rboundaryRegion
+  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
 !</input>
 
 !<output>
   ! The calculated value of the integral.
-  REAL(DP), INTENT(OUT) :: dvalue
+  real(DP), intent(OUT) :: dvalue
 !</output>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
-    TYPE(t_collection) :: rcollection
+    type(t_spatialDiscretisation), pointer :: p_rdiscr
+    type(t_collection) :: rcollection
     
     ! Get the underlying discretisation
     p_rdiscr => rvectorScalar%p_rspatialDiscr
 
     ! Create a collection that allows us to pass the vector to
     ! the callback routine
-    CALL collct_init(rcollection)
+    call collct_init(rcollection)
     
     ! Save the vector to the collection, so we can restore it in
     ! the callback routine
-    CALL collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .TRUE.) 
+    call collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .true.) 
 
-    CALL bdint_integral2D (p_rdiscr%p_rboundary,p_rdiscr%p_rtriangulation,&
+    call bdint_integral2D (p_rdiscr%p_rboundary,p_rdiscr%p_rtriangulation,&
       ccubType,ffunctionFEevaluation2D,dvalue,rboundaryRegion,rcollection)
       
     ! Release the collection
-    CALL collct_deletevalue (rcollection,'vector')
-    CALL collct_done(rcollection)
+    call collct_deletevalue (rcollection,'vector')
+    call collct_done(rcollection)
       
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
 
-  SUBROUTINE ffunctionFEevaluation2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
+  subroutine ffunctionFEevaluation2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
         Dvalues,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the calculation of boundary
@@ -521,34 +521,34 @@ CONTAINS
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: DpointsRef
+    real(DP), dimension(:,:,:), intent(IN)  :: DpointsRef
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
     
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
-    INTEGER, INTENT(IN) :: ibct
+    integer, intent(IN) :: ibct
     
     ! For every point under consideration, this specifies the parameter
     ! value of the point on the boundary component. The parameter value
     ! is calculated in LENGTH PARAMETRISATION!
     ! DIMENSION(npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: DpointPar
+    real(DP), dimension(:,:), intent(IN) :: DpointPar
     
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
+    integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
   !</input>
   
   !<output>
@@ -556,31 +556,31 @@ CONTAINS
     ! in all the points specified in Dpoints, or the appropriate derivative
     ! of the function, respectively, according to cderivative.
     !   DIMENSION(npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+    real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
   !</output>
     
   !</subroutine>
 
     ! local variables
-    TYPE(t_vectorScalar), POINTER :: p_rvector
-    INTEGER(PREC_ELEMENTIDX) :: iel
+    type(t_vectorScalar), pointer :: p_rvector
+    integer(PREC_ELEMENTIDX) :: iel
 
     ! Get the vector with the FE function from the collection
     p_rvector => collct_getvalue_vecsca (rcollection, 'vector')
   
     ! Evaluate the FE function in the given points.
-    DO iel=1,SIZE(Ielements)
-      CALL fevl_evaluate_mult (DER_FUNC, Dvalues(:,iel), p_rvector, &
+    do iel=1,size(Ielements)
+      call fevl_evaluate_mult (DER_FUNC, Dvalues(:,iel), p_rvector, &
           Ielements(iel), DpointsRef(:,:,iel), Dpoints(:,:,iel))
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE bdint_normalDerivativeInt2D (rvectorScalar,ccubType,&
+  subroutine bdint_normalDerivativeInt2D (rvectorScalar,ccubType,&
       dvalue,rboundaryRegion)
 
 !<description>
@@ -594,58 +594,58 @@ CONTAINS
 
 !<input>
   ! A scalar FE function to compute a boundary integral of.
-  TYPE(t_vectorScalar), INTENT(IN) :: rvectorScalar
+  type(t_vectorScalar), intent(IN) :: rvectorScalar
 
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  INTEGER, INTENT(IN) :: ccubType
+  integer, intent(IN) :: ccubType
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
   ! the whole boundary.
-  TYPE(t_boundaryRegion), INTENT(IN), OPTIONAL :: rboundaryRegion
+  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
 !</input>
 
 !<output>
   ! The calculated value of the integral.
-  REAL(DP), INTENT(OUT) :: dvalue
+  real(DP), intent(OUT) :: dvalue
 !</output>
 
 !</subroutine>
 
     ! local variables
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
-    TYPE(t_collection) :: rcollection
+    type(t_spatialDiscretisation), pointer :: p_rdiscr
+    type(t_collection) :: rcollection
     
     ! Get the underlying discretisation
     p_rdiscr => rvectorScalar%p_rspatialDiscr
 
     ! Create a collection that allows us to pass the vector to
     ! the callback routine
-    CALL collct_init(rcollection)
+    call collct_init(rcollection)
     
     ! Save the vector to the collection, so we can restore it in
     ! the callback routine
-    CALL collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .TRUE.) 
+    call collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .true.) 
 
-    CALL bdint_integral2D (p_rdiscr%p_rboundary,p_rdiscr%p_rtriangulation,&
+    call bdint_integral2D (p_rdiscr%p_rboundary,p_rdiscr%p_rtriangulation,&
       ccubType,ffunctionNormalDeriv2D,dvalue,rboundaryRegion,rcollection)
       
     ! Release the collection
-    CALL collct_deletevalue (rcollection,'vector')
-    CALL collct_done(rcollection)
+    call collct_deletevalue (rcollection,'vector')
+    call collct_done(rcollection)
       
-  END SUBROUTINE
+  end subroutine
 
   !****************************************************************************
 
-  SUBROUTINE ffunctionNormalDeriv2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
+  subroutine ffunctionNormalDeriv2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
         Dvalues,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the calculation of boundary
@@ -665,34 +665,34 @@ CONTAINS
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: DpointsRef
+    real(DP), dimension(:,:,:), intent(IN)  :: DpointsRef
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
     
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
-    INTEGER, INTENT(IN) :: ibct
+    integer, intent(IN) :: ibct
     
     ! For every point under consideration, this specifies the parameter
     ! value of the point on the boundary component. The parameter value
     ! is calculated in LENGTH PARAMETRISATION!
     ! DIMENSION(npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: DpointPar
+    real(DP), dimension(:,:), intent(IN) :: DpointPar
     
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
+    integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
   !</input>
   
   !<output>
@@ -700,49 +700,49 @@ CONTAINS
     ! in all the points specified in Dpoints, or the appropriate derivative
     ! of the function, respectively, according to cderivative.
     !   DIMENSION(npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+    real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
   !</output>
     
   !</subroutine>
 
     ! local variables
-    TYPE(t_vectorScalar), POINTER :: p_rvector
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: ipoint
-    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DderivX,DderivY
-    REAL(DP) :: dnx,dny,dminPar,dmaxPar,dt
+    type(t_vectorScalar), pointer :: p_rvector
+    integer(PREC_ELEMENTIDX) :: iel
+    integer :: ipoint
+    real(DP), dimension(:,:), allocatable :: DderivX,DderivY
+    real(DP) :: dnx,dny,dminPar,dmaxPar,dt
 
     ! Get the vector with the FE function from the collection
     p_rvector => collct_getvalue_vecsca (rcollection, 'vector')
   
     ! Allocate memory for the values of the derivative
-    ALLOCATE(DderivX(UBOUND(Dvalues,1),UBOUND(Dvalues,2)))
-    ALLOCATE(DderivY(UBOUND(Dvalues,1),UBOUND(Dvalues,2)))
+    allocate(DderivX(ubound(Dvalues,1),ubound(Dvalues,2)))
+    allocate(DderivY(ubound(Dvalues,1),ubound(Dvalues,2)))
   
     ! Evaluate the derivative of the FE function in the given points.
-    DO iel=1,SIZE(Ielements)
-      CALL fevl_evaluate_mult (DER_DERIV_X, DderivX(:,iel), p_rvector, &
+    do iel=1,size(Ielements)
+      call fevl_evaluate_mult (DER_DERIV_X, DderivX(:,iel), p_rvector, &
           Ielements(iel), DpointsRef(:,:,iel), Dpoints(:,:,iel))
-      CALL fevl_evaluate_mult (DER_DERIV_Y, DderivY(:,iel), p_rvector, &
+      call fevl_evaluate_mult (DER_DERIV_Y, DderivY(:,iel), p_rvector, &
           Ielements(iel), DpointsRef(:,:,iel), Dpoints(:,:,iel))
-    END DO
+    end do
 
     ! Get the minimum and maximum parameter value. The point with the minimal
     ! parameter value is the start point of the interval, the point with the
     ! maximum parameter value the endpoint.
     dminPar = DpointPar(1,1)
     dmaxPar = DpointPar(1,1)
-    DO iel=1,SIZE(Ielements)
-      DO ipoint = 1,UBOUND(Dpoints,1)
-        dminPar = MIN(DpointPar(ipoint,iel),dminPar)
-        dmaxPar = MAX(DpointPar(ipoint,iel),dmaxPar)
-      END DO
-    END DO
+    do iel=1,size(Ielements)
+      do ipoint = 1,ubound(Dpoints,1)
+        dminPar = min(DpointPar(ipoint,iel),dminPar)
+        dmaxPar = max(DpointPar(ipoint,iel),dmaxPar)
+      end do
+    end do
     
     ! Multiply the derivative with the normal in each point to get the
     ! normal derivative.
-    DO iel=1,SIZE(Ielements)
-      DO ipoint = 1,UBOUND(Dpoints,1)
+    do iel=1,size(Ielements)
+      do ipoint = 1,ubound(Dpoints,1)
       
         dt = DpointPar(ipoint,iel)
       
@@ -755,29 +755,29 @@ CONTAINS
         ! the endpoints of a boundary edge. In such a case, the routine
         ! would normally compute the normal vector as a mean on the
         ! normal vectors of the edges adjacent to such a point!
-        IF (DpointPar(ipoint,iel) .EQ. dminPar) THEN
+        if (DpointPar(ipoint,iel) .eq. dminPar) then
           ! Start point
-          CALL boundary_getNormalVec(p_rvector%p_rspatialDiscr%p_rboundary, ibct, &
+          call boundary_getNormalVec2D(p_rvector%p_rspatialDiscr%p_rboundary, ibct, &
               dt, dnx, dny,BDR_NORMAL_RIGHT,BDR_PAR_LENGTH)
-        ELSE IF (DpointPar(ipoint,iel) .EQ. dmaxPar) THEN
+        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
           ! End point
-          CALL boundary_getNormalVec(p_rvector%p_rspatialDiscr%p_rboundary, ibct, &
+          call boundary_getNormalVec2D(p_rvector%p_rspatialDiscr%p_rboundary, ibct, &
               dt, dnx, dny,BDR_NORMAL_LEFT,BDR_PAR_LENGTH)
-        ELSE
+        else
           ! Inner point
-          CALL boundary_getNormalVec(p_rvector%p_rspatialDiscr%p_rboundary, ibct, &
+          call boundary_getNormalVec2D(p_rvector%p_rspatialDiscr%p_rboundary, ibct, &
               dt, dnx, dny,cparType=BDR_PAR_LENGTH)
-        END IF
+        end if
       
         ! Calculate the normal derivative
         Dvalues(ipoint,iel) = DderivX(ipoint,iel)*dnx + DderivY(ipoint,iel)*dny
       
-      END DO
-    END DO
+      end do
+    end do
     
     ! Release memory
-    DEALLOCATE(DderivX,DderivY)
+    deallocate(DderivX,DderivY)
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

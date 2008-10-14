@@ -1,18 +1,18 @@
   ! This file describes the interface for a function that is used in 
   ! bdint_scalarBoundary2D to calculate integral values on the boundary.
   
-  INTERFACE
+  interface
   
   !<subroutine>
 
-    SUBROUTINE ffunction (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
+    subroutine ffunction (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
         Dvalues,rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the calculation of boundary
@@ -32,34 +32,34 @@
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: DpointsRef
+    real(DP), dimension(:,:,:), intent(IN)  :: DpointsRef
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
     
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
-    INTEGER, INTENT(IN) :: ibct
+    integer, intent(IN) :: ibct
     
     ! For every point under consideration, this specifies the parameter
     ! value of the point on the boundary component. The parameter value
     ! is calculated in LENGTH PARAMETRISATION!
     ! DIMENSION(npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: DpointPar
+    real(DP), dimension(:,:), intent(IN) :: DpointPar
     
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
+    integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
   !</input>
   
   !<output>
@@ -67,12 +67,12 @@
     ! in all the points specified in Dpoints, or the appropriate derivative
     ! of the function, respectively, according to cderivative.
     !   DIMENSION(npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+    real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
   !</output>
     
   !</subroutine>
   
-    END SUBROUTINE
+    end subroutine
     
-  END INTERFACE
+  end interface
   

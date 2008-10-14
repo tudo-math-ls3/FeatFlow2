@@ -1,18 +1,18 @@
   ! This file describes the interface for a reference function that
   ! is used in pperr_scalarBoundary2D to calculate errors on the boundary.
   
-  INTERFACE
+  interface
   
   !<subroutine>
 
-    SUBROUTINE ffunctionReference (cderivative,rdiscretisation, &
+    subroutine ffunctionReference (cderivative,rdiscretisation, &
                   DpointsRef, Dpoints, Ielements, Dvalues, rcollection)
     
-    USE basicgeometry
-    USE triangulation
-    USE collection
-    USE scalarpde
-    USE domainintegration
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
     
   !<description>
     ! This subroutine is called during the calculation of errors with boundary
@@ -30,36 +30,36 @@
     ! This is a DER_xxxx derivative identifier (from derivative.f90) that
     ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
     ! The result must be written to the Dvalue-array below.
-    INTEGER, INTENT(IN)                                         :: cderivative
+    integer, intent(IN)                                         :: cderivative
   
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: DpointsRef
+    real(DP), dimension(:,:,:), intent(IN)  :: DpointsRef
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
     
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
+    integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    type(t_collection), intent(INOUT), optional      :: rcollection
   !</input>
   
   !<output>
@@ -67,12 +67,12 @@
     ! in all the points specified in Dpoints, or the appropriate derivative
     ! of the function, respectively, according to cderivative.
     !   DIMENSION(npointsPerElement,nelements)
-    REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+    real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
   !</output>
     
   !</subroutine>
   
-    END SUBROUTINE
+    end subroutine
     
-  END INTERFACE
+  end interface
   

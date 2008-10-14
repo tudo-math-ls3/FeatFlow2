@@ -25,26 +25,26 @@
 !# </purpose>
 !#########################################################################
 
-MODULE mapleio
+module mapleio
 
-  USE fsystem
-  USE storage
-  USE io
-  USE basicgeometry
+  use fsystem
+  use storage
+  use io
+  use basicgeometry
   
-  IMPLICIT NONE
+  implicit none
 
-  INTERFACE mapleio_writePointPlot
-    MODULE PROCEDURE mapleio_writePointPlotSingle
-    MODULE PROCEDURE mapleio_writePointPlotMult
-  END INTERFACE
+  interface mapleio_writePointPlot
+    module procedure mapleio_writePointPlotSingle
+    module procedure mapleio_writePointPlotMult
+  end interface
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE mapleio_writePointArray (ichannel,Dpoints,sname,iindex)
+  subroutine mapleio_writePointArray (ichannel,Dpoints,sname,iindex)
   
   !<description>
     ! Writes a MAPLE command to output channel ichannel which creates
@@ -55,59 +55,59 @@ CONTAINS
     
   !<input>
     ! Output channel number where to write the MAPLE output to.
-    INTEGER, INTENT(IN) :: ichannel
+    integer, intent(IN) :: ichannel
     
     ! Point set that should be written out. This is a list of (2D or 2D)
     ! point coordinates that form the polygon.
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
+    real(DP), dimension(:,:), intent(IN) :: Dpoints
     
     ! Name of the variable to be used by MAPLE.
-    CHARACTER(len=*), INTENT(IN) :: sname
+    character(len=*), intent(IN) :: sname
     
     ! OPTIONAL: Index of the variable (if sname should be treated as
     ! an array of polygons). If present, the variable gets the name
     ! 'sname(iindex)'.
-    INTEGER, INTENT(IN), OPTIONAL :: iindex
+    integer, intent(IN), optional :: iindex
   !</input>
     
 !</subroutine>
 
-    INTEGER :: ipoint,idim
+    integer :: ipoint,idim
     
     ! Create the first line
-    IF (.NOT. PRESENT(iindex)) THEN
-      WRITE (ichannel,'(A)') sname//':=['
-    ELSE
-      WRITE (ichannel,'(A)') sname//'('//TRIM(sys_siL(iindex,10))//'):=['
-    END IF
+    if (.not. present(iindex)) then
+      write (ichannel,'(A)') sname//':=['
+    else
+      write (ichannel,'(A)') sname//'('//trim(sys_siL(iindex,10))//'):=['
+    end if
     
     ! Write the points
-    DO ipoint=1,UBOUND(Dpoints,2)
+    do ipoint=1,ubound(Dpoints,2)
     
-      WRITE (ichannel,'(A)',ADVANCE='NO') &
-        '     ['//TRIM(sys_sdL(Dpoints(1,ipoint),10))
+      write (ichannel,'(A)',ADVANCE='NO') &
+        '     ['//trim(sys_sdL(Dpoints(1,ipoint),10))
         
-      DO idim=2,UBOUND(Dpoints,1)
-        WRITE (ichannel,'(A)',ADVANCE='NO') &
-          ','//TRIM(sys_sdL(Dpoints(idim,ipoint),10))
-      END DO
+      do idim=2,ubound(Dpoints,1)
+        write (ichannel,'(A)',ADVANCE='NO') &
+          ','//trim(sys_sdL(Dpoints(idim,ipoint),10))
+      end do
       
-      IF (ipoint .EQ. UBOUND(Dpoints,2)) THEN
-        WRITE (ichannel,'(A)',ADVANCE='NO') ']'
-      ELSE
-        WRITE (ichannel,'(A)',ADVANCE='YES') '],'
-      END IF
+      if (ipoint .eq. ubound(Dpoints,2)) then
+        write (ichannel,'(A)',ADVANCE='NO') ']'
+      else
+        write (ichannel,'(A)',ADVANCE='YES') '],'
+      end if
       
-    END DO
+    end do
 
-    WRITE (ichannel,'(A)') '];';
+    write (ichannel,'(A)') '];';
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE mapleio_writePolygonPlot (ichannel,Dpoints,sname,iindex)
+  subroutine mapleio_writePolygonPlot (ichannel,Dpoints,sname,iindex)
   
   !<description>
     ! Writes a MAPLE command to output channel ichannel which creates
@@ -118,60 +118,60 @@ CONTAINS
     
   !<input>
     ! Output channel number where to write the MAPLE output to.
-    INTEGER, INTENT(IN) :: ichannel
+    integer, intent(IN) :: ichannel
     
     ! Polygon that should be created. This is a list of (2D or 2D)
     ! point coordinates that form the polygon.
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
+    real(DP), dimension(:,:), intent(IN) :: Dpoints
     
     ! Name of the variable to be used by MAPLE.
-    CHARACTER(len=*), INTENT(IN) :: sname
+    character(len=*), intent(IN) :: sname
     
     ! OPTIONAL: Index of the variable (if sname should be treated as
     ! an array of polygons). If present, the variable gets the name
     ! 'sname(iindex)'.
-    INTEGER, INTENT(IN), OPTIONAL :: iindex
+    integer, intent(IN), optional :: iindex
   !</input>
     
 !</subroutine>
 
-    INTEGER :: ipoint,idim
+    integer :: ipoint,idim
     
     ! Create the first line
-    IF (.NOT. PRESENT(iindex)) THEN
-      WRITE (ichannel,'(A)') sname//':=polygonplot(['
-    ELSE
-      WRITE (ichannel,'(A)') sname//'('//TRIM(sys_siL(iindex,10))//&
+    if (.not. present(iindex)) then
+      write (ichannel,'(A)') sname//':=polygonplot(['
+    else
+      write (ichannel,'(A)') sname//'('//trim(sys_siL(iindex,10))//&
         '):=polygonplot(['
-    END IF
+    end if
     
     ! Write the points
-    DO ipoint=1,UBOUND(Dpoints,2)
+    do ipoint=1,ubound(Dpoints,2)
     
-      WRITE (ichannel,'(A)',ADVANCE='NO') &
-        '     ['//TRIM(sys_sdL(Dpoints(1,ipoint),10))
+      write (ichannel,'(A)',ADVANCE='NO') &
+        '     ['//trim(sys_sdL(Dpoints(1,ipoint),10))
         
-      DO idim=2,UBOUND(Dpoints,1)
-        WRITE (ichannel,'(A)',ADVANCE='NO') &
-          ','//TRIM(sys_sdL(Dpoints(idim,ipoint),10))
-      END DO
+      do idim=2,ubound(Dpoints,1)
+        write (ichannel,'(A)',ADVANCE='NO') &
+          ','//trim(sys_sdL(Dpoints(idim,ipoint),10))
+      end do
       
-      IF (ipoint .EQ. UBOUND(Dpoints,2)) THEN
-        WRITE (ichannel,'(A)',ADVANCE='NO') ']'
-      ELSE
-        WRITE (ichannel,'(A)',ADVANCE='YES') '],'
-      END IF
+      if (ipoint .eq. ubound(Dpoints,2)) then
+        write (ichannel,'(A)',ADVANCE='NO') ']'
+      else
+        write (ichannel,'(A)',ADVANCE='YES') '],'
+      end if
       
-    END DO
+    end do
 
-    WRITE (ichannel,'(A)')']);';
+    write (ichannel,'(A)')']);';
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE mapleio_writePointPlotSingle (ichannel,Dpoint,sname,iindex)
+  subroutine mapleio_writePointPlotSingle (ichannel,Dpoint,sname,iindex)
   
   !<description>
     ! Writes a MAPLE command to output channel ichannel which creates
@@ -182,49 +182,49 @@ CONTAINS
     
   !<input>
     ! Output channel number where to write the MAPLE output to.
-    INTEGER, INTENT(IN) :: ichannel
+    integer, intent(IN) :: ichannel
     
     ! Point that should be written out.
-    REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+    real(DP), dimension(:), intent(IN) :: Dpoint
     
     ! Name of the variable to be used by MAPLE.
-    CHARACTER(len=*), INTENT(IN) :: sname
+    character(len=*), intent(IN) :: sname
     
     ! OPTIONAL: Index of the variable (if sname should be treated as
     ! an array of polygons). If present, the variable gets the name
     ! 'sname(iindex)'.
-    INTEGER, INTENT(IN), OPTIONAL :: iindex
+    integer, intent(IN), optional :: iindex
   !</input>
     
 !</subroutine>
 
-    INTEGER :: idim
+    integer :: idim
     
     ! Create the first line
-    IF (.NOT. PRESENT(iindex)) THEN
-      WRITE (ichannel,'(A)') sname//':=pointplot('
-    ELSE
-      WRITE (ichannel,'(A)') sname//'('//TRIM(sys_siL(iindex,10))//&
+    if (.not. present(iindex)) then
+      write (ichannel,'(A)') sname//':=pointplot('
+    else
+      write (ichannel,'(A)') sname//'('//trim(sys_siL(iindex,10))//&
         '):=polygonplot('
-    END IF
+    end if
     
     ! Write the points
-    WRITE (ichannel,'(A)',ADVANCE='NO') &
-      '     ['//TRIM(sys_sdL(Dpoint(1),10))
+    write (ichannel,'(A)',ADVANCE='NO') &
+      '     ['//trim(sys_sdL(Dpoint(1),10))
       
-    DO idim=2,SIZE(Dpoint)
-      WRITE (ichannel,'(A)',ADVANCE='NO') &
-        ','//TRIM(sys_sdL(Dpoint(idim),10))
-    END DO
+    do idim=2,size(Dpoint)
+      write (ichannel,'(A)',ADVANCE='NO') &
+        ','//trim(sys_sdL(Dpoint(idim),10))
+    end do
     
-    WRITE (ichannel,'(A)')']);';
+    write (ichannel,'(A)')']);';
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE mapleio_writePointPlotMult (ichannel,Dpoints,sname,iindex)
+  subroutine mapleio_writePointPlotMult (ichannel,Dpoints,sname,iindex)
   
   !<description>
     ! Writes a MAPLE command to output channel ichannel which creates
@@ -235,50 +235,50 @@ CONTAINS
     
   !<input>
     ! Output channel number where to write the MAPLE output to.
-    INTEGER, INTENT(IN) :: ichannel
+    integer, intent(IN) :: ichannel
     
     ! Polygon that should be created. This is a list of (2D or 2D)
     ! point coordinates that form the polygon.
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
+    real(DP), dimension(:,:), intent(IN) :: Dpoints
     
     ! Name of the variable to be used by MAPLE.
-    CHARACTER(len=*), INTENT(IN) :: sname
+    character(len=*), intent(IN) :: sname
     
     ! OPTIONAL: Index of the variable (if sname should be treated as
     ! an array of polygons). If present, the variable gets the name
     ! 'sname(iindex)'.
-    INTEGER, INTENT(IN), OPTIONAL :: iindex
+    integer, intent(IN), optional :: iindex
   !</input>
     
 !</subroutine>
 
-    INTEGER :: ipoint,idim
+    integer :: ipoint,idim
     
     ! Create the first line
-    IF (.NOT. PRESENT(iindex)) THEN
-      WRITE (ichannel,'(A)') sname//':=pointplot('
-    ELSE
-      WRITE (ichannel,'(A)') sname//'('//TRIM(sys_siL(iindex,10))//&
+    if (.not. present(iindex)) then
+      write (ichannel,'(A)') sname//':=pointplot('
+    else
+      write (ichannel,'(A)') sname//'('//trim(sys_siL(iindex,10))//&
         '):=polygonplot(['
-    END IF
+    end if
     
     ! Write the point
-    WRITE (ichannel,'(A)',ADVANCE='NO') &
+    write (ichannel,'(A)',ADVANCE='NO') &
       '     ['//sys_sd(Dpoints(1,ipoint),10)
       
-    DO idim=2,UBOUND(Dpoints,1)
-      WRITE (ichannel,'(A)',ADVANCE='NO') &
+    do idim=2,ubound(Dpoints,1)
+      write (ichannel,'(A)',ADVANCE='NO') &
         ','//sys_sd(Dpoints(idim,ipoint),10)
-    END DO
+    end do
     
-    IF (ipoint .EQ. UBOUND(Dpoints,2)) THEN
-      WRITE (ichannel,'(A)',ADVANCE='YES') '],'
-    ELSE
-      WRITE (ichannel,'(A)',ADVANCE='NO') ']'
-    END IF
+    if (ipoint .eq. ubound(Dpoints,2)) then
+      write (ichannel,'(A)',ADVANCE='YES') '],'
+    else
+      write (ichannel,'(A)',ADVANCE='NO') ']'
+    end if
 
-    WRITE (ichannel,'(A)')');';
+    write (ichannel,'(A)')');';
   
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

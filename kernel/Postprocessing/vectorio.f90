@@ -35,22 +35,22 @@
 !# </purpose>
 !#########################################################################
 
-MODULE vectorio
+module vectorio
 
-  USE fsystem
-  USE storage
-  USE io
-  USE linearsystemscalar
-  USE linearsystemblock
+  use fsystem
+  use storage
+  use io
+  use linearsystemscalar
+  use linearsystemblock
   
-  IMPLICIT NONE
+  implicit none
 
-  CONTAINS
+  contains
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE vecio_writeArray_Dble (Ddata, ifile, sfile, sformat, Ipermutation)
+  subroutine vecio_writeArray_Dble (Ddata, ifile, sfile, sformat, Ipermutation)
   
   !<description>
     ! Write double precision vector into a text file.
@@ -60,84 +60,84 @@ MODULE vectorio
     
   !<input>
     ! vector: array [:] of double
-    REAL(DP), DIMENSION(:), INTENT(IN) :: Ddata
+    real(DP), dimension(:), intent(IN) :: Ddata
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: ifile
+    integer(I32), intent(IN) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
-    CHARACTER(len=*), INTENT(IN) :: sfile
+    character(len=*), intent(IN) :: sfile
     
     ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
-    CHARACTER(len=*), INTENT(IN), OPTIONAL :: sformat
+    character(len=*), intent(IN), optional :: sformat
 
     ! OPTIONAL: Permutation for unsorting.
     ! If specified, this permutation tells how to unsort a vector before
     ! writing it to the file.
-    INTEGER(PREC_VECIDX), DIMENSION(:), OPTIONAL :: Ipermutation
+    integer(PREC_VECIDX), dimension(:), optional :: Ipermutation
   !</input>
     
 !</subroutine>
     
     !local variables
-    INTEGER :: i, cf
-    REAL(DP) :: dval
+    integer :: i, cf
+    real(DP) :: dval
     
-    IF (ifile .EQ. 0) THEN
-      CALL io_openFileForWriting(sfile, cf, SYS_REPLACE, bformatted=PRESENT(sformat))
-      IF (cf .EQ. -1) THEN
-        PRINT *, 'vecio_writeArray_Dble: Could not open file '// &
+    if (ifile .eq. 0) then
+      call io_openFileForWriting(sfile, cf, SYS_REPLACE, bformatted=present(sformat))
+      if (cf .eq. -1) then
+        print *, 'vecio_writeArray_Dble: Could not open file '// &
                  trim(sfile)
-        CALL sys_halt()
-      END IF
-    ELSE
+        call sys_halt()
+      end if
+    else
       cf = ifile
-    END IF
+    end if
     
-    IF (SIZE(Ddata) .LE. 0) RETURN
+    if (size(Ddata) .le. 0) return
 
     ! Write the vector.
     ! Unsort the vector on the fly if necessary.
-    IF (PRESENT(sformat)) THEN
-      IF (PRESENT(Ipermutation)) THEN
-        DO i=1, SIZE(Ddata)
+    if (present(sformat)) then
+      if (present(Ipermutation)) then
+        do i=1, size(Ddata)
           dval = Ddata(Ipermutation(i))
-          WRITE (cf,sformat) dval
-        END DO
-      ELSE
-        DO i=1, SIZE(Ddata)
+          write (cf,sformat) dval
+        end do
+      else
+        do i=1, size(Ddata)
           dval = Ddata(i)
-          WRITE (cf,sformat) dval
-        END DO
-      END IF
-    ELSE
-      IF (PRESENT(Ipermutation)) THEN
-        DO i=1, SIZE(Ddata)
+          write (cf,sformat) dval
+        end do
+      end if
+    else
+      if (present(Ipermutation)) then
+        do i=1, size(Ddata)
           dval = Ddata(Ipermutation(i))
-          WRITE (cf) dval
-        END DO
-      ELSE
-        DO i=1, SIZE(Ddata)
+          write (cf) dval
+        end do
+      else
+        do i=1, size(Ddata)
           dval = Ddata(i)
-          WRITE (cf) dval
-        END DO
-      END IF
-    END IF
+          write (cf) dval
+        end do
+      end if
+    end if
     
     ! Close the file if necessary
-    IF (ifile .EQ. 0) CLOSE(cf)
+    if (ifile .eq. 0) close(cf)
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE vecio_readArray_Dble (Ddata, ifile, sfile, sformat, Ipermutation)
+  subroutine vecio_readArray_Dble (Ddata, ifile, sfile, sformat, Ipermutation)
   
   !<description>
     ! Reads a double precision vector from a file.
@@ -150,10 +150,10 @@ MODULE vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: ifile
+    integer(I32), intent(IN) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
-    CHARACTER(len=*), INTENT(IN) :: sfile
+    character(len=*), intent(IN) :: sfile
     
     ! OPTIONAL: Format string to use for the input; e.g. '(E20.10)'.
     ! If not specified, data is read from the file unformatted 
@@ -161,73 +161,73 @@ MODULE vectorio
     ! When reading an array written out by vecio_writeArray_Dble,
     ! the format string shall match the setting of the 
     ! format string used there.
-    CHARACTER(len=*), INTENT(IN), OPTIONAL :: sformat
+    character(len=*), intent(IN), optional :: sformat
     
     ! OPTIONAL: Permutation for sorting.
     ! If specified, this permutation tells how to unsort a vector before
     ! writing it to the file.
-    INTEGER(PREC_VECIDX), DIMENSION(:), OPTIONAL :: Ipermutation
+    integer(PREC_VECIDX), dimension(:), optional :: Ipermutation
   !</input>
   
   !<output>
     ! Array where to write the data to.
-    REAL(DP), DIMENSION(:), INTENT(OUT) :: Ddata
+    real(DP), dimension(:), intent(OUT) :: Ddata
   !</output>
     
 !</subroutine>
     
     ! local variables
-    INTEGER :: i, cf
-    REAL(DP) :: dval
+    integer :: i, cf
+    real(DP) :: dval
     
-    IF (ifile .EQ. 0) THEN
-      CALL io_openFileForReading(sfile, cf, bformatted=PRESENT(sformat))
-      IF (cf .EQ. -1) THEN
-        PRINT *, 'vecio_readArray_Dble: Could not open file '// &
+    if (ifile .eq. 0) then
+      call io_openFileForReading(sfile, cf, bformatted=present(sformat))
+      if (cf .eq. -1) then
+        print *, 'vecio_readArray_Dble: Could not open file '// &
                  trim(sfile)
-        CALL sys_halt()
-      END IF
-    ELSE
+        call sys_halt()
+      end if
+    else
       cf = ifile
-    END IF
+    end if
     
     ! Read the array.
-    IF (PRESENT(sformat)) THEN
+    if (present(sformat)) then
       ! Unsort the vector on the fly if necessary.
-      IF (PRESENT(Ipermutation)) THEN
-        DO i=1, SIZE(Ddata)
-          READ (cf,sformat) dval
+      if (present(Ipermutation)) then
+        do i=1, size(Ddata)
+          read (cf,sformat) dval
           Ddata(Ipermutation(i)) = dval
-        END DO
-      ELSE
-        DO i=1, SIZE(Ddata)
-          READ (cf,sformat) dval
+        end do
+      else
+        do i=1, size(Ddata)
+          read (cf,sformat) dval
           Ddata(i) = dval
-        END DO
-      END IF
-    ELSE
+        end do
+      end if
+    else
       ! Unsort the vector on the fly if necessary.
-      IF (PRESENT(Ipermutation)) THEN
-        DO i=1, SIZE(Ddata)
+      if (present(Ipermutation)) then
+        do i=1, size(Ddata)
           Ddata(Ipermutation(i)) = dval
-        END DO
-      ELSE
-        DO i=1, SIZE(Ddata)
-          READ (cf) dval
+        end do
+      else
+        do i=1, size(Ddata)
+          read (cf) dval
           Ddata(i) = dval
-        END DO
-      END IF
-    END IF
+        end do
+      end if
+    end if
     
     ! Close the file if necessary
-    IF (ifile .EQ. 0) CLOSE(cf)
+    if (ifile .eq. 0) close(cf)
   
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE vecio_writeVectorHR (rvector, sarray, bunsort,&
+  subroutine vecio_writeVectorHR (rvector, sarray, bunsort,&
                                   ifile, sfile, sformat)
   
   !<description>
@@ -236,113 +236,113 @@ MODULE vectorio
     
   !<input>
     ! The vector to be written out
-    TYPE(t_vectorScalar), INTENT(IN) :: rvector
+    type(t_vectorScalar), intent(IN) :: rvector
     
     ! Name of the vector
-    CHARACTER(len=*), INTENT(IN) :: sarray
+    character(len=*), intent(IN) :: sarray
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: ifile
+    integer(I32), intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    CHARACTER(len=*), INTENT(IN) :: sfile
+    character(len=*), intent(IN) :: sfile
     
     ! Write unsorted vector.
     ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
     ! =FALSE: Write vector as it is.
-    LOGICAL, INTENT(IN) :: bunsort
+    logical, intent(IN) :: bunsort
 
     ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
-    CHARACTER(len=*), INTENT(IN), OPTIONAL :: sformat
+    character(len=*), intent(IN), optional :: sformat
   !</input>
     
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Ipermutation
-    INTEGER :: cf,nchar
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer :: cf,nchar
 
-    CHARACTER(len=128) :: S
-    CHARACTER(len=15) :: sarrayname
-    CHARACTER(len=6) :: sformatChar
+    character(len=128) :: S
+    character(len=15) :: sarrayname
+    character(len=6) :: sformatChar
 
-    IF (rvector%NEQ .EQ. 0) RETURN ! nothing to do
+    if (rvector%NEQ .eq. 0) return ! nothing to do
 
     ! Open the file
-    IF (ifile .EQ. 0) THEN
-      CALL io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=PRESENT(sformat))
-      IF (cf .EQ. -1) THEN
-        PRINT *, 'vecio_writeVectorHR: Could not open file '// &
+    if (ifile .eq. 0) then
+      call io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=present(sformat))
+      if (cf .eq. -1) then
+        print *, 'vecio_writeVectorHR: Could not open file '// &
                  trim(sfile)
-        CALL sys_halt()
-      END IF
-    ELSE
+        call sys_halt()
+      end if
+    else
       cf = ifile
-    END IF
+    end if
 
-    IF (PRESENT(sformat)) THEN
+    if (present(sformat)) then
       ! Get length of output strings
       S(:) = ' '
-      WRITE (S,sformat) 0.0_DP
-      nchar = LEN(trim(S))
+      write (S,sformat) 0.0_DP
+      nchar = len(trim(S))
       
       ! Build array format string
-      sformatChar = '(A'//TRIM(sys_i3(nchar))//')'
+      sformatChar = '(A'//trim(sys_i3(nchar))//')'
       
       ! Write all format strings into the file
-      WRITE (cf,'(A,3A15,2I15)') '# ',sarray, sformat, sformatChar, &
+      write (cf,'(A,3A15,2I15)') '# ',sarray, sformat, sformatChar, &
                                   nchar, rvector%NEQ
-    ELSE
+    else
       sarrayname = sarray
-      WRITE (cf) sarrayname, rvector%NEQ
-    END IF
+      write (cf) sarrayname, rvector%NEQ
+    end if
     
     ! Vector precision?
-    SELECT CASE (rvector%cdataType)
-    CASE (ST_DOUBLE)
+    select case (rvector%cdataType)
+    case (ST_DOUBLE)
       ! Permuted?
-      NULLIFY(p_Ipermutation)
-      IF (bunsort .AND. (lsyssc_isVectorSorted (rvector))) THEN
-        CALL storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
+      nullify(p_Ipermutation)
+      if (bunsort .and. (lsyssc_isVectorSorted (rvector))) then
+        call storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
         ! We must use the inverse permutation
         p_Ipermutation => p_Ipermutation(rvector%NEQ+1:)
-      END IF
+      end if
 
-      CALL lsyssc_getbase_double (rvector,p_Ddata)
+      call lsyssc_getbase_double (rvector,p_Ddata)
       
-      IF (PRESENT(sformat)) THEN
-        IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-          CALL vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat)
-        ELSE 
-          CALL vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
-        END IF
-      ELSE
-        IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-          CALL vecio_writeArray_Dble (p_Ddata, cf, sfile)
-        ELSE 
-          CALL vecio_writeArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
-        END IF
-      END IF
-    CASE DEFAULT
-      PRINT *,'vecio_writeVectorHR: Unsupported vector precision.'
-      CALL sys_halt()
-    END SELECT
+      if (present(sformat)) then
+        if (.not. associated(p_Ipermutation)) then
+          call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat)
+        else 
+          call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
+        end if
+      else
+        if (.not. associated(p_Ipermutation)) then
+          call vecio_writeArray_Dble (p_Ddata, cf, sfile)
+        else 
+          call vecio_writeArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
+        end if
+      end if
+    case DEFAULT
+      print *,'vecio_writeVectorHR: Unsupported vector precision.'
+      call sys_halt()
+    end select
     
     ! Close the file if necessary
-    IF (ifile .EQ. 0) CLOSE(cf)
+    if (ifile .eq. 0) close(cf)
     
-  END SUBROUTINE 
+  end subroutine 
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE vecio_readVectorHR (rvector, sarray, bunsort,&
+  subroutine vecio_readVectorHR (rvector, sarray, bunsort,&
                                  ifile, sfile, bformatted)
   
   !<description>
@@ -358,16 +358,16 @@ MODULE vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Read from channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: ifile
+    integer(I32), intent(IN) :: ifile
     
     ! Name of the file where to read from. Only relevant for ifile=0!
-    CHARACTER(len=*), INTENT(IN) :: sfile
+    character(len=*), intent(IN) :: sfile
     
     ! Read unsorted vector.
     ! =TRUE:  Read data and sort it according to the sorting strategy
     !         in the vector (if the vector is sorted)
     ! =FALSE: Read vector as it is.
-    LOGICAL, INTENT(IN) :: bunsort
+    logical, intent(IN) :: bunsort
 
     ! Whether to read data formatted or unformatted.
     ! TRUE  = Treat data in input file formatted, i.e. in human readable form.
@@ -377,106 +377,106 @@ MODULE vectorio
     ! sformat being specified shall be read with bformatted=TRUE.
     ! A vector written out by vecio_writeVectorHR without a format specifier
     ! sformat being specified shall be read with bformatted=FALSE.
-    LOGICAL, INTENT(IN) :: bformatted
+    logical, intent(IN) :: bformatted
   !</input>
 
   !<inputoutput>
     ! The vector to be read in.
     ! If the vector is not initialised, a new vector is automatically created
     ! with the correct size.
-    TYPE(t_vectorScalar), INTENT(INOUT) :: rvector
+    type(t_vectorScalar), intent(INOUT) :: rvector
   !</inputoutput>
 
   !<output>    
     ! Name of the vector
-    CHARACTER(len=*), INTENT(OUT) :: sarray
+    character(len=*), intent(OUT) :: sarray
   !</output>
     
     
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Ipermutation
-    INTEGER :: cf,nchar
-    INTEGER(PREC_VECIDX) :: NEQ
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer :: cf,nchar
+    integer(PREC_VECIDX) :: NEQ
 
-    CHARACTER(len=15) :: sarrayname,sformat
-    CHARACTER(len=6) :: sformatChar,S
+    character(len=15) :: sarrayname,sformat
+    character(len=6) :: sformatChar,S
 
     ! Open the file
-    IF (ifile .EQ. 0) THEN
-      CALL io_openFileForReading(sfile, cf, bformatted=bformatted)
-      IF (cf .EQ. -1) THEN
-        PRINT *, 'vecio_writeVectorHR: Could not open file '// &
+    if (ifile .eq. 0) then
+      call io_openFileForReading(sfile, cf, bformatted=bformatted)
+      if (cf .eq. -1) then
+        print *, 'vecio_writeVectorHR: Could not open file '// &
                  trim(sfile)
-        CALL sys_halt()
-      END IF
-    ELSE
+        call sys_halt()
+      end if
+    else
       cf = ifile
-    END IF
+    end if
 
-    IF (bformatted) THEN
+    if (bformatted) then
       ! Get the format specification from the file
-      READ (cf,'(A2,3A15,2I15)') S,sarrayname, sformat, sformatChar, &
+      read (cf,'(A2,3A15,2I15)') S,sarrayname, sformat, sformatChar, &
                                 nchar, NEQ
-    ELSE
+    else
       ! Get array information from the file
-      READ (cf) sarrayname, NEQ
-    END IF
+      read (cf) sarrayname, NEQ
+    end if
 
     sarray = sarrayname
     
     ! Does the vector exist? If not, we create a new one.
-    IF (rvector%NEQ .EQ. 0) THEN
-      CALL lsyssc_createVector (rvector,NEQ,.FALSE.,ST_DOUBLE)
-    END IF
+    if (rvector%NEQ .eq. 0) then
+      call lsyssc_createVector (rvector,NEQ,.false.,ST_DOUBLE)
+    end if
     
-    IF (rvector%NEQ .NE. NEQ) THEN
-      PRINT *,'vecio_readVectorHR: Vector has wrong size!'
-      CALL sys_halt()
-    END IF
+    if (rvector%NEQ .ne. NEQ) then
+      print *,'vecio_readVectorHR: Vector has wrong size!'
+      call sys_halt()
+    end if
     
     ! Vector precision?
-    SELECT CASE (rvector%cdataType)
-    CASE (ST_DOUBLE)
+    select case (rvector%cdataType)
+    case (ST_DOUBLE)
       ! Permuted?
-      NULLIFY(p_Ipermutation)
-      IF (bunsort .AND. (lsyssc_isVectorSorted (rvector))) THEN
-        CALL storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
+      nullify(p_Ipermutation)
+      if (bunsort .and. (lsyssc_isVectorSorted (rvector))) then
+        call storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
         ! We must use the inverse permutation
         p_Ipermutation => p_Ipermutation(NEQ+1:)
-      END IF
+      end if
 
-      CALL lsyssc_getbase_double (rvector,p_Ddata)
+      call lsyssc_getbase_double (rvector,p_Ddata)
       
-      IF (bformatted) THEN
-        IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-          CALL vecio_readArray_Dble (p_Ddata, cf, sfile, sformat)
-        ELSE 
-          CALL vecio_readArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
-        END IF
-      ELSE
-        IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-          CALL vecio_readArray_Dble (p_Ddata, cf, sfile)
-        ELSE 
-          CALL vecio_readArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
-        END IF
-      END IF
-    CASE DEFAULT
-      PRINT *,'vecio_readVectorHR: Unsupported vector precision.'
-      CALL sys_halt()
-    END SELECT
+      if (bformatted) then
+        if (.not. associated(p_Ipermutation)) then
+          call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat)
+        else 
+          call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
+        end if
+      else
+        if (.not. associated(p_Ipermutation)) then
+          call vecio_readArray_Dble (p_Ddata, cf, sfile)
+        else 
+          call vecio_readArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
+        end if
+      end if
+    case DEFAULT
+      print *,'vecio_readVectorHR: Unsupported vector precision.'
+      call sys_halt()
+    end select
     
     ! Close the file if necessary
-    IF (ifile .EQ. 0) CLOSE(cf)
+    if (ifile .eq. 0) close(cf)
     
-  END SUBROUTINE 
+  end subroutine 
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE vecio_writeBlockVectorHR (rvector, sarray, bunsort,&
+  subroutine vecio_writeBlockVectorHR (rvector, sarray, bunsort,&
                                        ifile, sfile, sformat)
   
   !<description>
@@ -487,125 +487,125 @@ MODULE vectorio
     
   !<input>
     ! The vector to be written out
-    TYPE(t_vectorBlock), INTENT(IN) :: rvector
+    type(t_vectorBlock), intent(IN) :: rvector
     
     ! Name of the vector
-    CHARACTER(len=*), INTENT(IN) :: sarray
+    character(len=*), intent(IN) :: sarray
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: ifile
+    integer(I32), intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    CHARACTER(len=*), INTENT(IN) :: sfile
+    character(len=*), intent(IN) :: sfile
     
     ! Write unsorted vector.
     ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
     ! =FALSE: Write vector as it is.
-    LOGICAL, INTENT(IN) :: bunsort
+    logical, intent(IN) :: bunsort
 
     ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
-    CHARACTER(len=*), INTENT(IN), OPTIONAL :: sformat
+    character(len=*), intent(IN), optional :: sformat
   !</input>
     
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Ipermutation
-    INTEGER :: cf,nchar,I
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer :: cf,nchar,I
 
-    CHARACTER(len=128) :: S
-    CHARACTER(len=15) :: sarrayname
-    CHARACTER(len=6) :: sformatChar
+    character(len=128) :: S
+    character(len=15) :: sarrayname
+    character(len=6) :: sformatChar
 
-    IF (rvector%NEQ .EQ. 0) RETURN ! nothing to do
+    if (rvector%NEQ .eq. 0) return ! nothing to do
 
     ! Open the file
-    IF (ifile .EQ. 0) THEN
-      CALL io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=PRESENT(sformat))
-      IF (cf .EQ. -1) THEN
-        PRINT *, 'vecio_writeBlockVectorHR: Could not open file '// &
+    if (ifile .eq. 0) then
+      call io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=present(sformat))
+      if (cf .eq. -1) then
+        print *, 'vecio_writeBlockVectorHR: Could not open file '// &
                  trim(sfile)
-        CALL sys_halt()
-      END IF
-    ELSE
+        call sys_halt()
+      end if
+    else
       cf = ifile
-    END IF
+    end if
 
     ! Write all format strings into the file
-    IF (PRESENT(sformat)) THEN
+    if (present(sformat)) then
       ! Get length of output strings
       S(:) = ' '
-      WRITE (S,sformat) 0.0_DP
-      nchar = LEN(trim(S))
+      write (S,sformat) 0.0_DP
+      nchar = len(trim(S))
       
       ! Build array format string
-      sformatChar = '(A'//TRIM(sys_i3(nchar))//')'
+      sformatChar = '(A'//trim(sys_i3(nchar))//')'
       
-      WRITE (cf,'(A,3A15,3I15)',ADVANCE="NO") '# ',sarray, sformat, sformatChar, &
+      write (cf,'(A,3A15,3I15)',ADVANCE="NO") '# ',sarray, sformat, sformatChar, &
                                                nchar, rvector%NEQ, rvector%nblocks
       ! Write block structure
-      DO i=1,rvector%nblocks
-        WRITE (cf,'(I15)',ADVANCE="NO") rvector%RvectorBlock(i)%NEQ
-      END DO
+      do i=1,rvector%nblocks
+        write (cf,'(I15)',ADVANCE="NO") rvector%RvectorBlock(i)%NEQ
+      end do
       
       ! New line
-      WRITE (cf,*)
-    ELSE
+      write (cf,*)
+    else
       sarrayname = sarray
-      WRITE (cf) sarrayname, rvector%NEQ,rvector%nblocks
+      write (cf) sarrayname, rvector%NEQ,rvector%nblocks
       ! Write block structure
-      WRITE (cf) (rvector%RvectorBlock(i)%NEQ,i=1,rvector%nblocks)
-    END IF
+      write (cf) (rvector%RvectorBlock(i)%NEQ,i=1,rvector%nblocks)
+    end if
     
     ! Vector precision?
-    SELECT CASE (rvector%cdataType)
-    CASE (ST_DOUBLE)
-      DO i=1,rvector%nblocks
+    select case (rvector%cdataType)
+    case (ST_DOUBLE)
+      do i=1,rvector%nblocks
         ! Permuted?
-        NULLIFY(p_Ipermutation)
-        IF (bunsort .AND. (lsyssc_isVectorSorted (rvector%RvectorBlock(i)))) THEN
-          CALL storage_getbase_int (&
+        nullify(p_Ipermutation)
+        if (bunsort .and. (lsyssc_isVectorSorted (rvector%RvectorBlock(i)))) then
+          call storage_getbase_int (&
               rvector%RvectorBlock(i)%h_IsortPermutation,p_Ipermutation)
           ! We must use the inverse permutation
           p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(i)%NEQ+1:)
-        END IF
+        end if
 
-        CALL lsyssc_getbase_double (rvector%RvectorBlock(i),p_Ddata)
+        call lsyssc_getbase_double (rvector%RvectorBlock(i),p_Ddata)
         
-        IF (PRESENT(sformat)) THEN
-          IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-            CALL vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat)
-          ELSE 
-            CALL vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
-          END IF
-        ELSE
-          IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-            CALL vecio_writeArray_Dble (p_Ddata, cf, sfile)
-          ELSE 
-            CALL vecio_writeArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
-          END IF
-        END IF
-      END DO
-    CASE DEFAULT
-      PRINT *,'vecio_writeBlockVectorHR: Unsupported vector precision.'
-      CALL sys_halt()
-    END SELECT
+        if (present(sformat)) then
+          if (.not. associated(p_Ipermutation)) then
+            call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat)
+          else 
+            call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
+          end if
+        else
+          if (.not. associated(p_Ipermutation)) then
+            call vecio_writeArray_Dble (p_Ddata, cf, sfile)
+          else 
+            call vecio_writeArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
+          end if
+        end if
+      end do
+    case DEFAULT
+      print *,'vecio_writeBlockVectorHR: Unsupported vector precision.'
+      call sys_halt()
+    end select
     
     ! Close the file if necessary
-    IF (ifile .EQ. 0) CLOSE(cf)
+    if (ifile .eq. 0) close(cf)
     
-  END SUBROUTINE 
+  end subroutine 
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE vecio_readBlockVectorHR (rvector, sarray, bunsorted,&
+  subroutine vecio_readBlockVectorHR (rvector, sarray, bunsorted,&
                                       ifile, sfile, bformatted)
   
   !<description>
@@ -628,16 +628,16 @@ MODULE vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Read from channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: ifile
+    integer(I32), intent(IN) :: ifile
     
     ! Name of the file where to read from. Only relevant for ifile=0!
-    CHARACTER(len=*), INTENT(IN) :: sfile
+    character(len=*), intent(IN) :: sfile
     
     ! Read unsorted vector.
     ! =TRUE:  Read data and sort it according to the sorting strategy
     !         in the vector (if the vector is sorted)
     ! =FALSE: Read vector as it is.
-    LOGICAL, INTENT(IN) :: bunsorted
+    logical, intent(IN) :: bunsorted
 
     ! Whether to read data formatted or unformatted.
     ! TRUE  = Treat data in input file formatted, i.e. in human readable form.
@@ -647,141 +647,141 @@ MODULE vectorio
     ! sformat being specified shall be read with bformatted=TRUE.
     ! A vector written out by vecio_writeBlockVectorHR without a format specifier
     ! sformat being specified shall be read with bformatted=FALSE.
-    LOGICAL, INTENT(IN) :: bformatted
+    logical, intent(IN) :: bformatted
   !</input>
 
   !<inputoutput>
     ! The vector to be read in.
     ! If the vector is not initialised, a new vector is automatically created
     ! with the correct size.
-    TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+    type(t_vectorBlock), intent(INOUT) :: rvector
   !</inputoutput>
 
   !<output>    
     ! Name of the vector
-    CHARACTER(len=*), INTENT(OUT) :: sarray
+    character(len=*), intent(OUT) :: sarray
   !</output>
     
     
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Ipermutation
-    INTEGER :: cf,nchar,nblocks,i
-    INTEGER(PREC_VECIDX) :: NEQ
-    INTEGER(PREC_VECIDX), DIMENSION(:), ALLOCATABLE :: IblockSize
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer :: cf,nchar,nblocks,i
+    integer(PREC_VECIDX) :: NEQ
+    integer(PREC_VECIDX), dimension(:), allocatable :: IblockSize
 
-    CHARACTER(len=15) :: sarrayname,sformat
-    CHARACTER(len=6) :: sformatChar,S
+    character(len=15) :: sarrayname,sformat
+    character(len=6) :: sformatChar,S
 
     ! Open the file
-    IF (ifile .EQ. 0) THEN
-      CALL io_openFileForReading(sfile, cf, bformatted=bformatted)
-      IF (cf .EQ. -1) THEN
-        PRINT *, 'vecio_writeVectorHR: Could not open file '// &
+    if (ifile .eq. 0) then
+      call io_openFileForReading(sfile, cf, bformatted=bformatted)
+      if (cf .eq. -1) then
+        print *, 'vecio_writeVectorHR: Could not open file '// &
                  trim(sfile)
-        CALL sys_halt()
-      END IF
-    ELSE
+        call sys_halt()
+      end if
+    else
       cf = ifile
-    END IF
+    end if
 
-    IF (bformatted) THEN
+    if (bformatted) then
       ! Get the format specification from the file
-      READ (cf,'(A2,3A15,3I15)',ADVANCE="NO") S,sarrayname, sformat, sformatChar, &
+      read (cf,'(A2,3A15,3I15)',ADVANCE="NO") S,sarrayname, sformat, sformatChar, &
                                              nchar, NEQ
       ! If rvector does not specify the structure, read the vector structure
       ! from the file.
-      IF (rvector%NEQ .EQ. 0) THEN
-        READ (cf,'(I15)',ADVANCE="NO") nblocks
+      if (rvector%NEQ .eq. 0) then
+        read (cf,'(I15)',ADVANCE="NO") nblocks
         
         ! Get the block structure
-        ALLOCATE(IblockSize(nblocks))
-        DO i=1,nblocks
-          READ (cf,'(I15)',ADVANCE="NO") IblockSize(i)
-        END DO
+        allocate(IblockSize(nblocks))
+        do i=1,nblocks
+          read (cf,'(I15)',ADVANCE="NO") IblockSize(i)
+        end do
         
         ! New line
-        READ (cf,*)
-      ELSE
+        read (cf,*)
+      else
         ! Take the structure from rvector
         nblocks = rvector%nblocks
-        ALLOCATE(IblockSize(nblocks))
+        allocate(IblockSize(nblocks))
         IblockSize(:) = rvector%RvectorBlock(1:nblocks)%NEQ
 
         ! New line
-        READ (cf,*)
-      END IF
-    ELSE
+        read (cf,*)
+      end if
+    else
       ! Get array information from the file
-      READ (cf) sarrayname, NEQ, nblocks
+      read (cf) sarrayname, NEQ, nblocks
       
       ! Get the block structure
-      ALLOCATE(IblockSize(nblocks))
-      READ (cf) (IblockSize(i),i=1,nblocks)
-    END IF
+      allocate(IblockSize(nblocks))
+      read (cf) (IblockSize(i),i=1,nblocks)
+    end if
 
     sarray = sarrayname
     
     ! Does the vector exist? If not, we create a new one.
-    IF (rvector%NEQ .EQ. 0) THEN
-      CALL lsysbl_createVecBlockDirect (rvector,IblockSize,.FALSE.,ST_DOUBLE)
-    END IF
+    if (rvector%NEQ .eq. 0) then
+      call lsysbl_createVecBlockDirect (rvector,IblockSize,.false.,ST_DOUBLE)
+    end if
     
     ! Size of vector must match! Size of subvectors not -- it's not a bug,
     ! it's a feature ;-)
-    IF (rvector%NEQ .NE. NEQ) THEN
-      PRINT *,'vecio_readBlockVectorHR: Vector has wrong size!'
-      CALL sys_halt()
-    END IF
+    if (rvector%NEQ .ne. NEQ) then
+      print *,'vecio_readBlockVectorHR: Vector has wrong size!'
+      call sys_halt()
+    end if
 
     ! We don't need the block size anymore.    
-    DEALLOCATE (IblockSize)
+    deallocate (IblockSize)
     
     ! Vector precision?
-    SELECT CASE (rvector%cdataType)
-    CASE (ST_DOUBLE)
-      DO i=1,nblocks
+    select case (rvector%cdataType)
+    case (ST_DOUBLE)
+      do i=1,nblocks
         ! Permuted?
-        NULLIFY(p_Ipermutation)
-        IF (bunsorted .AND. (lsyssc_isVectorSorted (rvector%RvectorBlock(i)))) THEN
-          CALL storage_getbase_int (rvector%RvectorBlock(i)%h_IsortPermutation,&
+        nullify(p_Ipermutation)
+        if (bunsorted .and. (lsyssc_isVectorSorted (rvector%RvectorBlock(i)))) then
+          call storage_getbase_int (rvector%RvectorBlock(i)%h_IsortPermutation,&
               p_Ipermutation)
           ! We must use the inverse permutation
           p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(i)%NEQ+1:)
-        END IF
+        end if
 
-        CALL lsyssc_getbase_double (rvector%RvectorBlock(i),p_Ddata)
+        call lsyssc_getbase_double (rvector%RvectorBlock(i),p_Ddata)
         
-        IF (bformatted) THEN
-          IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-            CALL vecio_readArray_Dble (p_Ddata, cf, sfile, sformat)
-          ELSE 
-            CALL vecio_readArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
-          END IF
-        ELSE
-          IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-            CALL vecio_readArray_Dble (p_Ddata, cf, sfile)
-          ELSE 
-            CALL vecio_readArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
-          END IF
-        END IF
-      END DO
-    CASE DEFAULT
-      PRINT *,'vecio_readBlockVectorHR: Unsupported vector precision.'
-      CALL sys_halt()
-    END SELECT
+        if (bformatted) then
+          if (.not. associated(p_Ipermutation)) then
+            call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat)
+          else 
+            call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
+          end if
+        else
+          if (.not. associated(p_Ipermutation)) then
+            call vecio_readArray_Dble (p_Ddata, cf, sfile)
+          else 
+            call vecio_readArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
+          end if
+        end if
+      end do
+    case DEFAULT
+      print *,'vecio_readBlockVectorHR: Unsupported vector precision.'
+      call sys_halt()
+    end select
     
     ! Close the file if necessary
-    IF (ifile .EQ. 0) CLOSE(cf)
+    if (ifile .eq. 0) close(cf)
     
-  END SUBROUTINE 
+  end subroutine 
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE vecio_writeVectorMaple (rvector, sarray, bunsort,&
+  subroutine vecio_writeVectorMaple (rvector, sarray, bunsort,&
                                      ifile, sfile, sformat)
   
   !<description>
@@ -790,102 +790,102 @@ MODULE vectorio
     
   !<input>
     ! The vector to be written out
-    TYPE(t_vectorScalar), INTENT(IN) :: rvector
+    type(t_vectorScalar), intent(IN) :: rvector
     
     ! Name of the vector
-    CHARACTER(len=*), INTENT(IN) :: sarray
+    character(len=*), intent(IN) :: sarray
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: ifile
+    integer(I32), intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    CHARACTER(len=*), INTENT(IN) :: sfile
+    character(len=*), intent(IN) :: sfile
     
     ! Write unsorted vector.
     ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
     ! =FALSE: Write vector as it is.
-    LOGICAL, INTENT(IN) :: bunsort
+    logical, intent(IN) :: bunsort
 
     ! Format string to use for the output; e.g. '(E20.10)'.
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
-    CHARACTER(len=*), INTENT(IN) :: sformat
+    character(len=*), intent(IN) :: sformat
   !</input>
     
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Ipermutation
-    INTEGER :: cf,nchar
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer :: cf,nchar
 
-    CHARACTER(len=128) :: S
-    CHARACTER(len=6) :: sformatChar
+    character(len=128) :: S
+    character(len=6) :: sformatChar
 
-    IF (rvector%NEQ .EQ. 0) RETURN ! nothing to do
+    if (rvector%NEQ .eq. 0) return ! nothing to do
 
     ! Open the file
-    IF (ifile .EQ. 0) THEN
-      CALL io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=.TRUE.)
-      IF (cf .EQ. -1) THEN
-        PRINT *, 'vecio_writeVectorHR: Could not open file '// &
+    if (ifile .eq. 0) then
+      call io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=.true.)
+      if (cf .eq. -1) then
+        print *, 'vecio_writeVectorHR: Could not open file '// &
                  trim(sfile)
-        CALL sys_halt()
-      END IF
-    ELSE
+        call sys_halt()
+      end if
+    else
       cf = ifile
-    END IF
+    end if
 
     ! Get length of output strings
     S(:) = ' '
-    WRITE (S,sformat) 0.0_DP
-    nchar = LEN(trim(S))
+    write (S,sformat) 0.0_DP
+    nchar = len(trim(S))
     
     ! Build array format string
-    sformatChar = '(A'//TRIM(sys_i3(nchar))//')'
+    sformatChar = '(A'//trim(sys_i3(nchar))//')'
     
     ! Write a header:
-    WRITE (cf,'(A)',ADVANCE='NO') sarray//':=vector([';
+    write (cf,'(A)',ADVANCE='NO') sarray//':=vector([';
     
     ! Vector precision?
-    SELECT CASE (rvector%cdataType)
-    CASE (ST_DOUBLE)
+    select case (rvector%cdataType)
+    case (ST_DOUBLE)
       ! Permuted?
-      NULLIFY(p_Ipermutation)
-      IF (bunsort .AND. (lsyssc_isVectorSorted (rvector))) THEN
-        CALL storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
+      nullify(p_Ipermutation)
+      if (bunsort .and. (lsyssc_isVectorSorted (rvector))) then
+        call storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
         ! We must use the inverse permutation
         p_Ipermutation => p_Ipermutation(rvector%NEQ+1:)
-      END IF
+      end if
 
-      CALL lsyssc_getbase_double (rvector,p_Ddata)
+      call lsyssc_getbase_double (rvector,p_Ddata)
       
-      IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-        CALL vecio_writeMapleArray_Dble (p_Ddata, cf, sformat)
-      ELSE 
-        CALL vecio_writeMapleArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
-      END IF
+      if (.not. associated(p_Ipermutation)) then
+        call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat)
+      else 
+        call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
+      end if
       
       ! Footer
-      WRITE (cf,'(A)') '):';
+      write (cf,'(A)') '):';
       
-    CASE DEFAULT
-      PRINT *,'vecio_writeVectorHR: Unsupported vector precision.'
-      CALL sys_halt()
-    END SELECT
+    case DEFAULT
+      print *,'vecio_writeVectorHR: Unsupported vector precision.'
+      call sys_halt()
+    end select
     
     ! Close the file if necessary
-    IF (ifile .EQ. 0) CLOSE(cf)
+    if (ifile .eq. 0) close(cf)
 
-  END SUBROUTINE 
+  end subroutine 
 
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE vecio_writeBlockVectorMaple (rvector, sarray, bunsort,&
+  subroutine vecio_writeBlockVectorMaple (rvector, sarray, bunsort,&
                                           ifile, sfile, sformat)
   
   !<description>
@@ -894,112 +894,112 @@ MODULE vectorio
     
   !<input>
     ! The vector to be written out
-    TYPE(t_vectorBlock), INTENT(IN) :: rvector
+    type(t_vectorBlock), intent(IN) :: rvector
     
     ! Name of the vector
-    CHARACTER(len=*), INTENT(IN) :: sarray
+    character(len=*), intent(IN) :: sarray
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: ifile
+    integer(I32), intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    CHARACTER(len=*), INTENT(IN) :: sfile
+    character(len=*), intent(IN) :: sfile
     
     ! Write unsorted vector.
     ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
     ! =FALSE: Write vector as it is.
-    LOGICAL, INTENT(IN) :: bunsort
+    logical, intent(IN) :: bunsort
 
     ! Format string to use for the output; e.g. '(E20.10)'.
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
-    CHARACTER(len=*), INTENT(IN) :: sformat
+    character(len=*), intent(IN) :: sformat
   !</input>
     
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Ipermutation
-    INTEGER :: cf,nchar,iblock
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer :: cf,nchar,iblock
 
-    CHARACTER(len=128) :: S
-    CHARACTER(len=6) :: sformatChar
+    character(len=128) :: S
+    character(len=6) :: sformatChar
 
-    IF (rvector%NEQ .EQ. 0) RETURN ! nothing to do
+    if (rvector%NEQ .eq. 0) return ! nothing to do
 
     ! Open the file
-    IF (ifile .EQ. 0) THEN
-      CALL io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=.TRUE.)
-      IF (cf .EQ. -1) THEN
-        PRINT *, 'vecio_writeBlockVectorMaple: Could not open file '// &
+    if (ifile .eq. 0) then
+      call io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=.true.)
+      if (cf .eq. -1) then
+        print *, 'vecio_writeBlockVectorMaple: Could not open file '// &
                  trim(sfile)
-        CALL sys_halt()
-      END IF
-    ELSE
+        call sys_halt()
+      end if
+    else
       cf = ifile
-    END IF
+    end if
 
     ! Get length of output strings
     S(:) = ' '
-    WRITE (S,sformat) 0.0_DP
-    nchar = LEN(trim(S))
+    write (S,sformat) 0.0_DP
+    nchar = len(trim(S))
     
     ! Build array format string
-    sformatChar = '(A'//TRIM(sys_i3(nchar))//')'
+    sformatChar = '(A'//trim(sys_i3(nchar))//')'
     
     ! Write a header:
-    WRITE (cf,'(A)',ADVANCE='NO') sarray//':=vector([';
+    write (cf,'(A)',ADVANCE='NO') sarray//':=vector([';
     
     ! Vector precision?
-    SELECT CASE (rvector%cdataType)
-    CASE (ST_DOUBLE)
+    select case (rvector%cdataType)
+    case (ST_DOUBLE)
       ! Loop over the blocks
-      DO iblock = 1,rvector%nblocks
+      do iblock = 1,rvector%nblocks
         ! Permuted?
-        NULLIFY(p_Ipermutation)
-        IF (bunsort .AND. (lsyssc_isVectorSorted (rvector%RvectorBlock(iblock)))) THEN
-          CALL storage_getbase_int (&
+        nullify(p_Ipermutation)
+        if (bunsort .and. (lsyssc_isVectorSorted (rvector%RvectorBlock(iblock)))) then
+          call storage_getbase_int (&
             rvector%RvectorBlock(iblock)%h_IsortPermutation,p_Ipermutation)
           ! We must use the inverse permutation
           p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(iblock)%NEQ+1:)
-        END IF
+        end if
 
-        CALL lsyssc_getbase_double (rvector%RvectorBlock(iblock),p_Ddata)
+        call lsyssc_getbase_double (rvector%RvectorBlock(iblock),p_Ddata)
         
-        IF (.NOT. ASSOCIATED(p_Ipermutation)) THEN
-          CALL vecio_writeMapleArray_Dble (p_Ddata, cf, sformat)
-        ELSE 
-          CALL vecio_writeMapleArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
-        END IF
+        if (.not. associated(p_Ipermutation)) then
+          call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat)
+        else 
+          call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
+        end if
         
         ! If this is not the last block, attach more data
-        IF (iblock .NE. rvector%nblocks) THEN
-          WRITE (cf,'(A)', ADVANCE='NO') ','
-        END IF
+        if (iblock .ne. rvector%nblocks) then
+          write (cf,'(A)', ADVANCE='NO') ','
+        end if
         
-      END DO
+      end do
       ! Footer
-      WRITE (cf,'(A)') '):';
+      write (cf,'(A)') '):';
       
-    CASE DEFAULT
-      PRINT *,'vecio_writeBlockVectorMaple: Unsupported vector precision.'
-      CALL sys_halt()
-    END SELECT
+    case DEFAULT
+      print *,'vecio_writeBlockVectorMaple: Unsupported vector precision.'
+      call sys_halt()
+    end select
     
     ! Close the file if necessary
-    IF (ifile .EQ. 0) CLOSE(cf)
+    if (ifile .eq. 0) close(cf)
 
-  END SUBROUTINE 
+  end subroutine 
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecio_writeMapleArray_Dble (Ddata, ifile, sformat, Ipermutation)
+  subroutine vecio_writeMapleArray_Dble (Ddata, ifile, sformat, Ipermutation)
 
 !<description>  
   ! INTERNAL SUBROUTINE.
@@ -1009,55 +1009,55 @@ MODULE vectorio
   
 !<input>
   ! vector: array [:] of double
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddata
+  real(DP), dimension(:), intent(IN) :: Ddata
   
   ! output channel to use for output
-  INTEGER(I32), INTENT(IN) :: ifile
+  integer(I32), intent(IN) :: ifile
   
   ! Format string to use for the output; e.g. '(E20.10)'.
   ! If not specified, data is written to the file unformatted 
   ! (i.e. in a computer dependent, not human readable form).
-  CHARACTER(len=*), INTENT(IN) :: sformat
+  character(len=*), intent(IN) :: sformat
   
   ! OPTIONAL: Permutation for unsorting.
   ! If specified, this permutation tells how to unsort a vector before
   ! writing it to the file.
-  INTEGER(PREC_VECIDX), DIMENSION(:), OPTIONAL :: Ipermutation
+  integer(PREC_VECIDX), dimension(:), optional :: Ipermutation
 !</input>
 
 !</subroutine>
     
     !local variables
-    INTEGER :: i, cf
-    CHARACTER(LEN=32) :: sdata
-    REAL(DP) :: dval
+    integer :: i, cf
+    character(LEN=32) :: sdata
+    real(DP) :: dval
     
     cf = ifile
     
-    IF (SIZE(Ddata) .LE. 0) RETURN
+    if (size(Ddata) .le. 0) return
 
     ! Write the vector.
     ! Unsort the vector on the fly if necessary.
-    IF (PRESENT(Ipermutation)) THEN
-      DO i=1, SIZE(Ddata)-1
+    if (present(Ipermutation)) then
+      do i=1, size(Ddata)-1
         dval = Ddata(Ipermutation(i))
-        WRITE (sdata,sformat) dval
-        WRITE (cf,'(A)',ADVANCE='NO') TRIM(ADJUSTL(sdata))//','
-      END DO
+        write (sdata,sformat) dval
+        write (cf,'(A)',ADVANCE='NO') trim(adjustl(sdata))//','
+      end do
       dval = Ddata(Ipermutation(i))
-      WRITE (sdata,sformat) dval
-      WRITE (cf,'(A)',ADVANCE='NO') TRIM(ADJUSTL(sdata));
-    ELSE
-      DO i=1, SIZE(Ddata)-1
+      write (sdata,sformat) dval
+      write (cf,'(A)',ADVANCE='NO') trim(adjustl(sdata));
+    else
+      do i=1, size(Ddata)-1
         dval = Ddata(i)
-        WRITE (sdata,sformat) dval
-        WRITE (cf,'(A)',ADVANCE='NO') TRIM(ADJUSTL(sdata))//','
-      END DO
+        write (sdata,sformat) dval
+        write (cf,'(A)',ADVANCE='NO') trim(adjustl(sdata))//','
+      end do
       dval = Ddata(i)
-      WRITE (sdata,sformat) dval
-      WRITE (cf,'(A)',ADVANCE='NO') TRIM(ADJUSTL(sdata));
-    END IF
+      write (sdata,sformat) dval
+      write (cf,'(A)',ADVANCE='NO') trim(adjustl(sdata));
+    end if
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
