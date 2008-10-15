@@ -239,7 +239,7 @@ contains
   integer :: ncubp,icubp
   
   ! Derivative specifiers
-  logical, dimension(EL_MAXNDER) :: BderTrial, BderTest
+  logical, dimension(EL_MAXNDER) :: Bder
   
   ! Whther the viscosity ís constant or not
   logical :: bconstViscosity
@@ -355,13 +355,9 @@ contains
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
-    BderTrial = .false.
-    BderTrial(DER_DERIV_X) = .true.
-    BderTrial(DER_DERIV_Y) = .true.
-
-    BderTest = .false.
-    BderTest(DER_DERIV_X) = .true.
-    BderTest(DER_DERIV_Y) = .true.
+    Bder = .false.
+    Bder(DER_DERIV_X) = .true.
+    Bder(DER_DERIV_Y) = .true.
 
     ! We loop through all edges
     do IMT = 1,p_rtriangulation%NMT
@@ -537,7 +533,7 @@ contains
 
       ! Calculate the values of the basis functions.
       call elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, BderTest, Dbas)
+          revalElementSet, Bder, Dbas)
 
       ! Apply the permutation of the local DOF's on the test functions
       ! on element 2. The numbers of the local DOF's on element 1
