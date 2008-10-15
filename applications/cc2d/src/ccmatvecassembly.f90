@@ -696,9 +696,24 @@ contains
         if (.not. bshared) then
           call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
         end if
-          
+        
       end if
       
+      ! If the submatrices A12 and A21 exist, fill them with zero.
+      ! If they don't exist, we don't have to do anything.
+      if (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) then
+        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
+        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+      else
+        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
+        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
+      end if
+      
+      if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+      end if
+        
       ! ---------------------------------------------------
       ! Plug in the Stokes matrix?
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
@@ -729,6 +744,8 @@ contains
       
         select case (rnonlinearCCMatrix%iupwind)
         case (CCMASM_STAB_STREAMLINEDIFF)
+          ! Streamline diffusion.
+
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
@@ -742,23 +759,6 @@ contains
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
-          if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
-          
-            ! If the submatrices A12 and A21 exist, fill them with zero.
-            ! If they don't exist, we don't have to do anything.
-            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-            end if
-            
-         else
-
-            ! Clear A12/A21 that may receive parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-          
-         end if
-         
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamlineDiffusionBlk2d (&
                               rvector, rvector, &
@@ -798,6 +798,7 @@ contains
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
+
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
@@ -813,27 +814,6 @@ contains
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
-          if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
-
-            ! If the submatrices A12 and A21 exist, fill them with zero.
-            ! If they don't exist, we don't have to do anything.
-            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-            end if
-            
-          else
-
-            ! Clear A12/A21 that receives parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-          
-            ! Activate the submatrices A12 and A21 if they aren't.
-            rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
-            rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
-           
-          end if
-         
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamlineDiffusionBlk2d (&
                               rvector, rvector, &
