@@ -1284,8 +1284,8 @@ contains
           dval = cx * Dentry(IDOFE*ndof+JDOFE)         
 
           jcol=Idofs(JDOFE)
-          p_Dy1(irow) = p_Dy1(irow) - dval*p_Dx1(jcol)
-          p_Dy2(irow) = p_Dy2(irow) - dval*p_Dx2(jcol)
+          p_Dy1(irow) = p_Dy1(irow) + dval*p_Dx1(jcol)
+          p_Dy2(irow) = p_Dy2(irow) + dval*p_Dx2(jcol)
 
         end do
       end do
