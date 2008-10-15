@@ -134,6 +134,7 @@ contains
     ! Print the configuration to the terminal
     if (p_rproblem%MSHOW_Initialisation .ge. 2) then
       call output_line ('Parameters:')
+      call output_lbrk ()
       call parlst_info (p_rproblem%rparamList)
     end if
     

@@ -114,16 +114,29 @@ contains
 
 !</subroutine>
 
-    ! Each 'readfromfile' command adds the parameter of the specified file 
-    ! to the parameter list.
-    call parlst_readfromfile (rparamList, './data/discretisation.dat')
-    call parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')
-    call parlst_readfromfile (rparamList, './data/nonlinsol_cc2d.dat')
-    call parlst_readfromfile (rparamList, './data/output.dat')
-    call parlst_readfromfile (rparamList, './data/paramtriang.dat')
-    call parlst_readfromfile (rparamList, './data/bdconditions.dat')
-    call parlst_readfromfile (rparamList, './data/timediscr.dat')
-    call parlst_readfromfile (rparamList, './data/postprocessing.dat')
+    logical :: bexists
+    
+    ! Read the file 'master.dat'.
+    ! If that does not exist, try to manually read files with parameters from a
+    ! couple of files.
+    inquire(file='./data/master.dat', exist=bexists)
+    
+    if (bexists) then
+      ! Read the master file. That either one contains all parameters or
+      ! contains references to subfiles with data.
+      call parlst_readfromfile (rparamList, './data/master.dat','./data')
+    else
+      ! Each 'readfromfile' command adds the parameter of the specified file 
+      ! to the parameter list.
+      call parlst_readfromfile (rparamList, './data/discretisation.dat')
+      call parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')
+      call parlst_readfromfile (rparamList, './data/nonlinsol_cc2d.dat')
+      call parlst_readfromfile (rparamList, './data/output.dat')
+      call parlst_readfromfile (rparamList, './data/paramtriang.dat')
+      call parlst_readfromfile (rparamList, './data/bdconditions.dat')
+      call parlst_readfromfile (rparamList, './data/timediscr.dat')
+      call parlst_readfromfile (rparamList, './data/postprocessing.dat')
+    end if
   
   end subroutine
 
