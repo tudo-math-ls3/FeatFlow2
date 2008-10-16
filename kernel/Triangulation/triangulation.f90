@@ -9250,8 +9250,9 @@ contains
       p_Iverts(2,i) = i+1
     end do
     
-    ! There is one boundary component - the interval ends
-    rtriangulation%NBCT = 1
+    ! There are two boundary components 
+    ! - the interval start and end point
+    rtriangulation%NBCT = 2
     
     ! Allocate memory for boundary components
     call storage_new ('tria_createRawTria1D', 'KBCT', 3, ST_INT, &
@@ -9291,8 +9292,7 @@ contains
 
 !<subroutine>
 
-  subroutine tria_readTriFile1D(rtriangulation, sfilename, rboundary, &
-                                bnoExtendedRaw)
+  subroutine tria_readTriFile1D(rtriangulation, sfilename, bnoExtendedRaw)
 
 !<description>
   ! This routine reads a .TRI file of a 1D triangulation into memory
@@ -9331,13 +9331,6 @@ contains
 !<input>
   ! The name of the .tri file to read.
   character(LEN=*), intent(IN) :: sfilename
-
-  ! OPTIONAL: An rboundary object specifying the underlying domain.
-  ! If not specified, the routine assumes that the TRI file does not specify
-  ! boundary parameter values, i.e. the point coordinates in the TRI file
-  ! are all real coordinates. The array DvertexParameterValue is not
-  ! generated in this case.
-  type(t_boundary), intent(IN), optional :: rboundary
   
   ! OPTIONAL: Prevent creation of an extended raw mesh. If set to .false.,
   ! an 'extended raw' mesh will be created that provides a proper numbering
@@ -9366,7 +9359,7 @@ contains
     call tria_readRawTriangulation1D (iunit,rtriangulation)
 
     ! Create the basic boundary information
-    call tria_genRawBoundary1D (rtriangulation,rboundary)
+    call tria_genRawBoundary1D (rtriangulation)
 
     ! Extend the raw mesh by basic edge numbering,
     ! initialise an extended raw mesh.
@@ -9387,7 +9380,7 @@ contains
 
 !<subroutine>
 
-  subroutine tria_readRawTriangulation1D (iunit,rtriangulation)
+  subroutine tria_readRawTriangulation1D (iunit, rtriangulation)
 
 !<description>  
   ! Auxiliary routine of tria_readTriFile1D.
@@ -9424,20 +9417,20 @@ contains
     
     ! Read NEL,NVT,NMT,NVE,NBCT from the file
     ! and store this information in the structure.
-    read (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
-        rtriangulation%NNVE,rtriangulation%NBCT
+    read (iunit,*) rtriangulation%NEL, rtriangulation%NVT, rtriangulation%NMT,&
+                   rtriangulation%NNVE, rtriangulation%NBCT
        
     ! Check consistency: NEL+1 = NVT
     if (rtriangulation%NEL+1 .ne. rtriangulation%NVT) then
       call output_line ('Triangulation structure is invalid NEL+1 does not match NVT!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'tria_readRawTriangulation1D')
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_readRawTriangulation1D')
       call sys_halt()
     end if
 
     ! Check consistency: NNVE = 2
     if (rtriangulation%NNVE .ne. 2) then
       call output_line ('Triangulation structure is invalid: NNVE does not match 2!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'tria_readRawTriangulation1D')
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_readRawTriangulation1D')
       call sys_halt()
     end if
     
@@ -9448,12 +9441,11 @@ contains
     ! 2d array of size(NDIM2D, NVT)
     Isize = (/NDIM1D,int(rtriangulation%NVT,I32)/)
     call storage_new2D ('tria_readRawTriangulation1D', 'DCORVG', Isize, ST_DOUBLE, &
-        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+                        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointers to the coordinate array
     ! p_Ddata2D is the pointer to the coordinate array
-    call storage_getbase_double2D(&
-        rtriangulation%h_DvertexCoords,p_Ddata2D)
+    call storage_getbase_double2D(rtriangulation%h_DvertexCoords, p_Ddata2D)
         
     ! Read the data from the file, store it in the array.
     ! read data into p_Ddata:
@@ -9468,11 +9460,10 @@ contains
     ! 2d array of size(2, NEL)
     Isize = (/2,int(rtriangulation%NEL,I32)/)
     call storage_new2D ('tria_readRawTriangulation1D', 'KVERT', Isize, ST_INT, &
-        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+                        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointer to the IverticesAtElement array and read the array
-    call storage_getbase_int2D(&
-        rtriangulation%h_IverticesAtElement,p_Idata2D)
+    call storage_getbase_int2D(rtriangulation%h_IverticesAtElement, p_Idata2D)
 
     ! read ive=1 indices to 2 into p_Idata2D(ive,iel) where iel=1 to NEL
     read (iunit,*) ((p_Idata2D(ive,iel),ive=1,2), iel=1,rtriangulation%NEL)
@@ -9486,15 +9477,14 @@ contains
 
     ! Allocate memory for InodalProperty 
     call storage_new ('tria_readRawTriangulation1D', 'KNPR', &
-        int(rtriangulation%NVT,I32), ST_INT, &
-        rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+                      int(rtriangulation%NVT,I32), ST_INT, &
+                      rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
     
     ! Get the pointer to the InodalProperty array
-    call storage_getbase_int(&
-        rtriangulation%h_InodalProperty,p_Idata)
+    call storage_getbase_int(rtriangulation%h_InodalProperty, p_Idata)
 
     ! Read the data
-    read (iunit,*) (p_Idata(ivt),ivt=1,rtriangulation%NVT)
+    read (iunit,*) (p_Idata(ivt), ivt=1,rtriangulation%NVT)
 
   end subroutine tria_readRawTriangulation1D
 
@@ -9502,7 +9492,7 @@ contains
 
 !<subroutine>
 
-  subroutine tria_genRawBoundary1D (rtriangulation,rboundary)
+  subroutine tria_genRawBoundary1D (rtriangulation)
 
 !<description>  
   ! Auxiliary routine of tria_readTriFile1D.
@@ -9513,30 +9503,7 @@ contains
   ! -> IverticesAtBoundary is created and generated.
   !    The vertices are ordered for the boundary component according
   !    to IboundaryCpIdx but not ordered for their parameter value.
-  ! -> If rboundary is specified,
-  !    DvertexParameterValue is created and generated.
-  !    The parameter values are ordered for the boundary component 
-  !    according to IboundaryCpIdx but not ordered for the parameter value.
-  ! -> If rboundary is specified,
-  !    the parameter values of the boundary vertices are extracted
-  !    from the first coordinate in DvertexCoords and put into
-  !    the DvertexParameterValue array.
-  ! -> If rboundary is specified,
-  !    based on the parameter value of each boundary vertex, the 
-  !    DvertexCoords array receives the actual coordinates of 
-  !    the boundary vertices.
-  !    If not specified, the routine assumes that DvertexCoords
-  !    already contains the real point coordinates.
 !</description>
-  
-!<input>
-  ! OPTIONAL: The parametrisation that specifies the coordinates of the 
-  ! boundary points.
-  ! If specified, DvertexParameterValue is generated from DvertexCoords
-  ! and the coordinates of boundary vertices are (re-)generated
-  ! by DvertexParameterValue.
-  type(t_boundary), intent(IN), optional :: rboundary
-!</input>
   
 !<inputoutput>
   ! Triangulation to be initialised with basic data.
@@ -9557,21 +9524,21 @@ contains
 
     ! Get the pointer to the InodalProperty array
     call storage_getbase_int(&
-        rtriangulation%h_InodalProperty,p_InodalProperty)
+        rtriangulation%h_InodalProperty, p_InodalProperty)
 
-    ! There are two end points, hence NVBD=2
-    rtriangulation%NVBD = 2
+    ! Each boundary component corresponds to a single boundary vertex
+    rtriangulation%NVBD = rtriangulation%NBCT
 
     ! Allocate memory for IverticesAtBoundary.
-    call storage_new ('tria_genRawBoundary1D', &
-        'KVBD', int(rtriangulation%NVBD,I32), &
-        ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+    call storage_new ('tria_genRawBoundary1D', 'KVBD', &
+                      int(rtriangulation%NVBD,I32), ST_INT, &
+                      rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         
     ! Allocate memory for the boundary component index vector.
     ! Initialise that with zero!
-    call storage_new ('tria_genRawBoundary1D', &
-        'KBCT', int(rtriangulation%NBCT+1,I32), &
-        ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
+    call storage_new ('tria_genRawBoundary1D', 'KBCT', &
+                      int(rtriangulation%NBCT+1,I32), ST_INT, &
+                      rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
     ! Get pointers to the arrays
     call storage_getbase_int (&
@@ -9606,7 +9573,7 @@ contains
     
     ! Sum up the number of vertices on each boundary component to get the
     ! actual index vector.
-    do ibct = 2,rtriangulation%NBCT+1
+    do ibct = 2, rtriangulation%NBCT+1
       p_IboundaryCpIdx(ibct) = p_IboundaryCpIdx(ibct)+p_IboundaryCpIdx(ibct-1)
     end do
     
@@ -9630,7 +9597,7 @@ contains
     ! p_IboundaryCpIdx(i)  1   1   9  15
     
     p_IboundaryCpIdx(2:rtriangulation%NBCT+1) = p_IboundaryCpIdx(1:rtriangulation%NBCT)
-    
+   
     ! Then, we again loop through all vertices and collect those on the
     ! boundary. In that loop, we use p_IboundaryCpIdx(2:NBCT+1) as pointer and
     ! increase them for every point we find. The loop will behave like
@@ -9642,75 +9609,27 @@ contains
     ! p_IboundaryCpIdx(i)  1   9  15  19
     !
     ! Ok, let's catch the actual vertices.
-    !
-    ! The loop must be slightly modified if rboundary is not present!
-    if (present(rboundary)) then
-
-      ! Allocate memory for  and DvertexParameterValue
-      call storage_new ('tria_genRawBoundary1D', &
-          'DVBDP', int(rtriangulation%NVBD,I32), &
-          ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
-      
-      ! Get the array where to store boundary parameter values.
-      call storage_getbase_double (&
-          rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
-          
-      ! Check all vertices to find out, which vertices are on the boundary.
-      !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
-      do ivt=1,rtriangulation%NVT
-        if (p_InodalProperty(ivt) .gt. 0) then
-          ibct = p_InodalProperty(ivt)
-          
-          ! Create a new point on that boundary component 
-          ! and get the number, the point will have.
-          ! Note that the array was initialised with zero during the creation
-          ! process!
-          ivbd = p_IboundaryCpIdx(ibct+1)
-          p_IboundaryCpIdx(ibct+1) = ivbd+1
-          
-          ! Store the vertex as boundary vertex
-          p_IverticesAtBoundary (ivbd) = ivt
-          
-          ! Store the parameter value; it's saved in DvertexCoords(1,.)
-          p_DvertexParameterValue (ivbd) = p_DvertexCoords(1,ivt)
-          
-          ! Replace the coordinates in DvertexCoords by those
-          ! given by the parametrisation.
-          call boundary_getCoords(rboundary, ibct, p_DvertexParameterValue (ivbd), &
-              p_DvertexCoords(1,ivt), dy)
-          
-        end if
-      end do
-      !$OMP END PARALLEL DO
-      
-    else
-    
-      ! No parametrisation available, the array with boundary parameter values 
-      ! is not generaterd.
-      !
-      ! Check all vertices to find out, which vertices are on the boundary.
-      !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
-      do ivt=1,rtriangulation%NVT
-        if (p_InodalProperty(ivt) .gt. 0) then
-          ! id of the boundary component
-          ibct = p_InodalProperty(ivt)
-          
-          ! set ivbd to the number of vertices on that boundary component
-          ! thus ivbd holds the current number of vertices found for
-          ! boundary component ibct and ivbd represents the current
-          ! position in the p_IverticesAtBoundary array
-          ivbd = p_IboundaryCpIdx(ibct+1)
-          ! we have found a new point on that boundary component
-          ! so increase the number of points by one
-          p_IboundaryCpIdx(ibct+1) = ivbd+1
-          
-          ! Store the vertex as boundary vertex
-          p_IverticesAtBoundary (ivbd) = ivt
-        end if
-      end do
-      !$OMP END PARALLEL DO
-      
-    end if
+    ! Check all vertices to find out, which vertices are on the boundary.
+    !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
+    do ivt=1,rtriangulation%NVT
+      if (p_InodalProperty(ivt) .gt. 0) then
+        ! id of the boundary component
+        ibct = p_InodalProperty(ivt)
+        
+        ! set ivbd to the number of vertices on that boundary component
+        ! thus ivbd holds the current number of vertices found for
+        ! boundary component ibct and ivbd represents the current
+        ! position in the p_IverticesAtBoundary array
+        ivbd = p_IboundaryCpIdx(ibct+1)
+        ! we have found a new point on that boundary component
+        ! so increase the number of points by one
+        p_IboundaryCpIdx(ibct+1) = ivbd+1
+        
+        ! Store the vertex as boundary vertex
+        p_IverticesAtBoundary (ivbd) = ivt
+      end if
+    end do
+    !$OMP END PARALLEL DO
     
   end subroutine tria_genRawBoundary1D
 
@@ -10017,7 +9936,7 @@ contains
 
 !<subroutine>
 
-  subroutine tria_readRawTriangulation2D (iunit,rtriangulation)
+  subroutine tria_readRawTriangulation2D (iunit, rtriangulation)
 
 !<description>  
   ! Auxiliary routine of tria_readTriFile2D.
@@ -10054,8 +9973,8 @@ contains
     
     ! Read NEL,NVT,NMT,NVE,NBCT from the file
     ! and store this information in the structure.
-    read (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
-        rtriangulation%NNVE,rtriangulation%NBCT
+    read (iunit,*) rtriangulation%NEL, rtriangulation%NVT, rtriangulation%NMT,&
+                   rtriangulation%NNVE, rtriangulation%NBCT
         
     nve = rtriangulation%NNVE
     
@@ -10068,12 +9987,11 @@ contains
     ! 2d array of size(NDIM2D, NVT)
     Isize = (/NDIM2D,int(rtriangulation%NVT,I32)/)
     call storage_new2D ('tria_readRawTriangulation2D', 'DCORVG', Isize, ST_DOUBLE, &
-        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+                        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointers to the coordinate array
     ! p_Ddata2D is the pointer to the coordinate array
-    call storage_getbase_double2D(&
-        rtriangulation%h_DvertexCoords,p_Ddata2D)
+    call storage_getbase_double2D(rtriangulation%h_DvertexCoords, p_Ddata2D)
         
     ! Read the data from the file, store it in the array.
     ! read data into p_Ddata:
@@ -10089,11 +10007,10 @@ contains
     ! 2d array of size(NVE, NEL)
     Isize = (/nve,int(rtriangulation%NEL,I32)/)
     call storage_new2D ('tria_readRawTriangulation2D', 'KVERT', Isize, ST_INT, &
-        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+                        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointer to the IverticesAtElement array and read the array
-    call storage_getbase_int2D(&
-        rtriangulation%h_IverticesAtElement,p_Idata2D)
+    call storage_getbase_int2D(rtriangulation%h_IverticesAtElement, p_Idata2D)
 
     ! read ive=1 indices to nve into p_Idata2D(ive,iel) where iel=1 to NEL
     read (iunit,*) ((p_Idata2D(ive,iel),ive=1,nve), iel=1,rtriangulation%NEL)
@@ -10116,15 +10033,14 @@ contains
 
     ! Allocate memory for InodalProperty 
     call storage_new ('tria_readRawTriangulation2D', 'KNPR', &
-        int(rtriangulation%NVT,I32), ST_INT, &
-        rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+                      int(rtriangulation%NVT,I32), ST_INT, &
+                      rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
     
     ! Get the pointer to the InodalProperty array
-    call storage_getbase_int(&
-        rtriangulation%h_InodalProperty,p_Idata)
+    call storage_getbase_int(rtriangulation%h_InodalProperty, p_Idata)
 
     ! Read the data
-    read (iunit,*) (p_Idata(ivt),ivt=1,rtriangulation%NVT)
+    read (iunit,*) (p_Idata(ivt), ivt=1,rtriangulation%NVT)
 
   end subroutine tria_readRawTriangulation2D
 
@@ -10132,7 +10048,7 @@ contains
 
 !<subroutine>
 
-  subroutine tria_genRawBoundary2D (rtriangulation,rboundary)
+  subroutine tria_genRawBoundary2D (rtriangulation, rboundary)
 
 !<description>  
   ! Auxiliary routine of tria_readTriFile2D.
@@ -10186,7 +10102,7 @@ contains
 
     ! Get the pointer to the InodalProperty array
     call storage_getbase_int(&
-        rtriangulation%h_InodalProperty,p_InodalProperty)
+        rtriangulation%h_InodalProperty, p_InodalProperty)
 
     ! Calculate NVBD by simply counting how many elements
     ! in p_InodalProperty are <> 0.
@@ -10201,15 +10117,15 @@ contains
     rtriangulation%NVBD = ivbd
 
     ! Allocate memory for IverticesAtBoundary.
-    call storage_new ('tria_genRawBoundary2D', &
-        'KVBD', int(rtriangulation%NVBD,I32), &
-        ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+    call storage_new ('tria_genRawBoundary2D', 'KVBD', &
+                      int(rtriangulation%NVBD,I32), ST_INT, &
+                      rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         
     ! Allocate memory for the boundary component index vector.
     ! Initialise that with zero!
-    call storage_new ('tria_genRawBoundary2D', &
-        'KBCT', int(rtriangulation%NBCT+1,I32), &
-        ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
+    call storage_new ('tria_genRawBoundary2D', 'KBCT', &
+                      int(rtriangulation%NBCT+1,I32), ST_INT, &
+                      rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
     ! Get pointers to the arrays
     call storage_getbase_int (&
@@ -10244,7 +10160,7 @@ contains
     
     ! Sum up the number of vertices on each boundary component to get the
     ! actual index vector.
-    do ibct = 2,rtriangulation%NBCT+1
+    do ibct = 2, rtriangulation%NBCT+1
       p_IboundaryCpIdx(ibct) = p_IboundaryCpIdx(ibct)+p_IboundaryCpIdx(ibct-1)
     end do
     
