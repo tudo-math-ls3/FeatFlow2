@@ -45,7 +45,7 @@ contains
 !<subroutine>
 
   subroutine jstab_calcUEOJumpStabilisation (&
-      rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu)
+      rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation)
 
 !<description>
   ! Edge oriented stabilisation technique. This routine incorporates the
@@ -69,6 +69,11 @@ contains
   
   ! Viscosity parameter for the matrix if viscosity is constant.
   real(DP), intent(IN) :: dnu
+
+  ! OPTIONAL: Alternative discretisation structure to use for setting up
+  ! the jump stabilisaton. This allows to use a different FE pair for
+  ! setting up the stabilisation than the matrix itself.
+  type(t_spatialDiscretisation), intent(in), optional :: rdiscretisation
 !</input>
 
 !<inputoutput>
@@ -97,7 +102,7 @@ contains
 
     ! Modify the matrix.
     call jstab_ueoJumpStabil2d_m_unidble (&
-        rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu)
+        rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation)
 
   end subroutine
   
@@ -106,7 +111,7 @@ contains
 !<subroutine>
 
   subroutine jstab_ueoJumpStabil2d_m_unidble ( &
-      rmatrixScalar,dgamma,dgammastar,dtheta,ccubType,dnu)
+      rmatrixScalar,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation)
 !<description>
   ! Unified edge oriented jump stabilisation.
   !
@@ -142,6 +147,11 @@ contains
   
   ! Viscosity parameter for the matrix if viscosity is constant.
   real(DP), intent(IN) :: dnu
+
+  ! OPTIONAL: Alternative discretisation structure to use for setting up
+  ! the jump stabilisaton. This allows to use a different FE pair for
+  ! setting up the stabilisation than the matrix itself.
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
 !</input>
   
 !<inputoutput>
@@ -251,6 +261,10 @@ contains
     p_rtriangulation => rmatrixScalar%p_rspatialDiscrTest%p_rtriangulation
     p_rdiscretisation => rmatrixScalar%p_rspatialDiscrTest
     
+    ! If a discretisation structure is present, take that one.
+    if (present(rdiscretisation)) &
+      p_rdiscretisation => rdiscretisation
+    
     ! Get Kvert, Kadj, Kmid, Kmel,...
     call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                 p_IverticesAtElement)
@@ -359,6 +373,10 @@ contains
     Bder(DER_DERIV_X) = .true.
     Bder(DER_DERIV_Y) = .true.
 
+      ! Fill the basis function arrays with 0. Essential, as only parts
+      ! of them are overwritten later.
+      Dbas = 0.0_DP
+      
     ! We loop through all edges
     do IMT = 1,p_rtriangulation%NMT
     
@@ -371,10 +389,6 @@ contains
         cycle
       
       end if
-      
-      ! Fill the basis function arrays with 0. Essential, as only parts
-      ! of them are overwritten later.
-      Dbas = 0.0_DP
       
       ! On an example, we now show the relationship between all the DOF's
       ! we have to consider in the current situation. We have two elements,
@@ -564,8 +578,9 @@ contains
       ! ("d1psi10" = grad(psi_10) on element 1, 
       !  "psi_10" = test function on global DOF #10)
       !
-      ! That space Dbas(:,:,:,3) is unused up to now, initialised by 0.0 and 
-      ! now overwritten.
+      ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and 
+      ! partially overwrite with the reordered values of the basis functions.
+      Dbas (:,:,:,3) = 0.0_DP
       Dbas (IlocalDofRenum(1:indofPerElement),:,:,3) &
         = Dbas (1:indofPerElement,:,:,2)
       
@@ -590,12 +605,12 @@ contains
       dedgelength = &
         sqrt ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
             + (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2 )
-      dedgeweight = 0.5_DP * dedgelength
+      dedgeweight = dedgelength !* 0.5_DP
       
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
-      dcoeff = max(dgammastar * dnu * dedgelength, &
-                   dgamma * dedgelength**2)
+      dcoeff = & !max(dgammastar * dnu * dedgelength, &
+                   dgamma * dedgelength**2 !)
       
       ! Now we have the values of the basis functions in all the cubature 
       ! points.
@@ -697,7 +712,7 @@ contains
 
   subroutine jstab_matvecUEOJumpStabilBlk2d ( &
                   dgamma,dgammastar,ccubType,dnu,&
-                  rtemplateMat,rx,ry,cx,cy)
+                  rtemplateMat,rx,ry,cx,cy,rdiscretisation)
 !<description>
   ! Unified edge oriented jump stabilisation.
   !
@@ -744,6 +759,11 @@ contains
 
   ! Multiplication factor for y.
   real(DP), intent(in) :: cy
+
+  ! OPTIONAL: Alternative discretisation structure to use for setting up
+  ! the jump stabilisaton. This allows to use a different FE pair for
+  ! setting up the stabilisation than the matrix itself.
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
 !</input>
 
 !<inputoutput>
@@ -851,6 +871,10 @@ contains
     p_rtriangulation => rtemplateMat%p_rspatialDiscrTest%p_rtriangulation
     p_rdiscretisation => rtemplateMat%p_rspatialDiscrTest
     
+    ! If a discretisation structure is present, take that one.
+    if (present(rdiscretisation)) &
+      p_rdiscretisation => rdiscretisation
+
     ! Get Kvert, Kadj, Kmid, Kmel,...
     call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                 p_IverticesAtElement)
@@ -971,6 +995,10 @@ contains
     ! Don't calculate coordinates on the reference element -- we do this manually.                    
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
+    ! Fill the basis function arrays with 0. Essential, as only parts
+    ! of them are overwritten later.
+    Dbas = 0.0_DP
+    
     ! We loop through all edges
     do IMT = 1,p_rtriangulation%NMT
     
@@ -983,10 +1011,6 @@ contains
         cycle
       
       end if
-      
-      ! Fill the basis function arrays with 0. Essential, as only parts
-      ! of them are overwritten later.
-      Dbas = 0.0_DP
       
       ! On an example, we now show the relationship between all the DOF's
       ! we have to consider in the current situation. We have two elements,
@@ -1176,8 +1200,9 @@ contains
       ! ("d1psi10" = grad(psi_10) on element 1, 
       !  "psi_10" = test function on global DOF #10)
       !
-      ! That space Dbas(:,:,:,3) is unused up to now, initialised by 0.0 and 
-      ! now overwritten.
+      ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and 
+      ! partially overwrite with the reordered values of the basis functions.
+      Dbas (:,:,:,3) = 0.0_DP
       Dbas (IlocalDofRenum(1:indofPerElement),:,:,3) &
         = Dbas (1:indofPerElement,:,:,2)
       
@@ -1202,11 +1227,12 @@ contains
       dedgelength = &
         sqrt ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
             + (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2 )
-      dedgeweight = 0.5_DP * dedgelength
+      dedgeweight = dedgelength !* 0.5_DP *
       
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
-      dcoeff = max(dgammastar * dnu * dedgelength, dgamma * dedgelength**2)
+      dcoeff = & !max(dgammastar * dnu * dedgelength, &
+                   dgamma * dedgelength**2 !)
       
       ! Now we have the values of the basis functions in all the cubature 
       ! points.

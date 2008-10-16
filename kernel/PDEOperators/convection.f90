@@ -9417,8 +9417,7 @@ contains
 !<subroutine>
 
   subroutine conv_JumpStabilisation2d ( &
-                           rconfig, cdef, &
-                           rmatrix, rsolution, rdefect)
+      rconfig, cdef, rmatrix, rsolution, rdefect, rdiscretisation)
 
 !<description>
   ! Edge oriented stabilisation technique. Wrapper routine.
@@ -9455,9 +9454,14 @@ contains
   !                 rmatrix, rdefect and rsolution must all be present.
   integer, intent(IN) :: cdef
 
-  ! optional: Solution vector u_2.
+  ! OPTIONAL: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   type(t_vectorBlock), intent(IN), target, optional :: rsolution
+  
+  ! OPTIONAL: Alternative discretisation structure to use for setting up
+  ! the jump stabilisaton. This allows to use a different FE pair for
+  ! setting up the stabilisation than the matrix itself.
+  type(t_spatialDiscretisation), intent(in), optional :: rdiscretisation
 !</input>
 
 !<inputoutput>
@@ -9531,7 +9535,8 @@ contains
         if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
           call jstab_matvecUEOJumpStabilBlk2d ( &
               rconfig%dgamma,rconfig%dgammastar,rconfig%ccubType,rconfig%dnu,&
-              rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP)
+              rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP,&
+              rdiscretisation)
         end if
 
       end if
@@ -9540,7 +9545,7 @@ contains
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
           rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%dtheta,&
-          rconfig%ccubType,rconfig%dnu)
+          rconfig%ccubType,rconfig%dnu,rdiscretisation)
       end if
 
     else
