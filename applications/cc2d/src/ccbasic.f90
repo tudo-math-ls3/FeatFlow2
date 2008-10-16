@@ -98,6 +98,11 @@ module ccbasic
     ! for the pressure.
     logical :: bhasNeumannBoundary
     
+    ! An object specifying the block discretisation to be used for (edge)
+    ! stabilisation. Only used if edge stabilisation is activated, otherwise
+    ! this coincides with rdiscretisation.
+    type(t_blockDiscretisation) :: rdiscretisationStabil
+    
   end type
   
 !</typeblock>

@@ -207,6 +207,24 @@ module ccnonlinearcore
 
     real(DP) :: depsRelNewton = 1.0E99_DP
   
+    ! Whether to use the inexact Newton iteration or not.
+    ! The inexact Newton controls the stopping criterion of the linear
+    ! solver according to the nonlinear residual.
+    
+    integer :: cinexactNewton = 1
+
+    ! Stopping criterion for the linear solver in the inexact Newton iteration.
+    ! Controls the minimum number of digits to gain in the linear solver
+    ! per Newton iteration. Only used if cinexactNewton = 1.
+    
+    real(dp) :: dinexactNewtonEpsRel = 1.0E-2_DP
+
+    ! Exponent to control the stopping criterion for the linear solver in
+    ! an inexact Newton iteration. =2 result in quadratic convergence,
+    ! =1.5 in superlinear convergence. Only used if cinexactNewton = 1.
+    
+    real(dp) :: dinexactNewtonExponent = 2.0_DP
+  
   end type
   
 !</typeblock>
@@ -227,10 +245,14 @@ module ccnonlinearcore
     
     ! Pointer to linear solver node if a linear solver is the preconditioner.
     ! (Thus, this applies for the defect correction and the Newton preconditioner).
-    type(t_linsolNode), pointer :: p_rsolverNode
+    type(t_linsolNode), pointer :: p_rsolverNode => NULL()
+
+    ! If the linerar solver contains a multigrid preconditioner, this is a pointer
+    ! to the coarse grid solver. Otherwise, the pointer is not associated.
+    type(t_linsolNode), pointer :: p_rcgrSolver => NULL()
     
     ! An interlevel projection structure for changing levels
-    type(t_interlevelProjectionBlock), pointer :: p_rprojection
+    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
     
     ! Configuration block for the adaptive Newton preconditioner.
     ! Is only valid if ctypePreconditioning=CCPREC_NEWTONDYNAMIC!
@@ -238,11 +260,11 @@ module ccnonlinearcore
 
     ! Temporary scalar vector; used for calculating the nonlinear matrix
     ! on lower levels / projecting the solution from higher to lower levels.
-    type(t_vectorScalar), pointer :: p_rtempVectorSc
+    type(t_vectorScalar), pointer :: p_rtempVectorSc => NULL()
 
     ! Temporary scalar vector; used for calculating the optimal damping
     ! parameter.
-    type(t_vectorScalar), pointer :: p_rtempVectorSc2
+    type(t_vectorScalar), pointer :: p_rtempVectorSc2 => NULL()
 
   end type
 
@@ -315,6 +337,10 @@ module ccnonlinearcore
   
     ! Pointer to the discretisation structure of that level
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
+
+    ! Pointer to the discretisation structure of the stabilisation
+    ! on that level
+    type(t_blockDiscretisation), pointer :: p_rdiscretisationStabil => null()
 
     ! Stokes matrix for that specific level (=nu*Laplace)
     type(t_matrixScalar), pointer :: p_rmatrixStokes => null()
@@ -539,6 +565,8 @@ contains
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
       rnonlinearCCMatrix%p_rdiscretisation => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
+      rnonlinearCCMatrix%p_rdiscretisationStabil => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisationStabil
       rnonlinearCCMatrix%p_rmatrixStokes => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
       rnonlinearCCMatrix%p_rmatrixB1 => &
@@ -736,6 +764,8 @@ contains
           rnonlinearIteration%rprecSpecials%dadmatthreshold
       rnonlinearCCMatrix%p_rdiscretisation => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
+      rnonlinearCCMatrix%p_rdiscretisationStabil => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisationStabil
       rnonlinearCCMatrix%p_rmatrixStokes => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
       rnonlinearCCMatrix%p_rmatrixB1 => &
@@ -898,11 +928,11 @@ contains
     type(t_vectorScalar), pointer :: p_rvectorTemp,p_rvectorTemp2
     type(t_vectorBlock) :: rtemp1,rtemp2
     integer :: ierror
-    type(t_linsolNode), pointer :: p_rsolverNode
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rcgrSolver
     integer, dimension(3) :: Cnorms
     
     integer :: i
-    real(DP) :: dresInit,dres
+    real(DP) :: dresInit,dres,dtempdef
     logical :: bassembleNewton
     type(t_matrixBlock), dimension(:), pointer :: Rmatrices
     type(t_ccDynamicNewtonControl), pointer :: p_rnewton
@@ -991,6 +1021,70 @@ contains
       
         p_rsolverNode => rnonlinearIteration%rpreconditioner%p_rsolverNode
 
+        if (rnonlinearIteration%rpreconditioner%ctypePreconditioning .eq. &
+            CCPREC_NEWTONDYNAMIC) then
+          ! Do we have to apply the inexact Newton?
+          if (p_rnewton%cinexactNewton .ne. 0) then
+          
+            ! Adaptive stopping criterion / inexact Newton active.
+            !
+            ! Determine the stopping criterion for the linear solver.
+            ! This is an adaptive stopping criterion depending on the current
+            ! defect. In detail, for the inexact Newton we have
+            !
+            !   |b-Ax_{i+1}|         ( |b-Ax_i| ) exp             ( |b-Ax_i| )
+            !   ------------ = min { ( -------- )     , depsrel * ( -------- ) }
+            !     |b-Ax_0|           ( |b-Ax_0| )                 ( |b-Ax_0| )
+            !
+            ! see e.g. [Michael Hinze, Habilitation, p. 51]
+            !
+            ! If Newton is not active, we taje the formula
+            !
+            !   |b-Ax_{i+1}|             ( |b-Ax_i| )
+            !   ------------ = depsrel * ( -------- ) 
+            !     |b-Ax_0|               ( |b-Ax_0| )
+            !
+            ! to always gain depsrel.
+            ! Switch off the relative stopping criterion in the linear solver:
+            
+            p_rsolverNode%istoppingCriterion = 0
+            
+            ! Just for safetyness, gain at least one digit.
+            p_rsolverNode%depsRel = 1.0E-1_DP
+            
+            ! Calculate the new absolute stopping criterion:
+            dresInit = sqrt(rnonlinearIteration%DresidualInit(1)**2 + &
+                          rnonlinearIteration%DresidualInit(2)**2)
+            dres    = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
+                          rnonlinearIteration%DresidualOld(2)**2)
+            
+            dtempdef = dres / dresInit
+            
+            if (bassembleNewton) then
+              p_rsolverNode%depsAbs = &
+                  MIN(dtempDef**p_rnewton%dinexactNewtonExponent, &
+                      p_rnewton%dinexactNewtonEpsRel*dtempdef) * dresInit
+            else      
+              p_rsolverNode%depsAbs = p_rnewton%dinexactNewtonEpsRel*dtempdef*dresInit
+            end if
+            
+            ! If we have a multigrid solver, we also have to take care for
+            ! the coarse grid solver!
+            i = rnonlinearIteration%NLMIN
+            p_rcgrSolver => rnonlinearIteration%rpreconditioner%p_rcgrSolver
+            if (associated(p_rcgrSolver)) then
+              ! For the coarse grid solver, we choose the same stopping criterion.
+              ! But just for safetyness, the coarse grid solver should gain at least
+              ! one digit!
+              p_rcgrSolver%istoppingCriterion = 0
+              p_rcgrSolver%depsRel = 1.0E-1_DP
+              p_rcgrSolver%depsAbs = p_rsolverNode%depsAbs
+            end if
+            
+          end if
+          
+        end if
+          
         ! Re-attach the system matrices to the solver.
         ! Note that no pointers and no handles are changed, so we can savely do
         ! that without calling linsol_doneStructure/linsol_doneStructure.
@@ -1235,6 +1329,8 @@ contains
               rnonlinearIteration%rprecSpecials%dadmatthreshold
           rnonlinearCCMatrix%p_rdiscretisation => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisation
+          rnonlinearCCMatrix%p_rdiscretisationStabil => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisationStabil
           rnonlinearCCMatrix%p_rmatrixStokes => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStokes
           rnonlinearCCMatrix%p_rmatrixB1 => &

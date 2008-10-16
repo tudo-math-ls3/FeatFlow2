@@ -186,6 +186,7 @@ contains
     rnonlinearCCMatrix%p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
     rnonlinearCCMatrix%p_rmatrixTemplateGradient => rlevelInfo%rmatrixTemplateGradient
     rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%rdiscretisation
+    rnonlinearCCMatrix%p_rdiscretisationStabil => rlevelInfo%rdiscretisationStabil
     rnonlinearCCMatrix%p_rmatrixStokes => rlevelInfo%rmatrixStokes
     rnonlinearCCMatrix%p_rmatrixB1 => rlevelInfo%rmatrixB1
     rnonlinearCCMatrix%p_rmatrixB2 => rlevelInfo%rmatrixB2
@@ -283,6 +284,9 @@ contains
     do ilevel = nlmin,nlmax
       rnonlinearIteration%RcoreEquation(ilevel)%p_rdiscretisation => &
         rproblem%RlevelInfo(ilevel)%rdiscretisation
+
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rdiscretisationStabil => &
+        rproblem%RlevelInfo(ilevel)%rdiscretisationStabil
 
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixStokes => &
         rproblem%RlevelInfo(ilevel)%rmatrixStokes
@@ -560,6 +564,9 @@ contains
             scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
         
       end select
+      
+      ! Put the coarse grid solver node to the preconditioner structure.
+      rnonlinearIteration%rpreconditioner%p_rcgrSolver => p_rlevelInfo%p_rcoarseGridSolver
       
       ! Now after the coarse grid solver is done, we turn to the smoothers
       ! on all levels. Their initialisation is similar to the coarse grid
@@ -946,6 +953,18 @@ contains
             call parlst_getvalue_double (rproblem%rparamList, snewton, &
                 'depsRelNewton', rnonlinearIteration%rpreconditioner% &
                 radaptiveNewton%depsRelNewton, 1E99_DP)
+
+            call parlst_getvalue_int (rproblem%rparamList, snewton, &
+                'cinexactNewton', rnonlinearIteration%rpreconditioner% &
+                radaptiveNewton%cinexactNewton, 1)
+
+            call parlst_getvalue_double (rproblem%rparamList, snewton, &
+                'dinexactNewtonEpsRel', rnonlinearIteration%rpreconditioner% &
+                radaptiveNewton%dinexactNewtonEpsRel, 1.0E-2_DP)
+
+            call parlst_getvalue_double (rproblem%rparamList, snewton, &
+                'dinexactNewtonExponent', rnonlinearIteration%rpreconditioner% &
+                radaptiveNewton%dinexactNewtonExponent, 2.0_DP)
           end if
           
         end if

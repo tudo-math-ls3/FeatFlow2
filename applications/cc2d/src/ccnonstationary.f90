@@ -413,6 +413,10 @@ contains
     rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
     rnonlinearCCMatrix%dnu = rproblem%dnu
     rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+    rnonlinearCCMatrix%p_rdiscretisation => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
+    rnonlinearCCMatrix%p_rdiscretisationStabil => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisationStabil
     rnonlinearCCMatrix%p_rmatrixStokes => &
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStokes
     rnonlinearCCMatrix%p_rmatrixB1 => &

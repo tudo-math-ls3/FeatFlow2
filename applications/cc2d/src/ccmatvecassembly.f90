@@ -226,6 +226,10 @@ module ccmatvecassembly
     ! May point to NULL() during matrix creation.
     type(t_matrixScalar), pointer :: p_rmatrixMass => null()
 
+    ! An object specifying the block discretisation
+    ! for the (edge) stabilisation.
+    type(t_blockDiscretisation), pointer :: p_rdiscretisationStabil => null()
+
   end type
 
 !</typeblock>
@@ -836,13 +840,13 @@ contains
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
-                              rjumpStabil, CONV_MODMATRIX, &
-                              rmatrix%RmatrixBlock(1,1))   
+              rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
+              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
-                                rjumpStabil, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(2,2))   
+                rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
+              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
           end if
 
         case DEFAULT
@@ -875,13 +879,13 @@ contains
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
-                              rjumpStabil, CONV_MODMATRIX, &
-                              rmatrix%RmatrixBlock(1,1))   
+              rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(1,1),&
+              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
-                                rjumpStabil, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(2,2))   
+                rjumpStabil,CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
+                rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
           end if
 
         case DEFAULT
@@ -1355,9 +1359,9 @@ contains
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
-                              rjumpStabil, CONV_MODDEFECT, &
-                              rmatrix%RmatrixBlock(1,1),&
-                              rsolution=rvector,rdefect=rdefect)   
+              rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
+              rsolution=rvector,rdefect=rdefect,&
+              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
 
           if (.not. bshared) then
             call output_line (&
@@ -1397,9 +1401,9 @@ contains
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
-                              rjumpStabil, CONV_MODDEFECT, &
-                              rmatrix%RmatrixBlock(1,1),&
-                              rsolution=rvector,rdefect=rdefect)   
+              rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
+              rsolution=rvector,rdefect=rdefect,&
+              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
 
         case DEFAULT
           ! No stabilisation
