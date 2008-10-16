@@ -54,6 +54,7 @@
 		<File RelativePath="..\data\bdconditions.dat"/>
 		<File RelativePath="..\data\discretisation.dat"/>
 		<File RelativePath="..\data\linsol_cc2d.dat"/>
+		<File RelativePath="..\data\master.dat"/>
 		<File RelativePath="..\data\nonlinsol_cc2d.dat"/>
 		<File RelativePath="..\data\output.dat"/>
 		<File RelativePath="..\data\paramtriang.dat"/>
