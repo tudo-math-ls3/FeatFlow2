@@ -110,6 +110,9 @@ module spatialdiscretisation
   ! Automatically determine cubature formula for a discretisation.
   integer, parameter :: SPDISC_CUB_AUTOMATIC = 0
 
+  ! Cubature formula stays unchanged.
+  integer, parameter :: SPDISC_CUB_NOCHANGE  = -1
+
 !</constantblock>
 
 !</constants>
@@ -1250,6 +1253,8 @@ contains
   ! in the new discretisation structure
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
+  ! A value SPDISC_CUB_NOCHANGE means:
+  ! take the cubature formula from the source discretisation.
   integer, intent(IN)                       :: ccubType
 !</input>
   
@@ -1297,9 +1302,11 @@ contains
   ! Release old information if present
   call spdiscr_releaseDiscr(rdestDiscr)
   
-  ! Check the cubature formula against the element distribution.
-  ! This stops the program if this is not fulfilled.
-  call spdiscr_checkCubature(ccub,ieltyp)
+  if (ccub .ne. SPDISC_CUB_NOCHANGE) then
+    ! Check the cubature formula against the element distribution.
+    ! This stops the program if this is not fulfilled.
+    call spdiscr_checkCubature(ccub,ieltyp)
+  end if
   
   ! Copy the source structure to the destination.
   ! This copies all handles and hence all dynamic information
@@ -1314,9 +1321,19 @@ contains
   rdestDiscr%RelementDistr(1)%celement = ieltyp
   
   ! Init the cubature rule
-  rdestDiscr%RelementDistr(1)%ccubTypeBilForm = ccub
-  rdestDiscr%RelementDistr(1)%ccubTypeLinForm = ccub
-  rdestDiscr%RelementDistr(1)%ccubTypeEval = ccub
+  if (ccub .eq. SPDISC_CUB_NOCHANGE) then
+    ! Copy the old cubature formula
+    rdestDiscr%RelementDistr(1)%ccubTypeBilForm = &
+        rsourceDiscr%RelementDistr(1)%ccubTypeBilForm 
+    rdestDiscr%RelementDistr(1)%ccubTypeLinForm = &
+        rsourceDiscr%RelementDistr(1)%ccubTypeLinForm 
+    rdestDiscr%RelementDistr(1)%ccubTypeEval    = &
+        rsourceDiscr%RelementDistr(1)%ccubTypeEval    
+  else 
+    rdestDiscr%RelementDistr(1)%ccubTypeBilForm = ccub
+    rdestDiscr%RelementDistr(1)%ccubTypeLinForm = ccub
+    rdestDiscr%RelementDistr(1)%ccubTypeEval = ccub
+  end if
   
   ! Get the typical transformation used with the element
   rdestDiscr%RelementDistr(1)%ctrafoType = elem_igetTrafoType(ieltyp)
