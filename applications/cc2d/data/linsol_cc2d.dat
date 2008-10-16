@@ -72,22 +72,25 @@ nminIterations     = 2
 
 # Maximum number of steps
 
-nmaxIterations     = 5
+nmaxIterations     = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
+# Not used if the inexact Newton is active.
 
 depsRel            = 1E-2
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
+# Not used if the inexact Newton is active.
 
 depsAbs            = 1E-5
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
 # =1: Relative OR absolute stopping criterion must hold.
+# Not used if the inexact Newton is active.
 
 istoppingCriterion = 0
 
@@ -123,7 +126,7 @@ icycle             = 0
 # =1: use energy minimisation = standard for Q1~/Q0 discretisation
 # =2: use defect minimisation
 
-ccorrectionTypeAlpha = 1
+ccorrectionTypeAlpha = 0
 
 # lower limit for optimal MG-ALPHA; 
 # controls damping of coarse grid correction; Standard=-10.0
@@ -149,7 +152,7 @@ nsmoothingSteps    = 4
 
 # Relaxation parameter
 
-domega             = 0.9
+domega             = 1.0
 
 # Output level of the solver
 # = 2:extended output
@@ -177,18 +180,21 @@ nmaxIterations     = 1000
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
+# Not used if the inexact Newton is active.
 
 depsRel            = 1E-2
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
+# Not used if the inexact Newton is active.
 
 depsAbs            = 1E-2
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
 # =1: Relative OR absolute stopping criterion must hold.
+# Not used if the inexact Newton is active.
 
 istoppingCriterion = 0
 
@@ -198,7 +204,7 @@ istoppingCriterion = 0
 # = 0:no output except for warning messages (standard)
 # =-1:no output
 
-ioutputLevel       = 0
+ioutputLevel       = -1
 
 # Relaxation parameter
 

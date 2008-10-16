@@ -62,7 +62,9 @@ ioutputLevel       = 2
 #     to the Newton iteration if an error criterion is fulfilled for the
 #     residual. The parameter spreconditionerAdaptiveNewton below defines
 #     the name of a section that specifies the parameters for the dynamic
-#     switching.
+#     switching. Forthermore, the adaptive Newton can be executed
+#     as inexact Newton iteration with automatic accuracy setting
+#     for the linear solver.
 # Note: Currently, Newton only works with quadratic convergence if 
 # the stabilisation is deactivated (iUpwind=0, dUpsam=0.0)!!!
 
@@ -86,12 +88,12 @@ spreconditionerAdaptiveNewton = 'CC-ADAPTIVENEWTONITERATION'
 # lower limit for opt. OMEGA in nonlinear defect correction, 
 # <0: no rel. changes
 
-domegaMin          = 0.0
+domegaMin          = 1.0
 
 # upper limit for opt. OMEGA in nonlinear defect correction,
 # <0: no rel. changes
 
-domegaMax          = 2.0
+domegaMax          = 1.0
 
 # initial value limit for opt. OMEGA in nonlinear defect correction
 
@@ -110,14 +112,14 @@ domegaIni          = 1.0
 ############################
 
 # Minimum number of usul fix point iteration before to switch to
-# preconfitioning with the Newton matrix. (IFIXMIN)
+# preconditioning with the Newton matrix. (IFIXMIN)
 
 nminFixPointIterations = 0
 
 # Maximum number of usul fix point iteration before to switch to
 # preconfitioning with the Newton matrix. (IFIXMAX)
 
-nmaxFixPointIterations = 999
+nmaxFixPointIterations = 5
 
 # Norm of absolute residuum before applying Newton. 
 # Newton is only applied
@@ -126,7 +128,7 @@ nmaxFixPointIterations = 999
 # Otherwise, the usual fix point iteration is used.
 # Stamndard value = 1E-5.
 
-depsAbsNewton = 1.0E-5
+depsAbsNewton = 1.0E99
 
 # Norm of relative residuum before applying Newton. 
 # Newton is only applied
@@ -135,4 +137,23 @@ depsAbsNewton = 1.0E-5
 # Otherwise, the usual fix point iteration is used.
 # Standard value = 1E99 -> The absolute residuum counts.
 
-depsRelNewton = 1.0E99
+depsRelNewton = 1.0E-2
+
+# Whether to use the inexact Newton iteration or not.
+# The inexact Newton controls the stopping criterion of the linear
+# solver according to the nonlinear residual.
+
+cinexactNewton = 1
+
+# Stopping criterion for the linear solver in the inexact Newton iteration.
+# Controls the minimum number of digits to gain in the linear solver
+# per Newton iteration. Only used if cinexactNewton = 1.
+
+dinexactNewtonEpsRel = 1.0E-2
+
+# Exponent to control the stopping criterion for the linear solver in
+# an inexact Newton iteration. =2 result in quadratic convergence,
+# =1.5 in superlinear convergence. Only used if cinexactNewton = 1.
+
+dinexactNewtonExponent = 2.0
+

@@ -113,6 +113,15 @@ iUpwind            = 0
 
 dUpsam             = 1.0 # 0.1
 
+# Element type to use for the unified edge oriented jump stabilisation.
+# Allows to use a different finite element for setting up the stabilisation
+# than for discretising the equation. Only used if iUpwind=2.
+# =-1: Use iElementType.
+# >=0: Use a different FE type for the stabilisation than for the equation.
+#      See the documentation of ielementType which numbers are allowed here.
+
+iElementTypeStabil = -1
+
 # ------------------------------------------------------------------------
 
 # Generation of mass matrix. 0=lumped mass,1=real mass matrix
