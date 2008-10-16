@@ -89,8 +89,8 @@ module matrixio
     character(len=*), intent(IN) :: sformat
     
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
-    ! value is below this threshold are replaced by 0.0 for beter visualisation.
-    ! If not present, a default of 1E-12 is assumed.
+    ! value is below this threshold are replaced by 0.0 for better visualisation.
+    ! If not present, values are not replaced (i.e. the default value is 0.0).
     real(DP), intent(IN), optional :: dthreshold
   !</input>
     
@@ -98,23 +98,13 @@ module matrixio
 
     ! local variables
     type(t_matrixBlock) :: rtempMatrix
-    real(DP), dimension(:), pointer :: p_DA
-    real(DP) :: dthres 
 
     ! We have to create a global matrix first!
     call glsys_assembleGlobal (rmatrix,rtempMatrix,.true.,.true.)
                               
-    ! Replace small values by zero
-    dthres = 1E-12_DP
-    if (present(dthreshold)) dthres = dthreshold
-    if (abs(dthres) .gt. 0.0_DP) then
-      call lsyssc_getbase_double (rtempMatrix%RmatrixBlock(1,1),p_DA)
-      where (abs(p_Da) .lt. dthres) p_Da = 0.0_DP
-    end if
-    
     ! Write matrix to the file
     call matio_writeMatrixHR (rtempMatrix%RmatrixBlock(1,1), sarray,&
-                              bnoZero, ifile, sfile, sformat)
+                              bnoZero, ifile, sfile, sformat,dthreshold)
 
     ! Release the temporary matrix
     call lsysbl_releaseMatrix (rtempMatrix)
@@ -125,7 +115,7 @@ module matrixio
 
 !<subroutine>
   subroutine matio_writeMatrixHR (rmatrix, sarray,&
-                                  bnoZero, ifile, sfile, sformat)
+                                  bnoZero, ifile, sfile, sformat, dthreshold)
   
   !<description>
     ! This routine writes a scalar matrix into a text file.
@@ -154,6 +144,11 @@ module matrixio
     ! Format string to use for the output; e.g. '(E20.10)'
     character(len=*), intent(IN) :: sformat
     
+    ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for better visualisation.
+    ! If not present, values are not replaced (i.e. the default value is 0.0).
+    real(DP), intent(IN), optional :: dthreshold
+
   !</input>
     
 !</subroutine>
@@ -162,6 +157,11 @@ module matrixio
   real(DP), dimension(:), pointer :: p_DA
   integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
   integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  real(dp) :: dthres
+
+  ! Replace small values by zero
+  dthres = 0.0_DP
+  if (present(dthreshold)) dthres = dthreshold
 
   ! Depending on the matrix format, choose the right routine for writing
   select case (rmatrix%cmatrixFormat)
@@ -178,9 +178,10 @@ module matrixio
       call lsyssc_getbase_double (rmatrix,p_Da)
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
+
       call matio_writeMatrix79_Dble (p_Da, p_Kcol, p_Kld, &
                                       rmatrix%NEQ, rmatrix%NCOLS, sarray, &
-                                      bnoZero, ifile, sfile, sformat)
+                                      bnoZero, ifile, sfile, sformat,dthres)
     case DEFAULT
       call output_line ('Unsupported matrix precision!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
@@ -198,7 +199,7 @@ module matrixio
 
 !<subroutine>
   subroutine matio_writeMatrix1_Dble (Da, nrow, ncol, sarray, &
-                                       bnoZero, ifile, sfile, sformat)
+                                       bnoZero, ifile, sfile, sformat,dthreshold)
   
   !<description>
     ! Write full double precision matrix into a text file.
@@ -235,6 +236,10 @@ module matrixio
     ! format string to use for the output; e.g. '(D20.10)'
     character(len=*), intent(IN) :: sformat
     
+    ! Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for better visualisation.
+    real(DP), intent(IN) :: dthreshold
+
   !</input>
     
 !</subroutine>
@@ -275,7 +280,7 @@ module matrixio
     do i=1, nrow
       do j=1, ncol-1
         dval = Da(i,j)
-        if ((.not. bnoZero) .or. (dval .ne. 0.0_DP)) then
+        if ((.not. bnoZero) .or. (abs(dval) .gt. dthreshold)) then
           write (cf,sformat,ADVANCE='NO') dval
         else
           write (cf,sformatChar, ADVANCE='NO') '.'
@@ -299,7 +304,7 @@ module matrixio
 !<subroutine>
   subroutine matio_writeMatrix79_Dble (Da, Icol, Irow, &
                                         nrow, ncol, sarray, &
-                                        bnoZero, ifile, sfile, sformat)
+                                        bnoZero, ifile, sfile, sformat,dthreshold)
   
   !<description>
     ! Write sparse double precision matrix in matrix format 9 or
@@ -342,6 +347,10 @@ module matrixio
     ! format string to use for the output; e.g. '(D20.10)'
     character(len=*), intent(IN) :: sformat
     
+    ! Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for better visualisation.
+    real(DP), intent(IN) :: dthreshold
+
   !</input>
     
 !</subroutine>
@@ -406,6 +415,7 @@ module matrixio
       ! Write row i
       do j=1, ncol-1
         dval = p_DrowVec(j)
+        if (abs(dval) .lt. dthreshold) dval = 0.0_DP
         if (bnoZero .and. (dval .eq. SYS_MAXREAL)) then
           write (cf,sformatChar, ADVANCE='NO') '.'
         else
@@ -414,6 +424,7 @@ module matrixio
       end do
       
       dval = p_DrowVec(ncol)
+      if (abs(dval) .lt. dthreshold) dval = 0.0_DP
       if (bnoZero .and. (dval .eq. SYS_MAXREAL)) then
         write (cf,sformatChar, ADVANCE='YES') '.'
       else
