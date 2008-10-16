@@ -830,7 +830,7 @@ contains
           rjumpStabil%dgamma = rjumpStabil%dgammastar
           
           ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dgamma
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -869,7 +869,7 @@ contains
           rjumpStabil%dgamma = rjumpStabil%dgammastar
           
           ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dgamma
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -890,7 +890,7 @@ contains
         end select
       
       end if ! gamma <> 0
-    
+      
     end subroutine  
       
     ! -----------------------------------------------------
@@ -1061,9 +1061,15 @@ contains
     type(t_vectorBlock), pointer :: p_ry
     type(t_matrixBlock) :: rmatrix
     
+    ! DEBUG!!!
+    real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
+    
+    call lsysbl_getbase_double (rx,p_DdataX)
+    call lsysbl_getbase_double (rd,p_DdataD)
+    
     p_ry => rx
     if (present(ry)) p_ry => ry
-    
+
     ! Probably weight the input vector.
     if (dcd .ne. 1.0_DP) then
       call lsysbl_scaleVector (rd,dcd)
@@ -1197,6 +1203,12 @@ contains
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     type(T_jumpStabilisation) :: rjumpStabil
     
+    ! DEBUG!!!
+    real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
+    
+    call lsysbl_getbase_double (rvector,p_DdataX)
+    call lsysbl_getbase_double (rdefect,p_DdataD)
+
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
                     rmatrix%RmatrixBlock(1,1),&
@@ -1337,7 +1349,7 @@ contains
           rjumpStabil%dgamma = rjumpStabil%dgammastar
           
           ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dgamma
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -1379,7 +1391,7 @@ contains
           rjumpStabil%dgamma = rjumpStabil%dgammastar
           
           ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dgamma
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
