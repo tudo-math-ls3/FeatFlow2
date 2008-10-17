@@ -191,10 +191,10 @@ contains
     integer, intent(IN) :: cgraphFormat
 
     ! Maximum number of vertices
-    integer(PREC_VECIDX), intent(IN) :: nvtMax
+    integer, intent(IN) :: nvtMax
 
     ! Maximum number of edges
-    integer(PREC_MATIDX), intent(IN) :: nedgeMax
+    integer, intent(IN) :: nedgeMax
 
     ! OPTIONAL: Indicates if the graph is dense or not
     logical, intent(IN), optional :: bisDense
@@ -294,10 +294,10 @@ contains
     type(t_matrixScalar), intent(IN) :: rscalarMatrix
 
     ! OPTIONAL: maximum number of vertices
-    integer(PREC_VECIDX), intent(IN), optional :: nvtMax
+    integer, intent(IN), optional :: nvtMax
 
     ! OPTIONAL: maximum number of edges
-    integer(PREC_MATIDX), intent(IN), optional :: nedgeMax
+    integer, intent(IN), optional :: nedgeMax
 !</input>
 
 !<output>
@@ -309,10 +309,8 @@ contains
 
     ! local variables
     integer :: h_Key
-    integer(PREC_VECIDX) :: nvt
-    integer(PREC_MATIDX) :: nedge
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol,p_Key
+    integer :: nvt,nedge
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Key
 
     ! Set dimensions
     rgraph%NVT   = rscalarMatrix%NEQ
@@ -335,7 +333,8 @@ contains
     ! What matrix format are we?
     select case(rscalarMatrix%cmatrixFormat)
 
-    case(LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
+    case(LSYSSC_MATRIX7,&
+         LSYSSC_MATRIX7INTL)
       rgraph%cgraphFormat = GRPH_GRAPH7
 
       ! Create search tree for the list of vertices
@@ -359,7 +358,8 @@ contains
       call storage_free(h_Key)
       
 
-    case(LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+    case(LSYSSC_MATRIX9,&
+         LSYSSC_MATRIX9INTL)
       rgraph%cgraphFormat = GRPH_GRAPH9
       
       ! Create search tree for the list of vertices
@@ -443,26 +443,23 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kdiagonal
-    integer(PREC_TABLEIDX) :: itable
-    integer(PREC_VECIDX) :: ieq
-    integer(PREC_MATIDX) :: ia,ncols
-    integer(PREC_TREEIDX) :: ipred,ipos
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal
+    integer :: itable,ieq,ia,ncols,ipred,ipos
     integer(I32) :: isize
     
     ! Check that matrix and graph have the same format
     select case(rscalarMatrix%cmatrixFormat)
       
-    case(LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
+    case(LSYSSC_MATRIX7,&
+         LSYSSC_MATRIX7INTL)
       if (rgraph%cgraphFormat .ne. GRPH_GRAPH7) then
         call output_line('Matrix/graph have incompatible format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'grph_generateMatrix')
         call sys_halt()
       end if
 
-    case(LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+    case(LSYSSC_MATRIX9,&
+         LSYSSC_MATRIX9INTL)
       if (rgraph%cgraphFormat .ne. GRPH_GRAPH9) then
         call output_line('Matrix/graph have incompatible format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'grph_generateMatrix')
@@ -604,10 +601,10 @@ contains
     !**************************************************************
     ! Inorder traversal of the tree storing the vertex numbers
     recursive subroutine inorderDense(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
 
       ! local variables
-      integer(PREC_VECIDX)   :: ikey
+      integer :: ikey
 
       ! Check if position is valid
       if (i .eq. TNULL) return
@@ -630,11 +627,10 @@ contains
      !**************************************************************
     ! Inorder traversal of the tree storing the vertex numbers
     recursive subroutine inorderSparse(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
 
       ! local variables
-      integer(PREC_TABLEIDX) :: itable
-      integer(PREC_VECIDX)   :: ikey
+      integer :: itable,ikey
 
       ! Check if position is valid
       if (i .eq. TNULL) return
@@ -672,7 +668,7 @@ contains
 
 !<input>
     ! Number of the vertex
-    integer(PREC_VECIDX), intent(IN) :: iVertex
+    integer, intent(IN) :: iVertex
 !</input>
 
 !<inputoutput>
@@ -682,7 +678,7 @@ contains
 
 !<output>
     ! OPTIONAL: position of vertex in list
-    integer(PREC_TREEIDX), intent(OUT), optional :: iVertexPosition
+    integer, intent(OUT), optional :: iVertexPosition
 !</output>
 
 !<result>
@@ -692,7 +688,7 @@ contains
 !</function>
 
     ! local variabes
-    integer(PREC_TREEIDX) :: ipred
+    integer :: ipred
 
     ! Search in the vertex list
     bexists = (btree_searchInTree(rgraph%rVertices,iVertex,ipred).eq.BTREE_FOUND)
@@ -720,7 +716,7 @@ contains
 
 !<input>
     ! Number of the vertex
-    integer(PREC_VECIDX), intent(IN) :: iVertex
+    integer, intent(IN) :: iVertex
 !</input>
 
 !<inputoutput>
@@ -730,16 +726,15 @@ contains
 
 !<output>
     ! OPTIONAL: position of vertex in list
-    integer(PREC_TREEIDX), intent(OUT), optional :: iVertexPosition
+    integer, intent(OUT), optional :: iVertexPosition
 
     ! OPTIONAL: position of edge (iVertex,iVertex)
-    integer(PREC_ARRAYLISTIDX), intent(OUT), optional :: iEdgePosition
+    integer, intent(OUT), optional :: iEdgePosition
 !</output>
 !</subroutine>
 
     ! local variabes
-    integer(PREC_TREEIDX) :: iposVertex,iposEdge
-    integer(PREC_TABLEIDX) :: itable
+    integer :: iposVertex,iposEdge,itable
     
     ! Try to add entry with key iVertex
     if (rgraph%bisDense) then
@@ -762,9 +757,10 @@ contains
     ! Add trivial edge (iVertex,iVertex) to the list of edges
     select case(rgraph%cgraphFormat)
 
-    case(GRPH_GRAPH7,GRPH_GRAPH9,&
-        GRPH_GRAPHORDERED_DIRECTED,&
-        GRPH_GRAPHUNORDERED_DIRECTED)
+    case(GRPH_GRAPH7,&
+         GRPH_GRAPH9,&
+         GRPH_GRAPHORDERED_DIRECTED,&
+         GRPH_GRAPHUNORDERED_DIRECTED)
       call arrlst_prependToArrayList(rgraph%rEdges,itable,iVertex,iposEdge)
       
     case DEFAULT
@@ -798,10 +794,10 @@ contains
 
 !<input>
     ! Number of the vertex
-    integer(PREC_VECIDX), intent(IN) :: iVertex
+    integer, intent(IN) :: iVertex
 
     ! OPTIONAL: Number of the replacement vertex
-    integer(PREC_VECIDX), intent(IN), optional :: ireplacementVertex
+    integer, intent(IN), optional :: ireplacementVertex
 !</input>
 
 !<inputoutput>
@@ -811,9 +807,7 @@ contains
 !</subroutine>
 
     ! local variabes
-    integer(PREC_TABLEIDX) :: itable,jtable,ireplaceTable
-    integer(PREC_VECIDX)   :: jVertex,ireplaceVertex
-    integer(PREC_TREEIDX)  :: ipred,ipos,iposVertex
+    integer :: itable,jtable,ireplaceTable,jVertex,ireplaceVertex,ipred,ipos,iposVertex
     logical :: bdoReplace
 
     ! Check if vertex is present in tree?
@@ -837,12 +831,14 @@ contains
       ! What graph format are ?
       select case(rgraph%cgraphFormat)
         
-      case(GRPH_GRAPHUNORDERED_DIRECTED,GRPH_GRAPHORDERED_DIRECTED)
+      case(GRPH_GRAPHUNORDERED_DIRECTED,&
+           GRPH_GRAPHORDERED_DIRECTED)
         call output_line('We cannot remove directed graphs at the moment!',&
             OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         call sys_halt()
       
-      case(GRPH_GRAPH7,GRPH_GRAPH9)
+      case(GRPH_GRAPH7,&
+           GRPH_GRAPH9)
         ! We are in the lucky position, that the graph is undirected, that is,
         ! there exits an edge (i,j) if and only if there exists the edge (j,i).
         ! Hence, we do not have to loop through the list of all vertices but
@@ -990,12 +986,14 @@ contains
       ! What graph format are ?
       select case(rgraph%cgraphFormat)
         
-      case(GRPH_GRAPHUNORDERED_DIRECTED,GRPH_GRAPHORDERED_DIRECTED)
+      case(GRPH_GRAPHUNORDERED_DIRECTED,&
+           GRPH_GRAPHORDERED_DIRECTED)
         call output_line('We cannot remove directed graphs at the moment!',&
             OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         call sys_halt()
 
-      case(GRPH_GRAPH7,GRPH_GRAPH9)
+      case(GRPH_GRAPH7,&
+           GRPH_GRAPH9)
         ! We are in the lucky position, that the graph is undirected, that is,
         ! there exits an edge (i,j) if and only if there exists the edge (j,i).
         ! Hence, we do not have to loop through the list of all vertices but
@@ -1191,10 +1189,10 @@ contains
 
 !<input>
     ! Number of the starting vertex
-    integer(PREC_VECIDX), intent(IN) :: iFromVertex
+    integer, intent(IN) :: iFromVertex
 
     ! Number of the ending vertex
-    integer(PREC_VECIDX), intent(IN) :: iToVertex
+    integer, intent(IN) :: iToVertex
 !</input>
 
 !<inputoutput>
@@ -1204,7 +1202,7 @@ contains
 
 !<output>
     ! OPTIONAL: position of vertex in list
-    integer(PREC_TREEIDX), intent(OUT), optional :: iEdgePosition
+    integer, intent(OUT), optional :: iEdgePosition
 !</output>
 
 !<result>
@@ -1214,8 +1212,7 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_TABLEIDX) :: itable
-    integer(PREC_TREEIDX) :: ipred,ipos
+    integer :: itable,ipred,ipos
 
     ! Determine table
     if (rgraph%bisDense) then
@@ -1252,10 +1249,10 @@ contains
 
 !<input>
     ! Number of the starting vertex
-    integer(PREC_VECIDX), intent(IN) :: iFromVertex
+    integer, intent(IN) :: iFromVertex
 
     ! Number of the ending vertex
-    integer(PREC_VECIDX), intent(IN) :: iToVertex    
+    integer, intent(IN) :: iToVertex    
 !</input>
 
 !<inputoutput>
@@ -1265,16 +1262,15 @@ contains
 
 !<output>
     ! OPTIONAL: Position of edge (iToVertex,iFromVertex) in the array list
-    integer(PREC_ARRAYLISTIDX), intent(OUT), optional :: iToEdgePosition
+    integer, intent(OUT), optional :: iToEdgePosition
 
     ! OPTIONAL: Position of edge (iFromVertex,iToVertex) in the array list
-    integer(PREC_ARRAYLISTIDX), intent(OUT), optional :: iFromEdgePosition
+    integer, intent(OUT), optional :: iFromEdgePosition
 !</output>
 !</subroutine>
 
     ! local variables
-    integer(PREC_TABLEIDX) :: itable
-    integer(PREC_TREEIDX) :: ipred,ipos
+    integer :: itable,ipred,ipos
     
     ! What graph format are we?
     select case(rgraph%cgraphFormat)
@@ -1351,7 +1347,8 @@ contains
       end if
 
       
-    case(GRPH_GRAPH7,GRPH_GRAPH9)
+    case(GRPH_GRAPH7,&
+         GRPH_GRAPH9)
       
       if (rgraph%bisDense) then
 
@@ -1438,10 +1435,10 @@ contains
 
 !<input>
     ! Number of the starting vertex
-    integer(PREC_VECIDX), intent(IN) :: iFromVertex
+    integer, intent(IN) :: iFromVertex
 
     ! Number of the ending vertex
-    integer(PREC_VECIDX), intent(IN) :: iToVertex    
+    integer, intent(IN) :: iToVertex    
 !</input>
 
 !<inputoutput>
@@ -1451,13 +1448,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_TABLEIDX) :: itable
-    integer(PREC_TREEIDX) :: ipred,ipos
+    integer :: itable,ipred,ipos
     
     ! What graph format are we=
     select case(rgraph%cgraphFormat)
 
-    case(GRPH_GRAPHUNORDERED_DIRECTED,GRPH_GRAPHORDERED_DIRECTED)
+    case(GRPH_GRAPHUNORDERED_DIRECTED,&
+         GRPH_GRAPHORDERED_DIRECTED)
 
       if (rgraph%bisDense) then
 
@@ -1481,7 +1478,8 @@ contains
       end if
 
 
-    case(GRPH_GRAPH7,GRPH_GRAPH9)
+    case(GRPH_GRAPH7,&
+         GRPH_GRAPH9)
 
       if (rgraph%bisDense) then
         

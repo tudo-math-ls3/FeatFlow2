@@ -109,20 +109,13 @@ module binarytree
 
 !<constants>
 
-!<constantblock description="KIND values for tree data">
-
-  ! kind value for indices in tree
-  integer, parameter, public :: PREC_TREEIDX   = I32
-
-!</constantblock>
-
 !<constantblock description="Global flags for tree output">
 
   ! Tag for preorder traversal
   integer, parameter, public :: BTREE_PREORDER  = 0
 
   ! Tag for inorder traversal
-  integer, parameter, public :: BTREE_INORDER   = 1
+  integer, parameter, public :: BTREE_INORDER = 1
 
   ! Tag for postorder traversal
   integer, parameter, public :: BTREE_POSTORDER = 2
@@ -135,32 +128,32 @@ module binarytree
   integer, parameter, public :: BTREE_NOT_FOUND = -1
 
   ! Identifier for "found in tree"
-  integer, parameter, public :: BTREE_FOUND     =  0
+  integer, parameter, public :: BTREE_FOUND = 0
   
   ! Identifier for "copy to tree"
-  integer, parameter, public :: BTREE_COPY1     =  1
+  integer, parameter, public :: BTREE_COPY1 = 1
 
   ! Identifier for "copy from tree"
-  integer, parameter, public :: BTREE_COPY2     =  2
+  integer, parameter, public :: BTREE_COPY2 = 2
 
 !</constantblock>
 
 !<constantblock description="Internal tags for list status">
 
   ! Tag for empty tree
-  integer(PREC_TREEIDX), parameter, public :: TNULL = 0
+  integer, parameter, public :: TNULL = 0
 
   ! Tag for root of tree
-  integer(PREC_TREEIDX), parameter, public :: TROOT = 0
+  integer, parameter, public :: TROOT = 0
   
   ! Tag for next free item
-  integer(PREC_TREEIDX), parameter :: TFREE = 0
+  integer, parameter :: TFREE = 0
 
   ! Tag for left child
-  integer, parameter, public :: TLEFT       = 0
+  integer, parameter, public :: TLEFT = 0
 
   ! Tag for right child
-  integer, parameter, public :: TRIGHT      = 1
+  integer, parameter, public :: TRIGHT = 1
 
 !</constantblock>
 !</constants>
@@ -170,96 +163,96 @@ module binarytree
   
   type t_btree
     ! Format-Tag:
-    integer :: ctreeFormat         = ST_NOHANDLE
+    integer :: ctreeFormat = ST_NOHANDLE
     
     ! Current depth of the tree
-    integer(PREC_TREEIDX) :: depth = 0
+    integer :: depth = 0
 
     ! Number of items that are currently stored in the tree
-    integer(PREC_TREEIDX) :: NA    = 0
+    integer :: NA = 0
 
     ! Total number of items that can be stored in the tree
-    integer(PREC_TREEIDX) :: NNA   = 0
+    integer :: NNA = 0
 
     ! Total number of items that can initially be stored in the tree
     ! This information is needed to compute the growth of the tree
     ! after several resize operations
-    integer(PREC_TREEIDX) :: NNA0  = 0
+    integer :: NNA0 = 0
 
     ! Total number of resize operations
-    integer :: NRESIZE             = 0
+    integer :: NRESIZE = 0
     
     ! Dimension of the auxiliary Integer values to be stored
-    integer :: isizeInt            = 0
+    integer :: isizeInt = 0
 
     ! Dimension of the auxiliary Double values to be stored
-    integer :: isizeDble           = 0
+    integer :: isizeDble = 0
 
     ! Dimension of the auxiliary Single values to be stored
-    integer :: isizeSngl           = 0
+    integer :: isizeSngl = 0
 
     ! Factor by which the list is enlarged if new storage is allocate
-    real(DP) :: dfactor            = 1.5_DP
+    real(DP) :: dfactor = 1.5_DP
 
     ! Handle to the tree key data
-    integer :: h_Key               = ST_NOHANDLE
+    integer :: h_Key = ST_NOHANDLE
 
     ! Handle to the balance data
-    integer :: h_Kbal              = ST_NOHANDLE
+    integer :: h_Kbal = ST_NOHANDLE
 
     ! Handle to the path data
-    integer :: h_Kpath             = ST_NOHANDLE
+    integer :: h_Kpath = ST_NOHANDLE
 
     ! Handle to the children's data
-    integer :: h_Kchild            = ST_NOHANDLE
+    integer :: h_Kchild = ST_NOHANDLE
 
     ! Handle to the tree auxiliary Integer data
-    integer :: h_IData             = ST_NOHANDLE
+    integer :: h_IData = ST_NOHANDLE
 
     ! Handle to the tree auxiliary Double data
-    integer :: h_DData             = ST_NOHANDLE
+    integer :: h_DData = ST_NOHANDLE
 
     ! Handle to the tree auxiliary Single data
-    integer :: h_FData             = ST_NOHANDLE
+    integer :: h_FData = ST_NOHANDLE
 
     ! Tree child structure
     ! NOTE: This array is introduced to increase performance. It
     ! should not be touched by the user. However, if the handle would
     ! be dereferenced for each operation such as search, delete,
     ! performance would be very poor.
-    integer(PREC_TREEIDX), dimension(:,:), pointer :: p_Kchild => null()
+    integer, dimension(:,:), pointer :: p_Kchild => null()
 
     ! Tree path structure
     ! NOTE: This array is introduced to increase performance (see above).
-    integer(PREC_TREEIDX), dimension(:), pointer ::   p_Kpath => null()
+    integer, dimension(:), pointer :: p_Kpath => null()
 
     ! Tree balance structure
     ! NOTE: This array is introduced to increase performance (see above).
-    integer, dimension(:), pointer ::                 p_Kbal => null()
+    integer, dimension(:), pointer :: p_Kbal => null()
 
     ! Tree key data (Double)
     ! NOTE: This array is introduced to increase performance (see above).
-    real(DP), dimension(:), pointer ::                p_DKey => null()
+    real(DP), dimension(:), pointer :: p_DKey => null()
 
     ! Tree key data (Single)
     ! NOTE: This array is introduced to increase performance (see above).
-    real(SP), dimension(:), pointer ::                p_FKey => null()
+    real(SP), dimension(:), pointer :: p_FKey => null()
 
     ! Tree key data (Integer)
     ! NOTE: This array is introduced to increase performance (see above).
-    integer(PREC_TREEIDX), dimension(:), pointer ::   p_IKey => null()
+    integer, dimension(:), pointer :: p_IKey => null()
 
     ! Tree data (Double)
     ! NOTE: This array is introduced to increase performance (see above).
-    real(DP), dimension(:,:), pointer ::              p_DData => null()
+    real(DP), dimension(:,:), pointer :: p_DData => null()
 
     ! Tree data (Single)
     ! NOTE: This array is introduced to increase performance (see above).
-    real(SP), dimension(:,:), pointer ::              p_FData => null()
+    real(SP), dimension(:,:), pointer :: p_FData => null()
 
     ! Tree data (Integer)
     ! NOTE: This array is introduced to increase performance (see above).
-    integer(PREC_TREEIDX), dimension(:,:), pointer :: p_IData => null()
+    integer, dimension(:,:), pointer :: p_IData => null()
   end type t_btree
 
 !</typeblock>
@@ -343,7 +336,7 @@ contains
 
 !<input>
     ! Total number of items that can be stored in the tree
-    integer(PREC_TREEIDX), intent(IN) :: nna
+    integer, intent(IN) :: nna
 
     ! Format-tag. Type of tree format (Double,Single,Integer)
     integer, intent(IN) :: ctreeFormat
@@ -503,7 +496,7 @@ contains
 
 !<input>
     ! New number of total items that can be stored in the tree
-    integer(PREC_TREEIDX), intent(IN) :: nna
+    integer, intent(IN) :: nna
 !</input>
 
 !<inputoutput>
@@ -598,10 +591,10 @@ contains
 !</subroutine>
     
     ! local variables
-    real(DP), dimension(:), pointer   :: p_DKey
-    real(SP), dimension(:), pointer   :: p_FKey
-    integer,  dimension(:), pointer   :: p_IKey
-    integer(PREC_TREEIDX) :: j
+    real(DP), dimension(:), pointer :: p_DKey
+    real(SP), dimension(:), pointer :: p_FKey
+    integer,  dimension(:), pointer :: p_IKey
+    integer :: j
 
     ! Transform the content of the key handle to the tree
     select case (rtree%ctreeFormat)
@@ -679,7 +672,7 @@ contains
 
     ! local variables
     integer(I32), dimension(2) :: Isize
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check if tree has correct data format
     if (rtree%ctreeFormat .ne. ST_DOUBLE) then
@@ -785,7 +778,7 @@ contains
 
     ! local variables
     integer(I32), dimension(2) :: Isize
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check if tree has correct data format
     if (rtree%ctreeFormat .ne. ST_SINGLE) then
@@ -891,7 +884,7 @@ contains
 
     ! local variables
     integer(I32), dimension(2) :: Isize
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check if tree has correct data format
     if (rtree%ctreeFormat .ne. ST_INT) then
@@ -984,11 +977,11 @@ contains
 !</subroutine>
     
     ! local variables
-    real(DP), dimension(:), pointer   :: p_DKey
-    real(SP), dimension(:), pointer   :: p_FKey
-    integer,  dimension(:), pointer   :: p_IKey
+    real(DP), dimension(:), pointer :: p_DKey
+    real(SP), dimension(:), pointer :: p_FKey
+    integer,  dimension(:), pointer :: p_IKey
     integer(I32) :: isize
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check if handle needs to be (re-)allocated
     if (h_Key .eq. ST_NOHANDLE) then
@@ -1030,7 +1023,7 @@ contains
     ! Copy the content of the Double key to an array
     
     recursive subroutine inorderKeyDble(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeyDble(rtree%p_Kchild(TLEFT,i))
@@ -1043,7 +1036,7 @@ contains
     ! Copy the content of the Single key to an array
 
     recursive subroutine inorderKeySngl(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeySngl(rtree%p_Kchild(TLEFT,i))
@@ -1056,7 +1049,7 @@ contains
     ! Copy the content of the Integer key to an array
 
     recursive subroutine inorderKeyInt(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeyInt(rtree%p_Kchild(TLEFT,i))
@@ -1088,7 +1081,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check data format
     if (rtree%ctreeFormat .ne. ST_DOUBLE) then
@@ -1115,7 +1108,7 @@ contains
     ! Copy the content of the Double key to an array
     
     recursive subroutine inorderKeyDble(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeyDble(rtree%p_Kchild(TLEFT,i))
@@ -1147,7 +1140,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check data format
     if (rtree%ctreeFormat .ne. ST_SINGLE) then
@@ -1174,7 +1167,7 @@ contains
     ! Copy the content of the Single key to an array
 
     recursive subroutine inorderKeySngl(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeySngl(rtree%p_Kchild(TLEFT,i))
@@ -1206,13 +1199,12 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check data format
     if (rtree%ctreeFormat .ne. ST_INT) then
       call output_line('Invalid data format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arrayInt')
-      print *, "btree_copyFromTreeKey_arrayInt: Invalid data format!"
       call sys_halt()
     end if
 
@@ -1234,7 +1226,7 @@ contains
     ! Copy the content of the Integer key to an array
     
     recursive subroutine inorderKeyInt(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeyInt(rtree%p_Kchild(TLEFT,i))
@@ -1533,7 +1525,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check if auxiliary double data is available
     if (rtree%isizeDble .eq. 0) then
@@ -1567,7 +1559,7 @@ contains
     ! Copy the content of the Double data to an array
     
     recursive subroutine inorderDataDble(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataDble(rtree%p_Kchild(TLEFT,i))
@@ -1608,7 +1600,7 @@ contains
 
     ! local variables
     integer(I32), dimension(2) :: Isize
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check if auxiliary double data is available
     if (rtree%isizeDble .eq. 0) then
@@ -1659,7 +1651,7 @@ contains
     ! Copy the content of the Double data to an array
 
     recursive subroutine inorderDataDble(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataDble(rtree%p_Kchild(TLEFT,i))
@@ -1672,7 +1664,7 @@ contains
     ! Copy the content of the Double data to an array (masked)
 
     recursive subroutine inorderDataDbleMask(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataDbleMask(rtree%p_Kchild(TLEFT,i))
@@ -1710,7 +1702,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check if auxiliary single data is available
     if (rtree%isizeSngl .eq. 0) then
@@ -1744,7 +1736,7 @@ contains
     ! Copy the content of the Single data to an array
     
     recursive subroutine inorderDataSngl(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataSngl(rtree%p_Kchild(TLEFT,i))
@@ -1785,7 +1777,7 @@ contains
 
     ! local variables
     integer(I32), dimension(2) :: Isize
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check if auxiliary single data is available
     if (rtree%isizeSngl .eq. 0) then
@@ -1836,7 +1828,7 @@ contains
     ! Copy the content of the Single data to an array
 
     recursive subroutine inorderDataSngl(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataSngl(rtree%p_Kchild(TLEFT,i))
@@ -1849,7 +1841,7 @@ contains
     ! Copy the content of the Single data to an array (masked)
 
     recursive subroutine inorderDataSnglMask(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataSnglMask(rtree%p_Kchild(TLEFT,i))
@@ -1887,7 +1879,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check if auxiliary integer data is available
     if (rtree%isizeInt .eq. 0) then
@@ -1921,7 +1913,7 @@ contains
     ! Copy the content of the Integer data to an array
     
     recursive subroutine inorderDataInt(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataInt(rtree%p_Kchild(TLEFT,i))
@@ -1962,7 +1954,7 @@ contains
 
     ! local variables
     integer(I32), dimension(2) :: Isize
-    integer(PREC_TREEIDX) :: j
+    integer :: j
 
     ! Check if auxiliary integer data is available
     if (rtree%isizeInt .eq. 0) then
@@ -2013,7 +2005,7 @@ contains
     ! Copy the content of the Integer data to an array
 
     recursive subroutine inorderDataInt(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataInt(rtree%p_Kchild(TLEFT,i))
@@ -2026,7 +2018,7 @@ contains
     ! Copy the content of the Integer data to an array (masked)
 
     recursive subroutine inorderDataIntMask(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataIntMask(rtree%p_Kchild(TLEFT,i))
@@ -2070,12 +2062,12 @@ contains
 !<output>
     ! OPTIONAL: Position of the new entry. If ipos < 0 then
     ! the entry already exists and ABS(ipos) is its position
-    integer(PREC_TREEIDX), intent(OUT), optional :: iposOpt
+    integer, intent(OUT), optional :: iposOpt
 !</output>
 !</subroutine>
     
     ! local variables
-    integer(PREC_TREEIDX) :: ipos,jpos
+    integer :: ipos,jpos
     
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_DOUBLE) then
@@ -2165,12 +2157,12 @@ contains
 !<output>
     ! OPTIONAL: Position of the new entry. If ipos < 0 then
     ! the entry already exists and ABS(ipos) is its position
-    integer(PREC_TREEIDX), intent(OUT), optional :: iposOpt
+    integer, intent(OUT), optional :: iposOpt
 !</output>
 !</subroutine>
     
     ! local variables
-    integer(PREC_TREEIDX) :: ipos,jpos
+    integer :: ipos,jpos
     
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_SINGLE) then
@@ -2240,7 +2232,7 @@ contains
 
 !<input>
     ! key
-    integer(PREC_TREEIDX), intent(IN) :: ikey
+    integer, intent(IN) :: ikey
     
     ! OPTIONAL: Double data
     real(DP), dimension(:), intent(IN), optional :: DData
@@ -2260,12 +2252,12 @@ contains
 !<output>
     ! OPTIONAL: Position of the new entry. If ipos < 0 then
     ! the entry already exists and ABS(ipos) is its position
-    integer(PREC_TREEIDX), intent(OUT), optional :: iposOpt
+    integer, intent(OUT), optional :: iposOpt
 !</output>
 !</subroutine>
     
     ! local variables
-    integer(PREC_TREEIDX) :: ipos,jpos
+    integer :: ipos,jpos
     
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_INT) then
@@ -2334,7 +2326,7 @@ contains
 
 !<input>
     ! starting node
-    integer(PREC_TREEIDX), intent(IN) :: i
+    integer, intent(IN) :: i
 !</input>
 
 !<inputoutput>
@@ -2344,7 +2336,7 @@ contains
 !</subroutine>    
     
     ! local variables
-    integer(PREC_TREEIDX) :: v,x,w
+    integer :: v,x,w
     integer :: dir
     
     v   = rtree%p_Kpath(i)
@@ -2490,7 +2482,7 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_TREEIDX) :: ipred,ipos,jpos
+    integer :: ipred,ipos,jpos
 
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_DOUBLE) then
@@ -2593,7 +2585,7 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_TREEIDX) :: ipred,ipos,jpos
+    integer :: ipred,ipos,jpos
 
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_SINGLE) then
@@ -2681,7 +2673,7 @@ contains
 
 !<input>
     ! Key
-    integer(PREC_TREEIDX), intent(IN) :: ikey
+    integer, intent(IN) :: ikey
 !</input>
 
 !<inputoutput>
@@ -2696,7 +2688,7 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_TREEIDX) :: ipred,ipos,jpos
+    integer :: ipred,ipos,jpos
 
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_INT) then
@@ -2784,7 +2776,7 @@ contains
 
 !<input>
     ! starting node
-    integer(PREC_TREEIDX), intent(IN) :: i
+    integer, intent(IN) :: i
 !</input>
 
 !<inputoutput>
@@ -2794,7 +2786,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_TREEIDX) :: v,x,w
+    integer :: v,x,w
     integer :: dir,xbal
     
     v   = rtree%p_Kpath(i)
@@ -2941,7 +2933,7 @@ contains
 
 !<output>
     ! Position of the predecessor
-    integer(PREC_TREEIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 
 !<result>
@@ -2951,7 +2943,7 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_TREEIDX) :: jpos
+    integer :: jpos
     integer :: dir
 
     ! Check if list format is ok
@@ -3009,7 +3001,7 @@ contains
 
 !<output>
     ! Position of the predecessor
-    integer(PREC_TREEIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 
 !<result>
@@ -3019,7 +3011,7 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_TREEIDX) :: jpos
+    integer :: jpos
     integer :: dir
 
     ! Check if list format is ok
@@ -3067,7 +3059,7 @@ contains
 
 !<input>
     ! Key
-    integer(PREC_TREEIDX), intent(IN) :: ikey
+    integer, intent(IN) :: ikey
 !</input>
 
 !<inputoutput>
@@ -3077,7 +3069,7 @@ contains
 
 !<output>
     ! Position of the predecessor
-    integer(PREC_TREEIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 
 !<result>
@@ -3087,7 +3079,7 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_TREEIDX) :: jpos
+    integer :: jpos
     integer :: dir
 
     ! Check if list format is ok
@@ -3147,12 +3139,12 @@ contains
 
 !<result>
     ! Position of the item
-    integer(PREC_TREEIDX) :: ipos
+    integer :: ipos
 !</result>
 !</function>
   
     ! local variables
-    integer(PREC_TREEIDX) :: ipred
+    integer :: ipred
     
     if (btree_searchInTree(rtree,dkey,ipred) .ne. BTREE_FOUND) then
       call output_line('Unable to find item in tree!',&
@@ -3186,12 +3178,12 @@ contains
 
 !<result>
     ! Position of the item
-    integer(PREC_TREEIDX) :: ipos
+    integer :: ipos
 !</result>
 !</function>
   
     ! local variables
-    integer(PREC_TREEIDX) :: ipred
+    integer :: ipred
     
     if (btree_searchInTree(rtree,skey,ipred) .ne. BTREE_FOUND) then
       call output_line('Unable to find item in tree!',&
@@ -3215,7 +3207,7 @@ contains
 
 !<input>
     ! Key
-    integer(PREC_TREEIDX), intent(IN) :: ikey
+    integer, intent(IN) :: ikey
 !</input>
 
 !<inputoutput>
@@ -3225,12 +3217,12 @@ contains
 
 !<result>
     ! Position of the item
-    integer(PREC_TREEIDX) :: ipos
+    integer :: ipos
 !</result>
 !</function>
   
     ! local variables
-    integer(PREC_TREEIDX) :: ipred
+    integer :: ipred
     
     if (btree_searchInTree(rtree,ikey,ipred) .ne. BTREE_FOUND) then
       call output_line('Unable to find item in tree!',&
@@ -3318,7 +3310,7 @@ contains
     ! Print the content of the tree in preorder for Double key
     
     recursive subroutine preorderDble(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       write(*,FMT='(A)',ADVANCE='NO') rtree%p_DKey(i),','
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -3331,7 +3323,7 @@ contains
     ! Print the content of the tree in preorder for Single key
     
     recursive subroutine preorderSngl(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       write(*,FMT='(A)',ADVANCE='NO') rtree%p_FKey(i),','
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -3344,7 +3336,7 @@ contains
     ! Print the content of the tree in preorder for Integer key
     
     recursive subroutine preorderInt(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       write(*,FMT='(A)',ADVANCE='NO') rtree%p_IKey(i),','
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -3357,7 +3349,7 @@ contains
     ! Print the content of the tree in postorder for Double key
     
     recursive subroutine postorderDble(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDble(rtree%p_Kchild(TLEFT,i))
@@ -3370,7 +3362,7 @@ contains
     ! Print the content of the tree in postorder for Single key
     
     recursive subroutine postorderSngl(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderSngl(rtree%p_Kchild(TLEFT,i))
@@ -3383,7 +3375,7 @@ contains
     ! Print the content of the tree in postorder for Integer key
     
     recursive subroutine postorderInt(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderInt(rtree%p_Kchild(TLEFT,i))
@@ -3396,7 +3388,7 @@ contains
     ! Print the content of the tree in inorder for Double key
     
     recursive subroutine inorderDble(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDble(rtree%p_Kchild(TLEFT,i))
@@ -3409,7 +3401,7 @@ contains
     ! Print the content of the tree in inorder for Single key
     
     recursive subroutine inorderSngl(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderSngl(rtree%p_Kchild(TLEFT,i))
@@ -3422,7 +3414,7 @@ contains
     ! Print the content of the tree in inorder for Integer key
     
     recursive subroutine inorderInt(i)
-      integer(PREC_TREEIDX), intent(IN) :: i
+      integer, intent(IN) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderInt(rtree%p_Kchild(TLEFT,i))
@@ -3449,7 +3441,7 @@ contains
 
 !<result>
     ! height of the tree
-    integer(PREC_TREEIDX) :: h
+    integer :: h
 !</result>
 !</function>
     
@@ -3458,8 +3450,8 @@ contains
   contains
     
     pure recursive function height(i) result(h)
-      integer(PREC_TREEIDX), intent(IN) :: i
-      integer(PREC_TREEIDX) :: h,hl,hr
+      integer, intent(IN) :: i
+      integer :: h,hl,hr
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL) then
         hl = height(rtree%p_Kchild(TLEFT,i))

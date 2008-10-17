@@ -101,13 +101,6 @@ module octree
 
 !<constants>
 
-!<constantblock description="KIND values for octree data">
-  
-  ! Kind value for indices in quadtree
-  integer, parameter, public :: PREC_OTREEIDX = I32
-
-!</constantblock>
-
 !<constantblock description="Constants for octree structure">
   
   ! Position of the status information
@@ -235,19 +228,19 @@ module octree
 
     ! Octree structure
     ! NOTE: This array is introduced to increase performance (see above).
-    integer(PREC_OTREEIDX), dimension(:,:), pointer :: p_Knode
+    integer, dimension(:,:), pointer :: p_Knode
 
     ! Number of vertices currently stored in the octree
-    integer(PREC_OTREEIDX) :: NVT    = 0
+    integer :: NVT    = 0
 
     ! Total number of vertices that can be stored  in the octree
-    integer(PREC_OTREEIDX) :: NNVT   = 0
+    integer :: NNVT   = 0
 
     ! Number of nodes currently store in the octree
-    integer(PREC_OTREEIDX) :: NNODE  = 0
+    integer :: NNODE  = 0
 
     ! Total number of nodes that can be stored in the octree
-    integer(PREC_OTREEIDX) :: NNNODE = 0
+    integer :: NNNODE = 0
 
     ! Total number of resize operations
     integer :: NRESIZE               = 0
@@ -289,10 +282,10 @@ contains
 
 !<input>
     ! Total number of vertices that should be stored in the octree
-    integer(PREC_OTREEIDX), intent(IN) :: nnvt
+    integer, intent(IN) :: nnvt
 
     ! Total number of nodes that should be stored in the octree
-    integer(PREC_OTREEIDX), intent(IN) :: nnnode
+    integer, intent(IN) :: nnnode
 
     ! Dimensions of the initial bounding box
     real(DP), intent(IN) :: xmin,ymin,zmin,xmax,ymax,zmax
@@ -402,7 +395,7 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_Ddata,p_DdataTmp
-    integer(PREC_OTREEIDX), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     
     ! Check if handle is associated
     if (h_Ddata .eq. ST_NOHANDLE) then
@@ -449,7 +442,7 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DdataTmp
-    integer(PREC_OTREEIDX), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
 
     ! Check size of array
     Isize = shape(p_Ddata)
@@ -489,7 +482,7 @@ contains
     
     ! local variables
     real(DP), dimension(:,:), pointer :: p_Ddata
-    integer(PREC_OTREEIDX) :: ivt,jvt,inode,ipos
+    integer :: ivt,jvt,inode,ipos
     
     ! Set pointer and check its shape
     call storage_getbase_double2D(h_Ddata, p_Ddata)
@@ -528,7 +521,7 @@ contains
 !</subroutine>
     
     ! local variables
-    integer(PREC_OTREEIDX) :: ivt,jvt,inode,ipos
+    integer :: ivt,jvt,inode,ipos
     
     if (size(p_Ddata,1) .ne. 3) then
       call output_line('First dimension of array must be 3!',&
@@ -555,10 +548,10 @@ contains
 
 !<input>
     ! Number of the inserted vertex
-    integer(PREC_OTREEIDX), intent(IN) :: ivt
+    integer, intent(IN) :: ivt
 
     ! Number of the node into which vertex is inserted
-    integer(PREC_OTREEIDX), intent(IN) :: inode
+    integer, intent(IN) :: inode
     
     ! Coordinates of the new vertex
     real(DP), dimension(3), intent(IN) :: Ddata
@@ -566,12 +559,12 @@ contains
 
 !<inputoutput>
     ! Octree
-    type(t_octree), intent(INOUT)      :: roctree
+    type(t_octree), intent(INOUT) :: roctree
 !</inputoutput>
 !</subroutine>
     
     ! local variables
-    integer(PREC_OTREEIDX) :: isize
+    integer :: isize
 
     ! Check if there is enough space left in the vertex component of the octree
     if (roctree%NVT .eq. roctree%NNVT) then
@@ -590,9 +583,9 @@ contains
     ! Here, the recursive insertion routine follows
     
     recursive subroutine insert(ivt, inode)
-      integer(PREC_OTREEIDX), intent(IN) :: ivt,inode
+      integer, intent(IN) :: ivt,inode
       real(DP) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
-      integer(PREC_OTREEIDX) :: i,jnode,knode,nnode,isize
+      integer :: i,jnode,knode,nnode,isize
       
       if (roctree%p_Knode(OTREE_STATUS, inode) .eq. OTREE_MAX) then
         
@@ -714,7 +707,7 @@ contains
 
 !<output>
     ! Number of the vertex that is deleted
-    integer(PREC_OTREEIDX), intent(OUT) :: ivt
+    integer, intent(OUT) :: ivt
 !</output>
 
 !<result>
@@ -766,7 +759,7 @@ contains
 
 !<input>
     ! Number of the vertex to be deleted
-    integer(PREC_OTREEIDX), intent(IN) :: ivt
+    integer, intent(IN) :: ivt
 !</input>
 
 !<inputoutput>
@@ -776,7 +769,7 @@ contains
 
 !<output>
     ! Number of the vertex that replaces the deleted vertex
-    integer(PREC_OTREEIDX), intent(OUT) :: ivtReplace
+    integer, intent(OUT) :: ivtReplace
 !</output>
 
 !<result>
@@ -819,13 +812,13 @@ contains
 
 !<output>
     ! Number of the node in which the given coordinates are
-    integer(PREC_OTREEIDX), intent(OUT) :: inode
+    integer, intent(OUT) :: inode
 
     ! Position of the coordinates in the node
-    integer(PREC_OTREEIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 
     ! Number of the vertex the coordinates correspond to
-    integer(PREC_OTREEIDX), intent(OUT) :: ivt
+    integer, intent(OUT) :: ivt
 !</output>
 
 !<result>
@@ -846,7 +839,7 @@ contains
     ! Here, the recursive searching routine follows
 
     recursive function search(inode, ipos, ivt) result(f)
-      integer(PREC_OTREEIDX), intent(INOUT) :: inode,ipos,ivt
+      integer, intent(INOUT) :: inode,ipos,ivt
       integer :: f
       
       f = OTREE_NOT_FOUND
@@ -888,7 +881,7 @@ contains
     real(DP), dimension(3), intent(IN) :: Ddata
 
     ! Number of node
-    integer(PREC_OTREEIDX), intent(IN) :: inode
+    integer, intent(IN) :: inode
 !</input>
 
 !<result>
@@ -986,9 +979,9 @@ contains
     
     recursive subroutine print(xmin, ymin, zmin, xmax, ymax, zmax, inode)
       real(DP), intent(IN) :: xmin,ymin,zmin,xmax,ymax,zmax
-      integer(PREC_OTREEIDX), intent(IN) :: inode
-      real(DP)               :: xmid,ymid,zmid
-      integer(PREC_OTREEIDX) :: i
+      integer, intent(IN) :: inode
+      real(DP) :: xmid,ymid,zmid
+      integer :: i
 
       write(UNIT=iunit,FMT=*) 'hex'
       write(UNIT=iunit,FMT=10) xmin, ymin, zmin, xmax, ymax, zmax
@@ -1083,7 +1076,7 @@ contains
 
 !<result>
     ! Number of vertices in octree
-    integer(PREC_OTREEIDX) :: nvt
+    integer :: nvt
 !</result>
 !</function>
 
@@ -1142,7 +1135,7 @@ contains
     type(t_octree), intent(IN) :: roctree
 
     ! position in the octree
-    integer(PREC_OTREEIDX), intent(IN) :: ivt
+    integer, intent(IN) :: ivt
 !</input>
 
 !<result>
@@ -1168,7 +1161,7 @@ contains
     type(t_octree), intent(IN) :: roctree
 
     ! position in the octree
-    integer(PREC_OTREEIDX), intent(IN) :: ivt
+    integer, intent(IN) :: ivt
 !</input>
 
 !<result>
@@ -1194,7 +1187,7 @@ contains
     type(t_octree), intent(IN) :: roctree
 
     ! position in the octree
-    integer(PREC_OTREEIDX), intent(IN) :: ivt
+    integer, intent(IN) :: ivt
 !</input>
 
 !<result>
@@ -1300,7 +1293,7 @@ contains
 
 !<input>
     ! New number of vertices that should be stored in the octree
-    integer(PREC_OTREEIDX), intent(IN) :: nnvt
+    integer, intent(IN) :: nnvt
 !</input>
 
 !<inputoutput>
@@ -1329,7 +1322,7 @@ contains
 
 !<input>
     ! New number of nodes that should be stored in the octree
-    integer(PREC_OTREEIDX), intent(IN) :: nnnode
+    integer, intent(IN) :: nnnode
 !</input>
 
 !<inputoutput>

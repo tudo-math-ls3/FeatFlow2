@@ -97,13 +97,6 @@ module quadtree
 
 !<constants>
 
-!<constantblock description="KIND values for quadtree data">
-  
-  ! Kind value for indices in quadtree
-  integer, parameter, public :: PREC_QTREEIDX = I32
-
-!</constantblock>
-
 !<constantblock description="Constants for quadtree structure">
   
   ! Position of the status information
@@ -213,19 +206,19 @@ module quadtree
 
     ! Quadtree structure
     ! NOTE: This array is introduced to increase performance (see above).
-    integer(PREC_QTREEIDX), dimension(:,:), pointer :: p_Knode
+    integer, dimension(:,:), pointer :: p_Knode
 
     ! Number of vertices currently stored in the quadtree
-    integer(PREC_QTREEIDX) :: NVT    = 0
+    integer :: NVT    = 0
 
     ! Total number of vertices that can be stored  in the quadtree
-    integer(PREC_QTREEIDX) :: NNVT   = 0
+    integer :: NNVT   = 0
 
     ! Number of subdivisions currently store in the quadtree
-    integer(PREC_QTREEIDX) :: NNODE  = 0
+    integer :: NNODE  = 0
 
     ! Total number of subdivision that can be stored in the quadtree
-    integer(PREC_QTREEIDX) :: NNNODE = 0
+    integer :: NNNODE = 0
 
     ! Total number of resize operations
     integer :: NRESIZE            = 0
@@ -267,10 +260,10 @@ contains
 
 !<input>
     ! Total number of vertices that should be stored in the quadtree
-    integer(PREC_QTREEIDX), intent(IN) :: nnvt
+    integer, intent(IN) :: nnvt
 
     ! Total number of subdivisions that should be stored in the quadtree
-    integer(PREC_QTREEIDX), intent(IN) :: nnnode
+    integer, intent(IN) :: nnnode
 
     ! Dimensions of the initial bounding box
     real(DP), intent(IN) :: xmin,ymin,xmax,ymax
@@ -383,7 +376,7 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_Ddata,p_DdataTmp
-    integer(PREC_QTREEIDX), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     
     ! Check if handle is associated
     if (h_Ddata .eq. ST_NOHANDLE) then
@@ -430,7 +423,7 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DdataTmp
-    integer(PREC_QTREEIDX), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
 
     ! Check size of array
     Isize = shape(p_Ddata)
@@ -471,7 +464,7 @@ contains
     
     ! local variables
     real(DP), dimension(:,:), pointer :: p_Ddata
-    integer(PREC_QTREEIDX) :: ivt,jvt,inode,ipos
+    integer :: ivt,jvt,inode,ipos
     
     ! Set pointer and check its shape
     call storage_getbase_double2D(h_Ddata, p_Ddata)
@@ -510,7 +503,7 @@ contains
 !</subroutine>
     
     ! local variables
-    integer(PREC_QTREEIDX) :: ivt,jvt,inode,ipos
+    integer :: ivt,jvt,inode,ipos
     
     if (size(p_Ddata,1) .ne. 2) then
       call output_line('First dimension of array must be 2!',&
@@ -537,10 +530,10 @@ contains
 
 !<input>
     ! Number of the inserted vertex
-    integer(PREC_QTREEIDX), intent(IN) :: ivt
+    integer, intent(IN) :: ivt
 
     ! Number of the quad to which vertex is inserted
-    integer(PREC_QTREEIDX), intent(IN) :: inode
+    integer, intent(IN) :: inode
     
     ! Coordinates of the new vertex
     real(DP), dimension(2), intent(IN) :: Ddata
@@ -553,7 +546,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_QTREEIDX) :: isize
+    integer :: isize
     
     ! Check if there is enough space left in the nodal component of the quadtree
     if (rquadtree%NVT .eq. rquadtree%NNVT) then
@@ -572,9 +565,9 @@ contains
     ! Here, the recursive insertion routine follows
     
     recursive subroutine insert(ivt,inode)
-      integer(PREC_QTREEIDX), intent(IN) :: ivt,inode
-      real(DP)                           :: xmin,ymin,xmax,ymax,xmid,ymid
-      integer(PREC_QTREEIDX)             :: i,jnode,nnode,knode,isize
+      integer, intent(IN) :: ivt,inode
+      real(DP) :: xmin,ymin,xmax,ymax,xmid,ymid
+      integer :: i,jnode,nnode,knode,isize
             
       if (rquadtree%p_Knode(QTREE_STATUS,inode) .eq. QTREE_MAX) then
         
@@ -667,7 +660,7 @@ contains
 
 !<output>
     ! Number of the vertex that is deleted
-    integer(PREC_QTREEIDX), intent(OUT) :: ivt
+    integer, intent(OUT) :: ivt
 !</output>
 
 !<result>
@@ -723,7 +716,7 @@ contains
 
 !<input>
     ! Number of the vertex to be deleted
-    integer(PREC_QTREEIDX), intent(IN) :: ivt
+    integer, intent(IN) :: ivt
 !</input>
 
 !<inputoutput>
@@ -733,7 +726,7 @@ contains
 
 !<output>
     ! Number of the vertex that replaces the deleted vertex
-    integer(PREC_QTREEIDX), intent(OUT) :: ivtReplace
+    integer, intent(OUT) :: ivtReplace
 !</output>
 
 !<result>
@@ -776,13 +769,13 @@ contains
 
 !<output>
     ! Number of the quad in which the given coordinates are
-    integer(PREC_QTREEIDX), intent(OUT) :: inode
+    integer, intent(OUT) :: inode
 
     ! Position of the coordinates in the quad
-    integer(PREC_QTREEIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 
     ! Number of the vertex the coordinates correspond to
-    integer(PREC_QTREEIDX), intent(OUT) :: ivt
+    integer, intent(OUT) :: ivt
 !</output>
 
 !<result>
@@ -803,7 +796,7 @@ contains
     ! Here, the recursive searching routine follows
 
     recursive function search(inode, ipos, ivt) result(f)
-      integer(PREC_QTREEIDX), intent(INOUT) :: inode,ipos,ivt
+      integer, intent(INOUT) :: inode,ipos,ivt
       integer :: f
       
       f = QTREE_NOT_FOUND
@@ -845,7 +838,7 @@ contains
     real(DP), dimension(2), intent(IN) :: Ddata
 
     ! Number of quad
-    integer(PREC_QTREEIDX), intent(IN) :: inode
+    integer, intent(IN) :: inode
 !</input>
 
 !<result>
@@ -918,9 +911,9 @@ contains
     
     recursive subroutine print(xmin, ymin, xmax, ymax, inode)
       real(DP), intent(IN) :: xmin,ymin,xmax,ymax
-      integer(PREC_QTREEIDX), intent(IN) :: inode
+      integer, intent(IN) :: inode
       real(DP) :: xmid,ymid
-      integer(PREC_QTREEIDX) :: i
+      integer :: i
 
       write(UNIT=iunit,FMT=*) 'rect'
       write(UNIT=iunit,FMT=10) xmin, ymin, xmax, ymax
@@ -1001,7 +994,7 @@ contains
 
 !<result>
     ! number of vertices in quadtree
-    integer(PREC_QTREEIDX) :: nvt
+    integer :: nvt
 !</result>
 !</function>
 
@@ -1062,7 +1055,7 @@ contains
     type(t_quadtree), intent(IN) :: rquadtree
 
     ! position in the quadtree
-    integer(PREC_QTREEIDX), intent(IN) :: ivt
+    integer, intent(IN) :: ivt
 !</input>
 
 !<result>
@@ -1088,7 +1081,7 @@ contains
     type(t_quadtree), intent(IN) :: rquadtree
 
     ! position in the quadtree
-    integer(PREC_QTREEIDX), intent(IN) :: ivt
+    integer, intent(IN) :: ivt
 !</input>
 
 !<result>
@@ -1194,7 +1187,7 @@ contains
 
 !<input>
     ! New number of vertices that should be stored in the quadtree
-    integer(PREC_QTREEIDX), intent(IN) :: nnvt
+    integer, intent(IN) :: nnvt
 !</input>
 
 !<inputoutput>
@@ -1223,7 +1216,7 @@ contains
 
 !<input>
     ! New number of quads that should be stored in the quadtree
-    integer(PREC_QTREEIDX), intent(IN) :: nnnode
+    integer, intent(IN) :: nnnode
 !</input>
 
 !<inputoutput>

@@ -9,56 +9,65 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) list_createList
-!#     -> Create an empty list
+!#  1.) list_createList
+!#      -> Create an empty list
 !#
-!# 2.) list_releaseList
-!#     -> Release an existing list
+!#  2.) list_releaseList
+!#      -> Release an existing list
 !#
-!# 3.) list_resizeList
-!#     -> Reallocate memory for an existing list
+!#  3.) list_resizeList
+!#      -> Reallocate memory for an existing list
 !#
-!# 4.) list_copyList
-!#     -> Copy data to/from a list
+!#  4.) list_copyToList = list_copyToListHandle /
+!#                        list_copyToListDble /
+!#                        list_copyToListSngl /
+!#                        list_copyToListInt /
+!#      -> Copy data to a list
 !#
-!# 5.) list_swapList
-!#     -> Swap two lists
+!#  5.) list_copyFromList = list_copyFromListHandle /
+!#                          list_copyFromListDble /
+!#                          list_copyFromListSngl /
+!#                          list_copyFromListInt /
+!#      -> Copy data from a list
 !#
-!# 6.) list_getFirstInList
-!#     -> Get the position of the first item in list
+!#  6.) list_swapList
+!#      -> Swap two lists
 !#
-!# 7.) list_getLastInList
-!#     -> Get the position of the last item in list
+!#  7.) list_getFirstInList
+!#      -> Get the position of the first item in list
 !#
-!# 8.) list_getNextInList
-!#     -> Get the position of the next item in list
+!#  8.) list_getLastInList
+!#      -> Get the position of the last item in list
 !#
-!# 9.) list_prependToList = t_list_prependDble /
-!#                          t_list prependSngl /
-!#                          t_list_prependInt
-!#     -> Prepend data to list
+!#  9.) list_getNextInList
+!#      -> Get the position of the next item in list
 !#
-!# 10.) list_appendToList = t_list_appendDble /
-!#                          t_list_appendSngl /
-!#                          t_list_appendInt
+!# 10.) list_prependToList = list_prependToListDble /
+!#                           list_prependToListSngl /
+!#                           list_prependToListInt
+!#      -> Prepend data to list
+!#
+!# 11.) list_appendToList = list_appendToListDble /
+!#                          list_appendToListSngl /
+!#                          list_appendToListInt
 !#      -> Append data to list
 !#
-!# 11.) list_insertIntoList = t_list_insertDble /
-!#                            t_list_insertSngl /
-!#                            t_list_insertInt
+!# 12.) list_insertIntoList = list_insertIntoListDble /
+!#                            list_insertIntoListSngl /
+!#                            list_insertIntoListInt
 !#      -> Insert data into list
 !#
-!# 12.) list_deleteFromList = t_list_deleteDble /
-!#                            t_list_deleteSngl /
-!#                            t_list_deleteInt
+!# 13.) list_deleteFromList = list_deleteFromListDble /
+!#                            list_deleteFromListSngl /
+!#                            list_deleteFromListInt
 !#      -> Delete data from list
 !#
-!# 13.) list_searchInList = t_list_searchDble /
-!#                          t_list_searchSngl /
-!#                          t_list_searchInt
+!# 14.) list_searchInList = list_searchInListDble /
+!#                          list_searchInListSngl /
+!#                          list_searchInListInt
 !#      -> Search for data in list
 !#
-!# 14.) list_printList
+!# 15.) list_printList
 !#      -> Print content of list
 !#
 !# </purpose>
@@ -74,7 +83,8 @@ module list
   public :: list_createList
   public :: list_releaseList
   public :: list_resizeList
-  public :: list_copyList
+  public :: list_copyToList
+  public :: list_copyFromList
   public :: list_swapList
   public :: list_getFirstInList
   public :: list_getLastInList
@@ -88,13 +98,6 @@ module list
   public :: list_printList
 
 !<constants>
-
-!<constantblock description="KIND values for list data">
-
-  ! kind value for indices in list
-  integer, parameter, public :: PREC_LISTIDX = I32
-
-!</constantblock>
 
 !<constantblock description="Global flags for list ordering">
 
@@ -135,16 +138,16 @@ module list
 !<constantblock description="Internal tags for list status">
   
   ! Tag for empty list
-  integer(PREC_LISTIDX), parameter, public :: LNULL =  0
+  integer, parameter, public :: LNULL =  0
   
   ! Tag for head of list
-  integer(PREC_LISTIDX), parameter :: LHEAD = -2
+  integer, parameter :: LHEAD = -2
 
   ! Tag for tail of list
-  integer(PREC_LISTIDX), parameter :: LTAIL = -1
+  integer, parameter :: LTAIL = -1
 
   ! Tag for next free item
-  integer(PREC_LISTIDX), parameter :: LFREE =  0
+  integer, parameter :: LFREE =  0
 
 !</constantblock>
 !</constants>
@@ -158,72 +161,72 @@ module list
 
   type t_list
     ! Format-Tag: Double, Single, Integer
-    integer :: clistFormat        = ST_NOHANDLE
+    integer :: clistFormat = ST_NOHANDLE
     
     ! Type-Tag: Single-linked, Double-linked
-    integer :: clinkType          = LIST_UNORDERED
+    integer :: clinkType = LIST_UNORDERED
 
     ! Type of list ordering
-    integer :: cordering          = LIST_UNORDERED
+    integer :: cordering = LIST_UNORDERED
     
     ! Position of the last item inserted into the list
     integer :: item
 
     ! Number of items that are currently stored in the list
-    integer(PREC_LISTIDX) :: NA   = 0
+    integer :: NA = 0
 
     ! Total number of items that can be stored in the list
-    integer(PREC_LISTIDX) :: NNA  = 0
+    integer :: NNA = 0
 
     ! Total number of resize operations
-    integer :: NRESIZE            = 0
+    integer :: NRESIZE = 0
 
     ! Dimension of the auxiliary Integer values to be stored
-    integer :: isizeInt            = 0
+    integer :: isizeInt = 0
 
     ! Dimension of the auxiliary Double values to be stored
-    integer :: isizeDble           = 0
+    integer :: isizeDble = 0
 
     ! Dimension of the auxiliary Single values to be stored
-    integer :: isizeSngl           = 0
+    integer :: isizeSngl = 0
 
     ! Factor by which the list is enlarged if new storage is allocate
-    real(DP) :: dfactor           = 1.5_DP
+    real(DP) :: dfactor = 1.5_DP
 
     ! Handle to the list key
-    integer :: h_Key              = ST_NOHANDLE
+    integer :: h_Key = ST_NOHANDLE
 
     ! Handle to the list next-structure
-    integer :: h_Knext            = ST_NOHANDLE
+    integer :: h_Knext = ST_NOHANDLE
 
     ! Handle to the list previous-structure
-    integer :: h_Kprev            = ST_NOHANDLE
+    integer :: h_Kprev = ST_NOHANDLE
 
     ! Handle to the list auxiliary Integer data
-    integer :: h_IData             = ST_NOHANDLE
+    integer :: h_IData = ST_NOHANDLE
 
     ! Handle to the list auxiliary Double data
-    integer :: h_DData             = ST_NOHANDLE
+    integer :: h_DData = ST_NOHANDLE
 
     ! Handle to the list auxiliary Single data
-    integer :: h_SData             = ST_NOHANDLE
+    integer :: h_SData = ST_NOHANDLE
     
     ! List next-structure
     ! NOTE: This array is introduced to increase performance. It
     ! should not be touched by the user. However, if the handle would
     ! be dereferenced for each operation such as search, delete,
     ! performance would be very poor.
-    integer(PREC_LISTIDX), dimension(:), pointer :: Knext => null()
+    integer, dimension(:), pointer :: Knext => null()
 
     ! List previous structure
     ! NOTE: This array is introduced to increase performance (see
     ! above)
-    integer(PREC_LISTIDX), dimension(:), pointer :: Kprev => null()
+    integer, dimension(:), pointer :: Kprev => null()
 
     ! List key data (Integer)
     ! NOTE: This array is introduced to increase performance (see
     ! above)
-    integer(PREC_LISTIDX), dimension(:), pointer :: IKey => null()
+    integer, dimension(:), pointer :: IKey => null()
 
     ! List key data (Double)
     ! NOTE: This array is introduced to increase performance (see
@@ -245,7 +248,7 @@ module list
 
     ! List data (Integer)
     ! NOTE: This array is introduced to increase performance (see above).
-    integer(PREC_LISTIDX), dimension(:,:), pointer :: IData => null()
+    integer, dimension(:,:), pointer :: IData => null()
   end type t_list
   
 !</typeblock>
@@ -254,112 +257,51 @@ module list
   ! ***************************************************************************
   ! ***************************************************************************
   ! ***************************************************************************
-
-  interface list_createList
-    module procedure t_list_create
-  end interface
-  
-  interface list_releaseList
-    module procedure t_list_release
-  end interface
-  
-  interface list_resizeList
-    module procedure t_list_resize
-  end interface
-  interface resize   ! internal use
-    module procedure t_list_resize
-  end interface
-  
-  interface list_copyList
-    module procedure t_list_copyto
-    module procedure t_list_copytoDble
-    module procedure t_list_copytoSngl
-    module procedure t_list_copytoInt
-    module procedure t_list_copyfrom
-    module procedure t_list_copyfromDble
-    module procedure t_list_copyfromSngl
-    module procedure t_list_copyfromInt
-  end interface
-  
-  interface list_swapList
-    module procedure t_list_swap
-  end interface
-  
-  interface list_getFirstInList
-    module procedure t_list_first
-  end interface
-  
-  interface list_getLastInList
-    module procedure t_list_last
-  end interface
-  
-  interface list_getNextInList
-    module procedure t_list_next
+   
+  interface list_copyToList
+    module procedure list_copyToListHandle
+    module procedure list_copyToListDble
+    module procedure list_copyToListSngl
+    module procedure list_copyToListInt
   end interface
 
-  interface list_getPrevInList
-    module procedure t_list_prev
+  interface list_copyFromList
+    module procedure list_copyFromListHandle
+    module procedure list_copyFromListDble
+    module procedure list_copyFromListSngl
+    module procedure list_copyFromListInt
   end interface
   
   interface list_prependToList
-    module procedure t_list_prependDble
-    module procedure t_list_prependSngl
-    module procedure t_list_prependInt
-  end interface
-  interface prepend   ! internal use
-    module procedure t_list_prependDble
-    module procedure t_list_prependSngl
-    module procedure t_list_prependInt
+    module procedure list_prependToListDble
+    module procedure list_prependToListSngl
+    module procedure list_prependToListInt
   end interface
   
   interface list_appendToList
-    module procedure t_list_appendDble
-    module procedure t_list_appendSngl
-    module procedure t_list_appendInt
+    module procedure list_appendToListDble
+    module procedure list_appendToListSngl
+    module procedure list_appendToListInt
   end interface
-  interface append   ! internal use
-    module procedure t_list_appendDble
-    module procedure t_list_appendSngl
-    module procedure t_list_appendInt
-  end interface
-  
+   
   interface list_insertIntoList
-    module procedure t_list_insertDble
-    module procedure t_list_insertSngl
-    module procedure t_list_insertInt
+    module procedure list_insertIntoListDble
+    module procedure list_insertIntoListSngl
+    module procedure list_insertIntoListInt
   end interface
-  interface insert   ! internal use
-    module procedure t_list_insertDble
-    module procedure t_list_insertSngl
-    module procedure t_list_insertInt
-  end interface
-
+  
   interface list_deleteFromList
-    module procedure t_list_deleteDble
-    module procedure t_list_deleteSngl
-    module procedure t_list_deleteInt
+    module procedure list_deleteFromListDble
+    module procedure list_deleteFromListSngl
+    module procedure list_deleteFromListInt
   end interface
-  interface delete   ! internal use
-    module procedure t_list_deleteDble
-    module procedure t_list_deleteSngl
-    module procedure t_list_deleteInt
-  end interface
-  
+   
   interface list_searchInList
-    module procedure t_list_searchDble
-    module procedure t_list_searchSngl
-    module procedure t_list_searchInt
+    module procedure list_searchInListDble
+    module procedure list_searchInListSngl
+    module procedure list_searchInListInt
   end interface
-  interface search   ! internal use
-    module procedure t_list_searchDble
-    module procedure t_list_searchSngl
-    module procedure t_list_searchInt
-  end interface
-  
-  interface list_printList
-    module procedure t_list_print
-  end interface
-  
+      
   ! ***************************************************************************
   ! ***************************************************************************
   ! ***************************************************************************
@@ -370,7 +312,7 @@ contains
   
 !<subroutine>
 
-  subroutine t_list_create(rlist,nna,clistFormat,&
+  subroutine list_createList(rlist,nna,clistFormat,&
       isizeInt,isizeDble,isizeSngl,cordering,dfactor,clinkType)
 
 !<description>
@@ -379,7 +321,7 @@ contains
 
 !<input>
     ! Total number of items that can be stored in list
-    integer(PREC_LISTIDX), intent(IN) :: nna
+    integer, intent(IN) :: nna
 
     ! Format-tag. Type of list format (Double,Single,Integer)
     integer, intent(IN) :: clistFormat
@@ -438,13 +380,13 @@ contains
     end if
     
     ! Allocate memory and associate pointers
-    call storage_new('t_list_create','Knext',-2,nna,ST_INT,&
+    call storage_new('list_createList','Knext',-2,nna,ST_INT,&
         rlist%h_Knext,ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rlist%h_Knext,rlist%Knext)
     
     ! Double-linked list?    
-    if (rlist%clinkType == LIST_DOUBLELINKED) then
-      call storage_new('t_list_create','Kprev',nna,ST_INT,&
+    if (rlist%clinkType .eq. LIST_DOUBLELINKED) then
+      call storage_new('list_createList','Kprev',nna,ST_INT,&
           rlist%h_Kprev,ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rlist%h_Kprev,rlist%Kprev)
     end if
@@ -452,22 +394,22 @@ contains
     ! Allocate memory for Key
     select case(rlist%clistFormat)
     case (ST_DOUBLE)
-      call storage_new('t_list_create','Key',nna,ST_DOUBLE,&
+      call storage_new('list_createList','Key',nna,ST_DOUBLE,&
           rlist%h_Key,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double(rlist%h_Key,rlist%DKey)
 
     case (ST_SINGLE)
-      call storage_new('t_list_create','Key',nna,ST_SINGLE,&
+      call storage_new('list_createList','Key',nna,ST_SINGLE,&
           rlist%h_Key,ST_NEWBLOCK_NOINIT)
       call storage_getbase_single(rlist%h_Key,rlist%SKey)
 
     case (ST_INT)
-      call storage_new('t_list_create','Key',nna,ST_INT,&
+      call storage_new('list_createList','Key',nna,ST_INT,&
           rlist%h_Key,ST_NEWBLOCK_NOINIT)
       call storage_getbase_int(rlist%h_Key,rlist%IKey)
 
     case DEFAULT
-      print *, 't_list_create: Unsupported data format!'
+      print *, 'list_createList: Unsupported data format!'
       call sys_halt()
     end select
     
@@ -478,29 +420,29 @@ contains
 
     ! Allocate memory for auxiliary data
     if (isizeDble > 0) then
-      call storage_new('t_list_create','DData',(/isizeDble,nna/),&
+      call storage_new('list_createList','DData',(/isizeDble,nna/),&
           ST_DOUBLE,rlist%h_DData,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2D(rlist%h_DData,rlist%DData)
     end if
 
      if (isizeSngl > 0) then
-      call storage_new('t_list_create','SData',(/isizeSngl,nna/),&
+      call storage_new('list_createList','SData',(/isizeSngl,nna/),&
           ST_SINGLE,rlist%h_SData,ST_NEWBLOCK_NOINIT)
       call storage_getbase_single2D(rlist%h_SData,rlist%SData)
     end if
 
     if (isizeInt > 0) then
-      call storage_new('t_list_create','IData',(/isizeInt,nna/),&
+      call storage_new('list_createList','IData',(/isizeInt,nna/),&
           ST_INT,rlist%h_IData,ST_NEWBLOCK_NOINIT)
       call storage_getbase_int2D(rlist%h_IData,rlist%IData)
     end if
-  end subroutine t_list_create
+  end subroutine list_createList
   
   ! ***************************************************************************
 
 !<subroutine>
   
-  subroutine t_list_release(rlist)
+  subroutine list_releaseList(rlist)
 
 !<description>
     ! This subroutine releases an existing list
@@ -512,13 +454,13 @@ contains
 !</subroutine>
 
     ! Release memory
-    if (rlist%h_Key /= ST_NOHANDLE)   call storage_free(rlist%h_Key)
-    if (rlist%h_Knext /= ST_NOHANDLE) call storage_free(rlist%h_Knext)
-    if (rlist%h_Kprev /= ST_NOHANDLE) call storage_free(rlist%h_Kprev)
+    if (rlist%h_Key .ne. ST_NOHANDLE)   call storage_free(rlist%h_Key)
+    if (rlist%h_Knext .ne. ST_NOHANDLE) call storage_free(rlist%h_Knext)
+    if (rlist%h_Kprev .ne. ST_NOHANDLE) call storage_free(rlist%h_Kprev)
 
-    if (rlist%h_DData /= ST_NOHANDLE) call storage_free(rlist%h_DDATA)
-    if (rlist%h_SData /= ST_NOHANDLE) call storage_free(rlist%h_SDATA)
-    if (rlist%h_IData /= ST_NOHANDLE) call storage_free(rlist%h_IDATA)
+    if (rlist%h_DData .ne. ST_NOHANDLE) call storage_free(rlist%h_DDATA)
+    if (rlist%h_SData .ne. ST_NOHANDLE) call storage_free(rlist%h_SDATA)
+    if (rlist%h_IData .ne. ST_NOHANDLE) call storage_free(rlist%h_IDATA)
 
     nullify(rlist%Knext,rlist%Kprev,rlist%DKey,rlist%SKey,rlist%IKey)
     nullify(rlist%DData,rlist%SData,rlist%IData)
@@ -534,13 +476,13 @@ contains
     rlist%na          = 0
     rlist%nna         = 0
     rlist%dfactor     = 1.5_DP
-  end subroutine t_list_release
+  end subroutine list_releaseList
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  subroutine t_list_resize(rlist,nna)
+  subroutine list_resizeList(rlist,nna)
 
 !<description>
     ! This subroutine reallocates memory for an existing list
@@ -548,7 +490,7 @@ contains
 
 !<input>
     ! New number of total items that can be stored in the list
-    integer(PREC_LISTIDX), intent(IN) :: nna
+    integer, intent(IN) :: nna
 !</input>
 
 !<inputoutput>
@@ -561,18 +503,18 @@ contains
     rlist%nna=nna
 
     ! Reallocate structures
-    call storage_realloc('t_list_resize',-2,nna,rlist%h_Knext,&
+    call storage_realloc('list_resizeList',-2,nna,rlist%h_Knext,&
         ST_NEWBLOCK_NOINIT,.true.)
     call storage_getbase_int(rlist%h_Knext,rlist%Knext)
 
-    if (rlist%clinkType == LIST_DOUBLELINKED) then
-      call storage_realloc('t_list_resize',nna,rlist%h_Kprev,&
+    if (rlist%clinkType .eq. LIST_DOUBLELINKED) then
+      call storage_realloc('list_resizeList',nna,rlist%h_Kprev,&
           ST_NEWBLOCK_NOINIT,.true.)
       call storage_getbase_int(rlist%h_Kprev,rlist%Kprev)
     end if
 
     ! Reallocate Key
-    call storage_realloc('t_list_resize',nna,rlist%h_Key,&
+    call storage_realloc('list_resizeList',nna,rlist%h_Key,&
         ST_NEWBLOCK_NOINIT,.true.)
     select case(rlist%clistFormat)
     case (ST_DOUBLE)
@@ -585,35 +527,35 @@ contains
       call storage_getbase_int(rlist%h_Key,rlist%IKey)
 
     case DEFAULT
-      print *, 't_list_resize: Unsupported data format!'
+      print *, 'list_resizeList: Unsupported data format!'
       call sys_halt()
     end select
 
     ! Reallocate auxiliary data
     if (rlist%isizeDble > 0) then
-      call storage_realloc('t_list_resize',nna,rlist%h_DData,&
+      call storage_realloc('list_resizeList',nna,rlist%h_DData,&
           ST_NEWBLOCK_NOINIT,.true.)
       call storage_getbase_double2D(rlist%h_DData,rlist%DData)
     end if
 
     if (rlist%isizeSngl > 0) then
-      call storage_realloc('t_list_resize',nna,rlist%h_SData,&
+      call storage_realloc('list_resizeList',nna,rlist%h_SData,&
           ST_NEWBLOCK_NOINIT,.true.)
       call storage_getbase_single2D(rlist%h_SData,rlist%SData)
     end if
 
     if (rlist%isizeInt > 0) then
-      call storage_realloc('t_list_resize',nna,rlist%h_IData,&
+      call storage_realloc('list_resizeList',nna,rlist%h_IData,&
           ST_NEWBLOCK_NOINIT,.true.)
       call storage_getbase_int2D(rlist%h_IData,rlist%IData)
     end if
-  end subroutine t_list_resize
+  end subroutine list_resizeList
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_copyfrom(rlist,h_Key)
+  subroutine list_copyFromListHandle(rlist,h_Key)
 
 !<description>
     ! This subroutine copies the content of the list to the given
@@ -635,10 +577,10 @@ contains
     real(DP), dimension(:), pointer :: p_DKey
     real(SP), dimension(:), pointer :: p_SKey
     integer,  dimension(:), pointer :: p_IKey
-    integer(PREC_LISTIDX) :: ipos,jpos
+    integer :: ipos,jpos
     
     ! Transform the content of the list to h_Key
-    if (h_Key /= ST_NOHANDLE) call storage_free(h_Key)
+    if (h_Key .ne. ST_NOHANDLE) call storage_free(h_Key)
     call storage_new('t_list_copy','Key',rlist%na,&
         rlist%clistFormat,h_Key,ST_NEWBLOCK_NOINIT)
     select case(rlist%clistFormat)
@@ -649,7 +591,7 @@ contains
       do
         jpos = jpos+1
         p_DKey(jpos) = rlist%DKey(ipos)
-        if (ipos == rlist%Knext(LTAIL)) exit
+        if (ipos .eq. rlist%Knext(LTAIL)) exit
         ipos = rlist%Knext(ipos)
       end do
       
@@ -660,7 +602,7 @@ contains
       do
         jpos = jpos+1
         p_SKey(jpos) = rlist%SKey(ipos)
-        if (ipos == rlist%Knext(LTAIL)) exit
+        if (ipos .eq. rlist%Knext(LTAIL)) exit
         ipos = rlist%Knext(ipos)
       end do
       
@@ -671,7 +613,7 @@ contains
       do
         jpos = jpos+1
         p_IKey(jpos) = rlist%IKey(ipos)
-        if (ipos == rlist%Knext(LTAIL)) exit
+        if (ipos .eq. rlist%Knext(LTAIL)) exit
         ipos = rlist%Knext(ipos)
       end do
       
@@ -679,13 +621,13 @@ contains
       print *, 't_list_copy: Unsupported data format!'
       call sys_halt()
     end select
-  end subroutine t_list_copyfrom
+  end subroutine list_copyFromListHandle
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_copyfromDble(rlist,p_DKey)
+  subroutine list_copyFromListDble(rlist,p_DKey)
 
 !<description>
     ! This subroutine copies the content of the list to the given
@@ -704,10 +646,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_LISTIDX) :: ipos,jpos
+    integer :: ipos,jpos
 
-    if (rlist%clistFormat /= ST_DOUBLE) then
-      print *, 't_list_copyfromDble: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_DOUBLE) then
+      print *, 'list_copyFromListDble: Unsupported data format!'
       call sys_halt()
     end if
 
@@ -716,16 +658,16 @@ contains
     do
       jpos = jpos+1
       p_DKey(jpos) = rlist%DKey(ipos)
-      if (ipos == rlist%Knext(LTAIL)) exit
+      if (ipos .eq. rlist%Knext(LTAIL)) exit
       ipos = rlist%Knext(ipos)
     end do
-  end subroutine t_list_copyfromDble
+  end subroutine list_copyFromListDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_copyfromSngl(rlist,p_SKey)
+  subroutine list_copyFromListSngl(rlist,p_SKey)
 
 !<description>
     ! This subroutine copies the content of the list to the given
@@ -744,10 +686,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_LISTIDX) :: ipos,jpos
+    integer :: ipos,jpos
 
-    if (rlist%clistFormat /= ST_SINGLE) then
-      print *, 't_list_copyfromSngl: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_SINGLE) then
+      print *, 'list_copyFromListSngl: Unsupported data format!'
       call sys_halt()
     end if
 
@@ -756,16 +698,16 @@ contains
     do
       jpos = jpos+1
       p_SKey(jpos) = rlist%SKey(ipos)
-      if (ipos == rlist%Knext(LTAIL)) exit
+      if (ipos .eq. rlist%Knext(LTAIL)) exit
       ipos = rlist%Knext(ipos)
     end do
-  end subroutine t_list_copyfromSngl
+  end subroutine list_copyFromListSngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_copyfromInt(rlist,p_IKey)
+  subroutine list_copyFromListInt(rlist,p_IKey)
 
 !<description>
     ! This subroutine copies the content of the list to the given
@@ -784,10 +726,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_LISTIDX) :: ipos,jpos
+    integer :: ipos,jpos
 
-    if (rlist%clistFormat /= ST_INT) then
-      print *, 't_list_copyfromInt: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_INT) then
+      print *, 'list_copyFromListInt: Unsupported data format!'
       call sys_halt()
     end if
 
@@ -796,16 +738,16 @@ contains
     do
       jpos = jpos+1
       p_IKey(jpos) = rlist%IKey(ipos)
-      if (ipos == rlist%Knext(LTAIL)) exit
+      if (ipos .eq. rlist%Knext(LTAIL)) exit
       ipos = rlist%Knext(ipos)
     end do
-  end subroutine t_list_copyfromInt
+  end subroutine list_copyFromListInt
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_copyto(h_KeySrc,rlist)
+  subroutine list_copyToListHandle(h_KeySrc,rlist)
 
 !<description>
     ! This subroutine copies the content of the given handle to the list
@@ -826,36 +768,36 @@ contains
     real(DP), dimension(:), pointer :: p_DKey
     real(SP), dimension(:), pointer :: p_SKey
     integer,  dimension(:), pointer :: p_IKey
-    integer(PREC_LISTIDX) :: ipos,kpos
+    integer :: ipos,kpos
     
     ! Transform the content of h_Data to the list
     select case (rlist%clistFormat)
     case (ST_DOUBLE)
       call storage_getbase_double(h_KeySrc,p_DKey)
       do ipos=1,size(p_DKey)
-        call append(rlist,p_DKey(ipos),kpos)
+        call list_appendToList(rlist,p_DKey(ipos),kpos)
       end do
     case (ST_SINGLE)
       call storage_getbase_single(h_KeySrc,p_SKey)
       do ipos=1,size(p_SKey)
-        call append(rlist,p_DKey(ipos),kpos)
+        call list_appendToList(rlist,p_DKey(ipos),kpos)
       end do
     case (ST_INT)
       call storage_getbase_int(h_KeySrc,p_IKey)
       do ipos=1,size(p_IKey)
-        call append(rlist,p_IKey(ipos),kpos)
+        call list_appendToList(rlist,p_IKey(ipos),kpos)
       end do
     case DEFAULT
       print *, 't_list_copy: Unsupported data format!'
       call sys_halt()
     end select
-  end subroutine t_list_copyto
+  end subroutine list_copyToListHandle
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_copytoDble(p_DKeySrc,rlist)
+  subroutine list_copyToListDble(p_DKeySrc,rlist)
 
 !<description>
     ! This subroutine copies the content of the given double array to the list
@@ -873,23 +815,23 @@ contains
 !</subroutine>
     
     ! local variables
-    integer(PREC_LISTIDX) :: ipos,kpos
+    integer :: ipos,kpos
 
-    if (rlist%clistFormat /= ST_DOUBLE) then
-      print *, 't_list_copytoDble: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_DOUBLE) then
+      print *, 'list_copyToListDble: Unsupported data format!'
       call sys_halt()
     end if
     
     do ipos=1,size(p_DKeySrc)
-      call append(rlist,p_DKeySrc(ipos),kpos)
+      call list_appendToList(rlist,p_DKeySrc(ipos),kpos)
     end do
-  end subroutine t_list_copytoDble
+  end subroutine list_copyToListDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_copytoSngl(p_SKeySrc,rlist)
+  subroutine list_copyToListSngl(p_SKeySrc,rlist)
 
 !<description>
     ! This subroutine copies the content of the given single array to the list
@@ -907,23 +849,23 @@ contains
 !</subroutine>
     
     ! local variables
-    integer(PREC_LISTIDX) :: ipos,kpos
+    integer :: ipos,kpos
 
-    if (rlist%clistFormat /= ST_SINGLE) then
-      print *, 't_list_copytoSngl: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_SINGLE) then
+      print *, 'list_copyToListSngl: Unsupported data format!'
       call sys_halt()
     end if
     
     do ipos=1,size(p_SKeySrc)
-      call append(rlist,p_SKeySrc(ipos),kpos)
+      call list_appendToList(rlist,p_SKeySrc(ipos),kpos)
     end do
-  end subroutine t_list_copytoSngl
+  end subroutine list_copyToListSngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_copytoInt(p_IKeySrc,rlist)
+  subroutine list_copyToListInt(p_IKeySrc,rlist)
 
 !<description>
     ! This subroutine copies the content of the given integer array to the list
@@ -941,23 +883,23 @@ contains
 !</subroutine>
     
     ! local variables
-    integer(PREC_LISTIDX) :: ipos,kpos
+    integer :: ipos,kpos
 
-    if (rlist%clistFormat /= ST_INT) then
-      print *, 't_list_copytoInt: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_INT) then
+      print *, 'list_copyToListInt: Unsupported data format!'
       call sys_halt()
     end if
     
     do ipos=1,size(p_IKeySrc)
-      call append(rlist,p_IKeySrc(ipos),kpos)
+      call list_appendToList(rlist,p_IKeySrc(ipos),kpos)
     end do
-  end subroutine t_list_copytoInt
+  end subroutine list_copyToListInt
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  subroutine t_list_swap(rlist1,rlist2)
+  subroutine list_swapList(rlist1,rlist2)
 
 !<description>
     ! This subroutine swaps two lists
@@ -976,12 +918,12 @@ contains
     type(t_list) :: rlist
     
     ! Check if both lists are compatible
-    if (rlist1%clistFormat /= rlist2%clistFormat .or.&
-        rlist1%clinkType   /= rlist2%clinkType .or. &
-        rlist1%isizeInt    /= rlist2%isizeInt .or.&
-        rlist1%isizeDble   /= rlist2%isizeDble .or.&
-        rlist1%isizeSngl   /= rlist2%isizeSngl) then
-      print *, "t_list_swap: Lists are not compatible"
+    if (rlist1%clistFormat .ne. rlist2%clistFormat .or.&
+        rlist1%clinkType   .ne. rlist2%clinkType .or. &
+        rlist1%isizeInt    .ne. rlist2%isizeInt .or.&
+        rlist1%isizeDble   .ne. rlist2%isizeDble .or.&
+        rlist1%isizeSngl   .ne. rlist2%isizeSngl) then
+      print *, "list_swapList: Lists are not compatible"
       call sys_halt()
     end if
 
@@ -994,7 +936,7 @@ contains
     nullify(rlist1%Knext,rlist1%Kprev,rlist1%DKey,&
         rlist1%SKey,rlist1%IKey)
     call storage_getbase_int(rlist1%h_Knext,rlist1%Knext)
-    if (rlist1%h_Kprev /= ST_NOHANDLE) &
+    if (rlist1%h_Kprev .ne. ST_NOHANDLE) &
         call storage_getbase_int(rlist1%h_Kprev,rlist1%Kprev)
 
     select case(rlist1%clistFormat)
@@ -1008,7 +950,7 @@ contains
       call storage_getbase_int(rlist1%h_Key,rlist1%IKey)
 
     case DEFAULT
-      print *, 't_list_swap: Unsupported data type!'
+      print *, 'list_swapList: Unsupported data type!'
       call sys_halt()
     end select
 
@@ -1023,7 +965,7 @@ contains
     nullify(rlist2%Knext,rlist2%Kprev,rlist2%DKey,&
         rlist2%SKey,rlist2%IKey)
     call storage_getbase_int(rlist2%h_Knext,rlist2%Knext)
-    if (rlist2%h_Kprev /= ST_NOHANDLE) &
+    if (rlist2%h_Kprev .ne. ST_NOHANDLE) &
         call storage_getbase_int(rlist2%h_Kprev,rlist2%Kprev)
 
     select case(rlist2%clistFormat)
@@ -1037,7 +979,7 @@ contains
       call storage_getbase_int(rlist2%h_Key,rlist2%IKey)
 
     case DEFAULT
-      print *, 't_list_swap: Unsupported data type!'
+      print *, 'list_swapList: Unsupported data type!'
       call sys_halt()
     end select
 
@@ -1047,13 +989,13 @@ contains
         call storage_getbase_single2D(rlist2%h_SData,rlist2%SData)
     if (rlist2%isizeInt > 0)&
         call storage_getbase_int2D(rlist2%h_IData,rlist2%IData)
-  end subroutine t_list_swap
+  end subroutine list_swapList
 
   ! ***************************************************************************
   
 !<function>
   
-  pure function t_list_first(rlist) result(ipos)
+  pure function list_getFirstInList(rlist) result(ipos)
 
 !<description>
     ! This function returns the position of the first list item
@@ -1066,18 +1008,18 @@ contains
 
 !<result>
     ! position of first item
-    integer(PREC_LISTIDX) :: ipos
+    integer :: ipos
 !</result>
 !</function>
     
     ipos=rlist%Knext(LHEAD)
-  end function t_list_first
+  end function list_getFirstInList
 
   ! ***************************************************************************
   
 !<function>
   
-  pure function t_list_last(rlist) result(ipos)
+  pure function list_getLastInList(rlist) result(ipos)
 
 !<description>
     ! This function returns the position of the last list item
@@ -1090,18 +1032,18 @@ contains
 
 !<result>
     ! position of last item
-    integer(PREC_LISTIDX) :: ipos
+    integer :: ipos
 !</result>
 !</function>
     
     ipos=rlist%Knext(LTAIL)
-  end function t_list_last
+  end function list_getLastInList
 
   ! ***************************************************************************
 
 !<function>
 
-  function t_list_next(rlist,breset) result(ipos)
+  function list_getNextInList(rlist,breset) result(ipos)
 
 !<description>
     ! This function returns the position of the next list item
@@ -1122,7 +1064,7 @@ contains
 
 !<result>
     ! position of last item
-    integer(PREC_LISTIDX) :: ipos
+    integer :: ipos
 !</result>
 !</function>
     
@@ -1131,13 +1073,13 @@ contains
     
     ipos = rlist%Knext(rlist%item)
     rlist%item = ipos
-  end function t_list_next
+  end function list_getNextInList
 
    ! ***************************************************************************
 
 !<function>
 
-  function t_list_prev(rlist,breset) result(ipos)
+  function list_getPrevInList(rlist,breset) result(ipos)
 
 !<description>
     ! This function returns the position of the previous list item
@@ -1159,12 +1101,12 @@ contains
 
 !<result>
     ! position of previous item
-    integer(PREC_LISTIDX) :: ipos
+    integer :: ipos
 !</result>
 !</function>
 
-    if (rlist%clinkType /= LIST_DOUBLELINKED) then
-      print *, "t_list_prev: This operation is only available for&
+    if (rlist%clinkType .ne. LIST_DOUBLELINKED) then
+      print *, "list_getPrevInList: This operation is only available for&
           & double-linked lists!"
       call sys_halt()
     end if
@@ -1172,19 +1114,19 @@ contains
     ! Reset?
     if (breset) rlist%item=LTAIL
 
-    if (rlist%item == LNULL) then
+    if (rlist%item .eq. LNULL) then
       ipos = rlist%Knext(LTAIL)
     else
       ipos = rlist%Kprev(rlist%item)
     end if
     rlist%item = ipos
-  end function t_list_prev
+  end function list_getPrevInList
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_prependDble(rlist,dkey,ipos,DData,SData,IData)
+  subroutine list_prependToListDble(rlist,dkey,ipos,DData,SData,IData)
 
 !<description>
     ! This subroutine prepends a Double data to the list
@@ -1211,13 +1153,13 @@ contains
 
 !<output>
     ! Position of the prepended item
-    integer(PREC_LISTIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 !</subroutine>
     
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_DOUBLE) then
-      print *, 't_list_prependDble: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_DOUBLE) then
+      print *, 'list_prependToListDble: Unsupported data format!'
       call sys_halt()
     end if
     
@@ -1225,7 +1167,7 @@ contains
     rlist%na = rlist%na+1
     ipos     = rlist%Knext(LFREE)
     if (abs(ipos) > rlist%nna) then
-      call resize(rlist,ceiling(rlist%dfactor*rlist%nna))
+      call list_resizeList(rlist,ceiling(rlist%dfactor*rlist%nna))
     end if
     
     ! Set next free position
@@ -1239,7 +1181,7 @@ contains
     ! Set head, tail and data
     select case (rlist%clinkType)
     case (LIST_SINGLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1249,7 +1191,7 @@ contains
       end if
 
     case (LIST_DOUBLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1262,7 +1204,7 @@ contains
       end if
 
     case DEFAULT
-      print *, "t_list_prependDble: Invalid link type!"
+      print *, "list_prependToListDble: Invalid link type!"
       call sys_halt()
     end select
 
@@ -1278,13 +1220,13 @@ contains
     
     if ((rlist%isizeSngl > 0) .and. &
         present(SData)) rlist%SData(:,ipos) = SData
-  end subroutine t_list_prependDble
+  end subroutine list_prependToListDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_prependSngl(rlist,skey,ipos,DData,SData,IData)
+  subroutine list_prependToListSngl(rlist,skey,ipos,DData,SData,IData)
 
 !<description>
     ! This subroutine prepends a Single data to the list
@@ -1311,13 +1253,13 @@ contains
 
 !<output>
     ! Position of the prepended item
-    integer(PREC_LISTIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 !</subroutine>
     
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_SINGLE) then
-      print *, 't_list_prependSngl: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_SINGLE) then
+      print *, 'list_prependToListSngl: Unsupported data format!'
       call sys_halt()
     end if
     
@@ -1325,7 +1267,7 @@ contains
     rlist%na = rlist%na+1
     ipos     = rlist%Knext(LFREE)
     if (abs(ipos) > rlist%nna) then
-      call resize(rlist,ceiling(rlist%dfactor*rlist%nna))
+      call list_resizeList(rlist,ceiling(rlist%dfactor*rlist%nna))
     end if
     
     ! Set next free position
@@ -1339,7 +1281,7 @@ contains
     ! Set head, tail and data
     select case(rlist%clinkType)
     case (LIST_SINGLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1349,7 +1291,7 @@ contains
       end if
 
     case (LIST_DOUBLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1361,7 +1303,7 @@ contains
         rlist%Kprev(ipos)  = LNULL
       end if
     case DEFAULT
-      print *, "t_list_prependSngl: Invalid linktype!"
+      print *, "list_prependToListSngl: Invalid linktype!"
       call sys_halt()
     end select
 
@@ -1377,13 +1319,13 @@ contains
     
     if ((rlist%isizeSngl > 0) .and. &
         present(SData)) rlist%SData(:,ipos) = SData
-  end subroutine t_list_prependSngl
+  end subroutine list_prependToListSngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_prependInt(rlist,ikey,ipos,DData,SData,IData)
+  subroutine list_prependToListInt(rlist,ikey,ipos,DData,SData,IData)
 
 !<description>
     ! This subroutine prepends an Integer data to the list
@@ -1410,13 +1352,13 @@ contains
 
 !<output>
     ! Position of the prepended item
-    integer(PREC_LISTIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 !</subroutine>
     
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_INT) then
-      print *, 't_list_prependInt: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_INT) then
+      print *, 'list_prependToListInt: Unsupported data format!'
       call sys_halt()
     end if
     
@@ -1424,7 +1366,7 @@ contains
     rlist%na = rlist%na+1
     ipos     = rlist%Knext(LFREE)
     if (abs(ipos) > rlist%nna) then
-      call resize(rlist,ceiling(rlist%dfactor*rlist%nna))
+      call list_resizeList(rlist,ceiling(rlist%dfactor*rlist%nna))
     end if
     
     ! Set next free position
@@ -1438,7 +1380,7 @@ contains
     ! Set head, tail and data
     select case (rlist%clinkType)
     case (LIST_SINGLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1448,7 +1390,7 @@ contains
       end if
 
     case (LIST_DOUBLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1461,7 +1403,7 @@ contains
       end if
       
     case DEFAULT
-      print *, "t_list_prependInt: Invalid link type!"
+      print *, "list_prependToListInt: Invalid link type!"
       call sys_halt()
     end select
 
@@ -1477,13 +1419,13 @@ contains
     
     if ((rlist%isizeSngl > 0) .and. &
         present(SData)) rlist%SData(:,ipos) = SData
-  end subroutine t_list_prependInt
+  end subroutine list_prependToListInt
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_appendDble(rlist,dkey,ipos,DData,SData,IData)
+  subroutine list_appendToListDble(rlist,dkey,ipos,DData,SData,IData)
 
 !<description>
     ! This subroutine appends a Double data to the list
@@ -1510,13 +1452,13 @@ contains
 
 !<output>
     ! Position of the appended item
-    integer(PREC_LISTIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 !</subroutine>
     
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_DOUBLE) then
-      print *, 't_list_appendDble: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_DOUBLE) then
+      print *, 'list_appendToListDble: Unsupported data format!'
       call sys_halt()
     end if
     
@@ -1524,7 +1466,7 @@ contains
     rlist%na = rlist%na+1
     ipos     = rlist%Knext(LFREE)
     if (abs(ipos) > rlist%nna) then
-      call resize(rlist,ceiling(rlist%dfactor*rlist%nna))
+      call list_resizeList(rlist,ceiling(rlist%dfactor*rlist%nna))
     end if
     
     ! Set next free position
@@ -1538,7 +1480,7 @@ contains
     ! Set head, tail and data
     select case(rlist%clinkType)
     case (LIST_SINGLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1549,7 +1491,7 @@ contains
       end if
       
     case (LIST_DOUBLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1562,7 +1504,7 @@ contains
       end if
 
     case DEFAULT
-      print *, "t_list_appendDble: Invalid link type!"
+      print *, "list_appendToListDble: Invalid link type!"
       call sys_halt()
     end select
 
@@ -1578,13 +1520,13 @@ contains
     
     if ((rlist%isizeSngl > 0) .and. &
         present(SData)) rlist%SData(:,ipos) = SData
-  end subroutine t_list_appendDble
+  end subroutine list_appendToListDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_appendSngl(rlist,skey,ipos,DData,SData,IData)
+  subroutine list_appendToListSngl(rlist,skey,ipos,DData,SData,IData)
 
 !<description>
     ! This subroutine appends a Single data to the list
@@ -1611,13 +1553,13 @@ contains
 
 !<output>
     ! Position of the appended item
-    integer(PREC_LISTIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 !</subroutine>
     
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_SINGLE) then
-      print *, 't_list_appendSngl: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_SINGLE) then
+      print *, 'list_appendToListSngl: Unsupported data format!'
       call sys_halt()
     end if
     
@@ -1625,7 +1567,7 @@ contains
     rlist%na = rlist%na+1
     ipos     = rlist%Knext(LFREE)
     if (abs(ipos) > rlist%nna) then
-      call resize(rlist,ceiling(rlist%dfactor*rlist%nna))
+      call list_resizeList(rlist,ceiling(rlist%dfactor*rlist%nna))
     end if
     
     ! Set next free position
@@ -1639,7 +1581,7 @@ contains
     ! Set head, tail and data
     select case(rlist%clinkType)
     case (LIST_SINGLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1650,7 +1592,7 @@ contains
       end if
 
     case (LIST_DOUBLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1663,7 +1605,7 @@ contains
       end if
 
     case DEFAULT
-      print *, "t_list_appendSngl: Invalid link type!"
+      print *, "list_appendToListSngl: Invalid link type!"
       call sys_halt()
     end select
 
@@ -1679,13 +1621,13 @@ contains
     
     if ((rlist%isizeSngl > 0) .and. &
         present(SData)) rlist%SData(:,ipos) = SData
-  end subroutine t_list_appendSngl
+  end subroutine list_appendToListSngl
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_appendInt(rlist,ikey,ipos,DData,SData,IData)
+  subroutine list_appendToListInt(rlist,ikey,ipos,DData,SData,IData)
 
 !<description>
     ! This subroutine appends an Integer data to the list
@@ -1712,13 +1654,13 @@ contains
 
 !<output>
     ! Position of the appended item
-    integer(PREC_LISTIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 !</subroutine>
     
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_INT) then
-      print *, 't_list_appendInt: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_INT) then
+      print *, 'list_appendToListInt: Unsupported data format!'
       call sys_halt()
     end if
     
@@ -1726,7 +1668,7 @@ contains
     rlist%na = rlist%na+1
     ipos     = rlist%Knext(LFREE)
     if (abs(ipos) > rlist%nna) then
-      call resize(rlist,ceiling(rlist%dfactor*rlist%nna))
+      call list_resizeList(rlist,ceiling(rlist%dfactor*rlist%nna))
     end if
     
     ! Set next free position
@@ -1740,7 +1682,7 @@ contains
     ! Set head, tail and data
     select case(rlist%clinkType)
     case(LIST_SINGLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1751,7 +1693,7 @@ contains
       end if
 
     case (LIST_DOUBLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1764,7 +1706,7 @@ contains
       end if
       
     case DEFAULT
-      print *, "t_list_appendInt: Invalid link type!"
+      print *, "list_appendToListInt: Invalid link type!"
       call sys_halt()
     end select
 
@@ -1780,13 +1722,13 @@ contains
     
     if ((rlist%isizeSngl > 0) .and. &
         present(SData)) rlist%SData(:,ipos) = SData
-  end subroutine t_list_appendInt
+  end subroutine list_appendToListInt
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_insertDble(rlist,dkey,ipred,ipos,DData,SData,IData)
+  subroutine list_insertIntoListDble(rlist,dkey,ipred,ipos,DData,SData,IData)
 
 !<description>
     ! This subroutine inserts a new Double data into the list AFTER
@@ -1798,7 +1740,7 @@ contains
     real(DP), intent(IN) :: dkey
 
     ! Position of predecessor
-    integer(PREC_LISTIDX), intent(IN) :: ipred
+    integer, intent(IN) :: ipred
 
     ! OPTIONAL: Double data
     real(DP), dimension(:), intent(IN), optional :: DData
@@ -1817,13 +1759,13 @@ contains
 
 !<output>
     ! Position of the prepended item
-    integer(PREC_LISTIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 !</subroutine>
 
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_DOUBLE) then
-      print *, 't_list_insertDble: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_DOUBLE) then
+      print *, 'list_insertIntoListDble: Unsupported data format!'
       call sys_halt()
     end if
     
@@ -1831,7 +1773,7 @@ contains
     rlist%na = rlist%na+1
     ipos     = rlist%Knext(LFREE)
     if (abs(ipos) > rlist%nna) then
-      call resize(rlist,ceiling(rlist%dfactor*rlist%nna))
+      call list_resizeList(rlist,ceiling(rlist%dfactor*rlist%nna))
     end if
     
     ! Set next free position
@@ -1845,11 +1787,11 @@ contains
     ! Set head, tail and data
     select case(rlist%clinkType)
     case (LIST_SINGLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
-      elseif (ipred == rlist%Knext(LTAIL)) then
+      elseif (ipred .eq. rlist%Knext(LTAIL)) then
         rlist%Knext(ipred) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1859,12 +1801,12 @@ contains
       end if
 
     case (LIST_DOUBLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
         rlist%Kprev(ipos)  = LNULL
-      elseif (ipred == rlist%Knext(LTAIL)) then
+      elseif (ipred .eq. rlist%Knext(LTAIL)) then
         rlist%Kprev(ipos)  = rlist%Knext(LTAIL)
         rlist%Knext(ipred) = ipos
         rlist%Knext(LTAIL) = ipos
@@ -1877,7 +1819,7 @@ contains
       end if
 
     case DEFAULT
-      print *, "t_list_insertDble: Invalid link type!"
+      print *, "list_insertIntoListDble: Invalid link type!"
       call sys_halt()
     end select
 
@@ -1893,13 +1835,13 @@ contains
     
     if ((rlist%isizeSngl > 0) .and. &
         present(SData)) rlist%SData(:,ipos) = SData
-  end subroutine t_list_insertDble
+  end subroutine list_insertIntoListDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_insertSngl(rlist,skey,ipred,ipos,DData,SData,IData)
+  subroutine list_insertIntoListSngl(rlist,skey,ipred,ipos,DData,SData,IData)
 
 !<description>
     ! This subroutine inserts a new Single data into the list AFTER
@@ -1911,7 +1853,7 @@ contains
     real(SP), intent(IN) :: skey
 
     ! Position of predecessor
-    integer(PREC_LISTIDX), intent(IN) :: ipred
+    integer, intent(IN) :: ipred
 
     ! OPTIONAL: Double data
     real(DP), dimension(:), intent(IN), optional :: DData
@@ -1930,13 +1872,13 @@ contains
 
 !<output>
     ! Position of the prepended item
-    integer(PREC_LISTIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 !</subroutine>
 
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_SINGLE) then
-      print *, 't_list_insertSngl: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_SINGLE) then
+      print *, 'list_insertIntoListSngl: Unsupported data format!'
       call sys_halt()
     end if
     
@@ -1944,7 +1886,7 @@ contains
     rlist%na = rlist%na+1
     ipos     = rlist%Knext(LFREE)
     if (abs(ipos) > rlist%nna) then
-      call resize(rlist,ceiling(rlist%dfactor*rlist%nna))
+      call list_resizeList(rlist,ceiling(rlist%dfactor*rlist%nna))
     end if
     
     ! Set next free position
@@ -1958,11 +1900,11 @@ contains
     ! Set head, tail and data
     select case(rlist%clinkType)
     case (LIST_SINGLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
-      elseif (ipred == rlist%Knext(LTAIL)) then
+      elseif (ipred .eq. rlist%Knext(LTAIL)) then
         rlist%Knext(ipred) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -1972,12 +1914,12 @@ contains
       end if
 
     case (LIST_DOUBLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
         rlist%Kprev(ipos)  = LNULL
-      elseif (ipred == rlist%Knext(LTAIL)) then
+      elseif (ipred .eq. rlist%Knext(LTAIL)) then
         rlist%Kprev(ipos)  = rlist%Knext(LTAIL)
         rlist%Knext(ipred) = ipos
         rlist%Knext(LTAIL) = ipos
@@ -1990,7 +1932,7 @@ contains
       end if
 
     case DEFAULT
-      print *, "t_list_insertSngl: Invalid link type!"
+      print *, "list_insertIntoListSngl: Invalid link type!"
       call sys_halt()
     end select
 
@@ -2006,13 +1948,13 @@ contains
     
     if ((rlist%isizeSngl > 0) .and. &
         present(SData)) rlist%SData(:,ipos) = SData
-  end subroutine t_list_insertSngl
+  end subroutine list_insertIntoListSngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine t_list_insertInt(rlist,ikey,ipred,ipos,DData,IData,SData)
+  subroutine list_insertIntoListInt(rlist,ikey,ipred,ipos,DData,IData,SData)
 
 !<description>
     ! This subroutine inserts a new Integer data into the list AFTER
@@ -2024,7 +1966,7 @@ contains
     integer, intent(IN) :: ikey
 
     ! Position of predecessor
-    integer(PREC_LISTIDX), intent(IN) :: ipred
+    integer, intent(IN) :: ipred
 
     ! OPTIONAL: Double data
     real(DP), dimension(:), intent(IN), optional :: DData
@@ -2043,13 +1985,13 @@ contains
 
 !<output>
     ! Position of the prepended item
-    integer(PREC_LISTIDX), intent(OUT) :: ipos
+    integer, intent(OUT) :: ipos
 !</output>
 !</subroutine>
 
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_INT) then
-      print *, 't_list_insertInt: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_INT) then
+      print *, 'list_insertIntoListInt: Unsupported data format!'
       call sys_halt()
     end if
     
@@ -2057,7 +1999,7 @@ contains
     rlist%na = rlist%na+1
     ipos     = rlist%Knext(LFREE)
     if (abs(ipos) > rlist%nna) then
-      call resize(rlist,ceiling(rlist%dfactor*rlist%nna))
+      call list_resizeList(rlist,ceiling(rlist%dfactor*rlist%nna))
     end if
     
     ! Set next free position
@@ -2071,11 +2013,11 @@ contains
     ! Set head, tail and data
     select case(rlist%clinkType)
     case (LIST_SINGLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
-      elseif (ipred == rlist%Knext(LTAIL)) then
+      elseif (ipred .eq. rlist%Knext(LTAIL)) then
         rlist%Knext(ipred) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
@@ -2085,12 +2027,12 @@ contains
       end if
 
     case (LIST_DOUBLELINKED)
-      if (rlist%Knext(LHEAD) == LNULL) then
+      if (rlist%Knext(LHEAD) .eq. LNULL) then
         rlist%Knext(LHEAD) = ipos
         rlist%Knext(LTAIL) = ipos
         rlist%Knext(ipos)  = LNULL
         rlist%Kprev(ipos)  = LNULL
-      elseif (ipred == rlist%Knext(LTAIL)) then
+      elseif (ipred .eq. rlist%Knext(LTAIL)) then
         rlist%Kprev(ipos)  = rlist%Knext(LTAIL)
         rlist%Knext(ipred) = ipos
         rlist%Knext(LTAIL) = ipos
@@ -2103,7 +2045,7 @@ contains
       end if
 
     case DEFAULT
-      print *, "t_list_insertInt: Invalid link type!"
+      print *, "list_insertIntoListInt: Invalid link type!"
       call sys_halt()
     end select
 
@@ -2119,13 +2061,13 @@ contains
     
     if ((rlist%isizeSngl > 0) .and. &
         present(SData)) rlist%SData(:,ipos) = SData
-  end subroutine t_list_insertInt
+  end subroutine list_insertIntoListInt
   
   ! ***************************************************************************
   
 !<function>
 
-  function t_list_deleteDble(rlist,dkey) result(f)
+  function list_deleteFromListDble(rlist,dkey) result(f)
 
 !<description>
     ! This function deletes a Double data from the list
@@ -2148,34 +2090,34 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_LISTIDX) :: ipred,ipos
+    integer :: ipred,ipos
 
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_DOUBLE) then
-      print *, 't_list_deleteDble: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_DOUBLE) then
+      print *, 'list_deleteFromListDble: Unsupported data format!'
       call sys_halt()
     end if
 
     ! Search for data
-    f=search(rlist,dkey,ipred)
-    if (f == LIST_NOT_FOUND) return
+    f=list_searchInList(rlist,dkey,ipred)
+    if (f .eq. LIST_NOT_FOUND) return
     
     ! Delete data
     rlist%na = rlist%na-1
     ipos     = rlist%Knext(ipred)
-    if (rlist%Knext(ipred) == rlist%Knext(LTAIL)) rlist%Knext(LTAIL)=ipred
+    if (rlist%Knext(ipred) .eq. rlist%Knext(LTAIL)) rlist%Knext(LTAIL)=ipred
 
     ! Update free position
     rlist%Knext(ipred) = rlist%Knext(ipos)
     rlist%Knext(ipos)  = rlist%Knext(LFREE)
     rlist%Knext(LFREE) = -ipos
-  end function t_list_deleteDble
+  end function list_deleteFromListDble
   
   ! ***************************************************************************
   
 !<function>
 
-  function t_list_deleteSngl(rlist,skey) result(f)
+  function list_deleteFromListSngl(rlist,skey) result(f)
 
 !<description>
     ! This function deletes a Single data from the list
@@ -2198,34 +2140,34 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_LISTIDX) :: ipred,ipos
+    integer :: ipred,ipos
 
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_SINGLE) then
-      print *, 't_list_deleteSngl: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_SINGLE) then
+      print *, 'list_deleteFromListSngl: Unsupported data format!'
       call sys_halt()
     end if
 
     ! Search for data
-    f=search(rlist,skey,ipred)
-    if (f == LIST_NOT_FOUND) return
+    f=list_searchInList(rlist,skey,ipred)
+    if (f .eq. LIST_NOT_FOUND) return
     
     ! Delete data
     rlist%na = rlist%na-1
     ipos     = rlist%Knext(ipred)
-    if (rlist%Knext(ipred) == rlist%Knext(LTAIL)) rlist%Knext(LTAIL)=ipred
+    if (rlist%Knext(ipred) .eq. rlist%Knext(LTAIL)) rlist%Knext(LTAIL)=ipred
 
     ! Update free position
     rlist%Knext(ipred) = rlist%Knext(ipos)
     rlist%Knext(ipos)  = rlist%Knext(LFREE)
     rlist%Knext(LFREE) = -ipos
-  end function t_list_deleteSngl
+  end function list_deleteFromListSngl
 
   ! ***************************************************************************
   
 !<function>
 
-  function t_list_deleteInt(rlist,ikey) result(f)
+  function list_deleteFromListInt(rlist,ikey) result(f)
 
 !<description>
     ! This function deletes an Integer data from the list
@@ -2248,34 +2190,34 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_LISTIDX) :: ipred,ipos
+    integer :: ipred,ipos
 
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_INT) then
-      print *, 't_list_deleteInt: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_INT) then
+      print *, 'list_deleteFromListInt: Unsupported data format!'
       call sys_halt()
     end if
 
     ! Search for data
-    f=search(rlist,ikey,ipred)
-    if (f == LIST_NOT_FOUND) return
+    f=list_searchInList(rlist,ikey,ipred)
+    if (f .eq. LIST_NOT_FOUND) return
     
     ! Delete data
     rlist%na = rlist%na-1
     ipos     = rlist%Knext(ipred)
-    if (rlist%Knext(ipred) == rlist%Knext(LTAIL)) rlist%Knext(LTAIL)=ipred
+    if (rlist%Knext(ipred) .eq. rlist%Knext(LTAIL)) rlist%Knext(LTAIL)=ipred
 
     ! Update free position
     rlist%Knext(ipred) = rlist%Knext(ipos)
     rlist%Knext(ipos)  = rlist%Knext(LFREE)
     rlist%Knext(LFREE) = -ipos
-  end function t_list_deleteInt
+  end function list_deleteFromListInt
 
   ! ***************************************************************************
   
 !<function>
 
-  function t_list_searchDble(rlist,dkey,ipred) result(f)
+  function list_searchInListDble(rlist,dkey,ipred) result(f)
 
 !<description>
     ! This function searches for a given Double key in the list
@@ -2291,7 +2233,7 @@ contains
 
 !<output>
     ! Position of the predecessor of the found item
-    integer(PREC_LISTIDX), intent(OUT) :: ipred
+    integer, intent(OUT) :: ipred
 !</output>
 
 !<result>
@@ -2301,11 +2243,11 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_LISTIDX) :: inext
+    integer :: inext
 
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_DOUBLE) then
-      print *, 't_list_searchDble: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_DOUBLE) then
+      print *, 'list_searchInListDble: Unsupported data format!'
       call sys_halt()
     end if
 
@@ -2315,14 +2257,14 @@ contains
     inext = rlist%Knext(ipred)
 
     ! Check if list is empty
-    if (inext == LNULL) return
+    if (inext .eq. LNULL) return
 
     ! What kind of ordering are we
     select case(rlist%cordering)
     case (LIST_UNORDERED)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%DKey(inext) == dkey) then
+        if (rlist%DKey(inext) .eq. dkey) then
           f=LIST_FOUND; exit
         end if
         
@@ -2332,7 +2274,7 @@ contains
     case (LIST_INCREASING)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%DKey(inext) == dkey) then
+        if (rlist%DKey(inext) .eq. dkey) then
           f=LIST_FOUND; exit
         end if
         
@@ -2343,7 +2285,7 @@ contains
     case (LIST_DECREASING)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%DKey(inext) == dkey) then
+        if (rlist%DKey(inext) .eq. dkey) then
           f=LIST_FOUND; exit
         end if
         
@@ -2354,25 +2296,25 @@ contains
     case (LIST_CSR7)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%DKey(inext) == dkey) then
+        if (rlist%DKey(inext) .eq. dkey) then
           f=LIST_FOUND; exit
         end if
         
         if ((ipred.ne.LHEAD) .and. rlist%DKey(inext) > dkey) exit
         
-        if (rlist%Knext(ipred) == rlist%Knext(LTAIL)) then
+        if (rlist%Knext(ipred) .eq. rlist%Knext(LTAIL)) then
           ipred=rlist%Knext(ipred); exit
         end if
         ipred=rlist%Knext(ipred)
       end do
     end select
-  end function t_list_searchDble
+  end function list_searchInListDble
   
   ! ***************************************************************************
   
 !<function>
 
-  function t_list_searchSngl(rlist,skey,ipred) result(f)
+  function list_searchInListSngl(rlist,skey,ipred) result(f)
 
 !<description>
     ! This function searches for a given Single key in the list
@@ -2388,7 +2330,7 @@ contains
 
 !<output>
     ! Position of the predecessor of the found item
-    integer(PREC_LISTIDX), intent(OUT) :: ipred
+    integer, intent(OUT) :: ipred
 !</output>
 
 !<result>
@@ -2398,11 +2340,11 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_LISTIDX) :: inext
+    integer :: inext
 
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_SINGLE) then
-      print *, 't_list_searchSngl: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_SINGLE) then
+      print *, 'list_searchInListSngl: Unsupported data format!'
       call sys_halt()
     end if
 
@@ -2412,14 +2354,14 @@ contains
     inext = rlist%Knext(ipred)
     
     ! Check if list is empty
-    if (inext == LNULL) return
+    if (inext .eq. LNULL) return
 
     ! What kind of ordering are we
     select case(rlist%cordering)
     case (LIST_UNORDERED)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%SKey(inext) == skey) then
+        if (rlist%SKey(inext) .eq. skey) then
           f=LIST_FOUND; exit
         end if
         
@@ -2429,7 +2371,7 @@ contains
     case (LIST_INCREASING)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%SKey(inext) == skey) then
+        if (rlist%SKey(inext) .eq. skey) then
           f=LIST_FOUND; exit
         end if
         
@@ -2440,7 +2382,7 @@ contains
     case (LIST_DECREASING)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)  
-        if (rlist%SKey(inext) == skey) then
+        if (rlist%SKey(inext) .eq. skey) then
           f=LIST_FOUND; exit
         end if
         
@@ -2451,25 +2393,25 @@ contains
     case (LIST_CSR7)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%SKey(inext) == skey) then
+        if (rlist%SKey(inext) .eq. skey) then
           f=LIST_FOUND; exit
         end if
         
         if ((ipred.ne.LHEAD) .and. rlist%SKey(inext) > skey) exit
         
-        if (rlist%Knext(ipred) == rlist%Knext(LTAIL)) then
+        if (rlist%Knext(ipred) .eq. rlist%Knext(LTAIL)) then
           ipred=rlist%Knext(ipred); exit
         end if
         ipred=rlist%Knext(ipred)
       end do
     end select
-  end function t_list_searchSngl
+  end function list_searchInListSngl
 
   ! ***************************************************************************
   
 !<function>
 
-  function t_list_searchInt(rlist,ikey,ipred) result(f)
+  function list_searchInListInt(rlist,ikey,ipred) result(f)
 
 !<description>
     ! This function searches for a given Integer key in the list
@@ -2485,7 +2427,7 @@ contains
 
 !<output>
     ! Position of the predecessor of the found item
-    integer(PREC_LISTIDX), intent(OUT) :: ipred
+    integer, intent(OUT) :: ipred
 !</output>
 
 !<result>
@@ -2495,11 +2437,11 @@ contains
 !</function>
 
     ! local variables
-    integer(PREC_LISTIDX) :: inext
+    integer :: inext
 
     ! Check if list format is ok
-    if (rlist%clistFormat /= ST_INT) then
-      print *, 't_list_searchInt: Unsupported data format!'
+    if (rlist%clistFormat .ne. ST_INT) then
+      print *, 'list_searchInListInt: Unsupported data format!'
       call sys_halt()
     end if
 
@@ -2509,14 +2451,14 @@ contains
     inext = rlist%Knext(ipred)
     
     ! Check if list is empty
-    if (inext == LNULL) return
+    if (inext .eq. LNULL) return
 
     ! What kind of ordering are we
     select case(rlist%cordering)
     case (LIST_UNORDERED)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%IKey(inext) == ikey) then
+        if (rlist%IKey(inext) .eq. ikey) then
           f=LIST_FOUND; exit
         end if
         
@@ -2526,7 +2468,7 @@ contains
     case (LIST_INCREASING)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%IKey(inext) == ikey) then
+        if (rlist%IKey(inext) .eq. ikey) then
           f=LIST_FOUND; exit
         end if
         
@@ -2537,7 +2479,7 @@ contains
     case (LIST_DECREASING)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%IKey(inext) == ikey) then
+        if (rlist%IKey(inext) .eq. ikey) then
           f=LIST_FOUND; exit
         end if
         
@@ -2548,25 +2490,25 @@ contains
     case (LIST_CSR7)
       do while(ipred.ne.rlist%Knext(LTAIL))
         inext = rlist%Knext(ipred)
-        if (rlist%IKey(inext) == ikey) then
+        if (rlist%IKey(inext) .eq. ikey) then
           f=LIST_FOUND; exit
         end if
         
         if ((ipred.ne.LHEAD) .and. rlist%IKey(inext) > ikey) exit
         
-        if (rlist%Knext(ipred) == rlist%Knext(LTAIL)) then
+        if (rlist%Knext(ipred) .eq. rlist%Knext(LTAIL)) then
           ipred=rlist%Knext(ipred); exit
         end if
         ipred=rlist%Knext(ipred)
       end do
     end select
-  end function t_list_searchInt
+  end function list_searchInListInt
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  subroutine t_list_print(rlist)
+  subroutine list_printList(rlist)
 
 !<description>
     ! This subroutine prints the content of the list
@@ -2579,36 +2521,36 @@ contains
 !</subroutine>
 
     ! local variable
-    integer(PREC_LISTIDX) :: ipos
+    integer :: ipos
     
     ipos = rlist%Knext(LHEAD)
-    if (ipos == LNULL) return
+    if (ipos .eq. LNULL) return
     
     select case (rlist%clistFormat)
     case (ST_DOUBLE)
       do
         write(*,*) rlist%DKey(ipos)
-        if (ipos == rlist%Knext(LTAIL)) exit
+        if (ipos .eq. rlist%Knext(LTAIL)) exit
         ipos = rlist%Knext(ipos)
       end do
 
     case (ST_SINGLE)
       do
         write(*,*) rlist%SKey(ipos)
-        if (ipos == rlist%Knext(LTAIL)) exit
+        if (ipos .eq. rlist%Knext(LTAIL)) exit
         ipos = rlist%Knext(ipos)
       end do
       
     case (ST_INT)
       do
         write(*,*) rlist%IKey(ipos)
-        if (ipos == rlist%Knext(LTAIL)) exit
+        if (ipos .eq. rlist%Knext(LTAIL)) exit
         ipos = rlist%Knext(ipos)
       end do
       
     case DEFAULT
-      print *, 't_list_print: Unsupported data type!'
+      print *, 'list_printList: Unsupported data type!'
       call sys_halt()
     end select
-  end subroutine t_list_print
+  end subroutine list_printList
 end module list
