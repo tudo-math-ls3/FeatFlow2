@@ -193,6 +193,7 @@ contains
     rnonlinearCCMatrix%p_rmatrixD1 => rlevelInfo%rmatrixD1
     rnonlinearCCMatrix%p_rmatrixD2 => rlevelInfo%rmatrixD2
     rnonlinearCCMatrix%p_rmatrixMass => rlevelInfo%rmatrixMass
+    rnonlinearCCMatrix%p_rmatrixStabil => rlevelInfo%rmatrixStabil
 
     call cc_assembleMatrix (CCMASM_ALLOCMEM,cmatrixType,&
       rmatrix,rnonlinearCCMatrix)
@@ -313,6 +314,8 @@ contains
       rnonlinearIteration%RcoreEquation(ilevel)%p_rtempVector => &
         rproblem%RlevelInfo(ilevel)%rtempVector
 
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixStabil => &
+          rproblem%RlevelInfo(ilevel)%rmatrixStabil
     end do
       
     ! Clear auxiliary variables for the nonlinear iteration
@@ -857,9 +860,6 @@ contains
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
     type(t_matrixBlock), dimension(:), pointer :: Rmatrices
-    
-    ! Pointer to the template FEM matrix
-    type(t_matrixScalar), pointer :: p_rmatrixTempateFEM
     
     select case (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
     case (CCPREC_NONE)

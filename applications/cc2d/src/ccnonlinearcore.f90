@@ -387,6 +387,10 @@ module ccnonlinearcore
     ! Note: This information is automatically created when the preconditioner
     ! is initialised! The main application does not have to initialise it!
     type(t_matrixScalar) :: rmatrixD2
+    
+    ! Pointer to the Jump stabilisation matrix. 
+    ! Only active if iupwind=CCMASM_STAB_FASTEDGEORIENTED, otherwise not associated
+    type(t_matrixScalar), pointer :: p_rmatrixStabil => NULL()
 
   end type
 
@@ -579,6 +583,8 @@ contains
           rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
       rnonlinearCCMatrix%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
+      rnonlinearCCMatrix%p_rmatrixStabil => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStabil
           
       call cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP)        
       
@@ -778,6 +784,8 @@ contains
           rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
       rnonlinearCCMatrix%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
+      rnonlinearCCMatrix%p_rmatrixStabil => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStabil
 
       ! Assemble the matrix.        
       call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -1343,6 +1351,8 @@ contains
               rnonlinearIteration%RcoreEquation(ilev)%rmatrixD2
           rnonlinearCCMatrix%p_rmatrixMass => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
+          rnonlinearCCMatrix%p_rmatrixStabil => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStabil
 
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.

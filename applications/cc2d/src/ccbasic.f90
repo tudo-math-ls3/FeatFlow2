@@ -103,6 +103,10 @@ module ccbasic
     ! this coincides with rdiscretisation.
     type(t_blockDiscretisation) :: rdiscretisationStabil
     
+    ! Precomputed matrix for edge stabilisation. Only active if
+    ! iupwind = CCMASM_STAB_FASTEDGEORIENTED.
+    type(t_matrixScalar) :: rmatrixStabil
+    
   end type
   
 !</typeblock>

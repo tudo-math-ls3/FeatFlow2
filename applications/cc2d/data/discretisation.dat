@@ -94,7 +94,7 @@ iBoundary          = 2
 # 4 = Q2 (E013) / Q2 (E013) / QP1
 # 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
 # 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
-# 6 = Q2~(EB50) / Q2~(EB50) / QP1
+# 7 = Q2~(EB50) / Q2~(EB50) / QP1
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
 # (QP1  = Quadrilateral discontinuous P1 element)
 
@@ -106,13 +106,14 @@ iElementType       = 3
 # 0=Streamline Diffusion
 # 1=upwind
 # 2=unified edge oriented jump stabilisation
+# 3=fast unified edge oriented jump stabilisation (preconputed matrix)
 
 iUpwind            = 0
 
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
 
-dUpsam             = 1.0 # 0.1
+dUpsam             = 1.0
 
 # Element type to use for the unified edge oriented jump stabilisation.
 # Allows to use a different finite element for setting up the stabilisation

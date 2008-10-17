@@ -584,7 +584,10 @@ contains
     ! matrix stencil!
     cmatBuildType = BILF_MATC_ELEMENTBASED
     
-    if (rproblem%rstabilisation%iupwind .eq. 2) cmatBuildType = BILF_MATC_EDGEBASED
+    if ((rproblem%rstabilisation%iupwind .eq. CCMASM_STAB_EDGEORIENTED) .or. &
+        (rproblem%rstabilisation%iupwind .eq. CCMASM_STAB_FASTEDGEORIENTED)) then
+      cmatBuildType = BILF_MATC_EDGEBASED
+    end if
   
     ! Initialise all levels...
     do i=rproblem%NLMIN,rproblem%NLMAX
@@ -759,6 +762,9 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
+    ! Structure for a precomputed jump stabilisation matrix
+    type(t_jumpStabilisation) :: rjumpStabil
+    
     ! Structure for the bilinear form for assembling Stokes,...
     ! TYPE(t_bilinearForm) :: rform
 
@@ -885,6 +891,39 @@ contains
 
       call lsyssc_transposeMatrixInSitu (rlevelInfo%rmatrixD2,LSYSSC_TR_VIRTUAL)
     
+    end if
+                              
+    ! -----------------------------------------------------------------------
+    ! Fast edge-oriented stabilisation
+    ! -----------------------------------------------------------------------
+
+    if (rproblem%rstabilisation%iupwind .eq. CCMASM_STAB_FASTEDGEORIENTED) then
+    
+      ! Precompute the jump stabilisation matrix.
+      !
+      ! Set up the jump stabilisation structure.
+      ! There's not much to do, only initialise the viscosity...
+      rjumpStabil%dnu = rproblem%dnu
+      
+      ! Set stabilisation parameter
+      rjumpStabil%dgammastar = rproblem%rstabilisation%dupsam
+      rjumpStabil%dgamma = rjumpStabil%dgammastar
+      
+      ! Matrix weight
+      rjumpStabil%dtheta = 1.0_DP
+      
+      ! Allocate an empty matrix
+      call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
+                  rlevelInfo%rmatrixStabil,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rlevelInfo%rmatrixStabil)
+
+      ! Call the jump stabilisation technique to precalculate the
+      ! matrix. The operator is assumed to be linear, so we can just
+      ! precompute it.
+      call conv_jumpStabilisation2d (&
+          rjumpStabil, CONV_MODMATRIX, rlevelInfo%rmatrixStabil,&
+          rdiscretisation=rlevelInfo%rdiscretisationStabil%RspatialDiscr(1))
+      
     end if
                                 
     ! -----------------------------------------------------------------------

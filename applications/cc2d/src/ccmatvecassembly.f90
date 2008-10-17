@@ -112,6 +112,9 @@ module ccmatvecassembly
   ! Edge-oriented stabilisation; configured by dupsam as 'gamma'
   integer, parameter :: CCMASM_STAB_EDGEORIENTED      = 2
 
+  ! Fast Edge-oriented stabilisation; configured by dupsam as 'gamma'. Preconputed matrix.
+  integer, parameter :: CCMASM_STAB_FASTEDGEORIENTED  = 3
+
 !</constantblock>
 
 !<constantblock description="Matrix type ID's specifying the general matrix class to set up.">
@@ -229,6 +232,10 @@ module ccmatvecassembly
     ! An object specifying the block discretisation
     ! for the (edge) stabilisation.
     type(t_blockDiscretisation), pointer :: p_rdiscretisationStabil => null()
+
+    ! Pointer to the Jump stabilisation matrix. 
+    ! Only active if iupwind=CCMASM_STAB_FASTEDGEORIENTED, otherwise not associated
+    type(t_matrixScalar), pointer :: p_rmatrixStabil => NULL()
 
   end type
 
@@ -628,7 +635,7 @@ contains
     integer :: iupwind
     type(t_convUpwind) :: rupwind
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
-    type(T_jumpStabilisation) :: rjumpStabil
+    type(t_jumpStabilisation) :: rjumpStabil
     real(DP) :: dvecWeight
     
       ! Standard value for dvectorWeight is = -1.
@@ -849,7 +856,47 @@ contains
               rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
           end if
 
-        case DEFAULT
+        case (CCMASM_STAB_FASTEDGEORIENTED)
+          ! Jump stabilisation with precomputed matrix.
+
+          ! In the first step, set up the matrix as above with central discretisation,
+          ! i.e. call SD to calculate the matrix without SD stabilisation.
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
+          
+          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
+          rstreamlineDiffusion%dupsam = 0.0_DP
+          
+          ! Matrix weight
+          rstreamlineDiffusion%dtheta = rnonlinearCCMatrix%dgamma
+          
+          ! Weight for the Newtop part; =0 deactivates Newton.
+          rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
+          
+          ! Call the SD method to calculate the nonlinearity.
+          call conv_streamlineDiffusionBlk2d (&
+                              rvector, rvector, &
+                              dvecWeight, 0.0_DP,&
+                              rstreamlineDiffusion, CONV_MODMATRIX, &
+                              rmatrix)          
+        
+          ! Sum up the precomputed edge stabilisation matrix.
+          call lsyssc_matrixLinearComb (&
+              rnonlinearCCMatrix%p_rmatrixStabil     ,rnonlinearCCMatrix%dtheta,&
+              rmatrix%RmatrixBlock(1,1),1.0_DP,&
+              rmatrix%RmatrixBlock(1,1),&
+              .false.,.false.,.true.,.true.)
+          
+          if (.not. bshared) then
+            call lsyssc_matrixLinearComb (&
+                rnonlinearCCMatrix%p_rmatrixStabil   ,rnonlinearCCMatrix%dtheta,&
+                rmatrix%RmatrixBlock(2,2),1.0_DP,&
+                rmatrix%RmatrixBlock(2,2),&
+                .false.,.false.,.true.,.true.)
+          end if
+          
+        case default
           call output_line ('Don''t know how to set up nonlinearity!?!', &
               OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityBlocks')
           call sys_halt()
@@ -888,7 +935,38 @@ contains
                 rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
           end if
 
-        case DEFAULT
+        case (CCMASM_STAB_FastEDGEORIENTED)
+          ! Fast Jump stabilisation. Precomputed matrix.
+          !
+          ! Sum
+        
+          ! Set up the jump stabilisation structure.
+          ! There's not much to do, only initialise the viscosity...
+          rjumpStabil%dnu = rnonlinearCCMatrix%dnu
+          
+          ! Set stabilisation parameter
+          rjumpStabil%dgammastar = rnonlinearCCMatrix%dupsam
+          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          
+          ! Matrix weight
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+
+          ! Sum up the precomputed edge stabilisation matrix.
+          call lsyssc_matrixLinearComb (&
+              rnonlinearCCMatrix%p_rmatrixStabil     ,rnonlinearCCMatrix%dtheta,&
+              rmatrix%RmatrixBlock(1,1),1.0_DP,&
+              rmatrix%RmatrixBlock(1,1),&
+              .false.,.false.,.true.,.true.)
+          
+          if (.not. bshared) then
+            call lsyssc_matrixLinearComb (&
+                rnonlinearCCMatrix%p_rmatrixStabil   ,rnonlinearCCMatrix%dtheta,&
+                rmatrix%RmatrixBlock(2,2),1.0_DP,&
+                rmatrix%RmatrixBlock(2,2),&
+                .false.,.false.,.true.,.true.)
+          end if
+
+        case default
           ! No stabilisation
         
         end select
@@ -1250,7 +1328,7 @@ contains
       
         ! Type of stablilisation?
         select case (rnonlinearCCMatrix%iupwind)
-        case (0)
+        case (CCMASM_STAB_STREAMLINEDIFF)
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
@@ -1276,7 +1354,7 @@ contains
                               rstreamlineDiffusion, CONV_MODDEFECT, &
                               rmatrix,rsolution=rvector,rdefect=rdefect)
                               
-        case (1)
+        case (CCMASM_STAB_UPWIND)
           ! Set up the upwind structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
           rupwind%dnu = rnonlinearCCMatrix%dnu
@@ -1299,7 +1377,7 @@ contains
             call sys_halt()
           end if     
 
-        case (2)
+        case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
@@ -1370,7 +1448,62 @@ contains
             call sys_halt()
           end if
 
-        case DEFAULT
+        case (CCMASM_STAB_FASTEDGEORIENTED)
+          ! Fast Jump stabilisation. Precomputed matrix.
+          
+          ! In the first step, set up the matrix as above with central discretisation,
+          ! i.e. call SD to calculate the matrix without SD stabilisation.
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
+          
+          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
+          rstreamlineDiffusion%dupsam = 0.0_DP
+          
+          ! Matrix weight
+          rstreamlineDiffusion%dtheta = rnonlinearCCMatrix%dgamma
+          
+          ! Weight for the Newtop part; =0 deactivates Newton.
+          rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
+          
+          if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
+
+            ! Deactivate the matrices A12 and A21 by setting the multiplicators
+            ! to 0.0. Whatever the content is (if there's content at all),
+            ! these matrices are ignored then by the kernel.
+            
+            rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
+            rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
+            
+          else
+
+            ! Clear A12/A21 that receives parts of the Newton matrix
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+          
+            ! Activate the submatrices A12 and A21 if they aren't.
+            rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
+            rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+           
+          end if
+         
+          ! Call the SD method to calculate the nonlinearity.
+          call conv_streamlineDiffusionBlk2d (&
+                              rvector, rvector, &
+                              dvectorWeight, 0.0_DP,&
+                              rstreamlineDiffusion, CONV_MODDEFECT, &
+                              rmatrix,rsolution=rvector,rdefect=rdefect)          
+        
+          ! Subtract the stabilisation matrix stuff.
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStabil, &
+              rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
+              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStabil, &
+              rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
+              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+
+        case default
           call output_line ('Don''t know how to set up nonlinearity!?!', &
               OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
           call sys_halt()
@@ -1383,7 +1516,7 @@ contains
         !
         ! Type of stablilisation?
         select case (rnonlinearCCMatrix%iupwind)
-        case (2)
+        case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
         
           ! Set up the jump stabilisation structure.
@@ -1405,7 +1538,19 @@ contains
               rsolution=rvector,rdefect=rdefect,&
               rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
 
-        case DEFAULT
+        case (CCMASM_STAB_FASTEDGEORIENTED)
+          ! Fast Jump stabilisation. Precomputed matrix.
+          
+          ! Subtract the stabilisation matrix stuff.
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStabil, &
+              rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
+              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStabil, &
+              rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
+              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+
+        case default
           ! No stabilisation
         
         end select
