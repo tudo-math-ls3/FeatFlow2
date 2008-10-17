@@ -9420,13 +9420,6 @@ contains
     read (iunit,*) rtriangulation%NEL, rtriangulation%NVT, rtriangulation%NMT,&
                    rtriangulation%NNVE, rtriangulation%NBCT
        
-    ! Check consistency: NEL+1 = NVT
-    if (rtriangulation%NEL+1 .ne. rtriangulation%NVT) then
-      call output_line ('Triangulation structure is invalid NEL+1 does not match NVT!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_readRawTriangulation1D')
-      call sys_halt()
-    end if
-
     ! Check consistency: NNVE = 2
     if (rtriangulation%NNVE .ne. 2) then
       call output_line ('Triangulation structure is invalid: NNVE does not match 2!', &
