@@ -319,7 +319,7 @@ contains
           LSYSSC_MATRIX9, Rlevels(i)%rmatrixN)
 
       ! Build the A-Matrix.
-      call stdop_assembleLaplaceMatrix(Rlevels(i)%rmatrixA, .true., dnu)
+      call stdop_assembleLaplaceMatrix2D(Rlevels(i)%rmatrixA, .true., dnu)
 
       ! Build the B1-matrix entries.
       call stdop_assembleSimpleMatrix(Rlevels(i)%rmatrixB1, DER_FUNC, DER_DERIV_X,&
@@ -334,7 +334,7 @@ contains
                                       1.0_DP, .true.)
                                       
       ! Build the N-Matrix.
-      call stdop_assembleLaplaceMatrix(Rlevels(i)%rmatrixN, .true., deta)
+      call stdop_assembleLaplaceMatrix2D(Rlevels(i)%rmatrixN, .true., deta)
 
       ! Put the A-matrices into the block matrix
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixA, &
