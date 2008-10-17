@@ -17,9 +17,9 @@
 !#
 !# Auxiliary routines, called internally.
 !#
-!# 1.) ppgrd_calcGrad2DInterpP12Q12cnf
+!# 1.) ppgrd_calcGradInterpP12Q12cnf
 !#     -> Calculate the reconstructed gradient as P1, Q1, P2 or Q2
-!#        vector for an arbitrary conformal discretisation, 2D.
+!#        vector for an arbitrary conformal discretisation.
 !#        Uses 1st order interpolation to reconstruct the gradient.
 !#
 !# 2.) ppgrd_calcGradSuperPatchRecov
@@ -184,69 +184,61 @@ contains
       call sys_halt()
     end if
 
-    select case (rvectorScalar%p_rspatialDiscr%p_rtriangulation%ndim)
-    case (NDIM2D)
-      ! Currently, the destination vector must be either pure Q1 or pure P1 or
-      ! mixed Q1/P1 -- everything else is currently not supported.
-      bisQ0 = .false.
-      bisP0 = .false.
-      bisQ1 = .false.
-      bisP1 = .false.
-      bisQ2 = .false.
-      bisP2 = .false.
-      bisDifferent = .false.
-      ! We only check the first two subvectors which we overwrite.
-      ! Any additional subvectors are ignored!
-      do i=1,min(2,rvectorGradient%nblocks)
-        p_rdiscr => rvectorGradient%p_rblockDiscr%RspatialDiscr(i)
-        do j=1,p_rdiscr%inumFESpaces
-          select case (&
-              elem_getPrimaryElement (p_rdiscr%RelementDistr(j)%celement))
-          case (EL_Q0)
-            bisQ0 = .true.
-          case (EL_P0)
-            bisP0 = .true.
-          case (EL_Q1)
-            bisQ1 = .true.
-          case (EL_P1)
-            bisP1 = .true.
-          case (EL_Q2)
-            bisQ2 = .true.
-          case (EL_P2)
-            bisP2 = .true.
-          case DEFAULT
-            bisDifferent = .true.
-          end select
-        end do
+    ! Currently, the destination vector must be either 
+    ! pure Q1, Q2 or  pure P1, P2 or mixed Q1/P1, Q2/P2
+    ! everything else is currently not supported.
+    bisQ1 = .false.
+    bisP1 = .false.
+    bisQ2 = .false.
+    bisP2 = .false.
+    bisDifferent = .false.
+    
+    ! We only check the first NDIMxD subvectors which we overwrite.
+    ! Any additional subvectors are ignored!
+    do i=1,min(rvectorGradient%nblocks,&
+               rvectorScalar%p_rspatialDiscr%p_rtriangulation%ndim)
+      p_rdiscr => rvectorGradient%p_rblockDiscr%RspatialDiscr(i)
+      do j=1,p_rdiscr%inumFESpaces
+        select case (&
+            elem_getPrimaryElement (p_rdiscr%RelementDistr(j)%celement))
+        case (EL_Q0, EL_Q0_3D)
+          bisQ0 = .true.
+        case (EL_P0_1D, EL_P0, EL_P0_3D)
+          bisP0 = .true.
+        case (EL_Q1, EL_Q1_3D)
+          bisQ1 = .true.
+        case (EL_P1_1D, EL_P1, EL_P1_3D)
+          bisP1 = .true.
+        case (EL_Q2)
+          bisQ2 = .true.
+        case (EL_P2_1D, EL_P2)
+          bisP2 = .true.
+        case DEFAULT
+          bisDifferent = .true.
+        end select
       end do
+    end do
+    
+    if (bisDifferent) then
+      call output_line ('Only Q0, Q1, P0, P1, Q2 and P2 supported as&
+          & discretisation for the destination vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
+      call sys_halt()
+    end if
+    
+    ! The bisXXXX flags might get important later...
+    
+    ! Depending on the method choosen, call the appropriate gradient
+    ! recovery routine.
+    select case (imethod)
+    case (PPGRD_INTERPOL)
+      ! 1st order gradient
+      call ppgrd_calcGradInterpP12Q12cnf (rvectorScalar,rvectorGradient)
       
-      if (bisDifferent) then
-        call output_line ('Only Q0, Q1, P0, P1, Q2 and P2 supported as&
-            & discretisation for the destination vector!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-        call sys_halt()
-      end if
-      
-      ! The bisXXXX flags might get important later...
-      
-      ! Depending on the method choosed, call the appropriate gradient
-      ! recovery routine.
-      select case (imethod)
-      case (PPGRD_INTERPOL)
-        ! 1st order gradient
-        call ppgrd_calcGrad2DInterpP12Q12cnf (rvectorScalar,rvectorGradient)
-      case (PPGRD_ZZTECHNIQUE)
-        ! 2nd order gradient with ZZ.
-        ! Standard method is 'nodewise'.
-        call ppgrd_calcGradSuperPatchRecov (rvectorScalar,rvectorGradient,PPGRD_NODEPATCH)
-      end select
-
-    case DEFAULT
-      ! Use ZZ as default.
+    case (PPGRD_ZZTECHNIQUE)
+      ! 2nd order gradient with ZZ.
+      ! Standard method is 'nodewise'.
       call ppgrd_calcGradSuperPatchRecov (rvectorScalar,rvectorGradient,PPGRD_NODEPATCH)
-      !CALL output_line ('Unsupported dimension!',&
-      !    OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-      !CALL sys_halt()
     end select
 
   end subroutine
@@ -255,17 +247,17 @@ contains
 
 !<subroutine>
 
-  subroutine ppgrd_calcGrad2DInterpP12Q12cnf (rvector,rvectorGradient)
+  subroutine ppgrd_calcGradInterpP12Q12cnf (rvector,rvectorGradient)
 
 !<description>
   ! Calculates the recovered gradient of a scalar finite element function
-  ! by standard interpolation. Supports conformal 2D discretisations
+  ! by standard interpolation. Supports conformal discretisations
   ! with $P_1$, $Q_1$, $P_2$ and $Q_2$ mixed in the destination vector.
 !</description>
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN)         :: rvector
+  type(t_vectorScalar), intent(IN) :: rvector
 !</input>
 
 !<inputoutput>
@@ -338,7 +330,7 @@ contains
     integer(PREC_DOFIDX), dimension(:,:), allocatable :: IdofsDest
     
     ! Pointers to the X- and Y-derivative vector
-    real(DP), dimension(:), pointer :: p_DxDeriv, p_DyDeriv
+    real(DP), dimension(:), pointer :: p_DxDeriv, p_DyDeriv, p_DzDeriv
     
     ! Number of elements in the current element distribution
     integer(PREC_ELEMENTIDX) :: NEL
@@ -352,16 +344,9 @@ contains
     
     ! Discretisation structures for the source- and destination vector(s)
     type(t_spatialDiscretisation), pointer :: p_rdiscrSource, p_rdiscrDest
-  
-    ! Evaluate the first derivative of the FE functions.
-
-    Bder = .false.
-    Bder(DER_DERIV_X) = .true.
-    Bder(DER_DERIV_Y) = .true.
-    
+      
     ! Get the discretisation structures of the source- and destination space.
-    ! Note that we assume here that the X- and Y-derivative is discretised
-    ! the same way!
+    ! Note that we assume here that all derivatives are discretised the same way!
     p_rdiscrSource => rvector%p_rspatialDiscr
     p_rdiscrDest => rvectorGradient%p_rblockDiscr%RspatialDiscr(1)
     
@@ -374,21 +359,48 @@ contains
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPGRD_NELEMSIM,p_rtriangulation%NEL)
     
-    ! Get pointetrs to the X- and Y-derivative destination vector.
-    call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
-    call lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
-    
     ! Array that allows the calculation about the number of elements
     ! meeting in a vertex, based onm DOF's.
-    call storage_new ('ppgrd_calcGrad2DInterpP1Q1cnf','DOFContrAtVertex',&
+    call storage_new ('ppgrd_calcGradInterpP1Q1cnf','DOFContrAtVertex',&
                       dof_igetNDofGlob(p_rdiscrDest),&
                       ST_INT, h_IcontributionsAtDOF, ST_NEWBLOCK_ZERO)
     call storage_getbase_int (h_IcontributionsAtDOF,p_IcontributionsAtDOF)
     
-    ! Clear the destination vectors.
-    call lalg_clearVectorDble (p_DxDeriv)
-    call lalg_clearVectorDble (p_DyDeriv)
-                               
+    ! Evaluate the first derivative of the FE functions.
+    Bder = .false.
+
+    ! Get pointers to the derivative destination vector.
+    select case(p_rtriangulation%ndim)
+    case (NDIM1D)
+      call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
+      call lalg_clearVectorDble (p_DxDeriv)
+      Bder(DER_DERIV1D_X) = .true.
+
+    case (NDIM2D)
+      call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
+      call lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
+      call lalg_clearVectorDble (p_DxDeriv)
+      call lalg_clearVectorDble (p_DyDeriv)
+      Bder(DER_DERIV2D_X) = .true.
+      Bder(DER_DERIV2D_Y) = .true.
+
+    case (NDIM3D)
+      call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
+      call lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
+      call lsyssc_getbase_double (rvectorGradient%RvectorBlock(3),p_DzDeriv)
+      call lalg_clearVectorDble (p_DxDeriv)
+      call lalg_clearVectorDble (p_DyDeriv)
+      call lalg_clearVectorDble (p_DzDeriv)
+      Bder(DER_DERIV3D_X) = .true.
+      Bder(DER_DERIV3D_Y) = .true.
+      Bder(DER_DERIV3D_Z) = .true.
+
+    case DEFAULT
+      call output_line('Invalid spatial dimension!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
+      call sys_halt()
+    end select
+    
     ! Now loop over the different element distributions (=combinations
     ! of trial and test functions) in the discretisation.
 
@@ -423,17 +435,38 @@ contains
       ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF's
       ! on each element indofDest!
       select case (elem_getPrimaryElement(p_relementDistrDest%celement))
+      case (EL_P0_1D)
+        call cub_getCubPoints(CUB_G1_1D, nlocalDOFsDest, Dxi, Domega)
       case (EL_P0)
         call cub_getCubPoints(CUB_G1_T, nlocalDOFsDest, Dxi, Domega)
+      case (EL_P0_3D)
+        call cub_getCubPoints(CUB_G1_3D, nlocalDOFsDest, Dxi, Domega)
+
       case (EL_Q0)
         call cub_getCubPoints(CUB_G1X1, nlocalDOFsDest, Dxi, Domega)
+
+      case (EL_P1_1D)
+        call cub_getCubPoints(CUB_TRZ_1D, nlocalDOFsDest, Dxi, Domega)
       case (EL_P1)
         call cub_getCubPoints(CUB_TRZ_T, nlocalDOFsDest, Dxi, Domega)
+      case (EL_P1_3D)
+        call cub_getCubPoints(CUB_TRZ_3D, nlocalDOFsDest, Dxi, Domega)
+        
       case (EL_Q1)
         call cub_getCubPoints(CUB_TRZ, nlocalDOFsDest, Dxi, Domega)
+
+      case (EL_P2_1D)
+        ! Manually calculate the coordinates of the 
+        ! corners/midpoints on the reference element.
+        Dxi(1,1) = 0.0_DP
+        Dxi(2,1) = 1.0_DP
+        Dxi(3,1) = 0.5_DP
+
+        nlocalDOFsDest = 3
+
       case (EL_P2)
-        ! Manually calculate the coordinates of the corners/midpoints on
-        ! the reference element.
+        ! Manually calculate the coordinates of the 
+        ! corners/midpoints on the reference element.
         Dxi(1,1)  =  1.0_DP
         Dxi(1,2)  =  0.0_DP
         Dxi(1,3)  =  0.0_DP
@@ -462,8 +495,8 @@ contains
         
       case (EL_Q2)
 
-        ! Manually calculate the coordinates of the corners/midpoints on
-        ! the reference element.
+        ! Manually calculate the coordinates of the 
+        ! corners/midpoints on the reference element.
         Dxi(1,1)  =  -1.0_DP
         Dxi(1,2)  =  -1.0_DP
 
@@ -495,7 +528,7 @@ contains
         
       case DEFAULT
         call output_line ('Unsupported FE space in destination vector!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGrad2DInterpP1Q1cnf')
+            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpP1Q1cnf')
         call sys_halt()
       end select
 
@@ -518,7 +551,7 @@ contains
       allocate(IdofsDest(indofDest,nelementsPerBlock))
 
       ! Allocate memory for the values of the derivatives in the corners
-      allocate(Dderivatives(nlocalDOFsDest,nelementsPerBlock,2))
+      allocate(Dderivatives(nlocalDOFsDest, nelementsPerBlock, p_rtriangulation%ndim))
 
       ! Initialisation of the element set.
       call elprep_init(revalElementSet)
@@ -569,35 +602,94 @@ contains
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
         ! At this point, we calculate the gradient information.
-        ! As this routine handles the 2D case, we have an X- and Y-derivative.
-        ! Calculate the X-derivative in the corners of the elements
-        ! into Dderivatives(:,:,1) and the Y-derivative into
-        ! Dderivatives(:,:,2).
-        
-        call fevl_evaluate_sim3 (rvector, revalElementSet,&
-                p_relementDistribution%celement, IdofsTrial, DER_DERIV_X,&
-                Dderivatives(:,1:IELmax-IELset+1_I32,1))
+        select case(p_rtriangulation%ndim)
+        case (NDIM1D)
+          ! Calculate the X-derivative in the corners of the elements
+          ! into Dderivatives(:,:,1).
+          
+          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+              p_relementDistribution%celement, IdofsTrial, DER_DERIV1D_X,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,1))
 
-        call fevl_evaluate_sim3 (rvector, revalElementSet,&
-                p_relementDistribution%celement, IdofsTrial, DER_DERIV_Y,&
-                Dderivatives(:,1:IELmax-IELset+1_I32,2))
-
-         ! Sum up the derivative values in the destination vector.
-         ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
-         ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
-         ! local DOF's in the destination space -- in that order!
-                    
-         do i=1,IELmax-IELset+1
-           do j=1,nlocalDOFsDest
-             p_DxDeriv(IdofsDest(j,i)) = p_DxDeriv(IdofsDest(j,i)) + Dderivatives(j,i,1)
-             p_DyDeriv(IdofsDest(j,i)) = p_DyDeriv(IdofsDest(j,i)) + Dderivatives(j,i,2)
-             
-             ! Count how often a DOF was touched.
-             p_IcontributionsAtDOF(IdofsDest(j,i)) = &
-                p_IcontributionsAtDOF(IdofsDest(j,i))+1
+          ! Sum up the derivative values in the destination vector.
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! local DOF's in the destination space -- in that order!
+          
+          do i=1,IELmax-IELset+1
+            do j=1,nlocalDOFsDest
+              p_DxDeriv(IdofsDest(j,i)) = p_DxDeriv(IdofsDest(j,i)) + Dderivatives(j,i,1)
+              
+              ! Count how often a DOF was touched.
+              p_IcontributionsAtDOF(IdofsDest(j,i)) = &
+                  p_IcontributionsAtDOF(IdofsDest(j,i))+1
            end do
          end do
-                    
+
+        case (NDIM2D)
+          ! Calculate the X-derivative in the corners of the elements
+          ! into Dderivatives(:,:,1) and the Y-derivative into Dderivatives(:,:,2).
+          
+          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+              p_relementDistribution%celement, IdofsTrial, DER_DERIV2D_X,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+
+          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+              p_relementDistribution%celement, IdofsTrial, DER_DERIV2D_Y,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,2))
+
+          ! Sum up the derivative values in the destination vector.
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! local DOF's in the destination space -- in that order!
+          
+          do i=1,IELmax-IELset+1
+            do j=1,nlocalDOFsDest
+              p_DxDeriv(IdofsDest(j,i)) = p_DxDeriv(IdofsDest(j,i)) + Dderivatives(j,i,1)
+              p_DyDeriv(IdofsDest(j,i)) = p_DyDeriv(IdofsDest(j,i)) + Dderivatives(j,i,2)
+              
+              ! Count how often a DOF was touched.
+              p_IcontributionsAtDOF(IdofsDest(j,i)) = &
+                  p_IcontributionsAtDOF(IdofsDest(j,i))+1
+           end do
+         end do
+
+         case (NDIM3D)
+           ! Calculate the X-derivative in the corners of the elements
+           ! into Dderivatives(:,:,1), the Y-derivative into Dderivatives(:,:,2)
+           ! and the Z-derivative into Dderivatives(:,:,3)
+          
+          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+              p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_X,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+
+          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+              p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Y,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,2))
+
+          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+              p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Z,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,3))
+          
+          ! Sum up the derivative values in the destination vector.
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! local DOF's in the destination space -- in that order!
+          
+          do i=1,IELmax-IELset+1
+            do j=1,nlocalDOFsDest
+              p_DxDeriv(IdofsDest(j,i)) = p_DxDeriv(IdofsDest(j,i)) + Dderivatives(j,i,1)
+              p_DyDeriv(IdofsDest(j,i)) = p_DyDeriv(IdofsDest(j,i)) + Dderivatives(j,i,2)
+              p_DzDeriv(IdofsDest(j,i)) = p_DzDeriv(IdofsDest(j,i)) + Dderivatives(j,i,3)
+              
+              ! Count how often a DOF was touched.
+              p_IcontributionsAtDOF(IdofsDest(j,i)) = &
+                  p_IcontributionsAtDOF(IdofsDest(j,i))+1
+           end do
+         end do
+
+       end select
+       
       end do ! IELset
       
       ! Release memory
@@ -610,15 +702,35 @@ contains
 
     end do ! icurrentElementDistr
 
-    ! We are nearly done. The final thing: divide the calculated derivatives by the
-    ! number of elements adjacent to each vertex. That closes the calculation
+    ! We are nearly done. The final thing: divide the calculated derivatives by 
+    ! the number of elements adjacent to each vertex. That closes the calculation
     ! of the 'mean' of the derivatives.
-    do i=1,size(p_DxDeriv)
-      ! Div/0 should not occur, otherwise the triangulation is crap as there's a point
-      ! not connected to any element!
-      p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
-      p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
-    end do
+    select case(p_rtriangulation%ndim)
+    case (NDIM1D)
+      do i=1,size(p_DxDeriv)
+        ! Div/0 should not occur, otherwise the triangulation is 
+        ! crap as there's a point not connected to any element!
+        p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
+      end do
+      
+    case (NDIM2D)
+      do i=1,size(p_DxDeriv)
+        ! Div/0 should not occur, otherwise the triangulation is
+        ! crap as there's a point not connected to any element!
+        p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
+        p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
+      end do
+
+    case (NDIM3D)
+      do i=1,size(p_DxDeriv)
+        ! Div/0 should not occur, otherwise the triangulation is
+        ! crap as there's a point not connected to any element!
+        p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
+        p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
+        p_DzDeriv(i) = p_DzDeriv(i) / p_IcontributionsAtDOF(i)
+      end do
+      
+    end select
     
     ! Release temp data
     call storage_free (h_IcontributionsAtDOF)
@@ -859,17 +971,23 @@ contains
     call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
     call storage_getbase_double2D (p_rtriangulation%h_DvertexCoords,  p_DvertexCoords)
 
+    ! We only need the derivatives of trial functions
+    Bder = .false.
+
     ! Get pointers to the derivative destination vector.
     select case(p_rtriangulation%ndim)
     case (NDIM1D)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
       call lalg_clearVectorDble (p_DxDeriv)
+      Bder(DER_DERIV1D_X) = .true.
 
     case (NDIM2D)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
       call lalg_clearVectorDble (p_DxDeriv)
       call lalg_clearVectorDble (p_DyDeriv)
+      Bder(DER_DERIV2D_X) = .true.
+      Bder(DER_DERIV2D_Y) = .true.
 
     case (NDIM3D)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
@@ -878,6 +996,9 @@ contains
       call lalg_clearVectorDble (p_DxDeriv)
       call lalg_clearVectorDble (p_DyDeriv)
       call lalg_clearVectorDble (p_DzDeriv)
+      Bder(DER_DERIV3D_X) = .true.
+      Bder(DER_DERIV3D_Y) = .true.
+      Bder(DER_DERIV3D_Z) = .true.
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
@@ -890,27 +1011,6 @@ contains
     call storage_new ('ppgrd_calcGradSuperPatchRecov','DOFContrAtVertex',&
         dof_igetNDofGlob(p_rdiscrDest), ST_INT, h_IcontributionsAtDOF, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(h_IcontributionsAtDOF, p_IcontributionsAtDOF)
-        
-    ! We only need the derivatives of trial functions
-    Bder = .false.
-    select case (p_rtriangulation%ndim)
-    case (NDIM1D)
-      Bder(DER_DERIV1D_X) = .true.
-
-    case (NDIM2D)
-      Bder(DER_DERIV2D_X) = .true.
-      Bder(DER_DERIV2D_Y) = .true.
-
-    case (NDIM3D)
-      Bder(DER_DERIV3D_X) = .true.
-      Bder(DER_DERIV3D_Y) = .true.
-      Bder(DER_DERIV3D_Z) = .true.
-
-    case DEFAULT
-      call output_line('Invalid spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
-      call sys_halt()
-    end select
     
     ! For the recovery, we only need the function values of trial functions
     BderDest = .false.
@@ -1001,7 +1101,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid patch type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGrad2DSuperPatchRecov')
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
       call sys_halt()
     end select
 
@@ -1046,7 +1146,7 @@ contains
         
       case DEFAULT
         call output_line('Invalid patch type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGrad2DSuperPatchRecov')
+            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
         call sys_halt()
       end select
 
@@ -1243,7 +1343,7 @@ contains
           
         case DEFAULT
           call output_line('Invalid patch type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGrad2DSuperPatchRecov')
+              OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
           call sys_halt()
         end select
         
@@ -3598,33 +3698,23 @@ contains
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-    
-        ! At this point, we calculate the gradient information.
-        ! As this routine handles the 2D case, we have an X- and Y-derivative.
-        ! Calculate the X-derivative in the corners of the elements
-        ! into Dderivatives(:,:,1) and the Y-derivative into
-        ! Dderivatives(:,:,2).
         
-        call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
-              p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_relementDistribution%celement, IdofsTrial, &
-              nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_X,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,1))
-
-        call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
-              p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_relementDistribution%celement, IdofsTrial, &
-              nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_Y,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,2))
-
-        ! Sum up the derivative values in the destination vector.
-        ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
-        ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
-        ! local DOF's in the destination space -- in that order!
-
+        ! How many spatial dimensions are we?
         select case (p_rtriangulation%ndim)
         case (NDIM1D)
-          
+          ! At this point, we calculate the gradient information and
+          ! Calculate the X-derivative in the corners of the elements
+          ! into Dderivatives(:,:,1).
+          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+              p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+              p_relementDistribution%celement, IdofsTrial, &
+              nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV1D_X,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+
+          ! Sum up the derivative values in the destination vector.
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! local DOF's in the destination space -- in that order!
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
 
@@ -3644,7 +3734,26 @@ contains
           end do
 
         case (NDIM2D)
-
+          ! At this point, we calculate the gradient information and
+          ! Calculate the X-derivative in the corners of the elements
+          ! into Dderivatives(:,:,1) and the Y-derivatives into
+          ! Dderivatives(:,:,2)
+          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+              p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+              p_relementDistribution%celement, IdofsTrial, &
+              nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV2D_X,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+          
+          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+              p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+              p_relementDistribution%celement, IdofsTrial, &
+              nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV2D_Y,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,2))
+          
+          ! Sum up the derivative values in the destination vector.
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! local DOF's in the destination space -- in that order!
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
 
@@ -3670,7 +3779,32 @@ contains
           end do
 
         case (NDIM3D)
+          ! At this point, we calculate the gradient information and
+          ! Calculate the X-derivative in the corners of the elements
+          ! into Dderivatives(:,:,1), the Y-derivatives into Dderivatives(:,:,2)
+          ! and the Z-derivatives into Dderivatives(:,:,3).
+          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+              p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+              p_relementDistribution%celement, IdofsTrial, &
+              nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_X,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+          
+          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+              p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+              p_relementDistribution%celement, IdofsTrial, &
+              nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_Y,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,2))
 
+          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+              p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
+              p_relementDistribution%celement, IdofsTrial, &
+              nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_Z,&
+              Dderivatives(:,1:IELmax-IELset+1_I32,3))
+
+          ! Sum up the derivative values in the destination vector.
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! local DOF's in the destination space -- in that order!
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
 
