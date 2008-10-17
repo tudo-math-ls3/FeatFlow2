@@ -266,13 +266,16 @@ module element
 !<constantblock description="Element identifiers for 1D elements">
 
   ! ID of constant conforming line FE, P0
-  integer(I32), parameter :: EL_P0_1D = EL_1D + 0
+  integer(I32), parameter :: EL_P0_1D   = EL_1D + 0
+  integer(I32), parameter :: EL_E000_1D = EL_P0_1D
   
   ! ID of linear conforming line FE, P1
-  integer(I32), parameter :: EL_P1_1D = EL_1D + 1
+  integer(I32), parameter :: EL_P1_1D   = EL_1D + 1
+  integer(I32), parameter :: EL_E001_1D = EL_P1_1D
   
   ! ID of quadratic conforming line FE, P2
-  integer(I32), parameter :: EL_P2_1D = EL_1D + 2
+  integer(I32), parameter :: EL_P2_1D   = EL_1D + 2
+  integer(I32), parameter :: EL_E002_1D = EL_P2_1D
   
   ! ID of cubic conforming line FE, 3,1-Spline
   integer(I32), parameter :: EL_S31_1D = EL_1D + 17
@@ -284,55 +287,39 @@ module element
   ! unspecified element
   integer(I32), parameter :: EL_UNDEFINED = -1
 
-  ! ID of constant conforming triangular FE, P0 (just for the FEAST-users...)
-  integer(I32), parameter :: EL_P0   = EL_2D + 0
-
   ! ID of constant conforming triangular FE, P0
+  integer(I32), parameter :: EL_P0   = EL_2D + 0
   integer(I32), parameter :: EL_E000 = EL_P0
 
-  ! ID of linear conforming triangular FE, P1 (just for the FEAST-users...)
+  ! ID of linear conforming triangular FE, P1
   integer(I32), parameter :: EL_P1   = EL_2D + 1
-
-  ! ID of linear conforming triangular FE, P1 
   integer(I32), parameter :: EL_E001 = EL_P1
 
-  ! ID of quadratic conforming triangular FE, P2 (just for the FEAST-users...)
+  ! ID of quadratic conforming triangular FE, P2
   integer(I32), parameter :: EL_P2   = EL_2D + 2
-
-  ! ID of quadratic conforming triangular FE, P2 
   integer(I32), parameter :: EL_E002 = EL_P2
 
-  ! ID of cubic conforming triangular FE, P3 (just for the FEAST-users...)
-  integer(I32), parameter :: EL_P3   = EL_2D + 3
-
   ! ID of cubic conforming triangular FE, P3
+  integer(I32), parameter :: EL_P3   = EL_2D + 3
   integer(I32), parameter :: EL_E003 = EL_P3
 
   ! ID for rotated linear $\tilde P1$ element (Crouzeix-Raviart)
   integer(I32), parameter :: EL_P1T  = EL_2D + 20
 
-  ! ID of constant conforming quadrilateral FE, Q0 (just for the FEAST-users...)
-  integer(I32), parameter :: EL_Q0   = EL_2D + 10
-
   ! ID of constant conforming quadrilateral FE, Q0
+  integer(I32), parameter :: EL_Q0   = EL_2D + 10
   integer(I32), parameter :: EL_E010 = EL_Q0
 
-  ! ID of bilinear conforming quadrilateral FE, Q1 (just for the FEAST-users...)
+  ! ID of bilinear conforming quadrilateral FE, Q1
   integer(I32), parameter :: EL_Q1   = EL_2D + 11
-
-  ! ID of bilinear conforming quadrilateral FE, Q1 
   integer(I32), parameter :: EL_E011 = EL_Q1 
 
-  ! ID of biquadratic conforming quadrilateral FE, Q2 (just for the FEAST-users...)
+  ! ID of biquadratic conforming quadrilateral FE, Q2
   integer(I32), parameter :: EL_Q2   = EL_2D + 13
-
-  ! ID of biquadratic conforming quadrilateral FE, Q2 
   integer(I32), parameter :: EL_E013 = EL_Q2
 
-  ! ID of bicubic conforming quadrilateral FE, Q3 (just for the FEAST-users...)
+  ! ID of bicubic conforming quadrilateral FE, Q3
   integer(I32), parameter :: EL_Q3   = EL_2D + 14
-
-  ! ID of bicubic conforming quadrilateral FE, Q3 
   integer(I32), parameter :: EL_E014 = EL_Q3
   
   ! ID of nonconforming parametric linear P1 element on a quadrilareral
@@ -371,20 +358,24 @@ module element
 !<constantblock description="Element identifiers for 3D elements">
 
   ! ID of constant conforming tetrahedral FE, P0
-  integer(I32), parameter :: EL_P0_3D = EL_3D + 0
+  integer(I32), parameter :: EL_P0_3D   = EL_3D + 0
+  integer(I32), parameter :: EL_E000_3D = EL_P0_3D
   
   ! ID of linear conforming tetrahedral FE, P1
-  integer(I32), parameter :: EL_P1_3D = EL_3D + 1
+  integer(I32), parameter :: EL_P1_3D   = EL_3D + 1
+  integer(I32), parameter :: EL_E001_3D = EL_P1_3D
 
   ! ID of constant conforming hexahedral FE, Q0
-  integer(I32), parameter :: EL_Q0_3D = EL_3D + 10
+  integer(I32), parameter :: EL_Q0_3D   = EL_3D + 10
+  integer(I32), parameter :: EL_E010_3D = EL_Q0_3D
 
   ! ID of trilinear conforming hexahedral FE, Q1
-  integer(I32), parameter :: EL_Q1_3D = EL_3D + 11
+  integer(I32), parameter :: EL_Q1_3D   = EL_3D + 11
+  integer(I32), parameter :: EL_E011_3D = EL_Q1_3D
 
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
   ! parametric, face-midpoint-value based
-  integer(I32), parameter :: EL_Q1T_3D = EL_3D + 30
+  integer(I32), parameter :: EL_Q1T_3D  = EL_3D + 30
   integer(I32), parameter :: EL_E031_3D = EL_Q1T_3D
   
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
