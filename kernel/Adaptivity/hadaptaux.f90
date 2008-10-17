@@ -37,70 +37,70 @@ module hadaptaux
 !<constantblock description="Global flags for grid refinement/coarsening">
 
   ! No refinement and coarsening
-  integer, parameter, public :: HADAPT_NOADAPTATION         = 0
+  integer, parameter, public :: HADAPT_NOADAPTATION = 0
 
   ! Red-Green refinement and coarsening strategy (R. Banks et al.)
-  integer, parameter, public :: HADAPT_REDGREEN             = 1
+  integer, parameter, public :: HADAPT_REDGREEN     = 1
 
   ! Longest edge bisection strategy (M. Rivara)
-  integer, parameter, public :: HADAPT_LONGESTEDGE          = 2
+  integer, parameter, public :: HADAPT_LONGESTEDGE  = 2
 
 !</constantblock>
 
 !<constantblock description="Bitfield identifiers for state of adaptation">
 
   ! Adaptation is undefined
-  integer, parameter, public :: HADAPT_UNDEFINED     = 2**0
+  integer, parameter, public :: HADAPT_UNDEFINED = 2**0
 
   ! Parameters of adaptivity structure are initialized
-  integer, parameter :: HADAPT_HAS_PARAMETERS        = 2**1
+  integer, parameter :: HADAPT_HAS_PARAMETERS   = 2**1
 
   ! Quadtree/octree for vertex coordinates is generated
-  integer, parameter :: HADAPT_HAS_COORDS            = 2**2
+  integer, parameter :: HADAPT_HAS_COORDS       = 2**2
 
   ! Array for IverticesAtElement is generated
-  integer, parameter :: HADAPT_HAS_VERTATELEM        = 2**3
+  integer, parameter :: HADAPT_HAS_VERTATELEM   = 2**3
 
   ! Array for IneighboursAtElement is generated
-  integer, parameter :: HADAPT_HAS_NEIGHATELEM       = 2**4
+  integer, parameter :: HADAPT_HAS_NEIGHATELEM  = 2**4
 
   ! Boundary data is generated
-  integer, parameter :: HADAPT_HAS_BOUNDARY          = 2**5
+  integer, parameter :: HADAPT_HAS_BOUNDARY     = 2**5
 
   ! Nodal property is generated
-  integer, parameter :: HADAPT_HAS_NODALPROP         = 2**6
+  integer, parameter :: HADAPT_HAS_NODALPROP    = 2**6
 
   ! Number of elements for predefined type
-  integer, parameter :: HADAPT_HAS_NELOFTYPE         = 2**7
+  integer, parameter :: HADAPT_HAS_NELOFTYPE    = 2**7
 
   ! Array for IelementsAtVertex is generated
-  integer, parameter :: HADAPT_HAS_ELEMATVERTEX      = 2**8
+  integer, parameter :: HADAPT_HAS_ELEMATVERTEX = 2**8
 
   ! Dynamic data structures are all generated
-  integer, parameter :: HADAPT_HAS_DYNAMICDATA       = HADAPT_HAS_PARAMETERS+&
-                                                       HADAPT_HAS_COORDS+&
-                                                       HADAPT_HAS_VERTATELEM+&
-                                                       HADAPT_HAS_NEIGHATELEM+&
-                                                       HADAPT_HAS_BOUNDARY+&
-                                                       HADAPT_HAS_NODALPROP+&
-                                                       HADAPT_HAS_NELOFTYPE+&
-                                                       HADAPT_HAS_ELEMATVERTEX
+  integer, parameter :: HADAPT_HAS_DYNAMICDATA  = HADAPT_HAS_PARAMETERS+&
+                                                  HADAPT_HAS_COORDS+&
+                                                  HADAPT_HAS_VERTATELEM+&
+                                                  HADAPT_HAS_NEIGHATELEM+&
+                                                  HADAPT_HAS_BOUNDARY+&
+                                                  HADAPT_HAS_NODALPROP+&
+                                                  HADAPT_HAS_NELOFTYPE+&
+                                                  HADAPT_HAS_ELEMATVERTEX
 
   ! Cells are marked for refinement
-  integer, parameter :: HADAPT_MARKEDREFINE          = 2**9
+  integer, parameter :: HADAPT_MARKEDREFINE     = 2**9
 
   ! Cells are marked for coarsening
-  integer, parameter :: HADAPT_MARKEDCOARSEN         = 2**10
+  integer, parameter :: HADAPT_MARKEDCOARSEN    = 2**10
 
   ! Cells are marked
-  integer, parameter :: HADAPT_MARKED                = HADAPT_MARKEDREFINE+&
-                                                       HADAPT_MARKEDCOARSEN
+  integer, parameter :: HADAPT_MARKED           = HADAPT_MARKEDREFINE+&
+                                                  HADAPT_MARKEDCOARSEN
   
   ! Grid has been refined
-  integer, parameter :: HADAPT_REFINED               = 2**11
+  integer, parameter :: HADAPT_REFINED          = 2**11
   
   ! Grid has been coarsened
-  integer, parameter :: HADAPT_COARSENED             = 2**12
+  integer, parameter :: HADAPT_COARSENED        = 2**12
 
 !</constantblock>
 
@@ -120,15 +120,15 @@ module hadaptaux
 !<constantblock description="Duplication flags. Specifies which information is
 !                            shared between adaptivity structures">
 
-  integer(I32), parameter :: HADAPT_SHARE_IMARKER                 = 2** 0
-  integer(I32), parameter :: HADAPT_SHARE_IVERTEXAGE              = 2** 1
-  integer(I32), parameter :: HADAPT_SHARE_INODALPROPERTY          = 2** 2
-  integer(I32), parameter :: HADAPT_SHARE_IVERTICESATELEMENT      = 2** 3
-  integer(I32), parameter :: HADAPT_SHARE_INEIGHATELEMENT         = 2** 4
-  integer(I32), parameter :: HADAPT_SHARE_IMIDNEIGHATELEMENT      = 2** 5
-  integer(I32), parameter :: HADAPT_SHARE_RVERTEXCOORDINATES      = 2** 6
-  integer(I32), parameter :: HADAPT_SHARE_RBOUNDARY               = 2** 7
-  integer(I32), parameter :: HADAPT_SHARE_RELEMENTSATVERTEX       = 2** 8
+  integer(I32), parameter :: HADAPT_SHARE_IMARKER            = 2** 0
+  integer(I32), parameter :: HADAPT_SHARE_IVERTEXAGE         = 2** 1
+  integer(I32), parameter :: HADAPT_SHARE_INODALPROPERTY     = 2** 2
+  integer(I32), parameter :: HADAPT_SHARE_IVERTICESATELEMENT = 2** 3
+  integer(I32), parameter :: HADAPT_SHARE_INEIGHATELEMENT    = 2** 4
+  integer(I32), parameter :: HADAPT_SHARE_IMIDNEIGHATELEMENT = 2** 5
+  integer(I32), parameter :: HADAPT_SHARE_RVERTEXCOORDINATES = 2** 6
+  integer(I32), parameter :: HADAPT_SHARE_RBOUNDARY          = 2** 7
+  integer(I32), parameter :: HADAPT_SHARE_RELEMENTSATVERTEX  = 2** 8
 
 !</constantblock>
 
@@ -146,7 +146,7 @@ module hadaptaux
   ! adaptive grid refinement and grid coarsening.
   type :: t_hadapt
     ! Format Tag: Specifies the state of adaptation
-    integer :: iSpec                                 = HADAPT_UNDEFINED
+    integer :: iSpec = HADAPT_UNDEFINED
 
     ! Duplication flag. Bitfield that indicates which information is
     ! shared with another adaptivity structure.
@@ -155,70 +155,70 @@ module hadaptaux
     ! not be deleted by hadapt_releaseAdaptation. 
     ! When the bit is 0, the array is a real copy of another array 
     ! and must be deleted in hadapt_releaseAdaptation.
-    integer(I32) :: iduplicationFlag                 = 0
+    integer(I32) :: iduplicationFlag = 0
 
     ! Tag: Specifies the strategy for grid refinement and coarsening
-    integer :: iadaptationStrategy                   = HADAPT_NOADAPTATION
+    integer :: iadaptationStrategy = HADAPT_NOADAPTATION
 
     ! Maximum number of subdivisions from the original mesh
-    integer :: NSUBDIVIDEMAX                         = 0
+    integer :: NSUBDIVIDEMAX = 0
 
     ! Total number of grid refinement steps
-    integer :: nRefinementSteps                      = 0
+    integer :: nRefinementSteps = 0
 
     ! Total number of grid coarsening steps
-    integer :: nCoarseningSteps                      = 0
+    integer :: nCoarseningSteps = 0
 
     ! Total number of grid smoothing steps
-    integer :: nSmoothingSteps                       = 0
+    integer :: nSmoothingSteps = 0
 
     ! Tolerance for refinement
-    real(DP) :: drefinementTolerance                 = 0
+    real(DP) :: drefinementTolerance = 0
 
     ! Tolerance for coarsening
-    real(DP) :: dcoarseningTolerance                 = 0
+    real(DP) :: dcoarseningTolerance = 0
 
     ! Dimension of the triangulation
-    integer :: ndim                                  = 0
+    integer :: ndim = 0
 
     ! Total number of vertices (initially)
-    integer(PREC_VERTEXIDX) :: NVT0                  = 0
+    integer :: NVT0 = 0
     
     ! Total number of vertices
-    integer(PREC_VERTEXIDX) :: NVT                   = 0
+    integer :: NVT = 0
 
     ! Increment of vertices
-    integer(PREC_VERTEXIDX) :: increaseNVT           = 0
+    integer :: increaseNVT = 0
 
     ! Total number of boundary vertives (initially)
-    integer :: NVBD0                                 = 0
+    integer :: NVBD0 = 0
 
     ! Total number of boundary vertives
-    integer :: NVBD                                  = 0
+    integer :: NVBD = 0
     
     ! Total number of boundary components (should not change)
-    integer :: NBCT                                  = 0
+    integer :: NBCT = 0
     
     ! Total number of elements (initially)
-    integer(PREC_ELEMENTIDX) :: NEL0                 = 0
+    integer :: NEL0 = 0
     
     ! Total number of elements
-    integer(PREC_ELEMENTIDX) :: NEL                  = 0
+    integer :: NEL = 0
 
     ! Maximum number of elements (before reallocation)
-    integer(PREC_ELEMENTIDX) :: NELMAX               = 0
+    integer :: NELMAX = 0
     
     ! Total number of green elements (required internally)
-    integer(PREC_ELEMENTIDX) :: nGreenElements       = 0
+    integer :: nGreenElements = 0
     
     ! Nuber of elements with a defined number of vertices per element.
     ! InelOfType(TRIA_NVETRI2D)  = number of triangles in the mesh (2D).
     ! InelOfType(TRIA_NVEQUAD2D) = number of quadrilaterals in the mesh (2D).
-    integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNVE) :: InelOfType = 0
+    integer, dimension(TRIA_MAXNVE) :: InelOfType = 0
 
     ! Same as InelOfType but this array stores the number of elements
     ! which are initially present in the mesh
-    integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNVE) :: InelOfType0 = 0
+    integer, dimension(TRIA_MAXNVE) :: InelOfType0 = 0
     
     ! Element marker array.
     ! Handle to
@@ -279,7 +279,7 @@ module hadaptaux
     ! Pointer to h_IverticesAtElement.
     ! This array is introduced to increase performance and must
     ! not be modified by the user
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement => null ()
+    integer, dimension(:,:), pointer :: p_IverticesAtElement => null ()
 
     ! Neighbour elements adjacent to an element.
     ! Handle to
@@ -291,7 +291,7 @@ module hadaptaux
     ! Pointer to h_IneighboursAtElement.
     ! This array is introduced to increase performance and must
     ! not be modified by the user
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement => null ()
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement => null ()
 
     ! Midneighbour elements adjacent to an element.
     ! Handle to
@@ -307,7 +307,10 @@ module hadaptaux
     ! Pointer to h_ImidneighboursAtElement.
     ! This array is introduced to increase performance and must
     ! not be modified by the user
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_ImidneighboursAtElement => null ()
+    integer, dimension(:,:), pointer :: p_ImidneighboursAtElement => null ()
+    
+    ! Binary tree storing the nodal coordinates in 1D
+    type(t_btree) :: rVertexCoordinates1D
     
     ! Quadtree storing the nodal coordinates in 2D
     type(t_quadtree) :: rVertexCoordinates2D
@@ -343,10 +346,10 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN)           :: rhadapt
+    type(t_hadapt), intent(IN) :: rhadapt
 
     ! Number of the element
-    integer(PREC_ELEMENTIDX), intent(IN) :: iel
+    integer, intent(IN) :: iel
 !</input>
 
 !<result>
@@ -357,6 +360,8 @@ contains
 
     ! Which spatial dimension do we have?
     select case(rhadapt%ndim)
+    case (NDIM1D)
+      nve = 2
 
     case (NDIM2D)
       
