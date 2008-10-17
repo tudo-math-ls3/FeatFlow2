@@ -795,29 +795,38 @@ module boundary
     ! local variables
     integer :: i,ihandle
     integer(I32), dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
-    
-    ! Get the pointers to the segment information arrays for the current
-    ! boundary component:
-    call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
-    call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
-    
-    ! Release the handles of the integer- and double-precision
-    ! data blocks:
-    do i=1,rboundary%iboundarycount
-      ihandle = p_IintSegInfo_handles(i)
-      call storage_free (ihandle)
-      p_IintSegInfo_handles(i) = ihandle
+
+    ! Check if data arrays are allocated
+    if ((rboundary%h_Iintdatavec_handles .ne. ST_NOHANDLE) .and.&
+        (rboundary%h_Idbldatavec_handles .ne. ST_NOHANDLE)) then
       
-      ihandle = p_IdbleSegInfo_handles(i)
-      call storage_free (ihandle)
-      p_IdbleSegInfo_handles(i) = ihandle
-    end do
+      ! Get the pointers to the segment information arrays for the current
+      ! boundary component:
+      call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
+      call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
+      
+      ! Release the handles of the integer- and double-precision
+      ! data blocks:
+      do i=1,rboundary%iboundarycount
+        ihandle = p_IintSegInfo_handles(i)
+        call storage_free (ihandle)
+        p_IintSegInfo_handles(i) = ihandle
+        
+        ihandle = p_IdbleSegInfo_handles(i)
+        call storage_free (ihandle)
+        p_IdbleSegInfo_handles(i) = ihandle
+      end do
+
+      ! Release data arrays in the structure
+      call storage_free (rboundary%h_Iintdatavec_handles)
+      call storage_free (rboundary%h_Idbldatavec_handles)
+    end if
     
     ! Release all arrays in the structure
-    call storage_free (rboundary%h_Iintdatavec_handles)
-    call storage_free (rboundary%h_Idbldatavec_handles)
-    call storage_free (rboundary%h_IsegCount)
-    call storage_free (rboundary%h_DmaxPar)
+    if (rboundary%h_IsegCount .ne. ST_NOHANDLE)&
+        call storage_free (rboundary%h_IsegCount)
+    if (rboundary%h_DmaxPar .ne. ST_NOHANDLE)&
+        call storage_free (rboundary%h_DmaxPar)
     
     rboundary%iboundarycount_g = 0
     rboundary%iboundarycount = 0
