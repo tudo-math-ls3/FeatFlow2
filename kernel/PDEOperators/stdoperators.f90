@@ -9,13 +9,16 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) stdop_assembleLaplaceMatrix
+!# 1.) stdop_assembleLaplaceMatrix1D
+!#     -> Assembles a standard 1D Laplace matrix
+!#
+!# 2.) stdop_assembleLaplaceMatrix2D
 !#     -> Assembles a standard 2D Laplace matrix
 !#
-!# 2.) stdop_assembleLaplaceMatrix3D
+!# 3.) stdop_assembleLaplaceMatrix3D
 !#     -> Assembles a standard 3D Laplace matrix
 !#
-!# 3.) stdop_assembleSimpleMatrix
+!# 4.) stdop_assembleSimpleMatrix
 !#     -> Assembles simple standard matrices like a mass matrix.
 !#
 !# </purpose>
@@ -35,10 +38,74 @@ contains
 
 !<subroutine>
 
-  subroutine stdop_assembleLaplaceMatrix (rmatrix,bclear,dalpha)
+  subroutine stdop_assembleLaplaceMatrix1D (rmatrix,bclear,dalpha)
   
 !<description>
-  ! This routine assembles a Laplace matrix into rmatrix.
+  ! This routine assembles a Laplace matrix into rmatrix in 1D.
+!</description>
+
+!<input>
+  ! OPTIONAL: If set to TRUE (standard), the content of rmatrix is set to 0.0
+  ! before assembling the matrix.
+  logical, intent(IN), optional :: bclear
+  
+  ! OPTIONAL: Constant coefficient in front of the matrix, which is multiplied
+  ! to all entries. If not specified, 1.0 is assumed.
+  real(DP), intent(IN), optional :: dalpha
+!</input>
+
+!<inputoutput>
+  ! Matrix structure where to save the entries of the Laplace matrix to.
+  ! The structure of the matrix (KCOL, KLD,...) as well as the discretisation
+  ! structure must already be given.
+  ! If the array for the matrix content does not exist, a new array is created.
+  ! If the array exist, the new entries of the Laplace operator overwrite
+  ! the old entries (if bclear=true) or are added to the old entries 
+  ! (if bclear=false).
+  type(t_matrixScalar), intent(INOUT) :: rmatrix
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    real(DP) :: dalpha1
+    logical :: bclear1
+    
+    ! A bilinear and linear form describing the analytic problem to solve
+    type(t_bilinearForm) :: rform
+    
+    bclear1 = .true.
+    dalpha1 = 1.0_DP
+    if (present(bclear)) bclear1=bclear
+    if (present(dalpha)) dalpha1=dalpha
+
+    ! For assembling of the entries, we need a bilinear form, 
+    ! which first has to be set up manually.
+    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+    ! scalar system matrix in 1D.
+    
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_DERIV_X
+    rform%Idescriptors(2,1) = DER_DERIV_X
+
+    ! In the standard case, we have constant coefficients:
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
+    rform%Dcoefficients(1)  = dalpha1
+
+    ! Now we can build the matrix entries.
+    call bilf_buildMatrixScalar (rform,bclear1,rmatrix)
+
+  end subroutine stdop_assembleLaplaceMatrix1D
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine stdop_assembleLaplaceMatrix2D (rmatrix,bclear,dalpha)
+  
+!<description>
+  ! This routine assembles a Laplace matrix into rmatrix in 2D.
 !</description>
 
 !<input>
@@ -96,8 +163,7 @@ contains
     ! Now we can build the matrix entries.
     call bilf_buildMatrixScalar (rform,bclear1,rmatrix)
 
-  end subroutine
-
+  end subroutine stdop_assembleLaplaceMatrix2D
 
   ! ***************************************************************************
 
@@ -106,7 +172,7 @@ contains
   subroutine stdop_assembleLaplaceMatrix3D (rmatrix,bclear,dalpha)
   
 !<description>
-  ! This routine assembles a Laplace matrix into rmatrix.
+  ! This routine assembles a Laplace matrix into rmatrix in 3D.
 !</description>
 
 !<input>
@@ -167,7 +233,7 @@ contains
     ! Now we can build the matrix entries.
     call bilf_buildMatrixScalar (rform,bclear1,rmatrix)
 
-  end subroutine
+  end subroutine stdop_assembleLaplaceMatrix3D
 
   ! ***************************************************************************
 
@@ -243,6 +309,6 @@ contains
     ! Now we can build the matrix entries.
     call bilf_buildMatrixScalar (rform,bclear1,rmatrix)
 
-  end subroutine
+  end subroutine stdop_assembleSimpleMatrix
 
-end module
+end module stdoperators
