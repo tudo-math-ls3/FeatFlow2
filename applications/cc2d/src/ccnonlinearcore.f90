@@ -563,6 +563,10 @@ contains
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+      rnonlinearCCMatrix%p_rdiscretisation => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
+      rnonlinearCCMatrix%p_rdiscretisationStabil => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisationStabil
       rnonlinearCCMatrix%p_rmatrixStokes => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
       rnonlinearCCMatrix%p_rmatrixB1 => &
@@ -575,16 +579,7 @@ contains
           rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
       rnonlinearCCMatrix%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
-      rnonlinearCCMatrix%p_rdiscretisation => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
           
-      ! For the defect, we use the original discretisation structure
-      ! when the jump stabilisation is activated; therefore,
-      ! we set rnonlinearCCMatrix%p_rdiscretisationStabil to 
-      ! p_rdiscretisation, this is correct here!
-      rnonlinearCCMatrix%p_rdiscretisationStabil => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
-
       call cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP)        
       
       p_RfilterChain => rnonlinearIteration%p_RfilterChain
@@ -1869,6 +1864,11 @@ contains
     ! Initial test for convergence/divergence.
     call cc_resNormCheck (rproblem,rnonlinearIteration,&
         ite,rx,rb,rd,bconvergence,bdivergence)
+        
+    ! Get the initial residuum; cc_resNormCheck saved that to DresidualOld.
+    rsolverNode%DinitialDefect(1) = sqrt(rnonlinearIteration%DresidualInit(1)**2 + &
+                                         rnonlinearIteration%DresidualInit(2)**2)
+    rsolverNode%DfinalDefect(1) = rsolverNode%DinitialDefect(1)
 
     ! Perform at least nminIterations iterations
     if (ite .lt. rsolverNode%nminIterations) bconvergence = .false.
@@ -1926,6 +1926,10 @@ contains
           ! Check the defect for convergence.
           call cc_resNormCheck (rproblem,rnonlinearIteration,&
               ite,rx,rb,rd,bconvergence,bdivergence)
+              
+          ! Get the new residual; cc_resNormCheck saved that to DresidualOld.
+          rsolverNode%DfinalDefect(1) = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
+                                             rnonlinearIteration%DresidualOld(2)**2)
 
           ! Perform at least nminIterations iterations
           if (ite .lt. rsolverNode%nminIterations) bconvergence = .false.

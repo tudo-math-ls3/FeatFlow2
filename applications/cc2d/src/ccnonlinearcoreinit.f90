@@ -329,16 +329,16 @@ contains
     end if
 
     ! Get stopping criteria of the nonlinear iteration
-    call parlst_getvalue_double (p_rsection, 'depsUR', &
+    call parlst_getvalue_double (p_rsection, 'depsD', &
                                  rnonlinearIteration%DepsNL(1), 0.1_DP)
 
-    call parlst_getvalue_double (p_rsection, 'depsPR', &
+    call parlst_getvalue_double (p_rsection, 'depsDiv', &
                                  rnonlinearIteration%DepsNL(2), 0.1_DP)
 
-    call parlst_getvalue_double (p_rsection, 'depsD', &
+    call parlst_getvalue_double (p_rsection, 'depsUR', &
                                  rnonlinearIteration%DepsNL(3), 0.1_DP)
 
-    call parlst_getvalue_double (p_rsection, 'depsDiv', &
+    call parlst_getvalue_double (p_rsection, 'depsPR', &
                                  rnonlinearIteration%DepsNL(4), 0.1_DP)
 
     call parlst_getvalue_double (p_rsection, 'ddmpD', &
