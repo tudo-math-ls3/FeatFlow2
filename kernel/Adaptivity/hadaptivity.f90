@@ -41,67 +41,73 @@
 !#      -> Restores an adaptivity structure previously backed up with 
 !#         hadapt_duplicateAdapation
 !#
-!#  7.) hadapt_setVertexCoords2D
+!#  7.) hadapt_setVertexCoords1D
+!#      -> Set the coordinates of vertices to the adaptivity structure in 1D
+!#
+!#  8.) hadapt_getVertexCoords1D
+!#      -> Get the coordinates of vertices from the adaptivity structure in 1D
+!#
+!#  9.) hadapt_setVertexCoords2D
 !#      -> Set the coordinates of vertices to the adaptivity structure in 2D
 !#
-!#  8.) hadapt_getVertexCoords2D
+!# 10.) hadapt_getVertexCoords2D
 !#      -> Get the coordinates of vertices from the adaptivity structure in 2D
 !#
-!#  9.) hadapt_setVertexCoords3D
+!# 11.) hadapt_setVertexCoords3D
 !#      -> Set the coordinates of vertices to the adaptivity structure in 3D
 !#
-!# 10.) hadapt_getVertexCoords3D
+!# 12.) hadapt_getVertexCoords3D
 !#      -> Get the coordinates of vertices from the adaptivity structure in 3D
 !#
-!# 11.) hadapt_setVerticesAtElement
+!# 13.) hadapt_setVerticesAtElement
 !#      -> Set the "vertices-at-element" structure to the adaptivity structure
 !#
-!# 12.) hadapt_getVerticesAtElement
+!# 14.) hadapt_getVerticesAtElement
 !#      -> Get the "vertices-at-element" structure from the adaptivity structure
 !#
-!# 13.) hadapt_setNeighboursAtElement
+!# 15.) hadapt_setNeighboursAtElement
 !#      -> Set the "neighbours-at-element" structure to the adaptivity structure
 !#
-!# 14.) hadapt_getNeighboursAtElement
+!# 16.) hadapt_getNeighboursAtElement
 !#      -> Get the "neighbours-at-element" structure from the adaptivity structure
 !#
-!# 15.) hadapt_setNelOfType
+!# 17.) hadapt_setNelOfType
 !#      -> Set the "InelOfType" array to the adaptivity structure
 !#
-!# 16.) hadapt_getNelOfType
+!# 18.) hadapt_getNelOfType
 !#      -> Get the "InelOfType" array from the adaptivity structure
 !#
-!# 17.) hadapt_setBoundary
+!# 19.) hadapt_setBoundary
 !#      -> Set the boundary structure to the adaptivity structure
 !#
-!# 18.) hadapt_getBoundary
+!# 20.) hadapt_getBoundary
 !#      -> Get the boundary structure form the adaptivity structure
 !#
-!# 19.) hadapt_setNodalProperty
+!# 21.) hadapt_setNodalProperty
 !#      -> Set the "nodal property" list to the adaptivity structure
 !#
-!# 20.) hadapt_getNodalProperty
+!# 22.) hadapt_getNodalProperty
 !#      -> Get the "nodal property" list from the adaptivity structure
 !#
-!# 21.) hadapt_genElementsAtVertex
+!# 23.) hadapt_genElementsAtVertex
 !#      -> Generate the "elements-at-vertex" data structure
 !#
-!# 22.) hadapt_performAdaptation
+!# 24.) hadapt_performAdaptation
 !#      -> perform one step of grid adaptation
 !#
-!# 23.) hadapt_infoStatistics
+!# 25.) hadapt_infoStatistics
 !#      -> output information about the adaptivity structure
 !#
-!# 24.) hadapt_writeGridSVG
+!# 26.) hadapt_writeGridSVG
 !#      -> write the adapted grid to file in SVG format
 !#
-!# 25.) hadapt_writeGridGMV
+!# 27.) hadapt_writeGridGMV
 !#      -> write the adapted grid to file in GMV format
 !#
-!# 26.) hadapt_checkConsistency
+!# 28.) hadapt_checkConsistency
 !#      -> check the internal consistency of dynamic data structures
 !#
-!# 27.) hadapt_refreshAdaptation
+!# 29.) hadapt_refreshAdaptation
 !#      -> Refresh pointers of adaptation structure
 !#
 !# The following internal routines are available:
@@ -351,13 +357,17 @@ contains
 !</subroutine>
 
     ! Initialize duplication flag
-    rhadapt%iduplicationFlag=0
+    rhadapt%iduplicationFlag = 0
 
     ! Set dimension
-    rhadapt%ndim=rtriangulation%ndim
+    rhadapt%ndim = rtriangulation%ndim
 
     ! Set coordinates
     select case(rhadapt%ndim)
+    case (NDIM1D)
+      call hadapt_setVertexCoords1D(rhadapt,&
+          rtriangulation%h_DvertexCoords, rtriangulation%NVT)
+
     case(NDIM2D)
       call hadapt_setVertexCoords2D(rhadapt,&
           rtriangulation%h_DvertexCoords, rtriangulation%NVT)
@@ -388,12 +398,17 @@ contains
     call hadapt_setNeighboursAtElement(rhadapt,&
         rtriangulation%h_IneighboursAtElement)
     
-    ! Set boundary
-    call hadapt_setBoundary(rhadapt, rtriangulation%h_IboundaryCpIdx,&
-                            rtriangulation%h_IverticesAtBoundary,&
-                            rtriangulation%h_DvertexParameterValue,&
-                            rtriangulation%NBCT, rtriangulation%NVBD)
+    ! Set boundary for 2D
+    if (rtriangulation%ndim .eq. NDIM2D) then
+      call hadapt_setBoundary(rhadapt, rtriangulation%h_IboundaryCpIdx,&
+                              rtriangulation%h_IverticesAtBoundary,&
+                              rtriangulation%h_DvertexParameterValue,&
+                              rtriangulation%NBCT, rtriangulation%NVBD)
+    end if
 
+print *, rtriangulation%ndim
+
+print *, rhadapt%ndim
     ! Generate "elements-meeting-at-vertex" structure
     call hadapt_genElementsAtVertex(rhadapt)
     
@@ -956,6 +971,141 @@ contains
 
 !<subroutine>
 
+  subroutine hadapt_setVertexCoords1D(rhadapt, h_DvertexCoords, nvt)
+
+!<description>
+    ! This subroutine sets the vertex coordinates given by the handle
+    ! h_DvertexCoords that points to the two-dimensional array 
+    ! p_DvertexCoords and stores them in the binary-search-tree.
+!</description>
+
+!<input>
+    ! Handle to the vertex coordinates
+    integer, intent(IN) :: h_DvertexCoords
+
+    ! Number of vertices
+    integer, intent(IN) :: nvt
+!</input>
+
+!<inputoutput>
+    ! Adaptivity structure
+    type(t_hadapt), intent(INOUT) :: rhadapt
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+
+    ! Check if handle is not empty
+    if (h_DvertexCoords .eq. ST_NOHANDLE) then
+      call output_line('Invalid handle!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setVertexCoords1D')
+      call sys_halt()
+    end if
+
+    ! Check if quadtree is already generated, then remove old quadtree/octree first
+    if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .eq. HADAPT_HAS_COORDS) then
+      call qtree_releaseQuadtree(rhadapt%rVertexCoordinates2D)
+    end if
+    
+    ! Set pointer
+    call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords, nvt)
+    
+    ! Create quadtree for vertices
+    call btree_createTree(rhadapt%rVertexCoordinates1D, 2*nvt,&
+                          ST_DOUBLE, 0, 0, 0, 1.5_DP)
+    
+    ! Copy vertex coordinates to quadtree
+    call btree_copyToTree(p_DvertexCoords(1,:), rhadapt%rVertexCoordinates1D)
+
+    ! Set specifier for quadtree
+    rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_COORDS)
+
+    ! Set dimensions
+    rhadapt%ndim = NDIM2D
+    rhadapt%NVT  = nvt
+  end subroutine hadapt_setVertexCoords1D
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine hadapt_getVertexCoords1D(rhadapt, h_DvertexCoords, nvt, ndim)
+
+!<description>
+    ! This subroutine gets the vertex coordinates from the binary tree
+    ! and stores them in the two-dimensional array associated to the
+    ! handle h_DvertexCoords. Note that the allocated memory will 
+    ! be reallocated if is does not provide the correct dimensions.
+!</description>
+
+!<input>
+    ! Adaptivity structure
+    type(t_hadapt), intent(IN) :: rhadapt
+!</input>
+
+!<inputoutput>
+    ! Handlt to the vertex coordinate vector
+    integer, intent(INOUT) :: h_DvertexCoords
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: number of vertices
+    integer, intent(OUT), optional :: nvt
+
+    ! OPTIONAL: number of spatial dimensions
+    integer, intent(OUT), optional :: ndim
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: h_Ddata
+
+    ! Check if coordinates exists
+    if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .ne. HADAPT_HAS_COORDS) then
+      call output_line('Binary tree does not exist!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords1D')
+      call sys_halt()
+    end if
+
+    ! Check if coordinates are given in 1D
+    if (rhadapt%ndim .ne. NDIM1D) then
+      call output_line('Invalid spatial dimension!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords1D')
+      call sys_halt()
+    end if
+
+    ! Copy binary tree to temporal handle 
+    h_Ddata = ST_NOHANDLE
+    call btree_copyFromTreeKey(rhadapt%rVertexCoordinates1D, h_Ddata)
+    call storage_getbase_double(h_Ddata, p_Ddata, rhadapt%NVT)
+    call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords)
+
+    ! Check if vectors are compatible and reallocate
+    ! the coordinate vector if required
+    if (size(p_Ddata) .gt. size(p_DvertexCoords,2)) then
+      call storage_realloc('hadapt_getVertexCoords1D', size(p_Ddata),&
+                           h_DvertexCoords, ST_NEWBLOCK_NOINIT, .false.)
+      call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords)
+    end if
+    
+    ! Copy data to coordinate vector
+    call lalg_copyVectorDble(p_Ddata, p_DvertexCoords(1,:), rhadapt%NVT)
+
+    ! Release temporal memory
+    call storage_free(h_Ddata)
+
+    ! Set dimension
+    if (present(ndim)) ndim = rhadapt%ndim
+    if (present(nvt))  nvt  = rhadapt%NVT
+  end subroutine hadapt_getVertexCoords1D
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine hadapt_setVertexCoords2D(rhadapt, h_DvertexCoords, nvt)
 
 !<description>
@@ -966,22 +1116,22 @@ contains
 
 !<input>
     ! Handle to the vertex coordinates
-    integer, intent(IN)                 :: h_DvertexCoords
+    integer, intent(IN) :: h_DvertexCoords
 
     ! Number of vertices
-    integer(PREC_VERTEXIDX), intent(IN) :: nvt
+    integer, intent(IN) :: nvt
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT)    :: rhadapt
+    type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    integer(PREC_QTREEIDX)            :: nnode
-    real(DP)                          :: xmin,xmax,ymin,ymax
+    real(DP) :: xmin,xmax,ymin,ymax
+    integer  :: nnode
 
     ! Check if handle is not empty
     if (h_DvertexCoords .eq. ST_NOHANDLE) then
@@ -1042,12 +1192,12 @@ contains
 
 !<inputoutput>
     ! Handlt to the vertex coordinate vector
-    integer, intent(INOUT)        :: h_DvertexCoords
+    integer, intent(INOUT) :: h_DvertexCoords
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of vertices
-    integer(PREC_VERTEXIDX), intent(OUT), optional :: nvt
+    integer, intent(OUT), optional :: nvt
 
     ! OPTIONAL: number of spatial dimensions
     integer, intent(OUT), optional :: ndim
@@ -1090,10 +1240,10 @@ contains
 
 !<input>
     ! Handle to the vertex coordinates
-    integer, intent(IN)                 :: h_DvertexCoords
+    integer, intent(IN) :: h_DvertexCoords
 
     ! Number of vertices
-    integer(PREC_VERTEXIDX), intent(IN) :: nvt
+    integer, intent(IN) :: nvt
 !</input>
 
 !<inputoutput>
@@ -1104,8 +1254,8 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    integer(PREC_QTREEIDX)            :: nnode
-    real(DP)                          :: xmin,xmax,ymin,ymax,zmin,zmax
+    real(DP) :: xmin,xmax,ymin,ymax,zmin,zmax
+    integer  :: nnode
 
     ! Check if handle is not empty
     if (h_DvertexCoords .eq. ST_NOHANDLE) then
@@ -1168,12 +1318,12 @@ contains
 
 !<inputoutput>
     ! Handlt to the vertex coordinate vector
-    integer, intent(INOUT)     :: h_DvertexCoords
+    integer, intent(INOUT) :: h_DvertexCoords
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of vertices
-    integer(PREC_VERTEXIDX), intent(OUT), optional :: nvt
+    integer, intent(OUT), optional :: nvt
 
     ! OPTIONAL: number of spatial dimensions
     integer, intent(OUT), optional :: ndim
@@ -1218,7 +1368,7 @@ contains
     integer, intent(IN) :: h_IverticesAtElement
 
     ! Total number of elements
-    integer(PREC_ELEMENTIDX), intent(IN) :: nel
+    integer, intent(IN) :: nel
 !</input>
 
 !<inputoutput>
@@ -1268,7 +1418,7 @@ contains
 
 !<output>
     ! OPTIONAL: number of elements
-    integer(PREC_ELEMENTIDX), intent(OUT), optional :: nel
+    integer, intent(OUT), optional :: nel
 !</output>
 !</subroutine>
 
@@ -1358,7 +1508,7 @@ contains
 
 !<output>
     ! OPTIONAL: number of elements
-    integer(PREC_ELEMENTIDX), intent(OUT), optional :: nel
+    integer, intent(OUT), optional :: nel
 !</output>
 !</subroutine>
 
@@ -1394,7 +1544,7 @@ contains
 
 !<input>
     ! Number of elements with a defined number of vertices per element.
-    integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNVE), intent(IN) :: InelOfType
+    integer, dimension(TRIA_MAXNVE), intent(IN) :: InelOfType
 !</input>
 
 !<inputoutput>
@@ -1427,7 +1577,7 @@ contains
 
 !<output>
     ! Number of elements with a defined number of vertices per element.
-    integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNVE), intent(OUT) :: InelOfType
+    integer, dimension(TRIA_MAXNVE), intent(OUT) :: InelOfType
 !</output>
 !</subroutine>
 
@@ -1480,8 +1630,8 @@ contains
     real(DP), dimension(:,:), pointer :: p_DvertexParameterValue2D
     real(DP), dimension(:), pointer   :: p_DvertexParameterValue
     integer, dimension(:), pointer    :: p_IboundaryCpIdx
-    integer(PREC_VERTEXIDX), dimension(:), pointer    :: p_IverticesAtBoundary
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtBoundary
+    integer, dimension(:), pointer    :: p_IverticesAtBoundary
+    integer, dimension(:,:), pointer  :: p_IneighboursAtBoundary
     integer(I32), dimension(2) :: Isize
     integer :: ioff,lvbd,ivbdStart,ivbdEnd,ibct,h_IneighboursAtBoundary
     
@@ -1612,7 +1762,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_DvertexParameterValue
     integer, dimension(:), pointer  :: p_IboundaryCpIdx
-    integer(PREC_VERTEXIDX), dimension(:), pointer   :: p_IverticesAtBoundary
+    integer, dimension(:), pointer  :: p_IverticesAtBoundary
     integer(I32) :: isize
     integer :: ioff,lvbd,ivbdStart,ivbdEnd,ibct
 
@@ -1797,9 +1947,7 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    integer(PREC_ARRAYLISTIDX) :: ipos
-    integer(PREC_ELEMENTIDX) :: iel
-    integer :: ive
+    integer :: ipos,iel,ive
 
     ! Check if "vertices-at-element" list exists
     if (iand(rhadapt%iSpec, HADAPT_HAS_VERTATELEM) .ne. HADAPT_HAS_VERTATELEM) then
@@ -1863,11 +2011,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_ELEMENTIDX), dimension(1) :: Ielements
-    integer(PREC_VERTEXIDX), dimension(1) :: Ivertices
+    integer, dimension(1) :: Ielements, Ivertices
     integer(I32), dimension(2) :: Isize
-    integer(PREC_VERTEXIDX)    :: nvt
-    integer(PREC_ELEMENTIDX)   :: nel
+    integer :: nvt,nel
 
     ! Check if dynamic data structures are available
     if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA) .ne. HADAPT_HAS_DYNAMICDATA) then
@@ -1978,11 +2124,11 @@ contains
     function NumberOfElements(rhadapt) result(nel)
       
       type(t_hadapt), intent(IN) :: rhadapt
-      integer(PREC_ELEMENTIDX)      :: nel
+      integer :: nel
       
       ! local variables
       integer, dimension(:), pointer :: p_Imarker
-      integer(PREC_ELEMENTIDX)       :: iel
+      integer :: iel
       
       call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
       
@@ -2145,10 +2291,7 @@ contains
     real(DP) :: x0,y0,xdim,ydim,dscale
     
     integer, dimension(:), pointer :: p_Imarker
-    integer(PREC_VERTEXIDX)  :: ivt
-    integer(PREC_ELEMENTIDX) :: iel
-    integer(PREC_ARRAYLISTIDX):: ipos
-    integer :: xsize,ysize,iunit,ive,nve
+    integer :: ivt,iel,ipos,xsize,ysize,iunit,ive,nve
     integer, save :: iout=0
     
     ! Check if dynamic data structures generated
@@ -2746,9 +2889,7 @@ contains
     
     ! local parameters
     integer,  dimension(:), pointer :: p_Imarker
-    integer(PREC_VERTEXIDX) :: ivt
-    integer(PREC_ELEMENTIDX) :: iel
-    integer :: iunit,nve
+    integer :: ivt,iel,iunit,nve
     integer, save :: iout=0
 
     ! Check if dynamic data structures generated
@@ -2883,13 +3024,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_ARRAYLISTIDX) :: ipos
-    integer(PREC_VERTEXIDX)    :: ivt,idx
-    integer(PREC_ELEMENTIDX)   :: iel,jel,jelmid
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertexIdx
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
+    integer, dimension(:), pointer :: p_IelementsAtVertexIdx,p_IelementsAtVertex
+    integer :: ipos,ivt,idx,iel,jel,jelmid,ive,jve,nve,mve
     integer :: h_IelementsAtVertexIdx,h_IelementsAtVertex
-    integer :: ive,jve,nve,mve
     logical :: btest,bfound
 
     ! Test #1: Consistency of element numbers
@@ -3271,7 +3408,7 @@ contains
     
     ! local variables
     integer, dimension(:), pointer :: p_Imarker
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
     
     ! Check if dynamic data structures are o.k. and if 
     ! cells are marked for refinement
@@ -3397,13 +3534,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_ELEMENTIDX), dimension(1) :: Ielements
-    integer(PREC_VERTEXIDX), dimension(2)  :: Ivertices
     integer,  dimension(:), pointer :: p_Imarker
-    integer(PREC_ARRAYLISTIDX) :: ipos
-    integer(PREC_ELEMENTIDX) :: iel,jel
-    integer(PREC_VERTEXIDX)  :: ivt,ivtReplace
-    integer :: ive
+    integer, dimension(1) :: Ielements
+    integer, dimension(2)  :: Ivertices
+    integer :: ipos,iel,jel,ivt,ivtReplace,ive
 
     ! Check if dynamic data structures are o.k. and 
     ! if  cells are marked for coarsening
