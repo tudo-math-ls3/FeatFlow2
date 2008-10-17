@@ -158,7 +158,7 @@ contains
                                  'DUPSAM',rproblem%rstabilisation%dupsam,0.0_DP)
 
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'IELEMENTTYPETABIL',iElementTypeStabil,0)
+                              'IELEMENTTYPESTABIL',iElementTypeStabil,0)
 
     ! Now set up discrezisation structures on all levels:
 
