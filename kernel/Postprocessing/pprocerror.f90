@@ -3260,8 +3260,8 @@ contains
             do iblock=1,rvector%nblocks
               do idim=1,p_rdiscretisation%ndimension
                 delementDeviation = delementDeviation + &
-                    OM * Dcoefficients(icubp,IEL,iblock) * &
-                        (p_DcubPtsReal(idim,icubp,IEL)-DmassCenter(idim))**2
+                    abs(OM * Dcoefficients(icubp,IEL,iblock)) * &
+                       (p_DcubPtsReal(idim,icubp,IEL)-DmassCenter(idim))**2
               end do
             end do
 
