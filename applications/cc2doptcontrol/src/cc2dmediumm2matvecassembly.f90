@@ -1654,13 +1654,11 @@ contains
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
-                              rvector, rvector, dvecWeight, 0.0_DP,&
                               rjumpStabil, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1))   
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
-                                rvector, rvector, dvecWeight, 0.0_DP,&
                                 rjumpStabil, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2))   
           end if
@@ -1693,13 +1691,11 @@ contains
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
-                              rvector, rvector, dvecWeight, 0.0_DP,&
                               rjumpStabil, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1))   
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
-                                rvector, rvector, dvecWeight, 0.0_DP,&
                                 rjumpStabil, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2))   
           end if
@@ -2939,7 +2935,6 @@ contains
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
-                              rtempVector, rtempVector, dvectorWeight, 0.0_DP,&
                               rjumpStabil, CONV_MODDEFECT, &
                               rtempMatrix%RmatrixBlock(1,1),&
                               rsolution=rtempVector,rdefect=rtempDefect)   
@@ -2978,14 +2973,12 @@ contains
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
-                              rtempVector, rtempVector, dvectorWeight, 0.0_DP,&
                               rjumpStabil, CONV_MODDEFECT, &
                               rtempMatrix%RmatrixBlock(1,1),&
                               rsolution=rtempVector,rdefect=rtempDefect)   
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
-                                rtempVector, rtempVector, dvectorWeight, 0.0_DP,&
                                 rjumpStabil, CONV_MODDEFECT, &
                                 rtempMatrix%RmatrixBlock(2,2),&
                                 rsolution=rtempVector,rdefect=rtempDefect)   
