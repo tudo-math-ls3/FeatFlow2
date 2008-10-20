@@ -214,6 +214,12 @@
 !# 61.) lsyssc_restoreFpdbObjectMat
 !#      -> Restores a scalar matrix from an ObjectItem
 !#
+!# 62.) lsyssc_unshareMatrix
+!#      -> Renders a matrix independent, resets the sharing state
+!# 
+!# 63.) lsyssc_unshareVector
+!#      -> Renders a vector independent, resets the sharing state
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -10663,38 +10669,25 @@ contains
   ! matrix in rtransposedMatrix.
   ! itransFlag decides (if specified) how the creation of the
   ! transposed matrix is to be performed.
-  !
-  ! Remark: Building a transposed matrix involves switching the trial- and
-  !  test-functions of the underlying discretisation. This routine does
-  !  *not* perform this switching! If the matrices base on a 
-  !  discretisation, the application has to set up the corresponding
-  !  discretisation structure manually and to attach it to the transposed
-  !  matrix!
 !</description>
 
 !<input>
   ! OPTIONAL: transposed-flag; one of the LSYSSC_TR_xxxx constants:
   ! =LSYSSC_TR_ALL or not specified: transpose the matrix completely.
   ! =LSYSSC_TR_STRUCTURE           : Transpose only the matrix structure; 
-  !     the content of the transposed matrix is invalid afterwards.
-  !     If there is a matrix in rtransposedMatrix, the structure is 
-  !       overwritten or an error is thrown, depending on whether the
-  !       structural data (NA,...) of rtransposedMatrix matches rmatrix.
-  !     If there's no matrix in rtransposedMatrix, a new matrix structure
-  !       without entries is created.
+  !     the content of the transposed matrix is invalid afterwards,
+  !     but is not released/destroyed.
   ! =LSYSSC_TR_VIRTUAL             : Actually don't touch the matrix 
   !     structure, but invert the 'transposed' flag in imatrixSpec. 
-  !
-  !     rtransposedMatrix is created by copying the data handles from
-  !     rmatrix - any previous data in rtransposedMatrix is overwritten. 
-  !     Afterwards, rtransposedMatrix is marked as transposed 
-  !     without modifying the structures, and all matrix-vector operations
-  !     will be performed with the transposed matrix. 
+  !     rmatrix is marked as transposed without modifying the structures, 
+  !     and all matrix-vector operations will be performed with the transposed 
+  !     matrix. 
   !     But caution: there may be some algorithms that don't work with such 
   !       'virtually' transposed matrices!
   ! =LSYSSC_TR_VIRTUALCOPY         : The same as LSYSSC_TR_VIRTUAL, but
   !     creates a duplicate of the source matrix in memory, thus resulting
   !     in rtransposedMatrix being a totally independent matrix.
+  !     So afterwards, rmatrix is an independent, virtually transposed matrix.
   integer, intent(IN), optional :: itransFlag
 !</input>
 
@@ -10705,22 +10698,70 @@ contains
 !</subroutine>
 
     type(t_matrixScalar) :: rmatrix2
-    
+
+    ! Transpose the matrix to a temporary copy.    
     call lsyssc_transposeMatrix (rmatrix,rmatrix2,itransFlag)
 
-    ! Transfer the copy-flags
-    rmatrix2%imatrixSpec = ior(iand(rmatrix2%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY)),&
-                               iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY))
-
-    ! Probably remove old data
-    if (.not. lsyssc_isMatrixContentShared(rmatrix,rmatrix2)) &
-      call lsyssc_releaseMatrixContent(rmatrix)
+    ! Next thing is to release the old matrix; but that's not as easy
+    ! as calling lsyssc_releaseMatrix! The point is that the source
+    ! matrix may or may not share its structure/content with another
+    ! one -- and the new matrix may do this as well!
+    !
+    ! We have to separate some cases...
     
-    ! Prevent lsyssc_releaseMatrix from releasing the content if it's still there
-    rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)
-    
-    if (.not. lsyssc_isMatrixStructureShared(rmatrix,rmatrix2)) &
+    select case (itransFlag)
+    case (LSYSSC_TR_ALL,LSYSSC_TR_VIRTUALCOPY)
+      ! These are the simple cases: The new matrix is independent.
+      ! Release the old one.
       call lsyssc_releaseMatrix(rmatrix)
+      
+    case (LSYSSC_TR_VIRTUAL)
+      ! This case slightly harder. The new matrix shares both,
+      ! structure and content with the old one. The old one may share
+      ! its structure or content with another one. We have to transfer
+      ! the copy flags from the old matrix here.
+      rmatrix2%imatrixSpec = ior(iand(rmatrix2%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY)),&
+                                 iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY))
+                                 
+      ! rmatrix2 has the handles of rmatrix but we want to release
+      ! rmatrix now. In this case we have to prevent the data arrays
+      ! from being released in case rmatrix is the old owner of the
+      ! arrays.
+      rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+      
+      ! Now we can savely release the source matrix without destroying
+      ! anything.
+      call lsyssc_releaseMatrix(rmatrix)
+      
+    case (LSYSSC_TR_STRUCTURE)
+      ! Ok, this case is a bit strange, somehow, and I'm not sure if it
+      ! really works this way, but it should :-)
+      !
+      ! The above lsyssc_transposeMatrix transposed the structure,
+      ! so the new matrix has a complete new structure -- we don't
+      ! have to take care about.
+      !
+      ! The content of rmatrix may belong to rmatrix or not.
+      ! The rule is that lsyssc_transposeMatrixInSitu must keeps the
+      ! content -- it gets invalid, but it's not destroyed. So we
+      ! must make sure that releasing rmatrix must not destroy
+      ! the content. On the other hand, rmatrix2 must get the
+      ! copy state of the content from rmatrix.
+      !
+      ! So at first make sure, rmatrix2 is the owner of the content
+      ! (if rmatrix was the original owner) or takes the copy state
+      ! from rmatrix.
+      rmatrix2%imatrixSpec = ior(iand(rmatrix2%imatrixSpec,&
+                                      not(LSYSSC_MSPEC_CONTENTISCOPY)),&
+                                 iand(rmatrix%imatrixSpec,&
+                                      LSYSSC_MSPEC_CONTENTISCOPY))
+    
+      ! Prevent lsyssc_releaseMatrix from releasing the content if it's still there
+      rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)
+      
+      ! Now we can release the old matrix.
+      call lsyssc_releaseMatrix(rmatrix)
+    end select
       
     ! Create a hard-copy of rmatrix.
     ! This is one of the very rare cases where we on purpose assign a matrix
@@ -19035,5 +19076,138 @@ contains
     end if
 
   end subroutine lsyssc_restoreFpdbObjectMat
+
+  !****************************************************************************
+  
+!<subroutine>
+  
+  subroutine lsyssc_unshareMatrix (rmatrix,bstructure,bdata)
+  
+!<description>
+  ! Resets the sharing state of the structure/data arrays in a matrix.
+  ! bstructure/bdata decides on if the structure and/or the data is
+  ! associated to rmatrix. If the matrix is already the owner of the
+  ! structure/data, nothing happens. If the matrix shares its structure/data
+  ! with another matrix, the new memory is allocated, the old data is
+  ! copied and the new independent structure/data arrays are associated
+  ! to the matrix. Therefore, if bstructure=bdata=.true, the matrix
+  ! will be made completely independent.
+!</description>
+  
+!<input>
+  ! Revoke the sharing state of the matrix structure. If the matrix
+  ! is not the owner of the structure, a new structure array is allocated
+  ! in memory and the data of the old structure is copied.
+  logical, intent(in) :: bstructure
+  
+  ! Revoke the sharing state of the matrix data. If the matrix
+  ! is not the owner of the data, a new data array is allocated
+  ! in memory and the data of the old structure is copied.
+  logical, intent(in) :: bdata  
+!</input>
+
+!<inputoutput>
+  ! Matrix to be changed matrix.
+  type(t_matrixScalar), intent(inout)            :: rmatrix
+!</inputoutput>  
+
+!</subroutine>
+
+    type(t_matrixScalar) :: rmatrix2
+    integer :: idup1,idup2
+    
+    idup1 = LSYSSC_DUP_SHARE
+    idup2 = LSYSSC_DUP_SHARE
+    
+    if (bstructure .and. &
+        (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0)) then
+      idup1 = LSYSSC_DUP_COPY  
+    end if
+
+    if (bdata .and. &
+        (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
+      idup2 = LSYSSC_DUP_COPY  
+    end if
+    
+    ! Probably nothing to do.
+    if ((idup1 .eq. LSYSSC_DUP_COPY) .and. (idup2 .eq. LSYSSC_DUP_COPY)) return
+    
+    ! Duplicate the matrix to eventually allocate memory
+    call lsyssc_duplicateMatrix (rmatrix,rmatrix2,idup1,idup2)
+    
+    ! Next thing is to release the old matrix; but that's not as easy
+    ! as calling lsyssc_releaseMatrix! The point is that the source
+    ! matrix may or may not share its structure/content with another
+    ! one -- and the new matrix may do this as well!
+    !
+    ! We have to handle structure and content separately.
+    ! If the structure/content is to be made independent, we have to reset
+    ! the copy flag. Otherwise, we have to take the old copy flag.
+    rmatrix2%imatrixSpec = rmatrix%imatrixSpec
+    
+    if (idup1 .eq. LSYSSC_DUP_COPY) then
+      rmatrix2%imatrixSpec = iand(rmatrix2%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+    else
+      ! As rmatrix2 is now the owner, prevent the data in rmatrix from being released.
+      rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY)
+    end if
+
+    if (idup2 .eq. LSYSSC_DUP_COPY) then
+      rmatrix2%imatrixSpec = iand(rmatrix2%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
+    else
+      ! As rmatrix2 is now the owner, prevent the data in rmatrix from being released.
+      rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)
+    end if
+    
+    ! Release the old matrix
+    call lsyssc_releaseMatrix(rmatrix)
+      
+    ! Create a hard-copy to rmatrix.
+    ! This is one of the very rare cases where we on purpose assign a matrix
+    ! structure to another...
+    rmatrix = rmatrix2
+
+  end subroutine
+
+  !****************************************************************************
+  
+!<subroutine>
+  
+  subroutine lsyssc_unshareVector (rvector)
+  
+!<description>
+  ! Resets the sharing state of the data arrays in a vector.
+  ! If the vector is already the owner of the
+  ! structure/data, nothing happens. If the vector shares its structure/data
+  ! with another vector, the new memory is allocated, the old data is
+  ! copied and the new independent data arrays are associated
+  ! to the vector. 
+!</description>
+  
+!<output>
+  ! Vector to be changed matrix.
+  type(t_vectorScalar), intent(inout)            :: rvector
+!</output>  
+
+!</subroutine>
+
+    type(t_vectorScalar) :: rvector2
+    integer :: idup1,idup2
+
+    ! If the vector is not the owner, make it the owner.
+    if (rvector%bisCopy) then
+      ! Copy & unshare the data
+      call lsyssc_duplicateVector(rvector,rvector2,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      
+      ! Release the original vector
+      call lsyssc_releaseVector (rvector)
+      
+      ! Create a hard-copy of rvector.
+      ! This is one of the very rare cases where we on purpose assign a matrix
+      ! structure to another...
+      rvector = rvector2
+    end if
+    
+  end subroutine
 
 end module

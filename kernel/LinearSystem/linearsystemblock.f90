@@ -193,6 +193,12 @@
 !# 56.) lsysbl_restoreFpdbObjectMat
 !#      -> Restores a block matrix from an ObjectItem
 !#
+!# 57.) lsyssc_unshareMatrix
+!#      -> Renders a matrix independent, resets the sharing state
+!# 
+!# 58.) lsyssc_unshareVector
+!#      -> Renders a vector independent, resets the sharing state
+!#
 !# </purpose>
 !##############################################################################
 
@@ -6216,5 +6222,98 @@ contains
       end subroutine restoreFpdbObjectMatrixBlock
       
   end subroutine lsysbl_restoreFpdbObjectMat
+
+  !****************************************************************************
+  
+!<subroutine>
+  
+  subroutine lsysbl_unshareMatrix (rmatrix,bstructure,bdata)
+  
+!<description>
+  ! Resets the sharing state of the structure/data arrays in a matrix.
+  ! bstructure/bdata decides on if the structure and/or the data is
+  ! associated to rmatrix. If the matrix is already the owner of the
+  ! structure/data, nothing happens. If the matrix shares its structure/data
+  ! with another matrix, the new memory is allocated, the old data is
+  ! copied and the new independent structure/data arrays are associated
+  ! to the matrix. Therefore, if bstructure=bdata=.true, the matrix
+  ! will be made completely independent.
+!</description>
+  
+!<input>
+  ! Revoke the sharing state of the matrix structure. If the matrix
+  ! is not the owner of the structure, a new structure array is allocated
+  ! in memory and the data of the old structure is copied.
+  logical, intent(in) :: bstructure
+  
+  ! Revoke the sharing state of the matrix data. If the matrix
+  ! is not the owner of the data, a new data array is allocated
+  ! in memory and the data of the old structure is copied.
+  logical, intent(in) :: bdata  
+!</input>
+
+!<inputoutput>
+  ! Matrix to be changed matrix.
+  type(t_matrixBlock), intent(inout)            :: rmatrix
+!</inputoutput>  
+
+!</subroutine>
+
+    ! local variables
+    integer(PREC_MATIDX) :: i,j
+    
+    ! Loop over all blocks in rmatrix and 'unshare' the data.
+    ! That's all.
+    do j=1,rmatrix%ndiagBlocks
+      do i=1,rmatrix%ndiagBlocks
+        call lsyssc_unshareMatrix (rmatrix%RmatrixBlock(i,j),bstructure,bdata)
+      end do
+    end do    
+    
+  end subroutine
+    
+  !****************************************************************************
+  
+!<subroutine>
+  
+  subroutine lsysbl_unshareVector (rvector)
+  
+!<description>
+  ! Resets the sharing state of the data arrays in a vector.
+  ! If the vector is already the owner of the
+  ! structure/data, nothing happens. If the vector shares its structure/data
+  ! with another vector, the new memory is allocated, the old data is
+  ! copied and the new independent data arrays are associated
+  ! to the vector. 
+!</description>
+  
+!<output>
+  ! Vector to be changed matrix.
+  type(t_vectorBlock), intent(inout)            :: rvector
+!</output>  
+
+!</subroutine>
+
+    type(t_vectorBlock) :: rvector2
+
+    ! If the vector is not the owner, make it the owner.
+    ! Note that here, we cannot do a loop over the subblocks as a vector
+    ! is (normally) realised as a large array with the subvectors
+    ! being part of the large array. We have to treat the block vector
+    ! in the same way as a scalar one...
+    if (rvector%bisCopy) then
+      ! Copy & unshare the data
+      call lsysbl_duplicateVector(rvector,rvector2,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      
+      ! Release the original vector
+      call lsysbl_releaseVector (rvector)
+      
+      ! Create a hard-copy of rvector.
+      ! This is one of the very rare cases where we on purpose assign a matrix
+      ! structure to another...
+      rvector = rvector2
+    end if
+    
+  end subroutine
 
 end module
