@@ -831,7 +831,7 @@ contains
     ! above. It directly sets up the Laplace matrix.
     ! If it's necessary to modify the Laplace matrix, remove this command
     ! and comment in the stuff above.
-    call stdop_assembleLaplaceMatrix2D (p_rmatrixStokes,.true.,rproblem%dnu)
+    call stdop_assembleLaplaceMatrix (p_rmatrixStokes,.true.,rproblem%dnu)
     
     ! In the global system, there are two coupling matrices B1 and B2.
     ! These are build either as "int p grad(phi)" (standard case)

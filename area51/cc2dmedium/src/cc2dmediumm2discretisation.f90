@@ -793,7 +793,7 @@ contains
 !    CALL bilf_buildMatrixScalar (rform,.TRUE.,&
 !                                 p_rmatrixStokes,coeff_Stokes,&
 !                                 rproblem%rcollection)
-    call stdop_assembleLaplaceMatrix2D (p_rmatrixStokes,.true.,rproblem%dnu)
+    call stdop_assembleLaplaceMatrix (p_rmatrixStokes,.true.,rproblem%dnu)
     
     ! In the global system, there are two coupling matrices B1 and B2.
     !

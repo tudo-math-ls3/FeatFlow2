@@ -323,7 +323,7 @@ contains
                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
       
       ! Build the Laplace-Matrix of the primary system.
-      call stdop_assembleLaplaceMatrix2D(Rlevels(i)%rmatrixA, .true., dnu)
+      call stdop_assembleLaplaceMatrix(Rlevels(i)%rmatrixA, .true., dnu)
       
       ! Build the B1-matrix entries
       call stdop_assembleSimpleMatrix(Rlevels(i)%rmatrixB1, DER_FUNC, DER_DERIV_X,&
@@ -374,7 +374,7 @@ contains
           LSYSSC_MATRIX9, Rlevels(i)%rmatrixN)
 
       ! Build the Laplace-Matrix of the secondary system.
-      call stdop_assembleLaplaceMatrix2D(Rlevels(i)%rmatrixN, .true., deta)
+      call stdop_assembleLaplaceMatrix(Rlevels(i)%rmatrixN, .true., deta)
 
       ! Copy the N-matrix into our secondary system block matrix.
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixN, &
