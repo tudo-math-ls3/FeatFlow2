@@ -626,10 +626,6 @@
 
 #else
 
-// *MK*: Windows compilation needs uppercase BLAS function names!
-
-#ifndef UMF_WINDOWS
-
 #ifdef COMPLEX
 
 /* naming convention (use underscore, or not) */
@@ -675,60 +671,6 @@
 #endif
 
 #endif	/* COMPLEX */
-
-// *MK*: Uppercase function names for Windows
-
-#else /*  Windows  */
-
-#ifdef COMPLEX
-
-/* naming convention (use underscore, or not) */
-#ifdef BLAS_NO_UNDERSCORE
-#define BLAS_GEMM_ROUTINE ZGEMM
-#define BLAS_TRSM_ROUTINE ZTRSM
-#define BLAS_TRSV_ROUTINE ZTRSV
-#define BLAS_GEMV_ROUTINE ZGEMV
-#define BLAS_GER_ROUTINE  ZGERU
-#define BLAS_SCAL_ROUTINE ZSCAL
-#define BLAS_COPY_ROUTINE ZCOPY
-#else
-/* default:  add underscorE */
-#define BLAS_GEMM_ROUTINE ZGEMM_
-#define BLAS_TRSM_ROUTINE ZTRSM_
-#define BLAS_TRSV_ROUTINE ZTRSV_
-#define BLAS_GEMV_ROUTINE ZGEMV_
-#define BLAS_GER_ROUTINE  ZGERU_
-#define BLAS_SCAL_ROUTINE ZSCAL_
-#define BLAS_COPY_ROUTINE ZCOPY_
-#endif
-
-#else
-
-/* naming convention (use underscore, or not) */
-#ifdef BLAS_NO_UNDERSCORE
-#define BLAS_GEMM_ROUTINE DGEMM
-#define BLAS_TRSM_ROUTINE DTRSM
-#define BLAS_TRSV_ROUTINE DTRSV
-#define BLAS_GEMV_ROUTINE DGEMV
-#define BLAS_GER_ROUTINE  DGER
-#define BLAS_SCAL_ROUTINE DSCAL
-#define BLAS_COPY_ROUTINE DCOPY
-#else
-/* default:  add underscore */
-#define BLAS_GEMM_ROUTINE DGEMM_
-#define BLAS_TRSM_ROUTINE DTRSM_
-#define BLAS_TRSV_ROUTINE DTRSV_
-#define BLAS_GEMV_ROUTINE DGEMV_
-#define BLAS_GER_ROUTINE  DGER_
-#define BLAS_SCAL_ROUTINE DSCAL_
-#define BLAS_COPY_ROUTINE DCOPY_
-#endif
-
-#endif	/* COMPLEX */
-
-#endif /*  Windows  */
-
-// [*MK*]
 
 #endif /* LP64 && USE_SUNPERF_BLAS */
 
