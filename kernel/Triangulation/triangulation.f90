@@ -15,115 +15,111 @@
 !#
 !# The following routines can be found here:
 !#
-!#  1.) tria_wrp_tria2Structure
-!#      -> Wrapper. Create a FEAT 2.0 triangulation structure from a
-!#         FEAT 1.x triangulation structure.
-!#
-!#  2.) tria_duplicate
+!#  1.) tria_duplicate
 !#      -> Creates a duplicate / backup of a triangulation.
 !#         Some information may be shared between two triangulation structures.
 !#
-!#  3.) tria_restore
+!#  2.) tria_restore
 !#      -> Restores a triangulation previously backed up with tria_backup.
 !#
-!#  4.) tria_done
+!#  3.) tria_done
 !#      -> Cleans up a triangulation structure, releases memory from the heap.
 !#
-!#  5.) tria_createRawTria1D
+!#  4.) tria_createRawTria1D
 !#      -> Creates a 'raw' 1D triangulation $[a,b]$ with $n$ sub-intervals 
 !#         of the same length
 !#
-!#  6.) tria_readTriFile1D
+!#  5.) tria_readTriFile1D
 !#      -> Reads a .TRI file and creates a 'raw' 1D mesh with only basic 
 !#         information.
 !#
-!#  7.) tria_readTriFile2D
+!#  6.) tria_readTriFile2D
 !#      -> Reads a .TRI file and creates a 'raw' 2D mesh with only basic 
 !#         information.
 !#
-!#  8.) tria_readTriFile3D
+!#  7.) tria_readTriFile3D
 !#      -> Reads a .TRI file and creates a 'raw' 3D mesh with only basic 
 !#         information.
 !#
-!#  9.) tria_resetToRaw
+!#  8.) tria_resetToRaw
 !#      -> Resets a mesh to a raw mesh.
 !#
-!# 10.) tria_initExtendedRawMesh
+!#  9.) tria_initExtendedRawMesh
 !#      -> Create an extended raw mesh from a pure raw mesh.
 !#
-!# 11.) tria_initStandardMeshFromRaw
+!# 10.) tria_initStandardMeshFromRaw
 !#      -> Generates all standard arrays for a mesh, i.e. converts a 'raw' mesh
 !#         (as set up by tria_readTriFile2D e.g.) to a standard mesh.
 !#
-!# 12.) tria_initMacroNodalProperty
+!# 11.) tria_initMacroNodalProperty
 !#      -> Attaches a macro nodal property array to an extended raw mesh.
 !#
-!# 13.) tria_refine2LevelOrdering
+!# 12.) tria_refine2LevelOrdering
 !#      -> Refines a mesh according to the 2-level ordering algorithm.
 !#         Creates a 'raw' fine mesh from a 'standard' coarse mesh.
 !#
-!# 14.) tria_compress2LevelOrdHierarchy
+!# 13.) tria_compress2LevelOrdHierarchy
 !#      -> Can be used to compress a mesh hierarchy created with the 2-level
 !#         ordering. Saves memory. Shares vertex coordinates between fine
 !#         and coarse mesh.
 !#
-!# 15.) tria_quickRefine2LevelOrdering
+!# 14.) tria_quickRefine2LevelOrdering
 !#      -> Refines a mesh multiple times according to the 2-level ordering 
 !#         algorithm. Creates a 'raw' fine mesh from a 'raw' or 'standard' 
 !#         coarse mesh.
 !#
-!# 16.) tria_rawGridToTri
+!# 15.) tria_rawGridToTri
 !#      -> Converts a raw mesh into a triangular mesh.
 !#
-!# 17.) tria_infoStatistics
+!# 16.) tria_infoStatistics
 !#      -> Prints out statistics about a mesh.
 !#
-!# 18.) tria_exportTriFile
+!# 17.) tria_exportTriFile
 !#      -> Exports a triangulation structure to a .TRI file.
 !#
-!# 19.) tria_searchBoundaryNode
+!# 18.) tria_searchBoundaryNode
 !#      -> Search for the position of a boundary vertex / edge on the boundary.
 !#
-!# 20.) tria_generateSubdomain
+!# 19.) tria_generateSubdomain
 !#      -> Extract cells from a mesh and generate a subdomain from them
 !#
-!# 21.) tria_attachCells
+!# 20.) tria_attachCells
 !#      -> Attaches a set of cells to an existing triangulation
 !#
-!# 22.) tria_cellGroupGreedy
+!# 21.) tria_cellGroupGreedy
 !#      -> Combines the cells of a mesh into simply connected sets of 
 !#         similar size by a greedy algorithm
 !#
-!# 23.) tria_getNNVA
+!# 22.) tria_getNNVA
 !#      -> Get the maximum number of vertices per face
 !#
-!# 24.) tria_getNNVE
+!# 23.) tria_getNNVE
 !#      -> Get the maximum number of vertices per element
 !#
-!# 25.) tria_getNVE = tria_getNVE_direct / 
+!# 24.) tria_getNVE = tria_getNVE_direct / 
 !#                    tria_getNVE_indirect
 !#      -> Get the number of vertices/edges on an element
 !#
-!# 26.) tria_getPointsOnEdge
+!# 25.) tria_getPointsOnEdge
 !#      -> For all edges in a triangulation, calculate the coordinates 
 !#         of a number of points on each edge
 !#
-!# 27.) tria_getNeighbourVertex
+!# 26.) tria_getNeighbourVertex
 !#      -> Calculates the vertex number of the neighbour vertex of a 
 !#         vertex on an edge.
 !#
-!# 28.) tria_getSubmeshNeighbourhood
+!# 27.) tria_getSubmeshNeighbourhood
 !#      -> Calculate a list of cells in the neighbourhood of a cell set
 !#
-!# 29.) tria_getElementsAtMacroEdge
+!# 28.) tria_getElementsAtMacroEdge
 !#      -> Calculate a list of all elements adjacent to a macro edge
 !#         inside of a macro cell.
 !#
-!# 30.) tria_getElementsAtMacroVertex
+!# 29.) tria_getElementsAtMacroVertex
 !#      -> Calculate a list of all elements adjacent to a vertex
 !#         inside of a macro cell.
 !#
-!# 31.) tria_getVerticesAtFaceDirect
+!# 30.) tria_getVerticesAtFaceDirect
 !#      -> Calculates the vertices on a face in 3D
 !#
 !# Auxiliary routines:
@@ -498,8 +494,6 @@ module triangulation
 
   implicit none
   
-  include 'stria.inc'
-
 !<constants>
 
 !<constantblock description="Triangulation constants">
@@ -747,12 +741,6 @@ module triangulation
   ! The basic triangulation structure for a triangulation.
   type t_triangulation
   
-    ! The 'old' triangulation structure for compatibility.
-    ! This was just an array of length SZTRIA emulating a structure,
-    ! where the entries could be accessed by means of the Oxxxx constants.
-    ! !!!THIS WILL BE DELETED IN THE FINAL VERSION!!!
-    integer, dimension(SZTRIA) :: Itria
-    
     ! Duplication flag. Bitfield. Used by TRIDUP/TRIRST/TRIDEL to 
     ! mark which information of a triangulation structure 
     ! coincides with those of another triangulation structure and
@@ -1467,526 +1455,6 @@ module triangulation
   end interface
 
 contains
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine tria_wrp_tria2Structure (TRIA, rtriangulation)
-
-!<description>
-  ! Wrapper routine. Accepts an 'old' triangulation structure array of CC2D
-  ! and converts it completely to a triangulation structure. All 'old'
-  ! information in the triangulation structure is overwritten.
-  ! If rtriangulation contains an old structure, the existing structure 
-  ! is recreated/updated.
-!</description>
-  
-!<input>
-  ! The old triangulation structure array that should be converted to
-  ! the new triangulation structure.
-  integer, dimension(SZTRIA), intent(IN) :: TRIA
-!</input>
-  
-!<inputoutput>
-  ! The triangulation structure which will be overwritten by the information
-  ! in TRIA.
-  type(t_triangulation), intent(INOUT)      :: rtriangulation
-!</inputoutput>
-  
-!</subroutine>
-
-  ! Do we have a structure?
-  if (rtriangulation%ndim .ne. 0) then
-    ! Release the old structure without removing it from the heap.
-    call tria_done (rtriangulation)
-  end if
-
-  ! We take the ownership of the triangulation structure - for compatibility
-  ! to old FEAT 1.x:
-  rtriangulation%Itria = TRIA
-  
-  ! Copy static entries
-  rtriangulation%NVT                      = TRIA(ONVT  )
-  rtriangulation%NMT                      = TRIA(ONMT  )
-  rtriangulation%NEL                      = TRIA(ONEL  )
-  rtriangulation%NBCT                     = TRIA(ONBCT )
-  rtriangulation%NVBD                     = TRIA(ONVBD )
-  rtriangulation%NMBD                     = TRIA(ONVBD ) ! NMBD=NVBD !!!
-  rtriangulation%nverticesPerEdge         = TRIA(ONVPED)
-  rtriangulation%nVerticesOnAllEdges      = TRIA(ONVEDT)
-  rtriangulation%nverticesInEachElement   = TRIA(ONVEDT)
-  rtriangulation%nverticesInAllElements   = TRIA(ONIEVT)
-  rtriangulation%nadditionalVertices      = TRIA(ONANT )
-  
-  ! Set ndim <> 0; this declares the structure as 'initialised'.
-  rtriangulation%ndim = NDIM2D
-  
-  ! The duplication flag stays at 0 - as for now, all
-  ! arrays are created from the feat arrays as new arrays, and
-  ! so they are not a copy of another array.
-  
-  rtriangulation%iduplicationFlag = 0
-  
-  ! *******************************************************
-  ! Copy DCORVG, create p_RcornerCoordinates.
-  
-  call copy_featarray_double2d ('DCORVG',2,int(rtriangulation%NVT),TRIA(OLCORVG),&
-                                rtriangulation%h_DvertexCoords)
-  
-  ! *******************************************************
-  ! Copy KVERT, create p_RverticesAtElement.
-  
-  call copy_featarray_int2d ('KVERT',4,int(rtriangulation%NEL),TRIA(OLVERT),&
-                             rtriangulation%h_IverticesAtElement)
-
-  ! *******************************************************
-  ! Copy KMID, create p_RedgesAtElement.
-  
-  call copy_featarray_int2d ('KMID',4,int(rtriangulation%NEL),TRIA(OLMID),&
-                             rtriangulation%h_IedgesAtElement)
-
-  ! *******************************************************
-  ! Copy KADJ, create p_RneighboursAtElement.
-  
-  call copy_featarray_int2d ('KADJ',4,int(rtriangulation%NEL),TRIA(OLADJ),&
-                             rtriangulation%h_IneighboursAtElement)
-
-  ! *******************************************************
-  ! Copy KMEL, create p_IelementsAtEdge.
-  
-  call copy_featarray_int2d ('KMEL',2,int(rtriangulation%NMT),TRIA(OLMEL),&
-                             rtriangulation%h_IelementsAtEdge)
-
-  ! *******************************************************
-  ! Copy KEAN, create p_IverticesAtEdge.
-  
-  call copy_featarray_int2d ('KEAN',2,int(rtriangulation%NMT),TRIA(OLEAN),&
-                             rtriangulation%h_IverticesAtEdge)
-
-  ! *******************************************************
-  ! Copy KNPR, create p_InodalProperty.
-  
-  call copy_featarray_int1d ('KNPR',int(rtriangulation%NVT+rtriangulation%NMT),&
-                             TRIA(OLNPR),rtriangulation%h_InodalProperty)
-                             
-  ! *******************************************************
-  ! Copy KAREA, create hpDelementArea.
-  
-  call copy_featarray_double1d ('KAREA',int(rtriangulation%NEL+1),&
-                                TRIA(OLAREA),rtriangulation%h_DelementVolume)
-                             
-  ! *******************************************************
-  ! Initialise the new KVEL, create p_IelementsAtVertexIdx/p_IelementsAtVertex.
-                             
-  call translate_KVEL (TRIA(ONVEL),int(rtriangulation%NVT),TRIA(OLVEL), &
-                       rtriangulation%h_IelementsAtVertex,&
-                       rtriangulation%h_IelementsAtVertexIdx)
-
-  ! *******************************************************
-  ! Copy KBCT, create p_IboundaryCpIdx.
-  
-  call copy_featarray_int1d ('KBCT',(rtriangulation%NBCT+1),&
-                             TRIA(OLBCT),rtriangulation%h_IboundaryCpIdx)
-  
-  ! *******************************************************
-  ! Copy KVBD, create p_IverticesAtBoundary.
-  
-  call copy_featarray_int1d ('KVBD',int(rtriangulation%NVBD),&
-                             TRIA(OLVBD),rtriangulation%h_IverticesAtBoundary)
-
-  ! *******************************************************
-  ! Copy KMBD, create p_IedgesAtBoundary.
-  
-  call copy_featarray_int1d ('KMBD',(rtriangulation%NMBD),&
-                             TRIA(OLMBD),rtriangulation%h_IedgesAtBoundary)
-
-  ! *******************************************************
-  ! Copy KEBD, create p_IelementsAtBoundary.
-  
-  call copy_featarray_int1d ('KEBD',int(rtriangulation%NMBD),&
-                             TRIA(OLEBD),rtriangulation%h_IelementsAtBoundary)
-
-  ! *******************************************************
-  ! Copy DVBDP, create p_DvertexParameterValue.
-  
-  call copy_featarray_double1d ('DVBDP',int(rtriangulation%NVBD),&
-                                TRIA(OLVBDP),rtriangulation%h_DvertexParameterValue)
-
-  ! *******************************************************
-  ! Copy DMBDP, create p_DedgeParameterValue.
-  
-  call copy_featarray_double1d ('DMBDP',int(rtriangulation%NMBD),&
-                                TRIA(OLMBDP),rtriangulation%h_DedgeParameterValue)
-
-
-  ! *******************************************************
-  ! Copy DCORMG, create p_DfreeVertexCoordinates.
-  
-  call copy_featarray_double2d ('DCORMG',2,int(rtriangulation%NMT),TRIA(OLCORMG),&
-                                rtriangulation%h_DfreeVertexCoordinates)
-  
-  contains
-  
-    ! Now the COPY-sub-subroutines used above.
-  
-    ! *************************************************************************  
-    ! Copies the FEAT array with feat-handle ifeathandle to the FEAT2.0
-    ! array identified by ihandle. If the size associated to ihandle is
-    ! wrong, the array is reallocated.
-    ! The FEAT array is assumed to have the shape 
-    !   array [1..idim1,1..idim2] of integer
-    
-    subroutine copy_featarray_int2d (name,idim1,idim2,ifeathandle,ihandle)
-    
-    character(LEN=*), intent(IN) :: name
-    integer, intent(IN) :: idim1, idim2, ifeathandle
-    integer, intent(INOUT) :: ihandle
-    
-    integer(I32), dimension(:,:), pointer :: p_array
-    !INTEGER, DIMENSION(:), POINTER :: p_array2
-    
-    integer(I32), dimension(2) :: Isize
-    integer(I32) :: j,i,kpos
-    
-    include 'cmem.inc'
-    
-    ! Clear the array if no FEAT handle assigned.
-    
-    if ((ifeathandle .eq. 0) .and. (ihandle .ne. ST_NOHANDLE)) then
-      call storage_free (ihandle)
-      return
-    end if
-    
-    Isize = (/idim1,idim2/)
-    
-    ! Do we have to reallocate?
-    
-    if (ihandle .ne. ST_NOHANDLE) then
-    
-      call storage_getbase_int2D (ihandle,p_array)
-    
-      if (size(p_array,2) .ne. idim2) then
-        ! Size wrong. Deallocate the old array, create a new one.
-        call storage_free (ihandle)
-        call storage_new2D ('tria_wrp_tria2Structure', name, &
-                            Isize, ST_INT, ihandle, &
-                            ST_NEWBLOCK_NOINIT)
-      end if
-    else
-      ! Allocate the array
-      call storage_new2D ('tria_wrp_tria2Structure', name, &
-                          Isize, ST_INT, ihandle, &
-                          ST_NEWBLOCK_NOINIT)
-    end if
-    call storage_getbase_int2D (ihandle,p_array)
-
-    ! Copy the FEAT array
-    !p_array2 => feat_htpint(idim1*idim2,ifeathandle)
-    kpos = L(ifeathandle)
-    !p_array2 => KWORK(L(ifeathandle):L(ifeathandle)+idim1*idim2-1)
-
-    !$OMP PARALLEL DO PRIVATE(i)
-    do j=0,idim2-1
-      do i=0,idim1-1
-        p_array(i+1,j+1) = KWORK(kpos+idim1*j+i)
-      end do
-    end do
-    !$OMP END PARALLEL DO
-    
-    end subroutine copy_featarray_int2d
-
-    ! *************************************************************************
-    ! Copies the FEAT array with feat-handle ifeathandle to the FEAT2.0
-    ! array identified by ihandle. If the size associated to ihandle is
-    ! wrong, the array is reallocated.
-    ! The FEAT array is assumed to have the shape 
-    !   array [1..idim1] of integer
-    
-    subroutine copy_featarray_int1d (name,idim1,ifeathandle,ihandle)
-    
-    character(LEN=*), intent(IN) :: name
-    integer, intent(IN) :: idim1,ifeathandle
-    integer, intent(INOUT) :: ihandle
-    
-    integer(I32), dimension(:), pointer :: p_array
-    !INTEGER, DIMENSION(:), POINTER :: p_array2
-    integer(I32) :: i,kpos
-    
-    include 'cmem.inc'
-    
-    ! Clear the array if no FEAT handle assigned.
-    
-    if ((ifeathandle .eq. 0) .and. (ihandle .ne. ST_NOHANDLE)) then
-      call storage_free (ihandle)
-      return
-    end if
-    
-    ! Do we have to reallocate?
-
-    if (ihandle .ne. ST_NOHANDLE) then
-    
-      call storage_getbase_int (ihandle,p_array)
-    
-      if (size(p_array) .ne. idim1) then
-        ! Size wrong. Deallocate the old array, create a new one.
-        call storage_free (ihandle)
-        call storage_new ('tria_wrp_tria2Structure', name, &
-                          int(idim1,I32), ST_INT, ihandle, &
-                          ST_NEWBLOCK_NOINIT)
-      end if
-    else
-      ! Allocate the array
-      call storage_new ('tria_wrp_tria2Structure', name, &
-                        int(idim1,I32),ST_INT, ihandle, &
-                        ST_NEWBLOCK_NOINIT)
-    end if
-    call storage_getbase_int (ihandle,p_array)
-
-    ! Copy the FEAT array
-    !p_array2 => feat_htpint(idim1,ifeathandle)
-    kpos = L(ifeathandle)
-    !p_array2 => KWORK(L(ifeathandle):L(ifeathandle)+idim1-1)
-    
-    !$OMP PARALLEL DO
-    do i=0,idim1-1
-      p_array(i+1) = KWORK(kpos+i) !p_array2(i)
-    end do
-    !$OMP END PARALLEL DO
-    
-    end subroutine copy_featarray_int1d
-
-    ! *************************************************************************
-    ! Copies the FEAT array with feat-handle ifeathandle to the FEAT2.0
-    ! array identified by ihandle. If the size associated to ihandle is
-    ! wrong, the array is reallocated.
-    ! The FEAT array is assumed to have the shape 
-    !   array [1..idim1,1..idim2] of double
-    
-    subroutine copy_featarray_double2d (name,idim1,idim2,ifeathandle,ihandle)
-    
-    character(LEN=*), intent(IN) :: name
-    integer, intent(IN) :: idim1, idim2, ifeathandle
-    integer, intent(INOUT) :: ihandle
-    
-    real(DP), dimension(:,:), pointer :: p_array
-    !DOUBLE PRECISION, DIMENSION(:), POINTER :: p_array2
-    integer(I32), dimension(2) :: Isize
-    integer(I32) :: j,i,kpos
-    
-    include 'cmem.inc'
-    
-    ! Clear the array if no FEAT handle assigned.
-    
-    if ((ifeathandle .eq. 0) .and. (ihandle .ne. ST_NOHANDLE)) then
-      call storage_free (ihandle)
-      return
-    end if
-    
-    Isize = (/idim1,idim2/)
-    
-    ! Do we have to reallocate?
-
-    if (ihandle .ne. ST_NOHANDLE) then
-    
-      call storage_getbase_double2D (ihandle,p_array)
-    
-      if (size(p_array,2) .ne. idim2) then
-        ! Size wrong. Deallocate the old array, create a new one.
-        call storage_free (ihandle)
-        call storage_new2D ('tria_wrp_tria2Structure', name, &
-                            ISize, ST_DOUBLE, ihandle, &
-                            ST_NEWBLOCK_NOINIT)
-      end if
-    else
-      ! Allocate the array
-      call storage_new2D ('tria_wrp_tria2Structure', name, &
-                          ISize, ST_DOUBLE, ihandle, &
-                          ST_NEWBLOCK_NOINIT)
-    end if
-    call storage_getbase_double2D (ihandle,p_array)
-
-    ! Copy the FEAT array
-    !p_array2 => feat_htpdouble(idim1*idim2,ifeathandle)
-    kpos = L(ifeathandle)
-    !p_array2 => DWORK(L(ifeathandle):L(ifeathandle)+idim1*idim2-1)
-    
-    !$OMP PARALLEL DO PRIVATE(i)
-    do j=0,idim2-1
-      do i=0,idim1-1
-        p_array(i+1,j+1) = DWORK(kpos+idim1*j+i)
-      end do
-    end do
-    !$OMP END PARALLEL DO
-    
-    end subroutine copy_featarray_double2d
-
-    ! *************************************************************************
-    ! Copies the FEAT array with feat-handle ifeathandle to the FEAT2.0
-    ! array identified by ihandle. If the size associated to ihandle is
-    ! wrong, the array is reallocated.
-    ! The FEAT array is assumed to have the shape 
-    !   array [1..idim1] of integer
-    
-    subroutine copy_featarray_double1d (name,idim1,ifeathandle,ihandle)
-    
-    character(LEN=*), intent(IN) :: name
-    integer, intent(IN) :: idim1,ifeathandle
-    integer, intent(INOUT) :: ihandle
-    
-    real(DP), dimension(:), pointer :: p_array
-    !DOUBLE PRECISION, DIMENSION(:), POINTER :: p_array2
-    
-    integer :: i,kpos
-    
-    include 'cmem.inc'
-    
-    ! Clear the array if no FEAT handle assigned.
-    
-    if ((ifeathandle .eq. 0) .and. (ihandle .ne. ST_NOHANDLE)) then
-      call storage_free (ihandle)
-      return
-    end if
-    
-    ! Do we have to reallocate?
-
-    if (ihandle .ne. ST_NOHANDLE) then
-    
-      call storage_getbase_double (ihandle,p_array)
-    
-      if (size(p_array) .ne. idim1) then
-        ! Size wrong. Deallocate the old array, create a new one.
-        call storage_free (ihandle)
-        call storage_new ('tria_wrp_tria2Structure', name, &
-                          int(idim1,I32), ST_DOUBLE, ihandle, &
-                          ST_NEWBLOCK_NOINIT)
-      end if
-    else
-      ! Allocate the array
-      call storage_new ('tria_wrp_tria2Structure', name, &
-                        int(idim1,I32),ST_DOUBLE, ihandle, &
-                        ST_NEWBLOCK_NOINIT)
-    end if
-    call storage_getbase_double (ihandle,p_array)
-
-    ! Copy the FEAT array
-    !p_array2 => feat_htpdouble(idim1,ifeathandle)
-    kpos = L(ifeathandle)
-    !p_array2 => DWORK(L(ifeathandle):L(ifeathandle)+idim1-1)
-    !$OMP PARALLEL DO
-    do i=0,idim1-1
-      p_array(i+1) = DWORK(kpos+i)
-    end do
-    !$OMP END PARALLEL DO
-    
-    end subroutine copy_featarray_double1d
-
-    ! *************************************************************************
-    ! Builds a new KADJ structure, translates the old KVEL.
-    ! ihandle represents the translated array, ihandleidx corresponds
-    ! to the index array inside the new KVEL.
-    
-    subroutine translate_KVEL (NVEL,NVT,ifeathandle,ihandle,ihandleidx)
-    
-    integer, intent(IN) :: NVEL,NVT, ifeathandle
-    integer, intent(INOUT) :: ihandle,ihandleidx
-    
-    integer(I32), dimension(:), pointer :: p_array, p_arrayidx
-    !INTEGER, DIMENSION(:), POINTER :: p_kadj
-    integer :: i,j, nentries, kpos
-    
-    include 'cmem.inc'
-    
-    ! Clear the array if no FEAT handle assigned.
-    
-    if (ifeathandle .eq. 0) then
-      if (ihandle .ne. ST_NOHANDLE) then
-        call storage_free (ihandle)
-      end if
-      if (ihandleidx .ne. ST_NOHANDLE) then
-        call storage_free (ihandleidx)
-      end if
-      return
-    end if
-    
-    ! Do we have to reallocate?
-
-    ! Get the KADJ array - as 1D representation of length NVEL*NVT
-    !p_kadj => feat_htpint(NVEL*NVT,ifeathandle)
-    kpos = L(ifeathandle)
-    
-    ! Count the number of entries in the translated KADJ array.
-    ! This is the number of nonzero entries in KADJ - and at least 1
-    ! (if there's only one cell...)
-    nentries = 0
-    do i=1,NVEL*NVT
-      if (KWORK(kpos+i-1) .ne. 0) nentries = nentries+1
-      !IF (p_kadj(i) .NE. 0) nentries = nentries+1
-    end do
-    nentries = max(1,nentries)
-    
-    ! Check the existance of the translated array
-    
-    if (ihandle .ne. ST_NOHANDLE) then
-    
-      call storage_getbase_int (ihandle,p_array)
-    
-      if (size(p_array) .ne. nentries) then
-        ! Size wrong. Deallocate the old array, create a new one.
-        call storage_free (ihandle)
-        if (ihandleidx .ne. 0) call storage_free (ihandleidx)
-        call storage_new ('tria_wrp_tria2Structure', 'KADJ', &
-                          int(nentries,I32), ST_INT, ihandle, &
-                          ST_NEWBLOCK_NOINIT)
-        call storage_new ('tria_wrp_tria2Structure', 'KADJIDX', &
-                          int(NVT+1,I32), ST_INT, ihandleidx, &
-                          ST_NEWBLOCK_NOINIT)
-      end if
-    else
-      ! Allocate the new array
-      if (ihandleidx .ne. 0) call storage_free (ihandleidx)
-      call storage_new ('tria_wrp_tria2Structure', 'KADJ', &
-                        int(nentries,I32), ST_INT, ihandle, &
-                        ST_NEWBLOCK_NOINIT)
-      call storage_new ('tria_wrp_tria2Structure', 'KADJIDX', &
-                        int(NVT+1,I32), ST_INT, ihandleidx, &
-                        ST_NEWBLOCK_NOINIT)
-    end if
-    call storage_getbase_int (ihandle,p_array)
-    call storage_getbase_int (ihandleidx,p_arrayidx)
-
-    ! *************************************************************************
-    ! Copy the FEAT array, set up the translated KADJ.
-    ! h_IelementsAtVertex receives the entries of KADJ.
-    ! h_IelementsAtVertexIdx receives indices in h_IelementsAtVertex;
-    ! more precisely, h_IelementsAtVertexIdx(i) points to the first
-    ! element adjacent to vertex i in h_IelementsAtVertex.
-    ! h_IelementsAtVertex( h_IelementsAtVertexIdx(i) .. h_IelementsAtVertexIdx(i+1)-1 )
-    ! is then a list of all adjacent elements to vertex i.
-    nentries = 0
-    do i=0,NVT-1
-      
-      ! Build the index array
-      p_arrayidx(i+1) = nentries+1
-      
-      ! Copy the entries
-      do j=0,NVEL-1
-        !IF (p_kadj(i*NVEL+j) .NE. 0) THEN
-        if (KWORK(kpos+i*NVEL+j) .ne. 0) then
-          nentries = nentries+1
-          p_array(nentries) = KWORK(kpos+i*NVEL+j) ! p_kadj(i*NVEL+j)
-        else
-          exit
-        end if
-      end do
-    end do
-    
-    ! Set up last element in the index array.
-    p_arrayidx(NVT+1) = nentries+1
-    
-    end subroutine translate_KVEL
-
-  end subroutine tria_wrp_tria2Structure
 
   ! ***************************************************************************
 

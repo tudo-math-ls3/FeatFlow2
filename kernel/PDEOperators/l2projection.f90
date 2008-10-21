@@ -112,7 +112,7 @@ contains
   ! A callback routine for the function to be discretised. The callback routine
   ! has the same syntax as that for evaluating analytic functions for the 
   ! computation of RHS vectors.
-  include 'intf_coefficientVectorSc.inc'
+  include '../DOFMaintenance/intf_coefficientVectorSc.inc'
 
   ! OPTIONAL: A pointer to a collection structure. This structure is 
   ! given to the callback function for calculating the function

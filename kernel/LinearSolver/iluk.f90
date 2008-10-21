@@ -774,8 +774,8 @@ contains
 !     ---------------
 !     Functions used
 !     ---------------
-      real(dp) dlamch
-      external dlamch
+      !real(dp) dlamch
+      !external dlamch
  
 !</subroutine>
  
@@ -792,7 +792,8 @@ contains
 !      Beginning of Executable Statements
 !========================================================================
 
-      SMALL = sqrt(dlamch('E'))
+      !SMALL = sqrt(dlamch('E'))
+      SMALL = SYS_EPSREAL
 
 !     ------------------------------------------------------------
 !     colptrs is used to hold the indices of entries in LU of 
