@@ -27,17 +27,6 @@ module stdoperators
   
   implicit none
   
-  ! Interfaces for compatibility only
-  interface stdop_assembleLaplaceMatrix1D
-    module procedure stdop_assembleLaplaceMatrix
-  end interface
-  interface stdop_assembleLaplaceMatrix2D
-    module procedure stdop_assembleLaplaceMatrix
-  end interface
-  interface stdop_assembleLaplaceMatrix3D
-    module procedure stdop_assembleLaplaceMatrix
-  end interface
-
 contains
 
   ! ***************************************************************************
