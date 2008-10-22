@@ -45,7 +45,7 @@
 # value and the time, it's possible to create moving boundary conditions.
 
 bdExpressions(6) =
-  'pi'             0    3.14159265358979
+  'AnalyticBC'    -2    ''
   'Umax'           0    0.3
   'Dirichlet0'     0    0.0
   'Dirichlet1'     0    1.0
@@ -105,6 +105,13 @@ ineumannBoundary = -1
 #                Example:  1.0  3  3  'PressValue1'
 #          = 3 : Slip boundary conditions. Like Neumann BC's this
 #                does not use an expression.
+#
+# Note: In the default configuration, the expession name 'AnalyticBC'
+#  (as defined above with expression type -2) serves as a trigger for 
+#  analytic Dirichlet boundary conditions that use the callback routione 
+#  'getBoundaryValues'. Therefore, when the term 'AnalyticBC' is used as 
+#  X- or Y-velocity, the routine 'getBoundaryValues' in cccallback.f90 is 
+#  called for that segment to return the analytic boundary value!
 
 # Benchmark configuration:
 bdComponent1(4)=
