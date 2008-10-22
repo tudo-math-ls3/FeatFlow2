@@ -22,7 +22,6 @@ module hadaptaux3d
   use collection
   use fsystem
   use hadaptaux
-  use hadaptaux2d
 
   implicit none
 
