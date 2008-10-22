@@ -328,7 +328,8 @@ contains
 
 !<subroutine>
 
-  subroutine btree_createTree(rtree,nna,ctreeFormat,isizeDble,isizeSngl,isizeInt,dfactor)
+  subroutine btree_createTree(rtree, nna, ctreeFormat, isizeDble,&
+                              isizeSngl, isizeInt, dfactor)
 
 !<description>
     ! This subroutine creates a new tree
@@ -356,7 +357,7 @@ contains
 !</input>
 
 !<output>
-    ! tree
+    ! binary tree
     type(t_btree), intent(OUT) :: rtree
 !</output>
 !</subroutine>
@@ -385,58 +386,58 @@ contains
     ! Allocate memory for tree structure
     Isize1 = (/TLEFT,TROOT/)
     Isize2 = (/TRIGHT,nna/)
-    call storage_new('btree_createTree','Kchild',Isize1,Isize2,&
-        ST_INT,rtree%h_Kchild,ST_NEWBLOCK_ZERO)
-    call storage_getbase_int2D(rtree%h_Kchild,rtree%p_Kchild)
+    call storage_new('btree_createTree', 'Kchild', Isize1, Isize2,&
+                     ST_INT, rtree%h_Kchild, ST_NEWBLOCK_ZERO)
+    call storage_getbase_int2D(rtree%h_Kchild, rtree%p_Kchild)
     
-    call storage_new('btree_createTree','Kpath',ceiling(1.441*LOG2(nna))+1,&
-        ST_INT,rtree%h_Kpath,ST_NEWBLOCK_ZERO)
-    call storage_getbase_int(rtree%h_Kpath,rtree%p_Kpath)
+    call storage_new('btree_createTree', 'Kpath', ceiling(1.441*LOG2(nna))+1,&
+                     ST_INT, rtree%h_Kpath, ST_NEWBLOCK_ZERO)
+    call storage_getbase_int(rtree%h_Kpath, rtree%p_Kpath)
 
-    call storage_new('btree_createTree','Kbal',nna,&
-        ST_INT,rtree%h_Kbal,ST_NEWBLOCK_ZERO)
-    call storage_getbase_int(rtree%h_Kbal,rtree%p_Kbal)
+    call storage_new('btree_createTree', 'Kbal', nna,&
+                     ST_INT, rtree%h_Kbal, ST_NEWBLOCK_ZERO)
+    call storage_getbase_int(rtree%h_Kbal, rtree%p_Kbal)
 
     ! Allocate memory for Key
     select case(rtree%ctreeFormat)
     case (ST_DOUBLE)
-      call storage_new('btree_createTree','Key',nna,&
-          ST_DOUBLE,rtree%h_Key,ST_NEWBLOCK_ZERO)
-      call storage_getbase_double(rtree%h_Key,rtree%p_DKey)
+      call storage_new('btree_createTree', 'Key', nna,&
+                       ST_DOUBLE, rtree%h_Key, ST_NEWBLOCK_ZERO)
+      call storage_getbase_double(rtree%h_Key, rtree%p_DKey)
     case (ST_SINGLE)
-      call storage_new('btree_createTree','Key',nna,&
-          ST_SINGLE,rtree%h_Key,ST_NEWBLOCK_ZERO)
-      call storage_getbase_single(rtree%h_Key,rtree%p_FKey)
+      call storage_new('btree_createTree', 'Key', nna,&
+                       ST_SINGLE, rtree%h_Key, ST_NEWBLOCK_ZERO)
+      call storage_getbase_single(rtree%h_Key, rtree%p_FKey)
     case (ST_INT)
-      call storage_new('btree_createTree','Key',nna,&
-          ST_INT,rtree%h_Key,ST_NEWBLOCK_ZERO)
-      call storage_getbase_int(rtree%h_Key,rtree%p_IKey)
+      call storage_new('btree_createTree', 'Key', nna,&
+                       ST_INT, rtree%h_Key, ST_NEWBLOCK_ZERO)
+      call storage_getbase_int(rtree%h_Key, rtree%p_IKey)
     case DEFAULT
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_createTree')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_createTree')
       call sys_halt()
     end select
 
     ! Allocate memory fo auxiliary data
     if (isizeDble > 0) then
-      Isize1 = (/isizeDble,nna/)
-      call storage_new('btree_createTree','DData',Isize1,&
-          ST_DOUBLE,rtree%h_DData,ST_NEWBLOCK_NOINIT)
-      call storage_getbase_double2D(rtree%h_DData,rtree%p_DData)
+      Isize1 = (/isizeDble, nna/)
+      call storage_new('btree_createTree', 'DData', Isize1,&
+                       ST_DOUBLE, rtree%h_DData, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_double2D(rtree%h_DData, rtree%p_DData)
     end if
 
     if (isizeSngl > 0) then
-      Isize1 = (/isizeSngl,nna/)
-      call storage_new('btree_createTree','FData',Isize1,&
-          ST_SINGLE,rtree%h_FData,ST_NEWBLOCK_NOINIT)
-      call storage_getbase_single2D(rtree%h_FData,rtree%p_FData)
+      Isize1 = (/isizeSngl, nna/)
+      call storage_new('btree_createTree', 'FData', Isize1,&
+                       ST_SINGLE, rtree%h_FData, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_single2D(rtree%h_FData, rtree%p_FData)
     end if
 
     if (isizeInt > 0) then
-      Isize1 = (/isizeInt,nna/)
-      call storage_new('btree_createTree','IData',Isize1,&
-          ST_INT,rtree%h_IData,ST_NEWBLOCK_NOINIT)
-      call storage_getbase_int2D(rtree%h_IData,rtree%p_IData)
+      Isize1 = (/isizeInt, nna/)
+      call storage_new('btree_createTree', 'IData', Isize1,&
+                       ST_INT, rtree%h_IData, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int2D(rtree%h_IData, rtree%p_IData)
     end if
 
     ! Initialize tree structure
@@ -479,16 +480,16 @@ contains
     rtree%NNA         = 0
     rtree%NRESIZE     = 0
 
-    nullify(rtree%p_DKey,rtree%p_FKey,rtree%p_IKey)
-    nullify(rtree%p_Kbal,rtree%p_Kpath,rtree%p_Kchild)
-    nullify(rtree%p_DData,rtree%p_FData,rtree%p_IData)
+    nullify(rtree%p_DKey, rtree%p_FKey, rtree%p_IKey)
+    nullify(rtree%p_Kbal, rtree%p_Kpath, rtree%p_Kchild)
+    nullify(rtree%p_DData, rtree%p_FData, rtree%p_IData)
   end subroutine btree_releaseTree
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  subroutine btree_resizeTree(rtree,nna)
+  subroutine btree_resizeTree(rtree, nna)
 
 !<description>
     ! This subroutine reallocates memory for an existing tree
@@ -500,60 +501,60 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
 
     ! Set new size
-    rtree%NNA=nna
-    rtree%NRESIZE=rtree%NRESIZE+1
+    rtree%NNA = nna
+    rtree%NRESIZE = rtree%NRESIZE+1
 
-    call storage_realloc('btree_resizeTree',TROOT,nna,&
-        rtree%h_Kchild,ST_NEWBLOCK_ZERO,.true.)
-    call storage_getbase_int2D(rtree%h_Kchild,rtree%p_Kchild)
+    call storage_realloc('btree_resizeTree', TROOT, nna,&
+                         rtree%h_Kchild, ST_NEWBLOCK_ZERO, .true.)
+    call storage_getbase_int2D(rtree%h_Kchild, rtree%p_Kchild)
 
-    call storage_realloc('btree_resizeTree',nna,&
-        rtree%h_Kbal,ST_NEWBLOCK_ZERO,.true.)
-    call storage_getbase_int(rtree%h_Kbal,rtree%p_Kbal)
+    call storage_realloc('btree_resizeTree', nna,&
+                         rtree%h_Kbal, ST_NEWBLOCK_ZERO, .true.)
+    call storage_getbase_int(rtree%h_Kbal, rtree%p_Kbal)
 
     call storage_realloc('btree_resizeTree',&
-        ceiling(1.441*LOG2(nna))+1,rtree%h_Kpath,&
-        ST_NEWBLOCK_ZERO,.true.)
-    call storage_getbase_int(rtree%h_Kpath,rtree%p_Kpath)
+                         ceiling(1.441*LOG2(nna))+1, rtree%h_Kpath,&
+                         ST_NEWBLOCK_ZERO, .true.)
+    call storage_getbase_int(rtree%h_Kpath, rtree%p_Kpath)
 
-    call storage_realloc('btree_resizeTree',nna,&
-        rtree%h_Key,ST_NEWBLOCK_ZERO,.true.)
+    call storage_realloc('btree_resizeTree', nna,&
+                         rtree%h_Key, ST_NEWBLOCK_ZERO, .true.)
     select case(rtree%ctreeFormat)
     case (ST_DOUBLE)
-      call storage_getbase_double(rtree%h_Key,rtree%p_DKey)
+      call storage_getbase_double(rtree%h_Key, rtree%p_DKey)
     case (ST_SINGLE)
-      call storage_getbase_single(rtree%h_Key,rtree%p_FKey)
+      call storage_getbase_single(rtree%h_Key, rtree%p_FKey)
     case (ST_INT)
-      call storage_getbase_int(rtree%h_Key,rtree%p_IKey)
+      call storage_getbase_int(rtree%h_Key, rtree%p_IKey)
     case DEFAULT
       call output_line('Unsupported key data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_resizeTree')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_resizeTree')
       call sys_halt()
     end select
 
     ! Auxiliary data
     if (rtree%isizeDble > 0) then
-      call storage_realloc('btree_resizeTree',nna,&
-          rtree%h_DData,ST_NEWBLOCK_NOINIT,.true.)
-      call storage_getbase_double2D(rtree%h_DData,rtree%p_DData)
+      call storage_realloc('btree_resizeTree', nna,&
+                           rtree%h_DData, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_double2D(rtree%h_DData, rtree%p_DData)
     end if
 
     if (rtree%isizeSngl > 0) then
-      call storage_realloc('btree_resizeTree',nna,&
-          rtree%h_FData,ST_NEWBLOCK_NOINIT,.true.)
-      call storage_getbase_single2D(rtree%h_FData,rtree%p_FData)
+      call storage_realloc('btree_resizeTree', nna,&
+                           rtree%h_FData, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_single2D(rtree%h_FData, rtree%p_FData)
     end if
 
     if (rtree%isizeInt > 0) then
-      call storage_realloc('btree_resizeTree',nna,&
-          rtree%h_IData,ST_NEWBLOCK_NOINIT,.true.)
-      call storage_getbase_int2D(rtree%h_IData,rtree%p_IData)
+      call storage_realloc('btree_resizeTree', nna,&
+                           rtree%h_IData, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_int2D(rtree%h_IData, rtree%p_IData)
     end if
   end subroutine btree_resizeTree
 
@@ -561,7 +562,7 @@ contains
 
 !<subroutine>
 
-  subroutine btree_copyToTree_handle(h_Key,rtree,h_DData,h_FData,h_IData)
+  subroutine btree_copyToTree_handle(h_Key, rtree, h_DData, h_FData, h_IData)
 
 !<description>
     ! This subroutine copies the content of handles to the tree.
@@ -585,7 +586,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
@@ -599,26 +600,26 @@ contains
     ! Transform the content of the key handle to the tree
     select case (rtree%ctreeFormat)
     case (ST_DOUBLE)
-      call storage_getbase_double(h_Key,p_DKey)
-      do j=1,size(p_DKey)
-        call btree_insertIntoTree(rtree,p_DKey(j))
+      call storage_getbase_double(h_Key, p_DKey)
+      do j = 1, size(p_DKey)
+        call btree_insertIntoTree(rtree, p_DKey(j))
       end do
       
     case (ST_SINGLE)
-      call storage_getbase_single(h_Key,p_FKey)
-      do j=1,size(p_FKey)
-        call btree_insertIntoTree(rtree,p_FKey(j))
+      call storage_getbase_single(h_Key, p_FKey)
+      do j = 1, size(p_FKey)
+        call btree_insertIntoTree(rtree, p_FKey(j))
       end do
       
     case (ST_INT)
-      call storage_getbase_int(h_Key,p_IKey)
-      do j=1,size(p_IKey)
-        call btree_insertIntoTree(rtree,p_IKey(j))
+      call storage_getbase_int(h_Key, p_IKey)
+      do j = 1, size(p_IKey)
+        call btree_insertIntoTree(rtree, p_IKey(j))
       end do
       
     case DEFAULT
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_handle')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_handle')
       call sys_halt()
     end select
     
@@ -630,18 +631,18 @@ contains
     ! handles of the tree structure
     
     if (present(h_DData) .and. rtree%isizeDble > 0) &
-        call storage_copy(h_DData,rtree%h_DData)
+        call storage_copy(h_DData, rtree%h_DData)
     if (present(h_FData) .and. rtree%isizeSngl > 0) &
-        call storage_copy(h_FData,rtree%h_FData)
+        call storage_copy(h_FData, rtree%h_FData)
     if (present(h_IData) .and. rtree%isizeInt  > 0) &
-        call storage_copy(h_IData,rtree%h_IData)
+        call storage_copy(h_IData, rtree%h_IData)
   end subroutine btree_copyToTree_handle
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_copyToTree_arrayDble(p_DKey,rtree,p_DData,p_FData,p_IData)
+  subroutine btree_copyToTree_arrayDble(p_DKey, rtree, p_DData, p_FData, p_IData)
 
 !<description>
     ! This subroutine copies the content of arrays to the tree
@@ -665,7 +666,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
@@ -677,65 +678,65 @@ contains
     ! Check if tree has correct data format
     if (rtree%ctreeFormat .ne. ST_DOUBLE) then
       call output_line('Invalid data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayDble')
       call sys_halt()
     end if
 
     ! Build-up treee structure
-    do j=1,size(p_DKey)
-      call btree_insertIntoTree(rtree,p_DKey(j))
+    do j = 1, size(p_DKey)
+      call btree_insertIntoTree(rtree, p_DKey(j))
     end do
 
     ! Copy auxiliary arrays to the tree.
     if (present(p_DData) .and. rtree%isizeDble > 0) then
-      call storage_getsize(rtree%h_DData,Isize)
+      call storage_getsize(rtree%h_DData, Isize)
       if ((rtree%isizeDble .ne. size(p_DData,1)) .or.&
           (rtree%NA .ne. size(p_DData,2))) then
         call output_line('Invalid auxiliary data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayDble')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayDble')
         call sys_halt()
       end if
       ! Do we have to reallocate memory?
       if (Isize(2) .ne. rtree%NNA) then
         call storage_realloc('btree_copyToTree_arrayDble',&
-            rtree%NNA,rtree%h_DData,ST_NEWBLOCK_NOINIT)
-        call storage_getbase_double2D(rtree%h_DData,rtree%p_DData)
+                             rtree%NNA, rtree%h_DData, ST_NEWBLOCK_NOINIT)
+        call storage_getbase_double2D(rtree%h_DData, rtree%p_DData)
       end if
       ! Copy data
       rtree%p_DData(:,1:rtree%NA) = p_DData
     end if
 
     if (present(p_FData) .and. rtree%isizeSngl > 0) then
-      call storage_getsize(rtree%h_FData,Isize)
+      call storage_getsize(rtree%h_FData, Isize)
       if ((rtree%isizeSngl .ne. size(p_FData,1)) .or.&
           (rtree%NA .ne. size(p_FData,2))) then
         call output_line('Invalid auxiliary data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayDble')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayDble')
         call sys_halt()
       end if
       ! Do we have to reallocate memory?
       if (Isize(2) .ne. rtree%NNA) then
         call storage_realloc('btree_copyToTree_arrayDble',&
-            rtree%NNA,rtree%h_FData,ST_NEWBLOCK_NOINIT)
-        call storage_getbase_single2D(rtree%h_FData,rtree%p_FData)
+                             rtree%NNA, rtree%h_FData, ST_NEWBLOCK_NOINIT)
+        call storage_getbase_single2D(rtree%h_FData, rtree%p_FData)
       end if
       ! Copy data
       rtree%p_FData(:,1:rtree%NA) = p_FData
     end if
 
     if (present(p_IData) .and. rtree%isizeInt > 0) then
-      call storage_getsize(rtree%h_IData,Isize)
+      call storage_getsize(rtree%h_IData, Isize)
       if ((rtree%isizeInt .ne. size(p_IData,1)) .or.&
           (rtree%NA .ne. size(p_IData,2))) then
         call output_line('Invalid auxiliary data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayDble')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayDble')
         call sys_halt()
       end if
       ! Do we have to reallocate memory?
       if (Isize(2) .ne. rtree%NNA) then
         call storage_realloc('btree_copyToTree_arrayDble',&
-            rtree%NNA,rtree%h_IData,ST_NEWBLOCK_NOINIT)
-        call storage_getbase_int2D(rtree%h_IData,rtree%p_IData)
+                             rtree%NNA, rtree%h_IData, ST_NEWBLOCK_NOINIT)
+        call storage_getbase_int2D(rtree%h_IData, rtree%p_IData)
       end if
       ! Copy data
       rtree%p_IData(:,1:rtree%NA) = p_IData
@@ -747,7 +748,7 @@ contains
 
 !<subroutine>
 
-  subroutine btree_copyToTree_arraySngl(p_FKey,rtree,p_DData,p_FData,p_IData)
+  subroutine btree_copyToTree_arraySngl(p_FKey, rtree, p_DData, p_FData, p_IData)
 
 !<description>
     ! This subroutine copies the content of arrays to the tree
@@ -771,7 +772,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
@@ -783,54 +784,54 @@ contains
     ! Check if tree has correct data format
     if (rtree%ctreeFormat .ne. ST_SINGLE) then
       call output_line('Invalid data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arraySngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arraySngl')
       call sys_halt()
     end if
 
     ! Build-up treee structure
-    do j=1,size(p_FKey)
-      call btree_insertIntoTree(rtree,p_FKey(j))
+    do j = 1, size(p_FKey)
+      call btree_insertIntoTree(rtree, p_FKey(j))
     end do
 
     ! Copy auxiliary arrays to the tree.
     if (present(p_DData) .and. rtree%isizeDble > 0) then
-      call storage_getsize(rtree%h_DData,Isize)
+      call storage_getsize(rtree%h_DData, Isize)
       if ((rtree%isizeDble .ne. size(p_DData,1)) .or.&
           (rtree%NA .ne. size(p_DData,2))) then
         call output_line('Invalid auxiliary data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arraySngl')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arraySngl')
         call sys_halt()
       end if
       ! Do we have to reallocate memory?
       if (Isize(2) .ne. rtree%NNA) then
         call storage_realloc('btree_copyToTree_arraySngl',&
-            rtree%NNA,rtree%h_DData,ST_NEWBLOCK_NOINIT)
-        call storage_getbase_double2D(rtree%h_DData,rtree%p_DData)
+                             rtree%NNA, rtree%h_DData, ST_NEWBLOCK_NOINIT)
+        call storage_getbase_double2D(rtree%h_DData, rtree%p_DData)
       end if
       ! Copy data
       rtree%p_DData(:,1:rtree%NA) = p_DData
     end if
     
     if (present(p_FData) .and. rtree%isizeSngl > 0) then
-      call storage_getsize(rtree%h_FData,Isize)
+      call storage_getsize(rtree%h_FData, Isize)
       if ((rtree%isizeSngl .ne. size(p_FData,1)) .or.&
           (rtree%NA .ne. size(p_FData,2))) then
         call output_line('Invalid auxiliary data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arraySngl')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arraySngl')
         call sys_halt()
       end if
       ! Do we have to reallocate memory?
       if (Isize(2) .ne. rtree%NNA) then
         call storage_realloc('btree_copyToTree_arraySngl',&
-            rtree%NNA,rtree%h_FData,ST_NEWBLOCK_NOINIT)
-        call storage_getbase_single2D(rtree%h_FData,rtree%p_FData)
+                             rtree%NNA, rtree%h_FData, ST_NEWBLOCK_NOINIT)
+        call storage_getbase_single2D(rtree%h_FData, rtree%p_FData)
       end if
       ! Copy data
       rtree%p_FData(:,1:rtree%NA) = p_FData
     end if
 
     if (present(p_IData) .and. rtree%isizeInt > 0) then
-      call storage_getsize(rtree%h_IData,Isize)
+      call storage_getsize(rtree%h_IData, Isize)
       if ((rtree%isizeInt .ne. size(p_IData,1)) .or.&
           (rtree%NA .ne. size(p_IData,2))) then
         call output_line('Invalid auxiliary data!',&
@@ -853,7 +854,7 @@ contains
 
 !<subroutine>
 
-  subroutine btree_copyToTree_arrayInt(p_IKey,rtree,p_DData,p_FData,p_IData)
+  subroutine btree_copyToTree_arrayInt(p_IKey, rtree, p_DData, p_FData, p_IData)
 
 !<description>
     ! This subroutine copies the content of arrays to the tree
@@ -877,7 +878,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
@@ -889,65 +890,65 @@ contains
     ! Check if tree has correct data format
     if (rtree%ctreeFormat .ne. ST_INT) then
       call output_line('Invalid data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayInt')
       call sys_halt()
     end if
 
     ! Build-up treee structure
-    do j=1,size(p_IKey)
-      call btree_insertIntoTree(rtree,p_IKey(j))
+    do j = 1, size(p_IKey)
+      call btree_insertIntoTree(rtree, p_IKey(j))
     end do
 
     ! Copy auxiliary arrays to the tree.
     if (present(p_DData) .and. rtree%isizeDble > 0) then
-      call storage_getsize(rtree%h_DData,Isize)
+      call storage_getsize(rtree%h_DData, Isize)
       if ((rtree%isizeDble .ne. size(p_DData,1)) .or.&
           (rtree%NA .ne. size(p_DData,2))) then
         call output_line('Invalid auxiliary data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayInt')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayInt')
         call sys_halt()
       end if
       ! Do we have to reallocate memory?
       if (Isize(2) .ne. rtree%NNA) then
         call storage_realloc('btree_copyToTree_arrayInt',&
-            rtree%NNA,rtree%h_DData,ST_NEWBLOCK_NOINIT)
-        call storage_getbase_double2D(rtree%h_DData,rtree%p_DData)
+                             rtree%NNA, rtree%h_DData, ST_NEWBLOCK_NOINIT)
+        call storage_getbase_double2D(rtree%h_DData, rtree%p_DData)
       end if
       ! Copy data
       rtree%p_DData(:,1:rtree%NA) = p_DData
     end if
     
     if (present(p_FData) .and. rtree%isizeSngl > 0) then
-      call storage_getsize(rtree%h_FData,Isize)
+      call storage_getsize(rtree%h_FData, Isize)
       if ((rtree%isizeSngl .ne. size(p_FData,1)) .or.&
           (rtree%NA .ne. size(p_FData,2))) then
         call output_line('Invalid auxiliary data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayInt')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayInt')
         call sys_halt()
       end if
       ! Do we have to reallocate memory?
       if (Isize(2) .ne. rtree%NNA) then
         call storage_realloc('btree_copyToTree_arrayInt',&
-            rtree%NNA,rtree%h_FData,ST_NEWBLOCK_NOINIT)
-        call storage_getbase_single2D(rtree%h_FData,rtree%p_FData)
+                             rtree%NNA, rtree%h_FData, ST_NEWBLOCK_NOINIT)
+        call storage_getbase_single2D(rtree%h_FData, rtree%p_FData)
       end if
       ! Copy data
       rtree%p_FData(:,1:rtree%NA) = p_FData
     end if
 
     if (present(p_IData) .and. rtree%isizeInt > 0) then
-      call storage_getsize(rtree%h_IData,Isize)
+      call storage_getsize(rtree%h_IData, Isize)
       if ((rtree%isizeInt .ne. size(p_IData,1)) .or.&
           (rtree%NA .ne. size(p_IData,2))) then
         call output_line('Invalid auxiliary data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayInt')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyToTree_arrayInt')
         call sys_halt()
       end if
       ! Do we have to reallocate memory?
       if (Isize(2) .ne. rtree%NNA) then
         call storage_realloc('btree_copyToTree_arrayInt',&
-            rtree%NNA,rtree%h_IData,ST_NEWBLOCK_NOINIT)
-        call storage_getbase_int2D(rtree%h_IData,rtree%p_IData)
+                             rtree%NNA, rtree%h_IData, ST_NEWBLOCK_NOINIT)
+        call storage_getbase_int2D(rtree%h_IData, rtree%p_IData)
       end if
       ! Copy data
       rtree%p_IData(:,1:rtree%NA) = p_IData
@@ -959,15 +960,18 @@ contains
 
 !<subroutine>
 
-  subroutine btree_copyFromTreeKey_handle(rtree,h_Key)
+  subroutine btree_copyFromTreeKey_handle(rtree, h_Key, corder)
 
 !<description>
     ! This subroutine copies the key of the tree to the handle h_Key
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
+    
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -981,44 +985,82 @@ contains
     real(SP), dimension(:), pointer :: p_FKey
     integer,  dimension(:), pointer :: p_IKey
     integer(I32) :: isize
-    integer :: j
+    integer :: j,iorder
 
     ! Check if handle needs to be (re-)allocated
     if (h_Key .eq. ST_NOHANDLE) then
-      call storage_new('btree_copyFromTreeKey_handle','Key',rtree%NA,&
-          rtree%ctreeFormat,h_Key,ST_NEWBLOCK_NOINIT)
+      call storage_new('btree_copyFromTreeKey_handle', 'Key', rtree%NA,&
+                       rtree%ctreeFormat, h_Key, ST_NEWBLOCK_NOINIT)
     else
       call storage_getsize(h_Key,isize)
       if (isize < rtree%NA) then
-        call storage_realloc('btree_copyFromTreeKey_handle',rtree%NA,&
-            h_Key,ST_NEWBLOCK_ZERO,.false.)
+        call storage_realloc('btree_copyFromTreeKey_handle', rtree%NA,&
+                             h_Key, ST_NEWBLOCK_ZERO, .false.)
       end if
     end if
+
+    ! Get ordering strategy
+    iorder = BTREE_INORDER
+    if (present(corder)) iorder = corder
 
     ! What kind of key is used?
     select case(rtree%ctreeFormat)
     case (ST_DOUBLE)
-      call storage_getbase_double(h_Key,p_DKey); j=0
-      call inorderKeyDble(rtree%p_Kchild(TRIGHT,TROOT))
+      call storage_getbase_double(h_Key, p_DKey); j=0
+      select case(iorder)
+      case (BTREE_PREORDER)
+        call preorderKeyDble(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_INORDER)
+        call inorderKeyDble(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_POSTORDER)
+        call postorderKeyDble(rtree%p_Kchild(TRIGHT, TROOT))
+      end select
       
     case (ST_SINGLE)
-      call storage_getbase_single(h_Key,p_FKey); j=0
-      call inorderKeySngl(rtree%p_Kchild(TRIGHT,TROOT))
-      
+      call storage_getbase_single(h_Key, p_FKey); j=0
+      select case(iorder)
+      case (BTREE_PREORDER)
+        call preorderKeySngl(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_INORDER)
+        call inorderKeySngl(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_POSTORDER)
+        call postorderKeySngl(rtree%p_Kchild(TRIGHT, TROOT))
+    end select
+
     case (ST_INT)
-      call storage_getbase_int(h_Key,p_IKey); j=0
-      call inorderKeyInt(rtree%p_Kchild(TRIGHT,TROOT))
+      call storage_getbase_int(h_Key, p_IKey); j=0
+      select case(iorder)
+      case (BTREE_PREORDER)
+        call preorderKeyInt(rtree%p_Kchild(TRIGHT,TROOT))
+      case (BTREE_INORDER)
+        call inorderKeyInt(rtree%p_Kchild(TRIGHT,TROOT))
+      case (BTREE_POSTORDER)
+        call postorderKeyInt(rtree%p_Kchild(TRIGHT,TROOT))
+      end select
       
     case DEFAULT
       call output_line('Unsupported data format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
       call sys_halt()
     end select
     
   contains
-
+    
     ! Here, the real working routines follow.
     
+    !**************************************************************
+    ! Copy the content of the Double key to an array
+    
+    recursive subroutine preorderKeyDble(i)
+      integer, intent(IN) :: i
+      
+            j=j+1; p_DKey(j)=rtree%p_DKey(i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderKeyDble(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderKeyDble(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderKeyDble
+
     !**************************************************************
     ! Copy the content of the Double key to an array
     
@@ -1031,7 +1073,33 @@ contains
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call inorderKeyDble(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderKeyDble
+
+    !**************************************************************
+    ! Copy the content of the Double key to an array
     
+    recursive subroutine postorderKeyDble(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderKeyDble(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderKeyDble(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_DKey(j)=rtree%p_DKey(i)
+    end subroutine postorderKeyDble
+       
+    !**************************************************************
+    ! Copy the content of the Single key to an array
+
+    recursive subroutine preorderKeySngl(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_FKey(j)=rtree%p_FKey(i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderKeySngl(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderKeySngl(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderKeySngl
+
     !**************************************************************
     ! Copy the content of the Single key to an array
 
@@ -1046,6 +1114,32 @@ contains
     end subroutine inorderKeySngl
 
     !**************************************************************
+    ! Copy the content of the Single key to an array
+
+    recursive subroutine postorderKeySngl(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderKeySngl(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderKeySngl(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_FKey(j)=rtree%p_FKey(i)
+    end subroutine postorderKeySngl
+
+    !**************************************************************
+    ! Copy the content of the Integer key to an array
+    
+    recursive subroutine preorderKeyInt(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_IKey(j)=rtree%p_IKey(i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderKeyInt(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderKeyInt(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderKeyInt
+    
+    !**************************************************************
     ! Copy the content of the Integer key to an array
 
     recursive subroutine inorderKeyInt(i)
@@ -1057,21 +1151,37 @@ contains
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call inorderKeyInt(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderKeyInt
+    
+    !**************************************************************
+    ! Copy the content of the Integer key to an array
+    
+    recursive subroutine postorderKeyInt(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderKeyInt(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderKeyInt(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_IKey(j)=rtree%p_IKey(i)
+    end subroutine postorderKeyInt
   end subroutine btree_copyFromTreeKey_handle
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_copyFromTreeKey_arrayDble(rtree,p_DKey)
+  subroutine btree_copyFromTreeKey_arrayDble(rtree, p_DKey, corder)
 
 !<description>
     ! This subroutine copies the key of the tree to the double-valued array p_DKey
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
+    
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -1081,29 +1191,52 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: j
+    integer :: j,iorder
 
     ! Check data format
     if (rtree%ctreeFormat .ne. ST_DOUBLE) then
       call output_line('Invalid data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arrayDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arrayDble')
       call sys_halt()
     end if
 
     ! Check size of array
     if (size(p_DKey) < rtree%NA) then
       call output_line('Array too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arrayDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arrayDble')
       call sys_halt()
     end if
     
-    j=0
-    call inorderKeyDble(rtree%p_Kchild(TRIGHT,TROOT))
+    ! Get ordering strategy
+    iorder = BTREE_INORDER
+    if (present(corder)) iorder = corder
+    
+    select case(iorder)
+    case (BTREE_PREORDER)
+      j=0; call preorderKeyDble(rtree%p_Kchild(TRIGHT, TROOT))
+    case (BTREE_INORDER)
+      j=0; call inorderKeyDble(rtree%p_Kchild(TRIGHT, TROOT))
+    case (BTREE_POSTORDER)
+      j=0; call postorderKeyDble(rtree%p_Kchild(TRIGHT, TROOT))
+    end select
 
   contains
     
     ! Here, the real working routine follows
     
+    !**************************************************************
+    ! Copy the content of the Double key to an array
+    
+    recursive subroutine preorderKeyDble(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_DKey(j)=rtree%p_DKey(i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderKeyDble(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderKeyDble(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderKeyDble
+
     !**************************************************************
     ! Copy the content of the Double key to an array
     
@@ -1116,21 +1249,37 @@ contains
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call inorderKeyDble(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderKeyDble
+
+    !**************************************************************
+    ! Copy the content of the Double key to an array
+    
+    recursive subroutine postorderKeyDble(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderKeyDble(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderKeyDble(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_DKey(j)=rtree%p_DKey(i)
+    end subroutine postorderKeyDble
   end subroutine btree_copyFromTreeKey_arrayDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_copyFromTreeKey_arraySngl(rtree,p_FKey)
+  subroutine btree_copyFromTreeKey_arraySngl(rtree, p_FKey, corder)
 
 !<description>
     ! This subroutine copies the key of the tree to the single-valued array p_FKey
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
+
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -1140,28 +1289,51 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: j
+    integer :: j,iorder
 
     ! Check data format
     if (rtree%ctreeFormat .ne. ST_SINGLE) then
       call output_line('Invalid data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arraySngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arraySngl')
       call sys_halt()
     end if
 
     ! Check size of array
     if (size(p_FKey) < rtree%NA) then
       call output_line('Array too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arraySngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arraySngl')
       call sys_halt()
     end if
     
-    j=0
-    call inorderKeySngl(rtree%p_Kchild(TRIGHT,TROOT))
+    ! Get ordering strategy
+    iorder = BTREE_INORDER
+    if (present(corder)) iorder = corder
+
+    select case(iorder)
+    case(BTREE_PREORDER)
+      j=0; call preorderKeySngl(rtree%p_Kchild(TRIGHT, TROOT))
+    case(BTREE_INORDER)
+      j=0; call inorderKeySngl(rtree%p_Kchild(TRIGHT, TROOT))
+    case(BTREE_POSTORDER)
+      j=0; call postorderKeySngl(rtree%p_Kchild(TRIGHT, TROOT))
+    end select
 
   contains
 
     ! Here, the real working routine follows
+
+    !**************************************************************
+    ! Copy the content of the Single key to an array
+
+    recursive subroutine preorderKeySngl(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_FKey(j)=rtree%p_FKey(i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderKeySngl(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderKeySngl(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderKeySngl
 
     !**************************************************************
     ! Copy the content of the Single key to an array
@@ -1175,21 +1347,37 @@ contains
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call inorderKeySngl(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderKeySngl
+
+    !**************************************************************
+    ! Copy the content of the Single key to an array
+
+    recursive subroutine postorderKeySngl(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderKeySngl(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderKeySngl(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_FKey(j)=rtree%p_FKey(i)
+    end subroutine postorderKeySngl
   end subroutine btree_copyFromTreeKey_arraySngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_copyFromTreeKey_arrayInt(rtree,p_IKey)
+  subroutine btree_copyFromTreeKey_arrayInt(rtree, p_IKey, corder)
 
 !<description>
     ! This subroutine copies the key of the tree to the integer-valued array p_IKey
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
+
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -1199,28 +1387,51 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: j
+    integer :: j,iorder
 
     ! Check data format
     if (rtree%ctreeFormat .ne. ST_INT) then
       call output_line('Invalid data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arrayInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arrayInt')
       call sys_halt()
     end if
 
     ! Check size of array
     if (size(p_IKey) < rtree%NA) then
       call output_line('Array too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arrayInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTreeKey_arrayInt')
       call sys_halt()
     end if
     
-    j=0
-    call inorderKeyInt(rtree%p_Kchild(TRIGHT,TROOT))
+    ! Get ordering strategy
+    iorder = BTREE_INORDER
+    if (present(corder)) iorder = corder
+
+    select case(iorder)
+    case (BTREE_PREORDER)
+      j=0; call preorderKeyInt(rtree%p_Kchild(TRIGHT, TROOT))
+    case (BTREE_INORDER)
+      j=0; call inorderKeyInt(rtree%p_Kchild(TRIGHT, TROOT))
+    case (BTREE_POSTORDER)
+      j=0; call postorderKeyInt(rtree%p_Kchild(TRIGHT, TROOT))
+    end select
 
   contains
     
     ! Here, the real working routine follows
+
+    !**************************************************************
+    ! Copy the content of the Integer key to an array
+    
+    recursive subroutine preorderKeyInt(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_IKey(j)=rtree%p_IKey(i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderKeyInt(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderKeyInt(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderKeyInt
 
     !**************************************************************
     ! Copy the content of the Integer key to an array
@@ -1234,13 +1445,26 @@ contains
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call inorderKeyInt(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderKeyInt
+
+    !**************************************************************
+    ! Copy the content of the Integer key to an array
+    
+    recursive subroutine postorderKeyInt(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderKeyInt(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderKeyInt(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_IKey(j)=rtree%p_IKey(i)
+    end subroutine postorderKeyInt
   end subroutine btree_copyFromTreeKey_arrayInt
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_copyFromTree_handle(rtree,ctype,h_Data,mask)
+  subroutine btree_copyFromTree_handle(rtree, ctype, h_Data, mask, corder)
 
 !<description>
     ! This subroutine copies some (part of) the auxiliary data
@@ -1262,7 +1486,7 @@ contains
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
     
     ! type of data
@@ -1270,6 +1494,9 @@ contains
 
     ! OPTIONAL: mask of components to be copied
     integer, dimension(:), intent(IN), optional :: mask
+
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -1279,9 +1506,9 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer   :: p_DData
-    real(SP), dimension(:), pointer   :: p_FData
-    integer,  dimension(:), pointer   :: p_IData
+    real(DP), dimension(:), pointer :: p_DData
+    real(SP), dimension(:), pointer :: p_FData
+    integer,  dimension(:), pointer :: p_IData
     real(DP), dimension(:,:), pointer :: p_DData2D
     real(SP), dimension(:,:), pointer :: p_FData2D
     integer,  dimension(:,:), pointer :: p_IData2D
@@ -1304,20 +1531,20 @@ contains
         if (present(mask)) Isize(1) = size(mask)
         
         if (Isize(1) > 1) then
-          call storage_new('btree_copyFromTree_handle','DData',Isize,&
-              ST_DOUBLE,h_Data,ST_NEWBLOCK_NOINIT)
-          call storage_getbase_double2D(h_Data,p_DData2D)
-          call btree_copyFromTree_arrayDble2D(rtree,p_DData2D,mask)
+          call storage_new('btree_copyFromTree_handle', 'DData', Isize,&
+                           ST_DOUBLE,h_Data,ST_NEWBLOCK_NOINIT)
+          call storage_getbase_double2D(h_Data, p_DData2D)
+          call btree_copyFromTree_arrayDble2D(rtree, p_DData2D, mask, corder)
         elseif (present(mask)) then
-          call storage_new('btree_copyFromTree_handle','DData',Isize(2),&
-              ST_DOUBLE,h_Data,ST_NEWBLOCK_NOINIT)
-          call storage_getbase_double(h_Data,p_DData)
-          call btree_copyFromTree_arrayDble(rtree,p_DData,mask(1))
+          call storage_new('btree_copyFromTree_handle', 'DData', Isize(2),&
+                           ST_DOUBLE, h_Data, ST_NEWBLOCK_NOINIT)
+          call storage_getbase_double(h_Data, p_DData)
+          call btree_copyFromTree_arrayDble(rtree, p_DData, mask(1), corder)
         else
-          call storage_new('btree_copyFromTree_handle','DData',Isize(2),&
-              ST_DOUBLE,h_Data,ST_NEWBLOCK_NOINIT)
+          call storage_new('btree_copyFromTree_handle', 'DData', Isize(2),&
+                           ST_DOUBLE, h_Data, ST_NEWBLOCK_NOINIT)
           call storage_getbase_double(h_Data,p_DData)
-          call btree_copyFromTree_arrayDble(rtree,p_DData,1)
+          call btree_copyFromTree_arrayDble(rtree, p_DData, 1, corder)
         end if
 
       case (ST_SINGLE)
@@ -1327,20 +1554,20 @@ contains
         if (present(mask)) Isize(1) = size(mask)
 
         if (Isize(1) > 1) then
-          call storage_new('btree_copyFromTree_handle','FData',Isize,&
-              ST_SINGLE,h_Data,ST_NEWBLOCK_NOINIT)
-          call storage_getbase_single2D(h_Data,p_FData2D)
-          call btree_copyFromTree_arraySngl2D(rtree,p_FData2D,mask)
+          call storage_new('btree_copyFromTree_handle', 'FData', Isize,&
+                           ST_SINGLE, h_Data, ST_NEWBLOCK_NOINIT)
+          call storage_getbase_single2D(h_Data, p_FData2D)
+          call btree_copyFromTree_arraySngl2D(rtree, p_FData2D, mask, corder)
         elseif (present(mask)) then
-          call storage_new('btree_copyFromTree_handle','FData',Isize(2),&
-              ST_SINGLE,h_Data,ST_NEWBLOCK_NOINIT)
-          call storage_getbase_single(h_Data,p_FData)
-          call btree_copyFromTree_arraySngl(rtree,p_FData,mask(1))
+          call storage_new('btree_copyFromTree_handle', 'FData', Isize(2),&
+                           ST_SINGLE, h_Data, ST_NEWBLOCK_NOINIT)
+          call storage_getbase_single(h_Data, p_FData)
+          call btree_copyFromTree_arraySngl(rtree, p_FData, mask(1), corder)
         else
-          call storage_new('btree_copyFromTree_handle','FData',Isize(2),&
-              ST_SINGLE,h_Data,ST_NEWBLOCK_NOINIT)
-          call storage_getbase_single(h_Data,p_FData)
-          call btree_copyFromTree_arraySngl(rtree,p_FData,1)
+          call storage_new('btree_copyFromTree_handle', 'FData', Isize(2),&
+                           ST_SINGLE, h_Data, ST_NEWBLOCK_NOINIT)
+          call storage_getbase_single(h_Data, p_FData)
+          call btree_copyFromTree_arraySngl(rtree, p_FData, 1, corder)
         end if
 
       case (ST_INT)
@@ -1350,149 +1577,149 @@ contains
         if (present(mask)) Isize(1) = size(mask)
 
         if (Isize(1) > 1) then
-          call storage_new('btree_copyFromTree_handle','IData',Isize,&
-              ST_INT,h_Data,ST_NEWBLOCK_NOINIT)
-          call storage_getbase_int2D(h_Data,p_IData2D)
-          call btree_copyFromTree_arrayInt2D(rtree,p_IData2D,mask)
+          call storage_new('btree_copyFromTree_handle', 'IData', Isize,&
+                           ST_INT, h_Data, ST_NEWBLOCK_NOINIT)
+          call storage_getbase_int2D(h_Data, p_IData2D)
+          call btree_copyFromTree_arrayInt2D(rtree, p_IData2D, mask, corder)
         elseif (present(mask)) then
-          call storage_new('btree_copyFromTree_handle','IData',Isize(2),&
-              ST_INT,h_Data,ST_NEWBLOCK_NOINIT)
-          call storage_getbase_int(h_Data,p_IData)
-          call btree_copyFromTree_arrayInt(rtree,p_IData,mask(1))
+          call storage_new('btree_copyFromTree_handle', 'IData', Isize(2),&
+                           ST_INT, h_Data, ST_NEWBLOCK_NOINIT)
+          call storage_getbase_int(h_Data, p_IData)
+          call btree_copyFromTree_arrayInt(rtree, p_IData, mask(1), corder)
         else
-          call storage_new('btree_copyFromTree_handle','IData',Isize(2),&
-              ST_INT,h_Data,ST_NEWBLOCK_NOINIT)
-          call storage_getbase_int(h_Data,p_IData)
-          call btree_copyFromTree_arrayInt(rtree,p_IData,1)
+          call storage_new('btree_copyFromTree_handle', 'IData', Isize(2),&
+                           ST_INT, h_Data, ST_NEWBLOCK_NOINIT)
+          call storage_getbase_int(h_Data, p_IData)
+          call btree_copyFromTree_arrayInt(rtree, p_IData, 1, corder)
         end if
         
       case DEFAULT
         call output_line('Unsupported data format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
         call sys_halt()
       end select
 
     else   ! The handle is already associated
 
       ! Check if data type is valid
-      call storage_getdatatype(h_Data,idatatype)
+      call storage_getdatatype(h_Data, idatatype)
       if (idatatype .ne. ctype) then
         call output_line('Data type mismatch!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
         call sys_halt()
       end if
 
       ! Are we 1D- or 2D-array?
-      call storage_getdimension(h_Data,idimension)
+      call storage_getdimension(h_Data, idimension)
       select case(idimension)
 
       case (1)   !!! 1D-ARRAY  !!!
 
         ! Do we have to reallocate the array?
-        call storage_getsize(h_Data,iisize)
+        call storage_getsize(h_Data, iisize)
         if (iisize < rtree%NA)&
-            call storage_realloc('btree_copyFromTree_handle',rtree%NA,&
-            h_Data,ST_NEWBLOCK_NOINIT,.false.)
+            call storage_realloc('btree_copyFromTree_handle', rtree%NA,&
+                                 h_Data, ST_NEWBLOCK_NOINIT, .false.)
 
         ! What kind of data type are we?
         select case(ctype)
         case (ST_DOUBLE)
-          call storage_getbase_double(h_Data,p_DData)
+          call storage_getbase_double(h_Data, p_DData)
 
           ! Which component should be copied
           if (present(mask)) then
             if (size(mask) > 1) then
               call output_line('For 1D-array mask can only have one entry!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                               OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
               call sys_halt()
             end if
-            call btree_copyFromTree_arrayDble(rtree,p_DData,mask(1))
+            call btree_copyFromTree_arrayDble(rtree, p_DData, mask(1), corder)
           elseif (rtree%isizeDble .eq. 1) then
-            call btree_copyFromTree_arrayDble(rtree,p_DData,1)
+            call btree_copyFromTree_arrayDble(rtree, p_DData, 1, corder)
           else
             call output_line('A 1D-array was given but there are more than &
-                &one components in the tree!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                             &one components in the tree!',&
+                             OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
             call sys_halt()
           end if
                     
         case (ST_SINGLE)
-          call storage_getbase_single(h_Data,p_FData)
+          call storage_getbase_single(h_Data, p_FData)
 
           ! Which component should be copied
           if (present(mask)) then
             if (size(mask) > 1) then
               call output_line('For 1D-array mask can only have one entry!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                               OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
               call sys_halt()
             end if
-            call btree_copyFromTree_arraySngl(rtree,p_FData,mask(1))
+            call btree_copyFromTree_arraySngl(rtree, p_FData, mask(1), corder)
           elseif (rtree%isizeSngl .eq. 1) then
-            call btree_copyFromTree_arraySngl(rtree,p_FData,1)
+            call btree_copyFromTree_arraySngl(rtree, p_FData, 1, corder)
           else
             call output_line('A 1D-array was given but there are more than &
-                &one components in the tree!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                             &one components in the tree!',&
+                             OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
             call sys_halt()
           end if
           
         case (ST_INT)
-          call storage_getbase_int(h_Data,p_IData)
+          call storage_getbase_int(h_Data, p_IData)
 
           ! Which component should be copied
           if (present(mask)) then
             if (size(mask) > 1) then
               call output_line('For 1D-array mask can only have one entry!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                               OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
               call sys_halt()
             end if
-            call btree_copyFromTree_arrayInt(rtree,p_IData,mask(1))
+            call btree_copyFromTree_arrayInt(rtree, p_IData, mask(1), corder)
           elseif (rtree%isizeInt .eq. 1) then
-            call btree_copyFromTree_arrayInt(rtree,p_IData,1)
+            call btree_copyFromTree_arrayInt(rtree, p_IData, 1, corder)
           else
             call output_line('A 1D-array was given but there are more than &
-                &one components in the tree!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                             &one components in the tree!',&
+                             OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
             call sys_halt()
           end if
 
         case DEFAULT
           call output_line('Unsupported data type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                           OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
           call sys_halt()
         end select
 
       case (2)   !!! 2D-ARRAY !!!
 
         ! Do we have to reallocate the array?
-        call storage_getsize(h_Data,Isize)
+        call storage_getsize(h_Data, Isize)
         if (Isize(2) < rtree%NA)&
-            call storage_realloc('btree_copyFromTree_handle',rtree%NA,&
-            h_Data,ST_NEWBLOCK_NOINIT,.false.)
+            call storage_realloc('btree_copyFromTree_handle', rtree%NA,&
+                                 h_Data, ST_NEWBLOCK_NOINIT, .false.)
 
         ! What kind of data type are we
         select case(ctype)
         case (ST_DOUBLE)
-          call storage_getbase_double2D(h_Data,p_DData2D)
-          call btree_copyFromTree_arrayDble2D(rtree,p_DData2D,mask)
+          call storage_getbase_double2D(h_Data, p_DData2D)
+          call btree_copyFromTree_arrayDble2D(rtree, p_DData2D, mask, corder)
 
         case (ST_SINGLE)
-          call storage_getbase_single2D(h_Data,p_FData2D)
-          call btree_copyFromTree_arraySngl2D(rtree,p_FData2D,mask)
+          call storage_getbase_single2D(h_Data, p_FData2D)
+          call btree_copyFromTree_arraySngl2D(rtree, p_FData2D, mask, corder)
 
         case (ST_INT)
-          call storage_getbase_int2D(h_Data,p_IData2D)
-          call btree_copyFromTree_arrayInt2D(rtree,p_IData2D,mask)
+          call storage_getbase_int2D(h_Data, p_IData2D)
+          call btree_copyFromTree_arrayInt2D(rtree, p_IData2D, mask, corder)
 
         case DEFAULT
           call output_line('Unsupported data type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                           OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
           call sys_halt()
         end select
 
       case DEFAULT
         call output_line('Unsupported data dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
         call sys_halt()
       end select
     end if
@@ -1502,7 +1729,7 @@ contains
 
 !<subroutine>
 
-  subroutine btree_copyFromTree_arrayDble(rtree,p_Ddata,mask)
+  subroutine btree_copyFromTree_arrayDble(rtree, p_Ddata, mask, corder)
 
 !<description>
     ! This subroutine copies one component of the auxiliary double data
@@ -1511,11 +1738,14 @@ contains
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
     
     ! mask of component to be copied
     integer, intent(IN) :: mask
+    
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -1525,36 +1755,59 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: j
+    integer :: j,iorder
 
     ! Check if auxiliary double data is available
     if (rtree%isizeDble .eq. 0) then
       call output_line('No double data available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble')
       call sys_halt()
     end if
 
     ! Check if given array is large enough in its second dimension
     if (size(p_DData) < rtree%NA) then
       call output_line('Array too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble')
       call sys_halt()
     end if
 
     ! Check if mask is valid
     if (mask < 1 .or. mask > rtree%isizeDble) then
       call output_line('Invalid mask!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble')
       call sys_halt()
     end if
     
-    ! Do the work
-    j=0; call inorderDataDble(rtree%p_Kchild(TRIGHT,TROOT))
+    ! Get ordering strategy
+    iorder = BTREE_INORDER
+    if (present(corder)) iorder = corder
+    
+    select case(iorder)
+    case (BTREE_PREORDER)
+      j=0; call preorderDataDble(rtree%p_Kchild(TRIGHT, TROOT))
+    case (BTREE_INORDER)
+      j=0; call inorderDataDble(rtree%p_Kchild(TRIGHT, TROOT))
+    case (BTREE_POSTORDER)
+      j=0; call postorderDataDble(rtree%p_Kchild(TRIGHT, TROOT))
+    end select
 
   contains
 
     ! Here, the real working routine follows.
     
+    !**************************************************************
+    ! Copy the content of the Double data to an array
+    
+    recursive subroutine preorderDataDble(i)
+      integer, intent(IN) :: i
+
+      j=j+1; p_DData(j)=rtree%p_DData(mask,i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderDataDble(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderDataDble(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderDataDble
+
     !**************************************************************
     ! Copy the content of the Double data to an array
     
@@ -1568,13 +1821,26 @@ contains
           call inorderDataDble(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderDataDble
 
+    !**************************************************************
+    ! Copy the content of the Double data to an array
+    
+    recursive subroutine postorderDataDble(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderDataDble(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderDataDble(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_DData(j)=rtree%p_DData(mask,i)
+    end subroutine postorderDataDble
+
   end subroutine btree_copyFromTree_arrayDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_copyFromTree_arrayDble2D(rtree,p_Ddata,mask)
+  subroutine btree_copyFromTree_arrayDble2D(rtree, p_Ddata, mask, corder)
 
 !<description>
     ! This subroutine copies some (part of) the auxiliary double data
@@ -1585,11 +1851,14 @@ contains
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
     
     ! OPTIONAL: mask of components to be copied
     integer, dimension(:), intent(IN), optional :: mask
+
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -1600,12 +1869,12 @@ contains
 
     ! local variables
     integer(I32), dimension(2) :: Isize
-    integer :: j
+    integer :: j,iorder
 
     ! Check if auxiliary double data is available
     if (rtree%isizeDble .eq. 0) then
       call output_line('No double data available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble2D')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble2D')
       call sys_halt()
     end if
 
@@ -1613,39 +1882,70 @@ contains
     Isize = shape(p_Ddata)
     if (Isize(2) < rtree%NA) then
       call output_line('Array too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble2D')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble2D')
       call sys_halt()
     end if
+
+    ! Get ordering strategy
+    iorder = BTREE_INORDER
+    if (present(corder)) iorder = corder
 
     ! Copy the content to the array
     if (present(mask)) then
       ! Check if given array has correct size in its first dimension
       if (Isize(1) .ne. size(mask)) then
         call output_line('Array dimensions do not match mask!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble2D')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble2D')
         call sys_halt()
       end if
 
       ! Check if mask is valid
       if (any(mask < 1) .or. any(mask > rtree%isizeDble)) then
         call output_line('Invalid mask!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble2D')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble2D')
         call sys_halt()
       end if
-      j=0; call inorderDataDbleMask(rtree%p_Kchild(TRIGHT,TROOT))
+      select case(iorder)
+      case (BTREE_PREORDER)
+        j=0; call preorderDataDbleMask(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_INORDER)
+        j=0; call inorderDataDbleMask(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_POSTORDER)
+        j=0; call postorderDataDbleMask(rtree%p_Kchild(TRIGHT, TROOT))
+      end select
     else
       ! Check if given array has correct size in its first dimension
       if (Isize(1) .ne. rtree%isizeDble) then
         call output_line('Array too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble2D')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayDble2D')
         call sys_halt()
       end if
-      j=0; call inorderDataDble(rtree%p_Kchild(TRIGHT,TROOT))
+      select case(iorder)
+      case (BTREE_PREORDER)
+        j=0; call preorderDataDble(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_INORDER)
+        j=0; call inorderDataDble(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_POSTORDER)
+        j=0; call postorderDataDble(rtree%p_Kchild(TRIGHT, TROOT))
+      end select
     end if
 
   contains
 
     ! Here, the real working routines follow.
+
+    !**************************************************************
+    ! Copy the content of the Double data to an array
+
+    recursive subroutine preorderDataDble(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_DData(:,j)=rtree%p_DData(:,i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderDataDble(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderDataDble(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderDataDble
 
     !**************************************************************
     ! Copy the content of the Double data to an array
@@ -1661,6 +1961,32 @@ contains
     end subroutine inorderDataDble
 
     !**************************************************************
+    ! Copy the content of the Double data to an array
+
+    recursive subroutine postorderDataDble(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderDataDble(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderDataDble(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_DData(:,j)=rtree%p_DData(:,i)
+    end subroutine postorderDataDble
+
+    !**************************************************************
+    ! Copy the content of the Double data to an array (masked)
+
+    recursive subroutine preorderDataDbleMask(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_DData(:,j)=rtree%p_DData(mask,i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderDataDbleMask(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderDataDbleMask(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderDataDbleMask
+
+    !**************************************************************
     ! Copy the content of the Double data to an array (masked)
 
     recursive subroutine inorderDataDbleMask(i)
@@ -1673,13 +1999,26 @@ contains
           call inorderDataDbleMask(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderDataDbleMask
 
+    !**************************************************************
+    ! Copy the content of the Double data to an array (masked)
+
+    recursive subroutine postorderDataDbleMask(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderDataDbleMask(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderDataDbleMask(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_DData(:,j)=rtree%p_DData(mask,i)
+    end subroutine postorderDataDbleMask
+
   end subroutine btree_copyFromTree_arrayDble2D
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_copyFromTree_arraySngl(rtree,p_FData,mask)
+  subroutine btree_copyFromTree_arraySngl(rtree, p_FData, mask, corder)
 
 !<description>
     ! This subroutine copies one component of the auxiliary single data
@@ -1688,11 +2027,14 @@ contains
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
     
     ! mask of component to be copied
     integer, intent(IN) :: mask
+
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -1702,36 +2044,59 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: j
+    integer :: j,iorder
 
     ! Check if auxiliary single data is available
     if (rtree%isizeSngl .eq. 0) then
       call output_line('No single data available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl')
       call sys_halt()
     end if
 
     ! Check if given array is large enough in its second dimension
     if (size(p_FData) < rtree%NA) then
       call output_line('Array too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl')
       call sys_halt()
     end if
 
     ! Check if mask is valid
     if (mask < 1 .or. mask > rtree%isizeSngl) then
       call output_line('Invalid mask!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl')
       call sys_halt()
     end if
     
-    ! Do the work
-    j=0; call inorderDataSngl(rtree%p_Kchild(TRIGHT,TROOT))
+     ! Get ordering strategy
+    iorder = BTREE_INORDER
+    if (present(corder)) iorder = corder
+
+    select case(iorder)
+    case (BTREE_PREORDER)
+      j=0; call preorderDataSngl(rtree%p_Kchild(TRIGHT, TROOT))
+    case (BTREE_INORDER)
+      j=0; call inorderDataSngl(rtree%p_Kchild(TRIGHT, TROOT))
+    case (BTREE_POSTORDER)
+      j=0; call postorderDataSngl(rtree%p_Kchild(TRIGHT, TROOT))
+    end select
 
   contains
 
     ! Here, the real working routine follows.
     
+    !**************************************************************
+    ! Copy the content of the Single data to an array
+    
+    recursive subroutine preorderDataSngl(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_FData(j)=rtree%p_FData(mask,i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderDataSngl(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderDataSngl(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderDataSngl
+
     !**************************************************************
     ! Copy the content of the Single data to an array
     
@@ -1745,13 +2110,26 @@ contains
           call inorderDataSngl(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderDataSngl
 
+    !**************************************************************
+    ! Copy the content of the Single data to an array
+    
+    recursive subroutine postorderDataSngl(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderDataSngl(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderDataSngl(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_FData(j)=rtree%p_FData(mask,i)
+    end subroutine postorderDataSngl
+
   end subroutine btree_copyFromTree_arraySngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_copyFromTree_arraySngl2D(rtree,p_Fdata,mask)
+  subroutine btree_copyFromTree_arraySngl2D(rtree, p_Fdata, mask, corder)
 
 !<description>
     ! This subroutine copies some (part of) the auxiliary single data
@@ -1762,11 +2140,14 @@ contains
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
     
     ! OPTIONAL: mask of components to be copied
     integer, dimension(:), intent(IN), optional :: mask
+
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -1777,12 +2158,12 @@ contains
 
     ! local variables
     integer(I32), dimension(2) :: Isize
-    integer :: j
+    integer :: j,iorder
 
     ! Check if auxiliary single data is available
     if (rtree%isizeSngl .eq. 0) then
       call output_line('No single data available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl2D')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl2D')
       call sys_halt()
     end if
     
@@ -1790,39 +2171,70 @@ contains
     Isize = shape(p_Fdata)
     if (Isize(2) < rtree%NA) then
       call output_line('Array too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl2D')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl2D')
       call sys_halt()
     end if
+
+    ! Get ordering strategy
+    iorder = BTREE_INORDER
+    if (present(corder)) iorder = corder
 
     ! Copy the content to the array
     if (present(mask)) then
       ! Check if given array has correct size in its first dimension
       if (Isize(1) .ne. size(mask)) then
         call output_line('Array dimensions do not match mask!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl2D')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl2D')
         call sys_halt()
       end if
 
       ! Check if mask is valid
       if (any(mask < 1) .or. any(mask > rtree%isizeSngl)) then
         call output_line('Invalid mask!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl2D')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl2D')
         call sys_halt()
       end if
-      j=0; call inorderDataSnglMask(rtree%p_Kchild(TRIGHT,TROOT))
+      select case(iorder)
+      case (BTREE_PREORDER)
+        j=0; call preorderDataSnglMask(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_INORDER)
+        j=0; call inorderDataSnglMask(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_POSTORDER)
+        j=0; call postorderDataSnglMask(rtree%p_Kchild(TRIGHT, TROOT))
+      end select
     else
       ! Check if given array has correct size in its first dimension
       if (Isize(1) .ne. rtree%isizeSngl) then
         call output_line('Array too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl2D')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arraySngl2D')
         call sys_halt()
       end if
-      j=0; call inorderDataSngl(rtree%p_Kchild(TRIGHT,TROOT))
+      select case(iorder)
+      case (BTREE_PREORDER)
+        j=0; call preorderDataSngl(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_INORDER)
+        j=0; call inorderDataSngl(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_POSTORDER)
+        j=0; call postorderDataSngl(rtree%p_Kchild(TRIGHT, TROOT))
+      end select
     end if
 
   contains
 
     ! Here, the real working routines follow.
+
+    !**************************************************************
+    ! Copy the content of the Single data to an array
+
+    recursive subroutine preorderDataSngl(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_FData(:,j)=rtree%p_FData(:,i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderDataSngl(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderDataSngl(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderDataSngl
 
     !**************************************************************
     ! Copy the content of the Single data to an array
@@ -1838,6 +2250,32 @@ contains
     end subroutine inorderDataSngl
 
     !**************************************************************
+    ! Copy the content of the Single data to an array
+
+    recursive subroutine postorderDataSngl(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderDataSngl(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderDataSngl(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_FData(:,j)=rtree%p_FData(:,i)
+    end subroutine postorderDataSngl
+
+    !**************************************************************
+    ! Copy the content of the Single data to an array (masked)
+
+    recursive subroutine preorderDataSnglMask(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_FData(:,j)=rtree%p_FData(mask,i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderDataSnglMask(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderDataSnglMask(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderDataSnglMask
+
+    !**************************************************************
     ! Copy the content of the Single data to an array (masked)
 
     recursive subroutine inorderDataSnglMask(i)
@@ -1850,13 +2288,26 @@ contains
           call inorderDataSnglMask(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderDataSnglMask
 
+    !**************************************************************
+    ! Copy the content of the Single data to an array (masked)
+
+    recursive subroutine postorderDataSnglMask(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderDataSnglMask(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderDataSnglMask(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_FData(:,j)=rtree%p_FData(mask,i)
+    end subroutine postorderDataSnglMask
+
   end subroutine btree_copyFromTree_arraySngl2D
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_copyFromTree_arrayInt(rtree,p_Idata,mask)
+  subroutine btree_copyFromTree_arrayInt(rtree, p_Idata, mask, corder)
 
 !<description>
     ! This subroutine copies one component of the auxiliary integer data
@@ -1865,11 +2316,14 @@ contains
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
     
     ! mask of component to be copied
     integer, intent(IN) :: mask
+
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -1879,36 +2333,59 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: j
+    integer :: j,iorder
 
     ! Check if auxiliary integer data is available
     if (rtree%isizeInt .eq. 0) then
       call output_line('No integer data available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt')
       call sys_halt()
     end if
 
     ! Check if given array is large enough in its second dimension
     if (size(p_IData) < rtree%NA) then
       call output_line('Array too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt')
       call sys_halt()
     end if
 
     ! Check if mask is valid
     if (mask < 1 .or. mask > rtree%isizeInt) then
       call output_line('Invalid mask!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt')
       call sys_halt()
     end if
     
-    ! Do the work
-    j=0; call inorderDataInt(rtree%p_Kchild(TRIGHT,TROOT))
+    ! Get ordering strategy
+    iorder = BTREE_INORDER
+    if (present(corder)) iorder = corder
+
+    select case(iorder)
+    case(BTREE_PREORDER)
+      j=0; call preorderDataInt(rtree%p_Kchild(TRIGHT, TROOT))
+    case(BTREE_INORDER)
+      j=0; call inorderDataInt(rtree%p_Kchild(TRIGHT, TROOT))
+    case(BTREE_POSTORDER)
+      j=0; call postorderDataInt(rtree%p_Kchild(TRIGHT, TROOT))
+    end select
 
   contains
 
     ! Here, the real working routine follows.
     
+    !**************************************************************
+    ! Copy the content of the Integer data to an array
+    
+    recursive subroutine preorderDataInt(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_IData(j)=rtree%p_IData(mask,i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderDataInt(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderDataInt(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderDataInt
+
     !**************************************************************
     ! Copy the content of the Integer data to an array
     
@@ -1922,13 +2399,26 @@ contains
           call inorderDataInt(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderDataInt
 
+    !**************************************************************
+    ! Copy the content of the Integer data to an array
+    
+    recursive subroutine postorderDataInt(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderDataInt(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderDataInt(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_IData(j)=rtree%p_IData(mask,i)
+    end subroutine postorderDataInt
+
   end subroutine btree_copyFromTree_arrayInt
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_copyFromTree_arrayInt2D(rtree,p_Idata,mask)
+  subroutine btree_copyFromTree_arrayInt2D(rtree, p_Idata, mask, corder)
 
 !<description>
     ! This subroutine copies some (part of) the auxiliary integer data
@@ -1939,11 +2429,14 @@ contains
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
     
     ! OPTIONAL: mask of components to be copied
     integer, dimension(:), intent(IN), optional :: mask
+
+    ! OPTIONAL: ordering strategy: BTREE_xxxORDER
+    integer, intent(IN), optional :: corder
 !</input>
 
 !<inputoutput>
@@ -1954,12 +2447,12 @@ contains
 
     ! local variables
     integer(I32), dimension(2) :: Isize
-    integer :: j
+    integer :: j,iorder
 
     ! Check if auxiliary integer data is available
     if (rtree%isizeInt .eq. 0) then
       call output_line('No integer data available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
       call sys_halt()
     end if
 
@@ -1967,39 +2460,70 @@ contains
     Isize = shape(p_IData)
     if (Isize(2) < rtree%NA) then
       call output_line('Invalid mask!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
       call sys_halt()
     end if
+
+    ! Get ordering strategy
+    iorder = BTREE_INORDER
+    if (present(corder)) iorder = corder
 
     ! Copy the content to the array
     if (present(mask)) then
       ! Check if given array has correct size in its first dimension
       if (Isize(1) .ne. size(mask)) then
         call output_line('Array dimensions do not match mask!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
         call sys_halt()
       end if
 
       ! Check if mask is valid
       if (any(mask < 1) .or. any(mask > rtree%isizeInt)) then
         call output_line('Invalid mask!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
         call sys_halt()
       end if
-      j=0; call inorderDataIntMask(rtree%p_Kchild(TRIGHT,TROOT))
+      select casE(iorder)
+      case (BTREE_PREORDER)
+        j=0; call preorderDataIntMask(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_INORDER)
+        j=0; call inorderDataIntMask(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_POSTORDER)
+        j=0; call postorderDataIntMask(rtree%p_Kchild(TRIGHT, TROOT))
+      end select
     else
       ! Check if given array has correct size in its first dimension
       if (Isize(1) .ne. rtree%isizeInt) then
         call output_line('Array too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
         call sys_halt()
       end if
-      j=0; call inorderDataInt(rtree%p_Kchild(TRIGHT,TROOT))
+      select case(iorder)
+      case (BTREE_PREORDER)
+        j=0; call preorderDataInt(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_INORDER)
+        j=0; call inorderDataInt(rtree%p_Kchild(TRIGHT, TROOT))
+      case (BTREE_POSTORDER)
+        j=0; call postorderDataInt(rtree%p_Kchild(TRIGHT, TROOT))
+      end select
     end if
 
   contains
 
     ! Here, the real working routines follow.
+
+    !**************************************************************
+    ! Copy the content of the Integer data to an array
+
+    recursive subroutine preorderDataInt(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_IData(:,j)=rtree%p_IData(:,i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderDataInt(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderDataInt(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderDataInt
 
     !**************************************************************
     ! Copy the content of the Integer data to an array
@@ -2015,6 +2539,32 @@ contains
     end subroutine inorderDataInt
 
     !**************************************************************
+    ! Copy the content of the Integer data to an array
+
+    recursive subroutine postorderDataInt(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderDataInt(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderDataInt(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_IData(:,j)=rtree%p_IData(:,i)
+    end subroutine postorderDataInt
+
+    !**************************************************************
+    ! Copy the content of the Integer data to an array (masked)
+
+    recursive subroutine preorderDataIntMask(i)
+      integer, intent(IN) :: i
+      
+      j=j+1; p_IData(:,j)=rtree%p_IData(mask,i)
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call preorderDataIntMask(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call preorderDataIntMask(rtree%p_Kchild(TRIGHT,i))
+    end subroutine preorderDataIntMask
+
+    !**************************************************************
     ! Copy the content of the Integer data to an array (masked)
 
     recursive subroutine inorderDataIntMask(i)
@@ -2027,13 +2577,26 @@ contains
           call inorderDataIntMask(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderDataIntMask
 
+    !**************************************************************
+    ! Copy the content of the Integer data to an array (masked)
+
+    recursive subroutine postorderDataIntMask(i)
+      integer, intent(IN) :: i
+      
+      if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
+          call postorderDataIntMask(rtree%p_Kchild(TLEFT,i))
+      if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
+          call postorderDataIntMask(rtree%p_Kchild(TRIGHT,i))
+      j=j+1; p_IData(:,j)=rtree%p_IData(mask,i)
+    end subroutine postorderDataIntMask
+    
   end subroutine btree_copyFromTree_arrayInt2D
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_insertIntoTreeDble(rtree,dkey,DData,FData,IData,iposOpt)
+  subroutine btree_insertIntoTreeDble(rtree, dkey, DData, FData, IData, iposOpt)
 
 !<description>
     ! This subroutine inserts a new Double key into the tree and
@@ -2055,7 +2618,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -2072,7 +2635,7 @@ contains
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_DOUBLE) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_insertIntoTreeDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_insertIntoTreeDble')
       call sys_halt()
     end if
 
@@ -2128,7 +2691,7 @@ contains
 
 !<subroutine>
 
-  subroutine btree_insertIntoTreeSngl(rtree,skey,DData,FData,IData,iposOpt)
+  subroutine btree_insertIntoTreeSngl(rtree, skey, DData, FData, IData, iposOpt)
 
 !<description>
     ! This subroutine inserts a new Single key into the tree and
@@ -2150,7 +2713,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -2167,7 +2730,7 @@ contains
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_SINGLE) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_insertIntoTreeSngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_insertIntoTreeSngl')
       call sys_halt()
     end if
 
@@ -2223,7 +2786,7 @@ contains
 
 !<subroutine>
 
-  subroutine btree_insertIntoTreeInt(rtree,ikey,DData,FData,IData,iposOpt)
+  subroutine btree_insertIntoTreeInt(rtree, ikey, DData, FData, IData, iposOpt)
 
 !<description>
     ! This subroutine inserts a new Integer key into the tree and
@@ -2245,7 +2808,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -2262,7 +2825,7 @@ contains
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_INT) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_insertIntoTreeInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_insertIntoTreeInt')
       call sys_halt()
     end if
 
@@ -2318,7 +2881,7 @@ contains
 
 !<subroutine>
   
-  recursive subroutine rebalanceAfterInsert(rtree,i)
+  recursive subroutine rebalanceAfterInsert(rtree, i)
 
 !<description>
     ! This subroutine rebalances the AVL tree after insertion
@@ -2330,7 +2893,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>    
@@ -2459,7 +3022,7 @@ contains
 
 !<function>
 
-  function btree_deleteFromTreeDble(rtree,dkey) result(f)
+  function btree_deleteFromTreeDble(rtree, dkey) result(f)
 
 !<description>
     ! This functions deletes a Double key from the tree
@@ -2471,7 +3034,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -2487,7 +3050,7 @@ contains
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_DOUBLE) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_deleteFromTreeDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_deleteFromTreeDble')
       call sys_halt()
     end if
 
@@ -2555,14 +3118,14 @@ contains
     end if
     
     ! Invoke rebalance procedure
-    if (rtree%depth > 0) call rebalanceAfterDeletion(rtree,rtree%depth)
+    if (rtree%depth > 0) call rebalanceAfterDeletion(rtree, rtree%depth)
   end function btree_deleteFromTreeDble
 
   ! ***************************************************************************
 
 !<function>
 
-  function btree_deleteFromTreeSngl(rtree,skey) result(f)
+  function btree_deleteFromTreeSngl(rtree, skey) result(f)
 
 !<description>
     ! This functions deletes a Single key from the tree
@@ -2574,7 +3137,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -2590,7 +3153,7 @@ contains
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_SINGLE) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_deleteFromTreeSngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_deleteFromTreeSngl')
       call sys_halt()
     end if
 
@@ -2658,14 +3221,14 @@ contains
     end if
     
     ! Invoke rebalance procedure
-    if (rtree%depth > 0) call rebalanceAfterDeletion(rtree,rtree%depth)
+    if (rtree%depth > 0) call rebalanceAfterDeletion(rtree, rtree%depth)
   end function btree_deleteFromTreeSngl
 
   ! ***************************************************************************
 
 !<function>
 
-  function btree_deleteFromTreeInt(rtree,ikey) result(f)
+  function btree_deleteFromTreeInt(rtree, ikey) result(f)
 
 !<description>
     ! This functions deletes a Integer key from the tree
@@ -2677,7 +3240,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -2693,7 +3256,7 @@ contains
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_INT) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_deleteFromTreeInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_deleteFromTreeInt')
       call sys_halt()
     end if
 
@@ -2761,14 +3324,14 @@ contains
     end if
     
     ! Invoke rebalance procedure
-    if (rtree%depth > 0) call rebalanceAfterDeletion(rtree,rtree%depth)
+    if (rtree%depth > 0) call rebalanceAfterDeletion(rtree, rtree%depth)
   end function btree_deleteFromTreeInt
 
   ! ***************************************************************************
 
 !<subroutine>  
   
-  recursive subroutine rebalanceAfterDeletion(rtree,i)
+  recursive subroutine rebalanceAfterDeletion(rtree, i)
 
 !<description>
     ! This subroutine rebalances the AVL tree after deletion
@@ -2780,7 +3343,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
@@ -2915,7 +3478,7 @@ contains
   
 !<function>
 
-  function btree_searchInTreeDble(rtree,dkey,ipos) result(f)
+  function btree_searchInTreeDble(rtree, dkey, ipos) result(f)
 !<description>
     ! This subroutine searches for a given Double key in the tree and
     ! returns the position of its predecessor.
@@ -2927,7 +3490,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -2949,7 +3512,7 @@ contains
     ! Check if list format is ok
     if (rtree%ctreeFormat .ne. ST_DOUBLE) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_searchInTreeDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_searchInTreeDble')
       call sys_halt()
     end if
     
@@ -2983,7 +3546,7 @@ contains
   
 !<function>
 
-  function btree_searchInTreeSngl(rtree,skey,ipos) result(f)
+  function btree_searchInTreeSngl(rtree, skey, ipos) result(f)
 !<description>
     ! This subroutine searches for a given Single key in the tree and
     ! returns the position of its predecessor.
@@ -2995,7 +3558,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -3017,7 +3580,7 @@ contains
     ! Check if list format is ok
     if (rtree%ctreeFormat .ne. ST_SINGLE) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_searchInTreeSngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_searchInTreeSngl')
       call sys_halt()
     end if
     
@@ -3051,7 +3614,7 @@ contains
   
 !<function>
 
-  function btree_searchInTreeInt(rtree,ikey,ipos) result(f)
+  function btree_searchInTreeInt(rtree, ikey, ipos) result(f)
 !<description>
     ! This subroutine searches for a given Integer key in the tree and
     ! returns the position of its predecessor.
@@ -3063,7 +3626,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -3085,7 +3648,7 @@ contains
     ! Check if list format is ok
     if (rtree%ctreeFormat .ne. ST_INT) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_searchInTreeInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_searchInTreeInt')
       call sys_halt()
     end if
     
@@ -3119,7 +3682,7 @@ contains
 
 !<function>
 
-  function btree_getItemInTreeDble(rtree,dkey) result(ipos)
+  function btree_getItemInTreeDble(rtree, dkey) result(ipos)
 
 !<description>
     ! This subroutine searches for a given Double key in the tree and
@@ -3133,7 +3696,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -3148,7 +3711,7 @@ contains
     
     if (btree_searchInTree(rtree,dkey,ipred) .ne. BTREE_FOUND) then
       call output_line('Unable to find item in tree!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_getItemInTreeDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_getItemInTreeDble')
       call sys_halt()
     end if
     ipos = rtree%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
@@ -3158,7 +3721,7 @@ contains
 
 !<function>
 
-  function btree_getItemInTreeSngl(rtree,skey) result(ipos)
+  function btree_getItemInTreeSngl(rtree, skey) result(ipos)
 
 !<description>
     ! This subroutine searches for a given Single key in the tree and
@@ -3172,7 +3735,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -3187,7 +3750,7 @@ contains
     
     if (btree_searchInTree(rtree,skey,ipred) .ne. BTREE_FOUND) then
       call output_line('Unable to find item in tree!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_getItemInTreeSngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_getItemInTreeSngl')
       call sys_halt()
     end if
     ipos = rtree%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
@@ -3197,7 +3760,7 @@ contains
 
 !<function>
 
-  function btree_getItemInTreeInt(rtree,ikey) result(ipos)
+  function btree_getItemInTreeInt(rtree, ikey) result(ipos)
 
 !<description>
     ! This subroutine searches for a given Integer key in the tree and
@@ -3211,7 +3774,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! tree
+    ! binary tree
     type(t_btree), intent(INOUT) :: rtree
 !</inputoutput>
 
@@ -3226,7 +3789,7 @@ contains
     
     if (btree_searchInTree(rtree,ikey,ipred) .ne. BTREE_FOUND) then
       call output_line('Unable to find item in tree!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_getItemInTreeInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_getItemInTreeInt')
       call sys_halt()
     end if
     ipos = rtree%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
@@ -3236,23 +3799,23 @@ contains
 
 !<subroutine>
   
-  subroutine btree_printTree(rtree,op)
+  subroutine btree_printTree(rtree, cordering)
 
 !<description>
     ! This subroutine prints the content of the tree
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
 
-    ! type of traversal
-    integer, intent(IN) :: op
+    ! type of traversal: BTREE_xxORDER
+    integer, intent(IN) :: cordering
 !</input>
 !</subroutine>
 
     ! Which kind of traversal should be applied
-    select case (op)
+    select case (cordering)
       
     case (BTREE_PREORDER)
       if (rtree%p_Kchild(TRIGHT,TROOT) .ne. TNULL) then
@@ -3265,7 +3828,7 @@ contains
           call preorderInt(rtree%p_Kchild(TRIGHT,TROOT))
         case DEFAULT
           call output_line('Unsupported data format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'btree_printTree')
+                           OU_CLASS_ERROR,OU_MODE_STD,'btree_printTree')
           call sys_halt()
         end select
       end if
@@ -3281,7 +3844,7 @@ contains
           call inorderInt(rtree%p_Kchild(TRIGHT,TROOT))
         case DEFAULT
           call output_line('Unsupported data format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'btree_printTree')
+                           OU_CLASS_ERROR,OU_MODE_STD,'btree_printTree')
           call sys_halt()
         end select
       end if
@@ -3297,7 +3860,7 @@ contains
           call postorderInt(rtree%p_Kchild(TRIGHT,TROOT))
         case DEFAULT
           call output_line('Unsupported data format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'btree_printTree')
+                           OU_CLASS_ERROR,OU_MODE_STD,'btree_printTree')
           call sys_halt()
         end select
       end if
@@ -3435,7 +3998,7 @@ contains
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
 !</input>
 
@@ -3480,7 +4043,7 @@ contains
 !</description>
 
 !<input>
-    ! tree
+    ! binary tree
     type(t_btree), intent(IN) :: rtree
 !</input>
 !</subroutine>
@@ -3509,7 +4072,7 @@ contains
 
 !<subroutine>
 
-  subroutine btree_duplicateTree(rtree,rtreeBackup)
+  subroutine btree_duplicateTree(rtree, rtreeBackup)
 
 !<description>
     ! This subroutine makes a copy of a binary tree in memory.
@@ -3555,7 +4118,7 @@ contains
         call storage_getbase_int(rtreeBackup%h_Key,rtreeBackup%p_IKey)
       case DEFAULT
         call output_line('Unsupported data format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'btree_duplicateTree')
+                         OU_CLASS_ERROR,OU_MODE_STD,'btree_duplicateTree')
         call sys_halt()
       end select
     end if
@@ -3595,7 +4158,7 @@ contains
 
 !<subroutine>
 
-  subroutine btree_restoreTree(rtreeBackup,rtree)
+  subroutine btree_restoreTree(rtreeBackup, rtree)
 
 !<description>
     ! This subroutine restores a binary tree from a previous backup.
@@ -3619,7 +4182,7 @@ contains
         rtree%isizeSngl   .ne. rtreeBackup%isizeSngl   .or.&
         rtree%isizeInt    .ne. rtreeBackup%isizeInt) then
       call output_line('Incompatible binary trees!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_restoreTree')
+                       OU_CLASS_ERROR,OU_MODE_STD,'btree_restoreTree')
       call sys_halt()
     end if
 
