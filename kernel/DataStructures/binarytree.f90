@@ -44,9 +44,9 @@
 !#                             btree_copyFromTree_arrayInt2D
 !#     -> Copy some auxiliary integer data of the tree to handle/array
 !#
-!# 9.) btree_insertToTree = btree_insertToTreeDble /
-!#                          btree_insertToTreeSngl /
-!#                          btree_insertToTreeInt
+!# 9.) btree_insertIntoTree = btree_insertIntoTreeDble /
+!#                            btree_insertIntoTreeSngl /
+!#                            btree_insertIntoTreeInt
 !#     -> Insert key into tree
 !#
 !# 10.) btree_deleteFromTree = btree_deleteFromTreeDble /
@@ -295,9 +295,9 @@ module binarytree
   end interface
   
   interface btree_insertIntoTree
-    module procedure btree_insertToTreeDble
-    module procedure btree_insertToTreeSngl
-    module procedure btree_insertToTreeInt
+    module procedure btree_insertIntoTreeDble
+    module procedure btree_insertIntoTreeSngl
+    module procedure btree_insertIntoTreeInt
   end interface
 
   interface btree_deleteFromTree
@@ -2033,7 +2033,7 @@ contains
 
 !<subroutine>
 
-  subroutine btree_insertToTreeDble(rtree,dkey,DData,FData,IData,iposOpt)
+  subroutine btree_insertIntoTreeDble(rtree,dkey,DData,FData,IData,iposOpt)
 
 !<description>
     ! This subroutine inserts a new Double key into the tree and
@@ -2072,7 +2072,7 @@ contains
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_DOUBLE) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_insertToTreeDble')
+          OU_CLASS_ERROR,OU_MODE_STD,'btree_insertIntoTreeDble')
       call sys_halt()
     end if
 
@@ -2122,13 +2122,13 @@ contains
     elseif(present(iposOpt)) then
       iposOpt=-rtree%p_Kchild(merge(TLEFT,TRIGHT,jpos < 0),abs(jpos))
     end if
-  end subroutine btree_insertToTreeDble
+  end subroutine btree_insertIntoTreeDble
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_insertToTreeSngl(rtree,skey,DData,FData,IData,iposOpt)
+  subroutine btree_insertIntoTreeSngl(rtree,skey,DData,FData,IData,iposOpt)
 
 !<description>
     ! This subroutine inserts a new Single key into the tree and
@@ -2167,7 +2167,7 @@ contains
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_SINGLE) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_insertToTreeSngl')
+          OU_CLASS_ERROR,OU_MODE_STD,'btree_insertIntoTreeSngl')
       call sys_halt()
     end if
 
@@ -2217,13 +2217,13 @@ contains
     elseif(present(iposOpt)) then
       iposOpt=-rtree%p_Kchild(merge(TLEFT,TRIGHT,jpos < 0),abs(jpos))
     end if
-  end subroutine btree_insertToTreeSngl
+  end subroutine btree_insertIntoTreeSngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine btree_insertToTreeInt(rtree,ikey,DData,FData,IData,iposOpt)
+  subroutine btree_insertIntoTreeInt(rtree,ikey,DData,FData,IData,iposOpt)
 
 !<description>
     ! This subroutine inserts a new Integer key into the tree and
@@ -2262,7 +2262,7 @@ contains
     ! Check if tree format is ok
     if (rtree%ctreeFormat .ne. ST_INT) then
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'btree_insertToTreeInt')
+          OU_CLASS_ERROR,OU_MODE_STD,'btree_insertIntoTreeInt')
       call sys_halt()
     end if
 
@@ -2312,7 +2312,7 @@ contains
     elseif(present(iposOpt)) then
       iposOpt=-rtree%p_Kchild(merge(TLEFT,TRIGHT,jpos < 0),abs(jpos))
     end if
-  end subroutine btree_insertToTreeInt
+  end subroutine btree_insertIntoTreeInt
 
   ! ***************************************************************************
 
