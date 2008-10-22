@@ -242,8 +242,6 @@
 !#  5.) tria_merge
 !#      -> Auxiliary routine for merge sort
 !#
-!#  6.) 
-!#
 !#
 !#  FAQ - Some explainations
 !# --------------------------
