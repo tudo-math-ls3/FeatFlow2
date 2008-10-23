@@ -11,6 +11,7 @@
 !##############################################################################
 
 module stack
+  use genoutput
   use storage
   
   implicit none
@@ -98,7 +99,8 @@ contains
           rstack%h_StackData,ST_NEWBLOCK_NOINIT)
       
     case DEFAULT
-      print *, "stack_create: Invalid data type!"
+      call output_line('Invalid data type!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_create')
       call sys_halt()
     end select
 
@@ -212,7 +214,8 @@ contains
     integer(I32), dimension(:), pointer :: StackData
     
     if (rstack%h_StackData == ST_NOHANDLE) then
-      print *, "stack_pushbackInt: Invalid data type"
+      call output_line('Invalid data type!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_pushbackInt')
       call sys_halt()
     end if
     
@@ -252,7 +255,8 @@ contains
     real(SP), dimension(:), pointer :: StackData
 
     if (rstack%h_StackData == ST_NOHANDLE) then
-      print *, "stack_pushbackSngl: Invalid data type"
+      call output_line('Invalid data type!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_pushbackSngl')
       call sys_halt()
     end if
 
@@ -292,7 +296,8 @@ contains
     real(DP), dimension(:), pointer :: StackData
 
     if (rstack%h_StackData == ST_NOHANDLE) then
-      print *, "stack_pushbackDble: Invalid data type"
+      call output_line('Invalid data type!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_pushbackDble')
       call sys_halt()
     end if
 
@@ -334,7 +339,8 @@ contains
       call storage_getbase_int(rstack%h_StackData,StackData)
       idata=StackData(rstack%istackPosition)
     else
-      print *, "stack_backInt: Stack empty!"
+      call output_line('Stack empty!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_backInt')
       call sys_halt()
     end if
     
@@ -365,7 +371,8 @@ contains
       call storage_getbase_single(rstack%h_StackData,StackData)
       sdata=StackData(rstack%istackPosition)
     else
-      print *, "stack_backSngl: Stack empty!"
+      call output_line('Stack empty!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_backSngl')
       call sys_halt()
     end if
     
@@ -396,7 +403,8 @@ contains
       call storage_getbase_double(rstack%h_StackData,StackData)
       ddata=StackData(rstack%istackPosition)
     else
-      print *, "stack_backDble: Stack empty!"
+      call output_line('Stack empty!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_backDble')
       call sys_halt()
     end if
     
@@ -428,7 +436,8 @@ contains
       idata=StackData(rstack%istackPosition)
       rstack%istackPosition=rstack%istackPosition-1
     else
-      print *, "stack_popbackInt: Stack empty!"
+      call output_line('Stack empty!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_popbackInt')
       call sys_halt()
     end if
     
@@ -460,7 +469,8 @@ contains
       sdata=StackData(rstack%istackPosition)
       rstack%istackPosition=rstack%istackPosition-1
     else
-      print *, "stack_popbackSngl: Stack empty!"
+      call output_line('Stack empty!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_popbackSngl')
       call sys_halt()
     end if
     
@@ -492,7 +502,8 @@ contains
       ddata=StackData(rstack%istackPosition)
       rstack%istackPosition=rstack%istackPosition-1
     else
-      print *, "stack_popbackDble: Stack empty!"
+      call output_line('Stack empty!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_popbackDble')
       call sys_halt()
     end if
     
