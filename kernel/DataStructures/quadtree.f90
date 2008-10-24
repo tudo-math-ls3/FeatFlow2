@@ -175,10 +175,10 @@ module quadtree
     private
 
     ! Handle to data vector
-    integer :: h_Ddata             = ST_NOHANDLE
+    integer :: h_Ddata = ST_NOHANDLE
 
     ! Handle to bounding box
-    integer :: h_Dbbox             = ST_NOHANDLE
+    integer :: h_Dbbox = ST_NOHANDLE
 
     ! Handle to quadtree structure
     !   KNODE(1:7,1:NNNODE)
@@ -191,7 +191,7 @@ module quadtree
     !   KNODE(1:4,INODE)    : for KNODE(7,INODE) > 0 : the points stored in the quad
     !                         for KNODE(7,INODE) < 0 : the quads into
     !                                                  which the present quad was subdivided
-    integer :: h_Knode             = ST_NOHANDLE
+    integer :: h_Knode = ST_NOHANDLE
 
     ! Data vectors
     ! NOTE: This array is introduced to increase performance. It should not be touched 
@@ -209,22 +209,22 @@ module quadtree
     integer, dimension(:,:), pointer :: p_Knode
 
     ! Number of vertices currently stored in the quadtree
-    integer :: NVT    = 0
+    integer :: NVT = 0
 
     ! Total number of vertices that can be stored  in the quadtree
-    integer :: NNVT   = 0
+    integer :: NNVT = 0
 
     ! Number of subdivisions currently store in the quadtree
-    integer :: NNODE  = 0
+    integer :: NNODE = 0
 
     ! Total number of subdivision that can be stored in the quadtree
     integer :: NNNODE = 0
 
     ! Total number of resize operations
-    integer :: NRESIZE            = 0
+    integer :: NRESIZE = 0
 
     ! Factor by which the quadtree is enlarged if new storage is allocate
-    real(DP) :: dfactor           = 1.5_DP
+    real(DP) :: dfactor = 1.5_DP
   end type t_quadtree
   
 !</typeblock>
@@ -287,11 +287,11 @@ contains
     end if
     
     ! Set values
-    rquadtree%NNNODE = nnnode
-    rquadtree%NNVT   = nnvt
-    rquadtree%NNODE  = 0
-    rquadtree%NVT    = 0
-    rquadtree%NRESIZE= 0
+    rquadtree%NNNODE  = nnnode
+    rquadtree%NNVT    = nnvt
+    rquadtree%NNODE   = 0
+    rquadtree%NVT     = 0
+    rquadtree%NRESIZE = 0
     
     ! Allocate memory and associate pointers
     Isize = (/2,nnvt/)
@@ -429,7 +429,7 @@ contains
     Isize = shape(p_Ddata)
     if (Isize(1) .ne. 2 .or. Isize(2) < rquadtree%NVT) then
       call output_line('Array too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'qtree_copyFromQuadtree_array')
+                       OU_CLASS_ERROR,OU_MODE_STD,'qtree_copyFromQuadtree_array')
       call sys_halt()
     end if
 
@@ -470,7 +470,7 @@ contains
     call storage_getbase_double2D(h_Ddata, p_Ddata)
     if (size(p_Ddata,1) .ne. 2) then
       call output_line('First dimension of array must be 2!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'qtree_copyToQuadtree_handle')
+                       OU_CLASS_ERROR,OU_MODE_STD,'qtree_copyToQuadtree_handle')
       call sys_halt()
     end if
     
@@ -507,7 +507,7 @@ contains
     
     if (size(p_Ddata,1) .ne. 2) then
       call output_line('First dimension of array must be 2!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'qtree_copyToQuadtree_handle')
+                       OU_CLASS_ERROR,OU_MODE_STD,'qtree_copyToQuadtree_handle')
       call sys_halt()
     end if
 
@@ -744,7 +744,7 @@ contains
       f     = qtree_deleteFromQuadtree(rquadtree, Ddata, ivtReplace)
     else
       call output_line('Invalid vertex number!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteFromQtreeByNumber')
+                       OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteFromQtreeByNumber')
       call sys_halt()
     end if
   end function qtree_deleteFromQtreeByNumber
@@ -970,7 +970,6 @@ contains
     call output_line('h_Dbbox: '//trim(sys_siL(rquadtree%h_Dbbox,15)))
     call output_line('h_Knode: '//trim(sys_siL(rquadtree%h_Knode,15)))
     call output_lbrk()
-    write(*,*)
     call output_line('Current data memory usage: '//&
         trim(sys_sdL(100*rquadtree%NVT/real(rquadtree%NNVT,DP),2))//'%')
     call output_line('Current node memory usage: '//&
@@ -1031,7 +1030,7 @@ contains
     if (present(inode)) then
       if (inode > rquadtree%NVT) then
         call output_line('Node number exceeds quadtree dimension',&
-            OU_CLASS_ERROR,OU_MODE_STD,'qtree_getBoundingBox')
+                         OU_CLASS_ERROR,OU_MODE_STD,'qtree_getBoundingBox')
         call sys_halt()
       end if
       bbox = rquadtree%p_Dbbox(QTREE_XMIN:QTREE_YMAX, inode)

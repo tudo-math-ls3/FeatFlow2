@@ -122,7 +122,7 @@ module octree
   integer, parameter :: OTREE_SEB    = 7
 
   ! Item in "South-West-Back" position
-  integer, parameter :: OTREE_SWB     = 6
+  integer, parameter :: OTREE_SWB    = 6
 
   ! Item in "North-West-Back" position
   integer, parameter :: OTREE_NWB    = 5
@@ -197,10 +197,10 @@ module octree
     private
 
     ! Handle to data vector
-    integer :: h_Ddata             = ST_NOHANDLE
+    integer :: h_Ddata = ST_NOHANDLE
 
     ! Handle to bounding box
-    integer :: h_Dbbox             = ST_NOHANDLE
+    integer :: h_Dbbox = ST_NOHANDLE
 
     ! Handle to octree structure
     !   KNODE(1:11,1:NNODE)
@@ -213,7 +213,7 @@ module octree
     !   KNODE(1:8,INODE)    : for KNODE(11,INODE) > 0 : the points stored in the node
     !                         for KNODE(11,INODE) < 0 : the nodes into which the present 
     !                                                   node was subdivided
-    integer :: h_Knode             = ST_NOHANDLE
+    integer :: h_Knode = ST_NOHANDLE
 
     ! Data vectors
     ! NOTE: This array is introduced to increase performance. It should not be touched 
@@ -231,22 +231,22 @@ module octree
     integer, dimension(:,:), pointer :: p_Knode
 
     ! Number of vertices currently stored in the octree
-    integer :: NVT    = 0
+    integer :: NVT = 0
 
     ! Total number of vertices that can be stored  in the octree
-    integer :: NNVT   = 0
+    integer :: NNVT = 0
 
     ! Number of nodes currently store in the octree
-    integer :: NNODE  = 0
+    integer :: NNODE = 0
 
     ! Total number of nodes that can be stored in the octree
     integer :: NNNODE = 0
 
     ! Total number of resize operations
-    integer :: NRESIZE               = 0
+    integer :: NRESIZE = 0
 
     ! Factor by which the octree is enlarged if new storage is allocate
-    real(DP) :: dfactor              = 1.5_DP
+    real(DP) :: dfactor = 1.5_DP
   end type t_octree
   
 !</typeblock>
@@ -448,7 +448,7 @@ contains
     Isize = shape(p_Ddata)
     if (Isize(1) .ne. 3 .or. Isize(2) < roctree%NVT) then
       call output_line('Array too small!',&
-          OU_CLASS_ERROR, OU_MODE_STD, 'otree_copyFromOctree_array')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'otree_copyFromOctree_array')
       call sys_halt()
     end if
 
@@ -488,7 +488,7 @@ contains
     call storage_getbase_double2D(h_Ddata, p_Ddata)
     if (size(p_Ddata, 1) .ne. 3) then
       call output_line('First dimension of array must be 3!',&
-          OU_CLASS_ERROR, OU_MODE_STD, 'otree_copyToOctree_handle')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'otree_copyToOctree_handle')
       call sys_halt()
     end if
     
@@ -525,7 +525,7 @@ contains
     
     if (size(p_Ddata,1) .ne. 3) then
       call output_line('First dimension of array must be 3!',&
-          OU_CLASS_ERROR, OU_MODE_STD, 'otree_copyToOctree_array')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'otree_copyToOctree_array')
       call sys_halt()
     end if
 
@@ -787,7 +787,7 @@ contains
       f     = otree_deleteFromOctree(roctree, Ddata, ivtReplace)
     else
       call output_line('Invalid vertex number!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'otree_deleteFromOctreeByNumber')
+                       OU_CLASS_ERROR,OU_MODE_STD,'otree_deleteFromOctreeByNumber')
       call sys_halt()
     end if
   end function otree_deleteFromOctreeByNumber
@@ -1052,7 +1052,6 @@ contains
     call output_line('h_Dbbox: '//trim(sys_siL(roctree%h_Dbbox,15)))
     call output_line('h_Knode: '//trim(sys_siL(roctree%h_Knode,15)))
     call output_lbrk()
-    write(*,*)
     call output_line('Current data memory usage: '//&
         trim(sys_sdL(100*roctree%NVT/real(roctree%NNVT,DP),2))//'%')
     call output_line('Current node memory usage: '//&
@@ -1111,7 +1110,7 @@ contains
     if (present(inode)) then
       if (inode > roctree%NVT) then
         call output_line('Node number exceeds octree dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'otree_getBoundingBox')
+                         OU_CLASS_ERROR,OU_MODE_STD,'otree_getBoundingBox')
         call sys_halt()
       end if
       bbox = roctree%p_Dbbox(OTREE_XMIN:OTREE_ZMAX, inode)
