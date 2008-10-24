@@ -319,7 +319,8 @@ contains
                            HADAPT_HAS_COORDS) then
       select case(rhadapt%ndim)
       case (NDIM1D)
-        call btree_releaseTree(rhadapt%rVertexCoordinates1D)
+        call storage_free(rhadapt%h_DvertexCoords1D)
+        nullify(rhadapt%p_DvertexCoords1D)
 
       case(NDIM2D)
         call qtree_releaseQuadtree(rhadapt%rVertexCoordinates2D)
@@ -558,8 +559,10 @@ contains
       
       select case(rhadaptBackup%ndim)
       case (NDIM1D)
-        call btree_duplicateTree(rhadapt%rVertexCoordinates1D,&
-                                 rhadaptBackup%rVertexCoordinates1D)
+        call storage_copy(rhadapt%h_DvertexCoords1D,&
+                          rhadaptBackup%h_DvertexCoords1D)
+        call storage_getbase_double2D(rhadaptBackup%h_DvertexCoords1D,&
+                                      rhadaptBackup%p_DvertexCoords1D)
       case(NDIM2D)
         call qtree_duplicateQuadtree(rhadapt%rVertexCoordinates2D,&
                                      rhadaptBackup%rVertexCoordinates2D)
@@ -723,8 +726,10 @@ contains
       
       select case(rhadaptBackup%ndim)
       case (NDIM1D)
-        call btree_restoreTree(rhadaptBackup%rVertexCoordinates1D,&
-                               rhadapt%rVertexCoordinates1D)
+        call storage_copy(rhadaptBackup%h_DvertexCoords1D,&
+                          rhadapt%h_DvertexCoords1D)
+        call storage_getbase_double2D(rhadapt%h_DvertexCoords1D,&
+                                      rhadapt%p_DvertexCoords1D)
       case(NDIM2D)
         call qtree_restoreQuadtree(rhadaptBackup%rVertexCoordinates2D,&
                                    rhadapt%rVertexCoordinates2D)
@@ -988,6 +993,11 @@ contains
         nvt = rhadapt%NVT+rhadapt%increaseNVT
         nel = hadapt_CalcNumberOfElements1D(rhadapt)
 
+        ! Adjust array DvertexCoords1D
+        call storage_realloc('hadapt_performAdaptation', nvt,&
+                             rhadapt%h_DvertexCoords1D, ST_NEWBLOCK_NOINIT, .true.)
+        call storage_getbase_double2D(rhadapt%h_DvertexCoords1D, rhadapt%p_DvertexCoords1D)
+
       case (NDIM2D)
         ! Mark elements for refinement based on indicator function
         call hadapt_markRefinement2D(rhadapt, rindicator)
@@ -1004,11 +1014,12 @@ contains
         nel = hadapt_CalcNumberOfElements2D(rhadapt)
 
       case (NDIM3D)
-        print *, "Not implemented yet"
-        stop
+        call output_line('h-adaptivity not yet implemented in 3D!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
+        call sys_halt()
       end select
       
-
+      
       ! Adjust array IvertexAge
       call storage_realloc('hadapt_performAdaptation', nvt,&
                            rhadapt%h_IvertexAge, ST_NEWBLOCK_NOINIT, .true.)
@@ -1064,10 +1075,12 @@ contains
         ! Perform element refinement in 1D
         call hadapt_refine1D(rhadapt, rcollection, fcb_hadaptCallback)
 
+        ! Perform element coarsening in 1D
+        call hadapt_coarsen1D(rhadapt, rcollection, fcb_hadaptCallback)
+
         ! Adjust nodal property array
         call storage_realloc('hadapt_performAdaptation', rhadapt%NVT,&
                              rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .true.)
-
 
       case (NDIM2D)
         ! Perform element refinement in 2D
@@ -1111,6 +1124,7 @@ contains
 !</subroutine>
 
     ! local variables
+    integer(I32), dimension(2) :: Isize
     integer :: ibct
     
     call output_line('Adaptivity statistics:')
@@ -1151,7 +1165,12 @@ contains
     call output_line('------------')
     select case(rhadapt%ndim)
     case (NDIM1D)
-      call btree_infoTree(rhadapt%rVertexCoordinates1D)
+      call storage_getsize(rhadapt%h_DvertexCoords1D, Isize)
+      call output_line('DvertexCoords1D')
+      call output_line('---------------')
+      call output_line('NVT:               '//trim(sys_siL(rhadapt%NVT,15)))
+      call output_line('NNVT:              '//trim(sys_siL(Isize(2),15)))
+      call output_line('h_DvertexCoords1D: '//trim(sys_siL(rhadapt%h_DvertexCoords1D,15)))
     case(NDIM2D)
       call qtree_infoQuadtree(rhadapt%rVertexCoordinates2D)
     case(NDIM3D)
@@ -1245,6 +1264,18 @@ contains
 
     ! Write vertices to output file
     select case(rhadapt%ndim)
+    case (NDIM1D)
+      write(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
+      do ivt = 1, rhadapt%NVT
+        write(UNIT=iunit,FMT=10) rhadapt%p_DvertexCoords1D(1,ivt)
+      end do
+      do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+        write(UNIT=iunit,FMT=10) 0._DP
+      end do
+      do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+        write(UNIT=iunit,FMT=10) 0._DP
+      end do
+      
     case (NDIM2D)
       write(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
       do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
@@ -1362,7 +1393,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_IelementsAtVertexIdx,p_IelementsAtVertex
+    integer, dimension(:), pointer :: p_IelementsAtVertexIdx
+    integer, dimension(:), pointer :: p_IelementsAtVertex
     integer :: ipos,ivt,idx,iel,jel,jelmid,ive,jve,nve,mve
     integer :: h_IelementsAtVertexIdx,h_IelementsAtVertex
     logical :: btest,bfound
