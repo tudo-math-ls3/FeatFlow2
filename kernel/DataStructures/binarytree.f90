@@ -3875,7 +3875,8 @@ contains
     recursive subroutine preorderDble(i)
       integer, intent(IN) :: i
       
-      write(*,FMT='(A)',ADVANCE='NO') rtree%p_DKey(i),','
+      write(*,FMT='(A)',ADVANCE='NO')&
+          trim(sys_sdEL(rtree%p_DKey(i),16))//','
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call preorderDble(rtree%p_Kchild(TLEFT,i))
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
@@ -3888,7 +3889,8 @@ contains
     recursive subroutine preorderSngl(i)
       integer, intent(IN) :: i
       
-      write(*,FMT='(A)',ADVANCE='NO') rtree%p_FKey(i),','
+      write(*,FMT='(A)',ADVANCE='NO')&
+          trim(sys_sdEL(REAL(rtree%p_FKey(i),DP),16))//','
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call preorderSngl(rtree%p_Kchild(TLEFT,i))
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
@@ -3901,7 +3903,8 @@ contains
     recursive subroutine preorderInt(i)
       integer, intent(IN) :: i
       
-      write(*,FMT='(A)',ADVANCE='NO') rtree%p_IKey(i),','
+      write(*,FMT='(A)',ADVANCE='NO')&
+          trim(sys_siL(rtree%p_IKey(i),16))//','
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call preorderInt(rtree%p_Kchild(TLEFT,i))
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
@@ -3918,7 +3921,8 @@ contains
           call postorderDble(rtree%p_Kchild(TLEFT,i))
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call postorderDble(rtree%p_Kchild(TRIGHT,i))
-      write(*,FMT='(A)',ADVANCE='NO') rtree%p_DKey(i),','
+      write(*,FMT='(A)',ADVANCE='NO')&
+          trim(sys_sdEL(rtree%p_DKey(i),16))//','
     end subroutine postorderDble
 
     !**************************************************************
@@ -3931,7 +3935,8 @@ contains
           call postorderSngl(rtree%p_Kchild(TLEFT,i))
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call postorderSngl(rtree%p_Kchild(TRIGHT,i))
-      write(*,FMT='(A)',ADVANCE='NO') rtree%p_FKey(i),','
+      write(*,FMT='(A)',ADVANCE='NO')&
+          trim(sys_sdEL(REAL(rtree%p_FKey(i),DP),16))//','
     end subroutine postorderSngl
 
     !**************************************************************
@@ -3944,7 +3949,8 @@ contains
           call postorderInt(rtree%p_Kchild(TLEFT,i))
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call postorderInt(rtree%p_Kchild(TRIGHT,i))
-      write(*,FMT='(A)',ADVANCE='NO') rtree%p_IKey(i),','
+      write(*,FMT='(A)',ADVANCE='NO')&
+          trim(sys_siL(rtree%p_IKey(i),16))//','
     end subroutine postorderInt
 
     !**************************************************************
@@ -3955,7 +3961,8 @@ contains
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDble(rtree%p_Kchild(TLEFT,i))
-      write(*,FMT='(A)',ADVANCE='NO') rtree%p_DKey(i),','
+      write(*,FMT='(A)',ADVANCE='NO')&
+          trim(sys_sdEL(rtree%p_DKey(i),16))//','
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call inorderDble(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderDble
@@ -3968,7 +3975,8 @@ contains
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderSngl(rtree%p_Kchild(TLEFT,i))
-      write(*,FMT='(A)',ADVANCE='NO') rtree%p_FKey(i),','
+      write(*,FMT='(A)',ADVANCE='NO')&
+          trim(sys_sdEL(REAL(rtree%p_FKey(i),DP),16))//','
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call inorderSngl(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderSngl
@@ -3981,7 +3989,8 @@ contains
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderInt(rtree%p_Kchild(TLEFT,i))
-      write(*,FMT='(A)',ADVANCE='NO') rtree%p_IKey(i),','
+      write(*,FMT='(A)',ADVANCE='NO')&
+          trim(sys_siL(rtree%p_IKey(i),16))//','
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call inorderInt(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderInt
