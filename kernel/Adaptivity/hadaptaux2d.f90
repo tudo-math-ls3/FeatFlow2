@@ -60,7 +60,7 @@
 !#      -> Updates the list of neighboring elements in 2D
 !#
 !#  7.) update_AllElementNeighbors2D
-!#      -> Updates the lists of neighboring elements of ALL adjacent elements
+!#      -> Updates the lists of neighboring elements of ALL adjacent elements in 2D
 !#
 !#  8.) refine_Tria2Tria
 !#      -> Refines a triangle by subdivision into two triangles
@@ -2880,7 +2880,7 @@ contains
               if (rhadapt%p_IneighboursAtElement(jve, jel) .eq. iel) exit
             end do
 
-            if (jve > mve) then
+            if (jve .gt.mve) then
               call output_line('Unable to find element!',&
                                OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenRefinement2D')
               call sys_halt()
@@ -3257,7 +3257,7 @@ contains
 !</description>
 
 !<input>
-    ! callback routines
+    ! Callback function
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
 !</input>
@@ -3288,6 +3288,8 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_coarsen2D')
       call sys_halt()
     end if
+
+    ! Set pointers
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
     
 
@@ -3940,7 +3942,7 @@ contains
       ydim = qtree_getY(rhadapt%rVertexCoordinates2D,ivt)-y0
       
       ! Write vertices as points?
-      if (rhadapt%p_IvertexAge(ivt) > 0) then
+      if (rhadapt%p_IvertexAge(ivt) .gt.0) then
         write(iunit,FMT='(A)') '<circle id="vt'//trim(sys_siL(ivt,10))//'" cx="'//&
             trim(sys_siL(int(dscale*xdim),10))//'" cy="'//&
             trim(sys_siL(ysize-int(dscale*ydim),10))//&
@@ -4074,7 +4076,7 @@ contains
     ! Number of the right-adjacent element w.r.t. to the oriented edge (I1,I2)
     integer, intent(IN) :: e1
 
-    ! Callback routines
+    ! Callback function
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
 !</input>
@@ -4151,7 +4153,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         call sys_halt()
       end if
-      ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT, TRIGHT, ipred < 0), abs(ipred))
+      ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT, TRIGHT, ipred .lt. 0), abs(ipred))
       dvbdp1 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
       
       if (btree_searchInTree(rhadapt%rBoundary(ibct), i2, ipred) .eq. BTREE_NOT_FOUND) then
@@ -4159,7 +4161,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         call sys_halt()
       end if
-      ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT, TRIGHT, ipred < 0), abs(ipred))
+      ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT, TRIGHT, ipred .lt. 0), abs(ipred))
       dvbdp2 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
       
       ! If I2 is last(=first) node on boundary component IBCT round DVBDP2 to next integer
@@ -4198,7 +4200,7 @@ contains
     ! Four corners of the quadrilateral
     integer, intent(IN) :: i1,i2,i3,i4
 
-    ! Callback routine
+    ! Callback function
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
 !</input>
@@ -4333,7 +4335,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
       end if
-      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred < 0), abs(ipred))
+      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
       
       ! Get the two boundary neighbors: I1 <- IVT -> I2
       i1 = rhadapt%rBoundary(ibct)%p_IData(BdrPrev, ipos)
@@ -4347,7 +4349,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
       end if
-      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred < 0), abs(ipred))
+      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
       rhadapt%rBoundary(ibct)%p_IData(BdrNext, ipos) = i2
       
       ! Second, set I1 as previous neighbor of I2
@@ -4357,7 +4359,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
       end if
-      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred < 0), abs(ipred))
+      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
       rhadapt%rBoundary(ibct)%p_IData(BdrPrev, ipos) = i1
       
       ! And finally, delete IVT from the boundary
@@ -4371,7 +4373,7 @@ contains
     
     ! If IVT is not the last node then copy the data for vertex IVTREPLACE
     ! to IVT and prepare IVTREPLACE for elimination
-    if (ivt < ivtReplace) then
+    if (ivt .lt. ivtReplace) then
       
       ! If IVTREPLACE is a boundary node then remove IVTREPLACE from the boundary
       ! vector, insert IVT into the boundary vector instead, and connect the
@@ -4387,7 +4389,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
         end if
-        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred < 0), abs(ipred))
+        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
         
         ! Insert IVT into the boundary vector
         call btree_insertIntoTree(rhadapt%rBoundary(ibct), ivt,&
@@ -4406,7 +4408,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
         end if
-        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred < 0), abs(ipred))
+        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
         rhadapt%rBoundary(ibct)%p_IData(BdrNext, ipos) = ivt
         
         ! Second, set IVT as previous neighbor of I2
@@ -4416,7 +4418,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
         end if
-        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred < 0), abs(ipred))
+        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
         rhadapt%rBoundary(ibct)%p_IData(BdrPrev, ipos) = ivt
         
         ! Finally, delete IVTREPLACE from the boundary
@@ -4654,7 +4656,7 @@ contains
       
       ! Element is not the last one. Then the element that should be removed must
       ! have a smaller element number. If this is not the case, something is wrong.
-      if (iel > ielReplace) then
+      if (iel .gt.ielReplace) then
         call output_line('Number of replacement element must not be smaller than that of&
                          & the removed elements!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')
@@ -5113,14 +5115,11 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: jel
-    integer :: ive,jve
+    integer :: jel,ive,jve
     logical :: bfound
 
     ! Check if the old element is still present in the triangulation
-    if (iel0 > rhadapt%NEL) then
-      return
-    end if
+    if (iel0 .gt. rhadapt%NEL) return
 
     ! Loop over adjacent elements
     adjacent: do ive = 1, hadapt_getNVE(rhadapt, iel0)
@@ -5199,10 +5198,10 @@ contains
     ! Number of element to be refined
     integer, intent(IN) :: iel
     
-    ! Identifiert for element marker
+    ! Identifier for element marker
     integer, intent(IN) :: imarker
 
-    ! Callback routines
+    ! Callback function
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
 !</input>
@@ -5289,7 +5288,7 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, iel,    ipos)
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices =(/i1,i2,i3,i4/)
       Ielements = (/e1,e2,e3,e4,e5,e6/)
@@ -5416,7 +5415,7 @@ contains
         qtree_getY(rhadapt%rVertexCoordinates2D, i3)
     dlen23 = sqrt(x*x+y*y)
     
-    if (dlen12 > dlen23) then
+    if (dlen12 .gt.dlen23) then
       
       ! 1st CASE: longest edge is (I1,I2)
       
@@ -5450,7 +5449,7 @@ contains
       call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
 
 
-      ! Optionally, invoke callback routine
+      ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback).and.present(rcollection)) then
         Ivertices = (/i1,i2,i3,i4,i5/)
         Ielements = (/e1,e2,e3,e4,e5/)
@@ -5493,7 +5492,7 @@ contains
       call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
 
 
-      ! Optionally, invoke callback routine
+      ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback).and.present(rcollection)) then
         Ivertices = (/i1,i2,i3,i4,i5/)
         Ielements = (/e1,e2,e3,e4,e5/)
@@ -5635,7 +5634,7 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+3, ipos)
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6/)
       Ielements = (/e1,e2,e3,e4,e5,e6/)
@@ -5783,7 +5782,7 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
     
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -5945,7 +5944,7 @@ contains
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
     
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -6113,7 +6112,7 @@ contains
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -6269,7 +6268,7 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, nel0+3, ipos)
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -6404,7 +6403,7 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -6566,7 +6565,7 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, nel0+2, ipos)
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,f4,f1,e4,f3,f8,e3,e8/)
@@ -6732,7 +6731,7 @@ contains
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+3
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -6897,7 +6896,7 @@ contains
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+4
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -6947,7 +6946,7 @@ contains
     ! Element number of the inner red triangle
     integer, intent(IN) :: iel
 
-    ! Callback routines
+    ! Callback function
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
 !</input>
@@ -6974,7 +6973,7 @@ contains
     iel1 = rhadapt%p_IneighboursAtElement(2, iel)
     
     ! Determine element with smaller element number
-    if (iel < iel1) then
+    if (iel .lt. iel1) then
       jel=iel; ielRemove=iel1
     else
       jel=iel1; ielRemove=iel
@@ -6997,7 +6996,7 @@ contains
     
     ! Update list of neighboring elements
     call update_ElementNeighbors2D(rhadapt, e1, e4, iel1, iel, jel, jel)
-    if (iel < iel1) then
+    if (iel .lt. iel1) then
       call update_ElementNeighbors2D(rhadapt, e2, e5, iel1, jel, jel)
     else
       call update_ElementNeighbors2D(rhadapt, e3, e6, iel, jel, jel)
@@ -7015,8 +7014,8 @@ contains
     
     select case(istate)
     case(STATE_TRIA_OUTERINNER,&
-        STATE_TRIA_ROOT,&
-        STATE_TRIA_REDINNER)
+         STATE_TRIA_ROOT,&
+         STATE_TRIA_REDINNER)
       ! Update element JEL = (I1,I2,I3)
       call replace_element2D(rhadapt, jel, i1, i2, i3,&
                              e1, e2, e3, e4, e5, e6)
@@ -7082,7 +7081,7 @@ contains
       
     end if
     
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4/)
       Ielements = (/e1,e2,e3,e4/)
@@ -7122,7 +7121,7 @@ contains
     ! Element number of the inner red triangle
     integer, intent(IN) :: iel
 
-    ! callback routines
+    ! Callback function
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
 !</input>
@@ -7258,7 +7257,7 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, jel, ipos)
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6/)
       Ielements = (/e1,e2,e3,e4,e5,e6/)
@@ -7312,7 +7311,7 @@ contains
     ! Identifiert for element marker
     integer, intent(IN) :: imarker
 
-    ! callback routines
+    ! Callback function
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
 !</input>
@@ -7440,7 +7439,7 @@ contains
       call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, jel2, ipos)
 
 
-      ! Optionally, invoke callback routine
+      ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback).and.present(rcollection)) then
         Ivertices = (/i1,i2,i3,i4,i5,i6/)
         Ielements = (/e1,e2,e3,e4,e5,e6/)
@@ -7522,7 +7521,7 @@ contains
       call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, jel2, ipos)
 
 
-      ! Optionally, invoke callback routine
+      ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback).and.present(rcollection)) then
         Ivertices = (/i1,i2,i3,i4,i5,i6/)
         Ielements = (/e1,e2,e3,e4,e5,e6/)
@@ -7606,7 +7605,7 @@ contains
       call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, jel2, ipos)
       
 
-      ! Optionally, invoke callback routine
+      ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback).and.present(rcollection)) then
         Ivertices = (/i1,i2,i3,i4,i5,i6/) 
         Ielements = (/e1,e2,e3,e4,e5,e6/)
@@ -7809,7 +7808,7 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, jel, ipos)
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -7995,7 +7994,7 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,jel2,ipos)
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -8173,7 +8172,7 @@ contains
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-3
     
     
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -8291,7 +8290,7 @@ contains
     rhadapt%InelOfType(TRIA_NVETRI2D) = rhadapt%InelOfType(TRIA_NVETRI2D)+4
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-4
     
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -8380,7 +8379,7 @@ contains
 
 
     ! Which is the smaller element?
-    if (iel < iel1) then
+    if (iel .lt. iel1) then
       
       ! Update list of neighboring elements
       call update_ElementNeighbors2D(rhadapt,e1,e5,iel1,iel,iel,iel)
@@ -8510,7 +8509,7 @@ contains
     end if
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,0,i7,0/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -8622,7 +8621,7 @@ contains
     rhadapt%InelOfType(TRIA_NVETRI2D) = rhadapt%InelOfType(TRIA_NVETRI2D)+2
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-2
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5,0,i7,0/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -8812,7 +8811,7 @@ contains
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+1
 
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,i5/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -9013,7 +9012,7 @@ contains
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+1
     
 
-    ! Optionally, invoke callback routine
+    ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback).and.present(rcollection)) then
       Ivertices = (/i1,i2,i3,i4,0,i6,i7,0/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -9053,7 +9052,7 @@ contains
     ! Number of element to be refined
     integer, intent(IN) :: iel
 
-    ! Identifiert for element marker
+    ! Identifier for element marker
     integer, intent(IN) :: imarker
 
     ! Callback function
@@ -9203,7 +9202,7 @@ contains
       call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,jel3,ipos)
 
       
-      ! Optionally, invoke callback routine
+      ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback).and.present(rcollection)) then
         Ivertices = (/i1,i2,i3,i4,0,i6,i7,0/)
         Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -9301,7 +9300,7 @@ contains
       call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,jel2,ipos)
       call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,jel3,ipos)
 
-      ! Optionally, invoke callback routine
+      ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback).and.present(rcollection)) then
         Ivertices = (/i1,i2,i3,i4,0,i6,i7,0/)
         Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
