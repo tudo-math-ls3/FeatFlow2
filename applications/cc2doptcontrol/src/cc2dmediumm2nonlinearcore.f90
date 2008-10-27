@@ -542,13 +542,21 @@ contains
         ! Did the preconditioner work?
         bsuccess = p_rsolverNode%iresult .eq. 0
         
+        if (bsuccess) then
+          ! Filter the final defect
+          p_RfilterChain => rpreconditioner%p_RfilterChain
+          call filter_applyFilterChainVec (rd, p_RfilterChain)
+        end if
+        
+        if (p_rsolverNode%dfinalDefect .ge. p_rsolverNode%dinitialDefect*0.99_DP) then
+          ! Ignore the correction, it cannot be good enough!
+          call output_line (&
+            'Space-Time-Preconditioner: Warning. Solution ignored for missing accuracy.')
+            
+          call lsysbl_clearVector (rd)
+        end if
+        
       end select
-      
-      if (bsuccess) then
-        ! Filter the final defect
-        p_RfilterChain => rpreconditioner%p_RfilterChain
-        call filter_applyFilterChainVec (rd, p_RfilterChain)
-      end if
       
     contains
       
