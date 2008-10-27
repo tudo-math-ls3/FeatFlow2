@@ -1031,7 +1031,7 @@ CONTAINS
     ! we prescribe a fixed number of adaptation steps
     if(p_calcAdapSteps(rgriddefInfo%iminDefLevel) .eq. GRIDDEF_FIXED)then
     
-      rgriddefInfo%nadaptionSteps = 10
+      rgriddefInfo%nadaptionSteps = 1
     
     end if
     
@@ -1396,8 +1396,8 @@ CONTAINS
     CASE(0)
       ! loop over all vertices and compute the monitor function
       DO ive=1,rgriddefInfo%p_rtriangulation%NVT
-        !p_Dentries(ive) = 0.5_dp + p_DvertexCoords(1,ive)
-        p_Dentries(ive) = 1.0_dp
+        p_Dentries(ive) = 0.5_dp + p_DvertexCoords(1,ive)
+        !p_Dentries(ive) = 1.0_dp
       END DO
     CASE(1)
       ! loop over all vertices and compute the monitor function
@@ -2421,10 +2421,10 @@ CONTAINS
 !      i = i +1
 !    enddo
     ! write back coordinates
-    do i=1,rgriddefInfo%p_rtriangulation%NVT
-      p_DvertexCoordsReal(1,i) = p_DvertexCoords(1,i)
-      p_DvertexCoordsReal(2,i) = p_DvertexCoords(2,i)
-    end do
+!    do i=1,rgriddefInfo%p_rtriangulation%NVT
+!      p_DvertexCoordsReal(1,i) = p_DvertexCoords(1,i)
+!      p_DvertexCoordsReal(2,i) = p_DvertexCoords(2,i)
+!    end do
   
   END SUBROUTINE ! end griddef_moveMesh
   
@@ -2680,7 +2680,6 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   ! These arrays are needed when we treat boundary vertices      
   INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx  
   INTEGER(I32), DIMENSION(:), POINTER :: p_IverticesAtBoundary
-  INTEGER(I32), DIMENSION(:), POINTER :: p_Isegs
   REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue  
   
   INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
@@ -2697,7 +2696,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   INTEGER(I32), DIMENSION(:), ALLOCATABLE :: rElements
   
   ! INTEGER
-  integer(i32) :: iregions,iedge,iupper,ivertex,icount,iinelement
+  integer(i32) :: iregions,iedge,iupper,ivertex,icount,iinelement,iend
 
   deps = 0.0000000001_dp
 
@@ -2727,9 +2726,6 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   CALL storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
   p_DvertexCoords)    
   
-  CALL storage_getbase_int (rgriddefInfo%p_rboundary%h_IsegCount,&
-  p_Isegs)
-  
   CALL storage_getbase_int(rgriddefInfo%rDeftriangulation%h_IedgesAtBoundary,&
   p_IedgesAtBoundary)    
   
@@ -2744,7 +2740,8 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   ! allocate the regions
   iupper = ubound(p_IedgesAtBoundary,1)
   ! ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-  allocate(rregion(p_Isegs(p_InodalProperty(ive)))) 
+  allocate(rregion(boundary_igetNsegments &
+  (rgriddefInfo%p_rboundary,p_InodalProperty(ive)))) 
 
   allocate(rElements(iupper))
 
@@ -2771,9 +2768,10 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     exit
     end if        
   end do
-
+  
+  iend = boundary_igetNsegments(rgriddefInfo%p_rboundary,p_InodalProperty(ive))
   ! create the boundary regions
-  do iregions=1,p_Isegs(p_InodalProperty(ive))
+  do iregions=1,iend
   ! Idea: create the regions, check in which region the parameter is
     call boundary_createRegion(rgriddefInfo%p_rboundary, p_InodalProperty(ive),&
                              iregions,rregion(iregions))
@@ -2790,7 +2788,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
                                  BDR_PAR_01, BDR_PAR_LENGTH)
 
   ! we want to stay in this boundary region
-  do iregions=1,p_Isegs(p_InodalProperty(ive))
+  do iregions=1,iend
   ! Idea: create the regions, check in which region the parameter is
     if(boundary_isInRegion (rregion(iregions),p_InodalProperty(ive),dalpha))then
       exit
@@ -3138,9 +3136,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   CALL storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
   p_DvertexCoords)    
   
-  CALL storage_getbase_int (rgriddefInfo%p_rboundary%h_IsegCount,&
-  p_Isegs)
-  
+ 
   CALL storage_getbase_int(rgriddefInfo%rDeftriangulation%h_IedgesAtBoundary,&
   p_IedgesAtBoundary)    
   
