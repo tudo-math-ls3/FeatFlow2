@@ -3131,6 +3131,10 @@ contains
             bsuccess,rsolverNode%p_rproblem%rcollection)      
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
         
+        ! Add that defect to the current solution -- damped by domega.
+        call lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
+            rsolverNode%domega,1.0_DP)
+      
         ! Save the new solution.
         call sptivec_setTimestepData (p_rx, 1+isubstep, rtempVectorX2)
         
@@ -3275,6 +3279,10 @@ contains
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3),&
             bsuccess,rsolverNode%p_rproblem%rcollection)      
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
+      
+        ! Add that defect to the current solution -- damped by domega.
+        call lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
+            rsolverNode%domega,1.0_DP)
       
         ! Save the new solution.
         call sptivec_setTimestepData (p_rx, 1+isubstep, rtempVectorX2)
