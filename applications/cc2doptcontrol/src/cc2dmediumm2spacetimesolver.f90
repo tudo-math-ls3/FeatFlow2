@@ -3131,7 +3131,7 @@ contains
             bsuccess,rsolverNode%p_rproblem%rcollection)      
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
         
-        if (rsolverNode%dfinalDefect .ge. rsolverNode%dfinalDefect*0.99_DP) then
+        if (rsolverNode%dfinalDefect .ge. rsolverNode%dinitialDefect*0.99_DP) then
           ! Ignore the correction, it cannot be good enough!
           call output_line ('Space-Time-Block-FBGS: Solution ignored for missing accuracy.')
         else
@@ -3285,7 +3285,7 @@ contains
             bsuccess,rsolverNode%p_rproblem%rcollection)      
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
       
-        if (rsolverNode%dfinalDefect .ge. rsolverNode%dfinalDefect*0.99_DP) then
+        if (rsolverNode%dfinalDefect .ge. rsolverNode%dinitialDefect*0.99_DP) then
           ! Ignore the correction, it cannot be good enough!
           call output_line ('Space-Time-Block-FBGS: Solution ignored for missing accuracy.')
         else
