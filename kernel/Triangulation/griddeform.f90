@@ -819,7 +819,9 @@ CONTAINS
   idupFlag = TR_SHARE_ALL
 
   ! we only want to dublicate the vertexcoords
+  ! and boundary parameters
   idupFlag = idupFlag - TR_SHARE_DVERTEXCOORDS
+  idupFlag = idupFlag - TR_SHARE_DVERTEXPARAMETERVALUE
 
   CALL tria_duplicate(rgriddefInfo%p_rtriangulation,rgriddefInfo%rDeftriangulation,&
                       idupFlag)
@@ -1031,7 +1033,7 @@ CONTAINS
     ! we prescribe a fixed number of adaptation steps
     if(p_calcAdapSteps(rgriddefInfo%iminDefLevel) .eq. GRIDDEF_FIXED)then
     
-      rgriddefInfo%nadaptionSteps = 1
+      rgriddefInfo%nadaptionSteps = 10
     
     end if
     
@@ -1376,7 +1378,7 @@ CONTAINS
   TYPE(t_vectorScalar), POINTER :: p_rvectorMonFuncQ1 
   INTEGER :: iMethod
   REAL(DP) :: Dist
-  iMethod = 0
+  iMethod = 1
   
   ! get the pointer to the coords of the grid
   ! this only works for Q1
@@ -2314,6 +2316,8 @@ CONTAINS
   ! local variables
   REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordsReal
   REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+  REAL(DP), DIMENSION(:), POINTER :: p_DvertexParametersReal
+  REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameters
   integer :: i
   
   
@@ -2321,7 +2325,13 @@ CONTAINS
   p_DvertexCoords)    
 
   CALL storage_getbase_double2d(rgriddefInfo%p_rtriangulation%h_dvertexCoords,&
-  p_DvertexCoordsReal)    
+  p_DvertexCoordsReal)   
+  
+  CALL storage_getbase_double(rgriddefInfo%rDeftriangulation%h_DvertexParameterValue,&
+  p_DvertexParameters)
+  
+  CALL storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DvertexParameterValue,&
+  p_DvertexParametersReal)   
   
   
 !    ! coordinates of the current vertex
@@ -2421,10 +2431,16 @@ CONTAINS
 !      i = i +1
 !    enddo
     ! write back coordinates
-!    do i=1,rgriddefInfo%p_rtriangulation%NVT
-!      p_DvertexCoordsReal(1,i) = p_DvertexCoords(1,i)
-!      p_DvertexCoordsReal(2,i) = p_DvertexCoords(2,i)
-!    end do
+    do i=1,rgriddefInfo%p_rtriangulation%NVT
+      p_DvertexCoordsReal(1,i) = p_DvertexCoords(1,i)
+      p_DvertexCoordsReal(2,i) = p_DvertexCoords(2,i)
+    end do
+
+    ! write back coordinates
+    do i=1,rgriddefInfo%p_rtriangulation%NVBD
+      p_DvertexParametersReal(i) = p_DvertexParameters(i)
+    end do
+
   
   END SUBROUTINE ! end griddef_moveMesh
   
@@ -2485,7 +2501,7 @@ CONTAINS
   deps = 0.0000000001_dp
 
   ! Get the boundary information we need
-  CALL storage_getbase_double(rgriddefInfo%rDeftriangulation%h_DvertexParameterValue,&
+  CALL storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DvertexParameterValue,&
   p_DvertexParameterValue)
 
   CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IboundaryCpIdx,&
@@ -2681,6 +2697,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx  
   INTEGER(I32), DIMENSION(:), POINTER :: p_IverticesAtBoundary
   REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue  
+  REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValueNew  
   
   INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
   INTEGER(I32), DIMENSION(:,:), POINTER :: p_IelementsAtEdge
@@ -2702,7 +2719,11 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
 
   ! Get the boundary information we need
   CALL storage_getbase_double(rgriddefInfo%rDeftriangulation%h_DvertexParameterValue,&
+  p_DvertexParameterValueNew)
+  
+  CALL storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DvertexParameterValue,&
   p_DvertexParameterValue)
+  
 
   CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IboundaryCpIdx,&
   p_IboundaryCpIdx)
@@ -2867,7 +2888,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     
     bsearchFailed = .true.
     icount = 0
-    ! alle randkanten die in region 1 liegen
+    ! loop over the edges
     do iedge=1,iupper
       ivertex = p_IedgesAtBoundary(iedge)
       ivertex = p_IverticesAtEdge(1,ivertex)
@@ -2911,7 +2932,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
         dparam2 = dparam
       end if
       
-      ! auf welcher Randkante befinde ich mich im Moment ?
+      ! 
       ! Find the boundary edge that corresponds to
       ! the current parameter
       if((dalpha .ge. dparam1) .and. (dalpha .le. dparam2))then
@@ -3002,8 +3023,8 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
         call boundary_getCoords(rgriddefInfo%p_rboundary, p_InodalProperty(ive),&
                                 dalpha_old, dx, dy)
         
-        ! write back the parameter value of the vertex
-        p_DvertexParameterValue(iboundary) = dalpha_old 
+!        ! write back the parameter value of the vertex
+        p_DvertexParameterValueNew(iboundary) = dalpha_old 
                                 
         ! write the coordindates                                
         p_DvertexCoords(1,ive) = dx
@@ -3023,7 +3044,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
       call boundary_getCoords(rgriddefInfo%p_rboundary, p_InodalProperty(ive),&
                               dalpha, dx, dy)
       
-      p_DvertexParameterValue(iboundary) = dalpha                              
+      p_DvertexParameterValueNew(iboundary) = dalpha                              
       ! write the coordindates                                
       p_DvertexCoords(1,ive) = dx
       p_DvertexCoords(2,ive) = dy     
