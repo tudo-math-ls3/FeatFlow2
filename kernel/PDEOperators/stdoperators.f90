@@ -112,8 +112,8 @@ contains
 
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = dalpha1
+    rform%BconstantCoeff(1:rform%itermCount) = .true.
+    rform%Dcoefficients(1:rform%itermCount)  = dalpha1
 
     ! Now we can build the matrix entries.
     call bilf_buildMatrixScalar (rform,bclear1,rmatrix)
