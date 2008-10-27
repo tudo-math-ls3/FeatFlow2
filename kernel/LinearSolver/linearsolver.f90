@@ -6604,9 +6604,14 @@ contains
     ! Check the solver status
     select case (int(Dinfo(1)))
     case (0) 
-      ! All ok.
+      ! Everything ok.
       rsolverNode%iiterations = 1
       rsolverNode%dconvergenceRate = 0.0_DP
+      
+      ! Just for algorithms that check the residuum, set the
+      ! initial/final residuum values to valid values.
+      rsolverNode%dinitialDefect = 1.0_DP
+      rsolverNode%dfinalDefect = 0.0_DP
       
       ! Scale defect by omega
       call lsysbl_scaleVector(rd, rsolverNode%domega)
