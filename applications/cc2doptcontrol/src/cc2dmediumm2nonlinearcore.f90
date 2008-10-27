@@ -548,7 +548,7 @@ contains
           call filter_applyFilterChainVec (rd, p_RfilterChain)
         end if
         
-        if (p_rsolverNode%dfinalDefect .ge. p_rsolverNode%dinitialDefect*0.99_DP) then
+        if (p_rsolverNode%dfinalDefect .gt. p_rsolverNode%dinitialDefect*0.99_DP) then
           ! Ignore the correction, it cannot be good enough!
           call output_line (&
             'Space-Time-Preconditioner: Warning. Solution ignored for missing accuracy.')
