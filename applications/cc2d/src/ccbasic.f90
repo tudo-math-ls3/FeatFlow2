@@ -53,6 +53,10 @@ module ccbasic
     ! matrices. The matrix contains only a stucture, no content.
     type(t_matrixScalar) :: rmatrixTemplateFEM
 
+    ! A template FEM matrix that defines the structure of the pressure
+    ! matrices. The matrix contains only a stucture, no content.
+    type(t_matrixScalar) :: rmatrixTemplateFEMPressure
+
     ! A template FEM matrix that defines the structure of gradient
     ! matrices (B1/B2). The matrix contains only a stucture, no content.
     type(t_matrixScalar) :: rmatrixTemplateGradient
@@ -85,12 +89,19 @@ module ccbasic
     ! Points to NULL until the BC's are discretised for the first time.
     type(t_discreteFBC), pointer :: p_rdiscreteFBC => null()
     
-    ! Nonstationary simulation: Mass matrix
+    ! Mass matrix for the velocity.
     type(t_matrixScalar) :: rmatrixMass
 
-    ! Nonstationary simulation: A scalar discretisation structure that 
-    ! specifies how to generate the mass matrix.
+    ! Mass matrix for the pressure.
+    type(t_matrixScalar) :: rmatrixMassPressure
+
+    ! A scalar discretisation structure that specifies how to generate 
+    ! the mass matrix in the velocity FEM space.
     type(t_spatialDiscretisation) :: rdiscretisationMass
+
+    ! A scalar discretisation structure that specifies how to generate 
+    ! the mass matrix in the pressure FEM space.
+    type(t_spatialDiscretisation) :: rdiscretisationMassPressure
 
     ! This flag signales whether there are Neumann boundary components
     ! visible on the boundary of this level or not. If there are no

@@ -540,6 +540,309 @@ contains
   end subroutine
 
   ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_AnalyticSolution_X (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This routine is called upon program start if ctypeInitialSolution=3.
+    ! It returns analytical values for the X-velocity in the
+    ! initial solution vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    ! REAL(DP) :: dtime
+    ! REAL(DP) :: dx,dy
+    !
+    ! To get the X/Y-coordinates of the boundary point, use:
+    !
+    ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
+    !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
+    !
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    !
+    ! dtime = 0.0_DP
+    ! IF (PRESENT(rcollection)) dtime = rcollection%Dquickaccess(1)
+    !
+    ! -----
+    ! In the basic implementation, we just call ffunction_TargetX to get the
+    ! values -- so the target function (which is normally used for
+    ! calculating the error to a reference function) is also the definition
+    ! for the initial solution.
+    ! If necessary, this behaviour can be changed here.
+    
+    call ffunction_TargetX (DER_FUNC,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dcoefficients(1,:,:),rcollection)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_AnalyticSolution_Y (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This routine is called upon program start if ctypeInitialSolution=3.
+    ! It returns analytical values for the Y-velocity in the
+    ! initial solution vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    ! REAL(DP) :: dtime
+    ! REAL(DP) :: dx,dy
+    !
+    ! To get the X/Y-coordinates of the boundary point, use:
+    !
+    ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
+    !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
+    !
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    !
+    ! dtime = 0.0_DP
+    ! IF (PRESENT(rcollection)) dtime = rcollection%Dquickaccess(1)
+    !
+    ! -----
+    ! In the basic implementation, we just call ffunction_TargetX to get the
+    ! values -- so the target function (which is normally used for
+    ! calculating the error to a reference function) is also the definition
+    ! for the initial solution.
+    ! If necessary, this behaviour can be changed here.
+    
+    call ffunction_TargetY (DER_FUNC,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dcoefficients(1,:,:),rcollection)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_AnalyticSolution_P (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This routine is called upon program start if ctypeInitialSolution=3.
+    ! It returns analytical values for the pressure in the
+    ! initial solution vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    ! REAL(DP) :: dtime
+    ! REAL(DP) :: dx,dy
+    !
+    ! To get the X/Y-coordinates of the boundary point, use:
+    !
+    ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
+    !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
+    !
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    !
+    ! dtime = 0.0_DP
+    ! IF (PRESENT(rcollection)) dtime = rcollection%Dquickaccess(1)
+    !
+    ! -----
+    ! In the basic implementation, we just call ffunction_TargetP to get the
+    ! values -- so the target function (which is normally used for
+    ! calculating the error to a reference function) is also the definition
+    ! for the initial solution.
+    ! If necessary, this behaviour can be changed here.
+    
+    call ffunction_TargetP (DER_FUNC,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dcoefficients(1,:,:),rcollection)
+    
+  end subroutine
+
+  ! ***************************************************************************
   
 !<subroutine>
 
@@ -627,7 +930,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = Dpoints(1,:,:)
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN

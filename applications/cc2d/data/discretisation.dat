@@ -9,13 +9,28 @@
 [CC-DISCRETISATION]
 ###################
 
-# Creation of start vector of the (stationary and nonstationary) simulation.
-# |.|=0: ZERO, <>0: read from CSTART; 
-# |.|=1: read start vector from sStart vector on level NLMAX,
-# |.|=2: read start vector from sStart  on level NLMAX-1.
-# etc...
-# <0: sStart is unformatted file 
-#     (smaller, but processor dependent and not human readable)
+# Type of the initial solution.
+# =0: Use zero solution.
+# =1: Read from file. isolutionStart specifies the level of the initial 
+#     solution, ssolutionStart specifies the filename to be read.
+#     THe file is expected as formatted text file.
+# =2: Read from file. isolutionStart specifies the level of the initial 
+#     solution, ssolutionStart specifies the filename to be read.
+#     The file is expected as unformatted binary file.
+#     (smaller, but processor dependent and not human readable!)
+# =3: Analytical initial solution. Create the solution by calling
+#     the callback functions coeff_AnalyticSolution_Y, 
+#     coeff_AnalyticSolution_Y and coeff_AnalyticSolution_P
+#     in cccallback.f90.
+
+ctypeInitialSolution = 0
+
+# If ctypeInitialSolution=1: Level of the initial solution in the file
+# to be read.
+# =1,2,3,...: File ssolutionStart specifies a solution on 
+#             level isolutionStart.
+# =0,-1,-2,...: File ssolutionStart specifies a solution on 
+#               level (NLMAX+isolutionStart).
 
 isolutionStart     = 0
 
