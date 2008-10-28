@@ -3600,10 +3600,12 @@ contains
       ! In the other case the convergence rate computes as
       ! (final defect/initial defect) ** 1/nit :
 
-      if (rsolverNode%dfinalDefect .gt. rsolverNode%drhsZero) then
+      if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
         rsolverNode%dconvergenceRate = &
                     (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
                     (1.0_DP/real(rsolverNode%iiterations,DP))
+      else
+        rsolverNode%dconvergenceRate = 0.0_DP
       end if
       
       if (rsolverNode%ioutputLevel .ge. 2) then
@@ -7893,10 +7895,12 @@ contains
       ! In the other case the convergence rate computes as
       ! (final defect/initial defect) ** 1/nit :
 
-      if (rsolverNode%dfinalDefect .gt. rsolverNode%drhsZero) then
+      if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
         rsolverNode%dconvergenceRate = &
                     (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
                     (1.0_DP/real(rsolverNode%iiterations,DP))
+      else
+        rsolverNode%dconvergenceRate = 0.0_DP
       end if
 
       if (rsolverNode%ioutputLevel .ge. 2) then
@@ -8879,10 +8883,12 @@ contains
       ! In the other case the convergence rate computes as
       ! (final defect/initial defect) ** 1/nit :
 
-      if (rsolverNode%dfinalDefect .gt. rsolverNode%drhsZero) then
+      if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
         rsolverNode%dconvergenceRate = &
                     (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
                     (1.0_DP/real(rsolverNode%iiterations,DP))
+      else
+        rsolverNode%dconvergenceRate = 0.0_DP
       end if
 
       if (rsolverNode%ioutputLevel .ge. 2) then
@@ -9321,10 +9327,12 @@ contains
       ! In the other case the convergence rate computes as
       ! (final defect/initial defect) ** 1/nit :
 
-      if (rsolverNode%dfinalDefect .gt. rsolverNode%drhsZero) then
+      if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
         rsolverNode%dconvergenceRate = &
                     (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
                     (1.0_DP/real(rsolverNode%iiterations,DP))
+      else
+        rsolverNode%dconvergenceRate = 0.0_DP
       end if
 
       if (rsolverNode%ioutputLevel .ge. 2) then
@@ -10488,10 +10496,12 @@ contains
       ! In the other case the convergence rate computes as
       ! (final defect/initial defect) ** 1/nit :
 
-      if (rsolverNode%dfinalDefect .gt. rsolverNode%drhsZero) then
+      if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
         rsolverNode%dconvergenceRate = &
                     (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
                     (1.0_DP/real(rsolverNode%iiterations,DP))
+      else
+        rsolverNode%dconvergenceRate = 0.0_DP
       end if
 
       if (rsolverNode%ioutputLevel .ge. 2) then
@@ -13017,6 +13027,8 @@ contains
           rsolverNode%dconvergenceRate = &
                       (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
                       (1.0_DP/real(rsolverNode%iiterations,DP))
+        else
+          rsolverNode%dconvergenceRate = 0.0_DP
         end if
       end if
     
