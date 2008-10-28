@@ -41,12 +41,12 @@
 !#     -> Is used for setting up the initial solution.
 !#     -> In the basic implementation, this calls ffunction_TargetX. 
 !#
-!# 4.) coeff_AnalyticSolutionY
+!# 5.) coeff_AnalyticSolutionY
 !#     -> Returns analytical values for the desired flow field in Y-direction.
 !#     -> Is used for setting up the initial solution.
 !#     -> In the basic implementation, this calls ffunction_TargetY. 
 !#
-!# 4.) coeff_AnalyticSolutionP
+!# 6.) coeff_AnalyticSolutionP
 !#     -> Returns analytical values for the desired pressure.
 !#     -> Is used for setting up the initial solution.
 !#     -> In the basic implementation, this calls ffunction_TargetP.
