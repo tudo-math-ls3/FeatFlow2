@@ -36,39 +36,54 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) ffunction_TargetX
+!# 4.) coeff_AnalyticSolutionX
+!#     -> Returns analytical values for the desired flow field in X-direction.
+!#     -> Is used for setting up the initial solution.
+!#     -> In the basic implementation, this calls ffunction_TargetX. 
+!#
+!# 4.) coeff_AnalyticSolutionY
+!#     -> Returns analytical values for the desired flow field in Y-direction.
+!#     -> Is used for setting up the initial solution.
+!#     -> In the basic implementation, this calls ffunction_TargetY. 
+!#
+!# 4.) coeff_AnalyticSolutionP
+!#     -> Returns analytical values for the desired pressure.
+!#     -> Is used for setting up the initial solution.
+!#     -> In the basic implementation, this calls ffunction_TargetP.
+!#
+!# 7.) ffunction_TargetX
 !#     -> Returns analytical values for the desired flow field in X-direction.
 !#     -> Is used for error analysis during the postprocessing.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 5.) ffunction_TargetY
+!# 8.) ffunction_TargetY
 !#     -> Returns analytical values for the desired flow field in Y-direction.
 !#     -> Is used for error analysis during the postprocessing.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 6.) ffunction_TargetP
+!# 9.) ffunction_TargetP
 !#     -> Returns analytical values for the desired pressure.
 !#     -> Is used for error analysis during the postprocessing.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 7.) getBoundaryValues
+!# 10.) getBoundaryValues
 !#     -> Returns analytical values on the boundary of the
 !#        problem to solve.
 !#
-!# 8.) getBoundaryValuesFBC
+!# 11.) getBoundaryValuesFBC
 !#     -> Returns analytical values on the fictitious boundary components
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_fbcassembly.inc'
 !#
-!# 9.) cc_initCollectForAssembly
+!# 12.) cc_initCollectForAssembly
 !#     -> Is called prior to the assembly process.
 !#     -> Stores some information from the problem structure to a collection
 !#        such that it can be accessed in callback routines
 !#
-!# 10.) cc_doneCollectForAssembly
+!# 13.) cc_doneCollectForAssembly
 !#      -> Is called after the assembly process.
 !#      -> Releases information stored in the collection by 
 !#         cc_initCollectForAssembly.
@@ -930,7 +945,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = Dpoints(1,:,:)
+    Dvalues(:,:) = 0.0_DP
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
