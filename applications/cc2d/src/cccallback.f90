@@ -36,17 +36,17 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) coeff_AnalyticSolutionX
+!# 4.) coeff_AnalyticSolution_X
 !#     -> Returns analytical values for the desired flow field in X-direction.
 !#     -> Is used for setting up the initial solution.
 !#     -> In the basic implementation, this calls ffunction_TargetX. 
 !#
-!# 5.) coeff_AnalyticSolutionY
+!# 5.) coeff_AnalyticSolution_Y
 !#     -> Returns analytical values for the desired flow field in Y-direction.
 !#     -> Is used for setting up the initial solution.
 !#     -> In the basic implementation, this calls ffunction_TargetY. 
 !#
-!# 6.) coeff_AnalyticSolutionP
+!# 6.) coeff_AnalyticSolution_P
 !#     -> Returns analytical values for the desired pressure.
 !#     -> Is used for setting up the initial solution.
 !#     -> In the basic implementation, this calls ffunction_TargetP.
