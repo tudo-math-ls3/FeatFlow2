@@ -142,7 +142,8 @@ CONTAINS
     CALL griddef_performDeformation(rgriddefInfo, rgriddefWork,idummy,&
                                      rdiscretisation,&
                                     .TRUE., .FALSE., .FALSE., &
-                                    .FALSE., NLMAX, 0, 0,rboundary)    
+                                    .FALSE., NLMAX, 0, 0,rboundary,&
+                                    tridef2d_monitorfct)    
                  
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
@@ -210,5 +211,32 @@ CONTAINS
     CALL boundary_release (rboundary)
     
   END SUBROUTINE
+  
+!******************************************************************************  
+  
+  !<subroutine>  
+    subroutine tridef2d_monitorfct(DvertexCoords,Dentries)
+  
+  
+    !<description>
+      ! In this function we build the nodewise area distribution out 
+      ! of an elementwise distribution
+    !</description>
+
+    !<inputoutput>
+     REAL(DP), dimension(:,:) :: DvertexCoords
+     REAL(DP), DIMENSION(:) :: Dentries
+    !</inputoutput>
+
+  !</subroutine>
+  ! local variables
+  integer :: ive
+
+
+      DO ive=1,ubound(DvertexCoords,2)
+        Dentries(ive) = 0.5_dp + DvertexCoords(1,ive)
+      END DO
+
+  end subroutine
 
 END MODULE
