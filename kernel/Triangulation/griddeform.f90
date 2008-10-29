@@ -15,7 +15,7 @@
 !# 3.) griddef_freeWorkDef
 !#     -> release the resources we needed for
 !#        the grid deformation
-!# 4.) griddef_createMonitorFunction
+!# 4.) griddef_calcMonitorFunction
 !#     -> creates a monitor function from a given error distribution
 !# 5.) griddef_prepareDeformation
 !#     -> allocate needed resources
@@ -775,8 +775,57 @@ CONTAINS
 !****************************************************************************************
   
 !<subroutine>   
-  SUBROUTINE griddef_createMonitorFunction()
-!</subroutine>   
+  SUBROUTINE griddef_calcMonitorFunction(rgriddefInfo, rdiscretisation, &
+                                      rgriddefWork,def_monitorfct)
+  !<description>
+    ! 
+    ! In this subroutine we calculate the values of the monitor
+    ! function by means of the given monitor function.
+    !
+  !</description>
+
+  !<inputout>
+    ! structure containing all parameter settings for grid deformation
+    TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+
+    ! structure containing all vector handles for the deformation algorithm
+    TYPE(t_griddefWork), INTENT(INOUT) :: rgriddefWork
+
+    ! An object specifying the discretisation.
+    ! This contains also information about trial/test functions,...
+    TYPE(t_blockDiscretisation), INTENT(IN)  :: rdiscretisation    
+
+  !</inputout>
+
+    ! A callback routine for the monitor function
+    include 'intf_monitorfct.inc'
+    optional :: def_monitorfct
+
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+  REAL(DP), DIMENSION(:), POINTER :: p_Dentries
+  TYPE(t_vectorScalar), POINTER :: p_rvectorMonFuncQ1 
+  
+  ! get the pointer to the coords of the grid
+  ! this only works for Q1
+  call storage_getbase_double2D (rgriddefInfo%p_rtriangulation%h_DvertexCoords,&
+    p_DvertexCoords)
+    
+  ! Set up an empty block vector    
+  call lsysbl_createVecBlockByDiscr(rdiscretisation,rgriddefWork%rvectorMonFuncQ1,.TRUE.) 
+
+  ! Get a pointer just not to write such a long name  
+  p_rvectorMonFuncQ1 => rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1)
+  
+  ! get the data
+  call storage_getbase_double(p_rvectorMonFuncQ1%h_ddata,p_Dentries)
+  
+  ! calculate monitor function
+  call def_monitorfct(p_DvertexCoords,p_Dentries)
+
+   
   END SUBROUTINE
   
 !****************************************************************************************
@@ -838,7 +887,7 @@ CONTAINS
                                         h_Dcontrib, rdiscretisation, &
                                         bstartNew, blevelHasChanged, bterminate, &
                                         bdegenerated, imgLevelCalc, iiteradapt, ibcIdx,& 
-                                        rboundary)
+                                        rboundary,def_monitorfct)                        
   !<description>
     ! This subroutine is the main routine for the grid deformation process, as all 
     ! necessary steps are included here. For performing grid deformation, it is sufficient
@@ -888,6 +937,11 @@ CONTAINS
     ! handle of vector with elementwise error contributions
     INTEGER(I32), INTENT(INOUT):: h_Dcontrib
   !</inoutput>
+  
+    ! A callback routine for the monitor function
+    include 'intf_monitorfct.inc'
+    optional :: def_monitorfct
+  
 
 !</subroutine>
 
@@ -950,7 +1004,7 @@ CONTAINS
     call griddef_reinitWork(rgriddefWork)
     ! perform one deformation step: This routine appplies deformation to the
     CALL  griddef_performOneDefStep(rgriddefInfo, rgriddefWork,rdiscretisation, &
-                                       p_DblendPar(idef), NLMAX, NLMAX)
+                                       p_DblendPar(idef), NLMAX, NLMAX,def_monitorfct)
                                        
                                            
 !
@@ -1061,7 +1115,7 @@ CONTAINS
 
 !<subroutine>
   SUBROUTINE griddef_performOneDefStep(rgriddefInfo, rgriddefWork,rdiscretisation, &
-                                       dblendpar, ilevelODE, ilevel)
+                                       dblendpar, ilevelODE, ilevel,def_monitorfct)
   !<description>
     ! This subroutine performs one deformation step of the enhanced deformation method.
   !</description>
@@ -1088,6 +1142,10 @@ CONTAINS
     ! This contains also information about trial/test functions,...
     TYPE(t_blockDiscretisation) :: rdiscretisation    
   !</input>
+    ! A callback routine for the monitor function
+    include 'intf_monitorfct.inc'
+    optional :: def_monitorfct
+  
 
 !</subroutine>
 
@@ -1130,7 +1188,8 @@ CONTAINS
     CALL griddef_getArea(rgriddefInfo, rgriddefWork,rdiscretisation)
 
     ! build a test monitor function
-    CALL griddef_buildMonFuncTest(rgriddefInfo,rgriddefWork,rdiscretisation)
+    CALL griddef_calcMonitorFunction(rgriddefInfo,rdiscretisation,&
+                                     rgriddefWork,def_monitorfct)
 
     ! normalise the functions
     CALL griddef_normaliseFctsNum(rgriddefInfo,rgriddefWork,dscale1,dscale2)
@@ -2054,9 +2113,9 @@ CONTAINS
   NEQ = rvectorMon%NEQ
 
   rvectorRhs  => rgriddefWork%rrhsBlock%RvectorBlock(1)
-  CALL lsyssc_getbase_double (rvectorRhs,p_Ddata)                                                                                                   
-  CALL lsyssc_getbase_double (rvectorMon,p_DdataMon)
-  CALL lsyssc_getbase_double (rvectorArea,p_DdataArea)
+  CALL lsyssc_getbase_double(rvectorRhs,p_Ddata)
+  CALL lsyssc_getbase_double(rvectorMon,p_DdataMon)
+  CALL lsyssc_getbase_double(rvectorArea,p_DdataArea)
   
 
   
