@@ -1187,10 +1187,13 @@ CONTAINS
     ! compute the area distribution
     CALL griddef_getArea(rgriddefInfo, rgriddefWork,rdiscretisation)
 
-    ! build a test monitor function
-    CALL griddef_calcMonitorFunction(rgriddefInfo,rdiscretisation,&
-                                     rgriddefWork,def_monitorfct)
-
+    if(present(def_monitorfct))then
+      ! build a test monitor function
+      CALL griddef_calcMonitorFunction(rgriddefInfo,rdiscretisation,&
+                                       rgriddefWork,def_monitorfct)
+    else
+      call griddef_buildMonFuncTest(rgriddefInfo, rgriddefWork,rdiscretisation)
+    end if
     ! normalise the functions
     CALL griddef_normaliseFctsNum(rgriddefInfo,rgriddefWork,dscale1,dscale2)
 
