@@ -3,7 +3,7 @@
 	<Platforms>
 		<Platform Name="x64"/></Platforms>
 	<Configurations>
-		<Configuration Name="Debug|x64" OutputDirectory="$(ConfigurationName)_x64" IntermediateDirectory="$(ProjectDir)\$(ConfigurationName)_x64" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+		<Configuration Name="Debug|x64" WorkingDirectory="$(ProjectDir)\..\" OutputDirectory="$(ConfigurationName)_x64" IntermediateDirectory="$(ProjectDir)\$(ConfigurationName)_x64" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" FloatingPointExceptionHandling="fpe0" FloatingPointStackCheck="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/$(ProjectName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/winpoisson.pdb" SubSystem="subSystemConsole" StackReserveSize="1048576" StackCommitSize="1048576"/>
 				<Tool Name="VFResourceCompilerTool"/>
@@ -12,7 +12,7 @@
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
-		<Configuration Name="Release|x64" OutputDirectory="$(ConfigurationName)_x64" IntermediateDirectory="$(ProjectDir)\$(ConfigurationName)_x64" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+		<Configuration Name="Release|x64" WorkingDirectory="$(ProjectDir)\..\" OutputDirectory="$(ConfigurationName)_x64" IntermediateDirectory="$(ProjectDir)\$(ConfigurationName)_x64" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" GlobalOptimizations="true" InlineFunctionExpansion="expandOnlyInline" Parallelization="true" AdditionalIncludeDirectories="$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/$(ProjectName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" SubSystem="subSystemConsole"/>
 				<Tool Name="VFResourceCompilerTool"/>
@@ -22,33 +22,32 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>
 	<Files>
+		<Filter Name="Data Files">
+		<File RelativePath="..\data\bdconditions.dat"/>
+		<File RelativePath="..\data\discretisation.dat"/>
+		<File RelativePath="..\data\linsol_cc2d.dat"/>
+		<File RelativePath="..\data\master.dat"/>
+		<File RelativePath="..\data\nonlinsol_cc2d.dat"/>
+		<File RelativePath="..\data\output.dat"/>
+		<File RelativePath="..\data\paramtriang.dat"/>
+		<File RelativePath="..\data\postprocessing.dat"/>
+		<File RelativePath="..\data\timediscr.dat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<Filter Name="1D">
-		<File RelativePath="..\src\poisson1d_callback.f90"/>
-		<File RelativePath="..\src\poisson1d_method0_simple.f90"/>
-		<File RelativePath="..\src\poisson1d_method1_mg.f90"/></Filter>
-		<Filter Name="2D">
-		<File RelativePath="..\src\poisson2d_callback.f90">
-			<FileConfiguration Name="Debug|x64">
-				<Tool Name="VFFortranCompilerTool" Preprocess="preprocessYes"/></FileConfiguration></File>
-		<File RelativePath="..\src\poisson2d_method0_simple.f90">
-			<FileConfiguration Name="Debug|x64">
-				<Tool Name="VFFortranCompilerTool" Preprocess="preprocessYes" PreprocessorDefinitions=""/></FileConfiguration></File>
-		<File RelativePath="..\src\poisson2d_method1_em30.f90"/>
-		<File RelativePath="..\src\poisson2d_method1_fbc.f90"/>
-		<File RelativePath="..\src\poisson2d_method1_hadapt.f90"/>
-		<File RelativePath="..\src\poisson2d_method1_l2prj.f90"/>
-		<File RelativePath="..\src\poisson2d_method1_mg.f90"/>
-		<File RelativePath="..\src\poisson2d_method1_ncc.f90"/>
-		<File RelativePath="..\src\poisson2d_method2.f90"/>
-		<File RelativePath="..\src\poisson2d_method2_cmsort.f90"/>
-		<File RelativePath="..\src\poisson2d_method2_collect.f90"/>
-		<File RelativePath="..\src\poisson2d_method2_mg.f90"/></Filter>
-		<Filter Name="3D">
-		<File RelativePath="..\src\poisson3d_callback.f90"/>
-		<File RelativePath="..\src\poisson3d_method0_simple.f90"/>
-		<File RelativePath="..\src\poisson3d_method1_em30.f90"/>
-		<File RelativePath="..\src\poisson3d_method1_mg.f90"/></Filter>
-		<Filter Name="main">
-		<File RelativePath="..\src\poisson.f90"/></Filter></Filter></Files>
+		<File RelativePath="..\src\adaptivetimestep.f90"/>
+		<File RelativePath="..\src\cc2d.f90"/>
+		<File RelativePath="..\src\ccbasic.f90"/>
+		<File RelativePath="..\src\ccboundarycondition.f90"/>
+		<File RelativePath="..\src\ccboundaryconditionparser.f90"/>
+		<File RelativePath="..\src\cccallback.f90"/>
+		<File RelativePath="..\src\ccgeneraldiscretisation.f90"/>
+		<File RelativePath="..\src\ccinitgeneralparameters.f90"/>
+		<File RelativePath="..\src\ccinitparamtriang.f90"/>
+		<File RelativePath="..\src\ccmainproblem.f90"/>
+		<File RelativePath="..\src\ccmatvecassembly.f90"/>
+		<File RelativePath="..\src\ccnonlinearcore.f90"/>
+		<File RelativePath="..\src\ccnonlinearcoreinit.f90"/>
+		<File RelativePath="..\src\ccnonstationary.f90"/>
+		<File RelativePath="..\src\ccpostprocessing.f90"/>
+		<File RelativePath="..\src\ccstationary.f90"/>
+		<File RelativePath="..\src\cctimeanalysis.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>
