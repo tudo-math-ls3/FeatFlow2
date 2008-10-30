@@ -3956,12 +3956,12 @@ contains
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
-    !$OMP PARALLEL PRIVATE(rintSubset, revalElementSet,&
-    !$OMP   cevaluationTag, kentry, dentry,DbasTest,DbasTrial, &
-    !$OMP   IdofsTest,IdofsTrial,p_Ddetj,&
-    !$OMP   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
-    !$OMP   p_DbasTrial, BderTrial, BderTest, ielmax,IEL, idofe,jdofe,jcol0, &
-    !$OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
+    !%OMP PARALLEL PRIVATE(rintSubset, revalElementSet,&
+    !%OMP   cevaluationTag, kentry, dentry,DbasTest,DbasTrial, &
+    !%OMP   IdofsTest,IdofsTrial,p_Ddetj,&
+    !%OMP   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
+    !%OMP   p_DbasTrial, BderTrial, BderTest, ielmax,IEL, idofe,jdofe,jcol0, &
+    !%OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
     do IALBET = 1,rform%itermcount
@@ -4077,7 +4077,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !$OMP do schedule(static,1)
+    !%OMP do schedule(static,1)
     do IELset = 1, size(p_IelementList), BILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -4380,14 +4380,14 @@ contains
           ! The critical section is put around both loops as indofTest/indofTrial
           ! are usually small and quickly to handle.
           !
-          !$OMP CRITICAL
+          !%OMP CRITICAL
           do IDOFE=1,indofTest
             do JDOFE=1,indofTrial
               p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + &
                                               Dentry(JDOFE,IDOFE)
             end do
           end do
-          !$OMP END CRITICAL
+          !%OMP END CRITICAL
 
         end do ! IEL
         
@@ -4487,21 +4487,21 @@ contains
           ! The critical section is put around both loops as indofTest/indofTrial
           ! are usually small and quickly to handle.
           !
-          !$OMP CRITICAL
+          !%OMP CRITICAL
           do IDOFE=1,indofTest
             do JDOFE=1,indofTrial
               p_DA(Kentry(JDOFE,IDOFE,IEL)) = &
                   p_DA(Kentry(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
             end do
           end do
-          !$OMP END CRITICAL
+          !%OMP END CRITICAL
 
         end do ! IEL
 
       end if ! rform%ballCoeffConstant
 
     end do ! IELset
-    !$OMP END DO
+    !%OMP END DO
     
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
@@ -4516,7 +4516,7 @@ contains
     deallocate(Kentry)
     deallocate(Dentry)
 
-    !$OMP END PARALLEL
+    !%OMP END PARALLEL
 
     deallocate(p_DcubPtsRef)
 
