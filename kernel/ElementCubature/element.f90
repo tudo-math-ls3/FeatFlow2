@@ -475,6 +475,18 @@ module element
   ! Number of entries in the Jacobian matrix, defining the mapping between
   ! the reference element and the real element. 3x3-matrix=9 elements
   integer, parameter :: EL_NJACENTRIES3D = 9
+  
+  ! Maximum number of DOFs per vertice.
+  integer, parameter :: EL_MAXNDOF_PER_VERT = 2
+  
+  ! Maximum number of DOFs per edge.
+  integer, parameter :: EL_MAXNDOF_PER_EDGE = 2
+  
+  ! Maximum number of DOFs per face.
+  integer, parameter :: EL_MAXNDOF_PER_FACE = 1
+  
+  ! Maximum number of DOFs per element.
+  integer, parameter :: EL_MAXNDOF_PER_ELEM = 4
 
 !</constantblock>
 
@@ -876,15 +888,15 @@ contains
     ! local DOF's for Ex30
     ndofAtEdges    = 4
   case (EL_Q1TB)
-    ! local DOF's for Ex30
+    ! local DOF's for EB30
     ndofAtEdges    = 4
     ndofAtElement  = 1
   case (EL_Q2T)
-    ! local DOF's for Ex35
+    ! local DOF's for Ex50
     ndofAtEdges    = 8
     ndofAtElement  = 1
   case (EL_Q2TB)
-    ! local DOF's for Ex37
+    ! local DOF's for EB50
     ndofAtEdges    = 8
     ndofAtElement  = 2
     
@@ -2702,6 +2714,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC1D)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -2710,12 +2723,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-derivatives are desired
   if (Bder(DER_DERIV1D_X)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -2724,7 +2739,8 @@ contains
       end do
 
     end do
-      
+    !$omp end parallel do
+
   end if
     
   end subroutine 
@@ -3011,6 +3027,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC1D)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -3020,12 +3037,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-derivatives are desired
   if (Bder(DER_DERIV1D_X)) then
   
+    !$omp parallel do default(shared) private(i,d)
     do j=1,nelements
     
       do i=1,npoints
@@ -3036,6 +3055,7 @@ contains
       end do
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -3349,6 +3369,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC1D)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
 
       do i=1,npoints
@@ -3363,12 +3384,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-derivatives are desired
   if (Bder(DER_DERIV1D_X)) then
   
+    !$omp parallel do default(shared) private(i,dxj)
     do j=1,nelements
     
       do i=1,npoints
@@ -3382,6 +3405,7 @@ contains
       end do
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -4055,6 +4079,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -4064,12 +4089,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
+    !$omp parallel do default(shared) private(i,dxj)
     do j=1,nelements
       dxj = 1E0_DP / Ddetj(:,j)
       
@@ -4092,6 +4119,7 @@ contains
 !      ENDIF
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -4469,6 +4497,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -4487,12 +4516,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
+    !$omp parallel do default(shared) private(i,dxj,dp1,dp2,dp3)
     do j=1,nelements
       dxj = 1E0_DP / Ddetj(:,j)
       
@@ -4540,6 +4571,7 @@ contains
 !      ENDIF
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -4879,6 +4911,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -4888,12 +4921,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
+    !$omp parallel do default(shared) private(i,dxj)
     do j=1,nelements
       dxj = 1E0_DP / Ddetj(:,j)
       
@@ -4916,6 +4951,7 @@ contains
 !      ENDIF
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -5610,6 +5646,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -5620,12 +5657,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
+    !$omp parallel do default(shared) private(i,dxj,Dhelp)
     do j=1,nelements
       dxj = 0.25E0_DP / Ddetj(:,j)
       
@@ -5670,6 +5709,7 @@ contains
 !      ENDIF
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -6080,6 +6120,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
+    !$omp parallel do default(shared) private(i,dx,dy)
     do j=1,nelements
     
       do i=1,npoints
@@ -6097,12 +6138,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
+    !$omp parallel do default(shared) private(i,Dxj,dx,dy,Dhelp,idof)
     do j=1,nelements
       Dxj = 1.0E0_DP / Ddetj(:,j)
       
@@ -6140,14 +6183,14 @@ contains
             Dbas(idof,DER_DERIV_X,i,j) = &
                 Dxj(i) * (Djac(4,i,j) * Dhelp(idof,1,i) &
                           - Djac(2,i,j) * Dhelp(idof,2,i))
-          end do              
-        end do
+!          end do              
+!        end do
 !      ENDIF
       
       !y-derivatives on current element
 !      IF (Bder(DER_DERIV_Y)) THEN
-        do i=1,npoints
-          do idof = 1,9
+!        do i=1,npoints
+!          do idof = 1,9
             Dbas(idof,DER_DERIV_Y,i,j) = &
                 -Dxj(i) * (Djac(3,i,j) * Dhelp(idof,1,i) &
                 - Djac(1,i,j) * Dhelp(idof,2,i))
@@ -6156,6 +6199,7 @@ contains
 !      ENDIF
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -7964,6 +8008,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -7978,12 +8023,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
+    !$omp parallel do default(shared) private(i,dxj,Dhelp)
     do j=1,nelements
       dxj = 0.125E0_DP / Ddetj(:,j)
       
@@ -8028,6 +8075,7 @@ contains
 !      ENDIF
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -8462,6 +8510,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
+    !$omp parallel do default(shared) private(i,dx,dy,dxy)
     do j=1,nelements
     
       do i=1,npoints
@@ -8476,12 +8525,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
+    !$omp parallel do default(shared) private(i,dxj,dx,dy,Dhelp)
     do j=1,nelements
       dxj = 0.125E0_DP / Ddetj(:,j)
       
@@ -8534,6 +8585,7 @@ contains
 !      ENDIF
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -9770,6 +9822,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -9784,12 +9837,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
+    !$omp parallel do default(shared) private(i,dxj,Dhelp)
     do j=1,nelements
       dxj = 0.5E0_DP / Ddetj(:,j)
       
@@ -9834,6 +9889,7 @@ contains
 !      ENDIF
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -10422,6 +10478,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
+    !$omp parallel do default(shared) private(i,dx,dy,d5,d6,d7,d8)
     do j=1,nelements
     
       ! Get the twist indices for this element.
@@ -10448,12 +10505,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
+    !$omp parallel do default(shared) private(i,dxj,Dhelp,dx,dy,d5,d6,d7,d8)
     do j=1,nelements
     
       ! Get the twist indices for this element
@@ -10539,6 +10598,7 @@ contains
 !      ENDIF
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -11181,6 +11241,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
+    !$omp parallel do default(shared) private(i,dx,dy,d5,d6,d7,d8)
     do j=1,nelements
     
       ! Get the twist indices for this element.
@@ -11208,12 +11269,14 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
+    !$omp parallel do default(shared) private(i,dx,dy,d5,d6,d7,d8,dxj,Dhelp)
     do j=1,nelements
     
       ! Get the twist indices for this element
@@ -11305,6 +11368,7 @@ contains
 !      ENDIF
 
     end do
+    !$omp end parallel do
       
   end if
     
@@ -12050,7 +12114,8 @@ contains
 
   !if function values are desired
   if (Bder(DER_FUNC3D)) then
-  
+    
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -12061,6 +12126,7 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
@@ -12068,6 +12134,7 @@ contains
   if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
       (Bder(DER_DERIV3D_Z))) then
   
+    !$omp parallel do default(shared) private(i,dxj,Dinv)
     do j=1,nelements
 
       ! Since the jacobian matrix (and therefore also its determinant) is
@@ -12114,6 +12181,7 @@ contains
         end do
 !      ENDIF
     end do
+    !$omp end parallel do
       
   end if
     
@@ -12949,6 +13017,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC3D)) then
   
+    !$omp parallel do default(shared) private(i)
     do j=1,nelements
     
       do i=1,npoints
@@ -12971,6 +13040,7 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
@@ -12978,6 +13048,7 @@ contains
   if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
       (Bder(DER_DERIV3D_Z))) then
   
+    !$omp parallel do default(shared) private(i,Dxj,Dhelp,djx,djy,djz)
     do j=1,nelements
       Dxj = 0.125_DP / Ddetj(:,j)
       
@@ -13084,6 +13155,7 @@ contains
         end do
 !      ENDIF
     end do
+    !$omp end parallel do
       
   end if
     
@@ -13620,6 +13692,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC3D)) then
   
+    !$omp parallel do default(shared) private(i,dx,dy,dz,dxy,dyz)
     do j=1,nelements
     
       do i=1,npoints
@@ -13637,6 +13710,7 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
@@ -13644,6 +13718,7 @@ contains
   if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
       (Bder(DER_DERIV3D_Z))) then
   
+    !$omp parallel do default(shared) private(i,dx,dy,dz,djx,djy,djz,Dhelp,dxj)
     do j=1,nelements
       Dxj = 1.0_DP / Ddetj(:,j)
       
@@ -13739,6 +13814,7 @@ contains
         end do
 !      ENDIF
     end do
+    !$omp end parallel do
       
   end if
     
@@ -14281,6 +14357,7 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC3D)) then
   
+    !$omp parallel do default(shared) private(i,dx,dy,dz,dxy,dyz)
     do j=1,nelements
     
       do i=1,npoints
@@ -14298,6 +14375,7 @@ contains
       end do
       
     end do
+    !$omp end parallel do
     
   end if
     
@@ -14305,6 +14383,7 @@ contains
   if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
       (Bder(DER_DERIV3D_Z))) then
   
+    !$omp parallel do default(shared) private(i,dx,dy,dz,djx,djy,djz,Dhelp,Dxj)
     do j=1,nelements
       Dxj = 1.0_DP / Ddetj(:,j)
       
@@ -14399,6 +14478,7 @@ contains
         end do
 !      ENDIF
     end do
+    !$omp end parallel do
       
   end if
     
