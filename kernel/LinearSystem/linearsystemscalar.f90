@@ -19192,7 +19192,6 @@ contains
 !</subroutine>
 
     type(t_vectorScalar) :: rvector2
-    integer :: idup1,idup2
 
     ! If the vector is not the owner, make it the owner.
     if (rvector%bisCopy) then
