@@ -523,7 +523,19 @@ module triangulation
 
   ! Number of vertices per element for quadrilateral element shapes in 2D.
   integer, parameter :: TRIA_NVEQUAD2D = 4
-  
+
+  ! Number of vertices per element for tetrahedral element shapes in 3D.
+  integer, parameter :: TRIA_NVETET3D  = 4
+
+  ! Number of vertices per element for pyramidal element shapes in 3D.
+  integer, parameter :: TRIA_NVEPYR3D  = 5
+
+  ! Number of vertices per element for prismatic element shapes in 3D.
+  integer, parameter :: TRIA_NVEPRIS3D  = 6
+
+  ! Number of vertices per element for hexahedral element shapes in 3D.
+  integer, parameter :: TRIA_NVEHEXA3D  = 8
+
   ! number of elements of a 3D connector
   integer, parameter :: TRIA_NCONNECT3D = 5
   
@@ -858,6 +870,10 @@ module triangulation
     ! InelOfType(TRIA_NVELINE1D) = number of lines in the mesh (1D).
     ! InelOfType(TRIA_NVETRI2D)  = number of triangles in the mesh (2D).
     ! InelOfType(TRIA_NVEQUAD2D) = number of quads in the mesh (2D).
+    ! InelOfType(TRIA_NVEPYR3D)  = number of pyramides in the mesh (3D).
+    ! InelOfType(TRIA_NVEPRIS2D) = number of prisms in the mesh (3D).
+    ! InelOfType(TRIA_NVETET3D)  = number of tetrahedra in the mesh (3D).
+    ! InelOfType(TRIA_NVEHEXA3D) = number of hexahedra in the mesh (3D).
     integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNVE) :: InelOfType = 0
   
     ! Number of vertices per edge; normally = 0.
@@ -4429,7 +4445,7 @@ contains
       ! copy the nodal properties
       ! the vertex, edge and face properties of the source mesh
       ! are the vertex properties of the destination mesh
-      call lalg_copyVectorint(p_InodalPropertySource(1:NVT+NMT+NAT),&
+      call lalg_copyVectorInt(p_InodalPropertySource(1:NVT+NMT+NAT),&
            p_InodalPropertyDest(1:NVT+NMT+NAT))
       
 !      p_InodalPropertyDest(1:NVT+NMT+NAT) = &        
@@ -4437,13 +4453,13 @@ contains
 
       ! there are still NEL vertices remaining but these
       ! are not boundary vertices so assign zeros there
-      call lalg_clearVectorint( &
+      call lalg_clearVectorInt( &
            p_InodalPropertyDest(NVT+NMT+NAT+1:NVT+NMT+NAT+NEL))
 !      p_InodalPropertyDest(NVT+NMT+NAT+1:NVT+NMT+NAT+NEL)=0
       
       
       ! allocate memory
-      if(rdestTriangulation%h_IboundaryCpIdx == ST_NOHANDLE) then
+      if(rdestTriangulation%h_IboundaryCpIdx .eq. ST_NOHANDLE) then
         call storage_new ('tria_refineBdry2lv3D', 'IboundaryCpIdx', &
             int(rdestTriangulation%NBCT+rdestTriangulation%NblindBCT+1,I32), ST_INT, &
             rdestTriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_NOINIT)
@@ -4570,7 +4586,7 @@ contains
 
 !<input>
   ! Number of refinements that should be applied to rtriangulation. > 0.
-  ! For a value <= 0, nothing will happen.
+  ! For a value .le. 0, nothing will happen.
   integer, intent(IN) :: nfine
 
   ! OPTIONAL: Boundary structure that defines the parametrisation of the boundary.
@@ -7564,7 +7580,7 @@ contains
               ! There is a neighbour. which face is the current one?
               nsearch: do ineighbourface = 1,ubound(p_IfacesAtElement,1)
                 
-                if (p_IfacesAtElement(ineighbourface,ielneighbour) == iface) then
+                if (p_IfacesAtElement(ineighbourface,ielneighbour) .eq. iface) then
                 
                   ! Get the vertex numbers on the current face...
                   ! From the one element as well as from the other.
@@ -7987,7 +8003,7 @@ contains
         iel2 = p_IelementsAtVertex(j) 
         
         ! check the vertices share element iel1
-        if( ( iel2 == iel1) .and. (iel2 < iSCElement  ) ) then
+        if( ( iel2 .eq. iel1) .and. (iel2 < iSCElement  ) ) then
           iSCElement = iel2      
         end if
         
@@ -9734,8 +9750,8 @@ contains
   subroutine tria_rawGridToTri (rtriangulation)
   
 !<description>
-  ! This routine converts a 2D 'raw' mesh into a triangular 2D mesh. All elements are 
-  ! converted to triangles.
+  ! This routine converts a 2D 'raw' mesh into a triangular 2D mesh.
+  ! All elements are converted to triangles.
   ! Warning: This routine can only applied to a 'raw' mesh, e.g. a mesh which 
   !  comes directly from a .TRI file. It's not advisable to apply this routine to
   !  a 'standard' mesh that contains already further mesh information 
@@ -9747,8 +9763,8 @@ contains
 !</description>
 
 !<inputoutput>
-  ! The triangulation structure to be converted. Is replaced by a triangular
-  ! mesh.
+  ! The triangulation structure to be converted.
+  ! Is replaced by a triangular mesh.
   type(t_triangulation), intent(INOUT) :: rtriangulation
 !</inputoutput>
 
@@ -12112,7 +12128,7 @@ contains
     integer(i32), dimension(:), pointer :: p_Iaux1
     
     ! allocate memory for the p_IelementsAtVertexIdx array
-    if(rtriangulation%h_IelementsAtVertexIdx == ST_NOHANDLE) then
+    if(rtriangulation%h_IelementsAtVertexIdx .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementsAtVertex3D', 'IelementsAtVertexIdx', &
           int(rtriangulation%NVT+1,I32), ST_INT, &
           rtriangulation%h_IelementsAtVertexIdx, ST_NEWBLOCK_NOINIT)
@@ -12185,7 +12201,7 @@ contains
     ! Isize contains now the length of the array where we store the adjacency
     ! information (IelementsAtVertex).
     ! Do we have (enough) memory for that array?
-    if (rtriangulation%h_IelementsAtVertex == ST_NOHANDLE) then
+    if (rtriangulation%h_IelementsAtVertex .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementsAtVertex3D', 'IelementsAtVertex', &
           int(Isize,I32), ST_INT, &
           rtriangulation%h_IelementsAtVertex, ST_NEWBLOCK_NOINIT)
@@ -12299,7 +12315,7 @@ contains
       ! check for equivalent connectors... that means:
       ! check if all 4 vertices that define the face are equal
       j = 0
-      do while(p_IConnectList(iel-1)%I_conData(j+1) == &
+      do while(p_IConnectList(iel-1)%I_conData(j+1) .eq. &
           p_IConnectList(iel)%I_conData(j+1) )
         ! increment counter
         j=j+1 
@@ -12410,7 +12426,7 @@ contains
     
     ! Fill IedgesAtElement with 0. That's important in case some
     ! elements in the array are not tackled when searching for edges
-    ! (e.g. in meshes where triangles and quads are mixed).
+    ! (e.g. in meshes where tetrahedra and hexahedra are mixed).
     call storage_clear (rtriangulation%h_IedgesAtElement)
     
     ! get the pointer to the memory
@@ -12437,13 +12453,13 @@ contains
         ! that contains the edge consisting of the
         ! vertices iVGlobal1 and iVGlobal2
         call tria_smallestCommonElement(rtriangulation, &
-            iVGlobal1, iVGlobal2,iel,iSCElement) 
+            iVGlobal1, iVGlobal2, iel, iSCElement) 
         
         
         ! if the smallest common element index greater or equal to
         ! the current iel the edge does not yet have an index
         ! so assign an index to the edge                   
-        if(iSCElement >= iel) then
+        if(iSCElement .ge. iel) then
           
           ! increment edge number
           iedge = iedge + 1
@@ -12459,11 +12475,11 @@ contains
           do i=1,rtriangulation%NNEE
             
             ! get the indices of the current edge of iSCElement
-            iVertexAtEdge1=p_IVerticesAtElement(Iedges(1,i),iSCElement)
-            iVertexAtEdge2=p_IVerticesAtElement(Iedges(2,i),iSCElement)
+            iVertexAtEdge1 = p_IVerticesAtElement(Iedges(1,i), iSCElement)
+            iVertexAtEdge2 = p_IVerticesAtElement(Iedges(2,i), iSCElement)
             
             ! for better readability ... ;)
-            ! if iVGlobal1 == iVertexAtEdge1 and iVGlobal2 == iVertexAtEdge2
+            ! if iVGlobal1==iVertexAtEdge1 and iVGlobal2==iVertexAtEdge2
             if( (iVGlobal1 .eq. iVertexAtEdge1) & 
                 .and. (iVGlobal2 .eq. iVertexAtEdge2) .or. &
                 ! or iVGlobal1==iVertexAtEdge2 and iVGlobal2==iVertexAtEdge1
@@ -12535,7 +12551,7 @@ contains
     Isize = (/rtriangulation%NNAE,rtriangulation%NEL/)
     
     ! allocate memory
-    if(rtriangulation%h_IfacesAtElement == ST_NOHANDLE) then
+    if(rtriangulation%h_IfacesAtElement .eq. ST_NOHANDLE) then
       call storage_new2d('tria_genFacesAtElement3D', 'IfacesAtElement', &
           Isize, ST_INT, &
           rtriangulation%h_IfacesAtElement, ST_NEWBLOCK_NOINIT)
@@ -12550,7 +12566,7 @@ contains
       do iface = 1,rtriangulation%NNAE
         
         ! check if a face number was already assigned
-        if(p_IneighboursAtElement(iface,iel) == 0 .or. &
+        if(p_IneighboursAtElement(iface,iel) .eq. 0 .or. &
             p_IneighboursAtElement(iface,iel) >  iel) then
           
           ! a face number was not yet assigned
@@ -12569,7 +12585,7 @@ contains
           
           IFaceNeighbour = 1
           do 
-            if(iel == p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
+            if(iel .eq. p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
             IFaceNeighbour = ifaceNeighbour + 1
           end do
           
@@ -12653,7 +12669,7 @@ contains
     call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
         p_IneighboursAtElement)
     
-    if(rtriangulation%h_IelementsAtEdgeIdx3D == ST_NOHANDLE) then
+    if(rtriangulation%h_IelementsAtEdgeIdx3D .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementsAtEdge3D', 'IelementsAtVertexIdx', &
           int(rtriangulation%NMT+1,I32), ST_INT, &
           rtriangulation%h_IelementsAtEdgeIdx3D, ST_NEWBLOCK_NOINIT)
@@ -12707,7 +12723,7 @@ contains
     Isize = p_IelementsAtEdgeIdx3D(rtriangulation%NMT+1)-1
     
     ! allocate memory
-    if(rtriangulation%h_IelementsAtEdge3D == ST_NOHANDLE) then
+    if(rtriangulation%h_IelementsAtEdge3D .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementsAtEdge3D', 'IelementsAtEdge3D', &
           int(Isize), ST_INT, &
           rtriangulation%h_IelementsAtEdge3D, ST_NEWBLOCK_NOINIT)
@@ -12792,7 +12808,7 @@ contains
     Isize = (/2,rtriangulation%NMT/)
     
     ! allocate memory
-    if(rtriangulation%h_IverticesAtEdge == ST_NOHANDLE) then
+    if(rtriangulation%h_IverticesAtEdge .eq. ST_NOHANDLE) then
       call storage_new2d('tria_genElementsAtEdge3D', 'IverticesAtEdge', &
           Isize, ST_INT, &
           rtriangulation%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
@@ -12810,7 +12826,7 @@ contains
         ! get the global edge number
         iglobalEdge = p_IedgesAtElement(ilocEdge,iel)
         ! check if this edge's global number equal to the current edge
-        if(iedge == iglobalEdge) then
+        if(iedge .eq. iglobalEdge) then
           ! get the global indices of the vertices attached to that edge
           iVertexGlobal1 = p_IverticesAtElement(Iedges(1,ilocEdge),iel)
           iVertexGlobal2 = p_IverticesAtElement(Iedges(2,ilocEdge),iel)
@@ -12821,7 +12837,7 @@ contains
           
           exit
           
-        end if ! iedge == iglobalEdge
+        end if ! iedge .eq. iglobalEdge
         
       end do ! end iel
       
@@ -12918,7 +12934,7 @@ contains
       
       ! if the vertex is an inner vertex
       ! we can skip this edge
-      if(IboundaryComponent == 0) then
+      if(IboundaryComponent .eq. 0) then
         p_InodalProperty(rtriangulation%NVT+ive) = 0
         cycle
       end if
@@ -13029,7 +13045,7 @@ contains
       
       ! if the vertex is an inner vertex
       ! we can skip this face
-      if(iboundaryComponent == 0) then
+      if(iboundaryComponent .eq. 0) then
         p_InodalProperty(rtriangulation%NVT+NMT+iface) = 0
         cycle
       end if
@@ -13126,7 +13142,7 @@ contains
     end if
     
     ! allocate memory
-    if(rtriangulation%h_IboundaryCpEdgesIdx == ST_NOHANDLE) then
+    if(rtriangulation%h_IboundaryCpEdgesIdx .eq. ST_NOHANDLE) then
       call storage_new ('tria_genEdgesAtBoundary3D', 'IboundaryCpEdgesIdx', &
           int(rtriangulation%NBCT+rtriangulation%NblindBCT+1,I32), ST_INT, &
           rtriangulation%h_IboundaryCpEdgesIdx, ST_NEWBLOCK_NOINIT)
@@ -13190,8 +13206,8 @@ contains
         ibdyFace = p_IbdyComponents(ibct)
         ! if we are at or beyond the end of that bdy component
         ! then skip it
-        if(ibdyFace >= p_IboundaryCpFacesIdx(ibct+1)) cycle
-        if(p_IfacesAtBoundary(ibdyFace) == iface) then
+        if(ibdyFace .ge. p_IboundaryCpFacesIdx(ibct+1)) cycle
+        if(p_IfacesAtBoundary(ibdyFace) .eq. iface) then
           ! we have identified a boundary face
           p_Iaux(iface) = 1
           ! increase the number of boundary faces found
@@ -13206,7 +13222,7 @@ contains
       end do ! end do ibct
       
       ! if not found
-      if(inotFound == rtriangulation%NBCT+rtriangulation%NblindBCT) then
+      if(inotFound .eq. rtriangulation%NBCT+rtriangulation%NblindBCT) then
         p_Iaux(iface) = 0
       end if
     
@@ -13222,7 +13238,7 @@ contains
       ! check all connected faces
       do iface=iface1,iface2
         IFaceIndex = p_IfacesAtEdge(iface)
-        if(p_Iaux(ifaceIndex) == 1) then
+        if(p_Iaux(ifaceIndex) .eq. 1) then
           ! the edge is connected to a boundary face
           ! so it is a boundary edge
           ! increase the number of edges on the boundary
@@ -13244,7 +13260,7 @@ contains
     rtriangulation%NMBD = NMBD
 
     ! allocate memory
-    if(rtriangulation%h_IedgesAtBoundary == ST_NOHANDLE) then
+    if(rtriangulation%h_IedgesAtBoundary .eq. ST_NOHANDLE) then
       call storage_new ('tria_genEdgesAtBoundary3D', 'IedgesAtBoundary', &
           int(NMBD,I32), ST_INT, &
           rtriangulation%h_IedgesAtBoundary, ST_NEWBLOCK_NOINIT)
@@ -13276,7 +13292,7 @@ contains
       ! check all connected faces
       do iface=iface1,iface2
         IFaceIndex = p_IfacesAtEdge(iface)
-        if(p_Iaux(ifaceIndex) == 1) then
+        if(p_Iaux(ifaceIndex) .eq. 1) then
           ! we have identified a boundary edge
           ! now get the corresponding boundary component          
           iBdyComp = p_IverticesAtEdge(1,ive)
@@ -13353,7 +13369,7 @@ contains
     end if
 
     ! allocate memory
-    if(rtriangulation%h_IboundaryCpFacesIdx == ST_NOHANDLE) then
+    if(rtriangulation%h_IboundaryCpFacesIdx .eq. ST_NOHANDLE) then
       call storage_new ('tria_genFacesAtBoundary3D', 'IboundaryCpFacesIdx', &
           int(rtriangulation%NBCT+rtriangulation%NblindBCT+1,I32), ST_INT, &
           rtriangulation%h_IboundaryCpFacesIdx, ST_NEWBLOCK_NOINIT)
@@ -13401,7 +13417,7 @@ contains
         end if
       end do ! end iel
 
-      if(inumVertices == 4 .and. inumElements < 2) then
+      if(inumVertices .eq. 4 .and. inumElements < 2) then
       ! boundary face
       ! increase the number of entries for tthe corresponding
       ! boundary component
@@ -13430,7 +13446,7 @@ contains
     p_IboundaryCpFacesIdx(1:rtriangulation%NBCT+rtriangulation%NblindBCT)
 
     ! allocate memory for the p_IfacesAtBoundary array
-    if(rtriangulation%h_IfacesAtBoundary == ST_NOHANDLE) then
+    if(rtriangulation%h_IfacesAtBoundary .eq. ST_NOHANDLE) then
       call storage_new ('tria_genFacesAtBoundary3D', 'IfacesAtBoundary', &
           int(NFBD,I32), ST_INT, &
           rtriangulation%h_IfacesAtBoundary, ST_NEWBLOCK_NOINIT)
@@ -13469,7 +13485,7 @@ contains
         end if
       end do ! end iel
       
-      if(inumVertices == 4 .and. inumElements < 2) then
+      if(inumVertices .eq. 4 .and. inumElements < 2) then
         ! we have identified a boundary face
         ! get the boundary component
         iBdyComp = p_InodalProperty(iglobIndex)
@@ -13517,7 +13533,7 @@ contains
     Isize = rtriangulation%NVT+1
     
     ! allocate memory
-    if(rtriangulation%h_IfacesAtVertexIdx == ST_NOHANDLE) then
+    if(rtriangulation%h_IfacesAtVertexIdx .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementsAtEdge3D', 'IfacesAtVertexIdx', &
           int(Isize,I32), ST_INT, &
           rtriangulation%h_IfacesAtVertexIdx, ST_NEWBLOCK_NOINIT)
@@ -13557,7 +13573,7 @@ contains
     Isize = p_IfacesAtVertexIdx(rtriangulation%NVT+1)-1
     
     ! allocate memory
-    if(rtriangulation%h_IfacesAtVertex == ST_NOHANDLE) then
+    if(rtriangulation%h_IfacesAtVertex .eq. ST_NOHANDLE) then
       call storage_new ('tria_genFacesAtVertex3D', 'IfacesAtVertex', &
           int(Isize), ST_INT, &
           rtriangulation%h_IfacesAtVertex, ST_NEWBLOCK_NOINIT)
@@ -13623,7 +13639,7 @@ contains
     Isize = (/4,rtriangulation%NAT/)
     
     ! allocate memory
-    if(rtriangulation%h_IfacesAtEdgeIdx == ST_NOHANDLE) then
+    if(rtriangulation%h_IfacesAtEdgeIdx .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementsAtEdge3D', 'IfacesAtEdgeIdx', &
           int(rtriangulation%NMT+1,I32), ST_INT, &
           rtriangulation%h_IfacesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
@@ -13668,7 +13684,7 @@ contains
     Isize(1) = p_IfacesAtEdgeIdx(rtriangulation%NMT+1)-1
     
     ! allocate memory
-    if(rtriangulation%h_IfacesAtEdge == ST_NOHANDLE) then
+    if(rtriangulation%h_IfacesAtEdge .eq. ST_NOHANDLE) then
       call storage_new ('tria_genFacesAtEdge3D', 'IfacesAtEdge', &
           int(Isize(1)), ST_INT, &
           rtriangulation%h_IfacesAtEdge, ST_NEWBLOCK_NOINIT)
@@ -13732,7 +13748,7 @@ contains
     Isize = (/4,rtriangulation%NAT/)
     
     ! allocate memory
-    if(rtriangulation%h_IedgesAtFace == ST_NOHANDLE) then
+    if(rtriangulation%h_IedgesAtFace .eq. ST_NOHANDLE) then
       call storage_new2d('tria_genEdgesAtFace3D', 'IedgesAtFace', &
           Isize, ST_INT, &
           rtriangulation%h_IedgesAtFace, ST_NEWBLOCK_NOINIT)
@@ -13762,7 +13778,7 @@ contains
       ! determine which local face is iface 
       do ilocalFace=1,rtriangulation%NNAE
         iglobalFace = p_IfacesAtElement(ilocalFace,iel)
-        if(iglobalFace == iface) exit
+        if(iglobalFace .eq. iface) exit
       end do
       
       ! now I need the edge numbers for this face
@@ -13852,7 +13868,7 @@ contains
         p_IfacesAtElement)
     
     ! allocate memory
-    if(rtriangulation%h_IelementsAtFace == ST_NOHANDLE) then
+    if(rtriangulation%h_IelementsAtFace .eq. ST_NOHANDLE) then
       call storage_new2d('tria_genElementsAtFace3D', 'IelementsAtFace', &
           Isize, ST_INT, &
           rtriangulation%h_IelementsAtFace, ST_NEWBLOCK_NOINIT)
@@ -13868,7 +13884,7 @@ contains
       do iface=1,rtriangulation%NNAE
         
         ! if there is no neighbour at this element
-        if(p_IneighboursAtElement(iface,iel) == 0) then
+        if(p_IneighboursAtElement(iface,iel) .eq. 0) then
           
           IFaceNumber = p_IfacesAtElement(iface,iel)
           
@@ -13941,7 +13957,7 @@ contains
     Isize = (/4,rtriangulation%NAT/)
     
     ! allocate memory
-    if(rtriangulation%h_IverticesAtFace == ST_NOHANDLE) then
+    if(rtriangulation%h_IverticesAtFace .eq. ST_NOHANDLE) then
       call storage_new2d('tria_genElementsAtEdge3D', 'IverticesAtFace', &
           Isize, ST_INT, &
           rtriangulation%h_IverticesAtFace, ST_NEWBLOCK_NOINIT)
@@ -13958,7 +13974,7 @@ contains
       do iface = 1,rtriangulation%NNAE
         
         ! check if a face number was already assigned
-        if(p_IneighboursAtElement(iface,iel) == 0 .or. &
+        if(p_IneighboursAtElement(iface,iel) .eq. 0 .or. &
             p_IneighboursAtElement(iface,iel) >  iel) then
           
           ! a face number was not yet assigned
@@ -13979,7 +13995,7 @@ contains
           
           ! number of the face
           do 
-            if(iel == p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
+            if(iel .eq. p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
             IFaceNeighbour = ifaceNeighbour + 1
           end do
           
@@ -14125,8 +14141,7 @@ contains
 
 !<description>
   ! this routine builds the connector list used 
-  ! in the neighbours at elements 
-  ! routine
+  ! in the neighbours at elements routine
 !</description>
 
 !<input>
@@ -14149,7 +14164,7 @@ contains
     
     ! Get some data arrays about the vertices.
     call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
-        p_idata3D)
+                                p_idata3D)
     
     
     ! allocate memory for NEL connectors
@@ -14160,112 +14175,399 @@ contains
     
     ! loop through all hexahedrons
     do i=1, rtriangulation%NEL
-      ! build connectors for each hexahedron
-      
-      !=========================================================  
-      ! first face
-      j=1
-      do k=1,4
-          p_IConnectList( (i-1) * NVFACE + j)%I_conData(k) = &
-          p_idata3D(k,i)
-      end do
-      ! save the number of the element this face was found from
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(k)=i
-      ! assign the local face number
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=1
-      j=j+1
-      !=========================================================
-      ! sixth face
-      do k=5,8
-          p_IConnectList( (i-1) * NVFACE + j)%I_conData(k-4) = &
-          p_idata3D(k,i)
-      end do
-        
-      ! save the number of the element this face was found from
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
-      
-      ! assign the local face number
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=6
-      j=j+1
-      !=========================================================
-      ! second face
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
-      p_idata3D(1,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
-      p_idata3D(2,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
-      p_idata3D(5,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
-      p_idata3D(6,i)
-        
-      ! save the number of the element this face was found from
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
-      
-      ! assign the local face number
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=2
-        
-      ! increment counter
-      j=j+1
-      
-      !=========================================================  
-      ! fourth face
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
-      p_idata3D(4,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
-      p_idata3D(3,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
-      p_idata3D(7,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
-      p_idata3D(8,i)
-        
-      ! save the number of the element this face was found from
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+      select case(tria_getNVE(rtriangulation, i))
+      case (TRIA_NVETET3D)
+        ! build connectors for each tetrahedron
 
-      ! assign the local face number
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=4
+        !=========================================================  
+        ! first face
+        j=1
+        do k=1,3
+          p_IConnectList( (i-1) * NVFACE + j)%I_conData(k) = &
+              p_idata3D(k,i)
+        end do
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = 0
+
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
         
-      ! increment counter
-      j=j+1
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=1
+
+        ! increment counter
+        j=j+1
+
+        !=========================================================
+        ! second face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(1,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(2,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(4,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = 0
+
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
         
-      !=========================================================  
-      ! third face
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
-      p_idata3D(2,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
-      p_idata3D(3,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
-      p_idata3D(6,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
-      p_idata3D(7,i)
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=2
         
-      ! save the number of the element this face was found from
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        ! increment counter
+        j=j+1
+
+        !=========================================================  
+        ! third face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(3,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(2,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(4,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = 0
         
-      ! assign the local face number
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=3
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
         
-      ! increment counter
-      j=j+1
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=3
         
-      !=========================================================  
-      ! fifth face
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
-      p_idata3D(1,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
-      p_idata3D(4,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
-      p_idata3D(8,i)
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
-      p_idata3D(5,i)
+        ! increment counter
+        j=j+1
+
+        !=========================================================  
+        ! fourth face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(3,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(1,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(3,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = 0
         
-      ! save the number of the element this face was found from
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=4
+        
+        !========================================================= 
+
+
+      case (TRIA_NVEPYR3D)
+        ! build connectors for each pyramid
+
+        !=========================================================  
+        ! first face
+        j=1
+        do k=1,4
+          p_IConnectList( (i-1) * NVFACE + j)%I_conData(k) = &
+              p_idata3D(k,i)
+        end do
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=1
+
+        ! increment counter
+        j=j+1
+
+        !=========================================================
+        ! second face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(1,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(2,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(5,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = 0
+
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=2
+        
+        ! increment counter
+        j=j+1
+
+        !=========================================================  
+        ! third face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(2,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(3,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(5,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = 0
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=3
+        
+        ! increment counter
+        j=j+1
+
+        !=========================================================  
+        ! fourth face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(4,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(3,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(5,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = 0
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=4
+
+        ! increment counter
+        j=j+1
+
+        !=========================================================  
+        ! fifth face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(4,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(1,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(5,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = 0
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=5
+
+        !=========================================================  
+
+
+      case (TRIA_NVEPRIS3D)
+        ! build connectors for each prism
+
+        !=========================================================  
+        ! first face
+        j=1
+        do k=1,3
+          p_IConnectList( (i-1) * NVFACE + j)%I_conData(k) = &
+              p_idata3D(k,i)
+        end do
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = 0
+
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=1
+
+        ! increment counter
+        j=j+1
+
+        !=========================================================  
+        ! fifth face
+        j=1
+        do k=4,6
+          p_IConnectList( (i-1) * NVFACE + j)%I_conData(k-3) = &
+              p_idata3D(k,i)
+        end do
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = 0
+
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=5
+
+        ! increment counter
+        j=j+1
+
+        !=========================================================
+        ! second face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(1,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(2,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(5,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+            p_idata3D(4,i)
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=2
+        
+        ! increment counter
+        j=j+1
+
+        !=========================================================
+        ! third face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(2,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(3,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(6,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+            p_idata3D(5,i)
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=3
+        
+        ! increment counter
+        j=j+1
+
+        !=========================================================
+        ! fourth face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(1,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(3,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(6,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+            p_idata3D(4,i)
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=4
+
+        !=========================================================  
+
+
+      case (TRIA_NVEHEXA3D)
+        ! build connectors for each hexahedron
+        
+        !=========================================================  
+        ! first face
+        j=1
+        do k=1,4
+          p_IConnectList( (i-1) * NVFACE + j)%I_conData(k) = &
+              p_idata3D(k,i)
+        end do
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=1
+
+        ! increment counter
+        j=j+1
+
+        !=========================================================
+        ! sixth face
+        do k=5,8
+          p_IConnectList( (i-1) * NVFACE + j)%I_conData(k-4) = &
+              p_idata3D(k,i)
+        end do
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=6
+
+        ! increment counter
+        j=j+1
+
+        !=========================================================
+        ! second face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(1,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(2,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(6,i)   ! was 5
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+            p_idata3D(5,i)   ! was 6
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=2
+        
+        ! increment counter
+        j=j+1
+        
+        !=========================================================  
+        ! fourth face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(4,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(3,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(7,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+            p_idata3D(8,i)
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=4
+        
+        ! increment counter
+        j=j+1
+        
+        !=========================================================  
+        ! third face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(2,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(3,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(7,i)   ! was 6
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+            p_idata3D(6,i)   ! was 7
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=3
+        
+        ! increment counter
+        j=j+1
+        
+        !=========================================================  
+        ! fifth face
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(1) = &
+            p_idata3D(1,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(2) = &
+            p_idata3D(4,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(3) = &
+            p_idata3D(8,i)
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(4) = &
+            p_idata3D(5,i)
+        
+        ! save the number of the element this face was found from
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(5)=i
+        
+        ! assign the local face number
+        p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=5
+        
+        !=========================================================  
+
+      case DEFAULT
+        call output_line('Unsupported type of element shape',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'tria_buildConnectorList')
+        call sys_halt()
+      end select
       
-      ! assign the local face number
-      p_IConnectList( (i-1) * NVFACE + j)%I_conData(6)=5
-        
-      !=========================================================  
-    
     end do
     
     ! done...
@@ -14444,7 +14746,7 @@ contains
       ! copy it to p_ConnectorList
       ! else
       ! copy the element from the right array
-      if(p_L(i)%I_conData(pos) <= p_R(j)%I_conData(pos)) then
+      if(p_L(i)%I_conData(pos) .le. p_R(j)%I_conData(pos)) then
         p_ConnectorList(k) = p_L(i)
         i = i + 1
         k = k + 1
@@ -14522,10 +14824,10 @@ contains
       ! assign the pivot element
       pivot = p_IConnector(l)
       
-      do while(lpos <= rpos)
+      do while(lpos .le. rpos)
         
         ! we find an element less than pivot => increment
-        if(p_IConnector(lpos) <= pivot) then
+        if(p_IConnector(lpos) .le. pivot) then
           lpos=lpos+1
           ! we find an element greater than => decrement
         else if(p_IConnector(rpos) > pivot) then
@@ -14592,7 +14894,7 @@ contains
     Iuboundloc = Iubound
     
     ! standard binary search scheme...
-    do while( Ilboundloc <= Iuboundloc )
+    do while( Ilboundloc .le. Iuboundloc )
     
       Imid = (Ilboundloc + Iuboundloc) / 2
     
