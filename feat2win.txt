@@ -1,0 +1,167 @@
+
+
+                           FEAT2 for Windows Readme
+
+-------------------------------------------------------------------------------
+
+Index
+-----
+I.   Prologue
+
+II.  The combined BLAS/LAPACK library
+     II.i.   Conventions
+     II.ii.  The reference BLAS/LAPACK library
+     II.iii. The GotoBLAS library
+     II.iv.  The AMD Core Math Library (ACML)
+     II.v.   The Intel Math Kernel Library (IMKL)
+
+III. Compiling Win32 binaries
+
+IV.  Compiling Win64 binaries
+
+
+-------------------------------------------------------------------------------
+I.   Prologue
+-------------------------------------------------------------------------------
+- todo -
+
+
+-------------------------------------------------------------------------------
+II.  The combined BLAS/LAPACK library
+-------------------------------------------------------------------------------
+Remark:
+This section (currently) only applies to the Win64 version of FEAT2. If you
+are compiling the Win32 version, you can skip this section (for now).
+
+
+FEAT2 uses a combined BLAS/LAPACK library for most of its low-level linear
+algebra operations. The combined BLAS/LAPACK library is simply a merge of the
+single and double precision real routines from the reference BLAS and LAPACK
+libraries.
+
+The reason why BLAS and LAPACK have been merged into one library is to provide
+compatibility for highly optimised, platform-dependent implementations which
+(usually) provide both BLAS and LAPACK implementations.
+
+Currently compatibility has only been tested with the reference netlib and the
+GotoBLAS implementations, but basically any BLAS/LAPACK implementation which
+satisfies the conventions in section II.i *should* work with FEAT2.
+
+If you don't have an optimised implementation, check section II.ii for more
+informations on how to compile the reference BLAS/LAPACK library.
+
+If you want to use the GotoBLAS implementation (recommended), then check
+section II.iii for more information.
+
+
+II.i.   Conventions
+-------------------
+Any combined BLAS/LAPACK library that is to be used with FEAT2 is assumed to
+fulfill the following conventions:
+
+-> Naming Convention
+BLAS/LAPACK routine and function names are assumed to be in lowercase decorated
+with an underscore prefix. (Remark: The decorating underscore prefix is 
+automatically set up by the compiler if the reference C calling convention is
+selected.)
+
+-> Calling Convention
+The calling convention is reference C, i.e.:
+1. Parameters are pushed onto the stack in reverse order (right to left), i.e.
+   the first (left) parameter is on top of the stack.
+2. The caller is responsible for cleaning up the stack.
+
+-> Scalar Parameters
+Scalar parameters are supposed to be passed as pointers (fortran-style).
+
+-> Matrix order
+Matrices are supposed to be stored in column major order (fortran-style).
+
+-> integer type
+An integer is assumed to be a 32-bit signed integer.
+
+
+II.ii.  The reference BLAS/LAPACK library
+-----------------------------------------
+If you don't have an optimised BLAS/LAPACK library for your system (or if you
+don't want to use it for whatever reason), then you have the possibility to
+compile a combined BLAS/LAPACK based on the reference netlib libraries.
+To do so, all you need to do is to open the "winblaslapack" project file in
+the "libraries\winblaslapack" directory and compile it in "Release" or
+"Release_IPO" mode.
+
+The "Release_IPO" mode produces a much greater library (approx. 120 MB) and
+takes longer to compile than the "Release" mode (approx. 5 MB), but the
+resulting library *should* be faster due to excessive inlining, so if you
+really need to use the reference BLAS/LAPACK implementation, it might be a good
+idea to use the "Release_IPO" mode.
+
+
+II.iii. The GotoBLAS library
+----------------------------
+To use the GotoBLAS library, you will first need one ;)
+Check the readme in the "libraries\winlibgoto" directory for closer information
+about pre-compiled GotoBLAS libraries shipped with FEAT2 or on how to compile
+your own.
+
+Once you have one, rename the corresponding lib-file to "winblasext.lib" or
+"winblasext_x64.lib" (depending on whether you have a 32 bit or 64 bit version)
+and place it directly into the "libraries" directory. Don't forget to copy the
+corresponding DLL into a directory which is in you PATH environment, e.g.
+"C:\Windows" or whereever you have Windows installed.
+
+
+II.iv.  The AMD Core Math Library (ACML)
+----------------------------------------
+(currently not supported)
+
+
+II.v.   The Intel Math Kernel Library (IMKL)
+--------------------------------------------
+(currently not supported)
+
+
+-------------------------------------------------------------------------------
+III. Compiling Win32 binaries
+-------------------------------------------------------------------------------
+To compile FEAT2 and its applications to 32-Bit binaries under Windows you
+will need the following:
+
+1. Microsoft Visual Studio .NET 2003 or newer
+2. Intel Visual Fortran 9.1 or newer
+
+- todo -
+
+
+-------------------------------------------------------------------------------
+IV.  Compiling Win64 binaries
+-------------------------------------------------------------------------------
+To compile FEAT2 and its applications to 64-Bit binaries under Windows you
+will need the following:
+
+1. Microsoft Visual Studio .NET 2008 or newer
+2. Intel Visual Fortran 10.1 or newer
+
+Before you can compile the FEAT2 kernel or one of the example applications, you
+will first need to compile the libraries.
+
+First you will the combined BLAS/LAPACK library. Take a look at section II in
+this file for more information on how to compile it or what alternatives are
+accepted.
+
+Once you have a corresponding "winblaslapack_x64.lib", you will need to compile
+the other libraries that the FEAT2 kernel uses. To do this, open the 
+'winlibraries_x64.sln' project file in the "libraries\winlibraries" directory,
+and compile the complete solution in "Release" mode.
+
+Now you should have 3 new files in your "libraries" directory:
+1. winblaslapack_x64.lib
+2. winlibamd_x64.lib
+3. winliumfpack4_x64.lib
+
+Once these files exist, you can open a project file of an application (e.g.
+"poisson_x64.sln" in the "applications/poisson/winpoisson" directory) and
+compile it - that's it.
+
+-------------------------------------------------------------------------------
+*End-Of-File*
