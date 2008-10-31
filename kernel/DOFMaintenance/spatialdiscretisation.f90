@@ -569,9 +569,18 @@ contains
       
     case (NDIM3D)
 
-      call output_line ('3D not supported.', &
-        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_getStdCubature')  
-      call sys_halt()
+      select case (elem_getPrimaryElement(ielementType))
+      case (EL_Q0_3D)
+        ! 1x1 Gauss formula
+        ccubType = CUB_G1_3D
+
+      case (EL_Q1_3D)
+        ! 2x2 Gauss formula
+        ccubType = CUB_G2_3D
+
+      case DEFAULT
+        ccubType = 0
+      end select
       
     case DEFAULT
       ccubType = 0
