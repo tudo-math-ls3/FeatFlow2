@@ -872,12 +872,12 @@ contains
 !    ! in Windows!?!
 !    ! Each thread will allocate its own local memory...
 !    !
-!    !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,p_DcubPtsReal, &
-!    !$OMP   p_Djac,p_Ddetj,p_Dcoords,DbasTest, &
-!    !$OMP   IdofsTest,bnonparTest,&
-!    !$OMP   p_DcubPtsTest,Dcoefficients, &
-!    !$OMP   j, ielmax,IEL, idofe, &
-!    !$OMP   ICUBP, IALBET,OM,IA,aux)    
+!    !%OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,p_DcubPtsReal, &
+!    !%OMP   p_Djac,p_Ddetj,p_Dcoords,DbasTest, &
+!    !%OMP   IdofsTest,bnonparTest,&
+!    !%OMP   p_DcubPtsTest,Dcoefficients, &
+!    !%OMP   j, ielmax,IEL, idofe, &
+!    !%OMP   ICUBP, IALBET,OM,IA,aux)    
 !    
 !    ! Get from the trial element space the type of coordinate system
 !    ! that is used there:
@@ -957,7 +957,7 @@ contains
 !  
 !  
 !    ! Loop over the elements - blockwise.
-!    !$OMP do schedule(static,1)
+!    !%OMP do schedule(static,1)
 !    DO IELset = 1, NEL, LINF_NELEMSIM
 !    
 !      ! We always handle LINF_NELEMSIM elements simultaneously.
@@ -1132,7 +1132,7 @@ contains
 !
 !      !CALL ZTIME(DT(10))
 !    END DO ! IELset
-!    !$OMP END DO
+!    !%OMP END DO
 !    
 !    ! Release memory
 !    CALL domint_doneIntegration(rintSubset)
@@ -1141,7 +1141,7 @@ contains
 !    DEALLOCATE(IdofsTest)
 !    DEALLOCATE(DbasTest)
 !    
-!    !$OMP END PARALLEL
+!    !%OMP END PARALLEL
 !
 !  END DO ! icurrentElementDistr
 !
@@ -1394,12 +1394,12 @@ contains
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
-    !$OMP PARALLEL PRIVATE(rintSubset, revalElementSet,&
-    !$OMP   p_Ddetj,DbasTest, cevaluationTag, bcubPtsInitialised,&
-    !$OMP   IdofsTest,&
-    !$OMP   Dcoefficients, &
-    !$OMP   ielmax,IEL, idofe, &
-    !$OMP   ICUBP, IALBET,OM,IA,aux)    
+    !%OMP PARALLEL PRIVATE(rintSubset, revalElementSet,&
+    !%OMP   p_Ddetj,DbasTest, cevaluationTag, bcubPtsInitialised,&
+    !%OMP   IdofsTest,&
+    !%OMP   Dcoefficients, &
+    !%OMP   ielmax,IEL, idofe, &
+    !%OMP   ICUBP, IALBET,OM,IA,aux)    
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
     do IALBET = 1,rform%itermcount
@@ -1445,7 +1445,7 @@ contains
   
   
     ! Loop over the elements - blockwise.
-    !$OMP do schedule(static,1)
+    !%OMP do schedule(static,1)
     do IELset = 1, NEL, LINF_NELEMSIM
     
       ! We always handle LINF_NELEMSIM elements simultaneously.
@@ -1615,7 +1615,7 @@ contains
 
       !CALL ZTIME(DT(10))
     end do ! IELset
-    !$OMP END DO
+    !%OMP END DO
     
     ! Release memory
     deallocate(Dcoefficients)
@@ -1624,7 +1624,7 @@ contains
 
     call elprep_releaseElementSet(revalElementSet)
     
-    !$OMP END PARALLEL
+    !%OMP END PARALLEL
 
     deallocate(p_DcubPtsRef)
 

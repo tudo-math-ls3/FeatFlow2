@@ -2949,40 +2949,40 @@ contains
       ! The coarse grid element number of element 1..NEL(coarse) stays
       ! the same. The number of the other coarse grid elements can
       ! be calculated by a formula.
-      !$OMP PARALLEL DO
+      !%OMP PARALLEL DO
       do iel = 1,rsourceTriangulation%NEL
         p_IcoarseGridElement(iel) = iel
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
 
-      !$OMP PARALLEL DO
+      !%OMP PARALLEL DO
       do iel = rsourceTriangulation%NEL+1,rdestTriangulation%NEL
         p_IcoarseGridElement(iel) = iel-rsourceTriangulation%NEL
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
 
       ! Ok, let's start the refinement. In the first step, we copy the
       ! corner coordinates of the coarse mesh to the fine mesh; they
       ! don't change during the refinement.
-      !$OMP PARALLEL DO
+      !%OMP PARALLEL DO
       do ivt=1,rsourceTriangulation%NVT
         p_DcoordDest(1,ivt) = p_DcoordSource(1,ivt)
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       
       ! Each line produces an line midpoint which is stored as new
       ! point in the fine mesh. To calculate the coordinates, take
       ! the mean of the coordinates in the coarse mesh.
       ivtoffset = rsourceTriangulation%NVT
 
-      !$OMP PARALLEL DO PRIVATE(ivt1,ivt2)
+      !%OMP PARALLEL DO PRIVATE(ivt1,ivt2)
       do iel=1, rsourceTriangulation%NEL
         ivt1 = p_IvertAtElementSource (1,iel)
         ivt2 = p_IvertAtElementSource (2,iel)
         p_DcoordDest(1,ivtoffset+iel) = &
             0.5_DP * ( p_DcoordSource (1,ivt1) + p_DcoordSource (1,ivt2) )
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       
       ! Allocate memory for IverticesAtElement and get a pointer to it.
       ! Fill the array with zero, so we won't have problems when mixing
@@ -3017,7 +3017,7 @@ contains
       ! IEL1 = IEL
       ! IEL2 = NEL+IEL
       
-      !$OMP PARALLEL DO PRIVATE(iel2)
+      !%OMP PARALLEL DO PRIVATE(iel2)
       do iel = 1,rsourceTriangulation%NEL
     
         ! Determine number of subelements.
@@ -3036,7 +3036,7 @@ contains
         p_IvertAtElementDest(2,iel2) = p_IvertAtElementSource(2, iel)
       
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       
       ! Create a new nodal property array
       call storage_new('tria_refineMesh2lv1D', 'h_InodalProperty',&
@@ -3050,11 +3050,11 @@ contains
                                p_InodalPropDest)
       
       ! Copy the nodal property of the coarse mesh
-      !$OMP PARALLEL DO
+      !%OMP PARALLEL DO
       do ivt=1, rsourceTriangulation%NVT
         p_InodalPropDest(ivt) = p_InodalPropSource(ivt)
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       
       ! We also need to copy the boundary vertices array to the finer level.
       rdestTriangulation%NVBD      = rsourceTriangulation%NVBD
@@ -3174,18 +3174,18 @@ contains
       ! Ok, let's start the refinement. In the first step, we copy the
       ! corner coordinates of the coarse mesh to the fine mesh; they
       ! don't change during the refinement.
-      !$OMP PARALLEL DO
+      !%OMP PARALLEL DO
       do ivt=1,rsourceTriangulation%NVT
         p_DcoordDest(1,ivt) = p_DcoordSource(1,ivt)
         p_DcoordDest(2,ivt) = p_DcoordSource(2,ivt)
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       
       ! Each edge produces an edge midpoint which is stored as new
       ! point in the fine mesh. To calculate the coordinates, take
       ! the mean of the coordinates in the coarse mesh.
       ivtoffset = rsourceTriangulation%NVT
-      !$OMP PARALLEL DO PRIVATE(ivt1,ivt2)
+      !%OMP PARALLEL DO PRIVATE(ivt1,ivt2)
       do imt=1,rsourceTriangulation%NMT
         ivt1 = p_IvertAtEdgeSource (1,imt)
         ivt2 = p_IvertAtEdgeSource (2,imt)
@@ -3194,7 +3194,7 @@ contains
         p_DcoordDest(2,ivtoffset+imt) = &
             0.5_DP * ( p_DcoordSource (2,ivt1) + p_DcoordSource (2,ivt2) )
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       
       ! Allocate memory for IverticesAtElement and get a pointer to it.
       ! Fill the array with zero, so we won't have problems when mixing
@@ -3343,7 +3343,7 @@ contains
       if (nnve .eq. TRIA_NVETRI2D) then
       
         ! Pure triangle mesh
-        !$OMP PARALLEL DO PRIVATE(iel1,iel2,iel3)
+        !%OMP PARALLEL DO PRIVATE(iel1,iel2,iel3)
         do iel = 1,rsourceTriangulation%NEL
       
           ! Determine number of subelements.
@@ -3378,12 +3378,12 @@ contains
           p_IvertAtElementDest(3,iel3) = p_IedgesAtElementSource (2,iel)+NVTsrc
         
         end do
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
       
       else if (nquads .eq. rsourceTriangulation%NEL) then
         
         ! Pure QUAD mesh
-        !$OMP PARALLEL DO PRIVATE(iel1,iel2,iel3,nquads)
+        !%OMP PARALLEL DO PRIVATE(iel1,iel2,iel3,nquads)
         do iel = 1,rsourceTriangulation%NEL
       
           ! Determine number of subelements.
@@ -3429,7 +3429,7 @@ contains
           p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)+NVTsrc
         
         end do ! iel
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
         
       else
       
@@ -3614,18 +3614,18 @@ contains
       ! to multiply each index by 2 as we have twice as many vertices per boundary
       ! component now.
       
-      !$OMP PARALLEL DO
+      !%OMP PARALLEL DO
       do ibct = 1,size(p_IboundaryCpIdxDest)
         p_IboundaryCpIdxDest(ibct) = 2*(p_IboundaryCpIdxSource(ibct)-1) + 1
       end do
-      !$OMP END PARALLEL DO
-      !$OMP PARALLEL DO
+      !%OMP END PARALLEL DO
+      !%OMP PARALLEL DO
       do ivbd = 0,size(p_IvertAtBoundartySource)-1
         p_IvertAtBoundartyDest(1+2*ivbd) = p_IvertAtBoundartySource(1+ivbd)
         p_IvertAtBoundartyDest(2+2*ivbd) = p_IedgesAtBoundartySource(1+ivbd)&
                                          + rsourceTriangulation%NVT
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       
       ! Let's see if parameter values of boundary vertices are available.
       if ((rsourceTriangulation%h_DvertexParameterValue .ne. ST_NOHANDLE) .and. &
@@ -3645,12 +3645,12 @@ contains
         call storage_getbase_double (rdestTriangulation%h_DvertexParameterValue,&
             p_DvertParamsDest)
             
-        !$OMP PARALLEL DO
+        !%OMP PARALLEL DO
         do ivbd = 0,size(p_IvertAtBoundartySource)-1
           p_DvertParamsDest(1+2*ivbd) = p_DvertParamsSource(1+ivbd)
           p_DvertParamsDest(2+2*ivbd) = p_DedgeParamsSource(1+ivbd)
         end do
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
         
         ! Now we have an array like
         !  1.0 2.0 -1.0 3.0    1.0 -1.0 2.0  ...
@@ -5703,12 +5703,12 @@ contains
       ! in p_InodalProperty are <> 0.
       rtriangulation%NVBD = 0
       ivbd = 0
-      !$OMP PARALLEL DO REDUCTION(+:ivbd)
+      !%OMP PARALLEL DO REDUCTION(+:ivbd)
       do ivt=1,rtriangulation%NVT
         !IF (p_InodalProperty(ivt) .NE. 0) rtriangulation%NVBD = rtriangulation%NVBD+1
         if (p_InodalProperty(ivt) .gt. 0) ivbd = ivbd+1
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       rtriangulation%NVBD = ivbd
 
       ! Allocate memory for IverticesAtBoundary.
@@ -5797,7 +5797,7 @@ contains
       ! Ok, let's catch the actual vertices.
       !      
       ! Check all vertices to find out, which vertices are on the boundary.
-      !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
+      !%OMP PARALLEL DO PRIVATE(ibct,ivbd)
       do ivt=1,rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
           ! id of the boundary component
@@ -5816,7 +5816,7 @@ contains
           p_IverticesAtBoundary (ivbd) = ivt
         end if
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
         
     end subroutine genRawBoundary2D
 
@@ -6167,12 +6167,12 @@ contains
       ! in p_InodalProperty are <> 0.
       rtriangulation%NVBD = 0
       ivbd = 0
-      !$OMP PARALLEL DO REDUCTION(+:ivbd)
+      !%OMP PARALLEL DO REDUCTION(+:ivbd)
       do ivt=1,rtriangulation%NVT
         !IF (p_InodalProperty(ivt) .NE. 0) rtriangulation%NVBD = rtriangulation%NVBD+1
         if (p_InodalProperty(ivt) .gt. 0) ivbd = ivbd+1
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       rtriangulation%NVBD = ivbd
 
       ! Allocate memory for IverticesAtBoundary.
@@ -6261,7 +6261,7 @@ contains
       ! Ok, let's catch the actual vertices.
       !      
       ! Check all vertices to find out, which vertices are on the boundary.
-      !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
+      !%OMP PARALLEL DO PRIVATE(ibct,ivbd)
       do ivt=1,rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
           ! id of the boundary component
@@ -6280,7 +6280,7 @@ contains
           p_IverticesAtBoundary (ivbd) = ivt
         end if
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
      
     end subroutine genRawBoundary2D
 
@@ -6881,7 +6881,7 @@ contains
     call storage_getbase_int2d(rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
   
     ! Loop through all edges
-    !$OMP PARALLEL DO PRIVATE(ipointpos,ipoint1,ipoint2,ipoint,idim)
+    !%OMP PARALLEL DO PRIVATE(ipointpos,ipoint1,ipoint2,ipoint,idim)
     do iedge = 0,rtriangulation%NMT-1
     
       ! Where do the set of points start in Dcoords?
@@ -6906,7 +6906,7 @@ contains
       end do
       
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
     ! Is the boundary structure given?
     if (present(rboundary)) then
@@ -9069,7 +9069,7 @@ contains
     !
     ! Ok, let's catch the actual vertices.
     ! Check all vertices to find out, which vertices are on the boundary.
-    !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
+    !%OMP PARALLEL DO PRIVATE(ibct,ivbd)
     do ivt=1,rtriangulation%NVT
       if (p_InodalProperty(ivt) .gt. 0) then
         ! id of the boundary component
@@ -9088,7 +9088,7 @@ contains
         p_IverticesAtBoundary (ivbd) = ivt
       end if
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
   end subroutine tria_genRawBoundary1D
 
@@ -9267,7 +9267,7 @@ contains
     dtotalVolume = 0.0_DP
         
     ! Calculate the element volume for all elements
-    !$OMP PARALLEL DO PRIVATE(ive,Dpoints) REDUCTION(+:dtotalVolume)
+    !%OMP PARALLEL DO PRIVATE(ive,Dpoints) REDUCTION(+:dtotalVolume)
     do iel=1,rtriangulation%NEL
     
       ! line element
@@ -9278,7 +9278,7 @@ contains
       
       dtotalVolume = dtotalVolume+p_DelementVolume(iel)
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
     ! Store the total volume in the last element of DelementVolume
     p_DelementVolume(rtriangulation%NEL+1) = dtotalVolume
@@ -9567,12 +9567,12 @@ contains
     ! in p_InodalProperty are <> 0.
     rtriangulation%NVBD = 0
     ivbd = 0
-    !$OMP PARALLEL DO REDUCTION(+:ivbd)
+    !%OMP PARALLEL DO REDUCTION(+:ivbd)
     do ivt=1,rtriangulation%NVT
       !IF (p_InodalProperty(ivt) .NE. 0) rtriangulation%NVBD = rtriangulation%NVBD+1
       if (p_InodalProperty(ivt) .gt. 0) ivbd = ivbd+1
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     rtriangulation%NVBD = ivbd
 
     ! Allocate memory for IverticesAtBoundary.
@@ -9669,7 +9669,7 @@ contains
           rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
           
       ! Check all vertices to find out, which vertices are on the boundary.
-      !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
+      !%OMP PARALLEL DO PRIVATE(ibct,ivbd)
       do ivt=1,rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
           ibct = p_InodalProperty(ivt)
@@ -9694,7 +9694,7 @@ contains
           
         end if
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       
     else
     
@@ -9702,7 +9702,7 @@ contains
       ! is not generaterd.
       !
       ! Check all vertices to find out, which vertices are on the boundary.
-      !$OMP PARALLEL DO PRIVATE(ibct,ivbd)
+      !%OMP PARALLEL DO PRIVATE(ibct,ivbd)
       do ivt=1,rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
           ! id of the boundary component
@@ -9721,7 +9721,7 @@ contains
           p_IverticesAtBoundary (ivbd) = ivt
         end if
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       
     end if
     
@@ -10156,7 +10156,7 @@ contains
     ! Next, we have to look at all edges to find neighbouring information.
     !
     ! Loop through all edges adjacent to all vertices.
-    !$OMP PARALLEL DO PRIVATE(ivt,ivtneighbour,iel,iedgeneighbour)
+    !%OMP PARALLEL DO PRIVATE(ivt,ivtneighbour,iel,iedgeneighbour)
     do iedge = 1,ubound(p_IedgeAtVertex,2)
     
       ! Get the edge information
@@ -10196,7 +10196,7 @@ contains
       end do ! iedgeneighbour
     
     end do ! iedge
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
     ! Release memory, finish.
     call storage_free (haux1)
@@ -10398,7 +10398,7 @@ contains
     if (ubound(p_IverticesAtElement,1) .eq. TRIA_NVETRI2D) then
 
       ! Calculate the element volume for all elements
-      !$OMP PARALLEL DO PRIVATE(ive, Dpoints) REDUCTION(+:dtotalVolume)
+      !%OMP PARALLEL DO PRIVATE(ive, Dpoints) REDUCTION(+:dtotalVolume)
       do iel=1,rtriangulation%NEL
         ! triangular element
         do ive=1,TRIA_NVETRI2D
@@ -10409,12 +10409,12 @@ contains
         
         dtotalVolume = dtotalVolume+p_DelementVolume(iel)
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
     
     else
 
       ! Calculate the element volume for all elements
-      !$OMP PARALLEL DO PRIVATE(ive,Dpoints) REDUCTION(+:dtotalVolume)
+      !%OMP PARALLEL DO PRIVATE(ive,Dpoints) REDUCTION(+:dtotalVolume)
       do iel=1,rtriangulation%NEL
       
         if (p_IverticesAtElement(4,iel) .eq. 0) then
@@ -10435,7 +10435,7 @@ contains
         
         dtotalVolume = dtotalVolume+p_DelementVolume(iel)
       end do
-      !$OMP END PARALLEL DO
+      !%OMP END PARALLEL DO
       
     end if
     
@@ -10495,11 +10495,11 @@ contains
     call storage_getbase_int (hresort,p_Iresort)
     
     ! Fill p_Iresort with 1,2,3,...
-    !$OMP PARALLEL DO
+    !%OMP PARALLEL DO
     do ivbd=1,rtriangulation%NVBD
       p_Iresort(ivbd) = ivbd
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
     ! For each boundary component on the physical boundary, call the sorting routine 
     ! and calculate the mapping how the entries are sorted.
@@ -10517,17 +10517,17 @@ contains
     ! Resort the vertices according to the calculated mapping.
     ! Afterwards, the vertices are ordered according to the increasing
     ! parameter value.
-    !$OMP PARALLEL DO
+    !%OMP PARALLEL DO
     do ivbd=1,size(p_IverticesAtBoundary)
       p_Iresort(ivbd) = p_IverticesAtBoundary(p_Iresort(ivbd))
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
-    !$OMP PARALLEL DO
+    !%OMP PARALLEL DO
     do ivbd=1,size(p_IverticesAtBoundary)
       p_IverticesAtBoundary(ivbd) = p_Iresort(ivbd)
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
     call storage_free (hresort)
 
@@ -10758,12 +10758,12 @@ contains
 
     ! Fill the array.
     ! Store the IverticesAtBoundary in the first entry and the index in the 2nd.
-    !$OMP PARALLEL DO
+    !%OMP PARALLEL DO
     do ivbd = 1,rtriangulation%NVBD
       p_IboundaryVertexPos(1,ivbd) = p_IverticesAtBoundary(ivbd)
       p_IboundaryVertexPos(2,ivbd) = ivbd
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
     ! Sort the array -- inside of each boundary component.
     ! Use the vertex number as key.
@@ -10864,7 +10864,7 @@ contains
     call storage_getbase_int2D (rtriangulation%h_IelementsAtEdge,p_IelementsAtEdge)
     
     ! Loop through all elements and all edges on the elements
-    !$OMP PARALLEL DO PRIVATE(ive,iedge)
+    !%OMP PARALLEL DO PRIVATE(ive,iedge)
     ! all elements
     do iel = 1,ubound(p_IedgesAtElement,2)
       ! loop 1-4
@@ -10899,7 +10899,7 @@ contains
       end do
       
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
   end subroutine tria_genElementsAtEdge2D
 
@@ -10981,7 +10981,7 @@ contains
     nnve = ubound(p_IedgesAtElement,1)
     
     ! Loop through all elements and all edges on the elements
-    !$OMP PARALLEL DO PRIVATE(ive,iedge,ivtneighbour)
+    !%OMP PARALLEL DO PRIVATE(ive,iedge,ivtneighbour)
     do iel = 1,ubound(p_IedgesAtElement,2)
       
       do ive = 1,ubound(p_IedgesAtElement,1)
@@ -11013,7 +11013,7 @@ contains
       end do
       
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
   end subroutine tria_genVerticesAtEdge2D
 
@@ -11095,7 +11095,7 @@ contains
     NVT = rtriangulation%NVT
     
     ! Loop through all elements and all edges on the elements
-    !$OMP PARALLEL DO PRIVATE(ive,ivt1,ivt2)
+    !%OMP PARALLEL DO PRIVATE(ive,ivt1,ivt2)
     do iel = 1,ubound(p_IedgesAtElement,2)
     
       do ive = 1,ubound(p_IedgesAtElement,1)
@@ -11139,7 +11139,7 @@ contains
       end do
       
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
 
   end subroutine tria_genEdgeNodalProperty2D
 
@@ -11235,7 +11235,7 @@ contains
     nnve = rtriangulation%NNVE
 
     ! Loop through all boundary components
-    !$OMP PARALLEL DO PRIVATE(ivbd,ivt,iel,ive)
+    !%OMP PARALLEL DO PRIVATE(ivbd,ivt,iel,ive)
     do ibct = 1,rtriangulation%NBCT+rtriangulation%NblindBCT
     
       ! On each boundary component, loop through all elements
@@ -11263,7 +11263,7 @@ contains
       end do
     
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
     ! We have as many edges on the boundary as vertices.
     rtriangulation%NMBD = rtriangulation%NVBD
@@ -11393,7 +11393,7 @@ contains
         end if
       
         ! On each boundary component, loop through all vertices
-        !$OMP PARALLEL DO PRIVATE(dpar1,dpar2)
+        !%OMP PARALLEL DO PRIVATE(dpar1,dpar2)
         do ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-2
         
           ! Check if the edge is really on the boundary. If yes, calculate
@@ -11419,7 +11419,7 @@ contains
           end if
         
         end do
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
       
         ! The 'last' vertex is a special case as there is no real neighbour.
         ! The parameter value of the 'neighbour' is the maximum parameter
@@ -11532,12 +11532,12 @@ contains
 
     ! Fill the array.
     ! Store the IverticesAtBoundary in the first entry and the index in the 2nd.
-    !$OMP PARALLEL DO
+    !%OMP PARALLEL DO
     do ivbd = 1,rtriangulation%NMBD
       p_IboundaryEdgePos(1,ivbd) = p_IedgesAtBoundary(ivbd)
       p_IboundaryEdgePos(2,ivbd) = ivbd
     end do
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
     ! We only sort the first NBCT BC's. The boundary component NBCT+1 (if it exists)
     ! collects all vertices that are not on the physical boundary but stem from
