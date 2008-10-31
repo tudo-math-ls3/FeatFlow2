@@ -810,6 +810,9 @@ contains
     case (VANKAPC_GENERAL)
       ! Release data of the general VANKA
       call vanka_doneGeneralVanka (rvanka%rvankaGeneral)
+    CASE (VANKAPC_NAVIERSTOKES2D)
+      ! Vanka for 2D Navier-Stokes problems
+      CALL vanka_doneNavierStokes2D (rvanka%rvankaNavSt2D)
       
     ! ELSE: nothing to do.
     end select
