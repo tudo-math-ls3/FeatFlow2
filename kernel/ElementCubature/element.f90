@@ -372,6 +372,18 @@ module element
   ! ID of trilinear conforming hexahedral FE, Q1
   integer(I32), parameter :: EL_Q1_3D   = EL_3D + 11
   integer(I32), parameter :: EL_E011_3D = EL_Q1_3D
+  
+  ! ID of constant conforming pyramid FE, Y0 = Q0
+  integer(I32), parameter :: EL_Y0_3D   = EL_3D + 60
+  
+  ! ID of sub-trilinear conforming pyramid FE, Y1 \subset Q1
+  integer(I32), parameter :: EL_Y1_3D   = EL_3D + 61
+  
+  ! ID of constant conforming prism FE, R0 = Q0
+  integer(I32), parameter :: EL_R0_3D   = EL_3D + 70
+  
+  ! ID of sub-trilinear conforming prism FE, R1 \subset Q1
+  integer(I32), parameter :: EL_R1_3D   = EL_3D + 71
 
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
   ! parametric, face-midpoint-value based
@@ -711,82 +723,88 @@ contains
 
 !</function>
 
-  select case (elem_getPrimaryElement(ieltype))
-  
-  ! -= 1D element types =-
-  case (EL_P0_1D)
-    ! local DOF's for 1D P0
-    elem_igetNDofLoc = 1
-  case (EL_P1_1D)
-    ! local DOF's for 1D P1
-    elem_igetNDofLoc = 2
-  case (EL_P2_1D)
-    ! local DOF's for 1D P2
-    elem_igetNDofLoc = 3
-  case (EL_S31_1D)
-    ! local DOF's for 1D S31
-    elem_igetNDofLoc = 4
-  
-  ! -= 2D element types =-
-  case (EL_P0, EL_Q0)
-    ! local DOF's for Q0
-    elem_igetNDofLoc = 1
-  case (EL_P1)
-    ! local DOF's for P1
-    elem_igetNDofLoc = 3
-  case (EL_P2)
-    ! local DOF's for P2
-    elem_igetNDofLoc = 6
-  case (EL_P3)
-    ! local DOF's for P3
-    elem_igetNDofLoc = 9
-  case (EL_P1T)
-    ! local DOF's for Ex20
-    elem_igetNDofLoc = 3
-  case (EL_Q1)
-    ! local DOF's for Q1
-    elem_igetNDofLoc = 4
-  case (EL_Q2)
-    ! local DOF's for Q2
-    elem_igetNDofLoc = 9
-  case (EL_Q3)
-    ! local DOF's for Q3
-    elem_igetNDofLoc = 16
-  case (EL_QP1)
-    ! local DOF's for QP1
-    elem_igetNDofLoc = 3
-  case (EL_Q1T)
-    ! local DOF's for Ex30
-    elem_igetNDofLoc = 4
-  case (EL_Q1TB)
-    ! local DOF's for EB30
-    elem_igetNDofLoc = 5
-  case (EL_Q2T)
-    ! local DOF's for Ex50 
-    ! 9 DOF's per element. 
-    elem_igetNDofLoc = 9
-  case (EL_Q2TB)
-    ! local DOF's for EB30 
-    ! 10 DOF's per element. 
-    elem_igetNDofLoc = 10
-  
-  ! -= 3D element types =-
-  case (EL_P0_3D, EL_Q0_3D)
-    ! local DOF's for 3D P0, Q0
-    elem_igetNDofLoc = 1
-  case (EL_P1_3D)
-    ! local DOF's for 3D P1
-    elem_igetNDofLoc = 4
-  case (EL_Q1_3D)
-    ! local DOF's for 3D Q1
-    elem_igetNDofLoc = 8
-  case (EL_Q1T_3D)
-    ! local DOF's for 3D Ex30
-    elem_igetNDofLoc = 6
+    select case (elem_getPrimaryElement(ieltype))
     
-  case DEFAULT
-    elem_igetNDofLoc = 0
-  end select
+    ! -= 1D element types =-
+    case (EL_P0_1D)
+      ! local DOFs for 1D P0
+      elem_igetNDofLoc = 1
+    case (EL_P1_1D)
+      ! local DOFs for 1D P1
+      elem_igetNDofLoc = 2
+    case (EL_P2_1D)
+      ! local DOFs for 1D P2
+      elem_igetNDofLoc = 3
+    case (EL_S31_1D)
+      ! local DOFs for 1D S31
+      elem_igetNDofLoc = 4
+    
+    ! -= 2D element types =-
+    case (EL_P0, EL_Q0)
+      ! local DOFs for Q0
+      elem_igetNDofLoc = 1
+    case (EL_P1)
+      ! local DOFs for P1
+      elem_igetNDofLoc = 3
+    case (EL_P2)
+      ! local DOFs for P2
+      elem_igetNDofLoc = 6
+    case (EL_P3)
+      ! local DOFs for P3
+      elem_igetNDofLoc = 9
+    case (EL_P1T)
+      ! local DOFs for Ex20
+      elem_igetNDofLoc = 3
+    case (EL_Q1)
+      ! local DOFs for Q1
+      elem_igetNDofLoc = 4
+    case (EL_Q2)
+      ! local DOFs for Q2
+      elem_igetNDofLoc = 9
+    case (EL_Q3)
+      ! local DOFs for Q3
+      elem_igetNDofLoc = 16
+    case (EL_QP1)
+      ! local DOFs for QP1
+      elem_igetNDofLoc = 3
+    case (EL_Q1T)
+      ! local DOFs for Ex30
+      elem_igetNDofLoc = 4
+    case (EL_Q1TB)
+      ! local DOFs for EB30
+      elem_igetNDofLoc = 5
+    case (EL_Q2T)
+      ! local DOFs for Ex50 
+      ! 9 DOF's per element. 
+      elem_igetNDofLoc = 9
+    case (EL_Q2TB)
+      ! local DOFs for EB30 
+      ! 10 DOF's per element. 
+      elem_igetNDofLoc = 10
+    
+    ! -= 3D element types =-
+    case (EL_P0_3D, EL_Q0_3D,EL_Y0_3D,EL_R0_3D)
+      ! local DOFs for 3D P0, Q0, Y0, R0
+      elem_igetNDofLoc = 1
+    case (EL_P1_3D)
+      ! local DOFs for 3D P1
+      elem_igetNDofLoc = 4
+    case (EL_Q1_3D)
+      ! local DOFs for 3D Q1
+      elem_igetNDofLoc = 8
+    case (EL_Y1_3D)
+      ! local DOFs for 3D Y1
+      elem_igetNDofLoc = 5
+    case (EL_R1_3D)
+      ! local DOFs for 3D R1
+      elem_igetNDofLoc = 6
+    case (EL_Q1T_3D)
+      ! local DOFs for 3D Ex30
+      elem_igetNDofLoc = 6
+      
+    case DEFAULT
+      elem_igetNDofLoc = 0
+    end select
 
   end function
 
@@ -827,93 +845,99 @@ contains
 
 !</subroutine>
 
-  ! Default setup
-  ndofAtVertices = 0
-  ndofAtEdges    = 0
-  ndofAtFaces    = 0
-  ndofAtElement  = 0
+    ! Default setup
+    ndofAtVertices = 0
+    ndofAtEdges    = 0
+    ndofAtFaces    = 0
+    ndofAtElement  = 0
 
-  select case (elem_getPrimaryElement(ieltype))
-  
-  ! -= 1D element types =-
-  case (EL_P0_1D)
-    ! local DOF's for P0
-    ndofAtElement  = 1
-  case (EL_P1_1D)
-    ! local DOF's for P1
-    ndofAtVertices = 2
-  case (EL_P2_1D)
-    ! local DOF's for P2
-    ndofAtVertices = 2
-    ndofAtElement  = 1
-  case (EL_S31_1D)
-    ! local DOF's for S31
-    ndofAtVertices = 4
+    select case (elem_getPrimaryElement(ieltype))
     
-  ! -= 2D element types =-
-  case (EL_P0, EL_Q0)
-    ! local DOF's for Q0
-    ndofAtElement  = 1
-  case (EL_P1)
-    ! local DOF's for P1
-    ndofAtVertices = 3
-  case (EL_P2)
-    ! local DOF's for P2
-    ndofAtVertices = 3
-    ndofAtEdges    = 3
-  case (EL_P3)
-    ! local DOF's for P3
-    ndofAtVertices = 3
-    ndofAtEdges    = 6
-  case (EL_P1T)
-    ! local DOF's for Ex20
-    ndofAtEdges    = 3
-  case (EL_Q1)
-    ! local DOF's for Q1
-    ndofAtVertices = 4
-  case (EL_Q2)
-    ! local DOF's for Q2
-    ndofAtVertices = 4
-    ndofAtEdges    = 4
-    ndofAtElement  = 1
-  case (EL_Q3)
-    ! local DOF's for Q3
-    ndofAtVertices = 4
-    ndofAtEdges    = 8
-    ndofAtElement  = 4
-  case (EL_QP1)
-    ! local DOF's for QP1
-    ndofAtElement  = 3
-  case (EL_Q1T)
-    ! local DOF's for Ex30
-    ndofAtEdges    = 4
-  case (EL_Q1TB)
-    ! local DOF's for EB30
-    ndofAtEdges    = 4
-    ndofAtElement  = 1
-  case (EL_Q2T)
-    ! local DOF's for Ex50
-    ndofAtEdges    = 8
-    ndofAtElement  = 1
-  case (EL_Q2TB)
-    ! local DOF's for EB50
-    ndofAtEdges    = 8
-    ndofAtElement  = 2
-    
-  ! -= 3D element types =-
-  case (EL_P0_3D, EL_Q0_3D)
-    ! local DOF's for P0
-    ndofAtElement  = 1
-  case (EL_P1_3D)
-    ! local DOF's for P1
-    ndofAtVertices = 4
-  case (EL_Q1_3D)
-    ! local DOF's for Q1
-    ndofAtVertices = 8
-  case (EL_Q1T_3D)
-    ! local DOF's for Ex30
-    ndofAtFaces = 6
-  end select
+    ! -= 1D element types =-
+    case (EL_P0_1D)
+      ! local DOFs for P0
+      ndofAtElement  = 1
+    case (EL_P1_1D)
+      ! local DOFs for P1
+      ndofAtVertices = 2
+    case (EL_P2_1D)
+      ! local DOFs for P2
+      ndofAtVertices = 2
+      ndofAtElement  = 1
+    case (EL_S31_1D)
+      ! local DOFs for S31
+      ndofAtVertices = 4
+      
+    ! -= 2D element types =-
+    case (EL_P0, EL_Q0)
+      ! local DOFs for Q0
+      ndofAtElement  = 1
+    case (EL_P1)
+      ! local DOFs for P1
+      ndofAtVertices = 3
+    case (EL_P2)
+      ! local DOFs for P2
+      ndofAtVertices = 3
+      ndofAtEdges    = 3
+    case (EL_P3)
+      ! local DOFs for P3
+      ndofAtVertices = 3
+      ndofAtEdges    = 6
+    case (EL_P1T)
+      ! local DOFs for Ex20
+      ndofAtEdges    = 3
+    case (EL_Q1)
+      ! local DOFs for Q1
+      ndofAtVertices = 4
+    case (EL_Q2)
+      ! local DOFs for Q2
+      ndofAtVertices = 4
+      ndofAtEdges    = 4
+      ndofAtElement  = 1
+    case (EL_Q3)
+      ! local DOFs for Q3
+      ndofAtVertices = 4
+      ndofAtEdges    = 8
+      ndofAtElement  = 4
+    case (EL_QP1)
+      ! local DOFs for QP1
+      ndofAtElement  = 3
+    case (EL_Q1T)
+      ! local DOFs for Ex30
+      ndofAtEdges    = 4
+    case (EL_Q1TB)
+      ! local DOFs for EB30
+      ndofAtEdges    = 4
+      ndofAtElement  = 1
+    case (EL_Q2T)
+      ! local DOFs for Ex50
+      ndofAtEdges    = 8
+      ndofAtElement  = 1
+    case (EL_Q2TB)
+      ! local DOFs for EB50
+      ndofAtEdges    = 8
+      ndofAtElement  = 2
+      
+    ! -= 3D element types =-
+    case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
+      ! local DOFs for P0,Q0,Y0,R0
+      ndofAtElement  = 1
+    case (EL_P1_3D)
+      ! local DOFs for P1
+      ndofAtVertices = 4
+    case (EL_Q1_3D)
+      ! local DOFs for Q1
+      ndofAtVertices = 8
+    case (EL_Y1_3D)
+      ! local DOFs for Y1
+      ndofAtVertices = 5
+    case (EL_R1_3D)
+      ! local DOFs for R1
+      ndofAtVertices = 6
+    case (EL_Q1T_3D)
+      ! local DOFs for Ex30
+      ndofAtFaces = 6
+    end select
 
   end subroutine
 
@@ -943,19 +967,9 @@ contains
 
 !</function>
 
-  ! NVE coincides with that NVE from the transformation.
-  ! Use the transformation routine to determine that value!
-  
-  elem_igetNVE = trafo_igetNVE(elem_igetTrafoType(ieltype))
-
-  !SELECT CASE (elem_getPrimaryElement(ieltype))
-  !CASE (EL_P0,EL_P1,EL_P2,EL_P3)
-  !  elem_igetNVE = 3
-  !CASE (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1, EL_Q1T)
-  !  elem_igetNVE = 4
-  !CASE DEFAULT
-  !  elem_igetNVE = 0
-  !END SELECT
+    ! NVE coincides with that NVE from the transformation.
+    ! Use the transformation routine to determine that value!
+    elem_igetNVE = trafo_igetNVE(elem_igetTrafoType(ieltype))
 
   end function
 
@@ -988,38 +1002,44 @@ contains
 
 !</function>
 
-  select case (iand(ieltype,EL_ELNRMASK+EL_NONPARAMETRIC))
-  ! 1D Element types
-  case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D)
-    ! Line elements
-    elem_igetCoordSystem = TRAFO_CS_REF1D
-  
-  ! 2D Element Types
-  case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
-    ! Triangular elements work in barycentric coordinates
-    elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
-  case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
-        EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
-    ! These work on the reference quadrilateral
-    elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
-  case (EL_Q1T+EL_NONPARAMETRIC)
-    ! EM30, EM31; these work in real coordinates
-    elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
-  
-  ! 3D Element types
-  case (EL_P0_3D, EL_P1_3D)
-    ! Tetrahedral elements work in barycentric coordinates
-    elem_igetCoordSystem = TRAFO_CS_BARY3DTETRA
-  case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D)
-    ! These work on the reference hexahedron
-    elem_igetCoordSystem = TRAFO_CS_REF3DHEXA
-  case (EL_Q1T_3D+EL_NONPARAMETRIC)
-    ! EM30; these work in real coordinates
-    elem_igetCoordSystem = TRAFO_CS_REAL3DHEXA
+    select case (iand(ieltype,EL_ELNRMASK+EL_NONPARAMETRIC))
+    ! 1D Element types
+    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D)
+      ! Line elements
+      elem_igetCoordSystem = TRAFO_CS_REF1D
     
-  case DEFAULT
-    elem_igetCoordSystem = TRAFO_CS_UNDEFINED
-  end select
+    ! 2D Element Types
+    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
+      ! Triangular elements work in barycentric coordinates
+      elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
+    case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
+          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
+      ! These work on the reference quadrilateral
+      elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
+    case (EL_Q1T+EL_NONPARAMETRIC)
+      ! EM30, EM31; these work in real coordinates
+      elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
+    
+    ! 3D Element types
+    case (EL_P0_3D, EL_P1_3D)
+      ! Tetrahedral elements work in barycentric coordinates
+      elem_igetCoordSystem = TRAFO_CS_BARY3DTETRA
+    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D)
+      ! These work on the reference hexahedron
+      elem_igetCoordSystem = TRAFO_CS_REF3DHEXA
+    case (EL_Y0_3D, EL_Y1_3D)
+      ! These work on the reference pyramid
+      elem_igetCoordSystem = TRAFO_CS_REF3DPYRA
+    case (EL_R0_3D, EL_R1_3D)
+      ! These work on the reference prism
+      elem_igetCoordSystem = TRAFO_CS_REF3DPRISM
+    case (EL_Q1T_3D+EL_NONPARAMETRIC)
+      ! EM30; these work in real coordinates
+      elem_igetCoordSystem = TRAFO_CS_REAL3DHEXA
+      
+    case DEFAULT
+      elem_igetCoordSystem = TRAFO_CS_UNDEFINED
+    end select
   
   end function
 
@@ -1046,33 +1066,41 @@ contains
 
 !</function>
 
-  select case (elem_getPrimaryElement(ieltype))
-  
-  case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D)
-    ! Linear line transformation, 1D
-    elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_1D
-  
-  case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
-    ! Linear triangular transformation, 2D
-    elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
+    select case (elem_getPrimaryElement(ieltype))
     
-  case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
-        EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
-    ! Bilinear quadrilateral transformation, 2D.
-    elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
-  
-  case (EL_P0_3D, EL_P1_3D)
-    ! Linear tetrahedral transrormation, 3D
-    elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_3D
-  
-  case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D)
-    ! Trilinear hexahedral transformation, 3D
-    elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_3D
-  
-  case DEFAULT
-    elem_igetTrafoType = TRAFO_ID_UNKNOWN
+    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D)
+      ! Linear line transformation, 1D
+      elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_1D
     
-  end select
+    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
+      ! Linear triangular transformation, 2D
+      elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
+      
+    case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
+          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
+      ! Bilinear quadrilateral transformation, 2D.
+      elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
+    
+    case (EL_P0_3D, EL_P1_3D)
+      ! Linear tetrahedral transrormation, 3D
+      elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_3D
+    
+    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D)
+      ! Trilinear hexahedral transformation, 3D
+      elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_3D
+    
+    case (EL_Y0_3D, EL_Y1_3D)
+      ! Sub-Trilinear pyramid transformation, 3D
+      elem_igetTrafoType = TRAFO_ID_MLINPYRAMID + TRAFO_DIM_3D
+    
+    case (EL_R0_3D, EL_R1_3D)
+      ! Sub-Trilinear prism transformation, 3D
+      elem_igetTrafoType = TRAFO_ID_MLINPRISM + TRAFO_DIM_3D
+    
+    case default
+      elem_igetTrafoType = TRAFO_ID_UNKNOWN
+      
+    end select
 
   end function
 
@@ -1130,68 +1158,80 @@ contains
 
 !</function>
 
-  select case (elem_getPrimaryElement(ieltype))
-  case (EL_P0_1D)
-    ! Function
-    elem_getMaxDerivative = 1
-  case (EL_P1_1D)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 2
-  case (EL_P2_1D)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 2
-  case (EL_S31_1D)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 2
-  case (EL_P0, EL_Q0)
-    ! Function
-    elem_getMaxDerivative = 1
-  case (EL_P1)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 3
-  case (EL_P2)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 3
-  case (EL_P3)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 3
-  case (EL_P1T)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 3
-  case (EL_Q1)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 3
-  case (EL_Q2)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 3
-  case (EL_Q3)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 3
-  case (EL_QP1)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 3
-  case (EL_Q1T,EL_Q1TB)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 3
-  case (EL_Q2T,EL_Q2TB)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 3
-  case (EL_P0_3D, EL_Q0_3D)
-    ! Function
-    elem_getMaxDerivative = 1
-  case (EL_P1_3D)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 4
-  case (EL_Q1_3D)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 4
-  case (EL_Q1T_3D)
-    ! Function + 1st derivative
-    elem_getMaxDerivative = 4
-  case DEFAULT
-    ! We don't know
-    elem_getMaxDerivative = DER_MAXNDER
-  end select
+    select case (elem_getPrimaryElement(ieltype))
+    
+    ! -= 1D elements =-
+    case (EL_P0_1D)
+      ! Function
+      elem_getMaxDerivative = 1
+    case (EL_P1_1D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 2
+    case (EL_P2_1D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 2
+    case (EL_S31_1D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 2
+    
+    ! -= 2D elements =-
+    case (EL_P0, EL_Q0)
+      ! Function
+      elem_getMaxDerivative = 1
+    case (EL_P1)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_P2)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_P3)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_P1T)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_Q1)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_Q2)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_Q3)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_QP1)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_Q1T,EL_Q1TB)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_Q2T,EL_Q2TB)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    
+    ! -= 3D elements =-
+    case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
+      ! Function
+      elem_getMaxDerivative = 1
+    case (EL_P1_3D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 4
+    case (EL_Q1_3D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 4
+    case (EL_Y1_3D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 4
+    case (EL_R1_3D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 4
+    case (EL_Q1T_3D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 4
+    case default
+      ! We don't know
+      elem_getMaxDerivative = DER_MAXNDER
+    end select
 
   end function
 
@@ -1231,7 +1271,7 @@ contains
       ! We need the twist indices. This element is 2D!
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
         EL_EVLTAG_JAC + EL_EVLTAG_DETJ + EL_EVLTAG_TWISTIDXEDGE
-    case DEFAULT
+    case default
       ! Standard evaluation tag. Evaluate reference coordinates 
       ! + Jac + Determinant of Jac for the transformation
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
@@ -1409,72 +1449,81 @@ contains
 
 ! </subroutine>
 
-  ! Choose the right element subroutine to call.
-  select case (ieltyp)
-  ! 1D elements
-  case (EL_P0_1D)
-    call elem_P0_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_P1_1D)
-    call elem_P1_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_P2_1D)
-    call elem_P2_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_S31_1D)
-    call elem_S31_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    ! Choose the right element subroutine to call.
+    select case (ieltyp)
+    ! 1D elements
+    case (EL_P0_1D)
+      call elem_P0_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_P1_1D)
+      call elem_P1_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_P2_1D)
+      call elem_P2_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_S31_1D)
+      call elem_S31_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
 
-  ! 2D elements
-  case (EL_P0)
-    call elem_P0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_P1)
-    call elem_P1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_P2)
-    call elem_P2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_P1T)
-    call elem_P1T (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_Q0)
-    call elem_Q0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_Q1)
-    call elem_Q1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_Q2)
-    call elem_Q2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_QP1)
-    call elem_QP1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
-    call elem_EM30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_E030)
-    call elem_E030 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_EB30)
-    call elem_EB30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_EM31)
-    call elem_EM31 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_E031)
-    call elem_E031 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_E050)
-    call elem_E050 (ieltyp, Dcoords, ItwistIndexEdges, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_EB50)
-    call elem_EB50 (ieltyp, Dcoords, ItwistIndexEdges, Djac, ddetj, Bder, Dpoint, Dbas)
+    ! 2D elements
+    case (EL_P0)
+      call elem_P0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_P1)
+      call elem_P1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_P2)
+      call elem_P2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_P1T)
+      call elem_P1T (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_Q0)
+      call elem_Q0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_Q1)
+      call elem_Q1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_Q2)
+      call elem_Q2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_QP1)
+      call elem_QP1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
+      call elem_EM30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_E030)
+      call elem_E030 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_EB30)
+      call elem_EB30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_EM31)
+      call elem_EM31 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_E031)
+      call elem_E031 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_E050)
+      call elem_E050 (ieltyp, Dcoords, ItwistIndexEdges, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_EB50)
+      call elem_EB50 (ieltyp, Dcoords, ItwistIndexEdges, Djac, ddetj, Bder, Dpoint, Dbas)
 
-  ! 3D elements
-  case (EL_P0_3D)
-    call elem_P0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_P1_3D)
-    call elem_P1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_Q0_3D)
-    call elem_Q0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_Q1_3D)
-    call elem_Q1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_EM30_3D)
-    call elem_EM30_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_E030_3D)
-    call elem_E030_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  case (EL_E031_3D)
-    call elem_E031_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    ! 3D elements
+    case (EL_P0_3D)
+      call elem_P0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_P1_3D)
+      call elem_P1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_Q0_3D)
+      call elem_Q0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_Q1_3D)
+      call elem_Q1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_Y0_3D)
+      call elem_Y0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_Y1_3D)
+      call elem_Y1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_R0_3D)
+      call elem_R0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_R1_3D)
+      call elem_R1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_EM30_3D)
+      call elem_EM30_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_E030_3D)
+      call elem_E030_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+    case (EL_E031_3D)
+      call elem_E031_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
 
-  case DEFAULT
-    ! Element not implemened!
-    ! Throw a floating point exception so that the program stops here!
-    ! We cannot use "PRINT" here as the routine is PURE!
-    call sys_throwFPE()
-  end select
+    case default
+      ! Element not implemened!
+      ! Throw a floating point exception so that the program stops here!
+      ! We cannot use "PRINT" here as the routine is PURE!
+      call sys_throwFPE()
+      
+    end select
 
   end subroutine 
   
@@ -1527,98 +1576,110 @@ contains
 
 ! </subroutine>
 
-  ! Choose the right element subroutine to call.
-  select case (ieltyp)
-  ! 1D elements
-  case (EL_P0_1D)
-    call elem_P0_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_P1_1D)
-    call elem_P1_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_P2_1D)
-    call elem_P2_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_S31_1D)
-    call elem_S31_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    ! Choose the right element subroutine to call.
+    select case (ieltyp)
+    ! 1D elements
+    case (EL_P0_1D)
+      call elem_P0_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_P1_1D)
+      call elem_P1_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_P2_1D)
+      call elem_P2_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_S31_1D)
+      call elem_S31_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
 
-  ! 2D elements
-  case (EL_P0)
-    call elem_P0 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_P1)
-    call elem_P1 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_P2)
-    call elem_P2 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_P1T)
-    call elem_P1T (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_Q0)
-    call elem_Q0 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_Q1)
-    call elem_Q1 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_Q2)
-    call elem_Q2 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_QP1)
-    call elem_QP1 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
-    call elem_EM30 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
-  case (EL_E030)
-    call elem_E030 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_EB30)
-    call elem_EB30 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_EM31)
-    call elem_EM31 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
-  case (EL_E031)
-    call elem_E031 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_E050)
-    call elem_E050 (ieltyp, revalElement%Dcoords, revalElement%itwistIndexEdges, &
-        revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_EB50)
-    call elem_EB50 (ieltyp, revalElement%Dcoords, revalElement%itwistIndexEdges, &
-        revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    ! 2D elements
+    case (EL_P0)
+      call elem_P0 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_P1)
+      call elem_P1 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_P2)
+      call elem_P2 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_P1T)
+      call elem_P1T (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_Q0)
+      call elem_Q0 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_Q1)
+      call elem_Q1 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_Q2)
+      call elem_Q2 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_QP1)
+      call elem_QP1 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
+      call elem_EM30 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
+    case (EL_E030)
+      call elem_E030 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_EB30)
+      call elem_EB30 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_EM31)
+      call elem_EM31 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
+    case (EL_E031)
+      call elem_E031 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_E050)
+      call elem_E050 (ieltyp, revalElement%Dcoords, revalElement%itwistIndexEdges, &
+          revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_EB50)
+      call elem_EB50 (ieltyp, revalElement%Dcoords, revalElement%itwistIndexEdges, &
+          revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
 
-  ! 3D elements
-  case (EL_P0_3D)
-    call elem_P0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_P1_3D)
-    call elem_P1_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_Q0_3D)
-    call elem_Q0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_Q1_3D)
-    call elem_Q1_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_EM30_3D)
-    call elem_EM30_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_E030_3D)
-    call elem_E030_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-  case (EL_E031_3D)
-    call elem_E031_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
-        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    ! 3D elements
+    case (EL_P0_3D)
+      call elem_P0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_P1_3D)
+      call elem_P1_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_Q0_3D)
+      call elem_Q0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_Q1_3D)
+      call elem_Q1_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_Y0_3D)
+      call elem_Y0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_Y1_3D)
+      call elem_Y1_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_R0_3D)
+      call elem_R0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_R1_3D)
+      call elem_R1_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_EM30_3D)
+      call elem_EM30_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_E030_3D)
+      call elem_E030_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_E031_3D)
+      call elem_E031_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
 
-  case DEFAULT
-    ! Element not implemened!
-    ! Throw a floating point exception so that the program stops here!
-    ! We cannot use "PRINT" here as the routine is PURE!
-    call sys_throwFPE()
-  end select
+    case default
+      ! Element not implemened!
+      ! Throw a floating point exception so that the program stops here!
+      ! We cannot use "PRINT" here as the routine is PURE!
+      call sys_throwFPE()
+    end select
 
   end subroutine 
   
@@ -1698,70 +1759,78 @@ contains
   ! local variables
   integer :: i
 
-  ! Choose the right element subroutine to call.
-  select case (ieltyp)
-  case (EL_P0_1D)
-    call elem_P0_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_P1_1D)
-    call elem_P1_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_P2_1D)
-    call elem_P2_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_S31_1D)
-    call elem_S31_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    
-  ! 2D elements
-  case (EL_P0)
-    call elem_P0_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_P1)
-    call elem_P1_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_P2)
-    call elem_P2_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_P1T)
-    call elem_P1T_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_Q0)
-    call elem_Q0_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_Q1)
-    call elem_Q1_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_EM30, EL_EM30_UNPIVOTED ,EL_EM30_UNSCALED)
-    call elem_EM30_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_E030)
-    call elem_E030_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_EB30)
-    call elem_EB30_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_EM31)
-    call elem_EM31_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_E031)
-    call elem_E031_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_E050)
-    call elem_E050_mult (ieltyp, Dcoords, itwistIndex,Djac, Ddetj, Bder, Dbas, &
-                         npoints, Dpoints)
-  case (EL_EB50)
-    call elem_EB50_mult (ieltyp, Dcoords, itwistIndex,Djac, Ddetj, Bder, Dbas, &
-                         npoints, Dpoints)
+    ! Choose the right element subroutine to call.
+    select case (ieltyp)
+    case (EL_P0_1D)
+      call elem_P0_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_P1_1D)
+      call elem_P1_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_P2_1D)
+      call elem_P2_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_S31_1D)
+      call elem_S31_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      
+    ! 2D elements
+    case (EL_P0)
+      call elem_P0_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_P1)
+      call elem_P1_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_P2)
+      call elem_P2_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_P1T)
+      call elem_P1T_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_Q0)
+      call elem_Q0_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_Q1)
+      call elem_Q1_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_EM30, EL_EM30_UNPIVOTED ,EL_EM30_UNSCALED)
+      call elem_EM30_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_E030)
+      call elem_E030_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_EB30)
+      call elem_EB30_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_EM31)
+      call elem_EM31_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_E031)
+      call elem_E031_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_E050)
+      call elem_E050_mult (ieltyp, Dcoords, itwistIndex,Djac, Ddetj, Bder, Dbas, &
+                           npoints, Dpoints)
+    case (EL_EB50)
+      call elem_EB50_mult (ieltyp, Dcoords, itwistIndex,Djac, Ddetj, Bder, Dbas, &
+                           npoints, Dpoints)
 
-  ! 3D elements
-  case (EL_P0_3D)
-    call elem_P0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_P1_3D)
-    call elem_P1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_Q0_3D)
-    call elem_Q0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_Q1_3D)
-    call elem_Q1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_EM30_3D)
-    call elem_EM30_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_E030_3D)
-    call elem_E030_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  case (EL_E031_3D)
-    call elem_E031_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    ! 3D elements
+    case (EL_P0_3D)
+      call elem_P0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_P1_3D)
+      call elem_P1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_Q0_3D)
+      call elem_Q0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_Q1_3D)
+      call elem_Q1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_Y0_3D)
+      call elem_Y0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_Y1_3D)
+      call elem_Y1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_R0_3D)
+      call elem_R0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_R1_3D)
+      call elem_R1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_EM30_3D)
+      call elem_EM30_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_E030_3D)
+      call elem_E030_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_E031_3D)
+      call elem_E031_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
 
-  case DEFAULT
-    ! Compatibility handling: evaluate all points separately
-    do i=1,npoints
-      call elem_generic (ieltyp, Dcoords, Djac(:,i), Ddetj(i), Bder, &
-                         Dpoints(:,i), Dbas(:,:,i), ItwistIndex)
-    end do
-  end select
+    case default
+      ! Compatibility handling: evaluate all points separately
+      do i=1,npoints
+        call elem_generic (ieltyp, Dcoords, Djac(:,i), Ddetj(i), Bder, &
+                           Dpoints(:,i), Dbas(:,:,i), ItwistIndex)
+      end do
+    end select
 
   end subroutine 
   
@@ -1862,105 +1931,117 @@ contains
 
   integer :: i
 
-  ! Choose the right element subroutine to call.
-  select case (ieltyp)
-  ! 1D elements
-  case (EL_P0_1D)
-    call elem_P0_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+    ! Choose the right element subroutine to call.
+    select case (ieltyp)
+    ! 1D elements
+    case (EL_P0_1D)
+      call elem_P0_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                           Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_P1_1D)
+      call elem_P1_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                           Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_P2_1D)
+      call elem_P2_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                           Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_S31_1D)
+      call elem_S31_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                            Bder, Dbas, npoints, nelements, Dpoints)
+
+    ! 2D elements
+    case (EL_P0)
+      call elem_P0_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                        Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_P1)
+      call elem_P1_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                        Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_P2)
+      call elem_P2_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                        Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_P1T)
+      call elem_P1T_sim (ieltyp, Dcoords, Djac, Ddetj, &
                          Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_P1_1D)
-    call elem_P1_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                         Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_P2_1D)
-    call elem_P2_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                         Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_S31_1D)
-    call elem_S31_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+    case (EL_Q0)
+      call elem_Q0_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                        Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_Q1)
+      call elem_Q1_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                        Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_Q2)
+      call elem_Q2_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                        Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
+      call elem_EM30_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                          Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_E030)
+      call elem_E030_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                          Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_EB30)
+      call elem_EB30_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                          Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_EM31)
+      call elem_EM31_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                          Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_E031)
+      call elem_E031_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                          Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_E050)
+      call elem_E050_sim (ieltyp, Dcoords, ItwistIndexEdges, Djac, Ddetj, &
+                          Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_EB50)
+      call elem_EB50_sim (ieltyp, Dcoords, ItwistIndexEdges, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
 
-  ! 2D elements
-  case (EL_P0)
-    call elem_P0_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_P1)
-    call elem_P1_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_P2)
-    call elem_P2_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_P1T)
-    call elem_P1T_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                       Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_Q0)
-    call elem_Q0_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_Q1)
-    call elem_Q1_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_Q2)
-    call elem_Q2_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
-    call elem_EM30_sim (ieltyp, Dcoords, Djac, Ddetj, &
+    ! 3D elements
+    case (EL_P0_3D)
+      call elem_P0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_E030)
-    call elem_E030_sim (ieltyp, Dcoords, Djac, Ddetj, &
+    case (EL_P1_3D)
+      call elem_P1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_EB30)
-    call elem_EB30_sim (ieltyp, Dcoords, Djac, Ddetj, &
+    case (EL_Q0_3D)
+      call elem_Q0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_EM31)
-    call elem_EM31_sim (ieltyp, Dcoords, Djac, Ddetj, &
+    case (EL_Q1_3D)
+      call elem_Q1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_E031)
-    call elem_E031_sim (ieltyp, Dcoords, Djac, Ddetj, &
+    case (EL_Y0_3D)
+      call elem_Y0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_E050)
-    call elem_E050_sim (ieltyp, Dcoords, ItwistIndexEdges, Djac, Ddetj, &
+    case (EL_Y1_3D)
+      call elem_Y1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_EB50)
-    call elem_EB50_sim (ieltyp, Dcoords, ItwistIndexEdges, Djac, Ddetj, &
+    case (EL_R0_3D)
+      call elem_R0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                        Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_R1_3D)
+      call elem_R1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                        Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_EM30_3D)
+      call elem_EM30_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                          Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_E030_3D)
+      call elem_E030_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                        Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_E031_3D)
+      call elem_E031_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
 
-  ! 3D elements
-  case (EL_P0_3D)
-    call elem_P0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_P1_3D)
-    call elem_P1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_Q0_3D)
-    call elem_Q0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_Q1_3D)
-    call elem_Q1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_EM30_3D)
-    call elem_EM30_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_E030_3D)
-    call elem_E030_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-  case (EL_E031_3D)
-    call elem_E031_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
-                      Bder, Dbas, npoints, nelements, Dpoints)
-
-  case DEFAULT
-    ! Compatibility handling: evaluate on all elements separately
-    if (present(ItwistIndexEdges)) then
-      do i=1,nelements
-        call elem_generic_mult (ieltyp, Dcoords(:,:,i),&
-            Djac(:,:,i), Ddetj(:,i), &
-            Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i), ItwistIndexEdges(i))
-      end do
-    else
-      do i=1,nelements
-        call elem_generic_mult (ieltyp, Dcoords(:,:,i),&
-            Djac(:,:,i), Ddetj(:,i), &
-            Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i))
-      end do
-    end if
-  end select
+    case default
+      ! Compatibility handling: evaluate on all elements separately
+      if (present(ItwistIndexEdges)) then
+        do i=1,nelements
+          call elem_generic_mult (ieltyp, Dcoords(:,:,i),&
+              Djac(:,:,i), Ddetj(:,i), &
+              Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i), ItwistIndexEdges(i))
+        end do
+      else
+        do i=1,nelements
+          call elem_generic_mult (ieltyp, Dcoords(:,:,i),&
+              Djac(:,:,i), Ddetj(:,i), &
+              Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i))
+        end do
+      end if
+    end select
 
   end subroutine 
   
@@ -2009,200 +2090,224 @@ contains
 
   integer :: i
 
-  ! Choose the right element subroutine to call.
-  select case (ieltyp)
-  ! 1D elements
-  case (EL_P0_1D)
-    call elem_P0_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_P1_1D)
-    call elem_P1_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_P2_1D)
-    call elem_P2_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_S31_1D)
-    call elem_S31_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  ! 2D elements
-  case (EL_P0)
-    call elem_P0_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_P1)
-    call elem_P1_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_P2)
-    call elem_P2_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_P1T)
-    call elem_P1T_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_Q0)
-    call elem_Q0_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_Q1)
-    call elem_Q1_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_Q2)
-    call elem_Q2_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
-    call elem_EM30_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsReal)
-  
-  case (EL_E030)
-    call elem_E030_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_EB30)
-    call elem_EB30_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
+    ! Choose the right element subroutine to call.
+    select case (ieltyp)
+    ! 1D elements
+    case (EL_P0_1D)
+      call elem_P0_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_P1_1D)
+      call elem_P1_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_P2_1D)
+      call elem_P2_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_S31_1D)
+      call elem_S31_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    ! 2D elements
+    case (EL_P0)
+      call elem_P0_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_P1)
+      call elem_P1_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_P2)
+      call elem_P2_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_P1T)
+      call elem_P1T_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_Q0)
+      call elem_Q0_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_Q1)
+      call elem_Q1_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_Q2)
+      call elem_Q2_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
+      call elem_EM30_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsReal)
+    
+    case (EL_E030)
+      call elem_E030_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_EB30)
+      call elem_EB30_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
 
-  case (EL_EM31)
-    call elem_EM31_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsReal)
-  
-  case (EL_E031)
-    call elem_E031_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_E050)
-    call elem_E050_sim (ieltyp, revalElementSet%p_Dcoords,&
-      revalElementSet%p_ItwistIndexEdge, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_EB50)
-    call elem_EB50_sim (ieltyp, revalElementSet%p_Dcoords,&
-      revalElementSet%p_ItwistIndexEdge, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  ! 3D elements
-  case (EL_P0_3D)
-    call elem_P0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_P1_3D)
-    call elem_P1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
+    case (EL_EM31)
+      call elem_EM31_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsReal)
+    
+    case (EL_E031)
+      call elem_E031_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_E050)
+      call elem_E050_sim (ieltyp, revalElementSet%p_Dcoords,&
+        revalElementSet%p_ItwistIndexEdge, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_EB50)
+      call elem_EB50_sim (ieltyp, revalElementSet%p_Dcoords,&
+        revalElementSet%p_ItwistIndexEdge, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    ! 3D elements
+    case (EL_P0_3D)
+      call elem_P0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_P1_3D)
+      call elem_P1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
 
-  case (EL_Q0_3D)
-    call elem_Q0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_Q1_3D)
-    call elem_Q1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_EM30_3D)
-    call elem_EM30_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsReal)
-  
-  case (EL_E030_3D)
-    call elem_E030_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-  case (EL_E031_3D)
-    call elem_E031_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
-      revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-      Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-      revalElementSet%p_DpointsRef)
-  
-        
-  case DEFAULT
-    ! Compatibility handling: evaluate on all elements separately
-    if (associated(revalElementSet%p_ItwistIndexEdge)) then
-      if (elem_isNonparametric(ieltyp)) then
-        do i=1,revalElementSet%nelements
-          call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
-              revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
-              Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
-              revalElementSet%p_DpointsReal(:,:,i), revalElementSet%p_ItwistIndexEdge(i))
-        end do
+    case (EL_Q0_3D)
+      call elem_Q0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_Q1_3D)
+      call elem_Q1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+
+    case (EL_Y0_3D)
+      call elem_Y0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_Y1_3D)
+      call elem_Y1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+
+    case (EL_R0_3D)
+      call elem_R0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_R1_3D)
+      call elem_R1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_EM30_3D)
+      call elem_EM30_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsReal)
+    
+    case (EL_E030_3D)
+      call elem_E030_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+    case (EL_E031_3D)
+      call elem_E031_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+    
+          
+    case default
+      ! Compatibility handling: evaluate on all elements separately
+      if (associated(revalElementSet%p_ItwistIndexEdge)) then
+        if (elem_isNonparametric(ieltyp)) then
+          do i=1,revalElementSet%nelements
+            call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+                revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
+                Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
+                revalElementSet%p_DpointsReal(:,:,i), revalElementSet%p_ItwistIndexEdge(i))
+          end do
+        else
+          do i=1,revalElementSet%nelements
+            call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+                revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
+                Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
+                revalElementSet%p_DpointsRef(:,:,i), revalElementSet%p_ItwistIndexEdge(i))
+          end do
+        end if
       else
-        do i=1,revalElementSet%nelements
-          call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
-              revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
-              Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
-              revalElementSet%p_DpointsRef(:,:,i), revalElementSet%p_ItwistIndexEdge(i))
-        end do
+        if (elem_isNonparametric(ieltyp)) then
+          do i=1,revalElementSet%nelements
+            call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+                revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
+                Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
+                revalElementSet%p_DpointsReal(:,:,i))
+          end do
+        else
+          do i=1,revalElementSet%nelements
+            call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+                revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
+                Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
+                revalElementSet%p_DpointsRef(:,:,i))
+          end do
+        end if
       end if
-    else
-      if (elem_isNonparametric(ieltyp)) then
-        do i=1,revalElementSet%nelements
-          call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
-              revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
-              Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
-              revalElementSet%p_DpointsReal(:,:,i))
-        end do
-      else
-        do i=1,revalElementSet%nelements
-          call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
-              revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
-              Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
-              revalElementSet%p_DpointsRef(:,:,i))
-        end do
-      end if
-    end if
-  end select
+    end select
 
   end subroutine 
 
@@ -13102,12 +13207,12 @@ contains
               (djx*Dhelp(7,1,i) - djy*Dhelp(7,2,i) + djz*Dhelp(7,3,i))
           Dbas(8,DER_DERIV3D_X,i,j) = Dxj(i) * &
               (djx*Dhelp(8,1,i) - djy*Dhelp(8,2,i) + djz*Dhelp(8,3,i))
-        end do
+!        end do
 !      ENDIF
       
       !y-derivatives on current element
 !      IF (Bder(DER_DERIV3D_Y)) THEN
-        do i=1,npoints
+!        do i=1,npoints
           djx = Djac(7,i,j)*Djac(6,i,j) - Djac(4,i,j)*Djac(9,i,j)
           djy = Djac(1,i,j)*Djac(9,i,j) - Djac(7,i,j)*Djac(3,i,j)
           djz = Djac(4,i,j)*Djac(3,i,j) - Djac(1,i,j)*Djac(6,i,j)
@@ -13127,12 +13232,12 @@ contains
               (-djx*Dhelp(7,1,i) + djy*Dhelp(7,2,i) - djz*Dhelp(7,3,i))
           Dbas(8,DER_DERIV3D_Y,i,j) = Dxj(i) * &
               (-djx*Dhelp(8,1,i) + djy*Dhelp(8,2,i) - djz*Dhelp(8,3,i))
-        end do
+!        end do
 !      ENDIF
 
       !z-derivatives on current element
 !      IF (Bder(DER_DERIV3D_Z)) THEN
-        do i=1,npoints
+!        do i=1,npoints
           djx = Djac(4,i,j)*Djac(8,i,j) - Djac(7,i,j)*Djac(5,i,j)
           djy = Djac(7,i,j)*Djac(2,i,j) - Djac(1,i,j)*Djac(8,i,j)
           djz = Djac(1,i,j)*Djac(5,i,j) - Djac(4,i,j)*Djac(2,i,j)
@@ -13768,12 +13873,12 @@ contains
               (djx*Dhelp(5,1,i) - djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
           Dbas(6,DER_DERIV3D_X,i,j) = Dxj(i) * &
               (djx*Dhelp(6,1,i) - djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
-        end do
+!        end do
 !      ENDIF
       
       !y-derivatives on current element
 !      IF (Bder(DER_DERIV3D_Y)) THEN
-        do i=1,npoints
+!        do i=1,npoints
           djx = Djac(7,i,j)*Djac(6,i,j) - Djac(4,i,j)*Djac(9,i,j)
           djy = Djac(1,i,j)*Djac(9,i,j) - Djac(7,i,j)*Djac(3,i,j)
           djz = Djac(4,i,j)*Djac(3,i,j) - Djac(1,i,j)*Djac(6,i,j)
@@ -13789,17 +13894,16 @@ contains
               (-djx*Dhelp(5,1,i) + djy*Dhelp(5,2,i) - djz*Dhelp(5,3,i))
           Dbas(6,DER_DERIV3D_Y,i,j) = Dxj(i) * &
               (-djx*Dhelp(6,1,i) + djy*Dhelp(6,2,i) - djz*Dhelp(6,3,i))
-        end do
+!        end do
 !      ENDIF
 
       !z-derivatives on current element
 !      IF (Bder(DER_DERIV3D_Z)) THEN
-        do i=1,npoints
+!        do i=1,npoints
           djx = Djac(4,i,j)*Djac(8,i,j) - Djac(7,i,j)*Djac(5,i,j)
           djy = Djac(7,i,j)*Djac(2,i,j) - Djac(1,i,j)*Djac(8,i,j)
           djz = Djac(1,i,j)*Djac(5,i,j) - Djac(4,i,j)*Djac(2,i,j)
           Dbas(1,DER_DERIV3D_Z,i,j) = Dxj(i) * &
-
               (djx*Dhelp(1,1,i) - djy*Dhelp(1,2,i) + djz*Dhelp(1,3,i))
           Dbas(2,DER_DERIV3D_Z,i,j) = Dxj(i) * &
               (djx*Dhelp(2,1,i) - djy*Dhelp(2,2,i) + djz*Dhelp(2,3,i))
@@ -14433,12 +14537,12 @@ contains
               (djx*Dhelp(5,1,i) - djy*Dhelp(5,2,i) + djz*Dhelp(5,3,i))
           Dbas(6,DER_DERIV3D_X,i,j) = Dxj(i) * &
               (djx*Dhelp(6,1,i) - djy*Dhelp(6,2,i) + djz*Dhelp(6,3,i))
-        end do
+!        end do
 !      ENDIF
       
       !y-derivatives on current element
 !      IF (Bder(DER_DERIV3D_Y)) THEN
-        do i=1,npoints
+!        do i=1,npoints
           djx = Djac(7,i,j)*Djac(6,i,j) - Djac(4,i,j)*Djac(9,i,j)
           djy = Djac(1,i,j)*Djac(9,i,j) - Djac(7,i,j)*Djac(3,i,j)
           djz = Djac(4,i,j)*Djac(3,i,j) - Djac(1,i,j)*Djac(6,i,j)
@@ -14454,12 +14558,12 @@ contains
               (-djx*Dhelp(5,1,i) + djy*Dhelp(5,2,i) - djz*Dhelp(5,3,i))
           Dbas(6,DER_DERIV3D_Y,i,j) = Dxj(i) * &
               (-djx*Dhelp(6,1,i) + djy*Dhelp(6,2,i) - djz*Dhelp(6,3,i))
-        end do
+!        end do
 !      ENDIF
 
       !z-derivatives on current element
 !      IF (Bder(DER_DERIV3D_Z)) THEN
-        do i=1,npoints
+!        do i=1,npoints
           djx = Djac(4,i,j)*Djac(8,i,j) - Djac(7,i,j)*Djac(5,i,j)
           djy = Djac(7,i,j)*Djac(2,i,j) - Djac(1,i,j)*Djac(8,i,j)
           djz = Djac(1,i,j)*Djac(5,i,j) - Djac(4,i,j)*Djac(2,i,j)
@@ -15580,5 +15684,1732 @@ contains
   
   ! That's it
   end subroutine
+
+
+!**************************************************************************
+! Element subroutines for parametric 3D Y0 element.
+! The routines are defines with the F95 PURE statement as they work 
+! only on the parameters; helps some compilers in optimisation.
+ 
+!<subroutine>  
+
+  pure subroutine elem_Y0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, &
+                              Dpoint, Dbas)
+
+!<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at the given point on the reference element. 
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_Y0_3D.
+  integer(I32), intent(IN)  :: ieltyp
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates,
+  ! Dcoords(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element.
+  !  Djac(1) = J(1,1)
+  !  Djac(2) = J(2,1)
+  !  Djac(3) = J(3,1)
+  !  Djac(4) = J(1,2)
+  !  Djac(5) = J(2,2)
+  !  Djac(6) = J(3,2)
+  !  Djac(7) = J(1,3)
+  !  Djac(8) = J(2,3)
+  !  Djac(9) = J(3,3)
+  ! REMARK: Not used by this special type of element!
+  real(DP), dimension(EL_NJACENTRIES3D), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element.
+  ! REMARK: Not used by this special type of element!
+  real(DP), intent(IN) :: ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Cartesian coordinates of the evaluation point on reference element.
+  ! Dpoint(1) = x-coordinate,
+  ! Dpoint(2) = y-coordinate
+  ! Dpoint(3) = z-coordinate
+  real(DP), dimension(3), intent(IN) :: Dpoint
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  !   basis function of the finite element in the point (dx,dy) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
+  real(DP), dimension(:,:), intent(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Clear the output array
+  !Dbas = 0.0_DP
+    
+  ! Y0 is a single basis function, constant in the element.
+  ! The function value of the basis function is =1, the derivatives are all 0!
+  DBas(1,DER_FUNC) = 1.0_DP
+
+  end subroutine 
+  
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_Y0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, &
+                                   Bder, Dbas, npoints, Dpoints)
+
+  !<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at multiple given points on the reference element. 
+  !</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_Y0_3D.
+  integer(I32), intent(IN)  :: ieltyp
+  
+  ! Number of points on every element where to evalate the basis functions.
+  integer, intent(IN) :: npoints
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates,
+  ! Dcoords(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element. For every point i:
+  !  Djac(1,i) = J_i(1,1)
+  !  Djac(2,i) = J_i(2,1)
+  !  Djac(3,i) = J_i(3,1)
+  !  Djac(4,i) = J_i(1,2)
+  !  Djac(5,i) = J_i(2,2)
+  !  Djac(6,i) = J_i(3,2)
+  !  Djac(7,i) = J_i(1,3)
+  !  Djac(8,i) = J_i(2,3)
+  !  Djac(9,i) = J_I(3,3)
+  ! REMARK: Not used by this special type of element!
+  real(DP), dimension(EL_NJACENTRIES3D,npoints), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element for every of the npoints points.
+  ! REMARK: Not used by this special type of element!
+  real(DP), dimension(:), intent(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints)
+  ! Dpoints(1,.)=x-coordinates,
+  ! Dpoints(2,.)=y-coordinates,
+  ! Dpoints(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dpoints
+  
+  !</input>
+  
+  !<output>
+  
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:), intent(OUT) :: Dbas
+  
+  !</output>
+
+! </subroutine>
+
+  ! Clear the output array
+  !Dbas = 0.0_DP
+  
+  ! Y0 is a single basis function, constant in the element.
+  ! The function value of the basis function is =1, the derivatives are all 0!
+  DBas(1,DER_FUNC,:) = 1.0_DP
+
+  end subroutine 
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_Y0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                                  Bder, Dbas, npoints, nelements, Dpoints)
+
+  !<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the reference 
+  ! element for multiple given elements.
+  !</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_Y0_3D.
+  integer(I32), intent(IN)  :: ieltyp
+  
+  ! Number of points on every element where to evalate the basis functions.
+  integer, intent(IN) :: npoints
+  
+  ! Number of elements, the basis functions are evaluated at
+  integer, intent(IN)  :: nelements
+
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE^,nelements)
+  !  Dcoords(1,.,.)=x-coordinates,
+  !  Dcoords(2,.,.)=y-coordinates,
+  !  Dcoords(3,.,.)=z-coordinates.
+  ! furthermore:
+  !  Dcoords(:,i,.) = Coordinates of vertex i
+  ! furthermore:
+  !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
+  real(DP), dimension(:,:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real elements. For every point i:
+  !  Djac(1,i,.) = J_i(1,1,.)
+  !  Djac(2,i,.) = J_i(2,1,.)
+  !  Djac(3,i,.) = J_i(3,1,.)
+  !  Djac(4,i,.) = J_i(1,2,.)
+  !  Djac(5,i,.) = J_i(2,2,.)
+  !  Djac(6,i,.) = J_i(3,2,.)
+  !  Djac(7,i,.) = J_i(1,3,.)
+  !  Djac(8,i,.) = J_i(2,3,.)
+  !  Djac(9,i,.) = J_i(3,3,.)
+  ! REMARK: Not used by this special type of element!
+  real(DP), dimension(EL_NJACENTRIES3D,npoints), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! elements for every of the npoints points on all the elements.
+  !  Ddetj(i,.) = Determinant of point i
+  !  Ddetj(:,j) = determinants of all points on element j
+  ! REMARK: Not used by this special type of element!
+  real(DP), dimension(:,:), intent(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints,nelements)
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates,
+  !  Dpoints(3,.)=z-coordinates.
+  ! furthermore:
+  !  Dpoints(:,i,.) = Coordinates of point i
+  ! furthermore:
+  !  Dpoints(:,:,j) = Coordinates of all points on element j
+  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+  
+  !</input>
+  
+  !<output>
+  
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
+  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(OUT) :: Dbas
+  real(DP), dimension(:,:,:,:), intent(OUT) :: Dbas
+  
+  !</output>
+
+! </subroutine>
+
+  ! Clear the output array
+  !Dbas = 0.0_DP
+  
+  ! Y0 is a single basis function, constant in the element.
+  ! The function value of the basis function is =1, the derivatives are all 0!
+  DBas(1,DER_FUNC,:,:) = 1.0_DP
+
+  end subroutine 
+
+!**************************************************************************
+! Element subroutines for parametric Y1 element.
+! The routines are defines with the F95 PURE statement as they work 
+! only on the parameters; helps some compilers in optimisation.
+ 
+!<subroutine>  
+
+  pure subroutine elem_Y1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, &
+                              Dpoint, Dbas)
+
+  !<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at the given point on the reference element. 
+  !</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_Y1_3D.
+  integer(I32), intent(IN)  :: ieltyp
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates,
+  ! Dcoords(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element.
+  !  Djac(1) = J(1,1)
+  !  Djac(2) = J(2,1)
+  !  Djac(3) = J(3,1)
+  !  Djac(4) = J(1,2)
+  !  Djac(5) = J(2,2)
+  !  Djac(6) = J(3,2)
+  !  Djac(7) = J(1,3)
+  !  Djac(8) = J(2,3)
+  !  Djac(9) = J(3,3)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  real(DP), dimension(EL_NJACENTRIES3D), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  real(DP), intent(IN) :: ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Cartesian coordinates of the evaluation point on reference element.
+  ! Dpoint(1) = x-coordinate,
+  ! Dpoint(2) = y-coordinate,
+  ! Dpoint(3) = z-coordinate
+  real(DP), dimension(3), intent(IN) :: Dpoint
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  !   basis function of the finite element in the point (dx,dy) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
+  real(DP), dimension(:,:), intent(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  !auxiliary vector containing the first derivatives on the reference element
+  real(DP), dimension(5,NDIM3D) :: Dhelp
+  real(DP) :: dx,dy,dz, djx, djy, djz
+
+  real(DP) :: dxj !auxiliary variable
+  
+  ! The Y1 element is specified by five polynomials on the reference element.
+  ! These eight polynomials are:
+  !
+  !  P1(x,y,z) = 1/8 (1-x) (1-y) (1-z)
+  !  P2(x,y,z) = 1/8 (1+x) (1-y) (1-z)
+  !  P3(x,y,z) = 1/8 (1+x) (1+y) (1-z)
+  !  P4(x,y,z) = 1/8 (1-x) (1+y) (1-z)
+  !  P5(x,y,z) = z
+  !
+  ! Each of them calculated that way that Pi(Xj)=delta_ij (Kronecker)
+  ! for X1,...,X5 the eight corners of the reference pyramid.
+  
+  ! Clear the output array
+  !Dbas = 0.0_DP
+  
+  dx = Dpoint(1)
+  dy = Dpoint(2)
+  dz = Dpoint(3)
+    
+  ! Remark: The Y1-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  ! If function values are desired, calculate them.
+!  if (el_bder(DER_FUNC3D)) then
+    Dbas(1,DER_FUNC3D) = 0.25_DP*(1.0_DP-dx)*(1.0_DP-dy)*(1.0_DP-dz)
+    Dbas(2,DER_FUNC3D) = 0.25_DP*(1.0_DP+dx)*(1.0_DP-dy)*(1.0_DP-dz)
+    Dbas(3,DER_FUNC3D) = 0.25_DP*(1.0_DP+dx)*(1.0_DP+dy)*(1.0_DP-dz)
+    Dbas(4,DER_FUNC3D) = 0.25_DP*(1.0_DP-dx)*(1.0_DP+dy)*(1.0_DP-dz)
+    Dbas(5,DER_FUNC3D) = dz
+!  endif
+  
+  ! If x-, y- or z-derivatives are desired, calculate them.
+  ! The values of the derivatives are calculated by taking the
+  ! derivative of the polynomials and multiplying them with the
+  ! inverse of the transformation matrix (in each point) as
+  ! stated above.
+!  if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
+!      (Bder(DER_DERIV3D_Z))) then
+    dxj = 0.25_DP / ddetj
+    
+    ! x-, y- and z-derivatives on reference element
+    Dhelp(1,1) =-(1.0_DP-dy)*(1.0_DP-dz)
+    Dhelp(2,1) = (1.0_DP-dy)*(1.0_DP-dz)
+    Dhelp(3,1) = (1.0_DP+dy)*(1.0_DP-dz)
+    Dhelp(4,1) =-(1.0_DP+dy)*(1.0_DP-dz)
+    Dhelp(5,1) = 0.0_DP
+    Dhelp(1,2) =-(1.0_DP-dx)*(1.0_DP-dz)
+    Dhelp(2,2) =-(1.0_DP+dx)*(1.0_DP-dz)
+    Dhelp(3,2) = (1.0_DP+dx)*(1.0_DP-dz)
+    Dhelp(4,2) = (1.0_DP-dx)*(1.0_DP-dz)
+    Dhelp(5,2) = 0.0_DP
+    Dhelp(1,3) =-(1.0_DP-dx)*(1.0_DP-dy)
+    Dhelp(2,3) =-(1.0_DP+dx)*(1.0_DP-dy)
+    Dhelp(3,3) =-(1.0_DP+dx)*(1.0_DP+dy)
+    Dhelp(4,3) =-(1.0_DP-dx)*(1.0_DP+dy)
+    Dhelp(5,3) = 4.0_DP
+      
+    ! x-derivatives on current element
+!    if (Bder(DER_DERIV3D_X)) then
+      djx = Djac(5)*Djac(9) - Djac(6)*Djac(8)
+      djy = Djac(8)*Djac(3) - Djac(2)*Djac(9)
+      djz = Djac(2)*Djac(6) - Djac(5)*Djac(3)
+      Dbas(1,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+!    endif
+    
+    ! y-derivatives on current element
+!    if (Bder(DER_DERIV3D_Y)) then
+      djx = Djac(7)*Djac(6) - Djac(4)*Djac(9)
+      djy = Djac(1)*Djac(9) - Djac(7)*Djac(3)
+      djz = Djac(4)*Djac(3) - Djac(1)*Djac(6)
+      Dbas(1,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(1,1) + djy*Dhelp(1,2) - djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(2,1) + djy*Dhelp(2,2) - djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(3,1) + djy*Dhelp(3,2) - djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(4,1) + djy*Dhelp(4,2) - djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(5,1) + djy*Dhelp(5,2) - djz*Dhelp(5,3))
+!    endif
+
+    ! z-derivatives on current element
+!    if (Bder(DER_DERIV3D_Z)) then
+      djx = Djac(4)*Djac(8) - Djac(7)*Djac(5)
+      djy = Djac(7)*Djac(2) - Djac(1)*Djac(8)
+      djz = Djac(1)*Djac(5) - Djac(4)*Djac(2)
+      Dbas(1,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+!    endif
+!  endif
+    
+  end subroutine 
+  
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_Y1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, &
+                                   Bder, Dbas, npoints, Dpoints)
+
+!<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at multiple given points on the reference element. 
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_Y1_3D.
+  integer(I32), intent(IN)  :: ieltyp
+  
+  ! Number of points on every element where to evalate the basis functions.
+  integer, intent(IN) :: npoints
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates,
+  ! Dcoords(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element. For every point i:
+  !  Djac(1,i) = J_i(1,1)
+  !  Djac(2,i) = J_i(2,1)
+  !  Djac(3,i) = J_i(3,1)
+  !  Djac(4,i) = J_i(1,2)
+  !  Djac(5,i) = J_i(2,2)
+  !  Djac(6,i) = J_i(3,2)
+  !  Djac(7,i) = J_i(1,3)
+  !  Djac(8,i) = J_i(2,3)
+  !  Djac(9,i) = J_I(3,3)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  real(DP), dimension(EL_NJACENTRIES3D,npoints), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element for every of the npoints points.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  real(DP), dimension(:), intent(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints).
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates,
+  !  Dpoints(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dpoints
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:), intent(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! auxiliary vector containing the first derivatives on the reference element
+  real(DP), dimension(5,NDIM3D) :: Dhelp
+
+  real(DP) :: djx, djy, djz,dxj
+  integer :: i   ! point counter
+    
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  ! Remark: The Y1-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  !if function values are desired
+  !IF (Bder(DER_FUNC3D)) THEN
+    do i=1,npoints
+      Dbas(1,DER_FUNC3D,i) = 0.25_DP*(1.0_DP-Dpoints(1,i))*&
+          (1.0_DP-Dpoints(2,i))*(1.0_DP-Dpoints(3,i))
+      Dbas(2,DER_FUNC3D,i) = 0.25_DP*(1.0_DP+Dpoints(1,i))*&
+          (1.0_DP-Dpoints(2,i))*(1.0_DP-Dpoints(3,i))
+      Dbas(3,DER_FUNC3D,i) = 0.25_DP*(1.0_DP+Dpoints(1,i))*&
+          (1.0_DP+Dpoints(2,i))*(1.0_DP-Dpoints(3,i))
+      Dbas(4,DER_FUNC3D,i) = 0.25_DP*(1.0_DP-Dpoints(1,i))*&
+          (1.0_DP+Dpoints(2,i))*(1.0_DP-Dpoints(3,i))
+      Dbas(5,DER_FUNC3D,i) = Dpoints(3,i)
+    end do
+  !ENDIF
+  
+  !if x-or y-derivatives are desired
+!  IF ((Bder(DER_DERIV3D_X)) .OR. (Bder(DER_DERIV3D_Y)) .OR.&
+!      (Bder(DER_DERIV3D_Z))) THEN
+    
+    !x-, y- and z-derivatives on reference element
+    do i = 1, npoints
+      Dhelp(1,1) =-(1.0_DP-Dpoints(2,i))*(1.0_DP-Dpoints(3,i))
+      Dhelp(2,1) = (1.0_DP-Dpoints(2,i))*(1.0_DP-Dpoints(3,i))
+      Dhelp(3,1) = (1.0_DP+Dpoints(2,i))*(1.0_DP-Dpoints(3,i))
+      Dhelp(4,1) =-(1.0_DP+Dpoints(2,i))*(1.0_DP-Dpoints(3,i))
+      Dhelp(5,1) = 0.0_DP
+
+      Dhelp(1,2) =-(1.0_DP-Dpoints(1,i))*(1.0_DP-Dpoints(3,i))
+      Dhelp(2,2) =-(1.0_DP+Dpoints(1,i))*(1.0_DP-Dpoints(3,i))
+      Dhelp(3,2) = (1.0_DP+Dpoints(1,i))*(1.0_DP-Dpoints(3,i))
+      Dhelp(4,2) = (1.0_DP-Dpoints(1,i))*(1.0_DP-Dpoints(3,i))
+      Dhelp(5,2) = 0.0_DP
+
+      Dhelp(1,3) =-(1.0_DP-Dpoints(1,i))*(1.0_DP-Dpoints(2,i))
+      Dhelp(2,3) =-(1.0_DP+Dpoints(1,i))*(1.0_DP-Dpoints(2,i))
+      Dhelp(3,3) =-(1.0_DP+Dpoints(1,i))*(1.0_DP+Dpoints(2,i))
+      Dhelp(4,3) =-(1.0_DP-Dpoints(1,i))*(1.0_DP+Dpoints(2,i))
+      Dhelp(5,3) = 4.0_DP
+      
+      dxj = 0.25_DP / Ddetj(i)
+      
+      ! x-derivatives on current element
+      djx = Djac(5,i)*Djac(9,i) - Djac(6,i)*Djac(8,i)
+      djy = Djac(8,i)*Djac(3,i) - Djac(2,i)*Djac(9,i)
+      djz = Djac(2,i)*Djac(6,i) - Djac(5,i)*Djac(3,i)
+      Dbas(1,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+    
+      ! y-derivatives on current element
+      djx = Djac(7,i)*Djac(6,i) - Djac(4,i)*Djac(9,i)
+      djy = Djac(1,i)*Djac(9,i) - Djac(7,i)*Djac(3,i)
+      djz = Djac(4,i)*Djac(3,i) - Djac(1,i)*Djac(6,i)
+      Dbas(1,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(1,1) + djy*Dhelp(1,2) - djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(2,1) + djy*Dhelp(2,2) - djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(3,1) + djy*Dhelp(3,2) - djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(4,1) + djy*Dhelp(4,2) - djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(5,1) + djy*Dhelp(5,2) - djz*Dhelp(5,3))
+
+      ! z-derivatives on current element
+      djx = Djac(4,i)*Djac(8,i) - Djac(7,i)*Djac(5,i)
+      djy = Djac(7,i)*Djac(2,i) - Djac(1,i)*Djac(8,i)
+      djz = Djac(1,i)*Djac(5,i) - Djac(4,i)*Djac(2,i)
+      Dbas(1,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+    end do
+!  ENDIF
+    
+  end subroutine 
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_Y1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                                  Bder, Dbas, npoints, nelements, Dpoints)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the reference 
+  ! element for multiple given elements.
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_Y1_3D.
+  integer(I32), intent(IN)  :: ieltyp
+
+  ! Number of points on every element where to evalate the basis functions.
+  integer, intent(IN) :: npoints
+  
+  ! Number of elements, the basis functions are evaluated at
+  integer, intent(IN)  :: nelements
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements).
+  !  Dcoords(1,.,.)=x-coordinates,
+  !  Dcoords(2,.,.)=y-coordinates,
+  !  Dcoords(3,.,.)=z-coordinates.
+  ! furthermore:
+  !  Dcoords(:,i,.) = Coordinates of vertex i
+  ! furthermore:
+  !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
+  real(DP), dimension(:,:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real elements. For every point i:
+  !  Djac(1,i,.) = J_i(1,1,.)
+  !  Djac(2,i,.) = J_i(2,1,.)
+  !  Djac(3,i,.) = J_i(3,1,.)
+  !  Djac(4,i,.) = J_i(1,2,.)
+  !  Djac(5,i,.) = J_i(2,2,.)
+  !  Djac(6,i,.) = J_i(3,2,.)
+  !  Djac(7,i,.) = J_i(1,3,.)
+  !  Djac(8,i,.) = J_i(2,3,.)
+  !  Djac(9,i,.) = J_i(3,3,.)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  !  Djac(:,:,j) refers to the determinants of the points of element j.
+  real(DP), dimension(EL_NJACENTRIES3D,npoints,nelements), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! elements for every of the npoints points on all the elements.
+  !  Ddetj(i,.) = Determinant of point i
+  !  Ddetj(:,j) = determinants of all points on element j
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  real(DP), dimension(:,:), intent(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints,nelements).
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates,
+  !  Dpoints(3,.)=z-coordinates.
+  ! furthermore:
+  !  Dpoints(:,i,.) = Coordinates of point i
+  ! furthermore:
+  !  Dpoints(:,:,j) = Coordinates of all points on element j
+  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  !   basis function of the finite element k in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
+  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(OUT) :: Dbas
+  real(DP), dimension(:,:,:,:), intent(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! auxiliary vector containing the first derivatives on the reference element
+  real(DP), dimension(5,NDIM3D) :: Dhelp
+  real(DP) :: djx, djy, djz, dxj
+  
+  integer :: i   ! point counter
+  integer :: j   ! element counter
+    
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  ! Remark: The Q1-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  !if function values are desired
+  if (Bder(DER_FUNC3D)) then
+  
+    !$omp parallel do default(shared) private(i)
+    do j=1,nelements
+    
+      do i=1,npoints
+        Dbas(1,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP-Dpoints(1,i,j))*&
+            (1.0_DP-Dpoints(2,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dbas(2,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP+Dpoints(1,i,j))*&
+            (1.0_DP-Dpoints(2,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dbas(3,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP+Dpoints(1,i,j))*&
+            (1.0_DP+Dpoints(2,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dbas(4,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP-Dpoints(1,i,j))*&
+            (1.0_DP+Dpoints(2,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dbas(5,DER_FUNC3D,i,j) = Dpoints(3,i,j)
+      end do
+      
+    end do
+    !$omp end parallel do
+    
+  end if
+    
+  !if x-, y- or z-derivatives are desired
+  if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
+      (Bder(DER_DERIV3D_Z))) then
+  
+    !$omp parallel do default(shared) private(i,Dxj,Dhelp,djx,djy,djz)
+    do j=1,nelements
+      !Dxj = 0.125_DP / Ddetj(:,j)
+      
+      ! x-, y- and z-derivatives on reference element
+      do i=1,npoints
+        Dhelp(1,1) =-(1.0_DP-Dpoints(2,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dhelp(2,1) = (1.0_DP-Dpoints(2,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dhelp(3,1) = (1.0_DP+Dpoints(2,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dhelp(4,1) =-(1.0_DP+Dpoints(2,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dhelp(5,1) = 0.0_DP
+        Dhelp(1,2) =-(1.0_DP-Dpoints(1,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dhelp(2,2) =-(1.0_DP+Dpoints(1,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dhelp(3,2) = (1.0_DP+Dpoints(1,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dhelp(4,2) = (1.0_DP-Dpoints(1,i,j))*(1.0_DP-Dpoints(3,i,j))
+        Dhelp(5,2) = 0.0_DP
+        Dhelp(1,3) =-(1.0_DP-Dpoints(1,i,j))*(1.0_DP-Dpoints(2,i,j))
+        Dhelp(2,3) =-(1.0_DP+Dpoints(1,i,j))*(1.0_DP-Dpoints(2,i,j))
+        Dhelp(3,3) =-(1.0_DP+Dpoints(1,i,j))*(1.0_DP+Dpoints(2,i,j))
+        Dhelp(4,3) =-(1.0_DP-Dpoints(1,i,j))*(1.0_DP+Dpoints(2,i,j))
+        Dhelp(5,3) = 4.0_DP
+
+        dxj = 0.25_DP / Ddetj(i,j)
+        
+        ! x-derivatives on current element
+        djx = Djac(5,i,j)*Djac(9,i,j) - Djac(6,i,j)*Djac(8,i,j)
+        djy = Djac(8,i,j)*Djac(3,i,j) - Djac(2,i,j)*Djac(9,i,j)
+        djz = Djac(2,i,j)*Djac(6,i,j) - Djac(5,i,j)*Djac(3,i,j)
+        Dbas(1,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+        Dbas(2,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+        Dbas(3,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+        Dbas(4,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+        Dbas(5,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+      
+        ! y-derivatives on current element
+        djx = Djac(7,i,j)*Djac(6,i,j) - Djac(4,i,j)*Djac(9,i,j)
+        djy = Djac(1,i,j)*Djac(9,i,j) - Djac(7,i,j)*Djac(3,i,j)
+        djz = Djac(4,i,j)*Djac(3,i,j) - Djac(1,i,j)*Djac(6,i,j)
+        Dbas(1,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(1,1) + djy*Dhelp(1,2) - djz*Dhelp(1,3))
+        Dbas(2,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(2,1) + djy*Dhelp(2,2) - djz*Dhelp(2,3))
+        Dbas(3,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(3,1) + djy*Dhelp(3,2) - djz*Dhelp(3,3))
+        Dbas(4,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(4,1) + djy*Dhelp(4,2) - djz*Dhelp(4,3))
+        Dbas(5,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(5,1) + djy*Dhelp(5,2) - djz*Dhelp(5,3))
+
+        ! z-derivatives on current element
+        djx = Djac(4,i,j)*Djac(8,i,j) - Djac(7,i,j)*Djac(5,i,j)
+        djy = Djac(7,i,j)*Djac(2,i,j) - Djac(1,i,j)*Djac(8,i,j)
+        djz = Djac(1,i,j)*Djac(5,i,j) - Djac(4,i,j)*Djac(2,i,j)
+        Dbas(1,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+        Dbas(2,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+        Dbas(3,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+        Dbas(4,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+        Dbas(5,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+
+      end do
+    end do
+    !$omp end parallel do
+      
+  end if
+    
+  end subroutine 
+
+
+!**************************************************************************
+! Element subroutines for parametric 3D R0 element.
+! The routines are defines with the F95 PURE statement as they work 
+! only on the parameters; helps some compilers in optimisation.
+ 
+!<subroutine>  
+
+  pure subroutine elem_R0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, &
+                              Dpoint, Dbas)
+
+!<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at the given point on the reference element. 
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_R0_3D.
+  integer(I32), intent(IN)  :: ieltyp
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates,
+  ! Dcoords(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element.
+  !  Djac(1) = J(1,1)
+  !  Djac(2) = J(2,1)
+  !  Djac(3) = J(3,1)
+  !  Djac(4) = J(1,2)
+  !  Djac(5) = J(2,2)
+  !  Djac(6) = J(3,2)
+  !  Djac(7) = J(1,3)
+  !  Djac(8) = J(2,3)
+  !  Djac(9) = J(3,3)
+  ! REMARK: Not used by this special type of element!
+  real(DP), dimension(EL_NJACENTRIES3D), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element.
+  ! REMARK: Not used by this special type of element!
+  real(DP), intent(IN) :: ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Cartesian coordinates of the evaluation point on reference element.
+  ! Dpoint(1) = x-coordinate,
+  ! Dpoint(2) = y-coordinate
+  ! Dpoint(3) = z-coordinate
+  real(DP), dimension(3), intent(IN) :: Dpoint
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  !   basis function of the finite element in the point (dx,dy) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
+  real(DP), dimension(:,:), intent(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Clear the output array
+  !Dbas = 0.0_DP
+    
+  ! R0 is a single basis function, constant in the element.
+  ! The function value of the basis function is =1, the derivatives are all 0!
+  DBas(1,DER_FUNC) = 1.0_DP
+
+  end subroutine 
+  
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_R0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, &
+                                   Bder, Dbas, npoints, Dpoints)
+
+  !<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at multiple given points on the reference element. 
+  !</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_R0_3D.
+  integer(I32), intent(IN)  :: ieltyp
+  
+  ! Number of points on every element where to evalate the basis functions.
+  integer, intent(IN) :: npoints
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates,
+  ! Dcoords(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element. For every point i:
+  !  Djac(1,i) = J_i(1,1)
+  !  Djac(2,i) = J_i(2,1)
+  !  Djac(3,i) = J_i(3,1)
+  !  Djac(4,i) = J_i(1,2)
+  !  Djac(5,i) = J_i(2,2)
+  !  Djac(6,i) = J_i(3,2)
+  !  Djac(7,i) = J_i(1,3)
+  !  Djac(8,i) = J_i(2,3)
+  !  Djac(9,i) = J_I(3,3)
+  ! REMARK: Not used by this special type of element!
+  real(DP), dimension(EL_NJACENTRIES3D,npoints), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element for every of the npoints points.
+  ! REMARK: Not used by this special type of element!
+  real(DP), dimension(:), intent(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints)
+  ! Dpoints(1,.)=x-coordinates,
+  ! Dpoints(2,.)=y-coordinates,
+  ! Dpoints(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dpoints
+  
+  !</input>
+  
+  !<output>
+  
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:), intent(OUT) :: Dbas
+  
+  !</output>
+
+! </subroutine>
+
+  ! Clear the output array
+  !Dbas = 0.0_DP
+  
+  ! R0 is a single basis function, constant in the element.
+  ! The function value of the basis function is =1, the derivatives are all 0!
+  DBas(1,DER_FUNC,:) = 1.0_DP
+
+  end subroutine 
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_R0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                                  Bder, Dbas, npoints, nelements, Dpoints)
+
+  !<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the reference 
+  ! element for multiple given elements.
+  !</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_R0_3D.
+  integer(I32), intent(IN)  :: ieltyp
+  
+  ! Number of points on every element where to evalate the basis functions.
+  integer, intent(IN) :: npoints
+  
+  ! Number of elements, the basis functions are evaluated at
+  integer, intent(IN)  :: nelements
+
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE^,nelements)
+  !  Dcoords(1,.,.)=x-coordinates,
+  !  Dcoords(2,.,.)=y-coordinates,
+  !  Dcoords(3,.,.)=z-coordinates.
+  ! furthermore:
+  !  Dcoords(:,i,.) = Coordinates of vertex i
+  ! furthermore:
+  !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
+  real(DP), dimension(:,:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real elements. For every point i:
+  !  Djac(1,i,.) = J_i(1,1,.)
+  !  Djac(2,i,.) = J_i(2,1,.)
+  !  Djac(3,i,.) = J_i(3,1,.)
+  !  Djac(4,i,.) = J_i(1,2,.)
+  !  Djac(5,i,.) = J_i(2,2,.)
+  !  Djac(6,i,.) = J_i(3,2,.)
+  !  Djac(7,i,.) = J_i(1,3,.)
+  !  Djac(8,i,.) = J_i(2,3,.)
+  !  Djac(9,i,.) = J_i(3,3,.)
+  ! REMARK: Not used by this special type of element!
+  real(DP), dimension(EL_NJACENTRIES3D,npoints), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! elements for every of the npoints points on all the elements.
+  !  Ddetj(i,.) = Determinant of point i
+  !  Ddetj(:,j) = determinants of all points on element j
+  ! REMARK: Not used by this special type of element!
+  real(DP), dimension(:,:), intent(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints,nelements)
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates,
+  !  Dpoints(3,.)=z-coordinates.
+  ! furthermore:
+  !  Dpoints(:,i,.) = Coordinates of point i
+  ! furthermore:
+  !  Dpoints(:,:,j) = Coordinates of all points on element j
+  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+  
+  !</input>
+  
+  !<output>
+  
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
+  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(OUT) :: Dbas
+  real(DP), dimension(:,:,:,:), intent(OUT) :: Dbas
+  
+  !</output>
+
+! </subroutine>
+
+  ! Clear the output array
+  !Dbas = 0.0_DP
+  
+  ! R0 is a single basis function, constant in the element.
+  ! The function value of the basis function is =1, the derivatives are all 0!
+  DBas(1,DER_FUNC,:,:) = 1.0_DP
+
+  end subroutine 
+
+!**************************************************************************
+! Element subroutines for parametric R1 element.
+! The routines are defines with the F95 PURE statement as they work 
+! only on the parameters; helps some compilers in optimisation.
+ 
+!<subroutine>  
+
+  pure subroutine elem_R1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, &
+                              Dpoint, Dbas)
+
+  !<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at the given point on the reference element. 
+  !</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_R1_3D.
+  integer(I32), intent(IN)  :: ieltyp
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates,
+  ! Dcoords(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element.
+  !  Djac(1) = J(1,1)
+  !  Djac(2) = J(2,1)
+  !  Djac(3) = J(3,1)
+  !  Djac(4) = J(1,2)
+  !  Djac(5) = J(2,2)
+  !  Djac(6) = J(3,2)
+  !  Djac(7) = J(1,3)
+  !  Djac(8) = J(2,3)
+  !  Djac(9) = J(3,3)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  real(DP), dimension(EL_NJACENTRIES3D), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  real(DP), intent(IN) :: ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Cartesian coordinates of the evaluation point on reference element.
+  ! Dpoint(1) = x-coordinate,
+  ! Dpoint(2) = y-coordinate,
+  ! Dpoint(3) = z-coordinate
+  real(DP), dimension(3), intent(IN) :: Dpoint
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  !   basis function of the finite element in the point (dx,dy) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
+  real(DP), dimension(:,:), intent(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  !auxiliary vector containing the first derivatives on the reference element
+  real(DP), dimension(6,NDIM3D) :: Dhelp
+  real(DP) :: dx,dy,dz, djx, djy, djz
+
+  real(DP) :: dxj !auxiliary variable
+  
+  ! The R1 element is specified by six polynomials on the reference element.
+  ! These six polynomials are:
+  !
+  !  P1(x,y,z) = 1/2 (1-x-y) (1-z)
+  !  P2(x,y,z) = 1/2 x (1-z)
+  !  P3(x,y,z) = 1/2 y (1-z)
+  !  P4(x,y,z) = 1/2 (1-x-y) (1+z)
+  !  P5(x,y,z) = 1/2 x (1+z)
+  !  P6(x,y,z) = 1/2 y (1+z)
+  !
+  ! Each of them calculated that way that Pi(Xj)=delta_ij (Kronecker)
+  ! for X1,...,X6 the six corners of the reference prism.
+  
+  ! Clear the output array
+  !Dbas = 0.0_DP
+  
+  dx = Dpoint(1)
+  dy = Dpoint(2)
+  dz = Dpoint(3)
+    
+  ! Remark: The R1-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  ! If function values are desired, calculate them.
+!  if (el_bder(DER_FUNC3D)) then
+    Dbas(1,DER_FUNC3D) = 0.5_DP*(1.0_DP-dx-dy)*(1.0_DP-dz)
+    Dbas(2,DER_FUNC3D) = 0.5_DP*dx*(1.0_DP-dz)
+    Dbas(3,DER_FUNC3D) = 0.5_DP*dy*(1.0_DP-dz)
+    Dbas(4,DER_FUNC3D) = 0.5_DP*(1.0_DP-dx-dy)*(1.0_DP+dz)
+    Dbas(5,DER_FUNC3D) = 0.5_DP*dx*(1.0_DP+dz)
+    Dbas(6,DER_FUNC3D) = 0.5_DP*dy*(1.0_DP+dz)
+!  endif
+  
+  ! If x-, y- or z-derivatives are desired, calculate them.
+  ! The values of the derivatives are calculated by taking the
+  ! derivative of the polynomials and multiplying them with the
+  ! inverse of the transformation matrix (in each point) as
+  ! stated above.
+!  if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
+!      (Bder(DER_DERIV3D_Z))) then
+    dxj = 0.5_DP / ddetj
+    
+    ! x-, y- and z-derivatives on reference element
+    Dhelp(1,1) =-(1.0_DP-dz)
+    Dhelp(2,1) = (1.0_DP-dz)
+    Dhelp(3,1) = 0.0_DP
+    Dhelp(4,1) =-(1.0_DP+dz)
+    Dhelp(5,1) = (1.0_DP+dz)
+    Dhelp(6,1) = 0.0_DP
+    Dhelp(1,2) =-(1.0_DP-dz)
+    Dhelp(2,2) = 0.0_DP
+    Dhelp(3,2) = (1.0_DP-dz)
+    Dhelp(1,2) =-(1.0_DP+dz)
+    Dhelp(2,2) = 0.0_DP
+    Dhelp(3,2) = (1.0_DP+dz)
+    Dhelp(1,3) =-(1.0_DP-dx-dy)
+    Dhelp(2,3) =-dx
+    Dhelp(3,3) =-dy
+    Dhelp(1,3) = (1.0_DP-dx-dy)
+    Dhelp(2,3) = dx
+    Dhelp(3,3) = dy
+      
+    ! x-derivatives on current element
+!    if (Bder(DER_DERIV3D_X)) then
+      djx = Djac(5)*Djac(9) - Djac(6)*Djac(8)
+      djy = Djac(8)*Djac(3) - Djac(2)*Djac(9)
+      djz = Djac(2)*Djac(6) - Djac(5)*Djac(3)
+      Dbas(1,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+      Dbas(6,DER_DERIV3D_X) = dxj * &
+          (djx*Dhelp(6,1) - djy*Dhelp(6,2) + djz*Dhelp(6,3))
+!    endif
+    
+    ! y-derivatives on current element
+!    if (Bder(DER_DERIV3D_Y)) then
+      djx = Djac(7)*Djac(6) - Djac(4)*Djac(9)
+      djy = Djac(1)*Djac(9) - Djac(7)*Djac(3)
+      djz = Djac(4)*Djac(3) - Djac(1)*Djac(6)
+      Dbas(1,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(1,1) + djy*Dhelp(1,2) - djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(2,1) + djy*Dhelp(2,2) - djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(3,1) + djy*Dhelp(3,2) - djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(4,1) + djy*Dhelp(4,2) - djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(5,1) + djy*Dhelp(5,2) - djz*Dhelp(5,3))
+      Dbas(6,DER_DERIV3D_Y) = dxj * &
+          (-djx*Dhelp(6,1) + djy*Dhelp(6,2) - djz*Dhelp(6,3))
+!    endif
+
+    ! z-derivatives on current element
+!    if (Bder(DER_DERIV3D_Z)) then
+      djx = Djac(4)*Djac(8) - Djac(7)*Djac(5)
+      djy = Djac(7)*Djac(2) - Djac(1)*Djac(8)
+      djz = Djac(1)*Djac(5) - Djac(4)*Djac(2)
+      Dbas(1,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+      Dbas(6,DER_DERIV3D_Z) = dxj * &
+          (djx*Dhelp(6,1) - djy*Dhelp(6,2) + djz*Dhelp(6,3))
+!    endif
+!  endif
+    
+  end subroutine 
+  
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_R1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, &
+                                   Bder, Dbas, npoints, Dpoints)
+
+!<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at multiple given points on the reference element. 
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_R1_3D.
+  integer(I32), intent(IN)  :: ieltyp
+  
+  ! Number of points on every element where to evalate the basis functions.
+  integer, intent(IN) :: npoints
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates,
+  ! Dcoords(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element. For every point i:
+  !  Djac(1,i) = J_i(1,1)
+  !  Djac(2,i) = J_i(2,1)
+  !  Djac(3,i) = J_i(3,1)
+  !  Djac(4,i) = J_i(1,2)
+  !  Djac(5,i) = J_i(2,2)
+  !  Djac(6,i) = J_i(3,2)
+  !  Djac(7,i) = J_i(1,3)
+  !  Djac(8,i) = J_i(2,3)
+  !  Djac(9,i) = J_I(3,3)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  real(DP), dimension(EL_NJACENTRIES3D,npoints), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element for every of the npoints points.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  real(DP), dimension(:), intent(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints).
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates,
+  !  Dpoints(3,.)=z-coordinates.
+  real(DP), dimension(:,:), intent(IN) :: Dpoints
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:), intent(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! auxiliary vector containing the first derivatives on the reference element
+  real(DP), dimension(6,NDIM3D) :: Dhelp
+
+  real(DP) :: djx, djy, djz,dxj
+  integer :: i   ! point counter
+    
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  ! Remark: The R1-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  !if function values are desired
+  !IF (Bder(DER_FUNC3D)) THEN
+    do i=1,npoints
+      Dbas(1,DER_FUNC3D,i) = 0.5_DP*(1.0_DP-Dpoints(1,i)-Dpoints(2,i))&
+                                   *(1.0_DP-Dpoints(3,i))
+      Dbas(2,DER_FUNC3D,i) = 0.5_DP*Dpoints(1,i)*(1.0_DP-Dpoints(3,i))
+      Dbas(3,DER_FUNC3D,i) = 0.5_DP*Dpoints(2,i)*(1.0_DP-Dpoints(3,i))
+      Dbas(5,DER_FUNC3D,i) = 0.5_DP*(1.0_DP-Dpoints(1,i)-Dpoints(2,i))&
+                                   *(1.0_DP+Dpoints(3,i))
+      Dbas(6,DER_FUNC3D,i) = 0.5_DP*Dpoints(1,i)*(1.0_DP+Dpoints(3,i))
+      Dbas(7,DER_FUNC3D,i) = 0.5_DP*Dpoints(2,i)*(1.0_DP+Dpoints(3,i))
+
+    end do
+  !ENDIF
+  
+  !if x-or y-derivatives are desired
+!  IF ((Bder(DER_DERIV3D_X)) .OR. (Bder(DER_DERIV3D_Y)) .OR.&
+!      (Bder(DER_DERIV3D_Z))) THEN
+    
+    !x-, y- and z-derivatives on reference element
+    do i = 1, npoints
+      Dhelp(1,1) =-(1.0_DP-Dpoints(3,i))
+      Dhelp(2,1) = (1.0_DP-Dpoints(3,i))
+      Dhelp(3,1) = 0.0_DP
+      Dhelp(4,1) =-(1.0_DP+Dpoints(3,i))
+      Dhelp(5,1) = (1.0_DP+Dpoints(3,i))
+      Dhelp(6,1) = 0.0_DP
+      Dhelp(1,2) =-(1.0_DP-Dpoints(3,i))
+      Dhelp(2,2) = 0.0_DP
+      Dhelp(3,2) = (1.0_DP-Dpoints(3,i))
+      Dhelp(4,2) =-(1.0_DP+Dpoints(3,i))
+      Dhelp(5,2) = 0.0_DP
+      Dhelp(6,2) = (1.0_DP+Dpoints(3,i))
+      Dhelp(1,3) =-(1.0_DP-Dpoints(1,i)-Dpoints(2,i))
+      Dhelp(2,3) =-Dpoints(1,i)
+      Dhelp(3,3) =-Dpoints(2,i)
+      Dhelp(4,3) = (1.0_DP-Dpoints(1,i)-Dpoints(2,i))
+      Dhelp(5,3) = Dpoints(1,i)
+      Dhelp(6,3) = Dpoints(2,i)
+      
+      dxj = 0.5_DP / Ddetj(i)
+      
+      ! x-derivatives on current element
+      djx = Djac(5,i)*Djac(9,i) - Djac(6,i)*Djac(8,i)
+      djy = Djac(8,i)*Djac(3,i) - Djac(2,i)*Djac(9,i)
+      djz = Djac(2,i)*Djac(6,i) - Djac(5,i)*Djac(3,i)
+      Dbas(1,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+      Dbas(6,DER_DERIV3D_X,i) = Dxj * &
+          (djx*Dhelp(6,1) - djy*Dhelp(6,2) + djz*Dhelp(6,3))
+    
+      ! y-derivatives on current element
+      djx = Djac(7,i)*Djac(6,i) - Djac(4,i)*Djac(9,i)
+      djy = Djac(1,i)*Djac(9,i) - Djac(7,i)*Djac(3,i)
+      djz = Djac(4,i)*Djac(3,i) - Djac(1,i)*Djac(6,i)
+      Dbas(1,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(1,1) + djy*Dhelp(1,2) - djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(2,1) + djy*Dhelp(2,2) - djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(3,1) + djy*Dhelp(3,2) - djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(4,1) + djy*Dhelp(4,2) - djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(5,1) + djy*Dhelp(5,2) - djz*Dhelp(5,3))
+      Dbas(6,DER_DERIV3D_Y,i) = Dxj * &
+          (-djx*Dhelp(6,1) + djy*Dhelp(6,2) - djz*Dhelp(6,3))
+
+      ! z-derivatives on current element
+      djx = Djac(4,i)*Djac(8,i) - Djac(7,i)*Djac(5,i)
+      djy = Djac(7,i)*Djac(2,i) - Djac(1,i)*Djac(8,i)
+      djz = Djac(1,i)*Djac(5,i) - Djac(4,i)*Djac(2,i)
+      Dbas(1,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+      Dbas(2,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+      Dbas(3,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+      Dbas(4,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+      Dbas(5,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+      Dbas(6,DER_DERIV3D_Z,i) = Dxj * &
+          (djx*Dhelp(6,1) - djy*Dhelp(6,2) + djz*Dhelp(6,3))
+    end do
+!  ENDIF
+    
+  end subroutine 
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_R1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                                  Bder, Dbas, npoints, nelements, Dpoints)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the reference 
+  ! element for multiple given elements.
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_R1_3D.
+  integer(I32), intent(IN)  :: ieltyp
+
+  ! Number of points on every element where to evalate the basis functions.
+  integer, intent(IN) :: npoints
+  
+  ! Number of elements, the basis functions are evaluated at
+  integer, intent(IN)  :: nelements
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements).
+  !  Dcoords(1,.,.)=x-coordinates,
+  !  Dcoords(2,.,.)=y-coordinates,
+  !  Dcoords(3,.,.)=z-coordinates.
+  ! furthermore:
+  !  Dcoords(:,i,.) = Coordinates of vertex i
+  ! furthermore:
+  !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
+  real(DP), dimension(:,:,:), intent(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real elements. For every point i:
+  !  Djac(1,i,.) = J_i(1,1,.)
+  !  Djac(2,i,.) = J_i(2,1,.)
+  !  Djac(3,i,.) = J_i(3,1,.)
+  !  Djac(4,i,.) = J_i(1,2,.)
+  !  Djac(5,i,.) = J_i(2,2,.)
+  !  Djac(6,i,.) = J_i(3,2,.)
+  !  Djac(7,i,.) = J_i(1,3,.)
+  !  Djac(8,i,.) = J_i(2,3,.)
+  !  Djac(9,i,.) = J_i(3,3,.)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  !  Djac(:,:,j) refers to the determinants of the points of element j.
+  real(DP), dimension(EL_NJACENTRIES3D,npoints,nelements), intent(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! elements for every of the npoints points on all the elements.
+  !  Ddetj(i,.) = Determinant of point i
+  !  Ddetj(:,j) = determinants of all points on element j
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  real(DP), dimension(:,:), intent(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(EL_MAXNDER), intent(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints,nelements).
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates,
+  !  Dpoints(3,.)=z-coordinates.
+  ! furthermore:
+  !  Dpoints(:,i,.) = Coordinates of point i
+  ! furthermore:
+  !  Dpoints(:,:,j) = Coordinates of all points on element j
+  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  !   basis function of the finite element k in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
+  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(OUT) :: Dbas
+  real(DP), dimension(:,:,:,:), intent(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! auxiliary vector containing the first derivatives on the reference element
+  real(DP), dimension(6,NDIM3D) :: Dhelp
+  real(DP) :: djx, djy, djz, dxj
+  
+  integer :: i   ! point counter
+  integer :: j   ! element counter
+    
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  !if function values are desired
+  if (Bder(DER_FUNC3D)) then
+  
+    !$omp parallel do default(shared) private(i)
+    do j=1,nelements
+    
+      do i=1,npoints
+        Dbas(1,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP-Dpoints(1,i,j)-Dpoints(2,i,j))&
+                                        *(1.0_DP-Dpoints(3,i,j))
+        Dbas(2,DER_FUNC3D,i,j) = 0.25_DP*Dpoints(1,i,j)*(1.0_DP-Dpoints(3,i,j))
+        Dbas(3,DER_FUNC3D,i,j) = 0.25_DP*Dpoints(2,i,j)*(1.0_DP-Dpoints(3,i,j))
+        Dbas(4,DER_FUNC3D,i,j) = 0.25_DP*(1.0_DP-Dpoints(1,i,j)-Dpoints(2,i,j))&
+                                        *(1.0_DP+Dpoints(3,i,j))
+        Dbas(5,DER_FUNC3D,i,j) = 0.25_DP*Dpoints(1,i,j)*(1.0_DP+Dpoints(3,i,j))
+        Dbas(6,DER_FUNC3D,i,j) = 0.25_DP*Dpoints(2,i,j)*(1.0_DP+Dpoints(3,i,j))
+      end do
+      
+    end do
+    !$omp end parallel do
+    
+  end if
+    
+  !if x-, y- or z-derivatives are desired
+  if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
+      (Bder(DER_DERIV3D_Z))) then
+  
+    !$omp parallel do default(shared) private(i,Dxj,Dhelp,djx,djy,djz)
+    do j=1,nelements
+      
+      ! x-, y- and z-derivatives on reference element
+      do i=1,npoints
+        Dhelp(1,1) =-(1.0_DP-Dpoints(3,i,j))
+        Dhelp(2,1) = (1.0_DP-Dpoints(3,i,j))
+        Dhelp(3,1) = 0.0_DP
+        Dhelp(4,1) =-(1.0_DP+Dpoints(3,i,j))
+        Dhelp(5,1) = (1.0_DP+Dpoints(3,i,j))
+        Dhelp(6,1) = 0.0_DP
+        Dhelp(1,2) =-(1.0_DP-Dpoints(3,i,j))
+        Dhelp(2,2) = 0.0_DP
+        Dhelp(3,2) = (1.0_DP-Dpoints(3,i,j))
+        Dhelp(1,2) =-(1.0_DP+Dpoints(3,i,j))
+        Dhelp(2,2) = 0.0_DP
+        Dhelp(3,2) = (1.0_DP+Dpoints(3,i,j))
+        Dhelp(1,3) =-(1.0_DP-Dpoints(1,i,j)-Dpoints(2,i,j))
+        Dhelp(2,3) =-Dpoints(1,i,j)
+        Dhelp(3,3) =-Dpoints(2,i,j)
+        Dhelp(1,3) =+(1.0_DP-Dpoints(1,i,j)-Dpoints(2,i,j))
+        Dhelp(2,3) =+Dpoints(1,i,j)
+        Dhelp(3,3) =+Dpoints(2,i,j)
+
+        dxj = 0.25_DP / Ddetj(i,j)
+        
+        ! x-derivatives on current element
+        djx = Djac(5,i,j)*Djac(9,i,j) - Djac(6,i,j)*Djac(8,i,j)
+        djy = Djac(8,i,j)*Djac(3,i,j) - Djac(2,i,j)*Djac(9,i,j)
+        djz = Djac(2,i,j)*Djac(6,i,j) - Djac(5,i,j)*Djac(3,i,j)
+        Dbas(1,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+        Dbas(2,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+        Dbas(3,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+        Dbas(4,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+        Dbas(5,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+        Dbas(6,DER_DERIV3D_X,i,j) = Dxj * &
+            (djx*Dhelp(6,1) - djy*Dhelp(6,2) + djz*Dhelp(6,3))
+      
+        ! y-derivatives on current element
+        djx = Djac(7,i,j)*Djac(6,i,j) - Djac(4,i,j)*Djac(9,i,j)
+        djy = Djac(1,i,j)*Djac(9,i,j) - Djac(7,i,j)*Djac(3,i,j)
+        djz = Djac(4,i,j)*Djac(3,i,j) - Djac(1,i,j)*Djac(6,i,j)
+        Dbas(1,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(1,1) + djy*Dhelp(1,2) - djz*Dhelp(1,3))
+        Dbas(2,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(2,1) + djy*Dhelp(2,2) - djz*Dhelp(2,3))
+        Dbas(3,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(3,1) + djy*Dhelp(3,2) - djz*Dhelp(3,3))
+        Dbas(4,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(4,1) + djy*Dhelp(4,2) - djz*Dhelp(4,3))
+        Dbas(5,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(5,1) + djy*Dhelp(5,2) - djz*Dhelp(5,3))
+        Dbas(6,DER_DERIV3D_Y,i,j) = Dxj * &
+            (-djx*Dhelp(6,1) + djy*Dhelp(6,2) - djz*Dhelp(6,3))
+
+        ! z-derivatives on current element
+        djx = Djac(4,i,j)*Djac(8,i,j) - Djac(7,i,j)*Djac(5,i,j)
+        djy = Djac(7,i,j)*Djac(2,i,j) - Djac(1,i,j)*Djac(8,i,j)
+        djz = Djac(1,i,j)*Djac(5,i,j) - Djac(4,i,j)*Djac(2,i,j)
+        Dbas(1,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(1,1) - djy*Dhelp(1,2) + djz*Dhelp(1,3))
+        Dbas(2,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(2,1) - djy*Dhelp(2,2) + djz*Dhelp(2,3))
+        Dbas(3,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(3,1) - djy*Dhelp(3,2) + djz*Dhelp(3,3))
+        Dbas(4,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(4,1) - djy*Dhelp(4,2) + djz*Dhelp(4,3))
+        Dbas(5,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(5,1) - djy*Dhelp(5,2) + djz*Dhelp(5,3))
+        Dbas(6,DER_DERIV3D_Z,i,j) = Dxj * &
+            (djx*Dhelp(6,1) - djy*Dhelp(6,2) + djz*Dhelp(6,3))
+
+      end do
+    end do
+    !$omp end parallel do
+      
+  end if
+    
+  end subroutine 
     
 end module 

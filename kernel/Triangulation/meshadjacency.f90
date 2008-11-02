@@ -41,6 +41,7 @@
 module meshadjacency
 
   use fsystem
+  use genoutput
   use storage
   use triangulation
 
@@ -98,10 +99,10 @@ contains
 
 !<output>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer(I32), intent(OUT) :: h_Iptr
+  integer, intent(OUT) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer(I32), intent(OUT) :: h_Iidx
+  integer, intent(OUT) :: h_Iidx
 !</output>
 
 !</subroutine>
@@ -232,14 +233,14 @@ contains
       ! What type of adjacency do we have here?
       if(cadj .eq. MSHADJ_ADJ_BY_VERTEX) then
 
-        print *, 'ERROR: mshadj_calcElementAdjacency'
-        print *, '3D vertice-based adjacency not yet implemented'
+        call output_line ('3D vertice-based adjacency not yet implemented', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'mshadj_calcElementAdjacency')
         call sys_halt()
  
       else if(cadj .eq. MSHADJ_ADJ_BY_VERTEX) then
 
-        print *, 'ERROR: mshadj_calcElementAdjacency'
-        print *, '3D edge-based adjacency not yet implemented'
+        call output_line ('3D edge-based adjacency not yet implemented', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'mshadj_calcElementAdjacency')
         call sys_halt()
       
       else

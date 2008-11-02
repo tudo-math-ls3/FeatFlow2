@@ -48,6 +48,7 @@
 module adjacency
 
   use fsystem
+  use genoutput
   use storage
 
 implicit none
@@ -102,15 +103,15 @@ contains
 !<input>
   ! A storage handle to the permutation that is to be applied onto the
   ! adjacency graph.
-  integer(I32), intent(IN) :: h_Ipermute
+  integer, intent(IN) :: h_Ipermute
 !</input>
 
 !<inputoutput>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer(I32), intent(INOUT) :: h_Iptr
+  integer, intent(INOUT) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer(I32), intent(INOUT) :: h_Iidx
+  integer, intent(INOUT) :: h_Iidx
 !</inputoutput>
 
 !</subroutine>
@@ -187,20 +188,20 @@ contains
   ! A storage handle to the permutation that is to be applied onto the pointer
   ! array of the adjacency graph. May be ST_NOHANDLE if the pointer array
   ! is not to be permuted.
-  integer(I32), intent(IN) :: h_IpermutePtr
+  integer, intent(IN) :: h_IpermutePtr
 
   ! A storage handle to the permutation that is to be applied onto the index
   ! array of the adjacency graph. May be ST_NOHANDLE if the index array
   ! is not to be permuted.
-  integer(I32), intent(IN) :: h_IpermuteIdx
+  integer, intent(IN) :: h_IpermuteIdx
 !</input>
 
 !<inputoutput>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer(I32), intent(INOUT) :: h_Iptr
+  integer, intent(INOUT) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer(I32), intent(INOUT) :: h_Iidx
+  integer, intent(INOUT) :: h_Iidx
 !</inputoutput>
 
 !</subroutine>
@@ -324,10 +325,10 @@ contains
 
 !<input>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer(I32), intent(IN) :: h_Iptr
+  integer, intent(IN) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer(I32), intent(IN) :: h_Iidx
+  integer, intent(IN) :: h_Iidx
 !</input>
 
   integer, dimension(:), pointer :: p_Iptr, p_Iidx
@@ -386,25 +387,25 @@ contains
 
 !<input>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer(I32), intent(IN) :: h_Iptr
+  integer, intent(IN) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer(I32), intent(IN) :: h_Iidx
+  integer, intent(IN) :: h_Iidx
   
   ! OPTIONAL: A storage handle to an array holding the order in which the
   ! colouring algorithm should proceed through the nodes. If not given,
   ! canonical order is used.
-  integer(I32), optional, intent(IN) :: h_InodeOrder
+  integer, optional, intent(IN) :: h_InodeOrder
 !</input>
 
 !<output>
   ! A storage handle to the permutation that has to be applied to
   ! get a coloured partitioning.
-  integer(I32), intent(OUT) :: h_Ipermute
+  integer, intent(OUT) :: h_Ipermute
 
   ! A storage handle to the colour partition table.
   ! The number of colours used is implicitly given by UBOUND(Icpt,1)-1.
-  integer(I32), intent(OUT) :: h_Icpt
+  integer, intent(OUT) :: h_Icpt
 !</output>
 
 !</subroutine>
@@ -616,10 +617,10 @@ contains
 
 !<input>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer(I32), intent(IN) :: h_Iptr
+  integer, intent(IN) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer(I32), intent(IN) :: h_Iidx
+  integer, intent(IN) :: h_Iidx
   
   ! OPTIONAL: A combination ADJ_CMK_FLAG_XXXX constants defined at the top
   ! of this module specifying the flags for the algorithm. If not given,
@@ -629,7 +630,7 @@ contains
 
 !<output>
   ! A storage handle to the (reverse) Cuthill-McKee permutation.
-  integer(I32), intent(OUT) :: h_Ipermute
+  integer, intent(OUT) :: h_Ipermute
 !</output>
 
 !</subroutine>
@@ -652,9 +653,11 @@ contains
           (iand(cflags,ADJ_CMK_FLAG_SORT_MAX) .ne. 0)) .or. &
          ((iand(cflags,ADJ_CMK_FLAG_ROOT_MIN) .ne. 0) .and. &
           (iand(cflags,ADJ_CMK_FLAG_ROOT_MAX) .ne. 0))) then
-         print *, 'ERROR: adj_calcCuthillMcKee'
-         print *, 'invalid flag combination'
-         return
+
+        call output_line ('Invalid flag combination', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'adj_calcCuthillMcKee')
+        call sys_halt()
+
       end if
       sort_choice = iand(cflags,ior(ADJ_CMK_FLAG_SORT_MIN,ADJ_CMK_FLAG_SORT_MAX))
       root_choice = iand(cflags,ior(ADJ_CMK_FLAG_ROOT_MIN,ADJ_CMK_FLAG_ROOT_MAX))
@@ -726,8 +729,9 @@ contains
       
         ! If we come out here, then something must have gone terribly wrong.
         ! We haven't processed all nodes yet, but we cannot find a new root...
-        print *, 'ERROR: adj_calcCuthillMcKee'
-        print *, 'internal error - no root found'
+        call output_line ('internal error - no root found', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'adj_calcCuthillMcKee')
+
         call sys_halt()
         
       end if
