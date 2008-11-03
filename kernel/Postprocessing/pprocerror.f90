@@ -74,9 +74,9 @@ module pprocerror
   use scalarpde
   use spatialdiscretisation
   use domainintegration
-  use collection
   use elementpreprocessing
   use feevaluation
+  use collection
 
   implicit none
 

@@ -10,9 +10,10 @@
     
     use basicgeometry
     use triangulation
-    use collection
     use scalarpde
     use domainintegration
+    use spatialdiscretisation
+    use collection
     
   !<description>
     ! This subroutine is called during the calculation of errors with boundary

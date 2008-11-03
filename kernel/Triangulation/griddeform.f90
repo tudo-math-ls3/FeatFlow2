@@ -75,7 +75,8 @@ MODULE griddeform
   USE element
   USE elementpreprocessing
   USE pprocgradients
-  USE ucd  
+  USE ucd
+  use linearsolver
   
   
   IMPLICIT NONE

@@ -8,6 +8,7 @@ interface
   subroutine fmshregHitTest(inumCells,Dcoords,Ihit,rcollection)
   
   use collection
+  use fsystem
   
 !<description>
   ! This subroutine is called for hit-testing cells to decide whether a

@@ -45,12 +45,12 @@
 
 module meshregion
 
-  use collection
   use fsystem
   use genoutput
   use geometryaux
   use storage
   use triangulation
+  use collection
 
   implicit none
 

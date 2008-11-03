@@ -33,10 +33,10 @@ module bilinearformevaluation
   use scalarpde
   use derivatives
   use cubature
-  use collection
   use domainintegration
   use element
   use elementpreprocessing
+  use collection
   
   implicit none
 

@@ -25,6 +25,7 @@ module domainintegration
 
   use fsystem
   use triangulation
+  use element
   use collection
   
   implicit none
@@ -65,7 +66,7 @@ module domainintegration
     ! elements. For multilinear forms (bilinear, trilinear), this is a pointer
     ! to the DOF's of the trial space.
     ! DIMENSION(#dofPerElement,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), pointer :: p_IdofsTrial => null()
+    integer, dimension(:,:), pointer :: p_IdofsTrial => null()
     
     ! An element evaluation set structure that contains all information
     ! needed to evaluate the finite element on all elements in p_Ielements.
