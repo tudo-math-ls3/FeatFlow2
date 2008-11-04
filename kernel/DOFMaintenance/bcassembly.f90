@@ -80,7 +80,7 @@ module bcassembly
   use fsystem
   use discretebc
   use discretefbc
-  use collection
+  use collection, only: t_collection
   use triangulation
   use dofmapping
   use meshregion

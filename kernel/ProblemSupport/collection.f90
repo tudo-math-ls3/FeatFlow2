@@ -246,19 +246,24 @@ module collection
 
   use fsystem
   use io
-  use linearsystemscalar
-  use linearsystemblock
-  use paramlist
-  use spatialdiscretisation
-  use linearsolver
-  use boundary
-  use multilevelprojection
-  use filtersupport
-  use fparser
   use genoutput
-  use geometry
-  use hadaptaux
-  use afcstabilisation
+  use paramlist, only: t_parlist
+  use boundary, only: t_boundary
+  use boundarycondition, only: t_boundaryConditions
+  use triangulation, only: t_triangulation
+  use spatialdiscretisation, only: t_spatialDiscretisation, &
+                                   t_blockDiscretisation
+  use discretebc, only: t_discreteBC
+  use linearsystemscalar, only: t_vectorScalar, t_matrixScalar
+  use linearsystemblock, only: t_vectorBlock, t_matrixBlock
+  use linearsolver, only: t_linsolNode
+  use multilevelprojection, only: t_interlevelProjectionScalar, &
+                                  t_interlevelProjectionBlock
+  use filtersupport, only: t_filterChain
+  use fparser, only: t_fparser
+  use geometry, only: t_geometryObject
+  use hadaptaux, only: t_hadapt
+  use afcstabilisation, only: t_afcstab
   
   implicit none
 

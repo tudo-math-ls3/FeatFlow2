@@ -40,7 +40,7 @@ module trilinearformevaluation
   use domainintegration
   use element
   use elementpreprocessing
-  use collection
+  use collection, only: t_collection
   
   implicit none
 

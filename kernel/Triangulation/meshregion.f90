@@ -50,7 +50,7 @@ module meshregion
   use geometryaux
   use storage
   use triangulation
-  use collection
+  use collection, only: t_collection
 
   implicit none
 
