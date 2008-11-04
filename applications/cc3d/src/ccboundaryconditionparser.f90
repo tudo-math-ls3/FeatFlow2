@@ -38,6 +38,7 @@ module ccboundaryconditionparser
   use paramlist
   use bcassembly
   use meshregion
+  use fparser
   
   use collection
   use convection

@@ -38,6 +38,7 @@ module ccboundaryconditionparser
   use nonlinearsolver
   use paramlist
   use bcassembly
+  use fparser
   
   use collection
   use convection
