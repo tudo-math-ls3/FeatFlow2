@@ -673,7 +673,6 @@ contains
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:,:), pointer :: p_Ddata
     integer(I32), dimension(2) :: Isize
-    integer :: h_Ddata
 
     ! Check if coordinates exists
     if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .ne.&
