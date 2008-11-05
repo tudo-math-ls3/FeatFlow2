@@ -2923,7 +2923,7 @@ end subroutine
 !</subroutine>
 
   ! Some temporary variables
-  real(DP) :: dangle, dradX, dradY, dcf, dSin, dCos
+  real(DP) :: dangle, dradX, dradY, dcf, ds, dc
   integer :: i
   
     ! Get elipse's radii
@@ -2943,15 +2943,15 @@ end subroutine
     do i = 1, nverts
     
       ! Calculate SIN and COS
-      dCos = cos(dangle)
-      dSin = sin(dangle)
+      dc = cos(dangle)
+      ds = sin(dangle)
     
       ! Calculate point
-      Dverts(1, i) = dradX * dCos
-      Dverts(2, i) = dradY * dSin
+      Dverts(1, i) = dradX * dc
+      Dverts(2, i) = dradY * ds
       
       ! Update angle
-      dangle = dangle + dtolerance / sqrt((dradX*dSin)**2 + (dradY*dCos)**2)
+      dangle = dangle + dtolerance / sqrt((dradX*ds)**2 + (dradY*dc)**2)
     
     end do
 
