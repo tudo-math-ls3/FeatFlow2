@@ -109,7 +109,7 @@ implicit none
     ! Local RHS/Solution vectors
     real(DP), dimension(:), pointer :: Du1 => NULL()
     real(DP), dimension(:), pointer :: Du2 => NULL()
-    real(DP), dimension(:), pointer :: Dp => NULL()
+    real(DP), dimension(:), pointer :: Dup => NULL()
     real(DP), dimension(:), pointer :: Df1 => NULL()
     real(DP), dimension(:), pointer :: Df2 => NULL()
     real(DP), dimension(:), pointer :: Dg => NULL()
@@ -462,7 +462,7 @@ contains
       allocate(rvanka%runi_diag%IdofP(nmaxdofP,nmaxel))
       allocate(rvanka%runi_diag%Du1(nmaxdofV))
       allocate(rvanka%runi_diag%Du2(nmaxdofV))
-      allocate(rvanka%runi_diag%Dp(nmaxdofP))
+      allocate(rvanka%runi_diag%Dup(nmaxdofP))
       allocate(rvanka%runi_diag%Df1(nmaxdofV))
       allocate(rvanka%runi_diag%Df2(nmaxdofV))
       allocate(rvanka%runi_diag%Dg(nmaxdofP))
@@ -516,7 +516,7 @@ contains
     if(associated(rvanka%runi_diag%IdofP)) deallocate(rvanka%runi_diag%IdofP)
     if(associated(rvanka%runi_diag%Du1)) deallocate(rvanka%runi_diag%Du1)
     if(associated(rvanka%runi_diag%Du2)) deallocate(rvanka%runi_diag%Du2)
-    if(associated(rvanka%runi_diag%Dp)) deallocate(rvanka%runi_diag%Dp)
+    if(associated(rvanka%runi_diag%Dup)) deallocate(rvanka%runi_diag%Dup)
     if(associated(rvanka%runi_diag%Df1)) deallocate(rvanka%runi_diag%Df1)
     if(associated(rvanka%runi_diag%Df2)) deallocate(rvanka%runi_diag%Df2)
     if(associated(rvanka%runi_diag%Dg)) deallocate(rvanka%runi_diag%Dg)
@@ -2277,14 +2277,14 @@ contains
             daux = daux + p_runi%Dt1(j,i)*p_runi%Df1(i) &
                         + p_runi%Dt2(j,i)*p_runi%Df2(i)
           end do
-          p_runi%Dp(j) = daux / p_runi%Ds(j)
+          p_runi%Dup(j) = daux / p_runi%Ds(j)
         end do
         
         ! Calculate X- and Y-velocity
         do i = 1, ndofV
           do j = 1, ndofP
-            p_runi%Df1(i) = p_runi%Df1(i) - p_runi%Db1(i,j)*p_runi%Dp(j)
-            p_runi%Df2(i) = p_runi%Df2(i) - p_runi%Db2(i,j)*p_runi%Dp(j)
+            p_runi%Df1(i) = p_runi%Df1(i) - p_runi%Db1(i,j)*p_runi%Dup(j)
+            p_runi%Df2(i) = p_runi%Df2(i) - p_runi%Db2(i,j)*p_runi%Dup(j)
           end do
           p_runi%Du1(i) = p_runi%Da1(i)*p_runi%Df1(i)
           p_runi%Du2(i) = p_runi%Da2(i)*p_runi%Df2(i)
@@ -2298,7 +2298,7 @@ contains
         end do
         do i = 1, ndofP
           j = p_runi%IdofP(i,iel)
-          p_DvecP(j) = p_DvecP(j) + domega * p_runi%Dp(i)
+          p_DvecP(j) = p_DvecP(j) + domega * p_runi%Dup(i)
         end do
       
       end do ! iel
