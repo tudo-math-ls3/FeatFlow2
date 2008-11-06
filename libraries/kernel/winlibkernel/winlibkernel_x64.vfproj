@@ -13,7 +13,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|x64" OutputDirectory="$(ConfigurationName)_x64" IntermediateDirectory="$(ProjectDir)\$(ConfigurationName)_x64" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" GlobalOptimizations="true" InlineFunctionExpansion="expandOnlyInline" Parallelization="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" DisableDefaultLibSearch="true"/>
+				<Tool Name="VFFortranCompilerTool" AdditionalOptions="/Qopenmp-lib:compat" SuppressStartupBanner="true" GlobalOptimizations="true" InlineFunctionExpansion="expandOnlyInline" Parallelization="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" DisableDefaultLibSearch="true"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/$(ProjectName).lib" AdditionalLibraryDirectories="$(ProjectDir)/../../" AdditionalDependencies="winblaslapack_x64.lib winlibamd_x64.lib winlibumfpack4_x64.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
@@ -22,8 +22,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>
 	<Files>
-		<Filter Name="Header Files" Filter="fi;fd">
-		<File RelativePath="..\include\stria.inc"/></Filter>
+		<Filter Name="Header Files" Filter="fi;fd"/>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="Adaptivity">
@@ -79,6 +78,14 @@
 		<File RelativePath="..\..\..\kernel\ElementCubature\cubature.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\derivatives.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\element.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_hexa3d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_line1d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_prism3d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_pyra3d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_quad2d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_tetra3d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_tri2d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\elementbase.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\elementpreprocessing.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\transformation.f90"/></Filter>
 		<Filter Name="LinearAlgebra">
@@ -152,6 +159,8 @@
 		<File RelativePath="..\..\..\kernel\TimeDependence\timestepping.f90"/></Filter>
 		<Filter Name="Triangulation">
 		<File RelativePath="..\..\..\kernel\Triangulation\griddeform.f90"/>
+		<File RelativePath="..\..\..\kernel\Triangulation\intf_monitorfct.inc"/>
+		<File RelativePath="..\..\..\kernel\Triangulation\intf_mshreghittest.inc"/>
 		<File RelativePath="..\..\..\kernel\Triangulation\meshadjacency.f90"/>
 		<File RelativePath="..\..\..\kernel\Triangulation\meshmodification.f90"/>
 		<File RelativePath="..\..\..\kernel\Triangulation\meshregion.f90"/>

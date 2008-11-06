@@ -100,6 +100,14 @@
 		<File RelativePath="..\..\..\kernel\ElementCubature\cubature.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\derivatives.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\element.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_hexa3d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_line1d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_prism3d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_pyra3d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_quad2d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_tetra3d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element_tri2d.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\elementbase.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\elementpreprocessing.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\transformation.f90"/></Filter>
 		<Filter Name="LinearAlgebra">

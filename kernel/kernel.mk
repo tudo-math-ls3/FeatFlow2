@@ -11,7 +11,9 @@ INCDIR:= $(INCDIR) -I$(KERNEL)/System -I$(KERNEL)/Triangulation \
 
 KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90 \
 	genoutput.f90 linearalgebra.f90 storage.f90 derivatives.f90 \
-	externalstorage.f90 cubature.f90 transformation.f90 triangulation.f90\
+	externalstorage.f90 cubature.f90 transformation.f90 triangulation.f90 \
+	elementbase.f90 element_line1d.f90 element_tri2d.f90 element_quad2d.f90 \
+	element_tetra3d.f90 element_hexa3d.f90 element_pyra3d.f90 element_prism3d.f90 \
 	scalarpde.f90 error.f90 element.f90 io.f90 boundary.f90 \
 	fictitiousboundary.f90 boundarycondition.f90\
 	paramlist.f90 spatialdiscretisation.f90 dofmapping.f90 \
