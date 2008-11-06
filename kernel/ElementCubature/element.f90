@@ -298,59 +298,78 @@ module element
   integer(I32), parameter :: EL_UNDEFINED = -1
 
   ! ID of constant conforming triangular FE, P0
-  integer(I32), parameter :: EL_P0   = EL_2D + 0
-  integer(I32), parameter :: EL_E000 = EL_P0
+  integer(I32), parameter :: EL_P0      = EL_2D + 0
+  integer(I32), parameter :: EL_E000    = EL_P0
+  integer(I32), parameter :: EL_P0_2D   = EL_P0
+  integer(I32), parameter :: EL_E000_2D = EL_P0
 
   ! ID of linear conforming triangular FE, P1
-  integer(I32), parameter :: EL_P1   = EL_2D + 1
-  integer(I32), parameter :: EL_E001 = EL_P1
+  integer(I32), parameter :: EL_P1      = EL_2D + 1
+  integer(I32), parameter :: EL_E001    = EL_P1
+  integer(I32), parameter :: EL_P1_2D   = EL_P1
+  integer(I32), parameter :: EL_E001_2D = EL_P1
 
   ! ID of quadratic conforming triangular FE, P2
-  integer(I32), parameter :: EL_P2   = EL_2D + 2
-  integer(I32), parameter :: EL_E002 = EL_P2
+  integer(I32), parameter :: EL_P2      = EL_2D + 2
+  integer(I32), parameter :: EL_E002    = EL_P2
+  integer(I32), parameter :: EL_P2_2D   = EL_P2
+  integer(I32), parameter :: EL_E002_2D = EL_P2
 
   ! ID of cubic conforming triangular FE, P3
-  integer(I32), parameter :: EL_P3   = EL_2D + 3
-  integer(I32), parameter :: EL_E003 = EL_P3
+  integer(I32), parameter :: EL_P3      = EL_2D + 3
+  integer(I32), parameter :: EL_E003    = EL_P3
+  integer(I32), parameter :: EL_P3_2D   = EL_P3
+  integer(I32), parameter :: EL_E003_2D = EL_P3
 
   ! ID for rotated linear $\tilde P1$ element (Crouzeix-Raviart)
-  integer(I32), parameter :: EL_P1T  = EL_2D + 20
+  integer(I32), parameter :: EL_P1T     = EL_2D + 20
+  integer(I32), parameter :: EL_P1T_2D  = EL_P1T
 
   ! ID of constant conforming quadrilateral FE, Q0
-  integer(I32), parameter :: EL_Q0   = EL_2D + 10
-  integer(I32), parameter :: EL_E010 = EL_Q0
+  integer(I32), parameter :: EL_Q0      = EL_2D + 10
+  integer(I32), parameter :: EL_E010    = EL_Q0
+  integer(I32), parameter :: EL_Q0_2D   = EL_Q0
+  integer(I32), parameter :: EL_E010_2D = EL_Q0
 
   ! ID of bilinear conforming quadrilateral FE, Q1
-  integer(I32), parameter :: EL_Q1   = EL_2D + 11
-  integer(I32), parameter :: EL_E011 = EL_Q1 
+  integer(I32), parameter :: EL_Q1      = EL_2D + 11
+  integer(I32), parameter :: EL_E011    = EL_Q1 
+  integer(I32), parameter :: EL_Q1_2D   = EL_Q1 
+  integer(I32), parameter :: EL_E011_2D = EL_Q1 
 
   ! ID of biquadratic conforming quadrilateral FE, Q2
-  integer(I32), parameter :: EL_Q2   = EL_2D + 13
-  integer(I32), parameter :: EL_E013 = EL_Q2
+  integer(I32), parameter :: EL_Q2      = EL_2D + 13
+  integer(I32), parameter :: EL_E013    = EL_Q2
+  integer(I32), parameter :: EL_Q2_2D   = EL_Q2
 
   ! ID of bicubic conforming quadrilateral FE, Q3
-  integer(I32), parameter :: EL_Q3   = EL_2D + 14
-  integer(I32), parameter :: EL_E014 = EL_Q3
+  integer(I32), parameter :: EL_Q3      = EL_2D + 14
+  integer(I32), parameter :: EL_E014    = EL_Q3
+  integer(I32), parameter :: EL_Q3_2D   = EL_Q3
   
   ! ID of nonconforming parametric linear P1 element on a quadrilareral
   ! element, given by function value in the midpoint and the two
   ! derivatives.
-  integer(I32), parameter :: EL_QP1  = EL_2D + 21
+  integer(I32), parameter :: EL_QP1     = EL_2D + 21
 
   ! General rotated bilinear $\tilde Q1$ element, all variants (conformal, 
   ! nonconformal, parametric, nonparametric).
   ! Simplest variant is: parametric, edge midpoint-value based.
-  integer(I32), parameter :: EL_Q1T  = EL_2D + 30
+  integer(I32), parameter :: EL_Q1T     = EL_2D + 30
+  integer(I32), parameter :: EL_Q1T_2D  = EL_Q1T
 
   ! General rotated bilinear $\tilde Q1$ element with bubble, 
   ! all variants (conformal, nonconformal, parametric, nonparametric).
-  integer(I32), parameter :: EL_Q1TB = EL_2D + 31
+  integer(I32), parameter :: EL_Q1TB    = EL_2D + 31
+  integer(I32), parameter :: EL_Q1TB_2D = EL_Q1TB
 
   ! General rotated biquadratic $\tilde Q2$ element, all variants.
-  integer(I32), parameter :: EL_Q2T  = EL_2D + 35
+  integer(I32), parameter :: EL_Q2T     = EL_2D + 35
+  integer(I32), parameter :: EL_Q2T_2D  = EL_Q2T
 
   ! General rotated biquadratic $\tilde Q2$ element with bubble, all variants.
-  integer(I32), parameter :: EL_Q2TB = EL_2D + 37
+  integer(I32), parameter :: EL_Q2TB    = EL_2D + 37
+  integer(I32), parameter :: EL_Q2TB_2D = EL_Q2TB
   
   ! Quadrilateral $Q_1$ element with one hanging node. In the property
   ! bitfield of the element identifier, the local number of the edge where there
@@ -413,22 +432,27 @@ module element
 !<constantblock description="Special 2D element variants.">
   
   ! ID of rotated linear nonconforming triangular FE, P1~, edge-midpoint based
-  integer(I32), parameter :: EL_E020 = EL_P1T
+  integer(I32), parameter :: EL_E020    = EL_P1T
+  integer(I32), parameter :: EL_E020_2D = EL_E020
 
   ! ID of rotated bilinear conforming quadrilateral FE, Q1~, integral
   ! mean value based
-  integer(I32), parameter :: EL_E030 = EL_Q1T + 2**16
+  integer(I32), parameter :: EL_E030    = EL_Q1T + 2**16
+  integer(I32), parameter :: EL_E030_2D = EL_E030
 
   ! ID of rotated bilinear conforming quadrilateral FE, Q1~ with bubble, integral
   ! mean value based
-  integer(I32), parameter :: EL_EB30 = EL_Q1TB + 2**16
+  integer(I32), parameter :: EL_EB30    = EL_Q1TB + 2**16
+  integer(I32), parameter :: EL_EB30_2D = EL_EB30
 
   ! ID of rotated bilinear conforming quadrilateral FE, Q1~, edge-midpoint based
-  integer(I32), parameter :: EL_E031 = EL_Q1T
+  integer(I32), parameter :: EL_E031    = EL_Q1T
+  integer(I32), parameter :: EL_E031_2D = EL_E031
 
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
   ! mean value based
-  integer(I32), parameter :: EL_EM30 = EL_Q1T + EL_NONPARAMETRIC+ 2**16
+  integer(I32), parameter :: EL_EM30    = EL_Q1T + EL_NONPARAMETRIC+ 2**16
+  integer(I32), parameter :: EL_EM30_2D = EL_EM30
 
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
   ! mean value based; 'unpivoted' variant, solving local 4x4 systems directly 
@@ -441,13 +465,16 @@ module element
   integer(I32), parameter :: EL_EM30_UNSCALED = EL_Q1T + EL_NONPARAMETRIC + 2**18 + 2**16
 
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
-  integer(I32), parameter :: EL_EM31 = EL_Q1T + EL_NONPARAMETRIC
+  integer(I32), parameter :: EL_EM31    = EL_Q1T + EL_NONPARAMETRIC
+  integer(I32), parameter :: EL_EM31_2D = EL_EM31
 
   ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~.
-  integer(I32), parameter :: EL_E050 = EL_Q2T
+  integer(I32), parameter :: EL_E050    = EL_Q2T
+  integer(I32), parameter :: EL_E050_2D = EL_E050
   
   ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~ with bubble.
-  integer(I32), parameter :: EL_EB50 = EL_Q2TB
+  integer(I32), parameter :: EL_EB50    = EL_Q2TB
+  integer(I32), parameter :: EL_EB50_2D = EL_EB50
   
   ! Isoparametric $Q_2$ element with one edge mapped nonlinear from the reference
   ! to the real element. Additionally, one bit in the property bitfield must
@@ -520,6 +547,125 @@ module element
 
 contains
 
+
+  ! ***************************************************************************
+
+!<function>  
+
+  integer(I32) function elem_igetID(selemName)
+
+  
+!<description>
+  ! This routine returns the element id to a given element name.
+  ! It is  case-insensitive. 
+!</description>
+
+!<result>
+  ! id of the element
+!</result>
+
+  !<input>
+
+  !cubature formula name - one of the EL_xxxx constants.
+  character (LEN=*) :: selemName
+
+  !</input>
+  
+!</function>
+
+    select case(trim(sys_upcase(selemName)))
+    ! -= 1D Line Elements =-
+    case("EL_P0_1D","EL_E000_1D")
+      elem_igetID = EL_P0_1D
+    case("EL_P1_1D","EL_E001_1D")
+      elem_igetID = EL_P1_1D
+    case("EL_P2_1D","EL_E002_1D")
+      elem_igetID = EL_P2_1D
+    case("EL_S31_1D")
+      elem_igetID = EL_S31_1D
+    
+    ! -= 2D Triangle Elements =-
+    case("EL_P0","EL_P0_2D","EL_E000","EL_E000_2D")
+      elem_igetID = EL_P0_2D
+    case("EL_P1","EL_P1_2D","EL_E001","EL_E001_2D")
+      elem_igetID = EL_P1_2D
+    case("EL_P2","EL_P2_2D","EL_E002","EL_E002_2D")
+      elem_igetID = EL_P2_2D
+    case("EL_P3","EL_P3_2D","EL_E003","EL_E003_2D")
+      elem_igetID = EL_P3_2D
+    case("EL_P1T","EL_P1T_2D","EL_E020","EL_E020_2D")
+      elem_igetID = EL_P1T_2D
+    
+    ! -= 2D Quadrilateral Elements =-
+    case("EL_Q0","EL_Q0_2D","EL_E010","EL_E010_2D")
+      elem_igetID = EL_Q0_2D
+    case("EL_Q1","EL_Q1_2D","EL_E011","EL_E011_2D")
+      elem_igetID = EL_Q1_2D
+    case("EL_Q2","EL_Q2_2D")
+      elem_igetID = EL_Q2_2D
+    case("EL_Q3","EL_Q3_2D")
+      elem_igetID = EL_Q3_2D
+    case("EL_QP1")
+      elem_igetID = EL_QP1
+    case("EL_Q1T","EL_Q1T_2D","EL_E030","EL_E030_2D")
+      elem_igetID = EL_E030_2D
+    case("EL_EM30","EL_EM30_2D")
+      elem_igetID = EL_EM30_2D
+    case("EL_E031","EL_E031_2D")
+      elem_igetID = EL_E031_2D
+    case("EL_EM31","EL_EM31_2D")
+      elem_igetID = EL_EM31_2D
+    case("EL_EM30_UNPIVOTED")
+      elem_igetID = EL_EM30_UNPIVOTED
+    case("EL_EM30_UNSCALED")
+      elem_igetID = EL_EM30_UNSCALED
+    case("EL_Q1TB","EL_Q1TB_2D","EL_EB30","EL_EB30_2D")
+      elem_igetID = EL_Q1TB_2D
+    case("EL_Q2T","EL_Q2T_2D","EL_E050","EL_E050_2D")
+      elem_igetID = EL_E050_2D
+    case("EL_Q2TB","EL_Q2TB_2D","EL_EB50","EL_EB50_2D")
+      elem_igetID = EL_EB50_2D
+    
+    ! -= 3D Tetrahedron Elements =-
+    case("EL_P0_3D","EL_E000_3D")
+      elem_igetID = EL_P0_3D
+    case("EL_P1_3D","EL_E001_3D")
+      elem_igetID = EL_P1_3D
+    
+    ! -= 3D Hexahedron Elements =-
+    case("EL_Q0_3D","EL_E010_3D")
+      elem_igetID = EL_Q0_3D
+    case("EL_Q1_3D","EL_E011_3D")
+      elem_igetID = EL_Q1_3D
+    case("EL_Q1T_3D","EL_E031_3D")
+      elem_igetID = EL_E031_3D
+    case("EL_E030_3D")
+      elem_igetID = EL_E030_3D
+    case("EL_EM31_3D")
+      elem_igetID = EL_EM30_3D
+    
+    ! -= 3D Pyramid Elements =-
+    case("EL_Y0_3D")
+      elem_igetID = EL_Y0_3D
+    case("EL_Y1_3D")
+      elem_igetID = EL_Y1_3D
+    
+    ! -= 3D Prism Elements =-
+    case("EL_R0_3D")
+      elem_igetID = EL_R0_3D
+    case("EL_R1_3D")
+      elem_igetID = EL_R1_3D
+
+    ! Unknown element
+    case default
+      call output_line('Error: Unknown element: ' // selemName, &
+                       OU_CLASS_ERROR,OU_MODE_STD,'elem_igetID')
+      call sys_halt()
+      
+    end select
+  
+  end function
+  
   ! ***************************************************************************
 
 !<function>  
