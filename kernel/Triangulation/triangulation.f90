@@ -8988,8 +8988,8 @@ contains
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM2D, NVT)
     Isize = (/NDIM1D,int(rtriangulation%NVT,I32)/)
-    call storage_new2D ('tria_readRawTriangulation1D', 'DCORVG', Isize, ST_DOUBLE, &
-                        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+    call storage_new2D ('tria_readRawTriangulation1D', 'DCORVG', Isize,&
+        ST_DOUBLE, rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointers to the coordinate array
     ! p_Ddata2D is the pointer to the coordinate array
@@ -9007,8 +9007,8 @@ contains
     ! build the old KVERT...
     ! 2d array of size(2, NEL)
     Isize = (/2,int(rtriangulation%NEL,I32)/)
-    call storage_new2D ('tria_readRawTriangulation1D', 'KVERT', Isize, ST_INT, &
-                        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+    call storage_new2D ('tria_readRawTriangulation1D', 'KVERT', Isize,&
+        ST_INT, rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointer to the IverticesAtElement array and read the array
     call storage_getbase_int2D(rtriangulation%h_IverticesAtElement, p_Idata2D)
@@ -9025,8 +9025,8 @@ contains
 
     ! Allocate memory for InodalProperty 
     call storage_new ('tria_readRawTriangulation1D', 'KNPR', &
-                      int(rtriangulation%NVT,I32), ST_INT, &
-                      rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+        int(rtriangulation%NVT,I32), ST_INT, &
+        rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
     
     ! Get the pointer to the InodalProperty array
     call storage_getbase_int(rtriangulation%h_InodalProperty, p_Idata)
@@ -9077,14 +9077,14 @@ contains
 
     ! Allocate memory for IverticesAtBoundary.
     call storage_new ('tria_genRawBoundary1D', 'KVBD', &
-                      int(rtriangulation%NVBD,I32), ST_INT, &
-                      rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+        int(rtriangulation%NVBD,I32), ST_INT, &
+        rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         
     ! Allocate memory for the boundary component index vector.
     ! Initialise that with zero!
     call storage_new ('tria_genRawBoundary1D', 'KBCT', &
-                      int(rtriangulation%NBCT+1,I32), ST_INT, &
-                      rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
+        int(rtriangulation%NBCT+1,I32), ST_INT, &
+        rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
     ! Get pointers to the arrays
     call storage_getbase_int (&
@@ -9533,8 +9533,8 @@ contains
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM2D, NVT)
     Isize = (/NDIM2D,int(rtriangulation%NVT,I32)/)
-    call storage_new2D ('tria_readRawTriangulation2D', 'DCORVG', Isize, ST_DOUBLE, &
-                        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+    call storage_new2D ('tria_readRawTriangulation2D', 'DCORVG', Isize,&
+        ST_DOUBLE, rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointers to the coordinate array
     ! p_Ddata2D is the pointer to the coordinate array
@@ -9553,8 +9553,8 @@ contains
     ! build the old KVERT...
     ! 2d array of size(NVE, NEL)
     Isize = (/nve,int(rtriangulation%NEL,I32)/)
-    call storage_new2D ('tria_readRawTriangulation2D', 'KVERT', Isize, ST_INT, &
-                        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+    call storage_new2D ('tria_readRawTriangulation2D', 'KVERT', Isize,&
+        ST_INT, rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointer to the IverticesAtElement array and read the array
     call storage_getbase_int2D(rtriangulation%h_IverticesAtElement, p_Idata2D)
@@ -9580,8 +9580,8 @@ contains
 
     ! Allocate memory for InodalProperty 
     call storage_new ('tria_readRawTriangulation2D', 'KNPR', &
-                      int(rtriangulation%NVT,I32), ST_INT, &
-                      rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+        int(rtriangulation%NVT,I32), ST_INT, &
+        rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
     
     ! Get the pointer to the InodalProperty array
     call storage_getbase_int(rtriangulation%h_InodalProperty, p_Idata)
@@ -9665,14 +9665,14 @@ contains
 
     ! Allocate memory for IverticesAtBoundary.
     call storage_new ('tria_genRawBoundary2D', 'KVBD', &
-                      int(rtriangulation%NVBD,I32), ST_INT, &
-                      rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+        int(rtriangulation%NVBD,I32), ST_INT, &
+        rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         
     ! Allocate memory for the boundary component index vector.
     ! Initialise that with zero!
     call storage_new ('tria_genRawBoundary2D', 'KBCT', &
-                      int(rtriangulation%NBCT+1,I32), ST_INT, &
-                      rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
+        int(rtriangulation%NBCT+1,I32), ST_INT, &
+        rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
     ! Get pointers to the arrays
     call storage_getbase_int (&
@@ -9864,7 +9864,7 @@ contains
     ! Create a new p_IverticesAtElement array for the triangular mesh.
     Isize = (/TRIA_NVETRI2D,icount+rtriangulation%NEL/)
     call storage_new2D ('tria_quadToTri', 'KVERTTRI', Isize, ST_INT, &
-                        h_IverticesAtElementTri,ST_NEWBLOCK_NOINIT)
+        h_IverticesAtElementTri,ST_NEWBLOCK_NOINIT)
     call storage_getbase_int2d (h_IverticesAtElementTri,p_IverticesAtElementTri)
     
     ! Convert the array
@@ -11996,8 +11996,8 @@ contains
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM3D, NVT)
     Isize = (/NDIM3D, int(rtriangulation%NVT, I32)/)   
-    call storage_new2D('tria_readRawTriangulation3D', 'DCORVG', Isize, ST_DOUBLE,&
-                       rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+    call storage_new2D('tria_readRawTriangulation3D', 'DCORVG', Isize,&
+        ST_DOUBLE, rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
     
     ! Get the pointers to the coordinate array
     ! p_Ddata2D is the pointer to the coordinate array
@@ -12017,8 +12017,8 @@ contains
     ! build the old KVERT...
     ! 2d array of size(NVE, NEL)
     Isize = (/nve,int(rtriangulation%NEL,I32)/)
-    call storage_new2D('tria_readRawTriangulation3D', 'KVERT', Isize, ST_INT,&
-                       rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+    call storage_new2D('tria_readRawTriangulation3D', 'KVERT', Isize,&
+        ST_INT, rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
     
     ! Get the pointer to the IverticesAtElement array and read the array
     call storage_getbase_int2D(rtriangulation%h_IverticesAtElement, p_Idata2D)
@@ -12044,8 +12044,8 @@ contains
     
     ! Allocate memory for InodalProperty
     call storage_new('tria_readRawTriangulation3D', 'KNPR',&
-                     int(rtriangulation%NVT,i32), ST_INT, &
-                     rtriangulation%h_InodalProperty,  ST_NEWBLOCK_ZERO)  
+        int(rtriangulation%NVT,i32), ST_INT, &
+        rtriangulation%h_InodalProperty,  ST_NEWBLOCK_ZERO)  
     
     ! get a pointer to the memory
     call storage_getbase_int(rtriangulation%h_InodalProperty, p_Idata)
@@ -12531,8 +12531,8 @@ contains
     Isize=(/rtriangulation%NNEE, rtriangulation%NEL/)
     
     ! allocate memory 
-    call storage_new2D ('tria_genEdgesAtElement3D', 'KMID', Isize, ST_INT, &
-        rtriangulation%h_IedgesAtElement, ST_NEWBLOCK_NOINIT)
+    call storage_new2D ('tria_genEdgesAtElement3D', 'KMID', Isize,&
+        ST_INT, rtriangulation%h_IedgesAtElement, ST_NEWBLOCK_NOINIT)
     
     ! get the pointer to the memory
     call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,&
@@ -13955,7 +13955,7 @@ contains
     integer(prec_elementidx), dimension(:,:), pointer :: p_IverticesAtFace
     integer(prec_elementidx), dimension(:), pointer :: p_IfacesAtVertexIdx
     integer(prec_elementidx), dimension(:), pointer :: p_IfacesAtVertex
-    integer :: iface, ivt, iGlobalVertex
+    integer :: iface, ivt, iglobalVertex
     integer(i32) :: haux1
     integer(prec_edgeidx), dimension(:), pointer :: p_Iaux1
   
@@ -13988,13 +13988,15 @@ contains
     p_IfacesAtVertexIdx(1) = 1;
     
     ! create the index array
-    do iface=1,rtriangulation%NAT
-      do ivt=1,4
+    do iface = 1, rtriangulation%NAT
+      do ivt = 1, 4
         ! get the global vertex number
-        iGlobalVertex = p_IverticesAtFace(ivt,iface)
+        iglobalVertex = p_IverticesAtFace(ivt,iface)
+
         ! increment the facecount for this vertex
-        p_IfacesAtVertexIdx(iGlobalVertex+1) = &
-            p_IfacesAtVertexIdx(iGlobalVertex+1) + 1
+        if (iglobalVertex > 0)&
+            p_IfacesAtVertexIdx(iglobalVertex+1) = &
+            p_IfacesAtVertexIdx(iglobalVertex+1) + 1
       end do ! end ivt
     end do ! end iface
     
@@ -14015,29 +14017,31 @@ contains
     end if
     
     ! get the pointer  
-    call storage_getbase_int(rtriangulation%h_IfacesAtVertex,p_IfacesAtVertex)
+    call storage_getbase_int(rtriangulation%h_IfacesAtVertex,&
+        p_IfacesAtVertex)
     
     ! build the auxilliary array  
     haux1 = ST_NOHANDLE
-    call storage_copy (rtriangulation%h_IfacesAtVertexIdx,haux1)
-    call storage_getbase_int (haux1,p_Iaux1) 
+    call storage_copy (rtriangulation%h_IfacesAtVertexIdx, haux1)
+    call storage_getbase_int (haux1, p_Iaux1) 
     
     ! assign the connectivity info
-    do iface=1, rtriangulation%NAT
+    do iface = 1, rtriangulation%NAT
       
       ! get the global vertex number and assign the faces
-      do ivt=1,4
+      do ivt = 1, 4
         
         ! iglobalFace is the iedge-th edge at face iface
-        iGlobalVertex = p_IverticesAtFace(ivt,iface)
+        iglobalVertex = p_IverticesAtFace(ivt,iface)
         
-        ! store the adjacency information at position p_Iaux1(ivt)        
-        p_IfacesAtVertex( p_Iaux1(iGlobalVertex) ) = iface
-        ! increase the position of the next element in p_Iaux1(ivt)
-        p_Iaux1(iGlobalVertex) = p_Iaux1(iGlobalVertex) + 1    
+        if (iglobalVertex > 0) then
+          ! store the adjacency information at position p_Iaux1(ivt)        
+          p_IfacesAtVertex( p_Iaux1(iglobalVertex) ) = iface
+          ! increase the position of the next element in p_Iaux1(ivt)
+          p_Iaux1(iglobalVertex) = p_Iaux1(iglobalVertex) + 1    
+        end if
         
       end do ! end iedge
-      
     end do ! end iface
     
     call storage_free(haux1)   
@@ -14076,8 +14080,8 @@ contains
     ! allocate memory
     if(rtriangulation%h_IfacesAtEdgeIdx .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementsAtEdge3D', 'IfacesAtEdgeIdx', &
-                        int(rtriangulation%NMT+1,I32), ST_INT, &
-                        rtriangulation%h_IfacesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
+          int(rtriangulation%NMT+1,I32), ST_INT, &
+          rtriangulation%h_IfacesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
     end if
     
     ! Fill the index array with zero.
@@ -14102,21 +14106,23 @@ contains
     p_IfacesAtEdgeIdx(1) = 1;
     
     ! create the index array
-    do iface=1, rtriangulation%NAT
+    do iface = 1, rtriangulation%NAT
       
       ! increase the facecount at these edges by one
-      do iedge=1,4
+      do iedge = 1, 4
         iglobalEdge = p_IedgesAtFace(iedge,iface)
-        
-        p_IfacesAtEdgeIdx(iglobalEdge+1) = &
+
+        if (iglobalEdge > 0)&
+            p_IfacesAtEdgeIdx(iglobalEdge+1) = &
             p_IfacesAtEdgeIdx(iglobalEdge+1) + 1 
+
       end do ! end iedge
-      
     end do ! end iface
     
     ! create the actual index array  
-    do iedge = 2,rtriangulation%NMT+1
-      p_IfacesAtEdgeIdx(iedge) = p_IfacesAtEdgeIdx(iedge) + p_IfacesAtEdgeIdx(iedge-1);
+    do iedge = 2, rtriangulation%NMT+1
+      p_IfacesAtEdgeIdx(iedge) = p_IfacesAtEdgeIdx(iedge) +&
+                                 p_IfacesAtEdgeIdx(iedge-1);
     end do ! end iedge
     
     Isize(1) = p_IfacesAtEdgeIdx(rtriangulation%NMT+1)-1
@@ -14124,8 +14130,8 @@ contains
     ! allocate memory
     if(rtriangulation%h_IfacesAtEdge .eq. ST_NOHANDLE) then
       call storage_new ('tria_genFacesAtEdge3D', 'IfacesAtEdge', &
-                        int(Isize(1)), ST_INT, &
-                        rtriangulation%h_IfacesAtEdge, ST_NEWBLOCK_NOINIT)
+          int(Isize(1)), ST_INT, &
+          rtriangulation%h_IfacesAtEdge, ST_NEWBLOCK_NOINIT)
     end if
     
     ! get the pointer
@@ -14137,21 +14143,22 @@ contains
     call storage_getbase_int (haux1, p_Iaux1) 
     
     ! assign the connectivity info
-    do iface=1, rtriangulation%NAT
+    do iface = 1, rtriangulation%NAT
       
       ! increase the facecount at these edges by one
-      do iedge=1,4
+      do iedge = 1, 4
         
         ! iglobalFace is the iedge-th edge at face iface
         iglobalEdge = p_IedgesAtFace(iedge,iface)
         
-        ! store the adjacency information at position p_Iaux1(ivt)        
-        p_IfacesAtEdge( p_Iaux1(iglobalEdge) ) = iface
-        ! increase the position of the next element in p_Iaux1(ivt)
-        p_Iaux1(iglobalEdge) = p_Iaux1(iglobalEdge) + 1    
+        if (iglobalEdge > 0) then
+          ! store the adjacency information at position p_Iaux1(ivt)        
+          p_IfacesAtEdge( p_Iaux1(iglobalEdge) ) = iface
+          ! increase the position of the next element in p_Iaux1(ivt)
+          p_Iaux1(iglobalEdge) = p_Iaux1(iglobalEdge) + 1    
+        end if
         
       end do ! end iedge
-      
     end do ! end iface
     
     call storage_free(haux1)   
@@ -14175,7 +14182,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(prec_vertexidx), dimension(:,:), pointer    :: p_IverticesAtElement
+    integer(prec_vertexidx), dimension(:,:), pointer  :: p_IverticesAtElement
     integer(prec_edgeidx), dimension(:,:), pointer    :: p_IedgesAtElement
     integer(prec_elementidx), dimension(:,:), pointer :: p_IelementsAtFace
     integer(prec_elementidx), dimension(:,:), pointer :: p_IedgesAtFace
@@ -14189,8 +14196,8 @@ contains
     
     ! allocate memory
     if(rtriangulation%h_IedgesAtFace .eq. ST_NOHANDLE) then
-      call storage_new2d('tria_genEdgesAtFace3D', 'IedgesAtFace', Isize, ST_INT, &
-                         rtriangulation%h_IedgesAtFace, ST_NEWBLOCK_NOINIT)
+      call storage_new2d('tria_genEdgesAtFace3D', 'IedgesAtFace', Isize,&
+          ST_INT, rtriangulation%h_IedgesAtFace, ST_NEWBLOCK_NOINIT)
     end if
     
     
@@ -14430,6 +14437,7 @@ contains
 !</subroutine>
   
     ! local variables
+    integer(prec_vertexidx), dimension(:,:), pointer  :: p_IverticesAtElement
     integer(prec_elementidx), dimension(:,:), pointer :: p_IfacesAtElement
     integer(prec_elementidx), dimension(:,:), pointer :: p_IneighboursAtElement
     integer(prec_elementidx), dimension(:,:), pointer :: p_IelementsAtFace
@@ -14446,6 +14454,9 @@ contains
     
     call storage_getbase_int2D (rtriangulation%h_IfacesAtElement,&
         p_IfacesAtElement)
+
+    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
     
     ! allocate memory
     if(rtriangulation%h_IelementsAtFace .eq. ST_NOHANDLE) then
@@ -14459,9 +14470,9 @@ contains
     
     
     ! loop over all elements
-    do iel=1,rtriangulation%NEL
+    do iel = 1, rtriangulation%NEL
       ! loop over all faces of this element
-      do iface=1,rtriangulation%NNAE
+      do iface = 1, tria_getNAE(p_IverticesAtElement, iel)
         
         ! if there is no neighbour at this element
         if(p_IneighboursAtElement(iface,iel) .eq. 0) then
