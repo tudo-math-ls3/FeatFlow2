@@ -285,7 +285,7 @@ contains
   type(t_elementDistribution), pointer :: p_relementDistrV, p_relementDistrP
   
     ! Matrix must be 3x3.
-    IF (rmatrix%ndiagBlocks .NE. 3) THEN
+    IF ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) THEN
       CALL output_line ('System matrix is not 3x3.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initNavierStokes2D')
       CALL sys_halt()

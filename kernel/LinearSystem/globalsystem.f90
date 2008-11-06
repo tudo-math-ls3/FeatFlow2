@@ -77,10 +77,11 @@ contains
     logical :: balloc
     type(t_matrixBlock) :: rlocalMatrix
     type(t_matrixScalar) :: rlocalMatrixScalar
-    integer(PREC_VECIDX), dimension(max(rsourceMatrix%ndiagBlocks,1)+1) :: Icolumns,Irows
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kdiagonal,p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_MATIDX) :: isize
+    integer, dimension(max(rsourceMatrix%nblocksPerCol,1)+1) :: Irows
+    integer, dimension(max(rsourceMatrix%nblocksPerRow,1)+1) :: Icolumns
+    integer, dimension(:), pointer :: p_Kdiagonal,p_Kld
+    integer, dimension(:), pointer :: p_Kcol
+    integer :: isize
     
     ! Initialise values for data type and matrix format.
     cdataTypeLocal = ST_DOUBLE
@@ -96,7 +97,8 @@ contains
     
     ! Up to now, we don't support everything!
     ! Cancel if the input parameters want too much of us...
-    if (rsourceMatrix%ndiagBlocks .eq. 0) return
+    if ((rsourceMatrix%nblocksPerCol .eq. 0) .or. &
+        (rsourceMatrix%nblocksPerRow .eq. 0)) return
     
     if (cdataTypeLocal .ne. ST_DOUBLE) then
       print *,'glsys_assembleGlobal: Only double precision dest. matrix supported!'
@@ -108,8 +110,8 @@ contains
       call sys_halt()
     end if
     
-    do j=1,rsourceMatrix%ndiagBlocks
-      do i=1,rsourceMatrix%ndiagBlocks
+    do j=1,rsourceMatrix%nblocksPerRow
+      do i=1,rsourceMatrix%nblocksPerCol
       
         if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
         
@@ -140,8 +142,8 @@ contains
   call lsysbl_duplicateMatrix (rsourceMatrix,rlocalMatrix, &
       LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       
-  do j=1,rlocalMatrix%ndiagBlocks
-    do i=1,rlocalMatrix%ndiagBlocks
+  do j=1,rlocalMatrix%nblocksPerRow
+    do i=1,rlocalMatrix%nblocksPerCol
         
       if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
         ! Transpose the submatrix if necessary
@@ -435,7 +437,8 @@ contains
     ! Standard is double precision.
     integer, intent(IN) :: cdataType
 
-      if (rdestMatrix%ndiagBlocks .lt. 1) then
+      if ((rdestMatrix%nblocksPerCol .lt. 1) .or. &
+          (rdestMatrix%nblocksPerRow .lt. 1)) then
         ! Create a new 1x1 matrix if necessary.
         call lsysbl_releaseMatrix (rdestMatrix)
         call lsysbl_createEmptyMatrix (rdestMatrix,1)
@@ -489,9 +492,9 @@ contains
       Irows(:) = 0
       
       ! Loop through all matrix blocks.
-      do i=1,rsourceMatrix%ndiagBlocks
+      do i=1,rsourceMatrix%nblocksPerCol
       
-        do j=1,rsourceMatrix%ndiagBlocks
+        do j=1,rsourceMatrix%nblocksPerRow
           ! When checking for the presence of the matrix, don't respect
           ! the scaling factor; we only want to get the size of the matrix 
           ! columns/rows!
@@ -510,8 +513,10 @@ contains
       ! global matrix starts with.
       Icolumns(1) = 1
       Irows(1) = 1
-      do i=2,rsourceMatrix%ndiagBlocks
+      do i=2,rsourceMatrix%nblocksPerRow
         Icolumns(i) = Icolumns(i) + Icolumns(i-1)
+      end do
+      do i=2,rsourceMatrix%nblocksPerCol
         Irows(i) = Irows(i) + Irows(i-1)
       end do
       
@@ -539,14 +544,14 @@ contains
       call lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
                         
       ! Loop through all matrix blocks.
-      do i=1,rsourceMatrix%ndiagBlocks
+      do i=1,rsourceMatrix%nblocksPerCol
       
         ! Get the starting position of this block-row in the global matrix
         irowoffset = Irows(i)-1
         
         narow = 0
         
-        do j=1,rsourceMatrix%ndiagBlocks
+        do j=1,rsourceMatrix%nblocksPerRow
           if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
             
             p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
@@ -626,12 +631,12 @@ contains
       call lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
       
       ! Loop through all matrix subblocks
-      do i=1,rsourceMatrix%ndiagBlocks
+      do i=1,rsourceMatrix%nblocksPerCol
       
         ! Global row index?
         irowGlobal = Irows(i)-1
         
-        do j=1,rsourceMatrix%ndiagBlocks
+        do j=1,rsourceMatrix%nblocksPerRow
         
           if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
     
@@ -723,12 +728,12 @@ contains
       call lsyssc_getbase_double (rdestMatrix,p_DaDest)
     
       ! Loop through all matrix subblocks
-      do i=1,rsourceMatrix%ndiagBlocks
+      do i=1,rsourceMatrix%nblocksPerCol
       
         ! Global row index?
         irowGlobal = Irows(i)-1
         
-        do j=1,rsourceMatrix%ndiagBlocks
+        do j=1,rsourceMatrix%nblocksPerRow
         
           if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
     
@@ -819,12 +824,12 @@ contains
       call lsyssc_getbase_double (rdestMatrix,p_DaDest)
     
       ! Loop through all matrix subblocks
-      do i=1,rsourceMatrix%ndiagBlocks
+      do i=1,rsourceMatrix%nblocksPerCol
       
         ! Global row index?
         irowGlobal = Irows(i)-1
         
-        do j=1,rsourceMatrix%ndiagBlocks
+        do j=1,rsourceMatrix%nblocksPerRow
         
           if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
     

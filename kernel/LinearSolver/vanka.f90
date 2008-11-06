@@ -939,7 +939,14 @@ contains
     integer :: nblocks,i,j,nmaxLocalDOFs,ndofsPerElement
     type(t_spatialDiscretisation), pointer            :: p_rdiscretisation
     
-    nblocks = rmatrix%ndiagBlocks
+    ! Make sure the block matrix is not rectangular!
+    IF (rmatrix%nblocksPerCol .ne. rmatrix%nblocksPerRow) THEN
+      CALL output_line ('System matrix is rectangular!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanka_initGeneralVanka')
+      CALL sys_halt()
+    END IF
+    
+    nblocks = rmatrix%nblocksPerCol
     nmaxLocalDOFs = 0
     ndofsPerElement = 0
     
@@ -947,8 +954,8 @@ contains
     rvankaGeneral%nblocks = nblocks
     allocate(rvankaGeneral%p_Rmatrices(nblocks,nblocks))
     
-    allocate(rvankaGeneral%p_InDofsLocal(rmatrix%ndiagBlocks))
-    allocate(rvankaGeneral%p_IblockOffset(rmatrix%ndiagBlocks+1))
+    allocate(rvankaGeneral%p_InDofsLocal(nblocks))
+    allocate(rvankaGeneral%p_IblockOffset(nblocks+1))
     
     ! This type of VANKA only supports a uniform discretisation
     ! and matrix format 7 or 9. Transposed matrices are not allowed.
@@ -1123,7 +1130,7 @@ contains
   type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     
   ! Saved matrix and the vector(s) must be compatible!
-  call lsysbl_isMatrixCompatible(rvector,rvankaGeneral%p_rmatrix)
+  call lsysbl_isMatrixCompatible(rvector,rvankaGeneral%p_rmatrix,.false.)
   call lsysbl_isVectorCompatible(rvector,rrhs)
     
   ! Get the data arrays of the vector/rhs
@@ -1616,11 +1623,11 @@ contains
     bextended = .false.
     
     ! Matrix must be 3x3.
-    if (rmatrix%ndiagBlocks .ne. 3) then
-      call output_line ('System matrix is not 3x3.',&
+    IF ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) THEN
+      CALL output_line ('System matrix is not 3x3.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-      call sys_halt()
-    end if
+      CALL sys_halt()
+    END IF
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(3,:) must be (virtually) transposed. All matrices must be double precision.
@@ -2129,12 +2136,11 @@ contains
     integer :: i,j
 
     ! Matrix must be 3x3.
-    if (rmatrix%ndiagBlocks .ne. 3) then
-      call output_line (&
-          'System matrix is not 3x3.',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_check2DSPQ1TQ0')
-      call sys_halt()
-    end if
+    IF ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) THEN
+      CALL output_line ('System matrix is not 3x3.',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DSPQ1TQ0simple')
+      CALL sys_halt()
+    END IF
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(3,:) must be (virtually) transposed. All matrices must be double precision.
@@ -7758,11 +7764,11 @@ contains
     type(t_blockDiscretisation), pointer :: p_rblockDiscr
     
     ! Matrix must be 6x6.
-    if (rmatrix%ndiagBlocks .ne. 6) then
-      call output_line ('System matrix is not 6x6.',&
+    IF ((rmatrix%nblocksPerCol .ne. 6) .or. (rmatrix%nblocksPerRow .ne. 6)) THEN
+      CALL output_line ('System matrix is not 6x6.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      call sys_halt()
-    end if
+      CALL sys_halt()
+    END IF
     
     ! A(1:2,1:3), A(4:5,4:6) must not be virtually transposed and of format 9.
     ! A(3,:),A(6,:) must be (virtually) transposed. All matrices must be double precision.
@@ -11119,11 +11125,11 @@ contains
     bextended = .false.
     
     ! Matrix must be 4x4.
-    if (rmatrix%ndiagBlocks .ne. 4) then
-      call output_line ('System matrix is not 4x4.',&
+    IF ((rmatrix%nblocksPerCol .ne. 4) .or. (rmatrix%nblocksPerRow .ne. 4)) THEN
+      CALL output_line ('System matrix is not 4x4.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-      call sys_halt()
-    end if
+      CALL sys_halt()
+    END IF
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(4,:) must be (virtually) transposed. All matrices must be double precision.
@@ -11550,12 +11556,11 @@ contains
     integer :: i,j
 
     ! Matrix must be 4x4.
-    if (rmatrix%ndiagBlocks .ne. 4) then
-      call output_line (&
-          'System matrix is not 4x4.',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_check3DSPQ1TQ0')
-      call sys_halt()
-    end if
+    IF ((rmatrix%nblocksPerCol .ne. 4) .or. (rmatrix%nblocksPerRow .ne. 4)) THEN
+      CALL output_line ('System matrix is not 4x4.',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DSPQ1TQ0simple')
+      CALL sys_halt()
+    END IF
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(4,:) must be (virtually) transposed. All matrices must be double precision.

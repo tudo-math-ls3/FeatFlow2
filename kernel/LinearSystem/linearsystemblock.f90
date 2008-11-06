@@ -265,7 +265,7 @@ module linearsystemblock
     type(t_uuid) :: ruuid
     
     ! Total number of equations in the vector
-    integer(PREC_DOFIDX)       :: NEQ = 0
+    integer                    :: NEQ = 0
     
     ! Handle identifying the vector entries or = ST_NOHANDLE if not
     ! allocated.
@@ -274,7 +274,7 @@ module linearsystemblock
     ! Start position of the vector data in the array identified by
     ! h_Ddata. Normally = 1. Can be set to > 1 if the vector is a subvector
     ! in a larger memory block allocated on the heap.
-    integer(PREC_VECIDX)       :: iidxFirstEntry = 1
+    integer                    :: iidxFirstEntry = 1
 
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE. The subvectors are all of the same type.
@@ -336,15 +336,18 @@ module linearsystemblock
     ! Total number of equations = rows in the whole matrix.
     ! This usually coincides with NCOLS. NCOLS > NEQ indicates, that 
     ! at least one block row in the block matrix is completely zero.
-    integer(PREC_DOFIDX)       :: NEQ         = 0
+    integer                    :: NEQ         = 0
 
     ! Total number of columns in the whole matrix.
     ! This usually coincides with NEQ. NCOLS < NEQ indicates, that
     ! at least one block column in the block matrix is completely zero.
-    integer(PREC_DOFIDX)       :: NCOLS       = 0
+    integer                    :: NCOLS       = 0
     
-    ! Number of diagonal blocks in the matrix.
-    integer                    :: ndiagBlocks = 0
+    ! Number of blocks per row.
+    integer                    :: nblocksPerRow = 0
+    
+    ! Number of blocks per column.
+    integer                    :: nblocksPerCol = 0
 
     ! Matrix specification tag. This is a bitfield coming from an OR 
     ! combination of different LSYSBS_MSPEC_xxxx constants and specifies
@@ -514,7 +517,7 @@ contains
   
 !<subroutine>
 
-  subroutine lsysbl_isMatrixCompatible (rvector,rmatrix,bcompatible)
+  subroutine lsysbl_isMatrixCompatible (rvector,rmatrix,btransposed,bcompatible)
   
 !<description>
   ! Checks whether a vector and a matrix are compatible to each other.
@@ -533,6 +536,12 @@ contains
   
   ! The matrix
   type(t_matrixBlock), intent(IN) :: rmatrix
+
+  ! Check for rvector being compatible from the left or from the right
+  ! to the matrix rmatrix.
+  ! =FALSE: Check whether matrix-vector product $A*x$ is possible
+  ! =TRUE : Check whether matrix-vector product $x^T*A = A^T*x$ is possible
+  logical, intent(IN)              :: btransposed
 !</input>
 
 !<output>
@@ -546,7 +555,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,j
+  integer :: i,j,itmp
   !LOGICAL :: b1,b2,b3
 
   ! We assume that we are not compatible
@@ -563,7 +572,13 @@ contains
     end if
   end if
 
-  if (rvector%nblocks .ne. rmatrix%ndiagBlocks) then
+  if(btransposed) then
+    itmp = rmatrix%nblocksPerCol
+  else
+    itmp = rmatrix%nblocksPerRow
+  end if
+
+  if (rvector%nblocks .ne. itmp) then
     if (present(bcompatible)) then
       bcompatible = .false.
       return
@@ -604,12 +619,14 @@ contains
   ! Each subvector corresponds to one 'column' in the block matrix.
   !
   ! Loop through all columns (!) of the matrix
-  do j=1,rvector%nblocks
+  !do j=1,rvector%nblocks
+  do j = 1, rmatrix%nblocksPerRow
   
     ! Loop through all rows of the matrix
-    do i=1,rvector%nblocks
+    !do i=1,rvector%nblocks
+    do i = 1, rmatrix%nblocksPerCol
     
-      if (rmatrix%RmatrixBlock(i,j)%NEQ .ne. 0) then
+      if (rmatrix%RmatrixBlock(i,j)%NEQ .eq. 0) cycle
 
 !        b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation)
 !        b2 = ASSOCIATED(rmatrix%RmatrixBlock(i,j)%p_rspatialDiscretisation)
@@ -625,6 +642,19 @@ contains
 !          END IF
 !        END IF
 
+      if(btransposed) then
+        itmp = i
+        if (rvector%RvectorBlock(i)%NEQ .ne. rmatrix%RmatrixBlock(i,j)%NEQ) then
+          if (present(bcompatible)) then
+            bcompatible = .false.
+            return
+          else
+            print *,'Vector/Matrix not compatible, different block structure!'
+            call sys_halt()
+          end if
+        end if
+      else ! not transposed
+        itmp = j
         if (rvector%RvectorBlock(j)%NEQ .ne. rmatrix%RmatrixBlock(i,j)%NCOLS) then
           if (present(bcompatible)) then
             bcompatible = .false.
@@ -634,37 +664,37 @@ contains
             call sys_halt()
           end if
         end if
+      end if
 
-        ! isortStrategy < 0 means unsorted. Both unsorted is ok.
+      ! isortStrategy < 0 means unsorted. Both unsorted is ok.
+      
 
-        if ((rvector%RvectorBlock(j)%isortStrategy .gt. 0) .or. &
-            (rmatrix%RmatrixBlock(i,j)%isortStrategy .gt. 0)) then
+      if ((rvector%RvectorBlock(itmp)%isortStrategy .gt. 0) .or. &
+          (rmatrix%RmatrixBlock(i,j)%isortStrategy .gt. 0)) then
 
-          if (rvector%RvectorBlock(j)%isortStrategy .ne. &
-              rmatrix%RmatrixBlock(i,j)%isortStrategy) then
-            if (present(bcompatible)) then
-              bcompatible = .false.
-              return
-            else
-              print *,'Vector/Matrix not compatible, differently sorted!'
-              call sys_halt()
-            end if
-          end if
-
-          if (rvector%RvectorBlock(j)%h_isortPermutation .ne. &
-              rmatrix%RmatrixBlock(i,j)%h_isortPermutation) then
-            if (present(bcompatible)) then
-              bcompatible = .false.
-              return
-            else
-              print *,'Vector/Matrix not compatible, differently sorted!'
-              call sys_halt()
-            end if
+        if (rvector%RvectorBlock(itmp)%isortStrategy .ne. &
+            rmatrix%RmatrixBlock(i,j)%isortStrategy) then
+          if (present(bcompatible)) then
+            bcompatible = .false.
+            return
+          else
+            print *,'Vector/Matrix not compatible, differently sorted!'
+            call sys_halt()
           end if
         end if
-      
+
+        if (rvector%RvectorBlock(itmp)%h_isortPermutation .ne. &
+            rmatrix%RmatrixBlock(i,j)%h_isortPermutation) then
+          if (present(bcompatible)) then
+            bcompatible = .false.
+            return
+          else
+            print *,'Vector/Matrix not compatible, differently sorted!'
+            call sys_halt()
+          end if
+        end if
       end if
-      
+    
     end do
   end do
 
@@ -822,7 +852,7 @@ contains
 
 !<input>
   ! An array with length-tags for the different blocks
-  integer(PREC_VECIDX), dimension(:), intent(IN) :: Isize
+  integer, dimension(:), intent(IN)         :: Isize
   
   ! Optional: If set to YES, the vector will be filled with zero initially.
   logical, intent(IN), optional             :: bclear
@@ -913,7 +943,7 @@ contains
 
 !<input>
   ! An integer describing the length of each block
-  integer(PREC_VECIDX), intent(IN) :: isize
+  integer, intent(IN) :: isize
 
   ! An integer describing the number of vector blocks
   integer, intent(IN) :: iblocks
@@ -1028,7 +1058,7 @@ contains
 !</subroutine>
 
   integer :: cdata,i
-  integer(PREC_VECIDX) :: n
+  integer :: n
   
   cdata = rtemplate%cdataType
   if (present(cdataType)) cdata = cdataType
@@ -1123,7 +1153,7 @@ contains
 !</subroutine>
 
   integer :: cdata,i
-  integer(PREC_VECIDX), dimension(max(1,rblockDiscretisation%ncomponents)) :: Isize
+  integer, dimension(max(1,rblockDiscretisation%ncomponents)) :: Isize
   
   cdata = ST_DOUBLE
   if (present(cdataType)) cdata = cdataType
@@ -1187,8 +1217,8 @@ contains
 !</subroutine>
 
   integer :: i
-  integer(PREC_VECIDX) :: NEQ
-  integer(PREC_VECIDX), dimension(max(1,rblockDiscretisationTrial%ncomponents)) :: Isize
+  integer :: NEQ,NCOLS
+  integer, dimension(max(1,rblockDiscretisationTrial%ncomponents)) :: Isize,Isize2
   
   ! Loop to the blocks in the block discretisation. Calculate size (#DOF's)
   ! of all the subblocks.
@@ -1196,7 +1226,16 @@ contains
   do i=1,rblockDiscretisationTrial%ncomponents
     Isize(i) = dof_igetNDofGlob(rblockDiscretisationTrial%RspatialDiscr(i))
   end do
-  NEQ = sum(Isize(:))
+  NCOLS = sum(Isize(:))
+  if(present(rblockDiscretisationTest)) then
+    Isize2(1) = 0
+    do i = 1, rblockDiscretisationTest%ncomponents
+      Isize(i) = dof_igetNDofGlob(rblockDiscretisationTest%RspatialDiscr(i))
+    end do
+    NEQ = sum(Isize(:))
+  else
+    NEQ = NCOLS
+  end if
   
   ! The 'INTENT(OUT)' already initialised the structure with the most common
   ! values. What is still missing, we now initialise:
@@ -1213,14 +1252,21 @@ contains
   
   ! Initialise NEQ/NCOLS by default for a quadrativ matrix
   rmatrix%NEQ = NEQ
-  rmatrix%NCOLS = NEQ
-  rmatrix%ndiagBlocks = rblockDiscretisationTrial%ncomponents
+  rmatrix%NCOLS = NCOLS
+  rmatrix%nblocksPerRow = rblockDiscretisationTrial%ncomponents
+  if(present(rblockDiscretisationTest)) then
+    rmatrix%nblocksPerCol = rblockDiscretisationTest%ncomponents
+  else
+    rmatrix%nblocksPerCol = rmatrix%nblocksPerRow
+  end if
   
   ! Check if number of diagonal blocks is nonzeri, otherwise exit
-  if (rmatrix%ndiagblocks <= 0) return
-  allocate(rmatrix%RmatrixBlock(rmatrix%ndiagBlocks,rmatrix%ndiagBlocks))
+  if ((rmatrix%nblocksPerCol <= 0) .or. (rmatrix%nblocksPerCol <= 0)) return
   
-  if (rmatrix%ndiagBlocks .eq. 1) then
+  allocate(rmatrix%RmatrixBlock(rmatrix%nblocksPerCol,rmatrix%nblocksPerRow))
+  
+  if ((rmatrix%nblocksPerCol .eq. 1) .and. &
+      (rmatrix%nblocksPerRow .eq. 1)) then
     rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
   end if
   
@@ -1230,11 +1276,11 @@ contains
   
 !<subroutine>
 
-  subroutine lsysbl_createEmptyMatrix (rmatrix,nblocks)
+  subroutine lsysbl_createEmptyMatrix (rmatrix,nblocksPerCol,nblocksPerRow)
   
 !<description>
-  ! Creates a basic (nblocks x nblocks) block matrix. Reserves memory for
-  ! all the submatrices but does not initialise any submatrix.
+  ! Creates a basic (nblocksPerCol x nblocksPerRow) block matrix. Reserves
+  ! memory for all the submatrices but does not initialise any submatrix.
   !
   ! This routine can be used to create a totally empty matrix without any
   ! discretisation structure in the background.
@@ -1245,8 +1291,12 @@ contains
 !</description>
 
 !<input>
-  ! Number of diagonal blocks in the matrix
-  integer, intent(IN) :: nblocks
+  ! Number of blocks per column in the matrix
+  integer, intent(IN) :: nblocksPerCol
+  
+  ! OPTIONAL: Number of blocks per row in the matrix. If not given, 
+  ! nblocksPerCol is used.
+  integer, optional, intent(IN) :: nblocksPerRow
 !</input>
 
 !<output>
@@ -1255,15 +1305,26 @@ contains
 !</output>
 
 !</subroutine>
+
+  integer :: nbpr
   
-    ! Check if number of giagonal blocks is nonzero, otherwise exit
-    if (nblocks <= 0) return
+    ! Check if number of blocks is nonzero, otherwise exit
+    if (nblocksPerCol .le. 0) return
+    if (present(nblocksPerRow)) then
+      if(nblocksPerRow .le. 0) return
+      nbpr = nblocksPerRow
+    else
+      nbpr = nblocksPerCol
+    end if
+    
 
     ! Allocate memory for the blocks, that's it.
-    allocate(rmatrix%RmatrixBlock(nblocks,nblocks))
-    rmatrix%ndiagBlocks = nblocks
+    allocate(rmatrix%RmatrixBlock(nblocksPerCol,nbpr))
+    rmatrix%nblocksPerCol = nblocksPerCol
+    rmatrix%nblocksPerRow = nbpr
 
-    if (rmatrix%ndiagBlocks .eq. 1) then
+    if ((rmatrix%nblocksPerCol .eq. 1) .and. &
+        (rmatrix%nblocksPerRow .eq. 1)) then
       rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
     end if
 
@@ -1304,7 +1365,7 @@ contains
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
-  integer, intent(IN),optional              :: cdataType
+  integer, intent(IN),optional :: cdataType
 !</input>
 
 !<output>
@@ -1315,10 +1376,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,n,j,NVAR
+    integer :: i,n,j,NVAR,nbpc,nbpr
     integer :: cdata
     logical :: btrans
-    integer(PREC_VECIDX) :: NEQ, NCOLS
+    integer :: NEQ, NCOLS
 
     cdata = ST_DOUBLE
     if (present(cdataType)) cdata = cdataType
@@ -1329,9 +1390,13 @@ contains
     end if
     
     if (btrans) then
+      nbpc = rtemplateMat%nblocksPerRow
+      nbpr = rtemplateMat%nblocksPerCol
       NEQ = rtemplateMat%NCOLS
       NCOLS = rtemplateMat%NEQ
     else
+      nbpc = rtemplateMat%nblocksPerCol
+      nbpr = rtemplateMat%nblocksPerRow
       NEQ = rtemplateMat%NEQ
       NCOLS = rtemplateMat%NCOLS
     end if
@@ -1339,23 +1404,22 @@ contains
     rx%NEQ = NCOLS
 
     ! Allocate one large vector holding all data.
-    call storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', &
-                        NCOLS, &
-                        cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+    call storage_new1D ('lsysbl_createVecBlockIndMat', 'Vector', &
+                        NCOLS, cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
     
-    ! Check if number of diagonal bocks is nonzero, otherwise exit
-    if (rtemplateMat%ndiagBlocks <= 0) return
+    ! Check if number of bocks is nonzero, otherwise exit
+    if (nbpr <= 0) return
 
     ! Initialise the sub-blocks. Save a pointer to the starting address of
     ! each sub-block.
-    allocate(rx%RvectorBlock(rtemplateMat%ndiagBlocks))
+    allocate(rx%RvectorBlock(nbpr))
     
     n=1
-    do i = 1,rtemplateMat%ndiagBlocks
+    do i = 1, nbpr
       ! Search for the first matrix in column i of the block matrix -
       ! this will give us information about the vector. Note that the
       ! diagonal blocks does not necessarily have to exist!
-      do j=1,rtemplateMat%ndiagBlocks
+      do j = 1, nbpc
       
         if (btrans) then
           NEQ = rtemplateMat%RmatrixBlock(i,j)%NCOLS
@@ -1423,7 +1487,7 @@ contains
         
       end do
       
-      if (j .gt. rtemplateMat%ndiagBlocks) then
+      if (j .gt. nbpc) then
         ! Let's hope this situation (an empty equation) never occurs - 
         ! might produce some errors elsewhere :)
         rx%RvectorBlock(i)%NEQ  = 0
@@ -1433,7 +1497,7 @@ contains
       
     end do
     
-    rx%nblocks = rtemplateMat%ndiagBlocks
+    rx%nblocks = nbpr
     rx%cdataType = cdata
 
     ! Transfer the boundary conditions and block discretisation pointers
@@ -1514,7 +1578,7 @@ contains
   ! (More precisely, the blocks in rx and the diagonal blocks of
   !  rtemplateMat!)
   !
-  ! In case the vector is completely incompatiblew to the matrix
+  ! In case the vector is completely incompatible to the matrix
   ! (different number of blocks, different NEQ), an error is thrown.
 !</description>
   
@@ -1541,7 +1605,7 @@ contains
 
     ! local variables
     integer :: i,j
-    integer(PREC_VECIDX) :: NEQ, NCOLS
+    integer :: NEQ, NCOLS,nbpc,nbpr
     logical :: btrans
 
     btrans = .false.
@@ -1550,25 +1614,28 @@ contains
     end if
     
     if (btrans) then
+      nbpc = rtemplateMat%nblocksPerRow
+      nbpr = rtemplateMat%nblocksPerCol
       NEQ = rtemplateMat%NCOLS
       NCOLS = rtemplateMat%NEQ
     else
+      nbpc = rtemplateMat%nblocksPerCol
+      nbpr = rtemplateMat%nblocksPerRow
       NEQ = rtemplateMat%NEQ
       NCOLS = rtemplateMat%NCOLS
     end if
 
     ! There must be at least some compatibility between the matrix
     ! and the vector!
-    if ((NCOLS .ne. rx%NEQ) .or. &
-        (rtemplateMat%ndiagBlocks .ne. rx%nblocks)) then
+    if ((NCOLS .ne. rx%NEQ) .or. (nbpr .ne. rx%nblocks)) then
       print *,'lsysbl_assignDiscretIndirectMat error: Matrix/Vector incompatible!'
       call sys_halt()
     end if
 
     ! Simply modify all pointers of all subvectors, that's it.
     if (.not. btrans) then
-      do i=1,rx%nblocks
-        do j=1,rx%nblocks
+      do i = 1, nbpr
+        do j = 1, nbpc
           ! Search for the first matrix in the 'column' of the block matrix and use
           ! its properties to initialise
           if (rtemplateMat%RmatrixBlock(j,i)%NEQ .ne. 0) then
@@ -1580,8 +1647,8 @@ contains
         end do
       end do
     else
-      do i=1,rx%nblocks
-        do j=1,rx%nblocks
+      do i = 1, nbpr
+        do j = 1, nbpc
           ! Search for the first matrix in the 'column' of the block matrix and use
           ! its properties to initialise
           if (rtemplateMat%RmatrixBlock(i,j)%NCOLS .ne. 0) then
@@ -1637,8 +1704,8 @@ contains
     integer :: i,j
 
     ! Modify all pointers of all submatrices.
-    do j=1,rmatrix%ndiagblocks
-      do i=1,rmatrix%ndiagblocks
+    do j=1,rmatrix%nblocksPerRow
+      do i=1,rmatrix%nblocksPerCol
         if (lsysbl_isSubmatrixPresent(rmatrix,i,j,.true.)) then
 
           if (.not. present(rdiscrTest)) then
@@ -1808,15 +1875,15 @@ contains
 !</subroutine>
   
   ! local variables
-  integer :: x,y
+  integer :: i,j
   
   ! loop through all the submatrices and release them
-  do x=1,rmatrix%ndiagBlocks
-    do y=1,rmatrix%ndiagBlocks
+  do j = 1, rmatrix%nblocksPerRow
+    do i = 1, rmatrix%nblocksPerCol
       
       ! Only release the matrix if there is one.
-      if (rmatrix%RmatrixBlock(y,x)%NA .ne. 0) then
-        call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(y,x))
+      if (rmatrix%RmatrixBlock(i,j)%NA .ne. 0) then
+        call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(i,j))
       end if
       
     end do
@@ -1824,7 +1891,9 @@ contains
   
   ! Clean up the other variables, finish
   rmatrix%NEQ = 0
-  rmatrix%ndiagBlocks = 0
+  rmatrix%NCOLS = 0
+  rmatrix%nblocksPerCol = 0
+  rmatrix%nblocksPerRow = 0
   
   nullify(rmatrix%p_rblockDiscrTrial)
   nullify(rmatrix%p_rblockDiscrTest)
@@ -1858,15 +1927,15 @@ contains
 !</subroutine>
   
   ! local variables
-  integer :: x
+  integer :: j
   
-  ! loop through all the submatrices in row irow and release them
-  do x=1,rmatrix%ndiagBlocks
-    ! Only release the matrix if there is one.
-    if (rmatrix%RmatrixBlock(irow,x)%NA .ne. 0) then
-      call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(irow,x))
-    end if
-  end do
+    ! loop through all the submatrices in row irow and release them
+    do j = 1, rmatrix%nblocksPerRow
+      ! Only release the matrix if there is one.
+      if (rmatrix%RmatrixBlock(irow,j)%NA .ne. 0) then
+        call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(irow,j))
+      end if
+    end do
   
   end subroutine
 
@@ -1893,15 +1962,15 @@ contains
 !</subroutine>
   
   ! local variables
-  integer :: y
+  integer :: i
   
-  ! loop through all the submatrices in row irow and release them
-  do y=1,rmatrix%ndiagBlocks
-    ! Only release the matrix if there is one.
-    if (rmatrix%RmatrixBlock(y,icolumn)%NA .ne. 0) then
-      call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(y,icolumn))
-    end if
-  end do
+    ! loop through all the submatrices in row irow and release them
+    do i = 1, rmatrix%nblocksPerCol
+      ! Only release the matrix if there is one.
+      if (rmatrix%RmatrixBlock(i,icolumn)%NA .ne. 0) then
+        call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(i,icolumn))
+      end if
+    end do
   
   end subroutine
 
@@ -1909,7 +1978,7 @@ contains
 
 !<subroutine>
   
-  subroutine lsysbl_blockMatVec (rmatrix, rx, ry, cx, cy)
+  subroutine lsysbl_blockMatVec (rmatrix, rx, ry, cx, cy, btransposed)
  
 !<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
@@ -1932,6 +2001,10 @@ contains
   ! Multiplicative factor for ry
   real(DP), intent(IN)                              :: cy
   
+  ! OPTIONAL: Specifies whether a multiplication with the matrix itself
+  ! (.false.) or with its transpose (.true.) should be performed. If not
+  ! given, .false. is assumed.
+  logical, optional, intent(IN)                     :: btransposed
 !</input>
 
 !<inputoutput>
@@ -1944,46 +2017,68 @@ contains
 !</subroutine>
   
   ! local variables
-  integer :: x,y,mvok
-  real(DP)     :: cyact
+  integer :: i,j,mvok,nbpc,nbpr
+  real(DP) :: cyact
+  logical :: btrans = .false.
   
-  ! The vectors must be compatible to each other.
-  call lsysbl_isVectorCompatible (rx,ry)
+    if(present(btransposed)) btrans = btransposed
+    
+    ! The vectors must be compatible to each other.
+    !call lsysbl_isVectorCompatible (rx,ry)
 
-  ! and compatible to the matrix
-  call lsysbl_isMatrixCompatible (rx,rmatrix)
-
-  ! loop through all the sub matrices and multiply.
-  do y=1,rmatrix%ndiagBlocks
-  
-    ! The original vector ry must only be respected once in the first
-    ! matrix-vector multiplication. The additive contributions of
-    ! the other blocks must simply be added to ry without ry being multiplied
-    ! by cy again!
-  
-    cyact = cy
-    MVOK = NO
-    do x=1,rMatrix%ndiagBlocks
+    ! and compatible to the matrix
+    call lsysbl_isMatrixCompatible (ry,rmatrix,.not. btrans)
+    call lsysbl_isMatrixCompatible (rx,rmatrix,btrans)
+    
+    if(btrans) then
+      nbpc = rmatrix%nblocksPerRow
+      nbpr = rmatrix%nblocksPerCol
+    else
+      nbpc = rmatrix%nblocksPerCol
+      nbpr = rmatrix%nblocksPerRow
+    end if
+    
+    ! loop through all the sub matrices and multiply.
+    do i = 1, nbpc
+    
+      ! The original vector ry must only be respected once in the first
+      ! matrix-vector multiplication. The additive contributions of
+      ! the other blocks must simply be added to ry without ry being multiplied
+      ! by cy again!
+    
+      cyact = cy
+      MVOK = NO
+      do j = 1, nbpr
+        
+        ! Only call the MV when there is a scalar matrix that we can use!
+        if(.not. btrans) then
+          if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) then
+            call lsyssc_scalarMatVec (rMatrix%RmatrixBlock(i,j), rx%RvectorBlock(j), &
+                                      ry%RvectorBlock(i), cx, cyact)
+            cyact = 1.0_DP
+            mvok = YES
+          end if
+        else
+          if (lsysbl_isSubmatrixPresent (rmatrix,j,i)) then
+            call lsyssc_scalarMatVec (rMatrix%RmatrixBlock(j,i), rx%RvectorBlock(j), &
+                                      ry%RvectorBlock(i), cx, cyact)
+            cyact = 1.0_DP
+            mvok = YES
+          end if
+        end if
+        
+      end do
       
-      ! Only call the MV when there is a scalar matrix that we can use!
-      if (lsysbl_isSubmatrixPresent (rmatrix,y,x)) then
-        call lsyssc_scalarMatVec (rMatrix%RmatrixBlock(y,x), rx%RvectorBlock(x), &
-                                  ry%RvectorBlock(y), cx, cyact)
-        cyact = 1.0_DP
-        mvok = YES
+      ! If mvok=NO here, there was no matrix in the current line!
+      ! A very special case, but nevertheless may happen. In this case,
+      ! simply scale the vector ry by cyact!
+      
+      if (mvok .eq. NO) then
+        !call lsysbl_scaleVector (ry,cy)
+        call lsyssc_scaleVector(ry%RvectorBlock(i),cy)
       end if
       
     end do
-    
-    ! If mvok=NO here, there was no matrix in the current line!
-    ! A very special case, but nevertheless may happen. In this case,
-    ! simply scale the vector ry by cyact!
-    
-    if (mvok .eq.NO) then
-      call lsysbl_scaleVector (ry,cy)
-    end if
-    
-  end do
    
   end subroutine
   
@@ -2024,7 +2119,11 @@ contains
   
     ! Vectors and matrix must be compatible
     call lsysbl_isVectorCompatible (rvectorSrc,rvectorDst)
-    call lsysbl_isMatrixCompatible (rvectorSrc,rmatrix)
+    call lsysbl_isMatrixCompatible (rvectorSrc,rmatrix,.false.)
+    call lsysbl_isMatrixCompatible (rvectorDst,rmatrix,.true.)
+    
+    ! As both vectors are compatible to each other and compatible to the
+    ! matrix, the matrix must be a square matrix!
   
     ! Loop over the blocks
     do iblock = 1,rvectorSrc%nblocks
@@ -2066,7 +2165,7 @@ contains
   ! local variables
   integer :: h_Ddata, cdataType
   integer(I32) :: isize,NEQ,i
-  integer(PREC_VECIDX) :: ioffset
+  integer :: ioffset
   logical :: bisCopy
   type(t_vectorScalar), dimension(:), pointer :: p_rblocks
   
@@ -2165,7 +2264,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_VECIDX) :: NEQ
+  integer :: NEQ
   real(DP), dimension(:), pointer :: p_Dsource,p_Ddest
   real(SP), dimension(:), pointer :: p_Fsource,p_Fdest
   
@@ -2509,7 +2608,7 @@ contains
     ! Perform the scalar product
     res=lalg_scalarProductSngl(p_Fdata1dp,p_Fdata2dp)
 
-  case DEFAULT
+  case default
     print *,'lsysbl_scalarProduct: Not supported precision combination'
     call sys_halt()
   end select
@@ -2676,10 +2775,11 @@ contains
 !</subroutine>
 
     ! Fill the rmatrix structure with data.
-    rmatrix%NEQ         = rscalarMat%NEQ * rscalarMat%NVAR
-    rmatrix%NCOLS       = rscalarMat%NCOLS * rscalarMat%NVAR
-    rmatrix%ndiagBlocks = 1
-    rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
+    rmatrix%NEQ           = rscalarMat%NEQ * rscalarMat%NVAR
+    rmatrix%NCOLS         = rscalarMat%NCOLS * rscalarMat%NVAR
+    rmatrix%nblocksPerCol = 1
+    rmatrix%nblocksPerRow = 1
+    rmatrix%imatrixSpec   = LSYSBS_MSPEC_SCALAR
     
     ! Copy the content of the scalar matrix structure into the
     ! first block of the block matrix
@@ -2916,7 +3016,7 @@ contains
   ! local variables
   integer :: cdata,h_Ddata,i
   logical :: biscopy
-  integer(PREC_VECIDX) :: istart,n !,length
+  integer :: istart,n !,length
   type(t_vectorScalar), dimension(:), pointer :: p_Rblocks
 
 !  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
@@ -3004,7 +3104,7 @@ contains
 !<input>
   ! An array with size definitions. Isize(j) specifies the length of the j'th
   ! subvector.
-  integer(PREC_VECIDX), dimension(:), intent(IN) :: Isize
+  integer, dimension(:), intent(IN) :: Isize
 !</input>
 
 !<inputoutput>
@@ -3016,7 +3116,7 @@ contains
 
   ! local variables
   integer :: i
-  integer(PREC_VECIDX) :: n !,length
+  integer :: n !,length
 
 !  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 !  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
@@ -3089,7 +3189,7 @@ contains
 
     ! local variables
     integer :: i
-    integer(PREC_VECIDX) :: iidx
+    integer :: iidx
 
     ! Get current size of vector memory
     call storage_getsize(rx%h_Ddata, iidx)
@@ -3146,24 +3246,17 @@ contains
 
 !</subroutine>
 
-  integer :: i,j,k,NEQ,NCOLS
+  integer :: j,k,NEQ,NCOLS
   
-  ! At first, recalculate the number of diagonal blocks in the
-  ! block matrix
-  outer: do i=ubound(rmatrix%RmatrixBlock,2),1,-1
-    do j=ubound(rmatrix%RmatrixBlock,1),1,-1
-      if (rmatrix%RmatrixBlock(j,i)%NEQ .ne. 0) exit outer
-    end do
-  end do outer
-  
-  ! The maximum of i and j is the new number of diagonal blocks
-  rmatrix%ndiagBlocks = max(i,j)
+  ! At first, recalculate the number of blocks in the block matrix
+  rmatrix%nblocksPerCol = ubound(rmatrix%RmatrixBlock,1)
+  rmatrix%nblocksPerRow = ubound(rmatrix%RmatrixBlock,2)
   
   ! Calculate the new NEQ and NCOLS. Go through all 'columns' and 'rows
   ! of the block matrix and sum up their dimensions.
   NCOLS = 0
-  do j=1,ubound(rmatrix%RmatrixBlock,2)
-    do k=1,ubound(rmatrix%RmatrixBlock,1)
+  do j = 1, rmatrix%nblocksPerRow
+    do k = 1, rmatrix%nblocksPerCol
       if (rmatrix%RmatrixBlock(k,j)%NCOLS .ne. 0) then
         NCOLS = NCOLS + rmatrix%RmatrixBlock(k,j)%NCOLS *&
                         rmatrix%RmatrixBlock(k,j)%NVAR
@@ -3174,8 +3267,8 @@ contains
 
   ! Loop in the transposed way to calculate NEQ.
   NEQ = 0
-  do j=1,ubound(rmatrix%RmatrixBlock,1)
-    do k=1,ubound(rmatrix%RmatrixBlock,2)
+  do j = 1, rmatrix%nblocksPerCol
+    do k = 1, rmatrix%nblocksPerRow
       if (rmatrix%RmatrixBlock(j,k)%NEQ .ne. 0) then
         NEQ = NEQ + rmatrix%RmatrixBlock(j,k)%NEQ *&
                     rmatrix%RmatrixBlock(j,k)%NVAR
@@ -3216,8 +3309,8 @@ contains
   
   ! Loop through all blocks and clear the matrices
   ! block matrix
-  do i=1,rmatrix%ndiagBlocks
-    do j=1,rmatrix%ndiagBlocks
+  do i=1,rmatrix%nblocksPerCol
+    do j=1,rmatrix%nblocksPerRow
       if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) &
         call lsyssc_clearMatrix (rmatrix%RmatrixBlock(i,j),dvalue)
     end do
@@ -3338,7 +3431,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX) :: i,j
+    integer :: i,j
     type(t_matrixScalar), dimension(:,:), pointer :: p_rblocks
     
     ! Copy the matrix structure of rsourceMatrix to rdestMatrix. This will also
@@ -3348,16 +3441,17 @@ contains
     rdestMatrix%RmatrixBlock => p_rblocks
     if (.not. associated(rdestMatrix%RmatrixBlock)) then
       ! Check if number of diagonal blocks is nonzero, otherwise exit
-      if (rdestMatrix%ndiagblocks <= 0) return
-      allocate(rdestMatrix%RmatrixBlock(rdestMatrix%ndiagBlocks,rdestMatrix%ndiagBlocks))
+      if ((rdestMatrix%nblocksPerCol <= 0) .or. &
+          (rdestMatrix%nblocksPerRow <= 0)) return
+      allocate(rdestMatrix%RmatrixBlock(rdestMatrix%nblocksPerCol,rdestMatrix%nblocksPerRow))
     end if
     rdestMatrix%RmatrixBlock = rsourceMatrix%RmatrixBlock
     
     ! For every submatrix in the source matrix, call the 'scalar' variant
     ! of duplicateMatrix. Dismiss all old information and replace it by
     ! the new one.
-    do j=1,rsourceMatrix%ndiagBlocks
-      do i=1,rsourceMatrix%ndiagBlocks
+    do j=1,rsourceMatrix%nblocksPerRow
+      do i=1,rsourceMatrix%nblocksPerCol
         if (rdestMatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIXUNDEFINED) then
         
           ! Set the specification flags to "matrix is copy", so the releaseMatrix
@@ -3478,10 +3572,10 @@ contains
 !</subroutine>
 
     integer :: h_Ddata,i
-    integer(PREC_VECIDX) :: cdataType
+    integer :: cdataType
     logical :: bisCopy
     type(t_vectorScalar), dimension(:), pointer :: p_Rblocks
-    integer(PREC_VECIDX) ::  isize,ioffset
+    integer ::  isize,ioffset
 
     ! First the structure
 
@@ -3724,7 +3818,7 @@ contains
     type(t_vectorBlock), intent(INOUT) :: ry
     
     ! New first position of the first subvector in the global data array.
-    integer(PREC_VECIDX), intent(IN) :: iidxFirstEntry
+    integer, intent(IN) :: iidxFirstEntry
 
       integer :: ioffset,i
 
@@ -3879,13 +3973,13 @@ contains
     integer :: i,j
     
     ! Loop over the columns of the block matrix
-    do j=1,rmatrixSrc%ndiagBlocks
+    do j = 1, rmatrixSrc%nblocksPerRow
       ! Loop through all rows in that column. Find the first matrix that can
       ! provide us with a sorting strategy we can use.
       ! We can assume that all submatrices in that matrix column have 
       ! the same sorting strategy, otherwise something like matrix-vector
       ! multiplication will quickly lead to a program failure...
-      do i = 1,rmatrixSrc%ndiagBlocks
+      do i = 1,rmatrixSrc%nblocksPerCol
         if (rmatrixSrc%RmatrixBlock(i,j)%NEQ .ne. 0) then
           call lsyssc_synchroniseSortMatVec (rmatrixSrc%RmatrixBlock(i,j),&
               rvectorDst%RvectorBlock(i),rtemp)
@@ -3973,12 +4067,12 @@ contains
 
 !</function>
 
-  integer(PREC_VECIDX) :: i,j,k
+  integer :: i,j,k
   
   ! Loop through all matrices and get the largest sort-identifier
   k = 0
-  do j=1,rmatrix%ndiagBlocks
-    do i=1,rmatrix%ndiagBlocks
+  do j=1,rmatrix%nblocksPerRow
+    do i=1,rmatrix%nblocksPerCol
       if (rmatrix%RmatrixBlock(i,j)%NEQ .ne. 0) then
         k = max(k,rmatrix%RmatrixBlock(i,j)%isortStrategy)
       end if
@@ -4013,7 +4107,7 @@ contains
 
 !</function>
 
-  integer(PREC_VECIDX) :: i,k
+  integer :: i,k
   
   ! Loop through all matrices and get the largest sort-identifier
   k = 0
@@ -4143,10 +4237,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ifirst, ilast, ncount, i, idupflag
-    integer(PREC_VECIDX) :: n
+    integer :: ifirst, ilast, ncount, i, idupflag,n
     logical :: bshareContent
-    integer(PREC_VECIDX), dimension(max(rvectorSrc%nblocks,1)) :: Isize
+    integer, dimension(max(rvectorSrc%nblocks,1)) :: Isize
     
     ! Evaluate the optional parameters
     ifirst = 1
@@ -4398,15 +4491,15 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX) :: i,j
+    integer :: i,j
     integer :: ifirstX, ilastX, ifirstY, ilastY
     
     ! Evaluate the optional parameters
     ifirstX = 1
-    ilastX = rsourceMatrix%ndiagBlocks
+    ilastX = rsourceMatrix%nblocksPerRow
 
-    ifirstY = ifirstX
-    ilastY = ilastX
+    ifirstY = 1
+    ilastY = rsourceMatrix%nblocksPerCol
     
     if (present(ifirstBlock)) then
       ifirstY = min(max(ifirstY,ifirstBlock),ilastX)
@@ -4428,22 +4521,19 @@ contains
       ilastX = ilastY
     end if
     
-    ! Currently, we only support square matrices -- this is a matter of change in the future!
-    if ((ilastY-ifirstY) .ne. (ilastX-ifirstX)) then
-      print *,'lsysbl_deriveSubmatrix: Currently, only square matrices are supported!'
-      stop
-    end if
-    
     ! If the destination matrix has the correct size, leave it.
     ! if not, release it and create a new one.
-    if ((rdestMatrix%NEQ .ne. 0) .and. (rdestMatrix%ndiagBlocks .ne. ilastX-ifirstX+1)) then
+    if ((rdestMatrix%NEQ .ne. 0) .and. &
+        ((rdestMatrix%nblocksPerRow .ne. ilastX-ifirstX+1) .or. &
+         (rdestMatrix%nblocksPerCol .ne. ilastY-ifirstY+1))) then
       call lsysbl_releaseMatrix (rdestMatrix)
     end if
     
     ! For every submatrix in the source matrix, call the 'scalar' variant
     ! of duplicateMatrix. 
     if (rdestMatrix%NEQ .eq. 0) &
-      call lsysbl_createEmptyMatrix(rdestMatrix,(ilastY-ifirstY+1))
+      call lsysbl_createEmptyMatrix(rdestMatrix,(ilastY-ifirstY+1),(ilastX-ifirstX+1))
+      
     do i=ifirstY,ilastY
       do j=ifirstX,ilastX
         if (lsysbl_isSubmatrixPresent(rsourceMatrix,i,j)) then
@@ -4544,16 +4634,16 @@ contains
 !<input>
     
     ! An array with desired length-tags for the different blocks
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Isize
+    integer, dimension(:), intent(IN) :: Isize
 
     ! Whether to fill the vector with zero initially
-    logical, intent(IN)                            :: bclear
+    logical, intent(IN)               :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(IN), optional                  :: bcopy
+    logical, intent(IN), optional     :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
-    integer(PREC_VECIDX), intent(IN), optional     :: NEQMAX
+    integer, intent(IN), optional     :: NEQMAX
 
 !</input>
 
@@ -4571,7 +4661,7 @@ contains
     real(DP), dimension(:), pointer     :: p_Ddata,p_DdataTmp
     real(SP), dimension(:), pointer     :: p_Fdata,p_FDataTmp
     integer(I32), dimension(:), pointer :: p_Idata,p_IdataTmp
-    integer(PREC_VECIDX) :: iNEQ,iisize,i,n
+    integer :: iNEQ,iisize,i,n
     logical              :: bdocopy
 
     ! Check, that the vector is not a copy of another (possibly larger) vector
@@ -4746,16 +4836,16 @@ contains
 !<input>
     
     ! Integer with desired length of all vector blocks
-    integer(PREC_VECIDX), intent(IN)               :: isize
+    integer, intent(IN)               :: isize
 
     ! Whether to fill the vector with zero initially
-    logical, intent(IN)                            :: bclear
+    logical, intent(IN)               :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(IN), optional                  :: bcopy
+    logical, intent(IN), optional     :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
-    integer(PREC_VECIDX), intent(IN), optional     :: NEQMAX
+    integer, intent(IN), optional     :: NEQMAX
 
 !</input>
 
@@ -4769,7 +4859,7 @@ contains
 !</subroutine>
     
     ! local variabls
-    integer(PREC_VECIDX), dimension(max(rx%nblocks,1)) :: Isubsize
+    integer, dimension(max(rx%nblocks,1)) :: Isubsize
 
     ! Fill auxiliary vector Iisize
     Isubsize(1:rx%nblocks) = isize
@@ -4828,8 +4918,8 @@ contains
 !</subroutine>
 
     ! local variabls
-    integer(PREC_VECIDX), dimension(max(rx%nblocks,1)) :: Isize
-    integer(PREC_VECIDX) :: NEQMAX
+    integer, dimension(max(rx%nblocks,1)) :: Isize
+    integer :: NEQMAX
     integer :: i
 
     ! Check if vector is initialized
@@ -4917,7 +5007,7 @@ contains
     real(DP), dimension(:), pointer     :: p_Ddata,p_DdataTmp
     real(SP), dimension(:), pointer     :: p_Fdata,p_FDataTmp
     integer(I32), dimension(:), pointer :: p_Idata,p_IdataTmp
-    integer(PREC_VECIDX) :: isize,i,j,n
+    integer :: isize,i,j,n
     logical              :: bdocopy
 
     ! Check, that the vector is not a copy of another (possibly larger) vector
@@ -4939,7 +5029,7 @@ contains
     else
       
       ! Check if vector/matrix are compatible
-      if (rx%nblocks /= rtemplateMat%ndiagblocks) then
+      if (rx%nblocks .ne. rtemplateMat%nblocksPerRow) then
         print *, "lsysbl_resizeVecBlockIndMat: Matrix/Vector incompatible!"
         call sys_halt()
       end if
@@ -4974,11 +5064,11 @@ contains
       end if
 
       n=1
-      do i = 1,rtemplateMat%ndiagBlocks
+      do i = 1, rtemplateMat%nblocksPerRow
         ! Search for the first matrix in column i of the block matrix -
         ! this will give us information about the vector. Note that the
         ! diagonal blocks does not necessarily have to exist!
-        do j=1,rtemplateMat%ndiagBlocks
+        do j = 1, rtemplateMat%nblocksPerCol
           
           ! Check if the matrix is not empty
           if (rtemplateMat%RmatrixBlock(j,i)%NCOLS .gt. 0) then
@@ -5017,7 +5107,7 @@ contains
           
         end do
 
-        if (j .gt. rtemplateMat%ndiagBlocks) then
+        if (j .gt. rtemplateMat%nblocksPerCol) then
           ! Let's hope this situation (an empty equation) never occurs - 
           ! might produce some errors elsewhere :)
           rx%RvectorBlock(i)%NEQ = 0
@@ -5131,11 +5221,11 @@ contains
     call output_lbrk()
     call output_line ('UUID: '//uuid_conv2String(rmatrix%ruuid))
     call output_line ('Matrix is a ('&
-        //trim(sys_siL(rmatrix%ndiagBlocks,3))//','&
-        //trim(sys_siL(rmatrix%ndiagBlocks,3))//') matrix.')
+        //trim(sys_siL(rmatrix%nblocksPerCol,3))//','&
+        //trim(sys_siL(rmatrix%nblocksPerRow,3))//') matrix.')
 
-    do jblock=1,rmatrix%ndiagBlocks
-      do iblock=1,rmatrix%ndiagBlocks
+    do jblock=1,rmatrix%nblocksPerRow
+      do iblock=1,rmatrix%nblocksPerCol
         if ((rmatrix%RmatrixBlock(iblock,jblock)%NEQ /= 0) .and.&
             (rmatrix%RmatrixBlock(iblock,jblock)%NCOLS /= 0)) then
           call output_lbrk()
@@ -5270,10 +5360,11 @@ contains
 !</subroutine>
 
     ! Fill the rmatrix structure with data.
-    rmatrix%NEQ         = rscalarMat%NEQ * rscalarMat%NVAR
-    rmatrix%NCOLS       = rscalarMat%NCOLS * rscalarMat%NVAR
-    rmatrix%ndiagBlocks = 1
-    rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
+    rmatrix%NEQ           = rscalarMat%NEQ * rscalarMat%NVAR
+    rmatrix%NCOLS         = rscalarMat%NCOLS * rscalarMat%NVAR
+    rmatrix%nblocksPerCol = 1
+    rmatrix%nblocksPerRow = 1
+    rmatrix%imatrixSpec   = LSYSBS_MSPEC_SCALAR
     
     ! Copy the content of the scalar matrix structure into the
     ! first block of the block matrix
@@ -5405,8 +5496,8 @@ contains
     integer :: i,j
     
     ! loop over all columns and rows in the source matrix
-    do j=1,rsourceMatrix%ndiagBlocks
-      do i=1,rsourceMatrix%ndiagBlocks
+    do j=1,rsourceMatrix%nblocksPerRow
+      do i=1,rsourceMatrix%nblocksPerCol
         ! Copy the submatrix from the source matrix to the destination
         ! matrix.
         call lsyssc_duplicateMatrix (rsourceMatrix%RmatrixBlock(i,j),&
@@ -5613,8 +5704,8 @@ contains
     rfpdbObjectItem%sname = sname
     rfpdbObjectItem%stype = 't_matrixBlock'
 
-    ! Allocate the array of data items: 10
-    allocate(rfpdbObjectItem%p_RfpdbDataItem(10))
+    ! Allocate the array of data items: 11
+    allocate(rfpdbObjectItem%p_RfpdbDataItem(11))
     
     ! Fill the array of data items: NEQ
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
@@ -5628,20 +5719,26 @@ contains
     p_fpdbDataItem%sname    = 'NCOLS'
     p_fpdbDataItem%iinteger = rmatrix%NCOLS
 
-    ! Fill the array of data items: ndiagBlocks
+    ! Fill the array of data items: nblocksPerCol
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
     p_fpdbDataItem%ctype    = FPDB_INT
-    p_fpdbDataItem%sname    = 'ndiagBlocks'
-    p_fpdbDataItem%iinteger = rmatrix%ndiagBlocks
+    p_fpdbDataItem%sname    = 'nblocksPerCol'
+    p_fpdbDataItem%iinteger = rmatrix%nblocksPerCol
+
+    ! Fill the array of data items: nblocksPerRow
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    p_fpdbDataItem%ctype    = FPDB_INT
+    p_fpdbDataItem%sname    = 'nblocksPerRow'
+    p_fpdbDataItem%iinteger = rmatrix%nblocksPerRow
 
     ! Fill the array of data items: imatrixSpec
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
     p_fpdbDataItem%ctype    = FPDB_INT
     p_fpdbDataItem%sname    = 'imatrixSpec'
     p_fpdbDataItem%iinteger = rmatrix%imatrixSpec
 
     ! Fill the array of data items: p_rblockDiscrTest
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
     p_fpdbDataItem%sname = 'p_rblockDiscrTest'
     if (associated(rmatrix%p_rblockDiscrTest)) then
       p_fpdbDataItem%ctype = FPDB_LINK
@@ -5650,7 +5747,7 @@ contains
     end if
 
     ! Fill the array of data items: p_rblockDiscrTrial
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
     p_fpdbDataItem%sname = 'p_rblockDiscrTrial'
     if (associated(rmatrix%p_rblockDiscrTrial)) then
       p_fpdbDataItem%ctype = FPDB_LINK
@@ -5659,13 +5756,13 @@ contains
     end if
 
     ! Fill the array of data items: bidenticalTrialAndTest
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
     p_fpdbDataItem%ctype    = FPDB_LOGICAL
     p_fpdbDataItem%sname    = 'bidenticalTrialAndTest'
     p_fpdbDataItem%blogical = rmatrix%bidenticalTrialAndTest
 
     ! Fill the array of data items: p_rdiscreteBC
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
     p_fpdbDataItem%sname = 'p_rdiscreteBC'
     if (associated(rmatrix%p_rdiscreteBC)) then
       p_fpdbDataItem%ctype = FPDB_LINK
@@ -5674,7 +5771,7 @@ contains
     end if
     
     ! Fill the array of data items: p_rdiscreteBCfict
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
     p_fpdbDataItem%sname = 'p_rdiscreteBCfict'
     if (associated(rmatrix%p_rdiscreteBCfict)) then
       p_fpdbDataItem%ctype = FPDB_LINK
@@ -5683,7 +5780,7 @@ contains
     end if
 
     ! Fill the array of data items: RmatrixBlock
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
     p_fpdbDataItem%sname = 'RmatrixBlock'
     if (.not.associated(rmatrix%RmatrixBlock)) then
       p_fpdbDataItem%ctype = FPDB_NULL
@@ -5725,11 +5822,11 @@ contains
 
       ! For each scalar submatrix a new ObjectItem is created and 
       ! associated to the DataItem of the array of scalar matrices.
-      do j = 1, rmatrix%ndiagblocks
-        do i = 1, rmatrix%ndiagblocks
+      do j = 1, rmatrix%nblocksPerRow
+        do i = 1, rmatrix%nblocksPerCol
           
           ! Compute index position
-          idx = rmatrix%ndiagblocks*(j-1)+i
+          idx = rmatrix%nblocksPerCol*(j-1)+i
           
           rfpdbObjectItem%p_RfpdbDataItem(idx)%ctype = FPDB_OBJECT
           rfpdbObjectItem%p_RfpdbDataItem(idx)%sname = 't_matrixScalar'
@@ -6017,7 +6114,7 @@ contains
     end if
 
     ! Check if DataItems have correct size
-    if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne. 10) then
+    if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne. 11) then
       call output_line ('Invalid data!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
       call sys_halt()
@@ -6048,19 +6145,30 @@ contains
       rmatrix%NCOLS = p_fpdbDataItem%iinteger
     end if
 
-    ! Restore the data from the DataItem: ndiagBlocks
+    ! Restore the data from the DataItem: nblocksPerCol
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'ndiagBlocks')) then
-      call output_line ('Invalid data: ndiagBlocks!', &
+        (trim(p_fpdbDataItem%sname) .ne. 'nblocksPerCol')) then
+      call output_line ('Invalid data: nblocksPerCol!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
       call sys_halt()
     else
-      rmatrix%ndiagBlocks = p_fpdbDataItem%iinteger
+      rmatrix%nblocksPerCol = p_fpdbDataItem%iinteger
+    end if
+
+    ! Restore the data from the DataItem: nblocksPerRow
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. 'nblocksPerRow')) then
+      call output_line ('Invalid data: nblocksPerRow!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
+      call sys_halt()
+    else
+      rmatrix%nblocksPerRow = p_fpdbDataItem%iinteger
     end if
 
     ! Restore the data from the DataItem: imatrixSpec
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
         (trim(p_fpdbDataItem%sname) .ne. 'imatrixSpec')) then
       call output_line ('Invalid data: imatrixSpec!', &
@@ -6071,7 +6179,7 @@ contains
     end if
 
     ! Restore the data from the DataItem: p_rblockDiscrTest
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
     if (trim(p_fpdbDataItem%sname) .ne. 'p_rblockDiscrTest') then
       call output_line ('Invalid data: p_rblockDiscrTest!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
@@ -6088,7 +6196,7 @@ contains
     end if
 
     ! Restore the data from the DataItem: p_rblockDiscrTrial
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
     if (trim(p_fpdbDataItem%sname) .ne. 'p_rblockDiscrTrial') then
       call output_line ('Invalid data: p_rblockDiscrTrial!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
@@ -6105,7 +6213,7 @@ contains
     end if
     
     ! Restore the data from the DataItem: bidenticalTrialAndTest
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
     if ((p_fpdbDataItem%ctype .ne. FPDB_LOGICAL) .or.&
         (trim(p_fpdbDataItem%sname) .ne. 'bidenticalTrialAndTest')) then
       call output_line ('Invalid data: bidenticalTrialAndTest!', &
@@ -6116,7 +6224,7 @@ contains
     end if
 
     ! Restore the data from the DataItem: p_rdiscreteBC
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
     if (trim(p_fpdbDataItem%sname) .ne. 'p_rdiscreteBC') then
       call output_line ('Invalid data: p_rdiscreteBC!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
@@ -6133,7 +6241,7 @@ contains
     end if
     
     ! Restore the data from the DataItem: p_rdiscreteBCfict
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
     if (trim(p_fpdbDataItem%sname) .ne. 'p_rdiscreteBCfict') then
       call output_line ('Invalid data: p_rdiscreteBCfict!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
@@ -6150,7 +6258,7 @@ contains
     end if
     
     ! Restore the data from the DataItem: RmatrixBlock
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
     if (trim(p_fpdbDataItem%sname) .ne. 'RmatrixBlock') then
       call output_line ('Invalid data: RmatrixBlock!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_restoreFpdbObjectMat')
@@ -6198,21 +6306,21 @@ contains
       
         ! Check if DataItems have correct size
         if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne.&
-            rmatrix%ndiagBlocks*rmatrix%ndiagBlocks) then
+            rmatrix%nblocksPerCol*rmatrix%nblocksPerRow) then
           call output_line ('Invalid data!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectMatrixBlock')
           call sys_halt()
         end if
         
         ! Allocate the array of scalar vectors
-        allocate(rmatrix%RmatrixBlock(rmatrix%ndiagBlocks,&
-                                      rmatrix%ndiagBlocks))
+        allocate(rmatrix%RmatrixBlock(rmatrix%nblocksPerCol,&
+                                      rmatrix%nblocksPerRow))
 
-        do j = 1, rmatrix%ndiagblocks
-          do i = 1, rmatrix%ndiagblocks
+        do j = 1, rmatrix%nblocksPerRow
+          do i = 1, rmatrix%nblocksPerCol
           
             ! Compute index position
-            idx = rmatrix%ndiagblocks*(j-1)+i
+            idx = rmatrix%nblocksPerCol*(j-1)+i
             call lsyssc_restoreFpdbObjectMat(&
                 rfpdbObjectItem%p_RfpdbDataItem(idx)%p_fpdbObjectItem,&
                 rmatrix%RmatrixBlock(i,j))
@@ -6260,12 +6368,12 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX) :: i,j
+    integer :: i,j
     
     ! Loop over all blocks in rmatrix and 'unshare' the data.
     ! That's all.
-    do j=1,rmatrix%ndiagBlocks
-      do i=1,rmatrix%ndiagBlocks
+    do j=1,rmatrix%nblocksPerRow
+      do i=1,rmatrix%nblocksPerCol
         call lsyssc_unshareMatrix (rmatrix%RmatrixBlock(i,j),bstructure,bdata)
       end do
     end do    

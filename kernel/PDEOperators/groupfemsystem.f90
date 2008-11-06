@@ -261,11 +261,20 @@ contains
     integer :: i
 
     ! Check if block matrix has only one block
-    if (rmatrixBlockTemplate%ndiagblocks .eq. 1) then
+    if ((rmatrixBlockTemplate%nblocksPerCol .eq. 1) .and. &
+        (rmatrixBlockTemplate%nblocksPerRow .eq. 1)) then
       call gfsys_initStabilisationScalar(&
           rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
       return
     end if
+    
+    !!!!! TEMPORARY !!!!!
+    if (rmatrixBlockTemplate%nblocksPerCol .ne. &
+        rmatrixBlockTemplate%nblocksPerRow) then
+      call output_line('ERROR: Block matrix rectangular!')
+      call sys_halt()
+    end if
+    !!!!! TEMPORARY !!!!!
 
     ! Check if matrix exhibits group structure
     if (rmatrixBlockTemplate%imatrixSpec .ne.&
@@ -276,7 +285,7 @@ contains
     end if
     
     ! Set atomic data from first block
-    rafcstab%NVAR  = rmatrixBlockTemplate%ndiagblocks
+    rafcstab%NVAR  = rmatrixBlockTemplate%nblocksPerCol
     rafcstab%NEQ   = rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ
     rafcstab%NEDGE = int(0.5*(rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
                      rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ), I32)
@@ -429,7 +438,8 @@ contains
 !</subroutine>
 
     ! Check if matrix has only one block
-    if (rmatrixBlock%ndiagblocks .eq. 1) then
+    if ((rmatrixBlock%nblocksPerCol .eq. 1) .and. &
+        (rmatrixBlock%nblocksPerRow .eq. 1)) then
       call gfsys_isMatrixCompatibleScalar(rafcstab,&
           rmatrixBlock%RmatrixBlock(1,1), bcompatible)
       return
@@ -448,7 +458,7 @@ contains
     end if
 
     ! Matrix/operator must have the same size
-    if (rafcstab%NVAR  .ne. rmatrixBlock%ndiagblocks .or.&
+    if (rafcstab%NVAR  .ne. rmatrixBlock%nblocksPerCol .or.&
         rafcstab%NEQ   .ne. rmatrixBlock%RmatrixBlock(1,1)%NEQ  .or.&
         rafcstab%NEDGE .ne. int(0.5*(rmatrixBlock%RmatrixBlock(1,1)%NA-&
         rmatrixBlock%RmatrixBlock(1,1)%NEQ),I32)) then
@@ -668,15 +678,15 @@ contains
 
     ! Check if block vector contains only one block and if
     ! global operator is stored in interleave format.
-    if (ru%nblocks .eq. 1   .and.&
-        rmatrixL%ndiagblocks .eq. 1) then
+    if ((ru%nblocks .eq. 1) .and. (rmatrixL%nblocksPerCol .eq. 1) .and. &
+        (rmatrixL%nblocksPerRow .eq. 1)) then
       call gfsys_buildDivOperatorScalar(RmatrixC, ru%RvectorBlock(1),&
           fcb_calcMatrix, dscale, bclear, rmatrixL%RmatrixBlock(1,1))
       return       
     end if
 
     ! Check if matrix/vector is compatible
-    call lsysbl_isMatrixCompatible(ru, rmatrixL)
+    call lsysbl_isMatrixCompatible(ru, rmatrixL, .false.)
 
     ! Check if all coefficient matrices are comptible
     ndim = size(RmatrixC,1)
@@ -845,13 +855,13 @@ contains
     ! Do we have to scale the matrix?
     if (dscale .ne. 1.0_DP) then
       if (bisFullMatrix) then
-        do iblock = 1, rmatrixL%ndiagblocks
-          do jblock = 1, rmatrixL%ndiagblocks
+        do iblock = 1, rmatrixL%nblocksPerCol
+          do jblock = 1, rmatrixL%nblocksPerRow
             call lsyssc_scaleMatrix(rmatrixL%Rmatrixblock(iblock,jblock), dscale)
           end do
         end do
       else
-        do iblock = 1, rmatrixL%ndiagblocks
+        do iblock = 1, rmatrixL%nblocksPerCol
           call lsyssc_scaleMatrix(rmatrixL%Rmatrixblock(iblock,iblock), dscale)
         end do
       end if
@@ -7150,8 +7160,8 @@ contains
 
     ! Check if block vector contains only one block and if
     ! global operator is stored in interleave format.
-    if ((ru%nblocks           .eq. 1) .and.&
-        (rmatrixJ%ndiagblocks .eq. 1)) then
+    if ((ru%nblocks .eq. 1) .and. (rmatrixJ%nblocksPerCol .eq. 1) .and. &
+        (rmatrixJ%nblocksPerRow .eq. 1)) then
       call gfsys_buildDivJacobianScalar(RmatrixC, ru%RvectorBlock(1),&
           fcb_calcMatrix, hstep, bclear, rmatrixJ%RmatrixBlock(1,1))
       return       
@@ -7418,8 +7428,8 @@ contains
     logical :: bisFull
     
     ! Check if array is compatible
-    if (rmatrix%ndiagblocks .ne. size(rarray,1) .or.&
-        rmatrix%ndiagblocks .ne. size(rarray,2)) then
+    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
+        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
       call output_line('Block matrix and array are not compatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_getbase_double')
       call sys_halt()
@@ -7427,8 +7437,8 @@ contains
 
     ! Assign pointers
     bisFull = .true.
-    do iblock = 1, rmatrix%ndiagblocks
-      do jblock = 1, rmatrix%ndiagblocks
+    do iblock = 1, rmatrix%nblocksPerCol
+      do jblock = 1, rmatrix%nblocksPerRow
         if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
           call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),&
                                      rarray(iblock,jblock)%Da)
@@ -7476,8 +7486,8 @@ contains
     logical :: bisFull
     
     ! Check if array is compatible
-    if (rmatrix%ndiagblocks .ne. size(rarray,1) .or.&
-        rmatrix%ndiagblocks .ne. size(rarray,2)) then
+    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
+        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
       call output_line('Block matrix and array are not compatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_getbase_single')
       call sys_halt()
@@ -7485,8 +7495,8 @@ contains
 
     ! Assign pointers
     bisFull = .true.
-    do iblock = 1, rmatrix%ndiagblocks
-      do jblock = 1, rmatrix%ndiagblocks
+    do iblock = 1, rmatrix%nblocksPerCol
+      do jblock = 1, rmatrix%nblocksPerRow
         if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
           call lsyssc_getbase_single(rmatrix%RmatrixBlock(iblock,jblock),&
                                      rarray(iblock,jblock)%Fa)
@@ -7534,8 +7544,8 @@ contains
     logical :: bisFull
     
     ! Check if array is compatible
-    if (rmatrix%ndiagblocks .ne. size(rarray,1) .or.&
-        rmatrix%ndiagblocks .ne. size(rarray,2)) then
+    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
+        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
       call output_line('Block matrix and array are not compatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_getbase_int')
       call sys_halt()
@@ -7543,8 +7553,8 @@ contains
 
     ! Assign pointers
     bisFull = .true.
-    do iblock = 1, rmatrix%ndiagblocks
-      do jblock = 1, rmatrix%ndiagblocks
+    do iblock = 1, rmatrix%nblocksPerCol
+      do jblock = 1, rmatrix%nblocksPerRow
         if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
           call lsyssc_getbase_int(rmatrix%RmatrixBlock(iblock,jblock),&
                                   rarray(iblock,jblock)%Ia)

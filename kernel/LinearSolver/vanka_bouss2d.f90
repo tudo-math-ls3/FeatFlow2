@@ -250,7 +250,7 @@ contains
     type(t_blockDiscretisation), pointer :: p_rblockDiscr
     
     ! Matrix must be 4x4.
-    if (rmatrix%ndiagBlocks .ne. 4) then
+    if ((rmatrix%nblocksPerCol .ne. 4) .or. (rmatrix%nblocksPerRow .ne. 4)) then
       call output_line ('System matrix is not 4x4.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
       call sys_halt()

@@ -850,7 +850,7 @@ contains
         ! Only exception: If the matrix is a submatrix of another matrix
         ! and not on the diagonal of its parent, we must replace the rows
         ! by zero vectors!
-        do jblock = 1,rmatrix%ndiagBlocks
+        do jblock = 1,rmatrix%nblocksPerRow
           if (lsysbl_isSubmatrixPresent(rmatrix,iblock,jblock)) then
             call matfil_imposeDirichletBC (&
                         rmatrix%RmatrixBlock(iblock,jblock), &
@@ -881,7 +881,7 @@ contains
         ! Only exception: If the matrix is a submatrix of another matrix
         ! and not on the diagonal of its parent, we must replace the rows
         ! by zero vectors!
-        do jblock = 1,rmatrix%ndiagBlocks
+        do jblock = 1,rmatrix%nblocksPerRow
           if (lsysbl_isSubmatrixPresent(rmatrix,iblock,jblock)) then
             call matfil_imposeFeastMirrorBC (&
                         rmatrix%RmatrixBlock(iblock,jblock), &
@@ -971,7 +971,7 @@ contains
         do icp = 1,p_RdiscreteBC(i)%rslipBCs%ncomponents
           iblock = p_RdiscreteBC(i)%rslipBCs%Icomponents(icp)
 
-          do jblock = 1,rmatrix%ndiagBlocks
+          do jblock = 1,rmatrix%nblocksPerRow
             if (lsysbl_isSubmatrixPresent(rmatrix,iblock,jblock)) then
               call matfil_imposeNLSlipBC (&
                           rmatrix%RmatrixBlock(iblock,jblock), &
@@ -1057,7 +1057,7 @@ contains
           ! Only exception: If the matrix is a submatrix of another matrix
           ! and not on the diagonal of its parent, we must replace the rows
           ! by zero vectors!
-          do jblock = 1,rmatrix%ndiagBlocks
+          do jblock = 1,rmatrix%nblocksPerRow
             if (lsysbl_isSubmatrixPresent(rmatrix,iblock,jblock)) then
               call matfil_imposeDirichletFBC (&
                           rmatrix%RmatrixBlock(iblock,jblock), &

@@ -2653,7 +2653,7 @@ contains
 !</subroutine>
 
     ! The only condition to this routine is that matrix and vector are compatible!
-    call lsysbl_isMatrixCompatible(rd,rsolverNode%rsystemMatrix)
+    call lsysbl_isMatrixCompatible(rd,rsolverNode%rsystemMatrix,.false.)
 
     ! Select the solver as configured in rsolverNode and let it perform
     ! the actual preconditioning task.
@@ -4353,7 +4353,8 @@ contains
     ! We cannot handle the matrix if...
     !
     ! ... it's not scalar
-    if (Rmatrices(ubound(Rmatrices,1))%ndiagBlocks .ne. 1) then
+    if ((Rmatrices(ubound(Rmatrices,1))%nblocksPerCol .ne. 1) .or. &
+        (Rmatrices(ubound(Rmatrices,1))%nblocksPerRow .ne. 1)) then
       ccompatible = LINSOL_COMP_ERRNOTSCALAR
     end if
 
@@ -4444,10 +4445,10 @@ contains
     dSum = 0.0_DP
 
     ! go through all block rows of our matrix
-    do iblockrow=1, rsolverNode%rsystemMatrix%ndiagBlocks
+    do iblockrow=1, rsolverNode%rsystemMatrix%nblocksPerCol
     
       ! go through all blocks in our block row
-      do iblockcol=1, rsolverNode%rsystemMatrix%ndiagBlocks
+      do iblockcol=1, rsolverNode%rsystemMatrix%nblocksPerRow
         
         ! store our current scalar matrix
         p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblockrow,iblockcol)
@@ -5515,8 +5516,8 @@ contains
     case (LINSOL_VANKA_GENERAL,LINSOL_VANKA_GENERALDIRECT)
       
       ! Check all sub-matrices
-      do jblock = 1,p_rmat%ndiagblocks
-        do iblock = 1,p_rmat%ndiagblocks
+      do jblock = 1,p_rmat%nblocksPerRow
+        do iblock = 1,p_rmat%nblocksPerCol
           if (p_rmat%RmatrixBlock(iblock,jblock)%NEQ .ne. 0) then
             if (iand(p_rmat%RmatrixBlock(iblock,jblock)%imatrixSpec,&
                 LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
@@ -6125,7 +6126,8 @@ contains
   if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
   ! Check out that we can handle the matrix.
-  if (rsolverNode%rsystemMatrix%ndiagBlocks .ne. 1) then
+  if ((rsolverNode%rsystemMatrix%nblocksPerRow .ne. 1) .or. &
+      (rsolverNode%rsystemMatrix%nblocksPerCol .ne. 1)) then
     ! We have to create a global matrix first!
     call glsys_assembleGlobal (rsolverNode%rsystemMatrix,rmatrixLocal, &
                                .true.,.true.)
@@ -6202,7 +6204,8 @@ contains
 
   ! Throw away the temporary matrix/matrices
   call lsyssc_releaseMatrix (rtempMatrix)
-  if (rsolverNode%rsystemMatrix%ndiagBlocks .ne. 1) then
+  if ((rsolverNode%rsystemMatrix%nblocksPerCol .ne. 1) .or. &
+      (rsolverNode%rsystemMatrix%nblocksPerRow .ne. 1)) then
     call lsysbl_releaseMatrix (rmatrixLocal)
   end if
   
@@ -6280,7 +6283,8 @@ contains
   if (isubgroup .ne. rsolverNode%isolverSubgroup) return
   
   ! Check out that we can handle the matrix.
-  if (rsolverNode%rsystemMatrix%ndiagBlocks .ne. 1) then
+  if ((rsolverNode%rsystemMatrix%nblocksPerCol .ne. 1) .or. &
+      (rsolverNode%rsystemMatrix%nblocksPerRow .ne. 1)) then
     ! We have to create a global matrix first!
     call glsys_assembleGlobal (rsolverNode%rsystemMatrix,rmatrixLocal, &
                                .true.,.true.)
@@ -6377,7 +6381,8 @@ contains
 
   ! Throw away the temporary matrix/matrices
   call lsyssc_releaseMatrix (rtempMatrix)
-  if (rsolverNode%rsystemMatrix%ndiagBlocks .ne. 1) then
+  if ((rsolverNode%rsystemMatrix%nblocksPerCol .ne. 1) .or. &
+      (rsolverNode%rsystemMatrix%nblocksPerRow .ne. 1)) then
     call lsysbl_releaseMatrix (rmatrixLocal)
   end if
     
@@ -6732,8 +6737,10 @@ contains
     ccompatible = LINSOL_COMP_OK
 
     ! But we cannot handle it if it's not scalar!
-    if (Rmatrices(ubound(Rmatrices,1))%ndiagBlocks .ne. 1) &
+    if((Rmatrices(ubound(Rmatrices,1))%nblocksPerCol .ne. 1) .or. &
+       (Rmatrices(ubound(Rmatrices,1))%nblocksPerRow .ne. 1)) then
       ccompatible = LINSOL_COMP_ERRNOTSCALAR
+    end if
     
     ! Set the compatibility flag only for the maximum level -- this is a
     ! one-level solver acting only there!
@@ -6811,7 +6818,8 @@ contains
     p_rmatrix => rsolverNode%rsystemMatrix
 
     ! We only support scalar 1x1 matrices in structure 7 and 9.
-    if (p_rmatrix%ndiagBlocks .ne. 1) then
+    if ((p_rmatrix%nblocksPerCol .ne. 1) .or. &
+        (p_rmatrix%nblocksPerRow .ne. 1)) then
       print *,'(M)ILU(s) supports only 1x1 matrices!'
       call sys_halt()
     end if

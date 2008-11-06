@@ -537,10 +537,10 @@ contains
 !</subroutine>
 
     ! local variables;
-    type(t_spatialDiscretisation), dimension(max(rmatrix%ndiagBlocks,1)) :: Rdiscr
+    type(t_spatialDiscretisation), dimension(max(rmatrix%nblocksPerRow,1)) :: Rdiscr
     integer :: i,j
 
-    if (rmatrix%ndiagBlocks .eq. 0) then
+    if (rmatrix%nblocksPerRow .eq. 0) then
       print *,'mlprj_initProjectionMat: No discretisation!'
       call sys_halt()
     end if
@@ -548,8 +548,8 @@ contains
     ! Set up an array of discretisation structures for all the equations.
     ! In every 'column' of the block matrix, search for the first existing
     ! matrix and use its properties for initialisation
-    do i=1,rmatrix%ndiagBlocks
-      do j=1,rmatrix%ndiagBlocks
+    do i=1,rmatrix%nblocksPerRow
+      do j=1,rmatrix%nblocksPerCol
         if (rmatrix%RmatrixBlock(j,i)%NEQ .ne. 0) then
           Rdiscr(i) = &
             rmatrix%RmatrixBlock(j,i)%p_rspatialDiscrTrial
@@ -951,18 +951,18 @@ contains
 !</function>
 
     ! local variables; 
-    type(t_spatialDiscretisation), dimension(max(rmatrixCoarse%ndiagBlocks,1)) :: RdiscrCoarse
-    type(t_spatialDiscretisation), dimension(max(rmatrixFine%ndiagBlocks,1)) :: RdiscrFine
+    type(t_spatialDiscretisation), dimension(max(rmatrixCoarse%nblocksPerRow,1)) :: RdiscrCoarse
+    type(t_spatialDiscretisation), dimension(max(rmatrixFine%nBlocksPerRow,1)) :: RdiscrFine
     integer :: i,j
 
-    if ((rmatrixCoarse%ndiagBlocks .eq. 0) .or. (rmatrixFine%ndiagBlocks .eq. 0)) then
+    if ((rmatrixCoarse%nblocksPerRow .eq. 0) .or. (rmatrixFine%nblocksPerRow .eq. 0)) then
       print *,'mlprj_getTempMemoryVec: No discretisation!'
       call sys_halt()
     end if
 
     ! Set up an array of discretisation structures for all the equations
-    do i=1,rmatrixCoarse%ndiagBlocks
-      do j=1,rmatrixCoarse%ndiagBlocks
+    do i=1,rmatrixCoarse%nblocksPerRow
+      do j=1,rmatrixCoarse%nblocksPerCol
         if (lsysbl_isSubmatrixPresent(rmatrixCoarse,j,i)) then
           if (.not. &
               associated(rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscrTrial)) then
@@ -977,8 +977,8 @@ contains
       end do
     end do
 
-    do i=1,rmatrixFine%ndiagBlocks
-      do j=1,rmatrixFine%ndiagBlocks
+    do i=1,rmatrixFine%nblocksPerRow
+      do j=1,rmatrixFine%nblocksPerCol
         if (lsysbl_isSubmatrixPresent(rmatrixFine,j,i)) then
           if (.not. &
               associated(rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscrTrial)) then
