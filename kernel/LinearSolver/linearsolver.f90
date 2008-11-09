@@ -532,6 +532,16 @@ module linearsolver
   ! but one of the subsolvers can only handle scalar matrices.
   integer, parameter :: LINSOL_COMP_ERRNOTSCALAR     = 4
   
+  ! One of the diagonal submatrices (pivot) is zero, but
+  ! the solver cannot handle saddle-point matrices.
+  integer, parameter :: LINSOL_COMP_ERRZEROPIVOT     = 5
+  
+  ! One of the submatrices has unsupported matrix type.
+  integer, parameter :: LINSOL_COMP_ERRMATTYPE       = 6
+  
+  ! The block matrix is rectangular.
+  integer, parameter :: LINSOL_COMP_ERRMATRECT       = 7
+  
 !</constantblock>
 
 ! *****************************************************************************
@@ -4061,8 +4071,56 @@ contains
   
 !</subroutine>
 
+  integer :: i,n
+  type(t_matrixScalar), pointer :: p_rblock => null()
+
     ! Normally we are compatible.
     ccompatible = LINSOL_COMP_OK
+    
+    ! Get the index of the top-level matrix
+    n = ubound(Rmatrices,1)
+    
+    ! Let's make sure the matrix is not rectangular.
+    if(Rmatrices(n)%nblocksPerRow .ne. Rmatrices(n)%nblocksPerCol) then
+      
+      ! Rectangular block matrix
+      ccompatible = LINSOL_COMP_ERRMATRECT
+      
+    else
+    
+      ! Okay, let's loop through all main diagonal blocks.
+      do i = 1, Rmatrices(n)%nblocksPerRow
+      
+        ! Get the diagonal block
+        p_rblock => Rmatrices(n)%RmatrixBlock(i,i)
+        
+        ! Is the matrix empty?
+        if(p_rblock%NEQ .eq. 0) then
+          ! Zero pivot
+          ccompatible = LINSOL_COMP_ERRZEROPIVOT
+          exit
+        end if
+        
+        ! Is the scaling factor zero?
+        if(p_rblock%dscaleFactor .eq. 0.0_DP) then
+          ! Zero pivot
+          ccompatible = LINSOL_COMP_ERRZEROPIVOT
+          exit
+        end if
+        
+        ! What about the matrix type?
+        if((p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+           (p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
+          ! Matrix type not supported
+          ccompatible = LINSOL_COMP_ERRMATTYPE
+          exit
+        end if
+        
+        ! This block is okay, continue with next one
+      
+      end do
+    
+    end if
     
     ! Set the compatibility flag only for the maximum level -- this is a
     ! one-level solver acting only there!
@@ -4101,10 +4159,10 @@ contains
 
     ! local variables
     integer iblock
-    integer(PREC_VECIDX) :: ieq
+    integer :: ieq
     
     type (t_matrixScalar), pointer :: p_rmatrix
-    integer (PREC_MATIDX), dimension(:), pointer :: p_Kdiag
+    integer, dimension(:), pointer :: p_Kdiag
     real(DP) :: dlocOmega,dscale
     real(SP) :: flocOmega,fscale
     real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
@@ -4544,11 +4602,11 @@ contains
 
     ! local variables
     integer iblock
-    integer(PREC_VECIDX) :: ieq
+    integer :: ieq
     
     type (t_matrixScalar), pointer :: p_rmatrix
     type (t_vectorScalar), pointer :: p_rvector
-    integer (PREC_MATIDX), dimension(:), pointer :: p_Kdiag
+    integer , dimension(:), pointer :: p_Kdiag
     real(DP) :: dlocOmega
     real(SP) :: flocOmega
     real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
@@ -4797,9 +4855,63 @@ contains
   
 !</subroutine>
 
+  integer :: i,n
+  type(t_matrixScalar), pointer :: p_rblock => null()
+
     ! Normally we are compatible.
     ccompatible = LINSOL_COMP_OK
     
+    ! Get the index of the top-level matrix
+    n = ubound(Rmatrices,1)
+    
+    ! Let's make sure the matrix is not rectangular.
+    if(Rmatrices(n)%nblocksPerRow .ne. Rmatrices(n)%nblocksPerCol) then
+      
+      ! Rectangular block matrix
+      ccompatible = LINSOL_COMP_ERRMATRECT
+      
+    else
+    
+      ! Okay, let's loop through all main diagonal blocks.
+      do i = 1, Rmatrices(n)%nblocksPerRow
+      
+        ! Get the diagonal block
+        p_rblock => Rmatrices(n)%RmatrixBlock(i,i)
+        
+        ! Is the matrix empty?
+        if(p_rblock%NEQ .eq. 0) then
+          ! Zero pivot
+          ccompatible = LINSOL_COMP_ERRZEROPIVOT
+          exit
+        end if
+        
+        ! Is the scaling factor zero?
+        if(p_rblock%dscaleFactor .eq. 0.0_DP) then
+          ! Zero pivot
+          ccompatible = LINSOL_COMP_ERRZEROPIVOT
+          exit
+        end if
+        
+        ! What about the matrix type?
+        if(p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX9) then
+          ! Matrix type not supported
+          ccompatible = LINSOL_COMP_ERRMATTYPE
+          exit
+        end if
+        
+        ! Is the matrix transposed?
+        if (iand(p_rblock%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+          ! Matrix mus not be transposed.
+          ccompatible = LINSOL_COMP_ERRTRANSPOSED
+          exit
+        end if
+        
+        ! This block is okay, continue with next one
+      
+      end do
+    
+    end if
+        
     ! Set the compatibility flag only for the maximum level -- this is a
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
@@ -4837,32 +4949,35 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: iblock
+    integer :: iblock,jblock
     
     type (t_matrixScalar), pointer :: p_rmatrix
     real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kdiagonal
+    integer, dimension(:), pointer :: p_Kcol
+    integer, dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kdiagonal
    
-    ! Loop through all diagonal blocks. Each block corresponds to one
-    ! diagonal block in the matrix.
-    do iblock = 1,rd%nblocks
-      ! Get the matrix
+    ! Loop through all block rows.
+    do iblock = 1, rd%nblocks
+    
+      ! Loop through all blocks in the lower triangular block matrix.
+      do jblock = 1, iblock-1
+      
+        ! Get the matrix
+        p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,jblock)
+        
+        ! Is it empty?
+        if(p_rmatrix%NEQ .eq. 0) cycle
+        
+        ! Otherwise update the defect.
+        call lsyssc_scalarMatVec(p_rmatrix, rd%RvectorBlock(jblock), &
+                    rd%RvectorBlock(iblock), rsolverNode%domega, 1.0_DP)
+        
+      end do
+    
+      ! Get the main diagonal matrix
       p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,iblock)
       
-      ! Some small checks...
-      if (p_rmatrix%NEQ .eq. 0) then
-        print *,'SOR: No diagonal submatrix for component ',iblock
-        call sys_halt()
-      end if
-      
-      if (iand(p_rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-          .ne. 0) then
-        print *,'SOR: Transposed submatrices not supported.'
-        call sys_halt()
-      end if
-
       ! Now we have to make some decisions. At first, which matrix
       ! structure do we have?
       select case (p_rmatrix%cmatrixFormat)
@@ -4918,13 +5033,13 @@ contains
     real(DP), dimension(:), intent(IN) :: DA
     
     ! input: column structure
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol
+    integer, dimension(:), intent(IN) :: Kcol
     
     ! input: row structure
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld
+    integer, dimension(:), intent(IN) :: Kld
     
     ! input: position of diagonal entries in the matrix
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: Kdiagonal
+    integer, dimension(:), intent(IN) :: Kdiagonal
     
     ! input: Relaxation parameter; standard value is 1.2.
     real(DP), intent(IN) :: domega
@@ -4937,8 +5052,8 @@ contains
     real(DP), dimension(:), intent(INOUT) :: Dx
     
       ! local variables
-      integer(PREC_VECIDX) :: NEQ,ieq
-      integer(PREC_MATIDX) :: Idiag,ICOL
+      integer :: NEQ,ieq
+      integer :: Idiag,ICOL
       real(DP) :: daux,dsc
       
       NEQ = size(Dx)
@@ -5076,9 +5191,63 @@ contains
   
 !</subroutine>
 
+  integer :: i,n
+  type(t_matrixScalar), pointer :: p_rblock => null()
+
     ! Normally we are compatible.
     ccompatible = LINSOL_COMP_OK
     
+    ! Get the index of the top-level matrix
+    n = ubound(Rmatrices,1)
+    
+    ! Let's make sure the matrix is not rectangular.
+    if(Rmatrices(n)%nblocksPerRow .ne. Rmatrices(n)%nblocksPerCol) then
+      
+      ! Rectangular block matrix
+      ccompatible = LINSOL_COMP_ERRMATRECT
+      
+    else
+    
+      ! Okay, let's loop through all main diagonal blocks.
+      do i = 1, Rmatrices(n)%nblocksPerRow
+      
+        ! Get the diagonal block
+        p_rblock => Rmatrices(n)%RmatrixBlock(i,i)
+        
+        ! Is the matrix empty?
+        if(p_rblock%NEQ .eq. 0) then
+          ! Zero pivot
+          ccompatible = LINSOL_COMP_ERRZEROPIVOT
+          exit
+        end if
+        
+        ! Is the scaling factor zero?
+        if(p_rblock%dscaleFactor .eq. 0.0_DP) then
+          ! Zero pivot
+          ccompatible = LINSOL_COMP_ERRZEROPIVOT
+          exit
+        end if
+        
+        ! What about the matrix type?
+        if(p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX9) then
+          ! Matrix type not supported
+          ccompatible = LINSOL_COMP_ERRMATTYPE
+          exit
+        end if
+        
+        ! Is the matrix transposed?
+        if (iand(p_rblock%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+          ! Matrix mus not be transposed.
+          ccompatible = LINSOL_COMP_ERRTRANSPOSED
+          exit
+        end if
+        
+        ! This block is okay, continue with next one
+      
+      end do
+    
+    end if
+        
     ! Set the compatibility flag only for the maximum level -- this is a
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
@@ -5143,9 +5312,9 @@ contains
     
     type (t_matrixScalar), pointer :: p_rmatrix
     real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kdiagonal
+    integer, dimension(:), pointer :: p_Kcol
+    integer, dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kdiagonal
     
     ! Get bscale from the solver structure
     bscale = rsolverNode%p_rsubnodeSSOR%bscale
@@ -5156,18 +5325,6 @@ contains
       ! Get the matrix
       p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,iblock)
       
-      ! Some small checks...
-      if (p_rmatrix%NEQ .eq. 0) then
-        print *,'SSOR: No diagonal submatrix for component ',iblock
-        call sys_halt()
-      end if
-      
-      if (iand(p_rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-          .ne. 0) then
-        print *,'SSOR: Transposed submatrices not supported.'
-        call sys_halt()
-      end if
-
       ! Now we have to make some decisions. At first, which matrix
       ! structure do we have?
       select case (p_rmatrix%cmatrixFormat)
@@ -5225,13 +5382,13 @@ contains
     real(DP), dimension(:), intent(IN) :: DA
     
     ! input: column structure
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol
+    integer, dimension(:), intent(IN) :: Kcol
     
     ! input: row structure
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld
+    integer, dimension(:), intent(IN) :: Kld
     
     ! input: position of diagonal entries in the matrix
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: Kdiagonal
+    integer, dimension(:), intent(IN) :: Kdiagonal
     
     ! input: Relaxation parameter; standard value is 1.2.
     real(DP), intent(IN) :: domega
@@ -5248,8 +5405,8 @@ contains
     real(DP), dimension(:), intent(INOUT) :: Dx
     
       ! local variables
-      integer(PREC_VECIDX) :: NEQ,ieq
-      integer(PREC_MATIDX) :: Idiag,ICOL
+      integer :: NEQ,ieq
+      integer :: Idiag,ICOL
       real(DP) :: daux,dsc
       
       NEQ = size(Dx)
@@ -6097,8 +6254,8 @@ contains
   integer :: isubgroup
   type(t_matrixScalar), pointer :: p_rmatrix
   type(t_matrixScalar) :: rtempMatrix
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
   real(DP), dimension(:), pointer :: p_DA
   type(t_matrixBlock), target :: rmatrixLocal
   integer(I32) :: idupFlag
@@ -6256,8 +6413,8 @@ contains
   type(t_matrixScalar), pointer :: p_rmatrix
   type(t_matrixBlock), target :: rmatrixLocal
   type(t_matrixScalar) :: rtempMatrix
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
   real(DP), dimension(:), pointer :: p_DA
 
   ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
@@ -6788,7 +6945,7 @@ contains
   integer(I32) :: isubgroup,ierr,maxstr
   type(t_matrixBlock), pointer :: p_rmatrix
   type(t_matrixScalar), pointer :: p_rmatrixSc
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld, p_Kcol
+  integer, dimension(:), pointer :: p_Kld, p_Kcol
   real(DP), dimension(:), pointer :: p_DA
   integer(I32) :: ifill
   real(DP) :: drelax
@@ -6997,7 +7154,7 @@ contains
 
     ! local variables
     real(DP), dimension(:), pointer :: p_Dd, p_lu
-    integer(PREC_MATIDX) :: lu,jlu,ilup
+    integer :: lu,jlu,ilup
     integer(I32), dimension(:), pointer :: p_jlu,p_ilup
 
     if (rd%cdataType .ne. ST_DOUBLE) then
@@ -11498,7 +11655,7 @@ contains
   ! local variables
   type(t_linsolMGLevelInfo), pointer :: p_rcurrentLevel
   integer :: isubgroup
-  integer(PREC_VECIDX) :: imemmax
+  integer :: imemmax
   type(t_matrixBlock), pointer :: p_rmatrix
   type(t_vectorBlock), pointer :: p_rtemplVect
   
@@ -13473,7 +13630,7 @@ contains
   ! local variables
   type(t_linsolMGLevelInfo2), pointer :: p_rcurrentLevel,p_rprevLevel
   integer :: isubgroup,nlmax,ilevel
-  integer(PREC_VECIDX) :: imemmax
+  integer :: imemmax
   type(t_matrixBlock), pointer :: p_rmatrix
   type(t_vectorBlock), pointer :: p_rtemplVect
   
