@@ -89,14 +89,14 @@ module discretefbc
     
     ! Number of boundary components affected by this boundary condition.
     ! E.g. =2 for X- and Y-velocity.
-    integer                             :: ncomponents       = 0
+    integer :: ncomponents = 0
     
     ! A list of 1..ncomponents components of the equation, this discrete BC 
     ! is specified for (e.g. [1 2] = X-velocity(1) + Y-velocity(2))
-    integer, dimension(:), pointer      :: Icomponents       => null()
+    integer, dimension(:), pointer :: Icomponents => null()
     
     ! Number of Dirichlet nodes; may be different from the length of the array!
-    integer(PREC_DOFIDX)                :: nDOF              = 0
+    integer :: nDOF = 0
     
     ! Handle to array with all DOF's that refer to Dirichlet nodes
     !   array [1..*] of integer

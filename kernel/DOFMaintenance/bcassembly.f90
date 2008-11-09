@@ -548,7 +548,7 @@ contains
     type(t_elementDistribution), pointer        :: p_relemDist
     integer, dimension(:), pointer :: p_IelemAtVert,p_IelemAtVertIdx, &
         p_IvertAtBnd, p_IbndCpIdx
-    integer(PREC_DOFIDX), dimension(4) :: IDOFs
+    integer, dimension(4) :: IDOFs
     integer, dimension(2) :: IbcIndex
     
     if (rdiscreteBC%inumEntriesAlloc .eq. 0) then
@@ -1186,16 +1186,11 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_DvertexParameterValue
     real(DP), dimension(:), pointer :: p_DedgeParameterValue
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtBoundary
-    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IverticesAtBoundary
-    integer(PREC_EDGEIDX), dimension(:), pointer :: p_IedgesAtBoundary
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:), pointer :: p_IelementsAtBoundary, &
+               p_IverticesAtBoundary, p_IedgesAtBoundary
+    integer, dimension(:,:), pointer :: p_IverticesAtElement,p_IedgesAtElement
     integer(I32), dimension(:), pointer :: p_IboundaryCpIdx
-    integer :: i,iidx
-    integer(PREC_ELEMENTIDX) :: iel
-    integer(PREC_VERTEXIDX) :: ivt
-    integer(PREC_EDGEIDX) :: iedge
+    integer :: i,iidx,iel,ivt,iedge
     logical :: bvertexInside, bedgeInside
     
     ! Get the parameter value array from the triangulation
@@ -1353,14 +1348,14 @@ contains
     ! local variables
     integer :: i,j,ilocalEdge,icount,ielidx
     integer(I32) :: ieltype
-    integer(PREC_ELEMENTIDX) :: ielement
+    integer :: ielement
     integer(I32) :: iedge,ipoint1,ipoint2,NVT
     integer, dimension(1) :: Icomponents
     type(t_discreteBCDirichlet),pointer         :: p_rdirichletBCs
     type(t_triangulation), pointer              :: p_rtriangulation
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
     integer(I32), dimension(:), pointer         :: p_IelementDistr
-    integer(PREC_DOFIDX), dimension(:,:), allocatable :: Idofs
+    integer, dimension(:,:), allocatable :: Idofs
     real(DP), dimension(:,:), allocatable       :: DdofValue
     real(DP), dimension(:), pointer             :: p_DedgeParameterValue,p_DvertexParameterValue
     integer(I32), dimension(:,:), pointer       :: p_IedgesAtElement
@@ -2318,20 +2313,20 @@ contains
     integer(I32) :: ieltype
     real(DP), dimension(DER_MAXNDER)            :: Dvalues
     real(DP),dimension(NDIM2D)                  :: Dtangential,Dnormal
-    integer(PREC_VERTEXIDX)                     :: NVT,ipoint1,ipoint2
-    integer(PREC_ELEMENTIDX)                    :: ielement
-    integer(PREC_EDGEIDX)                       :: iedge
+    integer                     :: NVT,ipoint1,ipoint2
+    integer                    :: ielement
+    integer                       :: iedge
     integer(I32), dimension(2)                  :: ImodifierSize
     
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
     type(t_triangulation), pointer              :: p_rtriangulation
-    integer(PREC_EDGEIDX), dimension(:,:), pointer       :: p_IedgesAtElement
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer     :: p_IverticesAtElement
+    integer, dimension(:,:), pointer       :: p_IedgesAtElement
+    integer, dimension(:,:), pointer     :: p_IverticesAtElement
     real(DP), dimension(:), pointer             :: p_DedgeParameterValue
     real(DP), dimension(:,:), pointer           :: p_DvertexCoords
     
     type(t_discreteBCpressureDrop), pointer     :: p_rpressureDropBCs
-    integer(PREC_DOFIDX), dimension(:), pointer :: p_IpressureDropDOFs
+    integer, dimension(:), pointer :: p_IpressureDropDOFs
     real(DP), dimension(:,:), pointer           :: p_Dmodifier
 
     integer(I32), dimension(:), allocatable     :: IedgesAtBoundaryIdx
@@ -2570,20 +2565,20 @@ contains
     integer :: i,icount
     integer(I32) :: ieltype
     real(DP),dimension(NDIM2D)                  :: Dtangential,Dnormal
-    integer(PREC_VERTEXIDX)                      :: NVT,ipoint1,ipoint2
-    integer(PREC_ELEMENTIDX)                    :: ielement
-    integer(PREC_EDGEIDX)                       :: iedge
+    integer                      :: NVT,ipoint1,ipoint2
+    integer                    :: ielement
+    integer                       :: iedge
     integer(I32), dimension(2)                  :: InormalsSize
     
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
     type(t_triangulation), pointer              :: p_rtriangulation
-    integer(PREC_EDGEIDX), dimension(:,:), pointer       :: p_IedgesAtElement
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer     :: p_IverticesAtElement
+    integer, dimension(:,:), pointer       :: p_IedgesAtElement
+    integer, dimension(:,:), pointer     :: p_IverticesAtElement
     real(DP), dimension(:), pointer             :: p_DedgeParameterValue
     real(DP), dimension(:,:), pointer           :: p_DvertexCoords
     
     type(t_discreteBCSlip), pointer             :: p_rslipBCs
-    integer(PREC_DOFIDX), dimension(:), pointer :: p_IslipDOFs
+    integer, dimension(:), pointer :: p_IslipDOFs
     real(DP), dimension(:,:), pointer           :: p_Dnormals
     real(DP) :: d
 
@@ -2828,11 +2823,11 @@ contains
     type(t_triangulation), pointer              :: p_rtriangulation
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
     
-    integer(PREC_DOFIDX) :: nDOFs
+    integer :: nDOFs
     integer :: h_Ddofs, h_Idofs, i, j, iidx
     integer(I32) :: ieltype
     integer(I32) :: nequations
-    integer(PREC_DOFIDX), dimension(2) :: IdofCount
+    integer, dimension(2) :: IdofCount
     
     integer(I32), dimension(:), pointer :: p_Idofs
     real(DP), dimension(:,:), pointer   :: p_Ddofs
@@ -3173,14 +3168,14 @@ contains
   type(t_discreteBCDirichlet), pointer :: p_rdirichlet
   type(t_triangulation), pointer :: p_rtria
   type(t_spatialDiscretisation), pointer :: p_rspatDisc
-  integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IvertexIdx
-  integer(PREC_EDGEIDX), dimension(:), pointer :: p_IedgeIdx
-  integer(PREC_FACEIDX), dimension(:), pointer :: p_IfaceIdx
-  integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementIdx
-  integer(PREC_VERTEXIDX) :: iregionNVT, itriaNVT
-  integer(PREC_EDGEIDX) :: iregionNMT, itriaNMT
-  integer(PREC_FACEIDX) :: iregionNAT, itriaNAT
-  integer(PREC_ELEMENTIDX) :: iregionNEL, itriaNEL
+  integer, dimension(:), pointer :: p_IvertexIdx
+  integer, dimension(:), pointer :: p_IedgeIdx
+  integer, dimension(:), pointer :: p_IfaceIdx
+  integer, dimension(:), pointer :: p_IelementIdx
+  integer :: iregionNVT, itriaNVT
+  integer :: iregionNMT, itriaNMT
+  integer :: iregionNAT, itriaNAT
+  integer :: iregionNEL, itriaNEL
   integer(I32), dimension(:), pointer :: p_IdofBitmap
   integer, dimension(:), pointer :: p_IelemAtVertIdx, p_IelemAtVert,&
     p_IelemAtEdgeIdx, p_IelemAtEdge, p_IelemDist
@@ -3190,7 +3185,7 @@ contains
   real(DP), dimension(2) :: Dcoord2D
   real(DP), dimension(3) :: Dcoord3D
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IvertsAtEdge,&
+  integer, dimension(:,:), pointer :: p_IvertsAtEdge,&
     p_IvertsAtFace, p_IvertsAtElem
   integer, dimension(4) :: Iwhere
   real(DP), dimension(3) :: Dwhere

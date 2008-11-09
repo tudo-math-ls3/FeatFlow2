@@ -40,10 +40,10 @@
     type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTrial
     
     ! The trilinear form which is currently being evaluated:
-    type(t_trilinearForm), intent(IN)                            :: rform
+    type(t_trilinearForm), intent(IN)                           :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
+    integer, intent(IN)                                         :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     integer, intent(IN)                                         :: npointsPerElement

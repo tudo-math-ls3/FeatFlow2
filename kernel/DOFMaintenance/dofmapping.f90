@@ -47,6 +47,7 @@ module dofmapping
   !<constantblock description="Kind values for global DOF's">
 
   ! kind value for indexing global DOF's
+  ! !!! DEPRECATED: DO NOT USE THIS CONSTANT ANYMORE !!!
   integer, parameter :: PREC_DOFIDX     = I32
 
   !</constantblock>
@@ -59,7 +60,7 @@ contains
 
 !<function>  
 
-  integer(PREC_DOFIDX) function dof_igetNDofGlob(rdiscretisation)
+  integer function dof_igetNDofGlob(rdiscretisation)
 
 !<description>
   ! This function returns for a given discretisation the number of global
@@ -135,7 +136,7 @@ contains
     ! Internal subroutine: Get global DOF number for uniform discretisation
     ! with only one element type.
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    integer(PREC_DOFIDX) function NDFG_uniform1D (rtriangulation, ieltype)
+    integer function NDFG_uniform1D (rtriangulation, ieltype)
     
     ! IN: The underlying triangulation
     type(t_triangulation), intent(IN) :: rtriangulation
@@ -169,7 +170,7 @@ contains
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! This is roughly the NDFG routine of the old FEAT library...
     
-    integer(PREC_DOFIDX) function NDFG_uniform2D (rtriangulation, ieltype)
+    integer function NDFG_uniform2D (rtriangulation, ieltype)
     
     ! IN: The underlying triangulation
     type(t_triangulation), intent(IN) :: rtriangulation
@@ -223,7 +224,7 @@ contains
     ! with two element types.
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
-    integer(PREC_DOFIDX) function NDFG_conformal2D_2el (rtriangulation, IelTypes)
+    integer function NDFG_conformal2D_2el (rtriangulation, IelTypes)
     
     ! IN: The underlying triangulation
     type(t_triangulation), intent(IN) :: rtriangulation
@@ -282,7 +283,7 @@ contains
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! This is roughly the NDFG routine of the old FEAT library...
     
-    integer(PREC_DOFIDX) function NDFG_uniform3D (rtriangulation, ieltype)
+    integer function NDFG_uniform3D (rtriangulation, ieltype)
     
     ! IN: The underlying triangulation
     type(t_triangulation), intent(IN) :: rtriangulation
@@ -313,7 +314,7 @@ contains
 
 !<function>  
 
-  integer(PREC_DOFIDX) function dof_igetNDofGlobBlock(rdiscretisation)
+  integer function dof_igetNDofGlobBlock(rdiscretisation)
 
 !<description>
   ! This function returns for a given block discretisation the number of global
@@ -333,7 +334,7 @@ contains
 
     ! Sum up the DOF's of every scalar sub-discretisation structure
     integer :: i
-    integer(PREC_DOFIDX) :: icount
+    integer :: icount
     
     icount = 0
     do i=1,rdiscretisation%ncomponents
@@ -368,22 +369,22 @@ contains
   type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
 
   ! Element index, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), intent(IN) :: ielIdx
+  integer, intent(IN) :: ielIdx
 
 !</input>
     
 !<output>
 
   ! array of global DOF numbers
-  integer(PREC_DOFIDX), dimension(:), intent(OUT) :: IdofGlob
+  integer, dimension(:), intent(OUT) :: IdofGlob
 
 !</output>
 
 ! </subroutine>
 
   ! local variables
-  integer(PREC_ELEMENTIDX), dimension(1) :: ielIdx_array
-  integer(PREC_DOFIDX), dimension(size(IdofGlob),1) :: IdofGlob_array
+  integer, dimension(1) :: ielIdx_array
+  integer, dimension(size(IdofGlob),1) :: IdofGlob_array
 
     ! Wrapper to dof_locGlobMapping_mult - better use this directly!
     ielIdx_array(1) = ielidx
@@ -420,7 +421,7 @@ contains
   type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -428,15 +429,15 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 ! </subroutine>
 
     ! local variables
-    integer(I32), dimension(:,:), pointer :: p_2darray,p_2darray2
-    integer(I32), dimension(:), pointer :: p_IelementCounter
+    integer, dimension(:,:), pointer :: p_2darray,p_2darray2
+    integer, dimension(:), pointer :: p_IelementCounter
     type(t_triangulation), pointer :: p_rtriangulation     
     integer(I32) :: ieltype
     integer(I32), dimension(2) :: IelTypes
@@ -521,27 +522,27 @@ contains
         case (EL_P1T)
           ! DOF's in the edges
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          call dof_locGlobUniMult_E20(p_2darray, IelIdx, IdofGlob)
+          call dof_locGlobUniMult_P1T(p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q1T)
           ! DOF's in the edges
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          call dof_locGlobUniMult_E30(p_2darray, IelIdx, IdofGlob)
+          call dof_locGlobUniMult_Q1T(p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q1TB)
           ! DOF's in the edges
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          call dof_locGlobUniMult_E30B(p_rtriangulation%NMT,p_2darray, IelIdx, IdofGlob)
+          call dof_locGlobUniMult_Q1TB(p_rtriangulation%NMT,p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q2T)
           ! DOF's in the edges and the element center
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          call dof_locGlobUniMult_E035(p_rtriangulation%NMT,p_2darray, IelIdx, IdofGlob)
+          call dof_locGlobUniMult_Q2T(p_rtriangulation%NMT,p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q2TB)
           ! DOF's in the edges and the element center
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-          call dof_locGlobUniMult_E037(p_rtriangulation%NMT,p_rtriangulation%NEL,&
+          call dof_locGlobUniMult_Q2TB(p_rtriangulation%NMT,p_rtriangulation%NEL,&
                                        p_2darray, IelIdx, IdofGlob)
           return
         end select
@@ -682,7 +683,7 @@ contains
 !<input>
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
 
 !</input>
     
@@ -690,14 +691,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -725,10 +726,10 @@ contains
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -736,14 +737,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -772,14 +773,14 @@ contains
 !<input>
 
   ! Number of corner vertices in the triangulation
-  integer(PREC_VERTEXIDX), intent(IN) :: NVT
+  integer, intent(IN) :: NVT
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -787,14 +788,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -824,14 +825,14 @@ contains
 !<input>
 
   ! Number of corner vertices in the triangulation
-  integer(PREC_VERTEXIDX), intent(IN) :: NVT
+  integer, intent(IN) :: NVT
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -839,14 +840,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -875,7 +876,7 @@ contains
 !<input>
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
 
 !</input>
     
@@ -883,14 +884,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -918,10 +919,10 @@ contains
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -929,14 +930,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i,j
+  integer :: i,j
   
   ! Get the number of local DOF's - usually either 3 or 4, depending on
   ! the element. The first dimension of IdofGlob indicates the number of 
@@ -968,17 +969,17 @@ contains
 !</description>
 
 !<input>
-  integer(PREC_VERTEXIDX), intent(IN) :: NVT
+  integer, intent(IN) :: NVT
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! An array with the number of edges adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(IN) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -986,14 +987,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -1030,34 +1031,34 @@ contains
 !<input>
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! An array with the number of edges adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(IN) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
   ! Number of corner vertices in the triangulation
-  integer(PREC_VERTEXIDX), intent(IN) :: NVT
+  integer, intent(IN) :: NVT
   
   ! Number of edes in the triangulation
-  integer(PREC_EDGEIDX), intent(IN) :: NMT
+  integer, intent(IN) :: NMT
 !</input>
     
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -1098,24 +1099,24 @@ contains
 !<input>
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! An array with the number of edges adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(IN) :: IedgesAtElement
 
   ! Element counter array. This gives every triangle and every quad a
   ! unique running number (1,2,3,...)
-  integer(I32), dimension(:), intent(IN) :: IelementCounter
+  integer, dimension(:), intent(IN) :: IelementCounter
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
   ! Number of corner vertices in the triangulation
-  integer(PREC_VERTEXIDX), intent(IN) :: NVT
+  integer, intent(IN) :: NVT
   
   ! Number of edes in the triangulation
-  integer(PREC_EDGEIDX), intent(IN) :: NMT
+  integer, intent(IN) :: NMT
   
   ! Element type identifier for which type of elements is currently
   ! under view in IelIdx. All elements in IelIdx are assumed to be of
@@ -1128,14 +1129,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   if (NVE .eq. 3) then
     ! This element set consists of triangular elements.
@@ -1200,10 +1201,10 @@ contains
 !<input>
 
   ! Number of elements in the triangulation
-  integer(PREC_ELEMENTIDX), intent(IN) :: NEL
+  integer, intent(IN) :: NEL
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
 
 !</input>
     
@@ -1211,14 +1212,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -1236,7 +1237,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_E20(IedgesAtElement, IelIdx, IdofGlob)
+  pure subroutine dof_locGlobUniMult_P1T(IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1250,10 +1251,10 @@ contains
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(IN) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -1261,14 +1262,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -1286,7 +1287,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_E30(IedgesAtElement, IelIdx, IdofGlob)
+  pure subroutine dof_locGlobUniMult_Q1T(IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1300,10 +1301,10 @@ contains
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(IN) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -1311,14 +1312,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -1335,13 +1336,12 @@ contains
   
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_E30B(iNMT, IedgesAtElement, IelIdx, IdofGlob)
+  pure subroutine dof_locGlobUniMult_Q1TB(iNMT, IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
   ! of the degrees of freedom of the elements in the list IelIdx.
-  ! All elements in the list are assumed to be E030B, E031B, EM30B or EM31B
-  ! (with bubble).
+  ! All elements in the list are assumed to be EB30.
   ! A uniform grid is assumed, i.e. a grid completely discretised the
   ! same element.
 !</description>
@@ -1349,14 +1349,14 @@ contains
 !<input>
 
   ! Number of edges in the triangulation.
-  integer(I32), intent(IN) :: iNMT
+  integer, intent(IN) :: iNMT
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(IN) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -1364,14 +1364,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -1390,12 +1390,12 @@ contains
   
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_E035(iNMT, IedgesAtElement, IelIdx, IdofGlob)
+  pure subroutine dof_locGlobUniMult_Q2T(iNMT, IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
   ! of the degrees of freedom of the elements in the list IelIdx.
-  ! All elements in the list are assumed to be E035.
+  ! All elements in the list are assumed to be E050.
   ! A uniform grid is assumed, i.e. a grid completely discretised the
   ! same element.
 !</description>
@@ -1403,14 +1403,14 @@ contains
 !<input>
 
   ! Number of edges in the triangulation.
-  integer(I32), intent(IN) :: iNMT
+  integer, intent(IN) :: iNMT
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(IN) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -1418,14 +1418,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -1448,13 +1448,13 @@ contains
   
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_E037(iNMT, iNEL, &
+  pure subroutine dof_locGlobUniMult_Q2TB(iNMT, iNEL, &
       IedgesAtElement, IelIdx, IdofGlob)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
   ! of the degrees of freedom of the elements in the list IelIdx.
-  ! All elements in the list are assumed to be E037.
+  ! All elements in the list are assumed to be EB50.
   ! A uniform grid is assumed, i.e. a grid completely discretised the
   ! same element.
 !</description>
@@ -1462,17 +1462,17 @@ contains
 !<input>
 
   ! Number of edges in the triangulation.
-  integer(I32), intent(IN) :: iNMT
+  integer, intent(IN) :: iNMT
 
   ! Number of elements in the triangulation.
-  integer(I32), intent(IN) :: iNEL
+  integer, intent(IN) :: iNEL
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(IN) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -1480,14 +1480,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -1525,7 +1525,7 @@ contains
 !<input>
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
 
 !</input>
     
@@ -1533,14 +1533,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)
@@ -1569,10 +1569,10 @@ contains
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -1580,14 +1580,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i,j
+  integer :: i,j
   
   ! Get the number of local DOF's - usually either 3 or 4, depending on
   ! the element. The first dimension of IdofGlob indicates the number of 
@@ -1621,10 +1621,10 @@ contains
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer(I32), dimension(:,:), intent(IN) :: IfacesAtElement
+  integer, dimension(:,:), intent(IN) :: IfacesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(IN) :: IelIdx
   
 !</input>
     
@@ -1632,14 +1632,14 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer(PREC_DOFIDX), dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
 
 !</output>
 
 !</subroutine>
 
   ! local variables 
-  integer(I32) :: i
+  integer :: i
   
   ! Loop through the elements to handle
   do i=1,size(IelIdx)

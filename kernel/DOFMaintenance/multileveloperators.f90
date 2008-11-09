@@ -43,11 +43,11 @@ module multileveloperators
   type t_matrixmem
     ! A pointer to a 1D memory block of integers - receives the
     ! column identifiers of a matrix
-    integer(I32), dimension(:), pointer :: p_Icol
+    integer, dimension(:), pointer :: p_Icol
     
     ! A pointer to a 1D memory block of integers - receives 
     ! indices of next entries in the list of each line in the matrix
-    integer(I32), dimension(:), pointer :: p_Iindx
+    integer, dimension(:), pointer :: p_Iindx
   end type
   
 !</typeblock>
@@ -97,7 +97,7 @@ contains
   ! OPTIONAL: An initial guess about how much memory the matrix needs. If set 
   ! to 0 or not given, an initial guess of 16*NEQ (but at least 10000 matrix 
   ! entries) is assumed.
-  integer(I32), intent(IN), optional :: imemGuess
+  integer, intent(IN), optional :: imemGuess
   
 !</input>
 
@@ -110,7 +110,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(I32) :: imem
+  integer :: imem
   
     imem = 0
     if (present(imemguess)) then
@@ -276,7 +276,7 @@ contains
   
   ! An initial guess about how much memory the matrix needs. If set to 0,
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
-  integer(I32), intent(IN) :: imemGuess
+  integer, intent(IN) :: imemGuess
   
 !</input>
 
@@ -289,15 +289,15 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_DOFIDX) :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
+  integer :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
   integer :: IDOFE, JDOFE, i, IHELP
-  integer(PREC_ELEMENTIDX) :: IELC,IELF,IELIDX,NELREF
+  integer :: IELC,IELF,IELIDX,NELREF
   logical :: BSORT
   
   ! An allocateable list of handles for memory blocks. Size is dynamically 
   ! increased if there are too many columns in the matrix.
   integer, dimension(:), pointer :: p_Ihcol, p_Ihindx, p_IhTmp
-  integer(PREC_DOFIDX), dimension(:), pointer :: p_Isize, p_ISizeTmp
+  integer, dimension(:), pointer :: p_Isize, p_ISizeTmp
   
   ! An allocateable list of pointers to the memory blocks - corresponds
   ! to the handles in p_Ihcol/p_Ihindx
@@ -305,7 +305,7 @@ contains
   
   ! Pointer to current KCOL memory block,
   ! pointer to current index memory block
-  integer(I32), dimension(:), pointer :: p_Icol, p_Iindx
+  integer, dimension(:), pointer :: p_Icol, p_Iindx
   
   ! Number of currently allocated pointers in Ihmemblock
   integer :: iblocks
@@ -314,10 +314,10 @@ contains
   integer :: icurrentblock
   
   ! Number of elements in the current coarse/fine mesh element distribution
-  integer(PREC_ELEMENTIDX) :: NELC, NELF
+  integer :: NELC, NELF
   
   ! Size of memory blocks
-  integer(PREC_DOFIDX) :: imemblkSize
+  integer :: imemblkSize
   
   ! Blocksize in terms of NEQ for guessing memory.
   ! The initial guess for memory is iblkSize*iblkSize*NEQ and every time
@@ -328,15 +328,15 @@ contains
   integer, parameter :: NmemBlkCount = 5
 
   ! Pointer to KLD, KCOL
-  integer(I32), dimension(:), pointer :: p_KLD, p_KCOL
+  integer, dimension(:), pointer :: p_KLD, p_KCOL
   
   ! Size of memory currently allocated
-  integer(PREC_DOFIDX) :: iallocated
+  integer :: iallocated
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,MLOP_NELEMSIM), TARGET :: &
+  !INTEGER, DIMENSION(EL_MAXNBAS,MLOP_NELEMSIM), TARGET :: &
   !                  IdofsTest, IdofsTrial
-  integer(PREC_DOFIDX), dimension(:,:), pointer :: p_IdofsTrial, p_IdofsTest
+  integer, dimension(:,:), pointer :: p_IdofsTrial, p_IdofsTest
   
   ! Number of local degees of freedom for trial and test functions
   integer :: indofTrial, indofTest
@@ -345,7 +345,7 @@ contains
   type(t_triangulation), pointer :: p_rtriaCoarse, p_rtriaFine
   
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList,p_IelementRef
+  integer, dimension(:), pointer :: p_IelementList,p_IelementRef
   
   ! Current element distribution
   type(t_elementDistribution), pointer :: p_relementDistribution
@@ -358,7 +358,7 @@ contains
   integer :: nelementsTrial, nelementsTest
     
   ! Two arrays for the refinement-patch arrays of the coarse triangulation
-  integer(I32), dimension(:), pointer :: p_IrefPatchIdx, p_IrefPatch
+  integer, dimension(:), pointer :: p_IrefPatchIdx, p_IrefPatch
 
     ! The algorithm is: Test every DOF on one element against each other
     ! DOF on the same element and save the combination into a matrix
@@ -1014,8 +1014,8 @@ contains
 
   ! local variables
   integer :: i,k,JDFG, ICUBP, NELC,NELF
-  integer(I32) :: IELC,IELF, IDXC, NELREF, IDOFE, JDOFE
-  integer(PREC_DOFIDX) :: JCOL0,JCOL
+  integer :: IELC,IELF, IDXC, NELREF, IDOFE, JDOFE
+  integer :: JCOL0,JCOL
   real(DP) :: OM, DB
   
   ! Array to tell the element which derivatives to calculate
@@ -1032,19 +1032,19 @@ contains
   integer :: ncubp,ncubpc
   
   ! Pointer to KLD, KCOL, DA
-  integer(I32), dimension(:), pointer :: p_KLD, p_KCOL
+  integer, dimension(:), pointer :: p_KLD, p_KCOL
   real(DP), dimension(:), pointer :: p_DA
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsCoarse, IdofsFine
+  integer, dimension(:,:), allocatable, target :: IdofsCoarse, IdofsFine
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
   real(DP), dimension(:,:,:,:), allocatable, target :: DbasCoarse,DbasFine
   
   ! Number of entries in the matrix - for quicker access
-  integer(PREC_DOFIDX) :: NA
-  integer(I32) :: NEQ
+  integer :: NA
+  integer :: NEQ
   
   ! Type of transformation from the reference to the real element 
   integer :: ctrafoCoarse, ctrafoFine
@@ -1060,11 +1060,11 @@ contains
   type(t_triangulation), pointer :: p_rtriaCoarse, p_rtriaFine
   
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList, p_IelementRef
+  integer, dimension(:), pointer :: p_IelementList, p_IelementRef
   
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  integer(PREC_DOFIDX), dimension(:,:,:), allocatable :: Kentry
+  integer, dimension(:,:,:), allocatable :: Kentry
   real(DP), dimension(:,:,:), allocatable :: Dentry
 
   ! An array that takes coordinates of the cubature formula on the reference element
@@ -1084,7 +1084,7 @@ contains
   integer :: nelementsCoarse, nelementsFine
     
   ! Two arrays for the refinement-patch arrays of the coarse triangulation
-  integer(I32), dimension(:), pointer :: p_IrefPatchIdx, p_IrefPatch
+  integer, dimension(:), pointer :: p_IrefPatchIdx, p_IrefPatch
   
   ! Element evaluation structures for evaluation of finite elements
   type(t_evalElementSet) :: relementSetCoarse, relementSetFine

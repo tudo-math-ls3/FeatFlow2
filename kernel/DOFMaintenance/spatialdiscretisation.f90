@@ -163,7 +163,7 @@ module spatialdiscretisation
     
     ! Number of elements in the list p_IelementList.
     ! May vary from the actual length of p_IelementList!
-    integer(PREC_ELEMENTIDX) :: NEL = 0
+    integer :: NEL = 0
     
     ! Handle to list of element numbers that are discretised with this 
     ! combination of trial/test functions.
@@ -1064,9 +1064,9 @@ contains
   ! local variables
   integer :: i,j
   integer, dimension(2) :: IelemCount
-  integer(I32), dimension(:), pointer :: p_Iarray,p_IelementCounter
+  integer, dimension(:), pointer :: p_Iarray,p_IelementCounter
   type(t_elementDistribution), pointer :: p_relementDistrTria,p_relementDistrQuad
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
   integer :: ccubTri,ccubQuad
   
   ! Automatically determine cubature formula if necessary  

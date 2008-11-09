@@ -133,10 +133,10 @@ module sortstrategy
   type t_levelHirarchy
   
     ! Pointer to the refinement-patch array of the level
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IrefinementPatch
+    integer, dimension(:), pointer :: p_IrefinementPatch
     
     ! Pointer to the refinement-patch-index array of the level
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IrefinementPatchIdx
+    integer, dimension(:), pointer :: p_IrefinementPatchIdx
 
     ! Whether the corresponding discretisation on that level is uniform or not.
     logical :: bisUniform
@@ -146,7 +146,7 @@ module sortstrategy
     
     ! Pointer to the identifier for the element distribution of an element.
     ! Only valid if the corresponding discretisation is not uniform.
-    integer(I32), dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelementDistr
     
   end type
 
@@ -177,14 +177,14 @@ contains
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Ipermutation
+    integer, dimension(:), intent(OUT) :: Ipermutation
   !</output>    
 
   !</subroutine>
   
     real(DP) :: d
-    integer(I32) :: i,k,n
-    integer(PREC_VECIDX) :: j
+    integer :: i,k,n
+    integer :: j
 
     ! Fill the array with 1,2,3,...
     n = size(Ipermutation) / 2
@@ -230,16 +230,16 @@ contains
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer(PREC_VECIDX), dimension(2*rmatrix%neq), intent(OUT) :: Ipermutation
+    integer, dimension(2*rmatrix%neq), intent(OUT) :: Ipermutation
   !</output>    
 
   !</subroutine>
   
   ! local variables
   integer :: h_Ideg,h_IcolTmp
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Ideg
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kld,p_IcolTmp, p_Kcol,p_Kdiag
-  integer(PREC_VECIDX) :: NEQ
+  integer, dimension(:), pointer :: p_Ideg
+  integer, dimension(:), pointer :: p_Kld,p_IcolTmp, p_Kcol,p_Kdiag
+  integer :: NEQ
   
   NEQ = rmatrix%NEQ
   
@@ -328,36 +328,36 @@ contains
   !<input>
   
     ! Number of equations
-    integer(I32),intent(IN)                    :: neq
+    integer,intent(IN)                    :: neq
 
     ! Maximum number of entries != 0 in every row of the matrix
-    integer(PREC_VECIDX), intent(IN)                   :: ndeg    
+    integer, intent(IN)                   :: ndeg    
    
     ! Row description of matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(IN) :: Ild
+    integer, dimension(neq+1), intent(IN) :: Ild
   
     ! Column description of matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN)     :: Icol
+    integer, dimension(:), intent(IN)     :: Icol
     
   !</input>
 
   !<inputoutput>
     ! Auxiliary vector; must be at least as long as the
     ! maximum number of entries != 0 in every row of the matrix
-    integer(PREC_VECIDX), dimension(ndeg), intent(INOUT) :: Ideg
+    integer, dimension(ndeg), intent(INOUT) :: Ideg
 
     ! Auxiliary vector; the column numbers of KCOL are assigned to this in
     ! the order of increasing degree. When calling the routine the user
     ! must copy the content of KCOL to this! These values are then
     ! resorted.
-    integer(PREC_VECIDX), dimension(:), intent(INOUT)  :: Icon
+    integer, dimension(:), intent(INOUT)  :: Icon
   !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    integer(I32) :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
-    integer(I32) :: idegMin, iidxMin
+    integer :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
+    integer :: idegMin, iidxMin
   
     ! Clear auxiliary vector
     Ideg(1:ndeg) = 0
@@ -501,39 +501,39 @@ contains
   !<input>
   
     ! Number of equations
-    integer(I32),intent(IN)                    :: neq
+    integer,intent(IN)                    :: neq
 
     ! Maximum number of entries != 0 in every row of the matrix
-    integer(PREC_VECIDX), intent(IN)                   :: ndeg    
+    integer, intent(IN)                   :: ndeg    
    
     ! Row description of matrix
-    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: Ild
+    integer, dimension(neq+1), intent(IN) :: Ild
   
     ! Column description of matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN)     :: Icol
+    integer, dimension(:), intent(IN)     :: Icol
     
     ! Incides of diagonal elements in structure 9 matrix
-    integer(PREC_MATIDX), dimension(:), intent(IN)     :: Idiag
-    
+    integer, dimension(:), intent(IN)     :: Idiag
+
   !</input>
 
   !<inputoutput>
     ! Auxiliary vector; must be at least as long as the
     ! maximum number of entries != 0 in every row of the matrix
-    integer(PREC_VECIDX), dimension(ndeg), intent(INOUT) :: Ideg
+    integer, dimension(ndeg), intent(INOUT) :: Ideg
 
     ! Auxiliary vector; the column numbers of KCOL are assigned to this in
     ! the order of increasing degree. When calling the routine the user
     ! must copy the content of KCOL to this! These values are then
     ! resorted.
-    integer(PREC_VECIDX), dimension(:), intent(INOUT)  :: Icon
+    integer, dimension(:), intent(INOUT)  :: Icon
   !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    integer(I32) :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
-    integer(I32) :: idegMin, iidxMin
+    integer :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
+    integer :: idegMin, iidxMin
   
     ! Clear auxiliary vector
     do idegIdx=1, ndeg
@@ -877,21 +877,21 @@ contains
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Ipermutation
+    integer, dimension(:), intent(OUT) :: Ipermutation
   !</output>    
 
   !</subroutine>
   
     ! local variables
     real(DP), dimension(:,:), pointer :: p_Dcoords,p_Dcoords2
-    integer(PREC_EDGEIDX), dimension(2) :: Isize
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(2) :: Isize
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer :: hhandle
     integer :: idir
-    integer(PREC_VERTEXIDX) :: ivt,nvt
-    integer(PREC_EDGEIDX) :: imt,nmt
-    integer(PREC_ELEMENTIDX) :: iel,nel
+    integer :: ivt,nvt
+    integer :: imt,nmt
+    integer :: iel,nel
     integer :: idim,ivtlocal
     
     if (rdiscretisation%ndimension .eq. 0) then
@@ -1117,19 +1117,19 @@ contains
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Ipermutation
+    integer, dimension(:), intent(OUT) :: Ipermutation
   !</output>    
 
   !</subroutine>
   
     ! local variables
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IelementsAtEdge
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer(I32), dimension(:), pointer :: p_IelementsAtVertexIdx
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
-    integer(PREC_ELEMENTIDX) :: iel
-    integer(PREC_VERTEXIDX) :: ivt
+    integer, dimension(:,:), pointer :: p_IelementsAtEdge
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:), pointer :: p_IelementsAtVertexIdx
+    integer, dimension(:), pointer :: p_IelementsAtVertex
+    integer :: iel
+    integer :: ivt
     
     if (rdiscretisation%ndimension .eq. 0) then
       call output_line ('Discretisation not initialised.', &
@@ -1198,18 +1198,18 @@ contains
     ! ivt specifies the lower left corner of the macro. iel specifies
     ! the element in the lower left corner that contains ivt.
     
-    integer(PREC_ELEMENTIDX), dimension(:,:), intent(IN) :: IelementsAtEdge
-    integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
-    integer(PREC_EDGEIDX), dimension(:,:), intent(IN) :: IedgesAtElement
-    integer(I32), dimension(:), intent(OUT) :: Ipermutation
-    integer(PREC_VERTEXIDX), intent(IN) :: ivt
-    integer(PREC_ELEMENTIDX), intent(IN) :: iel
-    integer(PREC_VERTEXIDX), intent(IN) :: NVT
+    integer, dimension(:,:), intent(IN) :: IelementsAtEdge
+    integer, dimension(:,:), intent(IN) :: IverticesAtElement
+    integer, dimension(:,:), intent(IN) :: IedgesAtElement
+    integer, dimension(:), intent(OUT) :: Ipermutation
+    integer, intent(IN) :: ivt
+    integer, intent(IN) :: iel
+    integer, intent(IN) :: NVT
 
       ! local variables
-      integer(PREC_VERTEXIDX) :: icornervertex,icornerelement,ipermidx
-      integer(PREC_VERTEXIDX) :: icurrentvertex,icurrentelement
-      integer(PREC_EDGEIDX) :: iedgeright,iedgetop
+      integer :: icornervertex,icornerelement,ipermidx
+      integer :: icurrentvertex,icurrentelement
+      integer :: iedgeright,iedgetop
       integer :: ilocalvertex
       integer, parameter :: NVE = 4
       
@@ -1476,12 +1476,12 @@ contains
   ! With NEQ=NEQ(matrix):
   !   Ipermutation(1:NEQ)       = permutation,
   !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-  integer(PREC_VECIDX), dimension(:), intent(OUT) :: Ipermutation
+  integer, dimension(:), intent(OUT) :: Ipermutation
 !</output>    
 
 !</subroutine>
   
-    integer(PREC_VECIDX) :: N
+    integer :: N
     
     ! Length of the permutation. Must correspond to the #DOF's
     ! on the finest level.
@@ -1522,24 +1522,24 @@ contains
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Ipermutation
+    integer, dimension(:), intent(OUT) :: Ipermutation
 
       ! local variables      
-      integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IrefinementPatch
-      integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IrefinementPatchIdx
+      integer, dimension(:), pointer :: p_IrefinementPatch
+      integer, dimension(:), pointer :: p_IrefinementPatchIdx
       type(t_triangulation), pointer :: p_rtriaCoarse,p_rtria
-      integer(PREC_DOFIDX) :: NEQ
+      integer :: NEQ
       integer :: hmarker
       integer(I32), dimension(:), pointer :: p_Imarker
-      integer(PREC_DOFIDX), dimension(EL_MAXNBAS) :: Idofs
-      integer(PREC_DOFIDX), dimension(size(Rdiscretisation)) :: IpatchIndex
-      integer(PREC_DOFIDX), dimension(size(Rdiscretisation)) :: ImaxIndex
-      integer(PREC_DOFIDX), dimension(size(Rdiscretisation)) :: Ielement
+      integer, dimension(EL_MAXNBAS) :: Idofs
+      integer, dimension(size(Rdiscretisation)) :: IpatchIndex
+      integer, dimension(size(Rdiscretisation)) :: ImaxIndex
+      integer, dimension(size(Rdiscretisation)) :: Ielement
       type(t_levelHirarchy), dimension(size(Rdiscretisation)) :: Rhierarchy
       integer :: ilev,ndof,ieldistr,idof
       integer(I32) :: ieltype
-      integer(PREC_DOFIDX) :: ipos
-      integer(PREC_ELEMENTIDX) :: ielcoarse
+      integer :: ipos
+      integer :: ielcoarse
       logical :: bisUniform
       
       ! Save pointers to the element patch arrays for all levels.

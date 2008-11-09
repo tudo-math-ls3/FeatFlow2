@@ -447,15 +447,15 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_DOFIDX) :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
+  integer :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
   integer :: IDOFE, JDOFE, i, IHELP,NVE
-  integer(PREC_ELEMENTIDX) :: IEL, IELmax, IELset
+  integer :: IEL, IELmax, IELset
   logical :: BSORT, bIdenticalTrialAndTest
   
   ! An allocateable list of handles for memory blocks. Size is dynamically 
   ! increased if there are too many columns in the matrix.
   integer, dimension(:), pointer :: p_Ihcol, p_Ihindx, p_IhTmp
-  integer(PREC_DOFIDX), dimension(:), pointer :: p_Isize, p_ISizeTmp
+  integer, dimension(:), pointer :: p_Isize, p_ISizeTmp
   
   ! An allocateable list of pointers to the memory blocks - corresponds
   ! to the handles in p_Ihcol/p_Ihindx
@@ -475,10 +475,10 @@ contains
   integer :: icurrentblock
   
   ! Number of elements in the current element distribution
-  integer(PREC_ELEMENTIDX) :: NEL
+  integer :: NEL
   
   ! Size of memory blocks
-  integer(PREC_DOFIDX) :: imemblkSize
+  integer :: imemblkSize
   
   ! Blocksize in terms of NEQ for guessing memory.
   ! The initial guess for memory is iblkSize*iblkSize*NEQ and every time
@@ -492,13 +492,13 @@ contains
   integer(I32), dimension(:), pointer :: p_KLD, p_KCOL, p_Kdiagonal
   
   ! Size of memory currently allocated
-  integer(PREC_DOFIDX) :: iallocated
+  integer :: iallocated
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
-  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
-  integer(PREC_DOFIDX), dimension(EL_MAXNBAS,BILF_NELEMSIM), target :: IdofsTest, IdofsTrial
-  integer(PREC_DOFIDX), dimension(:,:), pointer :: p_IdofsTrial
+  !INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
+  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
+  integer, dimension(EL_MAXNBAS,BILF_NELEMSIM), target :: IdofsTest, IdofsTrial
+  integer, dimension(:,:), pointer :: p_IdofsTrial
   
   ! Number of local degees of freedom for trial and test functions
   integer :: indofTrial, indofTest
@@ -1191,16 +1191,16 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_DOFIDX) :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
+  integer :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
   integer :: IDOFE, JDOFE, i, IHELP,NVE, nelemBlockCount, IELidx
   integer :: IELneighIdxJ
-  integer(PREC_ELEMENTIDX) :: IEL, IELmax, IELset
+  integer :: IEL, IELmax, IELset
   logical :: BSORT, bIdenticalTrialAndTest
   
   ! An allocateable list of handles for memory blocks. Size is dynamically 
   ! increased if there are too many columns in the matrix.
   integer, dimension(:), pointer :: p_Ihcol, p_Ihindx, p_IhTmp
-  integer(PREC_DOFIDX), dimension(:), pointer :: p_Isize, p_ISizeTmp
+  integer, dimension(:), pointer :: p_Isize, p_ISizeTmp
   
   ! An allocateable list of pointers to the memory blocks - corresponds
   ! to the handles in p_Ihcol/p_Ihindx
@@ -1217,7 +1217,7 @@ contains
   integer :: icurrentblock
   
   ! Size of memory blocks
-  integer(PREC_DOFIDX) :: imemblkSize
+  integer :: imemblkSize
   
   ! Blocksize in terms of NEQ for guessing memory.
   ! The initial guess for memory is iblkSize*iblkSize*NEQ and every time
@@ -1231,15 +1231,15 @@ contains
   integer(I32), dimension(:), pointer :: p_KLD, p_KCOL, p_Kdiagonal
   
   ! Size of memory currently allocated
-  integer(PREC_DOFIDX) :: iallocated
+  integer :: iallocated
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTest, IdofsTrial
-  integer(PREC_DOFIDX), dimension(:,:), pointer :: p_IdofsTrial
-  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
-  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+  integer, dimension(:,:), allocatable, target :: IdofsTest, IdofsTrial
+  integer, dimension(:,:), pointer :: p_IdofsTrial
+  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
+  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
   
-  integer(PREC_ELEMENTIDX), dimension(:), allocatable :: IadjPtr, IadjElem
+  integer, dimension(:), allocatable :: IadjPtr, IadjElem
   
   ! Number of local degees of freedom for trial and test functions
   integer :: indofTrial, indofTest
@@ -1259,7 +1259,7 @@ contains
   integer :: nelementsPerBlock
   
   ! Adjacent elements
-  integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_Kadj
+  integer, dimension(:,:), pointer :: p_Kadj
 
   ! The algorithm is: Test every DOF on one element against each other
   ! DOF on the same element and save the combination into a matrix
@@ -1997,7 +1997,7 @@ contains
 !  INTEGER :: i,i1,j,icurrentElementDistr,IDFG, ICUBP, IALBET, IA, IB, NVE
 !  LOGICAL :: bIdenticalTrialAndTest, bnonparTest, bnonparTrial
 !  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
-!  INTEGER(PREC_DOFIDX) :: JCOL0,JCOL
+!  INTEGER :: JCOL0,JCOL
 !  REAL(DP) :: OM,AUX, DB
 !  
 !  ! Array to tell the element which derivatives to calculate
@@ -2018,10 +2018,10 @@ contains
 !  REAL(DP), DIMENSION(:), POINTER :: p_DA
 !  
 !  ! An allocateable array accepting the DOF's of a set of elements.
-!  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
-!  INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
-!  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
-!  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+!  INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
+!  INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
+!  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
+!  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
 !  
 !  ! Allocateable arrays for the values of the basis functions - 
 !  ! for test and trial spaces.
@@ -2029,7 +2029,7 @@ contains
 !  REAL(DP), DIMENSION(:,:,:,:), POINTER :: p_DbasTrial
 !  
 !  ! Number of entries in the matrix - for quicker access
-!  INTEGER(PREC_DOFIDX) :: NA
+!  INTEGER :: NA
 !  INTEGER(I32) :: NEQ
 !  
 !  ! Number of local degees of freedom for trial and test functions
@@ -2043,7 +2043,7 @@ contains
 !  
 !  ! Local matrices, used during the assembly.
 !  ! Values and positions of values in the global matrix.
-!  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
+!  INTEGER, DIMENSION(:,:,:), ALLOCATABLE :: Kentry
 !  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dentry
 !  
 !  ! An array receiving the coordinates of cubature points on
@@ -2814,7 +2814,7 @@ contains
 !  INTEGER :: i,i1,j,k,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB
 !  LOGICAL :: bIdenticalTrialAndTest, bnonparTest, bnonparTrial
 !  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
-!  INTEGER(PREC_DOFIDX) :: JCOL0,JCOL
+!  INTEGER :: JCOL0,JCOL
 !  REAL(DP) :: OM,AUX, DB
 !  
 !  ! Array to tell the element which derivatives to calculate
@@ -2835,10 +2835,10 @@ contains
 !  REAL(DP), DIMENSION(:), POINTER :: p_DA
 !  
 !  ! An allocateable array accepting the DOF's of a set of elements.
-!  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
-!  INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
-!  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
-!  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+!  INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
+!  INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
+!  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
+!  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
 !  
 !  ! Allocateable arrays for the values of the basis functions - 
 !  ! for test and trial spaces.
@@ -2846,7 +2846,7 @@ contains
 !  REAL(DP), DIMENSION(:,:,:,:), POINTER :: p_DbasTrial
 !  
 !  ! Number of entries in the matrix - for quicker access
-!  INTEGER(PREC_DOFIDX) :: NA,NVE
+!  INTEGER :: NA,NVE
 !  INTEGER(I32) :: NEQ
 !  
 !  ! Number of local degees of freedom for trial and test functions
@@ -2860,7 +2860,7 @@ contains
 !  
 !  ! Local matrices, used during the assembly.
 !  ! Values and positions of values in the global matrix.
-!  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
+!  INTEGER, DIMENSION(:,:,:), ALLOCATABLE :: Kentry
 !  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dentry
 !  
 !  ! An array receiving the coordinates of cubature points on
@@ -3727,7 +3727,7 @@ contains
   integer :: i,i1,k,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB
   logical :: bIdenticalTrialAndTest
   integer(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
-  integer(PREC_DOFIDX) :: JCOL0,JCOL
+  integer :: JCOL0,JCOL
   real(DP) :: OM,AUX, DB
   
   ! Array to tell the element which derivatives to calculate
@@ -3748,8 +3748,8 @@ contains
   real(DP), dimension(:), pointer :: p_DA
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTest, IdofsTrial
-  integer(PREC_DOFIDX), dimension(:,:), pointer :: p_IdofsTrial
+  integer, dimension(:,:), allocatable, target :: IdofsTest, IdofsTrial
+  integer, dimension(:,:), pointer :: p_IdofsTrial
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
@@ -3757,7 +3757,7 @@ contains
   real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial
   
   ! Number of entries in the matrix - for quicker access
-  integer(PREC_DOFIDX) :: NA,NVE
+  integer :: NA,NVE
   integer(I32) :: NEQ
   
   ! Type of transformation from the reference to the real element 
@@ -3778,7 +3778,7 @@ contains
   
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  integer(PREC_DOFIDX), dimension(:,:,:), allocatable :: Kentry
+  integer, dimension(:,:,:), allocatable :: Kentry
   real(DP), dimension(:,:), allocatable :: Dentry
 
   ! An array that takes coordinates of the cubature formula on the reference element

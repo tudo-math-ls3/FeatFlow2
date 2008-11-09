@@ -107,10 +107,10 @@ module discretebc
     
     ! The component of the equation, this discrete BC is specified for
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
-    integer                            :: icomponent        = 0
+    integer :: icomponent = 0
     
     ! Number of Dirichlet nodes; may be different from the length of the array!
-    integer(PREC_DOFIDX)               :: nDOF              = 0
+    integer :: nDOF = 0
     
     ! Handle to array with all DOF's that refer to Dirichlet nodes
     !   array [1..*] of integer
@@ -142,19 +142,19 @@ module discretebc
     
     ! Number of velocity components that take part on the slip
     ! boundary conditions.
-    integer                                 :: ncomponents        = 0
+    integer :: ncomponents = 0
     
     ! List of all velocity components in the PDE that take part on
     ! the slip boundary conditions.
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
-    integer, dimension(:), pointer          :: Icomponents        => null()
+    integer, dimension(:), pointer :: Icomponents => null()
     
     ! Number of Dirichlet nodes; may be different from the length of the array!
-    integer(PREC_DOFIDX)               :: nDOF              = 0
+    integer :: nDOF = 0
     
     ! Handle to array with all DOF's that refer to Dirichlet nodes
     !   array [1..*] of integer
-    integer :: h_IslipDOFs   = ST_NOHANDLE
+    integer :: h_IslipDOFs = ST_NOHANDLE
     
     ! Handle to an array that contains the normal vectors of the
     ! boundary edges.
@@ -188,16 +188,16 @@ module discretebc
     ! Each of the 1..ncomponents entries in the vector specifies a component
     ! in the solution vector that is modified (e.g. 1=X-velocity, 2=Y-velocity 
     ! or similar)
-    integer, dimension(:), pointer     :: Icomponents        => null()
+    integer, dimension(:), pointer :: Icomponents => null()
     
     ! Number of DOF's in the arrays below; may be different from the length of 
     ! the array!
-    integer(PREC_DOFIDX)               :: nDOF              = 0
+    integer :: nDOF = 0
     
     ! Handle to array with all velocity DOF's on the boundary that must be 
     ! modified.
     !   array [1..*] of integer
-    integer :: h_IpressureDropDOFs   = ST_NOHANDLE
+    integer :: h_IpressureDropDOFs = ST_NOHANDLE
     
     ! Handle to array with additive content that must be added to the DOF's
     ! in the h_IpressureDropDOFs array.

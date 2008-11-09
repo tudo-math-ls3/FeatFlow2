@@ -56,11 +56,11 @@ module domainintegration
     ! distribution ielementDistribution of the discretisation. 
     ! If this is =1, e.g., this is the very first element block
     ! that is currently being integrated.
-    integer(PREC_ELEMENTIDX)                      :: ielementStartIdx = 0
+    integer                                       :: ielementStartIdx = 0
 
     ! The element set that is currently in progress by the integration 
     ! routine.
-    integer(I32), dimension(:), pointer           :: p_Ielements => null()
+    integer, dimension(:), pointer                :: p_Ielements => null()
     
     ! An array containing the the degrees of freedom on all the
     ! elements. For multilinear forms (bilinear, trilinear), this is a pointer

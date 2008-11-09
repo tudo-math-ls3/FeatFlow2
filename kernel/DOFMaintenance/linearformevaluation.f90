@@ -185,7 +185,7 @@ contains
 !  ! local variables
 !  INTEGER :: i,i1,j,icurrentElementDistr, ICUBP, IALBET, IA, NVE, IDOFE
 !  LOGICAL :: bnonparTest
-!  INTEGER(PREC_ELEMENTIDX) :: IEL, IELmax, IELset
+!  INTEGER :: IEL, IELmax, IELset
 !  REAL(DP) :: OM,AUX
 !  
 !  ! Array to tell the element which derivatives to calculate
@@ -205,9 +205,9 @@ contains
 !  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 !
 !  ! An allocateable array accepting the DOF's of a set of elements.
-!  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest
-!  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
-!  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+!  INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest
+!  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
+!  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
 !  
 !  ! Allocateable arrays for the values of the basis functions - 
 !  ! for test space.
@@ -259,7 +259,7 @@ contains
 !  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
 !  
 !  ! Number of elements in the current element distribution
-!  INTEGER(PREC_ELEMENTIDX) :: NEL
+!  INTEGER :: NEL
 !  
 !  ! Number of elements in a block. Normally =BILF_NELEMSIM,
 !  ! except if there are less elements in the discretisation.
@@ -694,9 +694,9 @@ contains
 !  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 !
 !  ! An allocateable array accepting the DOF's of a set of elements.
-!  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest
-!  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
-!  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+!  INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest
+!  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
+!  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
 !  
 !  ! Allocateable arrays for the values of the basis functions - 
 !  ! for test space.
@@ -748,7 +748,7 @@ contains
 !  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
 !  
 !  ! Number of elements in the current element distribution
-!  INTEGER(PREC_ELEMENTIDX) :: NEL
+!  INTEGER :: NEL
 !
 !  ! Number of elements in a block. Normally =BILF_NELEMSIM,
 !  ! except if there are less elements in the discretisation.
@@ -1228,9 +1228,9 @@ contains
   real(DP), dimension(:), pointer :: p_Ddata
 
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTest
-  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
-  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+  integer, dimension(:,:), allocatable, target :: IdofsTest
+  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
+  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test space.
@@ -1269,7 +1269,7 @@ contains
   type(t_elementDistribution), pointer :: p_elementDistribution
   
   ! Number of elements in the current element distribution
-  integer(PREC_ELEMENTIDX) :: NEL
+  integer :: NEL
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.

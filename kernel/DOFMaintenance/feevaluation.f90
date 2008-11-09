@@ -97,12 +97,12 @@ contains
   ! OPTIONAL: A list of elements containing the points Dpoints.
   ! If this is not specified, the element numbers containing the points
   ! are determined automatically.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN), optional :: Ielements
+  integer, dimension(:), intent(IN), optional :: Ielements
 
   ! OPTIONAL: A list of elements that are near the points in Dpoints.
   ! This gives only a hint where to start searching for the actual elements
   ! containing the points. This is ignored if Ielements is specified!
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN), optional :: IelementsHint
+  integer, dimension(:), intent(IN), optional :: IelementsHint
   
   ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens
   ! if a point is located outside of the domain. May happen e.g. in
@@ -122,8 +122,8 @@ contains
     ! local variables
     integer :: cnonmesh
     integer :: ipoint,ieltype,indof,nve,ibas
-    integer(PREC_ELEMENTIDX) :: iel
-    integer(I32), dimension(:), pointer :: p_IelementDistr
+    integer :: iel
+    integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
     
@@ -136,7 +136,7 @@ contains
     
     ! Values of basis functions and DOF's
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
-    integer(PREC_DOFIDX), dimension(EL_MAXNBAS) :: Idofs
+    integer, dimension(EL_MAXNBAS) :: Idofs
     
     ! List of element distributions in the discretisation structure
     type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
@@ -348,7 +348,7 @@ contains
   type(t_vectorScalar), intent(IN)              :: rvectorScalar
   
   ! The element number containing the points in Dpoints.
-  integer(PREC_ELEMENTIDX), intent(IN) :: ielement
+  integer, intent(IN) :: ielement
   
   ! OPTIONAL: Coordinates of the points on the reference element.
   ! If not specified, the coordinates are automatically calculated.
@@ -373,7 +373,7 @@ contains
 
     ! local variables
     integer :: ipoint,ieltype,indof,nve,ibas,npoints
-    integer(I32), dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
     
@@ -386,7 +386,7 @@ contains
     
     ! Values of basis functions and DOF's
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
-    integer(PREC_DOFIDX), dimension(EL_MAXNBAS) :: Idofs
+    integer, dimension(EL_MAXNBAS) :: Idofs
     
     ! List of element distributions in the discretisation structure
     type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
@@ -564,7 +564,7 @@ contains
   ! An array accepting the DOF's on the element in the trial space
   ! of the FE function.
   ! DIMENSION(\#local DOF's in trial space)
-  integer(PREC_DOFIDX), dimension(:), intent(IN) :: IdofsTrial
+  integer, dimension(:), intent(IN)              :: IdofsTrial
   
   ! Number of points on the element where to evalate the function
   integer, intent(IN) :: npoints
@@ -590,7 +590,7 @@ contains
   ! OPTIONAL: Twist index bitfield of the element. Defines for every edge its
   ! orientation.
   ! Can be omitted if the element does not need this information.
-  integer(I32), intent(IN), optional :: itwistIndex
+  integer(I32), intent(IN), optional             :: itwistIndex
 
 !</input>
 
@@ -700,7 +700,7 @@ contains
 !  
 !  ! A list of elements containing the points in Dpoints.
 !  ! All elements in this list must be of the same type!!!
-!  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
+!  INTEGER, DIMENSION(:), INTENT(IN) :: Ielements
 !  
 !  ! OPTIONAL: Coordinates of the points on the reference element.
 !  ! If not specified, the coordinates are automatically calculated.
@@ -729,7 +729,7 @@ contains
 !    
 !    ! Triangulation information
 !    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-!    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+!    INTEGER, DIMENSION(:,:), POINTER :: p_IverticesAtElement
 !    
 !    ! Transformation
 !    REAL(DP), DIMENSION(:,:,:),ALLOCATABLE :: Djac
@@ -738,7 +738,7 @@ contains
 !    
 !    ! Values of basis functions and DOF's
 !    REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE :: Dbas
-!    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: Idofs
+!    INTEGER, DIMENSION(:,:), ALLOCATABLE :: Idofs
 !    
 !    ! Coordinates of the corners of one element
 !    REAL(DP), DIMENSION(:,:,:),ALLOCATABLE :: Dcoord
@@ -968,7 +968,7 @@ contains
   
   ! A list of elements containing the points in Dpoints.
   ! All elements in this list must be of the same type!!!
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
+  integer, dimension(:), intent(IN) :: Ielements
   
   ! OPTIONAL: Coordinates of the points on the reference element.
   ! If not specified, the coordinates are automatically calculated.
@@ -987,7 +987,7 @@ contains
     ! local variables
     logical :: bnonpar
     integer :: ipoint,ieltype,indof,nve,ibas,iel
-    integer(I32), dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
     
@@ -1004,7 +1004,7 @@ contains
     
     ! Values of basis functions and DOF's
     real(DP), dimension(:,:,:,:), allocatable :: Dbas
-    integer(PREC_DOFIDX), dimension(:,:), allocatable :: Idofs
+    integer, dimension(:,:), allocatable :: Idofs
 
     ! Element evaluation set that collects element specific information
     ! during the evaluation
@@ -1238,7 +1238,7 @@ contains
   ! An array accepting the DOF's on all elements in the trial space
   ! of the FE function.
   ! DIMENSION(\#local DOF's in trial space,nelements)
-  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+  integer, dimension(:,:), intent(IN)           :: IdofsTrial
   
   ! Number of points on every element where to evalate the function
   integer, intent(IN) :: npoints
@@ -1392,7 +1392,7 @@ contains
   ! An array accepting the DOF's on all elements in the trial space
   ! of the FE function.
   ! DIMENSION(\#local DOF's in trial space,nelements)
-  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+  integer, dimension(:,:), intent(IN) :: IdofsTrial
   
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.

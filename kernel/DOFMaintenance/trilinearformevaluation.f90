@@ -267,8 +267,8 @@ contains
   ! local variables
   integer :: i,i1,k,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB, ifunc
   logical :: bIdenticalTrialAndTest, bIdenticalFuncAndTrial, bIdenticalFuncAndTest
-  integer(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
-  integer(PREC_DOFIDX) :: JCOL0,JCOL,idertype
+  integer :: IEL, IELmax, IELset, IDOFE, JDOFE
+  integer :: JCOL0,JCOL,idertype
   real(DP) :: OM,AUX, DB
   
   ! Array to tell the element which derivatives to calculate
@@ -290,11 +290,11 @@ contains
   real(DP), dimension(:), pointer :: p_DA
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTest, IdofsTrial
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsFunc
-  integer(PREC_DOFIDX), dimension(:,:), pointer :: p_IdofsTrial,p_IdofsFunc
-  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
-  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+  integer, dimension(:,:), allocatable, target :: IdofsTest, IdofsTrial
+  integer, dimension(:,:), allocatable, target :: IdofsFunc
+  integer, dimension(:,:), pointer :: p_IdofsTrial,p_IdofsFunc
+  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
+  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
@@ -302,8 +302,8 @@ contains
   real(DP), dimension(:,:,:,:), pointer :: p_DbasFunc,p_DbasTrial
   
   ! Number of entries in the matrix - for quicker access
-  integer(PREC_DOFIDX) :: NA,NVE
-  integer(I32) :: NEQ
+  integer :: NA,NVE
+  integer :: NEQ
   
   ! Type of transformation from the reference to the real element 
   integer :: ctrafoType
@@ -319,11 +319,11 @@ contains
   type(t_triangulation), pointer :: p_rtriangulation
   
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList
+  integer, dimension(:), pointer :: p_IelementList
   
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  integer(PREC_DOFIDX), dimension(:,:,:), allocatable :: Kentry
+  integer, dimension(:,:,:), allocatable :: Kentry
   real(DP), dimension(:,:), allocatable :: Dentry
   
   ! An array receiving the coordinates of cubature points on
@@ -339,7 +339,7 @@ contains
   type(t_elementDistribution), pointer :: p_elementDistrFunc
   
   ! Number of elements in the current element distribution
-  integer(PREC_ELEMENTIDX) :: NEL
+  integer :: NEL
   
   ! DOF-Data of the vector
   real(DP), dimension(:), pointer :: p_Ddata

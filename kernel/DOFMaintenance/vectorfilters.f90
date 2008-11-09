@@ -178,11 +178,11 @@ contains
 !</subroutine>
     
     ! local variables
-    integer(PREC_DOFIDX) :: i
+    integer :: i
     real(DP), dimension(:), pointer    :: p_vec
-    integer(I32), dimension(:), pointer :: p_idx
+    integer, dimension(:), pointer :: p_idx
     real(DP), dimension(:), pointer    :: p_val
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+    integer, dimension(:), pointer :: p_Iperm
 
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
@@ -274,10 +274,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_DOFIDX) :: i
+    integer :: i
     real(DP), dimension(:), pointer :: p_vec
-    integer(I32), dimension(:), pointer :: p_idx
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+    integer, dimension(:), pointer :: p_idx
+    integer, dimension(:), pointer :: p_Iperm
     
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
@@ -366,11 +366,11 @@ contains
 !</subroutine>
     
     ! local variables
-    integer(PREC_DOFIDX) :: i
+    integer :: i
     real(DP), dimension(:), pointer    :: p_vec
-    integer(I32), dimension(:), pointer :: p_idx
+    integer, dimension(:), pointer :: p_idx
     real(DP), dimension(:,:), pointer    :: p_val
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+    integer, dimension(:), pointer :: p_Iperm
 
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
@@ -458,10 +458,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_DOFIDX) :: i
+    integer :: i
     real(DP), dimension(:), pointer :: p_vec
-    integer(I32), dimension(:), pointer :: p_idx
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+    integer, dimension(:), pointer :: p_idx
+    integer, dimension(:), pointer :: p_Iperm
     
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
@@ -544,7 +544,7 @@ contains
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     real(DP), dimension(:), pointer        :: p_DelementArea,p_Ddata
     real(DP) :: dpintegral,c
-    integer(PREC_ELEMENTIDX) :: iel,nel,itrialspace
+    integer :: iel,nel,itrialspace
     
     ! Get the discretisation...
     if (.not. associated(rx%p_rspatialDiscr)) return
@@ -674,7 +674,7 @@ contains
 !</subroutine>
 
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(PREC_VECIDX) :: ieq
+    integer :: ieq
     real(DP) :: dsum
     
     ! Sum up all components of the vector
@@ -727,11 +727,11 @@ contains
     
     ! local variables
     integer :: j,icp
-    integer(PREC_DOFIDX) :: i
+    integer :: i
     real(DP), dimension(:), pointer    :: p_vec
-    integer(I32), dimension(:), pointer :: p_idx
+    integer, dimension(:), pointer :: p_idx
     real(DP), dimension(:,:), pointer    :: p_val
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+    integer, dimension(:), pointer :: p_Iperm
 
     ! If nDOF=0, there are no DOF's the current boundary condition segment,
     ! so we don't have to do anything. Maybe the case if the user selected
@@ -826,10 +826,10 @@ contains
 !</subroutine>
     
     ! local variables
-    integer(PREC_DOFIDX) :: i,idof
+    integer :: i,idof
     real(DP), dimension(:), pointer :: p_vecX,p_vecY
-    integer(I32), dimension(:), pointer :: p_idx
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+    integer, dimension(:), pointer :: p_idx
+    integer, dimension(:), pointer :: p_Iperm
     real(DP), dimension(:,:), pointer :: p_Dnormals
     real(DP) :: d
     
@@ -956,10 +956,10 @@ contains
 !</subroutine>
     
   ! local variables
-  integer(I32), dimension(:), pointer :: p_ImirrorDOFs
+  integer, dimension(:), pointer :: p_ImirrorDOFs
   integer :: i
   real(DP), dimension(:), pointer    :: p_Dvec
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+  integer, dimension(:), pointer :: p_Iperm
   real(DP) :: dmirrorWeight
 
   ! Impose the DOF value directly into the vector - more precisely, into the
@@ -1062,10 +1062,10 @@ contains
 !</subroutine>
     
   ! local variables
-  integer(I32), dimension(:), pointer :: p_ImirrorDOFs
+  integer, dimension(:), pointer :: p_ImirrorDOFs
   integer :: i
   real(DP), dimension(:), pointer    :: p_Dvec
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+  integer, dimension(:), pointer :: p_Iperm
 
   ! Impose the DOF value directly into the vector - more precisely, into the
   ! components of the subvector that is indexed by icomponent.

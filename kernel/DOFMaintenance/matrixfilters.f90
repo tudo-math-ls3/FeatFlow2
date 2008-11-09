@@ -112,10 +112,10 @@ contains
 !</subroutine>
     
   ! local variables
-  integer(I32), dimension(:), pointer :: p_idx
+  integer, dimension(:), pointer :: p_idx
   integer, parameter :: NBLOCKSIZE = 1000
-  integer(PREC_VECIDX), dimension(1000) :: Idofs
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+  integer, dimension(1000) :: Idofs
+  integer, dimension(:), pointer :: p_Iperm
   integer i,ilenleft
 
   ! If nDOF=0, there are no DOF's the current boundary condition segment,
@@ -242,10 +242,10 @@ contains
 !</subroutine>
     
   ! local variables
-  integer(I32), dimension(:), pointer :: p_idx
+  integer, dimension(:), pointer :: p_idx
   integer, parameter :: NBLOCKSIZE = 1000
-  integer(PREC_VECIDX), dimension(1000) :: Idofs
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+  integer, dimension(1000) :: Idofs
+  integer, dimension(:), pointer :: p_Iperm
   integer i,ilenleft
   
   ! If nDOF=0, there are no DOF's the current boundary condition segment,
@@ -372,10 +372,10 @@ contains
 !</subroutine>
     
   ! local variables
-  integer(I32), dimension(:), pointer :: p_idx
+  integer, dimension(:), pointer :: p_idx
   integer, parameter :: NBLOCKSIZE = 1000
-  integer(PREC_VECIDX), dimension(1000) :: Idofs
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+  integer, dimension(1000) :: Idofs
+  integer, dimension(:), pointer :: p_Iperm
   integer i,ilenleft
 
   ! If nDOF=0, there are no DOF's the current boundary condition segment,
@@ -475,12 +475,12 @@ contains
   ! OPTIONAL: Start column in the matrix.
   ! This parameter can specify where to start the vector sum.
   ! If not specified, 1 is assumed.
-  integer(PREC_VECIDX), intent(IN), optional :: istartColumn
+  integer, intent(IN), optional :: istartColumn
 
   ! OPTIONAL: End column in the matrix.
   ! This parameter can specify where to end the vector sum.
   ! If not specified, rmatrix%NCOLS is assumed.
-  integer(PREC_VECIDX), intent(IN), optional :: iendColumn
+  integer, intent(IN), optional :: iendColumn
 !</input>
 
 !<inputoutput>
@@ -492,10 +492,10 @@ contains
     
     ! Local variables
     type(t_matrixScalar) :: rmatrixTemp
-    integer(PREC_VECIDX) :: irowLen,istart,iend,i
+    integer :: irowLen,istart,iend,i
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld,p_Kdiagonal
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+    integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
+    integer, dimension(:), pointer :: p_Kcol
     
     ! Matrix must not be transposed
     if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
@@ -540,7 +540,7 @@ contains
     irowLen = iend-istart+1
     
     ! Add another row to the matrix
-    call lsyssc_resizeMatrixDirect (rmatrix, rmatrix%NEQ+1_PREC_VECIDX, &
+    call lsyssc_resizeMatrixDirect (rmatrix, rmatrix%NEQ+1, &
         rmatrix%NCOLS, rmatrix%NA+irowLen, .false.)
         
     rmatrix%NEQ = rmatrix%NEQ + 1
@@ -639,13 +639,13 @@ contains
 !</subroutine>
     
   ! local variables
-  integer(I32), dimension(:), pointer :: p_ImirrorDOFs,p_ImirrorDOFsClosed
+  integer, dimension(:), pointer :: p_ImirrorDOFs,p_ImirrorDOFsClosed
   integer :: i,j
   real(DP), dimension(:), pointer :: p_Da
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol,p_Iperm,p_IpermInverse
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-  integer(PREC_MATIDX) :: ia
-  integer(PREC_DOFIDX) :: idof
+  integer, dimension(:), pointer :: p_Kcol,p_Iperm,p_IpermInverse
+  integer, dimension(:), pointer :: p_Kld
+  integer :: ia
+  integer :: idof
   real(DP) :: dmirrorWeight
 
   ! Offdiagonal matrices are not processed by this routine up to now.
