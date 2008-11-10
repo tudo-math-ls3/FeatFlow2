@@ -1092,8 +1092,8 @@ contains
     
     integer :: i,j
     
-    do j=1,rsource%ndiagBlocks
-      do i=1,rsource%ndiagBlocks
+    do j=1,rsource%nblocksPerRow
+      do i=1,rsource%nblocksPerCol
         if (lsysbl_isSubmatrixPresent (rsource,i,j)) then
           if (lsysbl_isSubmatrixPresent (rdest,i+itop-1,j+ileft-1)) then
             call lsyssc_releaseMatrix (rdest%RmatrixBlock(j+ileft-1,i+itop-1))
