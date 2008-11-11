@@ -81,6 +81,10 @@
 !# 19.) sys_sl  
 !#      -> String routines to convert a logical to a strings
 !#
+!# 20.) sys_smem, sys_smemL
+!#      -> String routines to convert long integers representing memory usage
+!#         to strings.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -99,16 +103,36 @@ module fsystem
   integer, parameter :: NO = 1
 
 !</constantblock>
-  
-  integer, parameter :: DP = selected_real_kind(15,307)
+ 
+!<constantblock description="Kind values for floats">
+
+  ! kind value for 32 bit float (single precision)
   integer, parameter :: SP = selected_real_kind(6,37)
+
+  ! kind value for 64 bit float (double precision)
+  integer, parameter :: DP = selected_real_kind(15,307)
+
+  ! kind value for 128 bit float (quad precision)
+  !integer, parameter :: QP = selected_real_kind(33,4931)
+  
+  ! NOTE: Currently, QP is set to be equal to DP, as the g95
+  ! does not offer a quad precision type!
+  integer, parameter :: QP = DP
+
+!</constantblock>
 
 !<constantblock description="Kind values for integers">
 
-  ! kind value for 32Bit integer
+  ! kind value for 8 bit integer
+  integer, parameter :: I8 = selected_int_kind(2)
+
+  ! kind value for 16 bit integer
+  integer, parameter :: I16 = selected_int_kind(4)
+
+  ! kind value for 32 bit integer
   integer, parameter :: I32 = selected_int_kind(8)
 
-  ! kind value for 64Bit integer
+  ! kind value for 64 bit integer
   integer, parameter :: I64 = selected_int_kind(10)
 
 !</constantblock>
@@ -1012,6 +1036,145 @@ contains
     
   end function sys_str2Single
 
+!************************************************************************
+
+!<function>
+  
+  character (len=32) function sys_smem(imem,ndigits) result(sout)
+
+!<description>
+  ! This routine converts 64 bit integer representing memory usage to
+  ! a string.
+!</description>
+
+!<input>
+  ! The memory usage in bytes.
+  integer(I64), intent(IN) :: imem
+  
+  ! OPTIONAL: The number of digits. Must be 0 <= ndigits <= 3.
+  ! If not given, ndigits = 2 is used.
+  integer, optional, intent(IN) :: ndigits
+!</input>
+
+!</function>
+
+  integer :: k,nld,ntd
+  integer(I64) :: ii,jj,itds
+  character(len=32) :: sformat
+  character(len=8) :: spost
+  character(len=2) :: snld, sntd
+  
+    ! Get the number of trailing digits
+    ntd = 2
+    if(present(ndigits)) then
+      if(ndigits .lt. 0) then
+        ntd = 0
+      else if(ndigits .gt. 3) then
+        ntd = 3
+      else
+        ntd = ndigits
+      end if
+    end if
+    
+    ! Calculate trailing digits scale
+    itds = (10_I64)**ntd
+  
+    ! Find out in which range the memory usage is:
+    ii = abs(imem)
+    jj = 0
+    do k = 0, 6
+      if(ii .lt. 1024_I64) exit
+      jj = (itds * mod(ii, 1024_I64)) / 1024_I64
+      ii = ii / 1024_I64
+    end do
+  
+    ! What do we have here?
+    select case(k)
+    case (0)
+      spost = ' Bytes'
+    case (1)
+      spost = ' KB'   ! "Kilobytes"
+    case (2)
+      spost = ' MB'   ! "Megabytes"
+    case (3)
+      spost = ' GB'   ! "Gigabytes"
+    case (4)
+      spost = ' TB'   ! "Terabytes"
+    case (5)
+      spost = ' PB'   ! "Petabytes"
+    case (6)
+      spost = ' EB'   ! "Exabytes"
+    end select
+    
+    ! "Count" the number of leading digits
+    if(ii .lt. 10_I64) then
+      nld = 1
+    else if(ii .lt. 100_I64) then
+      nld = 2
+    else if(ii .lt. 1000_I64) then
+      nld = 3
+    else
+      nld = 4
+    end if
+    
+    ! If the memory usage was negative (nice idea), then the number
+    ! of leading digits has to be increased by 1 for the sign.
+    if(imem .lt. 0_I64) then
+      nld = nld + 1
+      ii = -ii
+    end if
+    
+    ! Prepare snld and sntd
+    write(snld,'(i1)') nld
+    write(sntd,'(i1)') ntd
+    
+    ! Now what format are we going to print?
+    if((k .eq. 0) .or. (ntd .eq. 0)) then
+
+      ! Print something like "xxx KB"
+      sformat = '(i' // trim(snld) // ',"' // trim(spost) // '")'
+      write(sout, sformat) ii
+      
+    else
+
+      ! Print something like "xxx.yy KB"
+      sformat = '(i' // trim(snld) // ',".",i' // trim(sntd) // '.' &
+                // trim(sntd) // ',"' // trim(spost) // '")'
+      write(sout, sformat) ii, jj
+      
+    end if
+    
+  end function sys_smem
+
+!************************************************************************
+
+!<function>
+  
+  character (len=32) function sys_smemL(imem,ndigits) result(sout)
+
+!<description>
+  ! This routine converts 64 bit integer representing memory usage to
+  ! a string.
+!</description>
+
+!<input>
+  ! The memory usage in bytes.
+  integer(I64), intent(IN) :: imem
+  
+  ! OPTIONAL: The number of digits. Must be 0 <= ndigits <= 3.
+  ! If not given, ndigits = 2 is used.
+  integer, optional, intent(IN) :: ndigits
+!</input>
+
+!</function>
+  
+    if(present(ndigits)) then
+      sout = adjustl(sys_smem(imem,ndigits))
+    else
+      sout = adjustl(sys_smem(imem))
+    end if
+
+  end function
 
 !************************************************************************
 ! Main conversion routines:
