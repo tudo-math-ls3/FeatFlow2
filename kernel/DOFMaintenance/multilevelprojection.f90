@@ -9571,7 +9571,7 @@ contains
     call lalg_copyVectorDble(p_Ddef,p_Ddir,n)
     
     ! Apply preconditioner onto Ddir
-    call mlprj_aux_precSSOR(p_Ddir,p_Kld,p_Kcol,p_Kdiag,p_Da,drelax)
+    call mlprj_aux_precSSOR(n,p_Ddir,p_Kld,p_Kcol,p_Kdiag,p_Da,drelax)
     
     ! Calculate gamma
     dgamma = lalg_scalarProductDble(p_Ddef,p_Ddir,n)
@@ -9583,18 +9583,20 @@ contains
     do iter = 1, nmaxiter
     
       ! Dtmp := A * Ddir
-      !$omp parallel do private(j,dt) default(shared)
+      dalpha = 0.0_DP
+      !$omp parallel do default(shared) private(j,dt) reduction(+:dalpha)
       do i = 1, n
         dt = 0.0_DP
         do j = p_Kld(i), p_Kld(i+1)-1
           dt = dt + p_Da(j)*p_Ddir(p_Kcol(j))
         end do
+        dalpha = dalpha + p_Ddir(i)*dt
         p_Dtmp(i) = dt
       end do
       !$omp end parallel do
       
       ! Calculate alpha
-      dalpha = lalg_scalarProductDble(p_Ddir,p_Dtmp,n)
+      !dalpha = lalg_scalarProductDble(p_Ddir,p_Dtmp,n)
       if(dalpha .eq. 0.0_DP) return
       dalpha = dgamma / dalpha
       
@@ -9611,7 +9613,7 @@ contains
       call lalg_copyVectorDble(p_Ddef,p_Dtmp,n)
       
       ! Apply preconditioner onto Dtmp
-      call mlprj_aux_precSSOR(p_Dtmp,p_Kld,p_Kcol,p_Kdiag,p_Da,drelax)
+      call mlprj_aux_precSSOR(n,p_Dtmp,p_Kld,p_Kcol,p_Kdiag,p_Da,drelax)
       
       ! Calculate new gamma and beta
       dgamma2 = dgamma
@@ -9628,7 +9630,7 @@ contains
 
   !<subroutine>
 
-    pure subroutine mlprj_aux_precSSOR(Dx,Kld,Kcol,Kdiag,Da,drlx)
+    pure subroutine mlprj_aux_precSSOR(n,Dx,Kld,Kcol,Kdiag,Da,drlx)
 
   !<description>
     ! PRIVATE AUXILIARY ROUTINE
@@ -9637,21 +9639,24 @@ contains
   
   !<inputoutput>
     ! The defect vector that is to be preconditioned.
-    real(DP), dimension(:), intent(INOUT) :: Dx
+    real(DP), dimension(*), intent(INOUT) :: Dx
   !</inputoutput> 
   
   !<input>
+    ! The size of Dx
+    integer, intent(IN) :: n
+    
     ! The Kld array of the mass matrix.
-    integer, dimension(:), intent(IN) :: Kld
+    integer, dimension(*), intent(IN) :: Kld
     
     ! The Kcol array of the mass matrix.
-    integer, dimension(:), intent(IN) :: Kcol
+    integer, dimension(*), intent(IN) :: Kcol
     
     ! The Kdiagonal array of the mass matrix.
-    integer, dimension(:), intent(IN) :: Kdiag
+    integer, dimension(*), intent(IN) :: Kdiag
 
     ! The DA array of the mass matrix.
-    real(DP), dimension(:), intent(IN) :: Da
+    real(DP), dimension(*), intent(IN) :: Da
     
     ! The relaxation parameter for SSOR. If set to 0, Jacobi is used instead.
     real(DP), intent(IN) :: drlx
@@ -9666,7 +9671,7 @@ contains
       if(drlx .eq. 0.0_DP) then
         
         !$omp parallel do default(shared)
-        do i = 1, ubound(Kdiag,1)
+        do i = 1, n
           Dx(i) = Dx(i) / Da(Kdiag(i))
         end do
         !$omp end parallel do
@@ -9676,7 +9681,7 @@ contains
       end if
     
       ! Forward insertion
-      do i = 1, ubound(Kld,1)-1
+      do i = 1, n
         dt = 0.0_DP
         k = Kdiag(i)
         do j = Kld(i), k-1
@@ -9686,7 +9691,7 @@ contains
       end do
       
       ! Backward insertion
-      do i = ubound(Kld,1)-1, 1, -1
+      do i = n, 1, -1
         dt = 0.0_DP
         k = Kdiag(i)
         do j = Kld(i+1)-1, k+1, -1
