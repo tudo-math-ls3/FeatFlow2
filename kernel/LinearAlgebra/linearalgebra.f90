@@ -3171,7 +3171,7 @@ contains
       end if
     else
       if(sc .eq. 0.0_SP) then
-        call lalg_clearVectorSngl(Fx)
+        call lalg_clearVectorSngl(Fx,n)
       else if(sc .ne. 1.0_SP) then
         call SSCAL(n,sc,Fx,1)
       end if
