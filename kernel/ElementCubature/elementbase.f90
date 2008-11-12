@@ -43,11 +43,8 @@ implicit none
   ! Calculate the Jacobian determinant in the points where to evaluate
   integer(I32), parameter :: EL_EVLTAG_DETJ         = 2**4
   
-  ! Calculate the twist indices for edges
-  integer(I32), parameter :: EL_EVLTAG_TWISTIDXEDGE = 2**5
-
-  ! Calculate the twist indices for faces
-  integer(I32), parameter :: EL_EVLTAG_TWISTIDXFACE = 2**6
+  ! Calculate the twist indices
+  integer(I32), parameter :: EL_EVLTAG_TWISTIDX     = 2**5
   
 !</constantblock>
 
@@ -104,8 +101,8 @@ implicit none
     !  Dpoints(3)=z-coordinates (only 3d).
     real(DP), dimension(NDIM3D) :: DpointReal
     
-    ! Twist index field for the edges of the element.
-    integer :: itwistIndexEdges
+    ! Twist index entry of the element.
+    integer :: itwistIndex
 
   end type
 
@@ -177,17 +174,9 @@ implicit none
     !  Dpoints(:,:,j) = Coordinates of all points on element j
     real(DP), dimension(:,:,:), pointer :: p_DpointsReal => null()
     
-    ! List of twist indices for edges. For every edge on every cell, the twist
-    ! index defines the orientation of the edge. May be undefined if
-    ! the element does not need twist indices.
+    ! Twist index array of the elements.
     ! Array with DIMENSION(nelements)
-    integer, dimension(:), pointer :: p_ItwistIndexEdge => null()
-
-    ! List of twist indices for faces (only 3D). For every edge on every cell, the 
-    ! twist index defines the orientation of the face. May be undefined if
-    ! the element does not need twist indices.
-    ! Array with DIMENSION(nelements)
-    integer, dimension(:), pointer :: p_ItwistIndexFace => null()
+    integer, dimension(:), pointer :: p_ItwistIndex => null()
   
     ! .TRUE., if the array with coordinates on the reference element
     ! is maintained by the caller; prevents release of memory in the

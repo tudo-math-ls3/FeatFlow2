@@ -1235,9 +1235,9 @@ contains
       ! No information about Jacobian necessary
       elem_getEvaluationTag = 0
     case (EL_Q2T, EL_Q2TB)
-      ! We need the twist indices. This element is 2D!
+      ! We need the twist indices.
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
-        EL_EVLTAG_JAC + EL_EVLTAG_DETJ + EL_EVLTAG_TWISTIDXEDGE
+        EL_EVLTAG_JAC + EL_EVLTAG_DETJ + EL_EVLTAG_TWISTIDX
     case default
       ! Standard evaluation tag. Evaluate reference coordinates 
       ! + Jac + Determinant of Jac for the transformation
@@ -1341,7 +1341,7 @@ contains
 !<subroutine>  
 
   pure subroutine elem_generic1 (ieltyp, Dcoords, Djac, ddetj, Bder, &
-                                Dpoint, Dbas, ItwistIndexEdges)
+                                Dpoint, Dbas, ItwistIndex)
 
 !<description>
   ! DEPRECATED!!!
@@ -1400,7 +1400,7 @@ contains
   ! OPTIONAL: Twist index bitfield that defines the orientation of the edges
   ! of the element.
   ! Can be omitted if the element does not use this information.
-  integer(I32), intent(IN), optional :: ItwistIndexEdges
+  integer(I32), intent(IN), optional :: ItwistIndex
 !</input>
   
 !<output>
@@ -1456,9 +1456,9 @@ contains
     case (EL_E031)
       call elem_E031 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
     case (EL_E050)
-      call elem_E050 (ieltyp, Dcoords, ItwistIndexEdges, Djac, ddetj, Bder, Dpoint, Dbas)
+      call elem_E050 (ieltyp, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
     case (EL_EB50)
-      call elem_EB50 (ieltyp, Dcoords, ItwistIndexEdges, Djac, ddetj, Bder, Dpoint, Dbas)
+      call elem_EB50 (ieltyp, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
 
     ! 3D elements
     case (EL_P0_3D)
@@ -1600,10 +1600,10 @@ contains
       call elem_E031 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_E050)
-      call elem_E050 (ieltyp, revalElement%Dcoords, revalElement%itwistIndexEdges, &
+      call elem_E050 (ieltyp, revalElement%Dcoords, revalElement%itwistIndex, &
           revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_EB50)
-      call elem_EB50 (ieltyp, revalElement%Dcoords, revalElement%itwistIndexEdges, &
+      call elem_EB50 (ieltyp, revalElement%Dcoords, revalElement%itwistIndex, &
           revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
 
     ! 3D elements
@@ -1806,7 +1806,7 @@ contains
 !<subroutine>  
 
   subroutine elem_generic_sim1 (ieltyp, Dcoords, Djac, Ddetj, &
-                               Bder, Dbas, npoints, nelements, Dpoints, ItwistIndexEdges)
+                               Bder, Dbas, npoints, nelements, Dpoints, ItwistIndex)
 
 !<description>
   ! DEPRECATED:
@@ -1879,7 +1879,7 @@ contains
   ! entry is a bitfield that defines the orientation of the edge.
   ! Can be omitted if the element does not need it.
   ! Array with DIMENSION(nelements)
-  integer(I32), dimension(:), intent(IN), optional :: ItwistIndexEdges
+  integer(I32), dimension(:), intent(IN), optional :: ItwistIndex
 !</input>
   
 !<output>
@@ -1952,10 +1952,10 @@ contains
       call elem_E031_sim (ieltyp, Dcoords, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_E050)
-      call elem_E050_sim (ieltyp, Dcoords, ItwistIndexEdges, Djac, Ddetj, &
+      call elem_E050_sim (ieltyp, Dcoords, ItwistIndex, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_EB50)
-      call elem_EB50_sim (ieltyp, Dcoords, ItwistIndexEdges, Djac, Ddetj, &
+      call elem_EB50_sim (ieltyp, Dcoords, ItwistIndex, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
 
     ! 3D elements
@@ -1995,11 +1995,11 @@ contains
 
     case default
       ! Compatibility handling: evaluate on all elements separately
-      if (present(ItwistIndexEdges)) then
+      if (present(ItwistIndex)) then
         do i=1,nelements
           call elem_generic_mult (ieltyp, Dcoords(:,:,i),&
               Djac(:,:,i), Ddetj(:,i), &
-              Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i), ItwistIndexEdges(i))
+              Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i), ItwistIndex(i))
         end do
       else
         do i=1,nelements
@@ -2167,7 +2167,7 @@ contains
     
     case (EL_E050)
       call elem_E050_sim (ieltyp, revalElementSet%p_Dcoords,&
-        revalElementSet%p_ItwistIndexEdge, &
+        revalElementSet%p_ItwistIndex, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
@@ -2263,20 +2263,20 @@ contains
           
     case default
       ! Compatibility handling: evaluate on all elements separately
-      if (associated(revalElementSet%p_ItwistIndexEdge)) then
+      if (associated(revalElementSet%p_ItwistIndex)) then
         if (elem_isNonparametric(ieltyp)) then
           do i=1,revalElementSet%nelements
             call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
                 revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
                 Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
-                revalElementSet%p_DpointsReal(:,:,i), revalElementSet%p_ItwistIndexEdge(i))
+                revalElementSet%p_DpointsReal(:,:,i), revalElementSet%p_ItwistIndex(i))
           end do
         else
           do i=1,revalElementSet%nelements
             call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
                 revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
                 Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
-                revalElementSet%p_DpointsRef(:,:,i), revalElementSet%p_ItwistIndexEdge(i))
+                revalElementSet%p_DpointsRef(:,:,i), revalElementSet%p_ItwistIndex(i))
           end do
         end if
       else

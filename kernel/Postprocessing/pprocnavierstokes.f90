@@ -121,7 +121,7 @@ contains
   type (t_triangulation), pointer :: p_rtriangulation
   
   ! An accepting the DOF's of an element.
-  integer(PREC_DOFIDX), dimension(EL_MAXNBAS), target :: IdofsU, IdofsP
+  integer, dimension(EL_MAXNBAS), target :: IdofsU, IdofsP
   
   ! Coordinates of the coordinates of an element
   real(DP), dimension(:,:), allocatable :: DCoords
@@ -159,20 +159,20 @@ contains
   integer :: ncubp,icubp
 
   ! Edges, vertices and elements on the boundary
-  integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtBoundary
-  integer(PREC_EDGEIDX), dimension(:), pointer    :: p_IedgesAtBoundary
-  integer(PREC_EDGEIDX), dimension(:,:), pointer  :: p_IedgesAtElement
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:), pointer :: p_IelementsAtBoundary
+  integer, dimension(:), pointer    :: p_IedgesAtBoundary
+  integer, dimension(:,:), pointer  :: p_IedgesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtEdge
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
   real(DP), dimension(:), pointer                 :: p_DvertexParameterValue
-  integer(I32), dimension(:), pointer             :: p_IboundaryCpIdx
+  integer, dimension(:), pointer             :: p_IboundaryCpIdx
   real(DP), dimension(:,:), pointer               :: p_DvertexCoordinates
 
   ! other local variables
   integer :: iedgeidx,ivt1,ivt2,ilocaledge,nlocaledges,idfl,icp
-  integer(PREC_DOFIDX) :: neqU,neqP
-  integer(PREC_EDGEIDX) :: iedge,iedgeglobal
-  integer(PREC_ELEMENTIDX) :: iel
+  integer :: neqU,neqP
+  integer :: iedge,iedgeglobal
+  integer :: iel
   real(DP) :: dvtp1,dvtp2,dedgelen, dweight,dut,dpf1,dpf2
   real(DP), dimension(2) :: DintU, DintP
   real(DP) :: dpres
@@ -273,8 +273,8 @@ contains
                                  
     ! Does the element need twist indices?
     nullify(p_ItwistIndex)
-    if (p_rtriangulation%h_ItwistIndexEdges .ne. ST_NOHANDLE) then
-      call storage_getbase_int (p_rtriangulation%h_ItwistIndexEdges,p_ItwistIndex)
+    if (p_rtriangulation%h_ItwistIndex .ne. ST_NOHANDLE) then
+      call storage_getbase_int32 (p_rtriangulation%h_ItwistIndex,p_ItwistIndex)
     end if
 
     ! Is one of the elements nonparametric
@@ -566,7 +566,7 @@ contains
   type (t_triangulation), pointer :: p_rtria
   
   ! An accepting the DOF's of an element.
-  integer(PREC_DOFIDX), dimension(EL_MAXNBAS), target :: IdofsU, IdofsP
+  integer, dimension(EL_MAXNBAS), target :: IdofsU, IdofsP
   
   ! Coordinates of the vertices
   real(DP), dimension(NDIM3D,8) :: Dcoords
@@ -608,16 +608,16 @@ contains
   integer :: ncubp,icubp
 
   ! Edges, vertices and elements on the boundary
-  integer(PREC_FACEIDX), dimension(:), pointer     :: p_IfaceIdx
-  integer(PREC_FACEIDX), dimension(:,:), pointer   :: p_IfaceAtElem
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IvertAtElem
-  integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IelemAtFace
+  integer, dimension(:), pointer     :: p_IfaceIdx
+  integer, dimension(:,:), pointer   :: p_IfaceAtElem
+  integer, dimension(:,:), pointer :: p_IvertAtElem
+  integer, dimension(:,:), pointer :: p_IelemAtFace
   real(DP), dimension(:,:), pointer                :: p_Dvertex
 
   ! other local variables
   integer :: iat, iface,ilocalface,idfl,i
-  integer(PREC_DOFIDX) :: neqU,neqP
-  integer(PREC_ELEMENTIDX) :: iel
+  integer :: neqU,neqP
+  integer :: iel
   real(DP) :: dpf1,dpf2,dpres,du1,du2,du3,dweight,dv
   real(DP), dimension(3) :: DintU, DintP
   integer(I32), dimension(:), pointer :: p_ItwistIndex
@@ -703,8 +703,8 @@ contains
     
     ! Does the element need twist indices?
     nullify(p_ItwistIndex)
-    if (p_rtria%h_ItwistIndexEdges .ne. ST_NOHANDLE) then
-      call storage_getbase_int (p_rtria%h_ItwistIndexFaces,p_ItwistIndex)
+    if (p_rtria%h_ItwistIndex .ne. ST_NOHANDLE) then
+      call storage_getbase_int32 (p_rtria%h_ItwistIndex,p_ItwistIndex)
     end if
 
     ! Is one of the elements nonparametric
@@ -1033,8 +1033,8 @@ contains
     ! local variables
     integer, parameter :: NVE = 4
 
-    integer(PREC_ELEMENTIDX) :: iel,ielaux,icurrentelement
-    integer(PREC_VERTEXIDX) :: jve
+    integer :: iel,ielaux,icurrentelement
+    integer :: jve
     integer(I32) :: ieltype1,ieltype2,ieltypeDest
     integer :: haux,ive,iadj
     integer :: ilastMarked,imarkCounter,imarktmp
@@ -1042,12 +1042,12 @@ contains
 
     ! Pointer to vector data of solution vector
     real(DP), dimension(:), pointer :: p_DdataUX,p_DdataUY,p_Dx
-    integer(I32), dimension(:), pointer :: p_Iind
+    integer, dimension(:), pointer :: p_Iind
     
     ! Stuff from the triangulation
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
     if (rvector%cdataType .ne. ST_DOUBLE) then
@@ -1271,13 +1271,13 @@ contains
     real(DP), dimension(:,:), intent(IN)               :: DvertexCoords
     
     ! Vertices at the element
-    integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+    integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
     ! Edges at the element
-    integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IedgesAtElement
+    integer, dimension(:,:), intent(IN) :: IedgesAtElement
     
     ! Element number where to calculate the streamfunction
-    integer(PREC_ELEMENTIDX), intent(IN)               :: iel
+    integer, intent(IN)               :: iel
     
     ! Local number (1..NVE) of any of the vertices on the element iel
     ! where the streamfunction is already calculated. This will be used
@@ -1286,7 +1286,7 @@ contains
     
     ! Marker array of length NVT. All vertices where streamfunction
     ! values are calculated are marked as 1.
-    integer(I32), intent(INOUT), dimension(:)          :: Imarkers
+    integer, intent(INOUT), dimension(:)          :: Imarkers
     
     ! X/Y-velocity.
     real(DP), dimension(:), intent(IN)                 :: Du, Dv
@@ -1297,8 +1297,8 @@ contains
     ! local variables
     integer, parameter :: NVE = 4
     integer :: ive,inextidx,inextvertex,imarked
-    integer(PREC_VERTEXIDX) :: ivt,NVT
-    integer(PREC_EDGEIDX) :: imid
+    integer :: ivt,NVT
+    integer :: imid
     real(DP) :: dpx1,dpx2,dpy1,dpy2,dn1,dn2
     integer :: ilastMarked
   

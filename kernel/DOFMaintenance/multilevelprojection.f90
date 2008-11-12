@@ -1050,8 +1050,8 @@ contains
       p_IneighboursAtElementFine
   integer, dimension(:,:), pointer :: p_IedgesAtElementCoarse,&
       p_IfacesAtElementCoarse, p_IedgesAtElementFine, p_IfacesAtElementFine
-  integer(I32), dimension(:), pointer :: p_ItwistIndexEdgesCoarse, &
-      p_ItwistIndexEdgesFine
+  integer(I32), dimension(:), pointer :: p_ItwistIndexCoarse, &
+      p_ItwistIndexFine
   real(DP), dimension(:,:), pointer :: p_DvertexCoordsCoarse
   real(DP), dimension(:), pointer   :: p_DelementAreaCoarse
   
@@ -1340,15 +1340,15 @@ contains
                                p_IneighboursAtElementFine)
           call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
-          call storage_getbase_int(p_rtriaFine%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesFine)
-          call storage_getbase_int(p_rtriaCoarse%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesCoarse)
+          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                               p_ItwistIndexFine)
+          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                               p_ItwistIndexCoarse)
 
           call mlprj_prolUniformEx50_double (p_DuCoarse,p_DuFine, &
               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexEdgesCoarse,p_ItwistIndexEdgesFine,&
+              p_ItwistIndexCoarse,p_ItwistIndexFine,&
               p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL)
         
         case (EL_Q2TB)
@@ -1361,15 +1361,15 @@ contains
                                p_IneighboursAtElementFine)
           call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
-          call storage_getbase_int(p_rtriaFine%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesFine)
-          call storage_getbase_int(p_rtriaCoarse%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesCoarse)
+          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                               p_ItwistIndexFine)
+          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                               p_ItwistIndexCoarse)
 
           call mlprj_prolUniformEB50_double (p_DuCoarse,p_DuFine, &
               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexEdgesCoarse,p_ItwistIndexEdgesFine,&
+              p_ItwistIndexCoarse,p_ItwistIndexFine,&
               p_rtriaCoarse%NMT,p_rtriaFine%NMT,&
               p_rtriaCoarse%NEL,p_rtriaFine%NEL)
 
@@ -1519,8 +1519,8 @@ contains
       p_IneighboursAtElementFine
   integer, dimension(:,:), pointer :: p_IedgesAtElementCoarse,&
       p_IedgesAtElementFine, p_IfacesAtElementCoarse, p_IfacesAtElementFine
-  integer(I32), dimension(:), pointer :: p_ItwistIndexEdgesCoarse, &
-      p_ItwistIndexEdgesFine
+  integer(I32), dimension(:), pointer :: p_ItwistIndexCoarse, &
+      p_ItwistIndexFine
   real(DP), dimension(:,:), pointer :: p_DvertexCoordsCoarse
   real(DP), dimension(:), pointer   :: p_DelementAreaCoarse
   
@@ -1821,15 +1821,15 @@ contains
                                p_IneighboursAtElementFine)
           call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
-          call storage_getbase_int(p_rtriaFine%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesFine)
-          call storage_getbase_int(p_rtriaCoarse%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesCoarse)
+          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                               p_ItwistIndexFine)
+          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                               p_ItwistIndexCoarse)
 
           call mlprj_restUniformEx50_double (p_DuCoarse,p_DuFine, &
               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexEdgesCoarse,p_ItwistIndexEdgesFine,&
+              p_ItwistIndexCoarse,p_ItwistIndexFine,&
               p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL)
 
         case (EL_Q2TB)
@@ -1842,15 +1842,15 @@ contains
                                p_IneighboursAtElementFine)
           call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
-          call storage_getbase_int(p_rtriaFine%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesFine)
-          call storage_getbase_int(p_rtriaCoarse%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesCoarse)
+          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                               p_ItwistIndexFine)
+          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                               p_ItwistIndexCoarse)
 
           call mlprj_restUniformEB50_double (p_DuCoarse,p_DuFine, &
               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexEdgesCoarse,p_ItwistIndexEdgesFine,&
+              p_ItwistIndexCoarse,p_ItwistIndexFine,&
               p_rtriaCoarse%NMT,p_rtriaFine%NMT,&
               p_rtriaCoarse%NEL,p_rtriaFine%NEL)
 
@@ -2001,8 +2001,8 @@ contains
   integer, dimension(:,:), pointer :: p_IedgesAtElementFine
   integer, dimension(:,:), pointer :: p_IfacesAtElementCoarse
   integer, dimension(:,:), pointer :: p_IfacesAtElementFine
-  integer(I32), dimension(:), pointer :: p_ItwistIndexEdgesCoarse, &
-      p_ItwistIndexEdgesFine
+  integer(I32), dimension(:), pointer :: p_ItwistIndexCoarse, &
+      p_ItwistIndexFine
   
   ! Data arrays
   real(DP), dimension(:), pointer :: p_DuCoarse, p_DuFine
@@ -2137,15 +2137,15 @@ contains
                                p_IneighboursAtElementFine)
           call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
-          call storage_getbase_int(p_rtriaFine%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesFine)
-          call storage_getbase_int(p_rtriaCoarse%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesCoarse)
+          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                               p_ItwistIndexFine)
+          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                               p_ItwistIndexCoarse)
 
           call mlprj_interpUniformEx50_double (p_DuCoarse,p_DuFine, &
               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexEdgesCoarse,p_ItwistIndexEdgesFine,&
+              p_ItwistIndexCoarse,p_ItwistIndexFine,&
               p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL)
 
         case (EL_Q2TB)
@@ -2158,15 +2158,15 @@ contains
                                p_IneighboursAtElementFine)
           call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
-          call storage_getbase_int(p_rtriaFine%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesFine)
-          call storage_getbase_int(p_rtriaCoarse%h_ItwistIndexEdges, &
-                               p_ItwistIndexEdgesCoarse)
+          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                               p_ItwistIndexFine)
+          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                               p_ItwistIndexCoarse)
 
           call mlprj_interpUniformEB50_double (p_DuCoarse,p_DuFine, &
               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexEdgesCoarse,p_ItwistIndexEdgesFine,&
+              p_ItwistIndexCoarse,p_ItwistIndexFine,&
               p_rtriaCoarse%NMT,p_rtriaFine%NMT,&
               p_rtriaCoarse%NEL,p_rtriaFine%NEL)
 

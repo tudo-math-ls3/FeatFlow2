@@ -6703,7 +6703,7 @@ contains
       do j = 1, reval%nelements
       
         ! Get the twist indices for this element.
-        itwist = reval%p_ItwistIndexEdge(j)
+        itwist = reval%p_ItwistIndex(j)
         d5 = real(iand(ishft(itwist, 1),2)-1,DP)
         d6 = real(iand(ishft(itwist, 0),2)-1,DP)
         d7 = real(iand(ishft(itwist,-1),2)-1,DP)
@@ -6747,7 +6747,7 @@ contains
       do j = 1, reval%nelements
       
         ! Get the twist indices for this element.
-        itwist = reval%p_ItwistIndexEdge(j)
+        itwist = reval%p_ItwistIndex(j)
         d5 = real(iand(ishft(itwist, 1),2)-1,DP)
         d6 = real(iand(ishft(itwist, 0),2)-1,DP)
         d7 = real(iand(ishft(itwist,-1),2)-1,DP)

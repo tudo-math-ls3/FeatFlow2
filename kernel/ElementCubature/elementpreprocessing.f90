@@ -184,8 +184,8 @@ contains
 ! </subroutine>
 
     integer :: ndimRef,ndim,nverticesPerElement,nelements,npointsPerElement
-    integer(I32), dimension(:), pointer :: p_ItwistIndexEdge
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer(I32), dimension(:), pointer :: p_ItwistIndex
+    integer :: iel,ielidx
     logical :: bemptyArray
     
     ! Fetch some information
@@ -299,16 +299,13 @@ contains
         end if
       end if
       
-      if (iand(cevaluationTag,EL_EVLTAG_TWISTIDXEDGE   ) .ne. 0) then
+      if (iand(cevaluationTag,EL_EVLTAG_TWISTIDX   ) .ne. 0) then
 
-        if (associated(revalElementSet%p_ItwistIndexEdge)) then
-          if (size(revalElementSet%p_ItwistIndexEdge) .lt. nelements) then
-            deallocate(revalElementSet%p_ItwistIndexEdge)
+        if (associated(revalElementSet%p_ItwistIndex)) then
+          if (size(revalElementSet%p_ItwistIndex) .lt. nelements) then
+            deallocate(revalElementSet%p_ItwistIndex)
           end if
         end if
-      end if
-      
-      if (iand(cevaluationTag,EL_EVLTAG_TWISTIDXFACE   ) .ne. 0) then
       end if
       
     end if
@@ -416,12 +413,12 @@ contains
       
     end if
 
-    ! Get the twist indices or the orientation of edges.
-    if (iand(cevaluationTag,EL_EVLTAG_TWISTIDXEDGE   ) .ne. 0) then
+    ! Get the twist indices.
+    if (iand(cevaluationTag,EL_EVLTAG_TWISTIDX   ) .ne. 0) then
       
       ! Get the twist index array
-      if (rtriangulation%h_ItwistIndexEdges .ne. ST_NOHANDLE) then
-        call storage_getbase_int (rtriangulation%h_ItwistIndexEdges,p_ItwistIndexEdge)
+      if (rtriangulation%h_ItwistIndex .ne. ST_NOHANDLE) then
+        call storage_getbase_int32 (rtriangulation%h_ItwistIndex,p_ItwistIndex)
       else
         call output_line ('Twist indices not available!', &
             OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
@@ -429,21 +426,17 @@ contains
       end if
       
       ! Allocate memory
-      if (.not. associated(revalElementSet%p_ItwistIndexEdge)) then
+      if (.not. associated(revalElementSet%p_ItwistIndex)) then
         allocate(&
-            revalElementSet%p_ItwistIndexEdge(nelements))
+            revalElementSet%p_ItwistIndex(nelements))
       end if
 
       ! Fetch the twist indices from the triangulation.
       do ielidx = 1,nelements
         iel = IelementList(ielIdx)
-        revalElementSet%p_ItwistIndexEdge(ielidx) = p_ItwistIndexEdge(iel)
+        revalElementSet%p_ItwistIndex(ielidx) = p_ItwistIndex(iel)
       end do
       
-    end if
-    
-    if (iand(cevaluationTag,EL_EVLTAG_TWISTIDXFACE   ) .ne. 0) then
-      ! not yet defined
     end if
     
   contains
@@ -528,12 +521,8 @@ contains
       deallocate(revalElementSet%p_Ddetj)
     end if
   
-    if (associated(revalElementSet%p_ItwistIndexEdge)) then
-      deallocate(revalElementSet%p_ItwistIndexEdge)
-    end if
-  
-    if (associated(revalElementSet%p_ItwistIndexFace)) then
-      deallocate(revalElementSet%p_ItwistIndexFace)
+    if (associated(revalElementSet%p_ItwistIndex)) then
+      deallocate(revalElementSet%p_ItwistIndex)
     end if
 
     revalElementSet%npointsPerElement = 0
@@ -575,7 +564,7 @@ contains
   type(t_triangulation), intent(IN) :: rtriangulation
   
   ! Element where to evaluate the basis functions
-  integer(PREC_ELEMENTIDX), intent(IN) :: ielement
+  integer, intent(IN) :: ielement
   
   ! Type of transformation from the reference element to the real element.
   integer, intent(IN) :: ctrafoType
@@ -608,7 +597,7 @@ contains
 
 ! </subroutine>
 
-    integer(I32), dimension(:), pointer :: p_ItwistIndexEdge
+    integer(I32), dimension(:), pointer :: p_ItwistIndex
     
     ! Calculate the transformation
     if (iand(cevaluationTag,EL_EVLTAG_COORDS      ) .ne. 0) then
@@ -668,11 +657,11 @@ contains
     end if
 
     ! Get the twist indices or the orientation of edges.
-    if (iand(cevaluationTag,EL_EVLTAG_TWISTIDXEDGE   ) .ne. 0) then
+    if (iand(cevaluationTag,EL_EVLTAG_TWISTIDX   ) .ne. 0) then
       
       ! Get the twist index array
-      if (rtriangulation%h_ItwistIndexEdges .ne. ST_NOHANDLE) then
-        call storage_getbase_int (rtriangulation%h_ItwistIndexEdges,p_ItwistIndexEdge)
+      if (rtriangulation%h_ItwistIndex .ne. ST_NOHANDLE) then
+        call storage_getbase_int32 (rtriangulation%h_ItwistIndex,p_ItwistIndex)
       else
         call output_line ('Twist indices not available!', &
             OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
@@ -680,12 +669,8 @@ contains
       end if
       
       ! Fetch the twist indices from the triangulation.
-      revalElement%itwistIndexEdges = p_ItwistIndexEdge(ielement)
+      revalElement%itwistIndex = p_ItwistIndex(ielement)
       
-    end if
-    
-    if (iand(cevaluationTag,EL_EVLTAG_TWISTIDXFACE   ) .ne. 0) then
-      ! not yet defined
     end if
     
   end subroutine
