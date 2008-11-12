@@ -41,46 +41,56 @@
 !# 10.) cc_writeSolution
 !#      -> Write solution vector as configured in the DAT file.
 !#
+!# Auxiliary routines
+!#
+!# 1.) cc_getDiscretisation
+!#     -> Initialise a block discretisation structure according to
+!#        an element type combination.
+!#
+!# 2.) cc_deriveDiscretisation
+!#     -> Derives a block discretisation structure according to
+!#        an element type combination from an existing discretisation 
+!#        structure.
 !# </purpose>
 !##############################################################################
 
-MODULE ccgeneraldiscretisation
+module ccgeneraldiscretisation
 
-  USE fsystem
-  USE storage
-  USE linearsolver
-  USE boundary
-  USE bilinearformevaluation
-  USE linearformevaluation
-  USE cubature
-  USE matrixfilters
-  USE vectorfilters
-  USE bcassembly
-  USE triangulation
-  USE spatialdiscretisation
-  USE coarsegridcorrection
-  USE spdiscprojection
-  USE nonlinearsolver
-  USE paramlist
-  USE stdoperators
+  use fsystem
+  use storage
+  use linearsolver
+  use boundary
+  use bilinearformevaluation
+  use linearformevaluation
+  use cubature
+  use matrixfilters
+  use vectorfilters
+  use bcassembly
+  use triangulation
+  use spatialdiscretisation
+  use coarsegridcorrection
+  use spdiscprojection
+  use nonlinearsolver
+  use paramlist
+  use stdoperators
   
-  USE collection
-  USE convection
-  USE vectorio
+  use collection
+  use convection
+  use vectorio
     
-  USE ccbasic
-  USE cccallback
-  USE ccnonlinearcoreinit
+  use ccbasic
+  use cccallback
+  use ccnonlinearcoreinit
   
-  IMPLICIT NONE
+  implicit none
   
-CONTAINS
+contains
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_initDiscretisation (rproblem)
+  subroutine cc_initDiscretisation (rproblem)
   
 !<description>
   ! This routine initialises the discretisation structure of the underlying
@@ -89,424 +99,429 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: I,j,k,ielementType,icubA,icubB,icubF, icubM
-  CHARACTER(LEN=SYS_NAMELEN) :: sstr
-  
-  ! Number of equations in our problem. velocity+velocity+pressure = 3
-  INTEGER, PARAMETER :: nequations = 4
+  integer :: I,j,k,ielementType,icubA,icubB,icubF, icubM, iElementTypeStabil
+  character(LEN=SYS_NAMELEN) :: sstr
   
     ! An object for saving the domain:
-    TYPE(t_boundary), POINTER :: p_rboundary
+    type(t_boundary), pointer :: p_rboundary
     
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    type(t_triangulation), pointer :: p_rtriangulation
     
     ! An object for the block discretisation on one level
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationMass
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisationMass
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisationMassPressure
     
     ! Which discretisation is to use?
     ! Which cubature formula should be used?
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iElementType',ielementType,3)
 
-    CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'scubStokes',sstr,'')
-    IF (sstr .EQ. '') THEN
-      CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    if (sstr .eq. '') then
+      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'icubStokes',icubA,CUB_G2X2)
-    ELSE
+    else
       icubA = cub_igetID(sstr)
-    END IF
+    end if
 
-    CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'scubB',sstr,'')
-    IF (sstr .EQ. '') THEN
-      CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    if (sstr .eq. '') then
+      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'icubB',icubB,CUB_G2X2)
-    ELSE
+    else
       icubB = cub_igetID(sstr)
-    END IF
+    end if
 
-    CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'scubF',sstr,'')
-    IF (sstr .EQ. '') THEN
-      CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    if (sstr .eq. '') then
+      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'icubF',icubF,CUB_G2X2)
-    ELSE
+    else
       icubF = cub_igetID(sstr)
-    END IF
+    end if
     
     ! Stabilisation parameters.
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'IUPWIND',rproblem%rstabilisation%iupwind,0)
     
-    CALL parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'DUPSAM',rproblem%rstabilisation%dupsam,0.0_DP)
+
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'IELEMENTTYPESTABIL',iElementTypeStabil,0)
 
     ! Now set up discrezisation structures on all levels:
 
-    DO i=rproblem%NLMIN,rproblem%NLMAX
+    do i=rproblem%NLMIN,rproblem%NLMAX
+    
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
       p_rboundary => rproblem%rboundary
       p_rtriangulation => rproblem%RlevelInfo(i)%rtriangulation
-      
-      ! Now we can start to initialise the discretisation. At first, set up
-      ! a block discretisation structure that specifies 4 blocks in the
-      ! solution vector.
-      CALL spdiscr_initBlockDiscr2D (&
-          rproblem%RlevelInfo(i)%rdiscretisation,nequations,&
-          p_rtriangulation, p_rboundary)
-
       p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
+      
+      ! -----------------------------------------------------------------------
+      ! Initialise discretisation structures for the spatial discretisation
+      ! -----------------------------------------------------------------------
 
-      SELECT CASE (ielementType)
-      CASE (0)
-        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
-        ! discretisation structures for every component of the solution vector.
-        ! We have a solution vector with three components:
-        !  Component 1 = X-velocity
-        !  Component 2 = Y-velocity
-        !  Component 3 = Pressure
-        ! For simplicity, we set up one discretisation structure for the 
-        ! velocity...
-        CALL spdiscr_initDiscr_simple ( &
-                    p_rdiscretisation%RspatialDiscr(1), &
-                    EL_E031,icubA, &
-                    p_rtriangulation, p_rboundary)
-                    
-        ! Manually set the cubature formula for the RHS as the above routine
-        ! uses the same for matrix and vectors.
-        p_rdiscretisation%RspatialDiscr(1)% &
-          RelementDistr(1)%ccubTypeLinForm = icubF
-                    
-        ! ...and copy this structure also to the discretisation structure
-        ! of the 2nd component (Y-velocity). This needs no additional memory, 
-        ! as both structures will share the same dynamic information afterwards.
-        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscr(1),&
-            p_rdiscretisation%RspatialDiscr(2))
-    
-        ! For the pressure (3rd component), we set up a separate discretisation 
-        ! structure, as this uses different finite elements for trial and test
-        ! functions.
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q0, icubB,p_rdiscretisation%RspatialDiscr(3))
-        
-        
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q1, icubB,p_rdiscretisation%RspatialDiscr(4))
-            
-       
-      CASE (1)
-        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
-        ! discretisation structures for every component of the solution vector.
-        ! We have a solution vector with three components:
-        !  Component 1 = X-velocity
-        !  Component 2 = Y-velocity
-        !  Component 3 = Pressure
-        ! For simplicity, we set up one discretisation structure for the 
-        ! velocity...
-        CALL spdiscr_initDiscr_simple ( &
-                    p_rdiscretisation%RspatialDiscr(1), &
-                    EL_E030,icubA, &
-                    p_rtriangulation, p_rboundary)
-                    
-        ! Manually set the cubature formula for the RHS as the above routine
-        ! uses the same for matrix and vectors.
-        p_rdiscretisation%RspatialDiscr(1)% &
-          RelementDistr(1)%ccubTypeLinForm = icubF
-                    
-        ! ...and copy this structure also to the discretisation structure
-        ! of the 2nd component (Y-velocity). This needs no additional memory, 
-        ! as both structures will share the same dynamic information afterwards.
-        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscr(1),&
-            p_rdiscretisation%RspatialDiscr(2))
-    
-        ! For the pressure (3rd component), we set up a separate discretisation 
-        ! structure, as this uses different finite elements for trial and test
-        ! functions.
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q0, icubB,p_rdiscretisation%RspatialDiscr(3))
-        
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q1, icubB,p_rdiscretisation%RspatialDiscr(4))
-            
-            
-       
-      CASE (2)
-        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
-        ! discretisation structures for every component of the solution vector.
-        ! We have a solution vector with three components:
-        !  Component 1 = X-velocity
-        !  Component 2 = Y-velocity
-        !  Component 3 = Pressure
-        ! For simplicity, we set up one discretisation structure for the 
-        ! velocity...
-        CALL spdiscr_initDiscr_simple ( &
-                    p_rdiscretisation%RspatialDiscr(1), &
-                    EL_EM31,icubA, &
-                    p_rtriangulation, p_rboundary)
-                    
-        ! Manually set the cubature formula for the RHS as the above routine
-        ! uses the same for matrix and vectors.
-        p_rdiscretisation%RspatialDiscr(1)% &
-          RelementDistr(1)%ccubTypeLinForm = icubF
-                    
-        ! ...and copy this structure also to the discretisation structure
-        ! of the 2nd component (Y-velocity). This needs no additional memory, 
-        ! as both structures will share the same dynamic information afterwards.
-        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscr(1),&
-            p_rdiscretisation%RspatialDiscr(2))
-    
-        ! For the pressure (3rd component), we set up a separate discretisation 
-        ! structure, as this uses different finite elements for trial and test
-        ! functions.
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q0, icubB,p_rdiscretisation%RspatialDiscr(3))
-        
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q1, icubB,p_rdiscretisation%RspatialDiscr(4))
-            
-      CASE (3)
-        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
-        ! discretisation structures for every component of the solution vector.
-        ! We have a solution vector with three components:
-        !  Component 1 = X-velocity
-        !  Component 2 = Y-velocity
-        !  Component 3 = Pressure
-        ! For simplicity, we set up one discretisation structure for the 
-        ! velocity...
-        CALL spdiscr_initDiscr_simple ( &
-                    p_rdiscretisation%RspatialDiscr(1), &
-                    EL_EM30,icubA, &
-                    p_rtriangulation, p_rboundary)
-                    
-        ! Manually set the cubature formula for the RHS as the above routine
-        ! uses the same for matrix and vectors.
-        p_rdiscretisation%RspatialDiscr(1)% &
-          RelementDistr(1)%ccubTypeLinForm = icubF
-                    
-        ! ...and copy this structure also to the discretisation structure
-        ! of the 2nd component (Y-velocity). This needs no additional memory, 
-        ! as both structures will share the same dynamic information afterwards.
-        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscr(1),&
-            p_rdiscretisation%RspatialDiscr(2))
-    
-        ! For the pressure (3rd component), we set up a separate discretisation 
-        ! structure, as this uses different finite elements for trial and test
-        ! functions.
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q0, icubB,p_rdiscretisation%RspatialDiscr(3))
-        
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q1, icubB,p_rdiscretisation%RspatialDiscr(4))
-            
-      CASE (4)
-        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
-        ! discretisation structures for every component of the solution vector.
-        ! We have a solution vector with three components:
-        !  Component 1 = X-velocity
-        !  Component 2 = Y-velocity
-        !  Component 3 = Pressure
-        ! For simplicity, we set up one discretisation structure for the 
-        ! velocity...
-        CALL spdiscr_initDiscr_simple ( &
-                    p_rdiscretisation%RspatialDiscr(1), &
-                    EL_Q2,icubA, &
-                    p_rtriangulation, p_rboundary)
-                    
-        ! Manually set the cubature formula for the RHS as the above routine
-        ! uses the same for matrix and vectors.
-        p_rdiscretisation%RspatialDiscr(1)% &
-          RelementDistr(1)%ccubTypeLinForm = icubF
-                    
-        ! ...and copy this structure also to the discretisation structure
-        ! of the 2nd component (Y-velocity). This needs no additional memory, 
-        ! as both structures will share the same dynamic information afterwards.
-        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscr(1),&
-            p_rdiscretisation%RspatialDiscr(2))
-    
-        ! For the pressure (3rd component), we set up a separate discretisation 
-        ! structure, as this uses different finite elements for trial and test
-        ! functions.
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_QP1, icubB,p_rdiscretisation%RspatialDiscr(3))
-        
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q1, icubB,p_rdiscretisation%RspatialDiscr(4))
-                   
-                    
-      CASE (5)
-        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
-        ! discretisation structures for every component of the solution vector.
-        ! We have a solution vector with three components:
-        !  Component 1 = X-velocity
-        !  Component 2 = Y-velocity
-        !  Component 3 = Pressure
-        ! For simplicity, we set up one discretisation structure for the 
-        ! velocity...
-        CALL spdiscr_initDiscr_simple ( &
-                    p_rdiscretisation%RspatialDiscr(1), &
-                    EL_EM30_UNPIVOTED,icubA, &
-                    p_rtriangulation, p_rboundary)
-                    
-        ! Manually set the cubature formula for the RHS as the above routine
-        ! uses the same for matrix and vectors.
-        p_rdiscretisation%RspatialDiscr(1)% &
-          RelementDistr(1)%ccubTypeLinForm = icubF
-                    
-        ! ...and copy this structure also to the discretisation structure
-        ! of the 2nd component (Y-velocity). This needs no additional memory, 
-        ! as both structures will share the same dynamic information afterwards.
-        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscr(1),&
-            p_rdiscretisation%RspatialDiscr(2))
-    
-        ! For the pressure (3rd component), we set up a separate discretisation 
-        ! structure, as this uses different finite elements for trial and test
-        ! functions.
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q0, icubB,p_rdiscretisation%RspatialDiscr(3))
+      ! Initialise the block discretisation according to the element specifier.
+      call cc_getDiscretisation (ielementType,p_rdiscretisation,&
+          rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary, &
+          icubA, icubB, icubF)
+      
+      ! Probably initialise the element type that is to be used for the jump
+      ! stabilisation. A value of -1 means: use the same element(s).
+      ! In this case, we have to initialise rdiscretisationUEOStabil.
+      if (iElementTypeStabil .ne. -1) then
+        call cc_deriveDiscretisation (iElementTypeStabil,p_rdiscretisation,&
+            rproblem%RlevelInfo(i)%rdiscretisationStabil)
+      else
+        call spdiscr_deriveBlockDiscr (p_rdiscretisation,&
+            rproblem%RlevelInfo(i)%rdiscretisationStabil)
+      end if
+      
+      ! -----------------------------------------------------------------------
+      ! Mass matrices. They are used in so many cases, it's better we always
+      ! have them available.
+      ! -----------------------------------------------------------------------
 
-       
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q1, icubB,p_rdiscretisation%RspatialDiscr(4))
+      ! Initialise a discretisation structure for the mass matrices.
+      ! Copy the discretisation structure of the first (Stokes) block
+      ! and replace the cubature-formula identifier by that which is to be
+      ! used for the mass matrix.
+      call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(1), &
+          rproblem%RlevelInfo(i)%rdiscretisationMass,.true.)
+      call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(3), &
+          rproblem%RlevelInfo(i)%rdiscretisationMassPressure,.true.)
+          
+      p_rdiscretisationMass => rproblem%RlevelInfo(i)%rdiscretisationMass
+      p_rdiscretisationMassPressure => &
+          rproblem%RlevelInfo(i)%rdiscretisationMassPressure
+      
+      call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'scubStokes',sstr,'')
+      if (sstr .eq. '') then
+        call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'icubStokes',icubM,CUB_G2X2)
+      else
+        icubM = cub_igetID(sstr)
+      end if
+
+      ! Initialise the cubature formula appropriately.
+      do k = 1,p_rdiscretisationMass%inumFESpaces
+        p_rdiscretisationMass%RelementDistr(k)%ccubTypeBilForm = icubM
+        p_rdiscretisationMassPressure%RelementDistr(k)%ccubTypeBilForm = icubM
+      end do
+
+      ! Should we do mass lumping?
+      call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                      'IMASS', j, 0)
+                                      
+      if (j .eq. 0) then
+      
+        ! How to do lumping?
+        call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                        'IMASSLUMPTYPE', j, 0)
+                                        
+        ! Set cubature formula for lumping. The constant from the DAT file corresponds
+        ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
+        ! When to do simple mass lumping, replace the cubature formula by one
+        ! that is compatible with the corresponding element to generate
+        ! a diagonal mass matrix.
+        if (j .eq. LSYSSC_LUMP_STD) then
+          
+          do k = 1,p_rdiscretisationMass%inumFESpaces
             
+            j = spdiscr_getLumpCubature (&
+                p_rdiscretisationMass%RelementDistr(k)%celement)
+            if (j .ne. 0) then
+              icubM = j
+            else
+              call output_line (&
+                  'Unknown cubature formula for mass lumping!', &
+                  OU_CLASS_ERROR,OU_MODE_STD,'cc_initDiscretisation')
+              call sys_halt()
+            end if
             
-      CASE (6)
-        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
-        ! discretisation structures for every component of the solution vector.
-        ! We have a solution vector with three components:
-        !  Component 1 = X-velocity
-        !  Component 2 = Y-velocity
-        !  Component 3 = Pressure
-        ! For simplicity, we set up one discretisation structure for the 
-        ! velocity...
-        CALL spdiscr_initDiscr_simple ( &
-                    p_rdiscretisation%RspatialDiscr(1), &
-                    EL_EM30_UNSCALED,icubA, &
-                    p_rtriangulation, p_rboundary)
-                    
-        ! Manually set the cubature formula for the RHS as the above routine
-        ! uses the same for matrix and vectors.
-        p_rdiscretisation%RspatialDiscr(1)% &
-          RelementDistr(1)%ccubTypeLinForm = icubF
-                    
-        ! ...and copy this structure also to the discretisation structure
-        ! of the 2nd component (Y-velocity). This needs no additional memory, 
-        ! as both structures will share the same dynamic information afterwards.
-        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscr(1),&
-            p_rdiscretisation%RspatialDiscr(2))
-    
-        ! For the pressure (3rd component), we set up a separate discretisation 
-        ! structure, as this uses different finite elements for trial and test
-        ! functions.
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q0, icubB,p_rdiscretisation%RspatialDiscr(3))
+            ! Set the cubature formula appropriately
+            p_rdiscretisationMass%RelementDistr(k)%ccubTypeBilForm = icubM
+            p_rdiscretisationMassPressure%RelementDistr(k)%ccubTypeBilForm = icubM
+
+          end do
         
-        CALL spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),  &
-            EL_Q1, icubB,p_rdiscretisation%RspatialDiscr(4))
-       
-         
-      CASE DEFAULT
-        CALL output_line (&
-            'Unknown discretisation: iElementType = '//sys_siL(ielementType,10), &
-            OU_CLASS_ERROR,OU_MODE_STD,'cc_initDiscretisation')
-        CALL sys_halt()
-      END SELECT
+        end if
+      
+      end if
+      
+    end do
+                                   
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_getDiscretisation (ielementType,rdiscretisation,&
+     rtriangulation, rboundary, icubA, icubB, icubF)
       
       ! For the pressure (3rd component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
       ! functions.
   
                     
-      ! -----------------------------------------------------------------------
-      ! Time-dependent problem
-      ! -----------------------------------------------------------------------
+!<description>
+  ! Initialises a discretisation structure according to an element combination
+  ! identifier.
+!</description>
 
-      CALL parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                       'ITIMEDEPENDENCE', j, 0)
-      IF (j .NE. 0) THEN
-      
-        ! Initialise a discretisation structure for the mass matrix.
-        ! Copy the discretisation structure of the first (Stokes) block
-        ! and replace the cubature-formula identifier by that which is to be
-        ! used for the mass matrix.
-        CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(1), &
-            rproblem%RlevelInfo(i)%rdiscretisationMass, .TRUE.)
-            
-        p_rdiscretisationMass => rproblem%RlevelInfo(i)%rdiscretisationMass
-        
-        CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                    'scubStokes',sstr,'')
-        IF (sstr .EQ. '') THEN
-          CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                    'icubStokes',icubM,CUB_G2X2)
-        ELSE
-          icubM = cub_igetID(sstr)
-        END IF
+!<input>
+  ! Element combination identifier to use. The following identifiers are supported:
+  ! 0 = Q1~(E031) / Q1~(E031) / Q0
+  ! 1 = Q1~(E030) / Q1~(E030) / Q0
+  ! 2 = Q1~(EM31) / Q1~(EM31) / Q0
+  ! 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+  ! 4 = Q2 (E013) / Q2 (E013) / QP1
+  ! 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+  ! 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+  integer, intent(in) :: ielementType
+  
+  ! Boundary structure for the discretisation
+  type(t_boundary), intent(in), target :: rboundary
+  
+  ! Triangulation structure for the discretisation
+  type(t_triangulation), intent(in), target :: rtriangulation
+  
+  ! Cubature formula for the velocity matrices
+  integer, intent(in) :: icubA
+  
+  ! Cubature formula for the gradient/divergence matrices
+  integer, intent(in) :: icubB
+  
+  ! Cubature formula for linear forms (RHS vectors)
+  integer, intent(in) :: icubF
+!</input>
 
-        ! Initialise the cubature formula appropriately.
-        DO k = 1,p_rdiscretisationMass%inumFESpaces
-          p_rdiscretisationMass%RelementDistr(k)%ccubTypeBilForm = icubM
-        END DO
+!<output>
+  ! Block discretisation structure that defines the discretisation according
+  ! to ielementType.
+  type(t_blockDiscretisation), intent(out), target :: rdiscretisation
+!</output>
 
-        ! Should we do mass lumping?
-        CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASS', j, 0)
-                                        
-        IF (j .EQ. 0) THEN
-        
-          ! How to do lumping?
-          CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                          'IMASSLUMPTYPE', j, 0)
-                                          
-          ! Set cubature formula for lumping. The constant from the DAT file corresponds
-          ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
-          ! When to do simple mass lumping, replace the cubature formula by one
-          ! that is compatible with the corresponding element to generate
-          ! a diagonal mass matrix.
-          IF (j .EQ. LSYSSC_LUMP_STD) THEN
-            
-            DO k = 1,p_rdiscretisationMass%inumFESpaces
-              
-              j = spdiscr_getLumpCubature (&
-                  p_rdiscretisationMass%RelementDistr(k)%celement)
-              IF (j .NE. 0) THEN
-                icubM = j
-              ELSE
-                CALL output_line (&
-                    'Unknown cubature formula for mass lumping!', &
-                    OU_CLASS_ERROR,OU_MODE_STD,'cc_initDiscretisation')
-                CALL sys_halt()
-              END IF
-              
-              ! Set the cubature formula appropriately
-              p_rdiscretisationMass%RelementDistr(k)%ccubTypeBilForm = icubM
+!</subroutine>
 
-            END DO
-          
-          END IF
-        
-        END IF
-       
-      END IF
-      
-    END DO
-                                   
-  END SUBROUTINE
+  ! Number of equations in our problem. velocity+velocity+pressure+Concentration = 4
+  integer, parameter :: nequations = 4
+  
+  ! local variables
+  integer :: ieltypeUV, ieltypeP, ieltypeC
+  
+    ! Initialise the element type identifiers according to ielementType
+    select case (ielementType)
+    case (0)
+      ieltypeUV = EL_E031
+      ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
+
+    case (1)
+      ieltypeUV = EL_E030
+      ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
+
+    case (2)
+      ieltypeUV = EL_EM31
+      ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
+
+    case (3)
+      ieltypeUV = EL_EM30
+      ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
+
+    case (4)
+      ieltypeUV = EL_Q2
+      ieltypeP = EL_QP1
+      ieltypeC = EL_Q1
+                  
+    case (5)
+      ieltypeUV = EL_EM30_UNPIVOTED
+      ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
+
+    case (6)
+      ieltypeUV = EL_EM30_UNSCALED
+      ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
+
+    case (7)
+      ieltypeUV = EL_EB50
+      ieltypeP = EL_QP1
+      ieltypeC = EL_Q1
+
+    case default
+      call output_line (&
+          'Unknown discretisation: iElementType = '//sys_siL(ielementType,10), &
+          OU_CLASS_ERROR,OU_MODE_STD,'cc_initDiscretisation')
+      call sys_halt()
+    end select
+  
+    ! Now we can start to initialise the discretisation. At first, set up
+    ! a block discretisation structure that specifies 3 blocks in the
+    ! solution vector.
+    call spdiscr_initBlockDiscr2D (&
+        rdiscretisation,nequations,rtriangulation,rboundary)
+
+    ! rdiscretisation%RspatialDiscr is a list of scalar 
+    ! discretisation structures for every component of the solution vector.
+    ! We have a solution vector with three components:
+    !  Component 1 = X-velocity
+    !  Component 2 = Y-velocity
+    !  Component 3 = Pressure
+    ! For simplicity, we set up one discretisation structure for the 
+    ! velocity...
+    call spdiscr_initDiscr_simple ( &
+        rdiscretisation%RspatialDiscr(1), &
+        ieltypeUV,icubA,rtriangulation, rboundary)
+                
+    ! Manually set the cubature formula for the RHS as the above routine
+    ! uses the same for matrix and vectors.
+    rdiscretisation%RspatialDiscr(1)% &
+      RelementDistr(1)%ccubTypeLinForm = icubF
+                
+    ! ...and copy this structure also to the discretisation structure
+    ! of the 2nd component (Y-velocity). This needs no additional memory, 
+    ! as both structures will share the same dynamic information afterwards.
+    call spdiscr_duplicateDiscrSc(rdiscretisation%RspatialDiscr(1),&
+        rdiscretisation%RspatialDiscr(2))
+
+    ! For the pressure (3rd component), we set up a separate discretisation 
+    ! structure, as this uses different finite elements for trial and test
+    ! functions.
+    call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1),  &
+        ieltypeP, icubB,rdiscretisation%RspatialDiscr(3))
+
+    ! The 4th block is the concentration.
+    call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1),  &
+        ieltypeC, icubB,rdiscretisation%RspatialDiscr(4))
+  
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_doneDiscretisation (rproblem)
+  subroutine cc_deriveDiscretisation (ielementType,rsourceDiscretisation,&
+     rdestDiscretisation)
+
+!<description>
+  ! Derives a 'compatible' discretisation from an existing discretisation
+  ! and changes the element pair.
+!</description>
+
+!<input>
+  ! Element combination identifier to use for the destination discretisation.
+  ! The following identifiers are supported:
+  ! 0 = Q1~(E031) / Q1~(E031) / Q0
+  ! 1 = Q1~(E030) / Q1~(E030) / Q0
+  ! 2 = Q1~(EM31) / Q1~(EM31) / Q0
+  ! 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+  ! 4 = Q2 (E013) / Q2 (E013) / QP1
+  ! 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+  ! 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+  integer, intent(in) :: ielementType
+
+  ! Block discretisation structure that defines the template discretisation
+  ! which element pair is to be changed.
+  type(t_blockDiscretisation), intent(in), target :: rsourceDiscretisation
+  
+!</input>
+
+!<output>
+  ! Destination discretisation structure. Receives a copy of the source
+  ! discretisation with the element type changed according to ielementType.
+  type(t_blockDiscretisation), intent(out), target :: rdestDiscretisation
+!</output>
+
+!</subroutine>
+
+  ! Number of equations in our problem. velocity+velocity+pressure = 3
+  integer, parameter :: nequations = 3
+  
+  ! local variables
+  integer :: ieltypeUV, ieltypeP
+  
+    ! Initialise the element type identifiers according to ielementType
+    select case (ielementType)
+    case (0)
+      ieltypeUV = EL_E031
+      ieltypeP = EL_Q0
+
+    case (1)
+      ieltypeUV = EL_E030
+      ieltypeP = EL_Q0
+
+    case (2)
+      ieltypeUV = EL_EM31
+      ieltypeP = EL_Q0
+
+    case (3)
+      ieltypeUV = EL_EM30
+      ieltypeP = EL_Q0
+
+    case (4)
+      ieltypeUV = EL_Q2
+      ieltypeP = EL_QP1
+                  
+    case (5)
+      ieltypeUV = EL_EM30_UNPIVOTED
+      ieltypeP = EL_Q0
+
+    case (6)
+      ieltypeUV = EL_EM30_UNSCALED
+      ieltypeP = EL_Q0
+
+    case (7)
+      ieltypeUV = EL_EB50
+      ieltypeP = EL_QP1
+
+    case default
+      call output_line (&
+          'Unknown discretisation: iElementType = '//sys_siL(ielementType,10), &
+          OU_CLASS_ERROR,OU_MODE_STD,'cc_initDiscretisation')
+      call sys_halt()
+    end select
+  
+    ! Copy the source discretisation structure.
+    call spdiscr_deriveBlockDiscr (rsourceDiscretisation,rdestDiscretisation)
+    
+    ! Replace the spatial discretisation structures inside by new ones
+    ! with the correct element type.
+    call spdiscr_deriveSimpleDiscrSc (rsourceDiscretisation%RspatialDiscr(1),  &
+        ieltypeUV, SPDISC_CUB_NOCHANGE,rdestDiscretisation%RspatialDiscr(1))
+        
+    call spdiscr_deriveSimpleDiscrSc (rsourceDiscretisation%RspatialDiscr(2),  &
+        ieltypeUV, SPDISC_CUB_NOCHANGE,rdestDiscretisation%RspatialDiscr(2))
+        
+    call spdiscr_deriveSimpleDiscrSc (rsourceDiscretisation%RspatialDiscr(3),  &
+        ieltypeP, SPDISC_CUB_NOCHANGE,rdestDiscretisation%RspatialDiscr(3))
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_doneDiscretisation (rproblem)
   
 !<description>
   ! Releases the discretisation from the heap.
@@ -514,39 +529,32 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,j
+  integer :: i
 
-    DO i=rproblem%NLMAX,rproblem%NLMIN,-1
+    do i=rproblem%NLMAX,rproblem%NLMIN,-1
       
       ! Remove the block discretisation structure and all substructures.
-      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation)
+      call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation)
       
-      ! -----------------------------------------------------------------------
-      ! Time-dependent problem
-      ! -----------------------------------------------------------------------
+      ! Release the mass matrix discretisation.
+      call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rdiscretisationMass)
+      call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rdiscretisationMassPressure)
 
-      CALL parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                       'ITIMEDEPENDENCE', j, 0)
-      IF (j .NE. 0) THEN
-        ! Release the mass matrix discretisation.
-        CALL spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rdiscretisationMass)
-      END IF
-
-    END DO
+    end do
     
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_allocMatVec (rproblem,rvector,rrhs)
+  subroutine cc_allocMatVec (rproblem,rvector,rrhs)
   
 !<description>
   ! Allocates memory for all matrices and vectors of the problem on the heap
@@ -558,38 +566,45 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
   
   ! A vector structure for the solution vector. The structure is initialised,
   ! memory is allocated for the data entries.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 
   ! A vector structure for the RHS vector. The structure is initialised,
   ! memory is allocated for the data entries.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
+  type(t_vectorBlock), intent(INOUT) :: rrhs
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,cmatBuildType
+  integer :: i,cmatBuildType,istrongDerivativeBmatrix
   
     ! A pointer to the system matrix and the RHS/solution vectors.
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes, p_rmatrixTemplateQ1
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplatePMass, p_rmatrixTemplateCoupMass
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM,p_rmatrixTemplateGradient
+    type(t_matrixScalar), pointer :: p_rmatrixStokes,p_rmatrixTemplateFEM
+    type(t_matrixScalar), pointer :: p_rmatrixTemplatePMass, p_rmatrixTemplateCoupMass
+    type(t_matrixScalar), pointer :: p_rmatrixTemplateFEMPressure
+    type(t_matrixScalar), pointer :: p_rmatrixTemplateGradient,p_rmatrixTemplateQ1
     
     ! A pointer to the discretisation structure with the data.
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+  
+    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
   
     ! When the jump stabilisation is used, we have to create an extended
     ! matrix stencil!
     cmatBuildType = BILF_MATC_ELEMENTBASED
     
-    IF (rproblem%rstabilisation%iupwind .EQ. 2) cmatBuildType = BILF_MATC_EDGEBASED
+    if ((rproblem%rstabilisation%iupwind .eq. CCMASM_STAB_EDGEORIENTED) .or. &
+        (rproblem%rstabilisation%iupwind .eq. CCMASM_STAB_FASTEDGEORIENTED)) then
+      cmatBuildType = BILF_MATC_EDGEBASED
+    end if
   
     ! Initialise all levels...
-    DO i=rproblem%NLMIN,rproblem%NLMAX
+    do i=rproblem%NLMIN,rproblem%NLMAX
 
       ! -----------------------------------------------------------------------
       ! Basic (Navier-) Stokes problem
@@ -619,9 +634,18 @@ CONTAINS
       p_rmatrixTemplateFEM => rproblem%RlevelInfo(i)%rmatrixTemplateFEM
 
       ! Create the matrix structure
-      CALL bilf_createMatrixStructure (&
+      call bilf_createMatrixStructure (&
                 p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrixTemplateFEM,cconstrType=cmatBuildType)
+
+      ! Create a template matrix for the pressure block.
+      p_rmatrixTemplateFEMPressure => rproblem%RlevelInfo(i)%rmatrixTemplateFEMPressure
+      
+      ! Create the matrices structure of the pressure using the 3rd
+      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
+      call bilf_createMatrixStructure (&
+                p_rdiscretisation%RspatialDiscr(3),LSYSSC_MATRIX9,&
+                p_rmatrixTemplateFEMPressure)
 
       ! In the global system, there are two gradient matrices B1 and B2.
       ! Create a template matrix that defines their structure.
@@ -629,7 +653,7 @@ CONTAINS
       
       ! Create the matrices structure of the pressure using the 3rd
       ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
-      CALL bilf_createMatrixStructure (&
+      call bilf_createMatrixStructure (&
                 p_rdiscretisation%RspatialDiscr(3),LSYSSC_MATRIX9,&
                 p_rmatrixTemplateGradient,p_rdiscretisation%RspatialDiscr(1))
       
@@ -665,11 +689,11 @@ CONTAINS
       !
       ! Don't create a content array yet, it will be created by 
       ! the assembly routines later.
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                   p_rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       
       ! Allocate memory for the entries; don't initialise the memory.
-      CALL lsyssc_allocEmptyMatrix (p_rmatrixStokes,LSYSSC_SETM_UNDEFINED)
+      call lsyssc_allocEmptyMatrix (p_rmatrixStokes,LSYSSC_SETM_UNDEFINED)
       
       ! In the global system, there are two coupling matrices B1 and B2.
       ! Both have the structure of the template gradient matrix.
@@ -680,18 +704,43 @@ CONTAINS
       !
       ! Don't create a content array yet, it will be created by 
       ! the assembly routines later.
-      
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateGradient,&
-                  rproblem%RlevelInfo(i)%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                  
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateGradient,&
-                  rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                
       ! Allocate memory for the entries; don't initialise the memory.
-      CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
+      
+      call lsyssc_duplicateMatrix (p_rmatrixTemplateGradient,&
+          rproblem%RlevelInfo(i)%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                  
+      call lsyssc_duplicateMatrix (p_rmatrixTemplateGradient,&
+          rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                
+      call lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
                                            LSYSSC_SETM_UNDEFINED)
-      CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
+                                           
+      call lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
                                            LSYSSC_SETM_UNDEFINED)
+
+      ! Set up memory for the divergence matrices B1^T and B2^T.
+      ! Virtually transpose B1/B2 and probably allocate memory, depending on what
+      ! we need. This gives us the divergence matrices D1 and D2.
+      call lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
+          rproblem%RlevelInfo(i)%rmatrixD1,LSYSSC_TR_VIRTUAL)
+
+      call lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
+          rproblem%RlevelInfo(i)%rmatrixD2,LSYSSC_TR_VIRTUAL)
+
+      if (istrongDerivativeBmatrix .eq. 1) then
+
+        ! Allocate new memory for the entries of D1 and D2.
+        
+        call lsyssc_releaseMatrixContent(rproblem%RlevelInfo(i)%rmatrixD1)
+        call lsyssc_releaseMatrixContent(rproblem%RlevelInfo(i)%rmatrixD2)
+
+        call lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixD1,&
+            LSYSSC_SETM_UNDEFINED)
+                                            
+        call lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixD2,&
+            LSYSSC_SETM_UNDEFINED)
+
+      end if
 
       ! -----------------------------------------------------------------------
       ! Temporary vectors
@@ -699,13 +748,13 @@ CONTAINS
       ! Now on all levels except for the maximum one, create a temporary 
       ! vector on that level, based on the block discretisation structure.
       ! It's used for building the matrices on lower levels.
-      IF (i .LT. rproblem%NLMAX) THEN
-        CALL lsysbl_createVecBlockByDiscr (&
+      if (i .lt. rproblem%NLMAX) then
+        call lsysbl_createVecBlockByDiscr (&
             rproblem%RlevelInfo(i)%rdiscretisation,&
-            rproblem%RlevelInfo(i)%rtempVector,.TRUE.)
-      END IF
+            rproblem%RlevelInfo(i)%rtempVector,.true.)
+      end if
 
-    END DO
+    end do
     
     ! (Only) on the finest level, we need to have to allocate a RHS vector
     ! and a solution vector.
@@ -714,18 +763,19 @@ CONTAINS
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template.
     ! Initialise the vectors with 0.
-    CALL lsysbl_createVecBlockByDiscr (&
-        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rrhs,.TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (&
-        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rvector,.TRUE.)
+    call lsysbl_createVecBlockByDiscr (&
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rrhs,.true.)
+        
+    call lsysbl_createVecBlockByDiscr (&
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rvector,.true.)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_generateStaticMatrices (rproblem,rlevelInfo)
+  subroutine cc_generateStaticMatrices (rproblem,rlevelInfo)
   
 !<description>
   ! Calculates entries of all static matrices (Stokes, B-matrices,...)
@@ -739,33 +789,39 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 
   ! A level-info structure. The static matrices in this structure are generated.
-  TYPE(t_problem_lvl), INTENT(INOUT),TARGET :: rlevelInfo
+  type(t_problem_lvl), intent(INOUT),target :: rlevelInfo
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: j
+    integer :: j,istrongDerivativeBmatrix
 
     ! A pointer to the Stokes and mass matrix
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes,p_rmatrixMass
+    type(t_matrixScalar), pointer :: p_rmatrixStokes
     
     ! A pointer to the PMass and masscoup matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplatePMass, p_rmatrixTemplateCoupMass
     
     ! A pointer to the discretisation structure with the data.
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    
+    ! Structure for a precomputed jump stabilisation matrix
+    type(t_jumpStabilisation) :: rjumpStabil
     
     ! Structure for the bilinear form for assembling Stokes,...
     ! TYPE(t_bilinearForm) :: rform
 
+    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
+
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
     
     ! -----------------------------------------------------------------------
     ! Basic (Navier-) Stokes problem
@@ -779,9 +835,9 @@ CONTAINS
     
     ! The global system looks as follows:
     !
-    !    ( A         B1 )
-    !    (      A    B2 )
-    !    ( B1^T B2^T    )
+    !    ( A         B1 )   ( A         B1 )
+    !    (      A    B2 ) = (      A    B2 )
+    !    ( B1^T B2^T    )   ( D1   D2      )
     !
     ! with A = L + nonlinear Convection. We compute in advance
     ! a standard Stokes matrix L which can be added later to the
@@ -822,77 +878,163 @@ CONTAINS
     ! above. It directly sets up the Laplace matrix.
     ! If it's necessary to modify the Laplace matrix, remove this command
     ! and comment in the stuff above.
-    CALL stdop_assembleLaplaceMatrix (p_rmatrixStokes,.TRUE.,rproblem%dnu)
+    call stdop_assembleLaplaceMatrix (p_rmatrixStokes,.true.,rproblem%dnu)
     
     ! In the global system, there are two coupling matrices B1 and B2.
-    !
-    ! Build the first pressure matrix B1.
-    CALL stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB1,&
-        DER_FUNC,DER_DERIV_X,-1.0_DP)
-
-    ! Build the second pressure matrix B2.
-    CALL stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB2,&
-        DER_FUNC,DER_DERIV_Y,-1.0_DP)
+    ! These are build either as "int p grad(phi)" (standard case)
+    ! or as "int grad(p) phi" (special case, only for nonconstant pressure).
     
+    if (istrongDerivativeBmatrix .eq. 0) then
+
+      ! Standard case.
+    
+      ! Build the first pressure matrix B1.
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB1,&
+          DER_FUNC,DER_DERIV_X,-1.0_DP)
+
+      ! Build the second pressure matrix B2.
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB2,&
+          DER_FUNC,DER_DERIV_Y,-1.0_DP)
+      
+      ! Set up the matrices D1 and D2.
+      ! For that purpose, virtually transpose B1/B2.
+      call lsyssc_transposeMatrix (rlevelInfo%rmatrixB1,&
+          rlevelInfo%rmatrixD1,LSYSSC_TR_VIRTUAL)
+
+      call lsyssc_transposeMatrix (rlevelInfo%rmatrixB2,&
+          rlevelInfo%rmatrixD2,LSYSSC_TR_VIRTUAL)
+          
+    else if (istrongDerivativeBmatrix .eq. 1) then
+    
+      ! Special case for nonconstant pressure.
+    
+      ! Build the first pressure matrix B1.
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB1,&
+          DER_DERIV_X,DER_FUNC,1.0_DP)
+
+      ! Build the second pressure matrix B2.
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB2,&
+          DER_DERIV_Y,DER_FUNC,1.0_DP)
+      
+      ! Virtually transpose D1 and D2 so that we can set them up.
+      ! They are saved virtually transposed at the moment, so doing that again
+      ! will give us non-transposed matrices.
+      call lsyssc_transposeMatrixInSitu (rlevelInfo%rmatrixD1,&
+          LSYSSC_TR_VIRTUAL)
+
+      call lsyssc_transposeMatrixInSitu (rlevelInfo%rmatrixD2,&
+          LSYSSC_TR_VIRTUAL)
+      
+      ! Build the first divergence matrix D1^T
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixD1,&
+          DER_FUNC,DER_DERIV_X,-1.0_DP)
+
+      ! Build the second divergence matrix D2^T
+      call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixD2,&
+          DER_FUNC,DER_DERIV_Y,-1.0_DP)
+          
+      ! Ok, finally return their state to 'virtually transposed'.
+      call lsyssc_transposeMatrixInSitu (rlevelInfo%rmatrixD1,LSYSSC_TR_VIRTUAL)
+
+      call lsyssc_transposeMatrixInSitu (rlevelInfo%rmatrixD2,LSYSSC_TR_VIRTUAL)
+    
+    end if
+          
+    ! Concentration mass matrices          
     CALL stdop_assembleSimpleMatrix (rlevelInfo%rmatrixTemplatePMass,&
         DER_FUNC,DER_FUNC,1.0_DP)
         
     CALL stdop_assembleSimpleMatrix (rlevelInfo%rmatrixTemplateCoupMass,&
         DER_FUNC,DER_FUNC,1.0_DP)                            
+                              
     ! -----------------------------------------------------------------------
-    ! Time-dependent problem
+    ! Fast edge-oriented stabilisation
     ! -----------------------------------------------------------------------
 
-    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                     'ITIMEDEPENDENCE', j, 0)
-     !IF (j .NE. 0) THEN
+    if (rproblem%rstabilisation%iupwind .eq. CCMASM_STAB_FASTEDGEORIENTED) then
     
-      p_rmatrixMass => rlevelInfo%rmatrixMass
+      ! Precompute the jump stabilisation matrix.
+      !
+      ! Set up the jump stabilisation structure.
+      ! There's not much to do, only initialise the viscosity...
+      rjumpStabil%dnu = rproblem%dnu
+      
+      ! Set stabilisation parameter
+      rjumpStabil%dgammastar = rproblem%rstabilisation%dupsam
+      rjumpStabil%dgamma = rjumpStabil%dgammastar
+      
+      ! Matrix weight
+      rjumpStabil%dtheta = 1.0_DP
+      
+      ! Allocate an empty matrix
+      call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
+                  rlevelInfo%rmatrixStabil,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rlevelInfo%rmatrixStabil)
 
-      ! If there is an existing mass matrix, release it.
-      CALL lsyssc_releaseMatrix (rlevelInfo%rmatrixMass)
+      ! Call the jump stabilisation technique to precalculate the
+      ! matrix. The operator is assumed to be linear, so we can just
+      ! precompute it.
+      call conv_jumpStabilisation2d (&
+          rjumpStabil, CONV_MODMATRIX, rlevelInfo%rmatrixStabil,&
+          rdiscretisation=rlevelInfo%rdiscretisationStabil%RspatialDiscr(1))
+      
+    end if
+                                
+    ! -----------------------------------------------------------------------
+    ! Mass matrices. They are used in so many cases, it's better we always
+    ! have them available.
+    ! -----------------------------------------------------------------------
 
-      ! Generate mass matrix. The matrix has basically the same structure as
-      ! our template FEM matrix, so we can take that.
-      CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
-                  p_rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                  
-      ! Change the discretisation structure of the mass matrix to the
-      ! correct one; at the moment it points to the discretisation structure
-      ! of the Stokes matrix...
-      CALL lsyssc_assignDiscretDirectMat (p_rmatrixMass,rlevelInfo%rdiscretisationMass)
+    ! If there is an existing mass matrix, release it.
+    call lsyssc_releaseMatrix (rlevelInfo%rmatrixMass)
+    call lsyssc_releaseMatrix (rlevelInfo%rmatrixMassPressure)
 
-      ! Call the standard matrix setup routine to build the matrix.                    
-      CALL stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
-                  
-      ! Should we do mass lumping?
-      CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                      'IMASS', j, 0)
+    ! Generate mass matrix. The matrix has basically the same structure as
+    ! our template FEM matrix, so we can take that.
+    call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
+                rlevelInfo%rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEMPressure,&
+                rlevelInfo%rmatrixMassPressure,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                
+    ! Change the discretisation structure of the mass matrix to the
+    ! correct one; at the moment it points to the discretisation structure
+    ! of the Stokes matrix...
+    call lsyssc_assignDiscretDirectMat (rlevelInfo%rmatrixMass,&
+        rlevelInfo%rdiscretisationMass)
+    call lsyssc_assignDiscretDirectMat (rlevelInfo%rmatrixMassPressure,&
+        rlevelInfo%rdiscretisationMassPressure)
+
+    ! Call the standard matrix setup routine to build the matrix.                    
+    call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMass,DER_FUNC,DER_FUNC)
+    call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMassPressure,DER_FUNC,DER_FUNC)
+                
+    ! Should we do mass lumping?
+    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                    'IMASS', j, 0)
+                                    
+    if (j .eq. 0) then
+    
+      ! How to do lumping?
+      call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                      'IMASSLUMPTYPE', j, 0)
                                       
-         IF (j .EQ. 0) THEN
-      
-        ! How to do lumping?
-        CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASSLUMPTYPE', j, 0)
-                                        
-        ! Lump the mass matrix. The constant from the DAT file corresponds
-        ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
-        CALL lsyssc_lumpMatrixScalar (p_rmatrixMass,j)
-      
-      END IF
-      
-    !END IF
+      ! Lump the mass matrix. The constant from the DAT file corresponds
+      ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
+      call lsyssc_lumpMatrixScalar (rlevelInfo%rmatrixMass,j)
+      call lsyssc_lumpMatrixScalar (rlevelInfo%rmatrixMassPressure,j)
+    
+    end if
 
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_generateBasicMatrices (rproblem)
+  subroutine cc_generateBasicMatrices (rproblem)
   
 !<description>
   ! Calculates the entries of all static matrices (Mass, B,...) on all levels.
@@ -903,26 +1045,26 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: i
+    integer :: i
 
-    DO i=rproblem%NLMIN,rproblem%NLMAX
-      CALL cc_generateStaticMatrices (&
+    do i=rproblem%NLMIN,rproblem%NLMAX
+      call cc_generateStaticMatrices (&
           rproblem,rproblem%RlevelInfo(i))
-    END DO
+    end do
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_generateBasicRHS (rproblem,rrhs)
+  subroutine cc_generateBasicRHS (rproblem,rrhs)
   
 !<description>
   ! Calculates the entries of the basic right-hand-side vector on the finest
@@ -933,21 +1075,21 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
   
   ! The RHS vector which is to be filled with data.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
+  type(t_vectorBlock), intent(INOUT) :: rrhs
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
   
-    ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_linearForm) :: rlinform
+    ! A linear form describing the analytic problem to solve
+    type(t_linearForm) :: rlinform
     
     ! A pointer to the discretisation structure with the data.
-    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Get a pointer to the RHS on the finest level as well as to the
     ! block discretisation structure:
@@ -972,23 +1114,23 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Discretise the X-velocity part:
-    CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(1),rlinform,.TRUE.,&
+    call linf_buildVectorScalar (&
+              p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
               rrhs%RvectorBlock(1),coeff_RHS_x,&
               rproblem%rcollection)
 
     ! And the Y-velocity part:
-    CALL linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(2),rlinform,.TRUE.,&
+    call linf_buildVectorScalar (&
+              p_rdiscretisation%RspatialDiscr(2),rlinform,.true.,&
               rrhs%RvectorBlock(2),coeff_RHS_y,&
               rproblem%rcollection)
                                 
     ! The third subvector must be zero initially - as it represents the RHS of
     ! the equation "div(u) = 0".
-    CALL lsyssc_clearVector(rrhs%RvectorBlock(3))
+    call lsyssc_clearVector(rrhs%RvectorBlock(3))
     
     
     !Disctretise the C-concentration part:
@@ -997,117 +1139,307 @@ CONTAINS
               rrhs%RvectorBlock(4),coeff_RHS_C,&
               rproblem%rcollection)                            
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_initInitialSolution (rproblem,rvector)
+  subroutine cc_initInitialSolution (rproblem,rvector)
   
 !<description>
   ! Initialises the initial solution vector into rvector. Depending on the settings
   ! in the DAT file this is either zero or read from a file.
+  !
+  ! The routine assumes that basic mass matrices have already been constructed.
 !</description>
 
 !<input>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(IN) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</input>
 
 !<inputoutput>
   ! The solution vector to be initialised. Must be set up according to the
   ! maximum level NLMAX in rproblem!
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(I32) :: istart
-    TYPE(t_vectorBlock) :: rvector1,rvector2
-    TYPE(t_vectorScalar) :: rvectorTemp
-    CHARACTER(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
-    INTEGER :: ilev
-    INTEGER(PREC_VECIDX) :: NEQ
-    TYPE(t_interlevelProjectionBlock) :: rprojection 
+    integer(I32) :: istart,ctypeInitialSolution
+    type(t_vectorBlock) :: rvector1,rvector2
+    type(t_vectorScalar) :: rvectorTemp
+    character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
+    integer :: ilev,ierror
+    integer(PREC_VECIDX) :: NEQ
+    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_linearForm) :: rlinform
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
+    type(t_matrixBlock), dimension(1) :: Rmatrices
+    type(t_vectorBlock) :: rsingleRHS,rsingleSol
 
     ! Get the parameter what to do with rvector
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'ctypeInitialSolution',ctypeInitialSolution,0)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'isolutionStart',istart,0)
-    CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'ssolutionStart',sfileString,'')
 
-    ! Create a temp vector at level NLMAX-istart+1.
-    ilev = rproblem%NLMAX-ABS(istart)+1
-    
-    IF (ilev .LT. rproblem%NLMIN) THEN
-      CALL output_line (&
-          'Level of start vector is < NLMIN! Initialising with zero!', &
-          OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
-      istart = 0
-    END IF
-    
-    ! Inít with zero? Read from file?
-    IF (istart .EQ. 0) THEN
+    ! What is the type of the initial solution?
+    select case (ctypeInitialSolution)
+    case (0)
       ! Init with zero
-      CALL lsysbl_clearVector (rvector)
-    ELSE
-      ! Remove possible ''-characters
-      READ(sfileString,*) sfile
+      call lsysbl_clearVector (rvector)
+      
+    case (1,2)
+      ! We have to read a file -- formatted or unformatted.
+      !
+      ! Create a temp vector at level NLMAX-istart+1.
+      if (istart .gt. 0) then
+        ilev = istart
+      else
+        ilev = rproblem%NLMAX-abs(istart)+1
+      end if
+      
+      if (ilev .lt. rproblem%NLMIN) then
+        call output_line (&
+            'Level of start vector is < NLMIN! Initialising with zero!', &
+            OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
+        istart = 0
+      end if
 
-      CALL lsysbl_createVectorBlock (&
-          rproblem%RlevelInfo(ilev)%rdiscretisation,rvector1,.FALSE.)
+      if (ilev .gt. rproblem%NLMAX) then
+        call output_line (&
+            'Level of start vector is > NLMAX! Initialising with zero!', &
+            OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
+        istart = 0
+      end if
+      
+      ! Remove possible ''-characters
+      read(sfileString,*) sfile
+
+      call lsysbl_createVectorBlock (&
+          rproblem%RlevelInfo(ilev)%rdiscretisation,rvector1,.false.)
       
       ! Read in the vector
-      CALL vecio_readBlockVectorHR (&
-          rvector1, sarray, .TRUE., 0, sfile, istart .GT. 0)
+      call vecio_readBlockVectorHR (&
+          rvector1, sarray, .true., 0, sfile, istart .gt. 0)
           
       ! If the vector is on level < NLMAX, we have to bring it to level NLMAX
-      DO WHILE (ilev .LT. rproblem%NLMAX)
+      do while (ilev .lt. rproblem%NLMAX)
         
         ! Initialise a vector for the higher level and a prolongation structure.
-        CALL lsysbl_createVectorBlock (&
-            rproblem%RlevelInfo(ilev+1)%rdiscretisation,rvector2,.FALSE.)
+        call lsysbl_createVectorBlock (&
+            rproblem%RlevelInfo(ilev+1)%rdiscretisation,rvector2,.false.)
         
-        CALL mlprj_initProjectionVec (rprojection,rvector2)
+        call mlprj_initProjectionVec (rprojection,rvector2)
         
         ! Prolongate to the next higher level.
 
         NEQ = mlprj_getTempMemoryVec (rprojection,rvector1,rvector2)
-        IF (NEQ .NE. 0) CALL lsyssc_createVector (rvectorTemp,NEQ,.FALSE.)
-        CALL mlprj_performProlongation (rprojection,rvector1, &
+        if (NEQ .ne. 0) call lsyssc_createVector (rvectorTemp,NEQ,.false.)
+        call mlprj_performProlongation (rprojection,rvector1, &
                                         rvector2,rvectorTemp)
-        IF (NEQ .NE. 0) CALL lsyssc_releaseVector (rvectorTemp)
+        if (NEQ .ne. 0) call lsyssc_releaseVector (rvectorTemp)
         
         ! Swap rvector1 and rvector2. Release the coarse grid vector.
-        CALL lsysbl_swapVectors (rvector1,rvector2)
-        CALL lsysbl_releaseVector (rvector2)
+        call lsysbl_swapVectors (rvector1,rvector2)
+        call lsysbl_releaseVector (rvector2)
         
-        CALL mlprj_doneProjection (rprojection)
+        call mlprj_doneProjection (rprojection)
         
         ! rvector1 is now on level ilev+1
         ilev = ilev+1
         
-      END DO
+      end do
       
       ! Copy the resulting vector rvector1 to the output.
-      CALL lsysbl_copyVector (rvector1,rvector)
+      call lsysbl_copyVector (rvector1,rvector)
       
       ! Release the temp vector
-      CALL lsysbl_releaseVector (rvector1)
-      
-    END IF
+      call lsysbl_releaseVector (rvector1)
 
-  END SUBROUTINE
+    case (3)
+    
+      ! We have to create the solution by analytical callback functions.
+      ! To do this for an arbitrary finite element, we have to do an
+      ! L2 projection for X,Y and P. That means we have to solve:
+      !     <u,phi> = <u_analytic,phi>
+      ! which means in the FE context:
+      !     Mu = f
+      ! with f a RHS created by analytical point values.
+
+      if (rproblem%MSHOW_Initialisation .ge. 1) &
+        call output_line('Preparing L2 projection of analytical initial solution...')
+
+      ! Get a pointer to the RHS on the finest level as well as to the
+      ! block discretisation structure:
+      p_rdiscretisation => rvector%p_rblockDiscr
+      
+      ! The vector structure is already prepared, but the entries are missing.
+      !
+      ! At first set up the corresponding linear form (u_analytical,Phi_j):
+      rlinform%itermCount = 1
+      rlinform%Idescriptors(1) = DER_FUNC
+      
+      ! Create a temp vector as RHS.
+      call lsysbl_createVectorBlock (&
+          rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rvector1,.false.)
+      
+      ! Assemble the RHS.
+      !
+      ! Initialise the collection for the assembly process with callback routines.
+      ! Basically, this stores the simulation time in the collection if the
+      ! simulation is nonstationary.
+      call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+
+      ! Discretise the X-velocity part:
+      call linf_buildVectorScalar (&
+                p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
+                rvector1%RvectorBlock(1),coeff_AnalyticSolution_X,&
+                rproblem%rcollection)
+
+      ! Y-velocity:
+      call linf_buildVectorScalar (&
+                p_rdiscretisation%RspatialDiscr(2),rlinform,.true.,&
+                rvector1%RvectorBlock(2),coeff_AnalyticSolution_Y,&
+                rproblem%rcollection)
+
+      ! Pressure:
+      call linf_buildVectorScalar (&
+                p_rdiscretisation%RspatialDiscr(3),rlinform,.true.,&
+                rvector1%RvectorBlock(3),coeff_AnalyticSolution_P,&
+                rproblem%rcollection)
+                                  
+      ! Clean up the collection (as we are done with the assembly.
+      call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+      
+      ! Now prepare a linear solver for solving with the mass matrix.
+      ! This is just a simple 1-level Jacobi solver as the mass matrix
+      ! is usually well conditioned.
+      call linsol_initJacobi (p_rpreconditioner, 0.8_DP)
+      call linsol_initDefCorr (p_rsolverNode, p_rpreconditioner)
+      
+      p_rsolverNode%depsRel = SYS_EPSREAL * 100.0_DP
+      p_rsolverNode%nmaxiterations = 1000
+      p_rsolverNode%ioutputLevel = 1
+
+      if (rproblem%MSHOW_Initialisation .ge. 1) &
+        call output_line('Solving L2 projection for U1...')
+      
+      ! We solve separately for the three components.
+      ! Prepare the solver for the velocity.
+      ! Prepare the solver for the X-velocity.
+      call lsysbl_createMatFromScalar(&
+          rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass,Rmatrices(1))
+      call linsol_setMatrices (p_rsolverNode,Rmatrices)
+      call linsol_initStructure (p_rsolverNode,ierror)
+      call linsol_initData (p_rsolverNode,ierror)
+
+      ! -----
+      ! Solve for the X-velocity.
+      call lsysbl_createVecFromScalar(rvector1%RvectorBlock(1),rsingleRHS)
+      call lsysbl_createVecFromScalar(rvector%RvectorBlock(1),rsingleSol)
+      call lsysbl_duplicateVector (rsingleSol,rvector2,&
+          LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
+    
+      call linsol_solveAdaptively (p_rsolverNode,rsingleSol,rsingleRHS,rvector2)
+      
+      if (p_rsolverNode%iresult .ne. 0) then
+        ! Cancel, there is something wrong.
+        call output_line('Cannot compute L2 projection, solver broke down. Using zero!')
+        call lsysbl_clearVector (rvector)
+
+      else
+      
+        ! -----
+        ! Solve for the Y-velocity.
+        ! Throw away the temporary references to the 1st component in rvector1/rvector
+        ! and replace them by references to the 2nd component.
+        call lsysbl_releaseVector (rsingleRHS)
+        call lsysbl_releaseVector (rsingleSol)
+
+        if (rproblem%MSHOW_Initialisation .ge. 1) &
+          call output_line('Solving L2 projection for U2...')
+
+        call lsysbl_createVecFromScalar(rvector1%RvectorBlock(2),rsingleRHS)
+        call lsysbl_createVecFromScalar(rvector%RvectorBlock(2),rsingleSol)
+
+        call linsol_solveAdaptively (p_rsolverNode,rsingleSol,rsingleRHS,rvector2)
+        
+        if (p_rsolverNode%iresult .ne. 0) then
+          ! Cancel, there is something wrong.
+          call output_line(&
+              'Cannot compute L2 projection, solver broke down. Using zero!')
+          call lsysbl_clearVector (rvector)
+          
+        else
+          ! -----
+          ! And the pressure. For that one we have to reinitialise the solver,
+          ! the matrices,...
+          call lsysbl_releaseVector (rsingleRHS)
+          call lsysbl_releaseVector (rsingleSol)
+          call lsysbl_releaseVector (rvector2)
+          call lsysbl_releaseMatrix (Rmatrices(1))
+
+          if (rproblem%MSHOW_Initialisation .ge. 1) &
+            call output_line('Solving L2 projection for P...')
+
+          ! Attach a new matrix.
+          call lsysbl_createMatFromScalar(&
+              rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMassPressure,Rmatrices(1))
+
+          call linsol_doneData (p_rsolverNode,ierror)
+          call linsol_doneStructure (p_rsolverNode,ierror)
+
+          call linsol_setMatrices (p_rsolverNode,Rmatrices)
+          
+          call linsol_initStructure (p_rsolverNode,ierror)
+          call linsol_initData (p_rsolverNode,ierror)
+          
+          ! Create references to the pressure part and solve.
+          call lsysbl_createVecFromScalar(rvector1%RvectorBlock(3),rsingleRHS)
+          call lsysbl_createVecFromScalar(rvector%RvectorBlock(3),rsingleSol)
+          call lsysbl_duplicateVector (rsingleSol,rvector2,&
+              LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
+          
+          call linsol_solveAdaptively (p_rsolverNode,rsingleSol,rsingleRHS,rvector2)
+     
+          if (p_rsolverNode%iresult .ne. 0) then
+            ! Cancel, there is something wrong.
+            call output_line(&
+                'Cannot compute L2 projection, solver broke down. Using zero!')
+            call lsysbl_clearVector (rvector)
+          end if
+        end if
+      end if
+      
+      ! -----
+      ! That's it, cleanup.
+      call lsysbl_releaseVector (rsingleRHS)
+      call lsysbl_releaseVector (rsingleSol)
+      call lsysbl_releaseVector (rvector2)
+      call lsysbl_releaseMatrix (Rmatrices(1))
+      
+      call linsol_doneData (p_rsolverNode,ierror)
+      call linsol_doneStructure (p_rsolverNode,ierror)
+      call linsol_releaseSolver (p_rsolverNode)
+    
+    end select        
+
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_writeSolution (rproblem,rvector)
+  subroutine cc_writeSolution (rproblem,rvector)
   
 !<description>
   ! Writes a solution vector rvector to a file as configured in the parameters
@@ -1116,92 +1448,92 @@ CONTAINS
 
 !<input>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(IN) :: rproblem
+  type(t_problem), intent(IN) :: rproblem
 
   ! The solution vector to be written out. Must be set up according to the
   ! maximum level NLMAX in rproblem!
-  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  type(t_vectorBlock), intent(IN) :: rvector
 !</input>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(I32) :: idestLevel
-    TYPE(t_vectorBlock) :: rvector1,rvector2
-    TYPE(t_vectorScalar) :: rvectorTemp
-    CHARACTER(LEN=SYS_STRLEN) :: sfile,sfileString
-    INTEGER :: ilev
-    INTEGER(PREC_VECIDX) :: NEQ
-    TYPE(t_interlevelProjectionBlock) :: rprojection 
-    LOGICAL :: bformatted
+    integer(I32) :: idestLevel
+    type(t_vectorBlock) :: rvector1,rvector2
+    type(t_vectorScalar) :: rvectorTemp
+    character(LEN=SYS_STRLEN) :: sfile,sfileString
+    integer :: ilev
+    integer(PREC_VECIDX) :: NEQ
+    type(t_interlevelProjectionBlock) :: rprojection 
+    logical :: bformatted
 
     ! Get the parameter what to do with rvector
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iSolutionWrite',idestLevel,0)
-    CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'sSolutionWrite',sfileString,'')
 
-    IF (idestLevel .EQ. 0) RETURN ! nothing to do.
+    if (idestLevel .eq. 0) return ! nothing to do.
     
     ! Remove possible ''-characters
-    READ(sfileString,*) sfile
+    read(sfileString,*) sfile
     
-    bformatted = idestLevel .GT. 0
-    idestLevel = rproblem%NLMAX-ABS(idestLevel)+1 ! level where to write out
+    bformatted = idestLevel .gt. 0
+    idestLevel = rproblem%NLMAX-abs(idestLevel)+1 ! level where to write out
 
-    IF (idestLevel .LT. rproblem%NLMIN) THEN
-      CALL output_line (&
+    if (idestLevel .lt. rproblem%NLMIN) then
+      call output_line (&
           'Warning: Level for solution vector is < NLMIN! Writing out at level NLMIN!',&
           OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
       idestLevel = rproblem%NLMIN
-    END IF
+    end if
     
     ! Interpolate the solution down to level istart.
-    CALL lsysbl_copyVector (rvector,rvector1)   ! creates new rvector1!
+    call lsysbl_copyVector (rvector,rvector1)   ! creates new rvector1!
 
-    DO ilev = rproblem%NLMAX,idestLevel+1,-1
+    do ilev = rproblem%NLMAX,idestLevel+1,-1
       
       ! Initialise a vector for the lower level and a prolongation structure.
-      CALL lsysbl_createVectorBlock (&
-          rproblem%RlevelInfo(ilev-1)%rdiscretisation,rvector2,.FALSE.)
+      call lsysbl_createVectorBlock (&
+          rproblem%RlevelInfo(ilev-1)%rdiscretisation,rvector2,.false.)
       
-      CALL mlprj_initProjectionVec (rprojection,rvector2)
+      call mlprj_initProjectionVec (rprojection,rvector2)
       
       ! Interpolate to the next higher level.
       ! (Don't 'restrict'! Restriction would be for the dual space = RHS vectors!)
 
       NEQ = mlprj_getTempMemoryVec (rprojection,rvector2,rvector1)
-      IF (NEQ .NE. 0) CALL lsyssc_createVector (rvectorTemp,NEQ,.FALSE.)
-      CALL mlprj_performInterpolation (rprojection,rvector2,rvector1, &
+      if (NEQ .ne. 0) call lsyssc_createVector (rvectorTemp,NEQ,.false.)
+      call mlprj_performInterpolation (rprojection,rvector2,rvector1, &
                                        rvectorTemp)
-      IF (NEQ .NE. 0) CALL lsyssc_releaseVector (rvectorTemp)
+      if (NEQ .ne. 0) call lsyssc_releaseVector (rvectorTemp)
       
       ! Swap rvector1 and rvector2. Release the fine grid vector.
-      CALL lsysbl_swapVectors (rvector1,rvector2)
-      CALL lsysbl_releaseVector (rvector2)
+      call lsysbl_swapVectors (rvector1,rvector2)
+      call lsysbl_releaseVector (rvector2)
       
-      CALL mlprj_doneProjection (rprojection)
+      call mlprj_doneProjection (rprojection)
       
-    END DO
+    end do
 
     ! Write out the solution.
-    IF (bformatted) THEN
-      CALL vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .TRUE.,&
+    if (bformatted) then
+      call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,&
                                     0, sfile, '(E22.15)')
-    ELSE
-      CALL vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .TRUE.,0, sfile)
-    END IF
+    else
+      call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,0, sfile)
+    end if
 
     ! Release temp memory.
-    CALL lsysbl_releaseVector (rvector1)
+    call lsysbl_releaseVector (rvector1)
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE cc_doneMatVec (rproblem,rvector,rrhs)
+  subroutine cc_doneMatVec (rproblem,rvector,rrhs)
   
 !<description>
   ! Releases system matrix and vectors.
@@ -1209,51 +1541,53 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
 
   ! A vector structure for the solution vector. The structure is cleaned up,
   ! memory is released.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  type(t_vectorBlock), intent(INOUT) :: rvector
 
   ! A vector structure for the RHS vector. The structure is cleaned up,
   ! memory is released.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
+  type(t_vectorBlock), intent(INOUT) :: rrhs
 !</inputoutput>
 
 !</subroutine>
 
-    INTEGER :: i
+    integer :: i
 
     ! Release matrices and vectors on all levels
-    DO i=rproblem%NLMAX,rproblem%NLMIN,-1
+    do i=rproblem%NLMAX,rproblem%NLMIN,-1
       ! If there is an existing mass matrix, release it.
-      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMassPressure)
 
       ! Release Stokes, B1 and B2 matrix
-      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)
-      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB1)
-      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStokes)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB1)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStokes)
       
       ! Release the template matrices. This is the point, where the
       ! memory of the matrix structure is released.
-      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateGradient)
-      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateFEM)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateGradient)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateFEM)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateFEMPressure)
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateQ1)
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateCoupMass)
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplatePMass)
       
       ! Remove the temp vector that was used for interpolating the solution
       ! from higher to lower levels in the nonlinear iteration.
-      IF (i .LT. rproblem%NLMAX) THEN
-        CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector)
-      END IF
+      if (i .lt. rproblem%NLMAX) then
+        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector)
+      end if
       
-    END DO
+    end do
 
     ! Delete solution/RHS vector
-    CALL lsysbl_releaseVector (rvector)
-    CALL lsysbl_releaseVector (rrhs)
+    call lsysbl_releaseVector (rvector)
+    call lsysbl_releaseVector (rrhs)
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module

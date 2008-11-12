@@ -49,11 +49,14 @@
 		<File RelativePath="..\src\ccnonstationary.f90"/>
 		<File RelativePath="..\src\ccpostprocessing.f90"/>
 		<File RelativePath="..\src\ccstationary.f90"/>
-		<File RelativePath="..\src\cctimeanalysis.f90"/></Filter></Filter>
+		<File RelativePath="..\src\cctimeanalysis.f90"/>
+		<File RelativePath="..\src\poisson2d_callback.f90"/>
+		<File RelativePath="..\src\poisson2d_method0_simple.f90"/></Filter></Filter>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		<File RelativePath="..\data\bdconditions.dat"/>
 		<File RelativePath="..\data\discretisation.dat"/>
 		<File RelativePath="..\data\linsol_cc2d.dat"/>
+		<File RelativePath="..\data\master.dat"/>
 		<File RelativePath="..\data\nonlinsol_cc2d.dat"/>
 		<File RelativePath="..\data\output.dat"/>
 		<File RelativePath="..\data\paramtriang.dat"/>
