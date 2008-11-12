@@ -16,6 +16,11 @@
 !#  2.) mlop_build2LvlMassMatrix
 !#      -> Assembles the entries of a 2-level-mass matrix that is needed for
 !#         L2-Prolongation and restriction operators.
+!#
+!#  3.) mlop_build2LvlProlMatrix
+!#      -> Assembles the entries of a prolongation matrix based on element-wise
+!#         L2-projection.
+!#         
 !# </purpose>
 !##############################################################################
 
@@ -34,6 +39,12 @@ module multileveloperators
   use elementpreprocessing
   
   implicit none
+  
+  private
+  
+  public :: mlop_create2LvlMatrixStruct
+  public :: mlop_build2LvlMassMatrix
+  public :: mlop_build2LvlProlMatrix
 
 !<types>
   
@@ -52,8 +63,6 @@ module multileveloperators
   
 !</typeblock>
 
-  private :: t_matrixmem
-
 !</types>
 
 !<constants>
@@ -64,6 +73,20 @@ module multileveloperators
   integer, parameter :: MLOP_NELEMSIM   = 100
   
 !</constantblock>
+
+!<constantblock description="Averaging specifiers for prolongation matrix assembly">
+
+  ! Use arithmetic averaging
+  integer, parameter, public :: MLOP_AVRG_ARITHMETIC = 1
+  
+  ! Average by basis function L2-mass
+  integer, parameter, public :: MLOP_AVRG_MASS = 2
+  
+  ! Average by inverse basis function L2-mass
+  integer, parameter, public :: MLOP_AVRG_INV_MASS = 3
+
+!</constantblock>
+
 !</constants>
 
 contains
@@ -146,7 +169,7 @@ contains
       ! Translate to matrix structure 7:
       call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
       
-    case DEFAULT
+    case default
       call output_line ('Not supported matrix structure!', &
           OU_CLASS_ERROR,OU_MODE_STD,'mlop_create2LvlMatrixStruct')
       call sys_halt()
@@ -242,7 +265,7 @@ contains
           
       call lsyssc_releaseMatrix (rmatrixBackup)
                                      
-    case DEFAULT
+    case default
       call output_line ('Not supported matrix structure!', &
           OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlMassMatrix')
       call sys_halt()
@@ -251,7 +274,111 @@ contains
 
 
   end subroutine
+
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine mlop_build2LvlProlMatrix (rdiscretisationCoarse,&
+                      rdiscretisationFine,bclear,rmatrixScalar,cavrgType)
+  
+!<description>
+  ! This routine calculates the entries of a 2-Level prolongation matrix.
+  ! The matrix structure must have been initialised by the
+  ! mlop_create2LvlMatrixStruct routine before calling this function.
+!</description>
+
+!<input>
+  ! The underlying discretisation structure defined on the coarse mesh which
+  ! is to be used to create the matrix.
+  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationCoarse
+  
+  ! The underlying discretisation structure defined on the fine mesh which
+  ! is to be used to create the matrix.
+  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationFine
+  
+  ! Whether to clear the matrix before calculating the entries.
+  ! If .FALSE., the new matrix entries are added to the existing entries.
+  logical, intent(IN) :: bclear
+  
+  ! OPTIONAL: Specifies which type of averaging is to be used.
+  ! One of the MLOP_AVRG_XXXX constants defined above. If not given,
+  ! MLOP_AVRG_ARITHMETIC is used.
+  integer, optional, intent(IN) :: cavrgType
+!</input>
+
+!<inputoutput>
+  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
+  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  type(t_matrixScalar) :: rmatrixBackup
+  integer :: caverage = MLOP_AVRG_ARITHMETIC
+  
+    if(present(cavrgType)) caverage = cavrgType
+
+    ! The matrix must be unsorted, otherwise we can't set up the matrix.
+    ! Note that we cannot switch off the sorting as easy as in the case
+    ! of a vector, since there's a structure behind the matrix! So the caller
+    ! has to make sure, the matrix is unsorted when this routine is called.
+    if (rmatrixScalar%isortStrategy .gt. 0) then
+      call output_line ('Matrix-structure must be unsorted!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProlMatrix')
+      call sys_halt()
+    end if
+
+    ! Let's make sure that the discretisations are uniform - we don't support
+    ! anything else right now.
+    if ((rdiscretisationCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
+        (rdiscretisationFine%ccomplexity .ne. SPDISC_UNIFORM)) then
+        
+      call output_line ('Discretisations must be uniform!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProlMatrix')
+      call sys_halt()
+      
+    end if
+
+    ! Which matrix structure do we have?
+    select case (rmatrixScalar%cmatrixFormat) 
+    case (LSYSSC_MATRIX9)
+      call mlop_build2LvlProl9_uni (rdiscretisationCoarse,&
+                      rdiscretisationFine,bclear,rmatrixScalar,caverage)
     
+    case (LSYSSC_MATRIX7)
+      ! Convert structure 7 to structure 9.For that purpose, make a backup of
+      ! the original matrix...
+      call lsyssc_duplicateMatrix (rmatrixScalar,rmatrixBackup,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          
+      ! Convert the matrix 
+      call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
+      
+      ! Create the matrix in structure 9
+      call mlop_build2LvlProl9_uni (rdiscretisationCoarse,&
+                      rdiscretisationFine,bclear,rmatrixScalar,caverage)
+                                     
+      ! Convert back to structure 7
+      call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
+      
+      ! Copy the entries back to the original matrix and release memory.
+      call lsyssc_duplicateMatrix (rmatrixBackup,rmatrixScalar,&
+          LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+          
+      call lsyssc_releaseMatrix (rmatrixBackup)
+                                     
+    case default
+      call output_line ('Not supported matrix structure!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProlMatrix')
+      call sys_halt()
+      
+    end select
+  
+  end subroutine
+  
   !****************************************************************************
   
 !<subroutine>
@@ -1490,6 +1617,627 @@ contains
     !%OMP END DO
     
     ! Release memory
+    deallocate(p_DcubPtsRefCoarse)
+    deallocate(p_DcubPtsRefFine)
+    deallocate(IdofsCoarse)
+    deallocate(IdofsFine)
+    deallocate(DbasCoarse)
+    deallocate(DbasFine)
+    deallocate(Kentry)
+    deallocate(Dentry)
+    deallocate(p_IelementRef)
+
+    !%OMP END PARALLEL
+
+  ! That's it
+  
+  end subroutine
+
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine mlop_build2LvlProl9_uni (rdiscretisationCoarse,&
+                      rdiscretisationFine,bclear,rmatrixScalar,cavrgType)
+  
+!<description>
+  ! This routine calculates the entries of a 2-Level prolongation matrix.
+  ! The matrix structure must have been initialised by the
+  ! mlop_create2LvlMatrixStruct routine before calling this function.
+!</description>
+
+!<input>
+  ! The underlying discretisation structure defined on the coarse mesh which
+  ! is to be used to create the matrix.
+  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationCoarse
+  
+  ! The underlying discretisation structure defined on the fine mesh which
+  ! is to be used to create the matrix.
+  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationFine
+  
+  ! Whether to clear the matrix before calculating the entries.
+  ! If .FALSE., the new matrix entries are added to the existing entries.
+  logical, intent(IN) :: bclear
+  
+  
+  ! Specifies which type of averaging is to be used.
+  ! One of the MLOP_AVRG_XXXX constants defined above.
+  integer, intent(IN) :: cavrgType
+!</input>
+
+!<inputoutput>
+  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
+  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+!</inputoutput>
+
+!</subroutine>
+
+
+  ! local variables
+  integer :: i,k,JDFG, ICUBP, NELC,NELF
+  integer :: IELC,IELF, IDXC, NELREF, IDOFE, JDOFE
+  integer :: JCOL0,JCOL
+  real(DP) :: OM, DB
+  
+  ! Array to tell the element which derivatives to calculate
+  logical, dimension(EL_MAXNDER) :: Bder
+  
+  ! Cubature point coordinates on the reference element
+  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
+
+  ! For every cubature point on the reference element,
+  ! the corresponding cubature weight
+  real(DP), dimension(CUB_MAXCUBP) :: Domega
+  
+  ! number of cubature points on the reference element
+  integer :: ncubp,ncubpc
+  
+  ! Pointer to KLD, KCOL, DA
+  integer, dimension(:), pointer :: p_KLD, p_KCOL
+  real(DP), dimension(:), pointer :: p_DA
+  
+  ! An allocateable array accepting the DOF's of a set of elements.
+  integer, dimension(:,:), allocatable, target :: IdofsCoarse, IdofsFine
+  
+  ! Allocateable arrays for the values of the basis functions - 
+  ! for test and trial spaces.
+  real(DP), dimension(:,:,:,:), allocatable, target :: DbasCoarse,DbasFine
+  
+  ! Number of entries in the matrix - for quicker access
+  integer :: NA
+  integer :: NEQ
+  
+  ! Type of transformation from the reference to the real element 
+  integer :: ctrafoCoarse, ctrafoFine
+  
+  ! Element evaluation tag; collects some information necessary for evaluating
+  ! the elements.
+  integer(I32) :: cevalTagCoarse, cevalTagFine
+  
+  ! Number of local degees of freedom for trial and test functions
+  integer :: indofCoarse, indofFine
+  
+  ! The triangulation structure - to shorten some things...
+  type(t_triangulation), pointer :: p_rtriaCoarse, p_rtriaFine
+  
+  ! A pointer to an element-number list
+  integer, dimension(:), pointer :: p_IelementList, p_IelementRef
+  
+  ! Local matrices, used during the assembly.
+  ! Values and positions of values in the global matrix.
+  integer, dimension(:,:,:), allocatable :: Kentry
+  real(DP), dimension(:,:,:), allocatable :: Dentry
+
+  ! An array that takes coordinates of the cubature formula on the reference element
+  real(DP), dimension(:,:), allocatable :: p_DcubPtsRefFine, p_DcubPtsRefCoarse
+  
+  ! Pointer to the jacobian determinants
+  real(DP), dimension(:,:), pointer :: p_Ddetj
+
+  ! Current element distribution
+  type(t_elementDistribution), pointer :: p_relemDistCoarse, p_relemDistFine
+  
+  ! Number of elements that have already been processed and number of
+  ! elements that are to be processed in the current run
+  integer :: nelementsDone, nelementsToDo
+  
+  ! Number of elements that are to be processed at once
+  integer :: nelementsCoarse, nelementsFine
+    
+  ! Two arrays for the refinement-patch arrays of the coarse triangulation
+  integer, dimension(:), pointer :: p_IrefPatchIdx, p_IrefPatch
+  
+  ! Element evaluation structures for evaluation of finite elements
+  type(t_evalElementSet) :: relementSetCoarse, relementSetFine
+  
+  ! Two arrays for the averaging weights
+  real(DP), dimension(:), allocatable :: DglobWeights
+  real(DP), dimension(:,:), allocatable :: DlocWeights
+  
+  ! One array for the local mass matrices
+  real(DP), dimension(:,:,:), allocatable :: Dmass
+  
+  ! One pivot array for lapack
+  integer, dimension(:), allocatable :: Ipivot
+
+    ! We only need the function values as we want to assemble a mass matrix.
+    Bder = .false.
+    Bder(DER_FUNC) = .true.
+    
+    ! Get information about the matrix:
+    NA = rmatrixScalar%NA
+    NEQ = rmatrixScalar%NEQ
+    
+    ! We need KCOL/KLD of our matrix
+    if ((rmatrixScalar%h_KCOL .eq. ST_NOHANDLE) .or. &
+        (rmatrixScalar%h_KLD .eq. ST_NOHANDLE)) then
+      call output_line ('No discretisation structure! Cannot assemble matrix!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProl9_uni')
+      call sys_halt()
+    end if
+    
+    call lsyssc_getbase_Kcol (rmatrixScalar,p_KCOL)
+    call lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
+    
+    ! Check if the matrix entries exist. If not, allocate the matrix.
+    if (rmatrixScalar%h_DA .eq. ST_NOHANDLE) then
+
+      ! Clear the entries in the matrix - we need to start with zero
+      ! when assembling a new matrix!
+      call storage_new1D ('mlop_build2LvlProl9_uni', 'DA', &
+                          NA, ST_DOUBLE, rmatrixScalar%h_DA, &
+                          ST_NEWBLOCK_ZERO)
+      call lsyssc_getbase_double (rmatrixScalar,p_DA)
+
+    else
+    
+      call lsyssc_getbase_double (rmatrixScalar,p_DA)
+
+      ! If desired, clear the matrix before assembling.
+      if (bclear) then
+        call lalg_clearVectorDble (p_DA)
+      end if
+      
+    end if
+    
+    ! Get a pointer to the triangulation - for easier access.
+    p_rtriaCoarse => rdiscretisationCoarse%p_rtriangulation
+    p_rtriaFine => rdiscretisationFine%p_rtriangulation
+
+    ! Get the refinement patch arrays from the fine triangulation
+    call storage_getbase_int(p_rtriaFine%h_IrefinementPatchIdx, p_IrefPatchIdx)
+    call storage_getbase_int(p_rtriaFine%h_IrefinementPatch, p_IrefPatch)
+    
+    ! Activate the current element distributions
+    p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(1)
+    p_relemDistFine => rdiscretisationFine%RelementDistr(1)
+  
+    ! Get the number of local DOF's for trial and test functions
+    indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
+    indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
+      
+    ! Calculate the number of coarse mesh elements we want to process
+    ! in one run.
+    nelementsCoarse = min(MLOP_NELEMSIM,p_relemDistCoarse%NEL) 
+    
+    ! Now calculate the number of fine mesh elements we want to process
+    ! in one run. 
+    select case(p_rtriaFine%ndim)
+    case (1)
+      nelementsFine = 2*nelementsCoarse
+    case (2)
+      nelementsFine = 4*nelementsCoarse
+    case (3)
+      nelementsFine = 8*nelementsCoarse
+    end select
+    
+    ! Allocate an array saving a couple of DOF's for trial and test functions
+    allocate(IdofsCoarse(indofCoarse,nelementsCoarse))
+    allocate(IdofsFine(indofFine,nelementsFine))
+    
+    ! p_IelementList must point to our set of elements in the discretisation
+    ! with that the trial functions
+    call storage_getbase_int (p_relemDistCoarse%h_IelementList, p_IelementList)
+    
+    ! And allocate the refinemed element list for the test functions
+    allocate(p_IelementRef(nelementsFine))
+    
+    ! Get the number of coarse mesh elements there.
+    NELC = p_relemDistCoarse%NEL
+      
+    ! Get from the trial element space the type of coordinate system
+    ! that is used there:
+    ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
+    ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
+    
+    ! Initialise the cubature formula, get cubature weights and point
+    ! coordinates on the reference element of the fine mesh
+    call cub_getCubPoints(p_relemDistFine%ccubTypeBilForm, ncubp, Dxi, Domega)
+    
+    ! Allocate some memory to hold the cubature points on the fine mesh
+    allocate(p_DcubPtsRefFine(trafo_igetReferenceDimension(ctrafoFine),ncubp))
+
+    ! Reformat the cubature points; they are in the wrong shape!
+    do i=1,ncubp
+      do k=1,ubound(p_DcubPtsRefFine,1)
+        p_DcubPtsRefFine(k,i) = Dxi(i,k)
+      end do
+    end do
+    
+    ! Now we need to transform the points from the fine mesh into the coarse mesh
+    ! Please note that the following trick does only work for 2-level ordered
+    ! meshes!
+    select case(p_rtriaFine%ndim)
+    case (1)
+      ncubpc = 2*ncubp
+      allocate(p_DcubPtsRefCoarse(trafo_igetReferenceDimension(ctrafoCoarse),ncubpc))
+      call trafo_mapCubPtsRef2LvlEdge1D(ncubp,p_DcubPtsRefFine,p_DcubPtsRefCoarse)
+      
+    case (2)
+      ncubpc = 4*ncubp
+      allocate(p_DcubPtsRefCoarse(trafo_igetReferenceDimension(ctrafoCoarse),ncubpc))
+      call trafo_mapCubPtsRef2LvlQuad2D(ncubp,p_DcubPtsRefFine,p_DcubPtsRefCoarse)
+
+    case (3)
+      ncubpc = 8*ncubp
+      allocate(p_DcubPtsRefCoarse(trafo_igetReferenceDimension(ctrafoCoarse),ncubpc))
+      call trafo_mapCubPtsRef2LvlHexa3D(ncubp,p_DcubPtsRefFine,p_DcubPtsRefCoarse)
+      
+    end select
+    
+    
+    ! Allocate arrays for the values of the test- and trial functions.
+    ! This is done here in the size we need it. Allocating it in-advance
+    ! with something like
+    !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
+    !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
+    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! which reduces the speed by 50%!
+    allocate(DbasFine(indofFine,&
+             elem_getMaxDerivative(p_relemDistFine%celement),&
+             ncubp,nelementsFine))
+    allocate(DbasCoarse(indofCoarse,&
+             elem_getMaxDerivative(p_relemDistCoarse%celement), &
+             ncubpc,nelementsCoarse))
+
+    ! Allocate an array saving the local matrices for all elements
+    ! in an element set.
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+    ! for this local matrix, but this would normally not fit to the cache
+    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+    allocate(Kentry(indofCoarse,indofFine,nelementsFine))
+    allocate(Dentry(indofFine,indofCoarse,nelementsFine))
+    allocate(Dmass(indofFine,indofFine,nelementsFine))
+    
+    ! Allocate a pivot array for lapack
+    allocate(Ipivot(indofFine))
+    
+    ! And allocate two arrays for the weights
+    allocate(DglobWeights(NEQ))
+    allocate(DlocWeights(indofFine,nelementsFine))
+    
+    ! And format the global weights array
+    call lalg_clearVectorDble(DglobWeights,NEQ)
+    
+    ! Format the local weights array to 1
+    call lalg_setVectorDble2D(DlocWeights,1.0_DP)
+    
+    ! Loop over the elements - blockwise.
+    nelementsDone = 0
+    do while(nelementsDone .lt. NELC)
+    
+      ! We always try to handle nelementsTrial elements simultaneously.
+      ! Of course, we will not handle more elements than the coarse
+      ! mesh discretisation has.
+      nelementsToDo = min(NELC-nelementsDone, nelementsCoarse)
+      
+      ! Now comes the interesting part - we have to ensure that the DOF-mapping
+      ! of the fine mesh discretisation fits into our DOF-array.
+      ! If, for example, a coarse mesh quad was refined into more than 4 fine
+      ! mesh quads, then it might happen that we cannot handle nelementsToDo
+      ! coarse mesh elements at once, but we need to decrease nelementsToDo.
+      NELF = 0
+      do IELC = 1, nelementsToDo
+      
+        ! Get the index of the coarse mesh element
+        IDXC = p_IelementList(nelementsDone+IELC)
+        
+        ! Get the number of fine mesh elements that have been refined from the
+        ! currently processed coarse mesh element.
+        NELREF = p_IrefPatchIdx(IDXC+1) - p_IrefPatchIdx(IDXC)
+        
+        ! Now if (NELF+NELREF) is greater than nelementsFine, then we need
+        ! to decrease nelementsToDo and exit the loop...
+        ! This case should never happen if the coarse mesh was refined using
+        ! the 2-Level-Ordering algorithm, but might happen for more freaky
+        ! refinement techniques...
+        if((NELF+NELREF) .gt. nelementsFine) then
+          nelementsToDo = IELC-1
+          exit
+        end if
+        
+        ! Copy the indices of the elements into the element list for the
+        ! fine mesh discretisation
+        do IELF = 1, NELREF
+          p_IelementRef(NELF+IELF) = p_IrefPatch(p_IrefPatchIdx(IDXC)+IELF-1)
+        end do
+        
+        ! Add the number of refined elements to the counter
+        NELF = NELF + NELREF
+      
+      end do
+      
+      ! If nelementsToDo is 0, then we have a serious problem...
+      if (nelementsToDo .le. 0) then
+        print *, "ERROR: mlop_build2LvlProl9_uni"
+        print *, "nelementsToDo = 0 !!!"
+        call sys_halt()
+      end if
+      
+      ! Call the DOF-mapping routine for the coarse and fine mesh
+      call dof_locGlobMapping_mult(rdiscretisationCoarse, &
+          p_IelementList(nelementsDone+1:nelementsDone+nelementsToDo), &
+          IdofsCoarse)
+      call dof_locGlobMapping_mult(rdiscretisationFine, p_IelementRef(1:NELF), &
+          IdofsFine)
+      
+      ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
+      NELF = 0
+      do IELC = 1, nelementsToDo
+      
+        ! Get the index of the currently processed coarse mesh element
+        IDXC = p_IelementList(nelementsDone+IELC)
+        
+        ! Get the number of fine mesh elements that are refined from the
+        ! current coarse mesh element
+        NELREF = p_IrefPatchIdx(IDXC+1) - p_IrefPatchIdx(IDXC)
+
+        ! And loop through all elements of the current refinement patch
+        do IELF = 1, NELREF
+        
+          ! Get the index of the currently processed fine mesh element
+          !IDXF = p_IelementRef(NELF+IELF)
+      
+          ! For building the local matrices, we have first to
+          ! loop through the test functions (the "O"'s), as these
+          ! define the rows in the matrix.
+          do IDOFE=1,indofFine
+          
+            ! Row IDOFE of the local matrix corresponds 
+            ! to row=global DOF KDFG(IDOFE) in the global matrix.
+            ! This is one of the the "O"'s in the above picture.
+            ! Get the starting position of the corresponding row
+            ! to JCOL0:
+            JCOL0 = p_KLD(IdofsFine(IDOFE,NELF+IELF))
+            
+            ! Now we loop through the other DOF's on the current element
+            ! (the "O"'s).
+            ! All these have common support with our current basis function
+            ! and will therefore give an additive value to the global
+            ! matrix.
+            do JDOFE=1,indofCoarse
+              
+              ! Get the global DOF of the "X" which interacts with 
+              ! our "O".
+              JDFG = IdofsCoarse(JDOFE,IELC)
+              
+              ! Starting in JCOL0 (which points to the beginning of
+              ! the line initially), loop through the elements in
+              ! the row to find the position of column IDFG.
+              ! Jump out of the DO loop if we find the column.
+              do JCOL=JCOL0,NA
+                if (p_KCOL(JCOL) .eq. JDFG) exit
+              end do
+
+              ! Because columns in the global matrix are sorted 
+              ! ascendingly (except for the diagonal element),
+              ! the next search can start after the column we just found.
+              
+              ! JCOL0=JCOL+1
+              
+              ! Save the position of the matrix entry into the local
+              ! matrix.
+              ! Note that a column in Kentry corresponds to a row in
+              ! the real matrix. We aligned Kentry/DENTRY this way to get
+              ! higher speed of the assembly routine, since this leads
+              ! to better data locality.
+              
+              Kentry(JDOFE,IDOFE,NELF+IELF)=JCOL
+              
+            end do ! IDOFE
+            
+          end do ! JDOFE
+        
+        end do ! IELF
+        
+        NELF = NELF + NELREF
+        
+      end do ! IELC
+      
+      ! -------------------- ELEMENT EVALUATION PHASE ----------------------
+      
+      ! Ok, we found the positions of the local matrix entries
+      ! that we have to change.
+      ! To calculate the matrix contributions, we have to evaluate
+      ! the elements to give us the values of the basis functions
+      ! in all the DOF's in all the elements in our set.
+
+      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+      ! the elements later. All of them can be combined with OR, what will give
+      ! a combined evaluation tag. 
+      cevalTagCoarse = elem_getEvaluationTag(p_relemDistCoarse%celement)
+      cevalTagFine = elem_getEvaluationTag(p_relemDistFine%celement)
+                      
+      cevalTagCoarse = ior(cevalTagCoarse,EL_EVLTAG_REFPOINTS)
+      cevalTagFine   = ior(cevalTagFine,EL_EVLTAG_REFPOINTS)
+
+      ! Calculate all information that is necessary to evaluate the finite element
+      ! on all cells of our subset. This includes the coordinates of the points
+      ! on the cells.
+      call elprep_prepareSetForEvaluation (relementSetCoarse,&
+          cevalTagCoarse, p_rtriaCoarse, &
+          p_IelementList(nelementsDone+1:nelementsDone+nelementsToDo), &
+          ctrafoCoarse, p_DcubPtsRefCoarse(:,1:ncubpc))
+
+      call elprep_prepareSetForEvaluation (relementSetFine,&
+          cevalTagFine, p_rtriaFine, p_IelementRef(1:NELF), &
+          ctrafoFine, p_DcubPtsRefFine(:,1:ncubp))
+      p_Ddetj => relementSetFine%p_Ddetj
+      
+      ! Calculate the values of the basis functions.
+      call elem_generic_sim2 (p_relemDistCoarse%celement, &
+          relementSetCoarse, Bder, DbasCoarse)
+      call elem_generic_sim2 (p_relemDistFine%celement, &
+          relementSetFine, Bder, DbasFine)
+      
+      ! --------------------- DOF COMBINATION PHASE ------------------------
+      
+      ! Values of all basis functions calculated. Now we can start 
+      ! to integrate!
+      
+      ! Clear the local matrix
+      Dentry = 0.0_DP
+      Dmass = 0.0_DP
+
+      ! Loop over the elements in the current set.
+      NELF = 0
+      do IELC=1,nelementsToDo
+      
+        ! Get the index of the currently processed coarse mesh element
+        IDXC = p_IelementList(nelementsDone+IELC)
+        
+        ! Get the number of fine mesh elements that are refined from the
+        ! current coarse mesh element
+        NELREF = p_IrefPatchIdx(IDXC+1) - p_IrefPatchIdx(IDXC)
+
+        ! And loop through all elements of the current refinement patch
+        do IELF = 1, NELREF
+          
+          ! Loop over all cubature points on the current element
+          do ICUBP = 1, ncubp
+
+            ! calculate the current weighting factor in the cubature formula
+            ! in that cubature point.
+            !
+            ! Take the absolut value of the determinant of the mapping.
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
+            OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,NELF+IELF))
+
+            ! Now loop through all possible combinations of DOF's
+            ! in the current cubature point. The outer loop
+            ! loops through the "O"'s in the above picture,
+            ! the test functions:
+            do IDOFE=1,indofFine
+            
+              ! Get the value of the (test) basis function 
+              ! phi_i (our "O") in the cubature point:
+              DB = DbasFine(IDOFE,DER_FUNC,ICUBP,NELF+IELF)*OM
+              
+              ! Perform an inner loop through the other DOF's
+              ! (the "X"). 
+              do JDOFE=1,indofCoarse
+              
+                Dentry(IDOFE,JDOFE,NELF+IELF) = Dentry(IDOFE,JDOFE,NELF+IELF) + &
+                         DB*DbasCoarse(JDOFE,DER_FUNC,&
+                         ICUBP + (IELF-1)*ncubp,IELC)
+              
+              end do ! JDOFE
+              
+              do JDOFE = 1, indofFine
+              
+                Dmass(JDOFE,IDOFE,NELF+IELF) = Dmass(JDOFE,IDOFE,NELF+IELF) + &
+                                DB*DbasFine(JDOFE,DER_FUNC,ICUBP,NELF+IELF)
+                
+              end do ! JDOFE
+            
+            end do ! IDOFE
+
+          end do ! ICUBP 
+          
+        end do ! IELF
+        
+        NELF = NELF + NELREF
+
+      end do ! IELC
+      
+      ! If we use any mass-based averaging, we need to backup the mass here,
+      ! as in the following step, the local mass matrices will be overwritten!
+      select case(cavrgType)
+      case (MLOP_AVRG_MASS)
+        ! mass based averaging
+        do IELF = 1, NELF
+          do IDOFE=1, indofFine
+            DlocWeights(IDOFE,IELF) = Dmass(IDOFE,IDOFE,IELF)
+          end do ! IDOFE
+        end do ! IELF
+      
+      case (MLOP_AVRG_INV_MASS)
+        ! inverse mass based averaging
+        do IELF = 1, NELF
+          do IDOFE=1, indofFine
+            DlocWeights(IDOFE,IELF) = 1.0_DP / Dmass(IDOFE,IDOFE,IELF)
+          end do ! IDOFE
+        end do ! IELF
+      
+      end select
+      
+      ! Now loop through all elements and perform the local L2-projection!
+      do IELF = 1, NELF
+        call DGESV(indofFine,indofCoarse,Dmass(:,:,IELF),indofFine,&
+                   Ipivot,Dentry(:,:,IELF),indofFine,IDOFE)
+      end do
+
+      ! Incorporate the local matrix into the global one.
+      ! Kentry gives the position of the additive contributions in Dentry.
+      do IELF = 1, NELF
+        do IDOFE=1,indofFine
+          OM = DlocWeights(IDOFE,IELF)
+          do JDOFE=1,indofCoarse
+            p_DA(Kentry(JDOFE,IDOFE,IELF)) = &
+              p_DA(Kentry(JDOFE,IDOFE,IELF)) + OM*Dentry(IDOFE,JDOFE,IELF)
+          end do
+          i = IdofsFine(IDOFE,IELF)
+          DglobWeights(i) = DglobWeights(i) + OM
+        end do
+      end do
+
+      ! Release the element sets here
+      call elprep_releaseElementSet(relementSetFine)
+      call elprep_releaseElementSet(relementSetCoarse)
+      
+      ! Increase the number of done elements
+      nelementsDone = nelementsDone + nelementsToDo
+      
+    end do ! WHILE(nelementsDone .LE. NELC)
+    !%OMP END DO
+    
+    ! Okay, there's one last thing left: Scale the matrix rows by the
+    ! global averaging weights!
+    do i = 1, NEQ
+    
+      ! Get the weight
+      OM = DglobWeights(i)
+      
+      ! Skip it if it is zero
+      if(OM .eq. 0.0_DP) continue
+      
+      ! Invert the weight
+      OM = 1.0_DP / OM
+      
+      ! And scale the i-th matrix row by OM
+      do k = p_Kld(i), p_Kld(i+1)-1
+        p_DA(k) = p_DA(k) * OM
+      end do
+    
+    end do ! i
+    
+    ! Release memory
+    deallocate(DlocWeights)
+    deallocate(DglobWeights)
+    deallocate(Ipivot)
+    deallocate(Dmass)
     deallocate(p_DcubPtsRefCoarse)
     deallocate(p_DcubPtsRefFine)
     deallocate(IdofsCoarse)
