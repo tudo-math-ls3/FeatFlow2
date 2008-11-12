@@ -112,12 +112,12 @@ module fsystem
   ! kind value for 64 bit float (double precision)
   integer, parameter :: DP = selected_real_kind(15,307)
 
-  ! kind value for 128 bit float (quad precision)
-  !integer, parameter :: QP = selected_real_kind(33,4931)
+  ! kind value for 80/128 bit float (quad precision)
+  integer, parameter :: QP = selected_real_kind(18,4931)
   
-  ! NOTE: Currently, QP is set to be equal to DP, as the g95
-  ! does not offer a quad precision type!
-  integer, parameter :: QP = DP
+  ! Note: Depending on the platform and the compiler, QP is either an 80
+  ! or an 128 bit float. The g95 and gfortran compilers use 80 floats
+  ! for QP, while the ifc compiler uses 128 bit floats.
 
 !</constantblock>
 
@@ -222,7 +222,7 @@ module fsystem
 !<typeblock>
 
   ! Emulation of an array of pointers to 2D double precision vectors
-  type t_realw2DPointer
+  type t_real2DPointer
     real(DP), dimension(:,:), pointer :: ptr
   end type
 
