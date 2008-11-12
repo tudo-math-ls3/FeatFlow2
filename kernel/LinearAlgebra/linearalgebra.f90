@@ -6182,9 +6182,10 @@ contains
   
 !</subroutine>
 
-  real(SP) :: SASUM, SNRM2, ISAMAX
+  real(SP) :: SASUM, SNRM2
+  integer :: ISAMAX
 
-  integer :: i, isize
+  integer :: isize, iposmaxlocal
   
     isize = size(Fx)
     if (present(n)) isize = n
@@ -6211,20 +6212,12 @@ contains
       
     case (LINALG_NORMMAX)
       ! MAX-norm. Find the absolute largest entry.
+      ! With the BLAS routine, calculate the position. Then get the entry.
+      iposmaxlocal = ISAMAX(isize,Fx,1)
+      resnorm = abs(Fx(iposmaxlocal))
+      
       if(present(iposMax)) then
-        ! iposMax is needed - calculate norm by hand instead of calling
-        ! the BLAS routine.
-        resnorm = abs(Fx(1))
-        iposMax = 1
-        do i = 2,isize
-          if (abs(Fx(i)) .gt. resnorm) then
-            iposMax = i
-            resnorm = abs(Fx(i))
-          end if
-        end do
-      else
-        ! iposMax is not needed - call BLAS then.
-        resnorm = ISAMAX(isize,Fx,1)
+        iposMax = iposmaxlocal
       end if
 
     case default
@@ -6272,9 +6265,10 @@ contains
   
 !</subroutine>
 
-  real(DP) :: DASUM,DNRM2,IDAMAX
+  real(DP) :: DASUM,DNRM2
+  integer :: IDAMAX
 
-  integer :: i,isize
+  integer :: isize,iposmaxlocal
   
     isize = size(Dx)
     if (present(n)) isize = n
@@ -6301,20 +6295,12 @@ contains
       
     case (LINALG_NORMMAX)
       ! MAX-norm. Find the absolute largest entry.
+      ! With the BLAS routine, calculate the position. Then get the entry.
+      iposmaxlocal = IDAMAX(isize,Dx,1)
+      resnorm = abs(Dx(iposmaxlocal))
+      
       if(present(iposMax)) then
-        ! iposMax is needed - calculate norm by hand instead of calling
-        ! the BLAS routine.
-        resnorm = abs(Dx(1))
-        iposMax = 1
-        do i=2,isize
-          if (abs(Dx(i)) .gt. resnorm) then
-            iposMax = i
-            resnorm = abs(Dx(i))
-          end if
-        end do
-      else
-        ! iposMax is not needed - call BLAS then.
-        resnorm = IDAMAX(isize,Dx,1)
+        iposMax = iposmaxlocal
       end if
         
     case default
