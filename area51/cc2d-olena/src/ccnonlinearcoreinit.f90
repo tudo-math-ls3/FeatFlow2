@@ -87,6 +87,7 @@ MODULE ccnonlinearcoreinit
   USE paramlist
   USE linearsolverautoinitialise
   USE matrixrestriction
+  USE vanka
   
   USE collection
   USE convection
@@ -137,7 +138,7 @@ CONTAINS
   
     ! A pointer to the system matrix and the RHS/solution vectors.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM,p_rmatrixTemplateGradient
-
+    TYPE(t_matrixScalar), POINTER ::p_rmatrixTemplateQ1,p_rmatrixTemplatePMass,p_rmatrixTemplateCoupMass
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
   
@@ -153,7 +154,10 @@ CONTAINS
     ! In the global system, there are two gradient matrices B1 and B2.
     ! Get a pointer to the template structure for these.
     p_rmatrixTemplateGradient => rlevelInfo%rmatrixTemplateGradient
-
+    
+    p_rmatrixTemplateQ1 => rlevelInfo%rmatrixTemplateQ1
+    p_rmatrixTemplatePMass => rlevelInfo%rmatrixTemplatePMass
+    p_rmatrixTemplateCoupMass => rlevelInfo%rmatrixTemplateCoupMass
     ! Initialise the block matrix with default values based on
     ! the discretisation.
     CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
@@ -189,7 +193,11 @@ CONTAINS
     rnonlinearCCMatrix%p_rmatrixB1 => rlevelInfo%rmatrixB1
     rnonlinearCCMatrix%p_rmatrixB2 => rlevelInfo%rmatrixB2
     rnonlinearCCMatrix%p_rmatrixMass => rlevelInfo%rmatrixMass
-
+    rnonlinearCCMatrix%p_rmatrixTemplateQ1 => rlevelInfo%rmatrixTemplateQ1
+    rnonlinearCCMatrix%p_rmatrixTemplatePMass => rlevelInfo%rmatrixTemplatePMass
+    rnonlinearCCMatrix%p_rmatrixTemplateCoupMass => rlevelInfo%rmatrixTemplateCoupMass
+    
+    
     CALL cc_assembleMatrix (CCMASM_ALLOCMEM,cmatrixType,&
       rmatrix,rnonlinearCCMatrix)
                                   
@@ -295,7 +303,15 @@ CONTAINS
 
       rnonlinearIteration%RcoreEquation(ilevel)%p_rtempVector => &
         rproblem%RlevelInfo(ilevel)%rtempVector
-
+        
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixTemplateQ1 => &
+        rproblem%RlevelInfo(ilevel)%rmatrixTemplateQ1  
+      
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixTemplateCoupMass => &
+        rproblem%RlevelInfo(ilevel)%rmatrixTemplateCoupMass
+      
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixTemplatePMass => &
+        rproblem%RlevelInfo(ilevel)%rmatrixTemplatePMass
     END DO
       
     ! Clear auxiliary variables for the nonlinear iteration
@@ -349,7 +365,7 @@ CONTAINS
       ! Pure Dirichlet problem -- Neumann boundary for the pressure.
       ! Filter the pressure to avoid indefiniteness.
       rnonlinearIteration%p_RfilterChain(3)%ifilterType = FILTER_TOL20
-      rnonlinearIteration%p_RfilterChain(3)%itoL20component = NDIM2D+1
+      rnonlinearIteration%p_RfilterChain(3)%itoL20component = NDIM2D+2
     END IF
     
   END SUBROUTINE
@@ -495,10 +511,10 @@ CONTAINS
         CALL linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
         
       CASE (1)
-        ! Defect correction with diagonal VANCA preconditioning.
+        ! Defect correction with diagonal VANKA preconditioning.
         !
-        ! Create VANCA and initialise it with the parameters from the DAT file.
-        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DNAVST)
+        ! Create VANKA and initialise it with the parameters from the DAT file.
+        CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
         
         CALL parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
             'spreconditionerSection', sstring, '')
@@ -508,7 +524,7 @@ CONTAINS
         CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,p_rpreconditioner%calgorithm)
         
-        ! Create the defect correction solver, attach VANCA as preconditioner.
+        ! Create the defect correction solver, attach VANKA as preconditioner.
         CALL linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
             rnonlinearIteration%p_RfilterChain)
         CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -517,10 +533,10 @@ CONTAINS
             scoarseGridSolverSection,p_rpreconditioner%calgorithm)
         
       CASE (2)
-        ! BiCGSTab with diagonal VANCA preconditioning.
+        ! BiCGSTab with diagonal VANKA preconditioning.
         !
-        ! Create VANCA and initialise it with the parameters from the DAT file.
-        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DNAVST)
+        ! Create VANKA and initialise it with the parameters from the DAT file.
+        CALL linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
         
         CALL parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
            'spreconditionerSection', sstring, '')
@@ -530,7 +546,7 @@ CONTAINS
         CALL linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,p_rpreconditioner%calgorithm)
         
-        ! Create the defect correction solver, attach VANCA as preconditioner.
+        ! Create the defect correction solver, attach VANKA as preconditioner.
         CALL linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
             rnonlinearIteration%p_RfilterChain)
         CALL linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -554,20 +570,20 @@ CONTAINS
 
           NULLIFY(p_rsmoother)
         
-          ! This is some kind of VANCA smoother. Initialise the correct one.
+          ! This is some kind of VANKA smoother. Initialise the correct one.
           SELECT CASE (ismootherType)
           CASE (0)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERAL)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERAL)
           CASE (1)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_GENERALDIRECT)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERALDIRECT)
           CASE (2)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DNAVST)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVST)
           CASE (3)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DNAVSTDIRECT)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVSTDIRECT)
           CASE (4)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVST)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVST)
           CASE (5)
-            CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DFNAVSTDIRECT)
+            CALL linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTDIRECT)
           END SELECT
           
           ! Initialise the parameters -- if there are any.
@@ -736,9 +752,9 @@ CONTAINS
         imaxmem = MAX(imaxmem,mlprj_getTempMemoryDirect (&
             rnonlinearIteration%rpreconditioner%p_rprojection,&
             rproblem%RlevelInfo(i-1)% &
-              rdiscretisation%RspatialDiscretisation(1:rrhs%nblocks),&
+              rdiscretisation%RspatialDiscr(1:rrhs%nblocks),&
             rproblem%RlevelInfo(i)% &
-              rdiscretisation%RspatialDiscretisation(1:rrhs%nblocks)))
+              rdiscretisation%RspatialDiscr(1:rrhs%nblocks)))
       END DO
       
       ! Set up a scalar temporary vector that we need for building up nonlinear
@@ -821,7 +837,7 @@ CONTAINS
 
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror    
-  
+    TYPE(t_cccoreEquationOneLevel), DImension(:),POINTER:: p_testingpointer
     ! A pointer to the matrix of the preconditioner
     TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner
 
@@ -865,7 +881,7 @@ CONTAINS
           ELSE
             cmatrixType = CCMASM_MTP_AUTOMATIC
           END IF
-
+           
           ! Allocate memory for the matrix or release the existing matrix,
           ! if there's a structural update.
           IF (binit) THEN
@@ -874,7 +890,7 @@ CONTAINS
             CALL lsysbl_releaseMatrix(&
                 rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
           END IF
-          
+          p_testingpointer => rnonlinearIteration%RcoreEquation
           ! Allocate memory for the basic submatrices.
           ! The B1^T and B2^T matrices are saved as 'virtual transpose' of B1 and
           ! B2 by default, we must change them later if necessary.
@@ -890,7 +906,6 @@ CONTAINS
         END IF
         
         ! On the current level, set up a global preconditioner matrix.
-
         p_rmatrixPreconditioner => &
             rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner
       
@@ -947,7 +962,7 @@ CONTAINS
         ! Under certain circumstances, the linear solver needs B^T-matrices.
         ! This is the case if
         ! - a direct solver (UMFPACK) is used on a level or
-        ! - if the general VANCA preconditioner is used.
+        ! - if the general VANKA preconditioner is used.
         ! In these cases, we create a separate copy of B1 and B2 and transpose them.
         ! Note that we do this only in that case when there is a 'structural update'
         ! (which means that the structure of the matrices have changed). Otherwise,
@@ -997,7 +1012,7 @@ CONTAINS
               
             ELSE
             
-              ! On the other levels, tweak the matrix if the general VANCA is
+              ! On the other levels, tweak the matrix if the general VANKA is
               ! chosen as smoother; it needs transposed matrices.
               IF ((rnonlinearIteration%rprecSpecials%ismootherType .EQ. 0) .OR. &
                   (rnonlinearIteration%rprecSpecials%ismootherType .EQ. 1)) THEN
@@ -1107,7 +1122,7 @@ CONTAINS
 !</inputoutput>
 
 !</subroutine>
-
+ 
     ! local variables
     INTEGER :: i
 

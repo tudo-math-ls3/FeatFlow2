@@ -224,7 +224,15 @@ MODULE ccmatvecassembly
     ! Pointer to a Mass matrix.
     ! May point to NULL() during matrix creation.
     TYPE(t_matrixScalar), POINTER :: p_rmatrixMass => NULL()
-
+    
+    ! A template FEM matrix that defines the structure of the concentration
+    ! matrix. 
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateQ1 => NULL()
+    
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplatePMass => NULL()
+    
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateCoupMass => NULL()
+    
   END TYPE
 
 !</typeblock>
@@ -367,6 +375,10 @@ CONTAINS
       CALL assembleVelocityBlocks (&
           rnonlinearCCMatrix,rmatrix,rvector,1.0_DP)
       
+      !Assemble the concentration matrix
+      !
+      CALL assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,rvector%rvectorBlock(4),1.0_DP)
+      
       ! Assemble the gradient submatrices
       !          
       !    ( .    .    B1  ) 
@@ -387,6 +399,8 @@ CONTAINS
       
       rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearCCMatrix%dtau
       rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearCCMatrix%dtau
+      
+      
       
       ! Matrix restriction
       ! ---------------------------------------------------
@@ -437,7 +451,8 @@ CONTAINS
 
       ! A pointer to the system matrix and the RHS/solution vectors.
       TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM,p_rmatrixTemplateGradient
-
+      
+      TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateQ1
       ! A pointer to the discretisation structure with the data.
       TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
     
@@ -463,7 +478,9 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
         CALL sys_halt()
       END IF
-
+      
+   !
+      
       ! In the global system, there are two gradient matrices B1 and B2.
       ! Get a pointer to the template structure for these.
       ! If there is no pointer, try to get use a pointer to one of these
@@ -483,7 +500,7 @@ CONTAINS
         CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
       ELSE
         ! No discretisation structure; create the matrix directly as 3x3 matrix.
-        CALL lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
+        CALL lsysbl_createEmptyMatrix (rmatrix,NDIM2D+2)
       END IF
         
       ! Let's consider the global system in detail. The standard matrix It has 
@@ -506,7 +523,6 @@ CONTAINS
       ! the entries.
       CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                   rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-          
       IF (.NOT. bdecoupled .AND. .NOT. bfulltensor) THEN     
            
         ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
@@ -527,9 +543,12 @@ CONTAINS
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      rmatrix%RmatrixBlock(2,2)%p_rspatialDiscretisation => &
-        p_rdiscretisation%RspatialDiscretisation(2)
-                                          
+      CALL lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(2,2),&
+          p_rdiscretisation%RspatialDiscr(2))
+          
+        p_rmatrixTemplateQ1 => rnonlinearCCMatrix%p_rmatrixTemplateQ1
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateQ1,&
+                  rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
       ! A 'full tensor matrix' consists also of blocks A12 and A21.
       IF (bfulltensor) THEN
 
@@ -615,7 +634,7 @@ CONTAINS
                                       rmatrix%RmatrixBlock(3,2),&
                                       LSYSSC_TR_VIRTUAL)
       END IF
-
+    
       ! That's it, all submatrices are basically set up.
       !
       ! Update the structural information of the block matrix, as we manually
@@ -686,7 +705,7 @@ CONTAINS
           CALL lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
         END IF
       END IF
-    
+      
       ! ---------------------------------------------------
       ! Plug in the mass matrix?
       IF (rnonlinearCCMatrix%dalpha .NE. 0.0_DP) THEN
@@ -944,8 +963,10 @@ CONTAINS
       END IF ! gamma <> 0
     
     END SUBROUTINE  
-      
-    ! -----------------------------------------------------
+    
+!-------------------------------------------------------------------------------------------------
+    
+    
     
     SUBROUTINE assembleGradientMatrices (rnonlinearCCMatrix,rmatrix,bsharedMatrix)
     
@@ -1076,7 +1097,50 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+  SUBROUTINE assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,rconcentration,dvectorWeight)
+        
+    ! Assembles the concentration matrix in the block matrix rmatrix at position (1,1):
+    !
+    ! rmatrix := dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
+    !            dnewton*N*(p_rvector)
+    
+    ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
+    ! about how to set up the matrix. 
+    TYPE(t_nonlinearCCMatrix), INTENT(IN) :: rnonlinearCCMatrix
+    
+    ! Block matrix where the 2x2-velocity submatrix should be assembled
+    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
 
+    ! Velocity vector for the nonlinearity. Must be specified if
+    ! GAMMA <> 0; can be omitted if GAMMA=0.
+    TYPE(t_vectorScalar), OPTIONAL :: rconcentration
+    
+    ! Weight for the velocity vector; standard = -1.
+    REAL(DP), INTENT(IN), OPTIONAL :: dvectorWeight
+    
+    ! local variables
+    LOGICAL :: bshared
+    INTEGER :: iupwind
+    TYPE(t_convUpwind) :: rupwind
+    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+    TYPE(T_jumpStabilisation) :: rjumpStabil
+    REAL(DP) :: dvecWeight
+    !REAL(DP), DIMENSION(:), POINTER :: p_h_Da
+   
+    IF  (.NOT. lsyssc_hasMatrixContent (rmatrix%rmatrixBlock(4,4))) THEN 
+      CALL lsyssc_allocEmptyMatrix (rmatrix%rmatrixBlock(4,4),LSYSSC_SETM_ZERO)     
+    END IF
+    
+    CALL lsyssc_initialiseIdentityMatrix (rmatrix%rmatrixBlock(4,4))
+    
+!     CALL storage_new1D('assembleConcentrationBlock', 'rmatrix%rmatrixBlock(4,4)%h_DA', &
+!          1, ST_DOUBLE, rmatrix%rmatrixBlock(4,4)%h_DA, ST_NEWBLOCK_ZERO)
+!          
+!      CALL storage_getbase_double(rmatrix%rmatrixBlock(4,4)%h_DA, p_h_Da)
+!     p_h_Da(:) = 1.0_dp
+    
+    END SUBROUTINE    
+    !***********************************************************************************************
 !<subroutine>
 
   SUBROUTINE cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,dcx,dcd,ry)
@@ -1146,7 +1210,7 @@ CONTAINS
     !    ( B1^T B2^T .   ) 
     ! 
     ! Create a temporary matrix that covers this structure.
-    CALL lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
+    CALL lsysbl_createEmptyMatrix (rmatrix,NDIM2D+2)
     
     ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect 
     ! needs this template matrix to provide the structure for the stabilisation
@@ -1175,11 +1239,21 @@ CONTAINS
     CALL lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
                                   rmatrix%RmatrixBlock(3,2),&
                                   LSYSSC_TR_VIRTUAL)
-
+    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixTemplatePMass,&
+        rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    
+    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixTemplateCoupMass,&
+        rmatrix%RmatrixBlock(3,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    
+    CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixTemplateQ1,&
+        rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+        
+     
+     CALL assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,rx%rvectorBlock(4),1.0_DP) 
     ! Update the structural information of the block matrix, as we manually
     ! changed the submatrices:
     CALL lsysbl_updateMatStrucInfo (rmatrix)
-    
+   
     ! In the first step, we assemble the defect that arises in the velocity 
     ! components. This is characterised by the following submatrix:
     !
@@ -1203,7 +1277,7 @@ CONTAINS
     CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,2))
     CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(2,1))
     CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(2,2))
-
+    CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(4,4))
     ! Initialise the weights for the B/B^T matrices
     rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearCCMatrix%deta
     rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearCCMatrix%deta

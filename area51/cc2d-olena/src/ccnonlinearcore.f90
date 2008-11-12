@@ -328,6 +328,15 @@ MODULE ccnonlinearcore
     ! Mass matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixMass => NULL()
     
+    ! Concentration matrix
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateQ1 => NULL()
+    
+    !The Mass matrix(3,3)
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplatePMass => NULL()
+    
+    !The mass matrix (4,3)
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateCoupMass => NULL()
+    
     ! Temporary vector for the interpolation of a solution to a lower level.
     ! Exists only on levels NLMIN..NLMAX-1 !
     TYPE(t_vectorBlock), POINTER :: p_rtempVector => NULL()
@@ -552,7 +561,13 @@ CONTAINS
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2T
       rnonlinearCCMatrix%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
-
+      rnonlinearCCMatrix%p_rmatrixTemplateQ1 => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixTemplateQ1
+      rnonlinearCCMatrix%p_rmatrixTemplatePMass => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixTemplatePMass
+      rnonlinearCCMatrix%p_rmatrixTemplateCoupMass => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixTemplateCoupMass
+      
       CALL cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP)        
       
       p_RfilterChain => rnonlinearIteration%p_RfilterChain
@@ -737,7 +752,13 @@ CONTAINS
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2
       rnonlinearCCMatrix%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
-
+      rnonlinearCCMatrix%p_rmatrixTemplateQ1 => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixTemplateQ1
+      rnonlinearCCMatrix%p_rmatrixTemplatePMass => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixTemplatePMass
+      rnonlinearCCMatrix%p_rmatrixTemplateCoupMass => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixTemplateCoupMass
+          
       ! Assemble the matrix.        
       CALL cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
           rmatrix,rnonlinearCCMatrix,rtemp1)
@@ -852,7 +873,7 @@ CONTAINS
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
     TYPE(t_ccnonlinearIteration), INTENT(INOUT), TARGET   :: rnonlinearIteration
-
+    
     ! Number of current iteration. 
     INTEGER, INTENT(IN)                           :: ite
 
@@ -1121,7 +1142,7 @@ CONTAINS
       TYPE(t_timer) :: rtimer
       ! A filter chain for the linear solver
       TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
-      
+      TYPE(t_problem_lvl), DIMENSION(:), POINTER :: p_RlevelInfo
       ! DEBUG!!!
     !    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
     !    call lsysbl_getbase_double (rd,p_def)
@@ -1139,7 +1160,7 @@ CONTAINS
 
         ! On all levels, we have to set up the nonlinear system matrix,
         ! so that the linear solver can be applied to it.
-        
+        p_RlevelInfo => rproblem%RlevelInfo
         NULLIFY(p_rmatrix)
 
         DO ilev=NLMAX,NLMIN,-1
@@ -1216,6 +1237,12 @@ CONTAINS
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2T
           rnonlinearCCMatrix%p_rmatrixMass => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
+          rnonlinearCCMatrix%p_rmatrixTemplateQ1 => &
+          rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixTemplateQ1
+      rnonlinearCCMatrix%p_rmatrixTemplatePMass => &
+          rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixTemplatePMass
+      rnonlinearCCMatrix%p_rmatrixTemplateCoupMass => &
+          rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixTemplateCoupMass
 
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
@@ -1705,7 +1732,7 @@ CONTAINS
 !</input>
 
 !</subroutine>
-
+  TYPE(t_problem_lvl), DIMENSION(:), POINTER :: p_RlevelInfo
   ! local variables
   TYPE(t_collection), POINTER :: p_rcollection
   INTEGER :: ite
@@ -1753,6 +1780,7 @@ CONTAINS
       ! as prescribed by the parameters of the solver.
       ! The callback routines might change it...
       domega = rsolverNode%domega
+    
       
       ! Perform at most nmaxIterations iterations
       DO ite = 1,rsolverNode%nmaxIterations

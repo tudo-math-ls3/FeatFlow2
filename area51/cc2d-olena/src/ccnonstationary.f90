@@ -64,7 +64,9 @@ MODULE ccnonstationary
   USE ccgeneraldiscretisation
   USE ccpostprocessing
   USE ccboundarycondition
-    
+  
+  USE poisson2d_method0_simple  
+  
   IMPLICIT NONE
 
 !<types>
@@ -359,7 +361,7 @@ CONTAINS
     ! local variables
     TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
     TYPE(t_nonlinearCCMatrix) :: rnonlinearCCMatrix
-    
+   
     ! DEBUG!!!
     !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
   
@@ -421,7 +423,15 @@ CONTAINS
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB2
     rnonlinearCCMatrix%p_rmatrixMass => &
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass    
-        
+    rnonlinearCCMatrix%p_rmatrixTemplateQ1 => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixTemplateQ1
+    
+    rnonlinearCCMatrix%p_rmatrixTemplatePMass => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixTemplatePMass
+    
+    rnonlinearCCMatrix%p_rmatrixTemplateCoupMass => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixTemplateCoupMass 
+           
     CALL cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,-1.0_DP,1.0_DP)
 
     ! -------------------------------------------    
@@ -478,7 +488,7 @@ CONTAINS
     ! handled fully implicitely. There is no part of the pressure on the RHS
     ! of the time step scheme and so the factor in front of the pressure
     ! is always the length of the current (sub)step!
-    CALL lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+    CALL lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+2),&
         rtimestepping%dtstep)
     
     ! Update the preconditioner for the case, something changed (e.g.
@@ -488,6 +498,7 @@ CONTAINS
     ! the routine must be called with bstructuralChange=true!
     CALL cc_updatePreconditioner (rproblem,rnonlinearIterationTmp,&
        rvector,rtempVectorRhs,.FALSE.,.FALSE.)
+
     
     ! Call the solver of the core equation to solve it using a nonlinear
     ! iteration.
@@ -495,7 +506,7 @@ CONTAINS
         rvector,rtempVectorRhs,rtempVector)             
 
     ! scale the pressure back, then we have again the correct solution vector.
-    CALL lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+    CALL lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+2),&
         1.0_DP/rtimestepping%dtstep)
 
     ! rvector is the solution vector u^{n+1}.    
@@ -531,13 +542,14 @@ CONTAINS
 
   ! Postprocessing structure. Defines what to do with solution vectors.
   TYPE(t_c2d2postprocessing), INTENT(INOUT) :: rpostprocessing
-  
+  TYPE(t_problem_lvl), POINTER :: p_rproblem_lvl
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
     INTEGER :: i,j
+    !TYPE(t_vectorBlock)  :: rconcentration
     TYPE(t_vectorBlock) :: rtempBlock1,rtempBlock2
     TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
     
@@ -562,6 +574,17 @@ CONTAINS
 
     ! Backup postprocessing structure
     TYPE(t_c2d2postprocessing) :: rpostprocessingBackup
+    
+    !Discretised stucture for the concentration
+    TYPE(t_blockDiscretisation) :: rdiscretisation
+    
+    ! We need a couple of variables for this problem. Let's see...
+    !
+    ! An object for saving the domain:
+    !TYPE(t_boundary) :: rboundary
+    
+    ! An object for saving the triangulation on the domain
+    !TYPE(t_triangulation) :: rtriangulation
 
     ! Some preparations for the nonlinear solver.
     !
@@ -585,7 +608,23 @@ CONTAINS
     ! Create temporary vectors we need for the nonlinear iteration.
     CALL lsysbl_createVecBlockIndirect (rrhs, rtempBlock1, .FALSE.)
     CALL lsysbl_createVecBlockIndirect (rrhs, rtempBlock2, .FALSE.)
-
+   
+    p_rproblem_lvl => rproblem%RlevelInfo(rproblem%nlmax)
+   
+   ! Now we can start to initialise the discretisation. At first, set up
+    ! a block discretisation structure that specifies the blocks in the
+    ! solution vector. In this simple problem, we only have one block.
+    CALL spdiscr_initBlockDiscr2D (rdiscretisation,1,&
+                                   p_rproblem_lvl%rtriangulation, rproblem%rboundary)
+                                   
+    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
+    ! structures for every component of the solution vector.
+    ! Initialise the first element of the list to specify the element
+    ! and cubature rule for this solution component:
+    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+                                   EL_E011,CUB_G2X2,p_rproblem_lvl%rtriangulation, rproblem%rboundary)
+    !CALL lsysbl_createVecBlockByDiscr (rdiscretisation,rconcentration,.TRUE.)
+    
     ! Implement the initial boundary conditions into the solution vector.
     ! Don't implement anything to matrices or RHS vector as these are
     ! maintained in the timeloop.
@@ -603,6 +642,7 @@ CONTAINS
     
     ! Reset counter of current macro step repetitions.
     irepetition = 0
+    
     
     !----------------------------------------------------
     ! Timeloop
@@ -1012,7 +1052,8 @@ CONTAINS
         
         END SELECT
       END IF
-        
+      !CALL poisson2d_0_simple_core(rconcentration,rvector,rproblem%rtimedependence%dtimeStep,&
+      !                 rproblem%rtimedependence%dtime)
       !----------------------------------------------------
       ! Postprocessing
       !----------------------------------------------------
@@ -1146,7 +1187,7 @@ CONTAINS
       CALL output_separator(OU_SEP_AT)
 
     END DO
-
+    
     ! Clean up the stuff of/for the nonlinear solver.
     !
     ! Release the temporary vectors
@@ -1159,6 +1200,11 @@ CONTAINS
     
     ! Release existing snapshots
     CALL cc_releaseSnapshop (rsnapshotLastMacrostep)
+    !Release the concentration vector
+    !CALL lsysbl_releaseVector (rconcentration)
+    ! Release the discretisation structure and all spatial discretisation
+    ! structures in it.
+    CALL spdiscr_releaseBlockDiscr(rdiscretisation)
     
     ! Release the preconditioner
     CALL cc_releasePreconditioner (rnonlinearIteration)

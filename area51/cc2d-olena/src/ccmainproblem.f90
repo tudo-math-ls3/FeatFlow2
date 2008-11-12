@@ -215,7 +215,7 @@ CONTAINS
       CALL output_separator (OU_SEP_MINUS)
       CALL output_line('Generating basic matrices...')
     END IF
-    CALL cc_generateBasicMatrices (p_rproblem)
+        CALL cc_generateBasicMatrices (p_rproblem)
 
     ! Create the solution vector -- zero or read from file.
     IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN

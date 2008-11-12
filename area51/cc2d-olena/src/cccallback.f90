@@ -198,7 +198,7 @@ CONTAINS
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_Stokes (rdiscretisation,rform, &
+  SUBROUTINE coeff_Stokes (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
@@ -223,9 +223,14 @@ CONTAINS
   !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
-    
+    ! analytic boundary boundary description etc.; trial space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
+        
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
+
     ! The bilinear form which is currently being evaluated:
     TYPE(t_bilinearForm), INTENT(IN)                            :: rform
     
@@ -278,7 +283,7 @@ CONTAINS
 ! ***************************************************************************
   !<subroutine>
 
-  SUBROUTINE coeff_Pressure (rdiscretisation,rform, &
+  SUBROUTINE coeff_Pressure (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
@@ -303,9 +308,14 @@ CONTAINS
   !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
-    
+    ! analytic boundary boundary description etc.; trial space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTrial
+        
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisationTest
+
     ! The bilinear form which is currently being evaluated:
     TYPE(t_bilinearForm), INTENT(IN)                            :: rform
     
@@ -515,6 +525,90 @@ CONTAINS
     
   !</subroutine>
 
+    REAL(DP) :: dtime
+    
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (PRESENT(rcollection)) THEN
+      dtime = rcollection%Dquickaccess(1)
+    ELSE
+      dtime = 0.0_DP
+    END IF
+    
+    Dcoefficients(:,:,:) = 0.0_DP
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  SUBROUTINE coeff_RHS_C (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    USE basicgeometry
+    USE triangulation
+    USE collection
+    USE scalarpde
+    USE domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form of the
+    ! X-velocity part of the right hand side vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    TYPE(t_linearForm), INTENT(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    INTEGER, INTENT(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
     REAL(DP) :: dtime
     
     ! In a nonstationary simulation, one can get the simulation time
@@ -985,7 +1079,7 @@ CONTAINS
     INTEGER :: ipoint,idx
     
     ! Get the triangulation array for the point coordinates
-    p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation
+    p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
     CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                     p_DvertexCoordinates)
     CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&

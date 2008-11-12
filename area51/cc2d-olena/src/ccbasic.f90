@@ -60,6 +60,15 @@ MODULE ccbasic
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar) :: rmatrixStokes
     
+    !for matrix TemplateQ1
+    TYPE(t_matrixScalar) :: rmatrixTemplateQ1
+    
+    !for matrix TemplateCoupMass 
+    TYPE(t_matrixScalar) :: rmatrixTemplateCoupMass 
+    
+    !for matrix TemplatePMass
+    TYPE(t_matrixScalar) :: rmatrixTemplatePMass
+    
     ! B1-matrix for that specific level. 
     TYPE(t_matrixScalar) :: rmatrixB1
 
