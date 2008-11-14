@@ -152,16 +152,16 @@ module fsystem
   integer, parameter :: SYS_NAMELEN = 32
 
   ! minimal difference to unity for real values
-  real(DP)           :: SYS_EPSREAL = epsilon(1.0_DP)
+  real(DP), parameter :: SYS_EPSREAL = epsilon(1.0_DP)
 
   ! minimal positive values for real variables
-  real(DP)           :: SYS_MINREAL = tiny(1.0_DP)
+  real(DP), parameter :: SYS_MINREAL = tiny(1.0_DP)
 
   ! maximal values for real variables
-  real(DP)           :: SYS_MAXREAL = huge(1.0_DP)
+  real(DP), parameter :: SYS_MAXREAL = huge(1.0_DP)
 
   ! maximal values for integer variables
-  integer            :: SYS_MAXINT = huge(1)
+  integer, parameter :: SYS_MAXINT = huge(1)
 
   ! mathematical constant Pi
   real(DP)           :: SYS_PI
