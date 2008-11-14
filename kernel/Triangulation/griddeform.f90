@@ -21,6 +21,8 @@
 !#     -> allocate needed resources
 !# 6.) griddef_performDeformation
 !#     -> main routine for the grid deformation process
+!# 6a.)griddef_computeAdapSteps
+!#     -> computes the number of adaption steps
 !# 7.) griddef_performOneDefStep
 !#     -> performs one deformation step of the (basic,enhanced) deformation method
 !# 8.) griddef_getArea
@@ -75,9 +77,8 @@ MODULE griddeform
   USE element
   USE elementpreprocessing
   USE pprocgradients
-  USE ucd
+  USE ucd  
   use linearsolver
-  
   
   IMPLICIT NONE
 
@@ -1088,7 +1089,7 @@ CONTAINS
     ! we prescribe a fixed number of adaptation steps
     if(p_calcAdapSteps(rgriddefInfo%iminDefLevel) .eq. GRIDDEF_FIXED)then
     
-      rgriddefInfo%nadaptionSteps = 10
+      rgriddefInfo%nadaptionSteps = 20
     
     end if
     
