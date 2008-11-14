@@ -224,19 +224,69 @@ CONTAINS
     !</description>
 
     !<inputoutput>
-     REAL(DP), dimension(:,:) :: DvertexCoords
-     REAL(DP), DIMENSION(:) :: Dentries
+     real(DP), dimension(:,:) :: DvertexCoords
+     real(DP), dimension(:) :: Dentries
     !</inputoutput>
 
-  !</subroutine>
-  ! local variables
-  integer :: ive
-
-
-      DO ive=1,ubound(DvertexCoords,2)
-        Dentries(ive) = 0.5_dp + DvertexCoords(1,ive)
-      END DO
-
+    !</subroutine>
+    ! local variables
+     real(dp),dimension(:,:),allocatable :: Dpoints
+     integer(PREC_VERTEXIDX) :: ive,i1,ipoints
+     integer :: iMethod
+     real(DP) :: Dist,t,dt,dmin
+     iMethod = 1
+      
+     ipoints = ubound(Dentries,1) 
+      
+      
+     select case(iMethod)
+       case(0)
+         ! loop over all vertices and compute the monitor function
+        do ive=1, ipoints
+          Dentries(ive) = 0.5_dp + DvertexCoords(1,ive)
+         end do
+       case(1)
+         ! loop over all vertices and compute the monitor function
+         do ive=1,ipoints
+           Dist = sqrt((0.5_dp - DvertexCoords(1,ive))**2 + (0.5_dp - DvertexCoords(2,ive))**2)
+           ! Good now define the monitor function
+           Dist = abs(Dist - 0.2_dp)/0.2_dp
+           Dist=max(dist,0.1_dp)
+           Dist=min(1.0_dp,dist)
+           Dentries(ive)=Dist
+         end do
+       case(2)
+        do ive=1,ipoints
+          Dentries(ive) = 1.0_dp
+        end do
+       case(3)
+       
+        allocate(Dpoints(2,10000))
+        dt = 6.28_dp/real(10000)
+        t  = 0.0_dp
+        do i1=1,10000
+         Dpoints(1,i1) = 0.5_dp + 0.1_dp * cos(t)
+         Dpoints(2,i1) = 0.5_dp + 0.2_dp * sin(t)
+         t = t + dt
+        end do
+       
+        
+       
+        do ive=1,ipoints
+          
+          dmin = 10000.0_dp
+            
+          do i1=1,10000
+            Dist = sqrt((Dpoints(1,i1)-DvertexCoords(1,ive))**2 + (Dpoints(2,i1)-DvertexCoords(2,ive))**2)
+            dmin =min(Dist,dmin)
+          end do
+          
+          Dentries(ive) = dmin
+          
+        end do
+       case default
+     end select
+      
   end subroutine
 
 END MODULE
