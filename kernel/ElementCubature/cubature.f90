@@ -22,7 +22,14 @@
 !#     -> Interpret a string as cubature type identifier. This is typically
 !#        used for parsing INI files.
 !#
-!# 2.) cub_getCubPoints
+!# 2.) cub_igetNumPts
+!#     -> Returns the number of points for a given cubature type identifier.
+!#
+!# 3.) cub_igetShape
+!#     -> Returns the element shape identifier on which a cubature formula
+!#        is defined.
+!#
+!# 4.) cub_getCubPoints
 !#     -> Get information about cubature points for a specific cubature
 !#        formula: Coordinates, number and weights.
 !# </purpose>
@@ -302,12 +309,159 @@ contains
   case("S5_3D_T")
     cub_igetID=CUB_S5_3D_T
 
-  case DEFAULT
+  case default
     print *,'Error: Unknown cubature formula: ',scubname
     call sys_halt()
   end select
     
   end function 
+
+  !****************************************************************************
+
+!<function>
+
+  integer function cub_igetNumPts(ccubType) result(n)
+  
+!<description>
+  ! This routine returns the number of cubature points for a given cubature id.
+!</description>
+
+!<result>
+  ! the number of points for the formula.
+!</result>
+
+!<input>
+  ! Cubature tpye identifier
+  integer, intent(IN) :: ccubType
+!</input>
+  
+!</function>
+
+    select case(ccubType)
+    ! -= 1D Line Formulas =-
+    case (CUB_G1_1D)
+      n = 1
+    case (CUB_G2_1D,CUB_TRZ_1D)
+      n = 2
+    case (CUB_G3_1D,CUB_SIMPSON_1D)
+      n = 3
+    case (CUB_G4_1D)
+      n = 4
+    case (CUB_G5_1D)
+      n = 5
+    case (CUB_G6_1D)
+      n = 6
+    
+    ! -= 2D Triangle Formulas =-
+    case (CUB_G1_T)
+      n = 1
+    case (CUB_G3_T,CUB_TRZ_T,CUB_Collatz)
+      n = 3
+    case (CUB_VMC)
+      n = 7
+    
+    ! -= 2D Quadrilateral Formulas =-
+    case (CUB_G1X1)
+      n = 1
+    case (CUB_G2X2,CUB_TRZ,CUB_MID,CUB_NS1,CUB_PG1X1)
+      n = 4
+    case (CUB_NS2)
+      n = 6
+    case (CUB_NS3)
+      n = 7
+    case (CUB_G3X3,CUB_PTRZ,CUB_SIMPSON)
+      n = 9
+    case (CUB_G)
+      n = 12
+    case (CUB_G4X4,CUB_PG2X2,CUB_3_8)
+      n = 16
+    case (CUB_G5X5)
+      n = 25
+    case (CUB_PG3X3)
+      n = 36
+      
+    ! -= 3D Tetrahedron Formulas =-
+    case (CUB_G1_3D_T)
+      n = 1
+    case (CUB_S2_3D_T,CUB_TRZ_3D_T)
+      n = 4
+    case (CUB_S3_3D_T)
+      n = 10
+    case (CUB_S5_3D_T)
+      n = 15
+      
+    ! -= 3D Hexahedron Formulas =-
+    case (CUB_G1_3D)
+      n = 1
+    case (CUB_MIDAREA_3D)
+      n = 6
+    case (CUB_G2_3D,CUB_TRZ_3D)
+      n = 8
+    case (CUB_G3_3D)
+      n = 27
+    
+    case default
+      print *, 'Error: Unknown cubature formula'
+      call sys_halt()
+    end select
+
+  end function
+
+
+  !****************************************************************************
+
+!<function>
+
+  integer(I32) function cub_igetShape(ccubType) result(ishp)
+  
+!<description>
+  ! This function returns the element shape identifier for a given cubature id.
+  ! The shape identifier is one of the BGEOM_SHAPE_XXXX constants defined in
+  ! basicgeometry.f90.
+!</description>
+
+!<result>
+  ! One of the BGEOM_SHAPE_XXXX shape identifiers.
+!</result>
+
+!<input>
+  ! Cubature type identifier
+  integer, intent(IN) :: ccubType
+!</input>
+  
+!</function>
+
+    if(ccubType .le. 100) then
+      ! Invalid identifier
+      ishp = BGEOM_SHAPE_UNKNOWN
+    else if(ccubType .le. 200) then
+      ! 1D Line
+      ishp = BGEOM_SHAPE_LINE
+    else if(ccubType .le. 250) then
+      ! 2D Quadrilateral
+      ishp = BGEOM_SHAPE_QUAD
+    else if(ccubType .le. 300) then
+      ! 2D Triangle
+      ishp = BGEOM_SHAPE_TRIA
+    else if(ccubType .le. 350) then
+      ! 3D Hexahedron
+      ishp = BGEOM_SHAPE_HEXA
+    else if(ccubType .le. 400) then
+      ! 3D Tetrahedron
+      ishp = BGEOM_SHAPE_TETRA
+    else if(ccubType .le. 450) then
+      ! 3D Pyramid
+      ishp = BGEOM_SHAPE_PYRA
+    else if(ccubType .le. 500) then
+      ! 3D Prism
+      ishp = BGEOM_SHAPE_PRISM
+    else
+      ! Invalid identifier
+      ishp = BGEOM_SHAPE_UNKNOWN
+    end if
+
+
+  end function
 
   !****************************************************************************
 
@@ -1684,7 +1838,7 @@ contains
     
     ncubp = 15
 
-  case DEFAULT 
+  case default 
     print *,'Error: unknown cubature formula: ',ccubType
     call sys_halt()
   end select

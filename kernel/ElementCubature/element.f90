@@ -1004,7 +1004,7 @@ contains
       ! EM30; these work in real coordinates
       elem_igetCoordSystem = TRAFO_CS_REAL3DHEXA
       
-    case DEFAULT
+    case default
       elem_igetCoordSystem = TRAFO_CS_UNDEFINED
     end select
   
@@ -1331,6 +1331,68 @@ contains
     ! identifier plus dimension.
     iresult = iand(ieltyp,EL_ELNRMASK)
   
+  end function
+
+  !************************************************************************
+  
+!<function>  
+
+  integer(I32) function elem_igetShape(ielType) result(ishp)
+  
+!<description>
+  ! This function returns the element shape identifier for a given element
+  ! id. The shape identifier is one of the BGEOM_SHAPE_XXXX constants
+  ! defined in basicgeometry.f90.
+!</description>
+
+
+!<result>
+  ! One of the BGEOM_SHAPE_XXXX shape identifiers.
+!</result>
+
+!<input>
+  ! Element identifier
+  integer(I32), intent(IN) :: ielType
+!</input>
+  
+!</function>
+
+    select case (elem_getPrimaryElement(ielType))
+    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D)
+      ! 1D Line
+      ishp = BGEOM_SHAPE_LINE
+    
+    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
+      ! 2D Triangle
+      ishp = BGEOM_SHAPE_TRIA
+      
+    case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
+          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
+      ! 2D Quadrilateral
+      ishp = BGEOM_SHAPE_QUAD
+    
+    case (EL_P0_3D, EL_P1_3D)
+      ! 3D Tetrahedron
+      ishp = BGEOM_SHAPE_TETRA
+    
+    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D)
+      ! 3D Hexahedron
+      ishp = BGEOM_SHAPE_HEXA
+    
+    case (EL_Y0_3D, EL_Y1_3D)
+      ! 3D Pyramid
+      ishp = BGEOM_SHAPE_PYRA
+    
+    case (EL_R0_3D, EL_R1_3D)
+      ! 3D Prism
+      ishp = BGEOM_SHAPE_PRISM
+    
+    case default
+      ! Unknown
+      ishp = BGEOM_SHAPE_UNKNOWN
+      
+    end select
+
   end function
 
 !**************************************************************************
