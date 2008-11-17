@@ -829,7 +829,7 @@ contains
     
     ! Stop the timer and print the elapsed time
     call stat_stopTimer(rtimer)
-    call output_line('Total time for non-linear loop: ' // stat_sgetTime(rtimer))
+    call output_line('Total time for non-linear loop: ' // stat_sgetTime_byTimer(rtimer))
 
     ! We can now start the postprocessing. 
     ! Start UCD export to GMV file:
