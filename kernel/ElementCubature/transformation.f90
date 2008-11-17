@@ -92,12 +92,17 @@
 !#         fine mesh edge to a coarse mesh edge according to the 2-level-
 !#         ordering refinement algorithm.
 !#
-!# 22.) trafo_mapCubPtsRef2LvlQuad2D
+!# 22.) trafo_mapCubPtsRef2LvlTri2D
+!#      -> Maps a set of 2D cubature points coordinate on the reference
+!#         fine mesh triangle to a coarse mesh triangle according
+!#         to the 2-level-ordering refinement algorithm.
+!#
+!# 23.) trafo_mapCubPtsRef2LvlQuad2D
 !#      -> Maps a set of 2D cubature points coordinate on the reference
 !#         fine mesh quadrilateral to a coarse mesh quadrilateral according
 !#         to the 2-level-ordering refinement algorithm.
 !#
-!# 23.) trafo_mapCubPtsRef2LvlHexa3D
+!# 24.) trafo_mapCubPtsRef2LvlHexa3D
 !#      -> Maps a set of 3D cubature points coordinate on the reference
 !#         fine mesh hexahedron to a coarse mesh hexahedron according to
 !#         the 2-level-ordering refinement algorithm.
@@ -3825,13 +3830,13 @@ contains
   integer , intent(IN) :: ncubp
   
   ! Cubature point coordinates on 1D reference fine mesh edge [-1,1]
-  ! Dfine(1,1..ncubp)= X-coordinates
+  ! Dfine(1,1:ncubp)= X-coordinates
   real(DP), dimension(:,:), intent(IN) :: Dfine
 !</input>
   
 !<output>
   ! Cubature point coordinates on 1D reference coarse mesh edge [-1,1]
-  ! Dcoarse(1,1..2*ncubp)= X-coordinates,
+  ! Dcoarse(1,1:*ncubp)= X-coordinates
   real(DP), dimension(:,:), intent(OUT) :: Dcoarse
 !</output>
 
@@ -3853,6 +3858,154 @@ contains
 
 !<subroutine>
 
+  pure subroutine trafo_mapCubPtsRef2LvlTri2D(ncubp, Dfine, Dcoarse)
+
+!<description>
+  ! This routine maps the coordinates of the cubature points of a fine mesh
+  ! triangle onto the coarse mesh triangle.
+!</description>
+
+!<input>
+  ! Number of cubature points for the triangle
+  integer , intent(IN) :: ncubp
+  
+  ! Cubature point coordinates for the fine mesh triangle given in 
+  ! barycentric coordinates
+  ! Dfine(1:3,1:ncubp) = barycentric coordinates
+  real(DP), dimension(:,:), intent(IN) :: Dfine
+!</input>
+  
+!<output>
+  ! Cubature point coordinates for the coarse mesh triangle given in
+  ! barycentric coordinates.
+  ! Dcoarse(1:3,1..4*ncubp) = barycentric coordinates
+  real(DP), dimension(:,:), intent(OUT) :: Dcoarse
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i
+  real(DP) :: d1,d2,d3
+  
+  ! Vertice / Edge-Midpoint coordinates
+  real(DP), parameter :: V1x = 0.0_DP
+  real(DP), parameter :: V1y = 0.0_DP
+  real(DP), parameter :: V2x = 1.0_DP
+  real(DP), parameter :: V2y = 0.0_DP
+  real(DP), parameter :: V3x = 0.0_DP
+  real(DP), parameter :: V3y = 1.0_DP
+  real(DP), parameter :: E1x = 0.5_DP
+  real(DP), parameter :: E1y = 0.0_DP
+  real(DP), parameter :: E2x = 0.5_DP
+  real(DP), parameter :: E2y = 0.5_DP
+  real(DP), parameter :: E3x = 0.0_DP
+  real(DP), parameter :: E3y = 0.5_DP
+  
+    ! Now as we don't use reference coordinates and a reference triangle
+    ! but barycentric coordinates, the 2-Level mapping of cubature points
+    ! on triangles gets a bit more tricky.
+    ! The very first thing that one has to be aware of is that one of the
+    ! barycentric coordinates is redundant as it can be calculated as 1
+    ! minus the sum of the other two coordinates. So we can focus on
+    ! calculating two barycentric coordinates to get the job done.
+    !
+    ! The trick we will use here can often be used when working with
+    ! barycentric coordinates, as they are quite unhandy: We will simply
+    ! define a reference triangle and a corresponding transformation from
+    ! barycentric coordinates into reference coordinates and vice versa.
+    ! Our reference triangle will be defined as the convex area with the
+    ! three corner vertices V1 := (0,0), V2 := (1,0) and V3 := (0,1).
+    ! Now if we have a point (p1,p2,p3) given in barycentric coordinates,
+    ! we can transform the point into reference coordinates by using:
+    !
+    !                      (x,y) = p1*V1 + p2*V2 + p3*V3
+    !
+    ! Now inserting the definition of our corner vertices Vi we get:
+    !
+    !                      (x,y) = (p2, p3)
+    !
+    ! On the other hand, if we want to transform a point (x,y) given in
+    ! reference coordinates into barycentric coordinates, we do this by:
+    !
+    !                 (p1,p2,p3) = (1-x-y, x, y)
+    !
+    ! Now in the following, we will also use the edge-midpoints given in
+    ! reference coordinates to calculate the reference coordinates of the
+    ! 2-Level mapping of the cubature points.
+    !
+    ! Take a look at the following ASCII-Art of a refined triangle:
+    !
+    !  y ^ 
+    !    |
+    !    1    V3
+    !    |    |\__
+    !    |    | 1 \__
+    !    |    |      \__
+    !    |    |         \__
+    !    |    |     D      \__
+    !    |    | 2           3 \
+    !    |    E3---------------E2
+    !    |    |\__3          2 |\__
+    !    |    | 3 \__    A     | 2 \__
+    !    |    |      \__       |      \__
+    !    |    |         \__    |         \__
+    !    |    |     B      \__1|     C      \__
+    !    |    | 1           2 \| 3           1 \
+    !    0    V1---------------E1---------------V2
+    !
+    !         0---------------------------------1--->
+    !                                               x
+    !
+    ! Assume that we have a point (p1,p2,p3) given in barycentric coordinates
+    ! on the triangle C. To map the point (p1,p2,p3) onto the coarse mesh
+    ! triangle, all we have to calculate is:
+    !
+    !                 (x,y) = p1*V2 + p2*E2 + p3*E1
+    !
+    ! To figure out the rest, the reader is assumed to switch on his/her
+    ! brain (or whatever organ the reader uses for thinking) and take
+    ! a closer look at the following algorithm ^_^
+
+    ! Remark:
+    ! Please note that the following implementation focuses on being
+    ! understandable rather than being efficient!
+    do i = 1, ncubp
+    
+      ! Get fine mesh barycentric coordinates
+      d1 = Dfine(1,i)
+      d2 = Dfine(2,i)
+      d3 = Dfine(3,i)
+      
+      ! Child A -> reference coordinates
+      Dcoarse(2,        i) = d1*E1x + d2*E2x + d3*E3x
+      Dcoarse(3,        i) = d1*E1y + d2*E2y + d3*E3y
+      
+      ! Child B -> reference coordinates
+      Dcoarse(2,  ncubp+i) = d1*V1x + d2*E1x + d3*E3x
+      Dcoarse(3,  ncubp+i) = d1*V1y + d2*E1y + d3*E3y
+      
+      ! Child C -> reference coordinates
+      Dcoarse(2,2*ncubp+i) = d1*V2x + d2*E2x + d3*E1x
+      Dcoarse(3,2*ncubp+i) = d1*V2y + d2*E2y + d3*E1y
+      
+      ! Child D -> reference coordinates
+      Dcoarse(2,3*ncubp+i) = d1*V3x + d2*E3x + d3*E2x
+      Dcoarse(3,3*ncubp+i) = d1*V3y + d2*E3y + d3*E2y
+      
+    end do
+    
+    ! Recalculate first barycentric coordinate
+    do i = 1, 4*ncubp
+      Dcoarse(1,i) = 1.0_DP - (Dcoarse(2,i) + Dcoarse(3,i))
+    end do
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
   pure subroutine trafo_mapCubPtsRef2LvlQuad2D(ncubp, Dfine, Dcoarse)
 
 !<description>
@@ -3865,15 +4018,15 @@ contains
   integer , intent(IN) :: ncubp
   
   ! Cubature point coordinates on 2D reference fine mesh quad [-1,1]x[-1,1]
-  ! Dfine(1,1..ncubp)= X-coordinates,
-  ! Dfine(2,1..ncubp)= Y-coordinates
+  ! Dfine(1,1:ncubp) = X-coordinates,
+  ! Dfine(2,1:ncubp) = Y-coordinates
   real(DP), dimension(:,:), intent(IN) :: Dfine
 !</input>
   
 !<output>
   ! Cubature point coordinates on 2D reference coarse mesh quad [-1,1]x[-1,1]
-  ! Dcoarse(1,1..4*ncubp)= X-coordinates,
-  ! Dcoarse(2,1..4*ncubp)= Y-coordinates
+  ! Dcoarse(1,1:4*ncubp) = X-coordinates,
+  ! Dcoarse(2,1:4*ncubp) = Y-coordinates
   real(DP), dimension(:,:), intent(OUT) :: Dcoarse
 !</output>
 
@@ -3910,17 +4063,17 @@ contains
   integer , intent(IN) :: ncubp
   
   ! Cubature point coordinates on 3D reference fine mesh hexahedron [-1,1]^3
-  ! Dfine(1,1..ncubp)= X-coordinates,
-  ! Dfine(2,1..ncubp)= Y-coordinates,
-  ! Dfine(3,1..ncubp)= Z-coordinates
+  ! Dfine(1,1:ncubp) = X-coordinates,
+  ! Dfine(2,1:ncubp) = Y-coordinates,
+  ! Dfine(3,1:ncubp) = Z-coordinates
   real(DP), dimension(:,:), intent(IN) :: Dfine
 !</input>
   
 !<output>
   ! Cubature point coordinates on 3D reference coarse mesh hexahedron [-1,1]^3
-  ! Dcoarse(1,1..8*ncubp)= X-coordinates,
-  ! Dcoarse(2,1..8*ncubp)= Y-coordinates,
-  ! Dcoarse(3,1..8*ncubp)= Z-coordinates
+  ! Dcoarse(1,1:8*ncubp) = X-coordinates,
+  ! Dcoarse(2,1:8*ncubp) = Y-coordinates,
+  ! Dcoarse(3,1:8*ncubp) = Z-coordinates
   real(DP), dimension(:,:), intent(OUT) :: Dcoarse
 !</output>
 
