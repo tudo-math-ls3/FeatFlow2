@@ -29,7 +29,7 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90 \
 	nonlinearsolver.f90 matrixrestriction.f90 fparser.f90 \
 	stack.f90 pprocnavierstokes.f90 ucd.f90 signal.f90 signal_ccode.c \
 	timestepping.f90 pprocerror.f90 trilinearformevaluation.f90 \
-	stdoperators.f90 sort.f90 quadtree.f90 l2projection.f90 \
+	stdoperators.f90 sort.f90 quadtree.f90 analyticprojection.f90 \
 	pprocgradients.f90 geometry.f90 mprimitives.f90 \
 	hadaptivity.f90 list.f90 binarytree.f90 arraylist.f90 \
 	graph.f90 octree.f90 triasearch.f90 statistics.f90 \

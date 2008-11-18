@@ -1,23 +1,24 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> l2projection </name>
+!# <name> analyticprojection </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains routines to calculate $L_2$ projections of analytically
+!# This module contains routines to calculate projections of analytically
 !# given functions, i.e. to calculate the Finite Element representation of
 !# an analytic function.
 !#
 !# One can find the following subroutines here:
 !#
-!# 1.) l2prj_analytL2projectionByMass
+!# 1.) anprj_analytL2projectionByMass
 !#     -> Performs defect correction with the consistent and lumped mass 
 !#        matrix of a FE space to calculate the consistent $L_2$ projection
 !#        of an analytically given function.
+!#
 !# </purpose>
 !##############################################################################
 
-module l2projection
+module analyticprojection
 
   use fsystem
   use linearalgebra
@@ -95,7 +96,7 @@ contains
 
 !<subroutine>
 
-  subroutine l2prj_analytL2projectionByMass (rvector,rmatrixMass,&
+  subroutine anprj_analytL2projectionByMass (rvector,rmatrixMass,&
       fcoeff_buildVectorSc_sim,rcollection,&
       rL2ProjectionConfig,rmatrixMassLumped,rvectorTemp1,rvectorTemp2)
       
