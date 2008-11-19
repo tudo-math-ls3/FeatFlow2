@@ -15,6 +15,10 @@
 !#        matrix of a FE space to calculate the consistent $L_2$ projection
 !#        of an analytically given function.
 !#
+!# 2.) anprj_discrDirect
+!#     -> Evaluates an analytically given function and creates the 
+!#        corresponding FE representation. 
+!#
 !# </purpose>
 !##############################################################################
 
@@ -101,7 +105,7 @@ contains
       rL2ProjectionConfig,rmatrixMassLumped,rvectorTemp1,rvectorTemp2)
       
 !<description>
-  ! Converts an analytically given FE function fcoeff_buildVectorSc_sim
+  ! Converts an analytically given function fcoeff_buildVectorSc_sim
   ! to a finite element vector rvector by using mass matrices.
   ! So the resulting vector is the consistent $L_2$ projection of the
   ! analytically given function.
@@ -306,6 +310,391 @@ contains
       call lsyssc_releaseVector(p_rvectorTemp1)
       deallocate(p_rvectorTemp1)
     end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine anprj_discrDirect (rvector,&
+      ffunctionReference,rcollection,iorder)
+      
+!<description>
+  ! Converts an analytically given function fcoeff_buildVectorSc_sim
+  ! to a finite element vector rvector by direct point evaluation.
+  ! Note that this function may not work for all finite elements!
+  ! Standard 'immediate' elements (Q0,Q1,..., midpoint based Q1~) are 
+  ! nevertheless supported.
+!</description>
+
+!<input>
+  ! A callback routine for the function to be discretised. The callback routine
+  ! has the same syntax as that for evaluating analytic functions for the 
+  ! computation of RHS vectors.
+  include '../Postprocessing/intf_refFunctionSc.inc'
+
+  ! OPTIONAL: A pointer to a collection structure. This structure is 
+  ! given to the callback function for calculating the function
+  ! which should be discretised in the linear form.
+  type(t_collection), intent(INOUT), target, optional :: rcollection
+
+  ! OPTIONAL: Order of the evaluation. Standard = 0.
+  ! =0: Automatic; use highest possible evaluation (currently =2) to
+  !     calculate as exact as possible.
+  ! =1: Use pure point evaluation. This is exact for Q0, Q1, Q2,... as well as
+  !     for midpoint based Q1~ finite elements.
+  ! =2: Use point evaluation for point-value based finite elements 
+  !     (Q0, Q1, Q2,...). Use exact integral mean value evaluation for integral
+  !     mean value based elements like Q1~ (E030, EM30).
+  ! Example: If the given vector is an integral mean value based Q1~
+  ! vector and iorder=1 is specified, it will be created as "1st order
+  ! approximation" to the given function -- which means by evaluating
+  ! in edge midpoints.
+  integer, intent(in), optional :: iorder
+!</input>
+
+!<inputoutput>
+  ! A scalar vector that receives the $L_2$ projection of the function.
+  type(t_vectorScalar), intent(INOUT), target :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,k,icurrentElementDistr, ICUBP, NVE
+    integer :: IEL, IELmax, IELset
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisation
+    real(dp), dimension(:), pointer :: p_Ddata
+    integer :: h_Dweight
+    real(dp), dimension(:), pointer :: p_Dweight
+    integer :: iactualorder
+    
+    ! Array to tell the element which derivatives to calculate
+    logical, dimension(EL_MAXNDER) :: Bder
+    
+    ! Cubature point coordinates on the reference element
+    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
+
+    ! For every cubature point on the reference element,
+    ! the corresponding cubature weight
+    real(DP), dimension(CUB_MAXCUBP) :: Domega
+    
+    ! number of cubature points on the reference element
+    integer :: ncubp
+    
+    ! Number of local degees of freedom for test functions
+    integer :: indofTrial
+    
+    ! The triangulation structure - to shorten some things...
+    type(t_triangulation), pointer :: p_rtriangulation
+    
+    ! A pointer to an element-number list
+    integer(I32), dimension(:), pointer :: p_IelementList
+    
+    ! An array receiving the coordinates of cubature points on
+    ! the reference element for all elements in a set.
+    real(DP), dimension(:,:), allocatable :: p_DcubPtsRef
+
+    ! Current element distribution
+    type(t_elementDistribution), pointer :: p_relementDistribution
+    
+    ! Number of elements in the current element distribution
+    integer(PREC_ELEMENTIDX) :: NEL
+
+    ! Pointer to the values of the function that are computed by the callback routine.
+    real(DP), dimension(:,:), allocatable :: Dcoefficients
+    
+    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! except if there are less elements in the discretisation.
+    integer :: nelementsPerBlock
+    
+    ! A t_domainIntSubset structure that is used for storing information
+    ! and passing it to callback routines.
+    type(t_domainIntSubset) :: rintSubset
+    type(t_evalElementSet) :: revalElementSet
+    
+    ! An allocateable array accepting the DOF's of a set of elements.
+    integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTrial
+  
+    ! Type of transformation from the reference to the real element 
+    integer :: ctrafoType
+    
+    ! Element evaluation tag; collects some information necessary for evaluating
+    ! the elements.
+    integer(I32) :: cevaluationTag
+
+    ! Evaluate optional parameters.
+    iactualorder = 0
+    if (present(iorder)) iactualorder = iorder
+    if (iactualorder .eq. 0) iactualorder = 2
+    
+    ! We choose the midpoint rule for evaluation. Actually, we don't compute
+    ! integrals but point values...
+    Bder = .false.
+    Bder(DER_FUNC) = .true.
+    
+    ! Get a pointer to the triangulation - for easier access.
+    p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
+    p_rdiscretisation => rvector%p_rspatialDiscr
+    
+    ! For saving some memory in smaller discretisations, we calculate
+    ! the number of elements per block. For smaller triangulations,
+    ! this is NEL. If there are too many elements, it's at most
+    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(1000,p_rtriangulation%NEL)
+    
+    ! Get the data of the FE function we want to initialise.
+    ! Clear the FE function in-advance.
+    call lsyssc_clearVector (rvector)
+    call lsyssc_getbase_double (rvector,p_Ddata)
+    
+    ! Allocate an array that contains the DOF weight;
+    ! Initialise with zero. For 'primal' elements e.g., the entries count
+    ! how often a DOF was touched. The contributions are summed up and
+    ! later on divided by this value.
+    call storage_new1D ('anprj_discrDirectEx31', 'Dweight', size(p_Ddata), &
+        ST_DOUBLE, h_Dweight, ST_NEWBLOCK_ZERO)
+    call storage_getbase_double(h_Dweight,p_Dweight)
+
+    ! Now loop over the different element distributions (=combinations
+    ! of trial and test functions) in the discretisation.
+
+    do icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
+    
+      ! Activate the current element distribution
+      p_relementDistribution => p_rdiscretisation%RelementDistr(icurrentElementDistr)
+    
+      ! Cancel if this element distribution is empty.
+      if (p_relementDistribution%NEL .eq. 0) cycle
+
+      ! Get the number of local DOF's for trial functions
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+      
+      ! Get the number of corner vertices of the element
+      NVE = elem_igetNVE(p_relementDistribution%celement)
+      
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there:
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+
+      ! Now a big element and dimension dependent part: Evaluation points of the
+      ! node functionals. The DOF's of most finite elements can be filled by the
+      ! correct evaluation of the analytic function -- which is done by
+      ! calculating values in different points and creating that functional.
+      !
+      ! For Q0, Q1, Q2,... we just have to evaluate the vertices, edges,...
+      ! and we have the node values.
+      !
+      ! For Q1~ it depends. If it's the midpoint based version, this is done by
+      ! taking the values in the midpoints of the edges. For the integral
+      ! mean value based variant, we have to evaluate line integrals.
+      ! Exception: If the 'order' is to low, we also take midpoint values
+      ! in the integral mean value case of Q1~.
+      select case (p_relementDistribution%celement)
+      case (EL_P0,EL_P1,EL_P2,EL_P3)
+        ! We evaluate in the edge midpoints.
+        ! That can be archieved by getting the cubature points from the midpoint rule,
+        ! these are exactly the midpoints!
+        allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+        call cub_getCubPoints(CUB_G3_T, ncubp, Dxi, Domega)
+
+        ! Reformat the cubature points; they are in the wrong shape!
+        do i=1,ncubp
+          do k=1,ubound(p_DcubPtsRef,1)
+            p_DcubPtsRef(k,i) = Dxi(i,k)
+          end do
+        end do
+        
+      case (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_E031,EL_EM31)
+        ! We evaluate in the edge midpoints.
+        ! That can be archieved by getting the cubature points from the midpoint rule,
+        ! these are exactly the midpoints!
+        allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+        call cub_getCubPoints(CUB_MID, ncubp, Dxi, Domega)
+
+        ! Reformat the cubature points; they are in the wrong shape!
+        do i=1,ncubp
+          do k=1,ubound(p_DcubPtsRef,1)
+            p_DcubPtsRef(k,i) = Dxi(i,k)
+          end do
+        end do
+
+      case (EL_E030,EL_EM30)
+        if (iactualorder .eq. 1) then
+          ! We evaluate in the edge midpoints.
+          ! That can be archieved by getting the cubature points from the midpoint rule,
+          ! these are exactly the midpoints!
+          allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+          call cub_getCubPoints(CUB_MID, ncubp, Dxi, Domega)
+
+          ! Reformat the cubature points; they are in the wrong shape!
+          do i=1,ncubp
+            do k=1,ubound(p_DcubPtsRef,1)
+              p_DcubPtsRef(k,i) = Dxi(i,k)
+            end do
+          end do
+        else
+          call output_line ('Full order currently not supported!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'anprj_discrDirect')
+          call sys_halt()
+        end if
+
+      case default
+        call output_line ('Element currently not supported!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'anprj_discrDirect')
+        call sys_halt()
+
+      end select
+      
+      ! Allocate memory for the DOF's of all the elements.
+      allocate(IdofsTrial(indofTrial,nelementsPerBlock))
+
+      ! Allocate memory for the function values
+      allocate(Dcoefficients(ncubp,nelementsPerBlock))
+    
+      ! Initialisation of the element set.
+      call elprep_init(revalElementSet)
+
+      ! We don't want to evaluate the element, but we need some information
+      ! from the preparation routine for the callback routine.
+      ! So we 'pretend' that we want to evaluate.
+      !
+      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+      ! the elements later. All of them can be combined with OR, what will give
+      ! a combined evaluation tag. 
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+                      
+      ! Evaluate real coordinates.
+      cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
+      
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      call storage_getbase_int (p_relementDistribution%h_IelementList, &
+                                p_IelementList)
+                     
+      ! Get the number of elements there.
+      NEL = p_relementDistribution%NEL
+    
+      ! Loop over the elements - blockwise.
+      do IELset = 1, NEL, 1000
+      
+        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! How many elements have we actually here?
+        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! elements simultaneously.
+        IELmax = min(NEL,IELset-1+1000)
+      
+        ! Calculate the global DOF's into IdofsTrial.
+        !
+        ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
+                                     IdofsTrial)
+                                     
+        ! Prepare the call to the evaluation routine of the analytic function.    
+        call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
+        rintSubset%ielementDistribution = icurrentElementDistr
+        rintSubset%ielementStartIdx = IELset
+        rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial => IdofsTrial
+    
+        ! Calculate all information that is necessary to evaluate the finite element
+        ! on all cells of our subset. This includes the coordinates of the points
+        ! on the cells.
+        call elprep_prepareSetForEvaluation (revalElementSet,&
+            cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
+            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+
+        ! In the next loop, we don't have to evaluate the coordinates
+        ! on the reference elements anymore.
+        cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+
+        ! It's time to call our coefficient function to calculate the
+        ! function values in the cubature points:  u(x,y)
+        call ffunctionReference (DER_FUNC,p_rdiscretisation, &
+                    int(IELmax-IELset+1),ncubp,&
+                    revalElementSet%p_DpointsReal,&
+                    IdofsTrial,rintSubset,&
+                    Dcoefficients(:,1:IELmax-IELset+1_I32),rcollection)
+
+        ! Another element dependent part: evaluation of the functional.
+        select case (p_relementDistribution%celement)
+        case (EL_P0,EL_P1,EL_P2,EL_P3,&
+              EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_E031,EL_EM31)
+              
+          ! Loop through elements in the set and for each element,
+          do IEL=1,IELmax-IELset+1
+          
+            do icubp = 1, ncubp
+            
+              ! Sum up the calculated value to the existing value of the 
+              ! corresponding DOF.
+              p_Ddata(IdofsTrial(icubp,IEL)) = p_Ddata(IdofsTrial(icubp,IEL)) + &
+                Dcoefficients(icubp,IEL)
+                
+              ! Count the entry
+              p_Dweight(IdofsTrial(icubp,IEL)) = p_Dweight(IdofsTrial(icubp,IEL)) + 1.0_DP
+
+            end do ! ICUBP 
+
+          end do ! IEL
+          
+        case (EL_E030,EL_EM30)
+        
+          if (iactualorder .eq. 1) then
+            ! Loop through elements in the set and for each element,
+            do IEL=1,IELmax-IELset+1
+            
+              do icubp = 1, ncubp
+              
+                ! Sum up the calculated value to the existing value of the 
+                ! corresponding DOF.
+                p_Ddata(IdofsTrial(icubp,IEL)) = p_Ddata(IdofsTrial(icubp,IEL)) + &
+                  Dcoefficients(icubp,IEL)
+                  
+                ! Count the entry
+                p_Dweight(IdofsTrial(icubp,IEL)) = p_Dweight(IdofsTrial(icubp,IEL)) + 1.0_DP
+
+              end do ! ICUBP 
+
+            end do ! IEL
+          else
+            call output_line ('Full order currently not supported!', &
+                              OU_CLASS_ERROR,OU_MODE_STD,'anprj_discrDirect')
+            call sys_halt()
+          end if
+
+        case default
+          call output_line ('Element currently not supported!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'anprj_discrDirect')
+          call sys_halt()
+
+        end select        
+        
+        ! Release the temporary domain integration structure again
+        call domint_doneIntegration (rintSubset)
+    
+      end do ! IELset
+      
+      ! Release memory
+      call elprep_releaseElementSet(revalElementSet)
+      
+      deallocate(p_DcubPtsRef)
+      deallocate(Dcoefficients)
+      deallocate(IdofsTrial)
+
+    end do ! icurrentElementDistr
+    
+    ! Take the mean value in all entries. We just summed up all contributions and now
+    ! this divides by the number of contributions...
+    ! All DOF's should be touched, so we assume that there is Dweight != 0 everywhere.
+    do i=1,size(p_Ddata)
+      p_Ddata(i) = p_Ddata(i) / p_Dweight(i)
+    end do
+    
+    ! Release temp data
+    call storage_free (h_Dweight)
 
   end subroutine
 

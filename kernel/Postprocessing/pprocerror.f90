@@ -451,7 +451,7 @@ contains
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       if (present(ffunctionReference)) then
-        ! Evaluate real coordinates if not necessary.
+        ! Evaluate real coordinates if necessary.
         cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
       end if
 
