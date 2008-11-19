@@ -119,7 +119,6 @@
 		<File RelativePath="..\..\..\kernel\PDEOperators\intf_gfsccallback.inc"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\intf_gfsyscallback.inc"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\jumpstabilisation.f90"/>
-		<File RelativePath="..\..\..\kernel\PDEOperators\l2projection.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\matrixrestriction.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\stdoperators.f90"/></Filter>
 		<Filter Name="Postprocessing">
@@ -140,6 +139,7 @@
 		<Filter Name="ProblemSupport">
 		<File RelativePath="..\..\..\kernel\ProblemSupport\collection.f90"/></Filter>
 		<Filter Name="Projection">
+		<File RelativePath="..\..\..\kernel\Projection\analyticprojection.f90"/>
 		<File RelativePath="..\..\..\kernel\Projection\spdiscprojection.f90"/></Filter>
 		<Filter Name="System">
 		<File RelativePath="..\..\..\kernel\System\afcutil.f90"/>
