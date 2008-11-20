@@ -6149,6 +6149,7 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rsource, p_rdest
   integer :: i,j,isizeSource,isizeDest
+  integer, dimension(2) :: Ilbound, Iubound
   integer, dimension(2) :: Isize2DSource,Isize2DDest
 
     ! Get the heap to use - local or global one.
@@ -6233,54 +6234,64 @@ contains
       case (2)
         select case (p_rsource%IdataType)
         case (ST_SINGLE)
+          Ilbound = lbound(p_rsource%p_Fsingle2D)
+          Iubound = ubound(p_rsource%p_Fsingle2D)
           call storage_new ('storage_copy', p_rsource%sname,&
-                            lbound(p_rsource%p_Fsingle2D),&
-                            ubound(p_rsource%p_Fsingle2D),&
+                            Ilbound,Iubound,&
                             ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_DOUBLE)
+          Ilbound = lbound(p_rsource%p_Ddouble2D)
+          Iubound = ubound(p_rsource%p_Ddouble2D)
           call storage_new ('storage_copy', p_rsource%sname,&
-                            lbound(p_rsource%p_Ddouble2D),&
-                            ubound(p_rsource%p_Ddouble2D),&
+                            Ilbound,Iubound,&
                             ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_QUAD)
+          Ilbound = lbound(p_rsource%p_Qquad2D)
+          Iubound = ubound(p_rsource%p_Qquad2D)
           call storage_new ('storage_copy', p_rsource%sname,&
-                            lbound(p_rsource%p_Qquad2D),&
-                            ubound(p_rsource%p_Qquad2D),&
+                            Ilbound,Iubound,&
                             ST_QUAD, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT)
+          Ilbound = lbound(p_rsource%p_Iinteger2D)
+          Iubound = ubound(p_rsource%p_Iinteger2D)
           call storage_new ('storage_copy', p_rsource%sname,&
-                            lbound(p_rsource%p_Iinteger2D),&
-                            ubound(p_rsource%p_Iinteger2D),&
+                            Ilbound,Iubound,&
                             ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT8)
+          Ilbound = lbound(p_rsource%p_Iint8_2D)
+          Iubound = ubound(p_rsource%p_Iint8_2D)
           call storage_new ('storage_copy', p_rsource%sname,&
-                            lbound(p_rsource%p_Iint8_2D),&
-                            ubound(p_rsource%p_Iint8_2D),&
+                            Ilbound,Iubound,&
                             ST_INT8, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT16)
+          Ilbound = lbound(p_rsource%p_Iint16_2D)
+          Iubound = ubound(p_rsource%p_Iint16_2D)
           call storage_new ('storage_copy', p_rsource%sname,&
-                            lbound(p_rsource%p_Iint16_2D),&
-                            ubound(p_rsource%p_Iint16_2D),&
+                            Ilbound,Iubound,&
                             ST_INT16, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT32)
+          Ilbound = lbound(p_rsource%p_Iint32_2D)
+          Iubound = ubound(p_rsource%p_Iint32_2D)
           call storage_new ('storage_copy', p_rsource%sname,&
-                            lbound(p_rsource%p_Iint32_2D),&
-                            ubound(p_rsource%p_Iint32_2D),&
+                            Ilbound,Iubound,&
                             ST_INT32, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT64)
+          Ilbound = lbound(p_rsource%p_Iint64_2D)
+          Iubound = ubound(p_rsource%p_Iint64_2D)
           call storage_new ('storage_copy', p_rsource%sname,&
-                            lbound(p_rsource%p_Iint64_2D),&
-                            ubound(p_rsource%p_Iint64_2D),&
+                            Ilbound,Iubound,&
                             ST_INT64, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_LOGICAL)
+          Ilbound = lbound(p_rsource%p_Blogical2D)
+          Iubound = ubound(p_rsource%p_Blogical2D)
           call storage_new ('storage_copy', p_rsource%sname,&
-                            lbound(p_rsource%p_Blogical2D),&
-                            ubound(p_rsource%p_Blogical2D),&
+                            Ilbound,Iubound,&
                             ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_CHAR)
+          Ilbound = lbound(p_rsource%p_Schar2D)
+          Iubound = ubound(p_rsource%p_Schar2D)
           call storage_new ('storage_copy', p_rsource%sname,&
-                            lbound(p_rsource%p_Schar2D),&
-                            ubound(p_rsource%p_Schar2D),&
+                            Ilbound,Iubound,&
                             ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         end select
       end select
