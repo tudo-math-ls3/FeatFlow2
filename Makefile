@@ -166,9 +166,8 @@ test: libs
 # name the file properly.
 
 dist: fixperms purge_all
-	@(cd applications/benchmark && $(MAKE) purge_all)
 	@bin/clear_tildefiles.sh
-	(cd .. && tar --exclude CVS --exclude .rem -cvzf FeatflowCD_$(FFVER).tar.gz FeatflowCD)
+	(cd .. && tar --exclude .svn --exclude .rem --exclude area51 --exclude docs --exclude documentation --exclude incoming --exclude 'libgoto*' --exclude cc2doptcontrol --exclude Deps.mk -cvzf Featflow2_$(FFVER).tar.gz Featflow2)
 fixperms:
 	@(cd ./bin ; chmod ug+x guess_id f77mkdep.sh clear_tildefiles.sh info_cpu info_f77)
 
