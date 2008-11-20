@@ -1598,7 +1598,7 @@ contains
 
       rvalue%sname = ''
       rvalue%csvalue = " "
-      nullify(rvalue%p_svalue)
+      if (associated(rvalue%p_svalue)) deallocate(rvalue%p_svalue)
       rvalue%ivalue = 0
       rvalue%dvalue = 0.0_DP
       nullify(rvalue%p_rdiscretisation)
