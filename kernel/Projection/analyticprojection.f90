@@ -369,7 +369,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,k,icurrentElementDistr, ICUBP, NVE
+    integer :: i,k,icurrentElementDistr, ICUBP
     integer :: IEL, IELmax, IELset
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     real(dp), dimension(:), pointer :: p_Ddata
@@ -477,9 +477,6 @@ contains
 
       ! Get the number of local DOF's for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
-      
-      ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%celement)
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
