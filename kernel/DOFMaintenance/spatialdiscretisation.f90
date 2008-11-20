@@ -871,27 +871,29 @@ contains
   integer :: i
   logical :: brelsub
   
-  brelsub = .true.
-  if (present(breleaseSubstruc)) brelsub = breleaseSubstruc
+  if (rblockDiscr%ndimension .ne. 0) then
+    brelsub = .true.
+    if (present(breleaseSubstruc)) brelsub = breleaseSubstruc
 
-  ! Cut the connection to the other structures
-  nullify(rblockDiscr%p_rtriangulation)
-  nullify(rblockDiscr%p_rboundary)
-  
-  ! Release substructures?
-  if (brelsub) then
-    if (associated(rblockDiscr%RspatialDiscr)) then
-      do i=1,rblockDiscr%ncomponents
-        call spdiscr_releaseDiscr (rblockDiscr%RspatialDiscr(i))
-      end do
+    ! Cut the connection to the other structures
+    nullify(rblockDiscr%p_rtriangulation)
+    nullify(rblockDiscr%p_rboundary)
+    
+    ! Release substructures?
+    if (brelsub) then
+      if (associated(rblockDiscr%RspatialDiscr)) then
+        do i=1,rblockDiscr%ncomponents
+          call spdiscr_releaseDiscr (rblockDiscr%RspatialDiscr(i))
+        end do
+      end if
     end if
-  end if
-  if (associated(rblockDiscr%RspatialDiscr)) &
+    
     deallocate(rblockDiscr%RspatialDiscr)
-  rblockDiscr%ncomponents = 0
+    rblockDiscr%ncomponents = 0
 
-  ! Structure not initialised anymore
-  rblockDiscr%ndimension = 0
+    ! Structure not initialised anymore
+    rblockDiscr%ndimension = 0
+  end if
   
   end subroutine  
 
@@ -1522,60 +1524,61 @@ contains
   integer :: i
   type(t_elementDistribution), pointer :: p_relementDistr
 
-  ! Cut the connection to the other structures
-  nullify(rspatialDiscr%p_rtriangulation)
-  nullify(rspatialDiscr%p_rboundary)
-  
-  if (.not. rspatialDiscr%bisCopy) then
-  
-    ! Release element distribution lists.
-    if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-      call storage_free (rspatialDiscr%h_IelementDistr)
-    end if
+  if (rspatialDiscr%ndimension .ne. 0) then
+    ! Cut the connection to the other structures
+    nullify(rspatialDiscr%p_rtriangulation)
+    nullify(rspatialDiscr%p_rboundary)
     
-  else
-    rspatialDiscr%h_IelementDistr = ST_NOHANDLE
-  end if
-  
-  ! Loop through all element distributions
-  do i=1,rspatialDiscr%inumFESpaces
-  
-    p_relementDistr => rspatialDiscr%RelementDistr(i)
+    if (.not. rspatialDiscr%bisCopy) then
     
-    ! If the element distribution is empty, skip it
-    if (p_relementDistr%NEL .ne. 0) then
-    
-      ! Release the element list there.
-      ! Take care: If the current structure is a copy of another one, the
-      ! element list 'belongs' to another structure, and so we mustn't
-      ! delete it from memory!
-      if (.not. rspatialDiscr%bisCopy) then
-        if (p_relementDistr%h_IelementList .ne. ST_NOHANDLE) &
-          call storage_free (p_relementDistr%h_IelementList)
-      else
-        p_relementDistr%h_IelementList = ST_NOHANDLE
+      ! Release element distribution lists.
+      if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
+        call storage_free (rspatialDiscr%h_IelementDistr)
       end if
       
+    else
+      rspatialDiscr%h_IelementDistr = ST_NOHANDLE
     end if
     
-    p_relementDistr%celement = EL_UNDEFINED
+    ! Loop through all element distributions
+    do i=1,rspatialDiscr%inumFESpaces
     
-  end do
-  
-  if (.not. rspatialDiscr%bisCopy) then
-    if (rspatialDiscr%h_IelementCounter .ne. ST_NOHANDLE) &
-      call storage_free (rspatialDiscr%h_IelementCounter)
-  else    
-    rspatialDiscr%h_IelementCounter = ST_NOHANDLE
-  end if
-  
-  ! No FE-spaces in here anymore...
-  if (associated(rspatialDiscr%RelementDistr)) &
+      p_relementDistr => rspatialDiscr%RelementDistr(i)
+      
+      ! If the element distribution is empty, skip it
+      if (p_relementDistr%NEL .ne. 0) then
+      
+        ! Release the element list there.
+        ! Take care: If the current structure is a copy of another one, the
+        ! element list 'belongs' to another structure, and so we mustn't
+        ! delete it from memory!
+        if (.not. rspatialDiscr%bisCopy) then
+          if (p_relementDistr%h_IelementList .ne. ST_NOHANDLE) &
+            call storage_free (p_relementDistr%h_IelementList)
+        else
+          p_relementDistr%h_IelementList = ST_NOHANDLE
+        end if
+        
+      end if
+      
+      p_relementDistr%celement = EL_UNDEFINED
+      
+    end do
+    
+    if (.not. rspatialDiscr%bisCopy) then
+      if (rspatialDiscr%h_IelementCounter .ne. ST_NOHANDLE) &
+        call storage_free (rspatialDiscr%h_IelementCounter)
+    else    
+      rspatialDiscr%h_IelementCounter = ST_NOHANDLE
+    end if
+    
+    ! No FE-spaces in here anymore...
     deallocate(rspatialDiscr%RelementDistr)
-  rspatialDiscr%inumFESpaces = 0
+    rspatialDiscr%inumFESpaces = 0
   
-  ! Structure not initialised anymore
-  rspatialDiscr%ndimension = 0
+    ! Structure not initialised anymore
+    rspatialDiscr%ndimension = 0
+  end if
   
   end subroutine  
 
