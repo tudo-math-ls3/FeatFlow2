@@ -524,6 +524,7 @@ contains
       
       ! Remove the block discretisation structure and all substructures.
       call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation)
+      call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisationStabil)
       
       ! Release the mass matrix discretisation.
       call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rdiscretisationMass)
