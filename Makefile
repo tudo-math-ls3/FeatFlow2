@@ -141,6 +141,10 @@ purge_all:
 	@$(foreach i, $(LIBS), (echo "Cleaning up "$(i) ; cd libraries/$i && $(MAKE) purge_all ); )
 	-rm -f -r object/libraries/lib-*
 
+clean_all:
+	@$(foreach i, $(APPS), (echo "Cleaning up "$(i) ; cd applications/$i && $(MAKE) clean_all ); )
+	@$(foreach i, $(LIBS), (echo "Cleaning up "$(i) ; cd libraries/$i && $(MAKE) clean_all ); )
+
 debug: debug_libs debug_apps
 debug_apps:
 	@$(foreach i, $(APPS), (echo "Cleaning up "$(i) ; cd applications/$i && $(MAKE) debug ); )
