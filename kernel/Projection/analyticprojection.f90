@@ -323,9 +323,16 @@ contains
 !<description>
   ! Converts an analytically given function fcoeff_buildVectorSc_sim
   ! to a finite element vector rvector by direct point evaluation.
-  ! Note that this function may not work for all finite elements!
-  ! Standard 'immediate' elements (Q0,Q1,..., midpoint based Q1~) are 
+  !
+  ! Note: This function may not work for all finite elements!
+  ! Standard 'immediate' elements (Q0,Q1,..., Q1~) are 
   ! nevertheless supported.
+  !
+  ! Note: For conformal finite elements (Q0,Q1,...) the result of this
+  ! routine is by FE-theory the same as the L2-projection of the function,
+  ! but computed much faster.
+  ! For nonconformal finite elements, the result is different and also
+  ! depending on iorder!
 !</description>
 
 !<input>
@@ -366,7 +373,7 @@ contains
     integer :: IEL, IELmax, IELset
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     real(dp), dimension(:), pointer :: p_Ddata
-    integer :: h_Dweight
+    integer :: h_Dweight, ccub, idof
     real(dp), dimension(:), pointer :: p_Dweight
     integer :: iactualorder
     
@@ -423,7 +430,7 @@ contains
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
     integer(I32) :: cevaluationTag
-
+    
     ! Evaluate optional parameters.
     iactualorder = 0
     if (present(iorder)) iactualorder = iorder
@@ -492,33 +499,6 @@ contains
       ! Exception: If the 'order' is to low, we also take midpoint values
       ! in the integral mean value case of Q1~.
       select case (p_relementDistribution%celement)
-      case (EL_P0,EL_P1,EL_P2,EL_P3)
-        ! We evaluate in the edge midpoints.
-        ! That can be archieved by getting the cubature points from the midpoint rule,
-        ! these are exactly the midpoints!
-        allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-        call cub_getCubPoints(CUB_G3_T, ncubp, Dxi, Domega)
-
-        ! Reformat the cubature points; they are in the wrong shape!
-        do i=1,ncubp
-          do k=1,ubound(p_DcubPtsRef,1)
-            p_DcubPtsRef(k,i) = Dxi(i,k)
-          end do
-        end do
-        
-      case (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_E031,EL_EM31)
-        ! We evaluate in the edge midpoints.
-        ! That can be archieved by getting the cubature points from the midpoint rule,
-        ! these are exactly the midpoints!
-        allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-        call cub_getCubPoints(CUB_MID, ncubp, Dxi, Domega)
-
-        ! Reformat the cubature points; they are in the wrong shape!
-        do i=1,ncubp
-          do k=1,ubound(p_DcubPtsRef,1)
-            p_DcubPtsRef(k,i) = Dxi(i,k)
-          end do
-        end do
 
       case (EL_E030,EL_EM30)
         if (iactualorder .eq. 1) then
@@ -535,15 +515,62 @@ contains
             end do
           end do
         else
-          call output_line ('Full order currently not supported!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'anprj_discrDirect')
-          call sys_halt()
+          ! In the 'full order' approximation, we compute the 2-point Gauss formula
+          ! on all 4 lines of the element shape. Get the coordinates of the
+          ! cubature points on a line [-1,1].
+          call cub_getCubPoints(CUB_G2_1D, ncubp, Dxi, Domega)
+          
+          ! Transfer the coordinates to the four edges of the reference element
+          allocate(p_DcubPtsRef(NDIM2D,CUB_MAXCUBP))
+          p_DcubPtsRef(1,1) = Dxi(1,1)
+          p_DcubPtsRef(2,1) = -1.0_DP
+          p_DcubPtsRef(1,2) = Dxi(2,1)
+          p_DcubPtsRef(2,2) = -1.0_DP
+
+          p_DcubPtsRef(1,3) = 1.0_DP
+          p_DcubPtsRef(2,3) = Dxi(1,1)
+          p_DcubPtsRef(1,4) = 1.0_DP
+          p_DcubPtsRef(2,4) = Dxi(2,1)
+
+          p_DcubPtsRef(1,5) = -Dxi(1,1)
+          p_DcubPtsRef(2,5) = 1.0_DP
+          p_DcubPtsRef(1,6) = -Dxi(2,1)
+          p_DcubPtsRef(2,6) = 1.0_DP
+
+          p_DcubPtsRef(1,7) = -1.0_DP
+          p_DcubPtsRef(2,7) = -Dxi(1,1)
+          p_DcubPtsRef(1,8) = -1.0_DP
+          p_DcubPtsRef(2,8) = -Dxi(2,1)
+          
+          ncubp = 8
+        
         end if
 
       case default
-        call output_line ('Element currently not supported!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'anprj_discrDirect')
-        call sys_halt()
+        ! For most of the standard finite elements based on point values,
+        ! the evaluation points coincide with the cubature points of that
+        ! cubature formula that lump the mass matrix in that FE space.
+        ! So try to get them...
+        ccub = spdiscr_getLumpCubature (p_relementDistribution%celement)
+        if (ccub .eq. 0) then
+          ! That FE space does not support lumped mass matrix and so
+          ! we have no point coordinates available to get the DOF values :(
+          call output_line ('Element not supported!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'anprj_discrDirect')
+          call sys_halt()
+        else
+          ! Get the coordinates of that points.
+          ! The weights Domega are ignored in the following...
+          allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+          call cub_getCubPoints(ccub, ncubp, Dxi, Domega)
+
+          ! Reformat the cubature points; they are in the wrong shape!
+          do i=1,ncubp
+            do k=1,ubound(p_DcubPtsRef,1)
+              p_DcubPtsRef(k,i) = Dxi(i,k)
+            end do
+          end do
+        end if
 
       end select
       
@@ -560,14 +587,12 @@ contains
       ! from the preparation routine for the callback routine.
       ! So we 'pretend' that we want to evaluate.
       !
-      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
-      ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      ! Create an element evaluation tag that computes us the element corners
+      ! (we may need them for integration), the coordinates on the
+      ! reference and on the real elements. Jacobian mapping, Jacobian determinants
+      ! etc. are not needed since we don't evaluate...
+      cevaluationTag = EL_EVLTAG_COORDS + EL_EVLTAG_REFPOINTS + EL_EVLTAG_REALPOINTS
                       
-      ! Evaluate real coordinates.
-      cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
-      
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that combination of trial functions
       call storage_getbase_int (p_relementDistribution%h_IelementList, &
@@ -620,9 +645,57 @@ contains
 
         ! Another element dependent part: evaluation of the functional.
         select case (p_relementDistribution%celement)
-        case (EL_P0,EL_P1,EL_P2,EL_P3,&
-              EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_E031,EL_EM31)
+        
+        case (EL_E030,EL_EM30)
+        
+          if (iactualorder .eq. 1) then
+          
+            ! Loop through elements in the set and for each element,
+            do IEL=1,IELmax-IELset+1
+            
+              do icubp = 1, ncubp
               
+                ! Sum up the calculated value to the existing value of the 
+                ! corresponding DOF.
+                p_Ddata(IdofsTrial(icubp,IEL)) = p_Ddata(IdofsTrial(icubp,IEL)) + &
+                  Dcoefficients(icubp,IEL)
+                  
+                ! Count the entry
+                p_Dweight(IdofsTrial(icubp,IEL)) = p_Dweight(IdofsTrial(icubp,IEL)) + 1.0_DP
+
+              end do ! ICUBP 
+
+            end do ! IEL
+            
+          else
+          
+            ! Loop through elements in the set and for each element,
+            do IEL=1,IELmax-IELset+1
+            
+              ! Loop through the DOF's on the current element.
+              do idof = 1,indofTrial 
+              
+                ! Calculate the DOF. For that purpose, calculate the line
+                ! integral (using the cubature points calculated above).
+                ! Weight by 0.5 to get the integral corresponding to an interval
+                ! of length 1 instead of 2 (what the cubature formula
+                ! uses: [-1,1]). That's already the integral mean
+                ! value we save as DOF...
+                p_Ddata(IdofsTrial(idof,IEL)) = p_Ddata(IdofsTrial(idof,IEL)) + &
+                  0.5_DP * (Dcoefficients(2*(idof-1)+1,IEL) * Domega(1) + &
+                            Dcoefficients(2*(idof-1)+2,IEL) * Domega(2))
+              
+                ! Count the entry
+                p_Dweight(IdofsTrial(idof,IEL)) = p_Dweight(IdofsTrial(idof,IEL)) + 1.0_DP
+
+              end do
+
+            end do ! IEL
+
+          end if
+
+        case default
+        
           ! Loop through elements in the set and for each element,
           do IEL=1,IELmax-IELset+1
           
@@ -640,35 +713,6 @@ contains
 
           end do ! IEL
           
-        case (EL_E030,EL_EM30)
-        
-          if (iactualorder .eq. 1) then
-            ! Loop through elements in the set and for each element,
-            do IEL=1,IELmax-IELset+1
-            
-              do icubp = 1, ncubp
-              
-                ! Sum up the calculated value to the existing value of the 
-                ! corresponding DOF.
-                p_Ddata(IdofsTrial(icubp,IEL)) = p_Ddata(IdofsTrial(icubp,IEL)) + &
-                  Dcoefficients(icubp,IEL)
-                  
-                ! Count the entry
-                p_Dweight(IdofsTrial(icubp,IEL)) = p_Dweight(IdofsTrial(icubp,IEL)) + 1.0_DP
-
-              end do ! ICUBP 
-
-            end do ! IEL
-          else
-            call output_line ('Full order currently not supported!', &
-                              OU_CLASS_ERROR,OU_MODE_STD,'anprj_discrDirect')
-            call sys_halt()
-          end if
-
-        case default
-          call output_line ('Element currently not supported!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'anprj_discrDirect')
-          call sys_halt()
 
         end select        
         
