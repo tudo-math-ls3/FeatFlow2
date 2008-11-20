@@ -1401,7 +1401,7 @@ contains
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    type(t_matrixBlock), dimension(:), target, allocatable :: Rmatrices
+    type(t_matrixBlock), dimension(:), pointer :: Rmatrices
     
     ! An interlevel projection structure for changing levels
     type(t_interlevelProjectionBlock) :: rprojection

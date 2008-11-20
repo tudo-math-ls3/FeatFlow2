@@ -107,7 +107,7 @@ contains
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An array of problem levels for the multigrid solver
-    type(t_level), dimension(:), target, allocatable :: Rlevels
+    type(t_level), dimension(:), pointer :: Rlevels
 
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
@@ -132,7 +132,7 @@ contains
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    type(t_matrixBlock), dimension(:), allocatable :: Rmatrices
+    type(t_matrixBlock), dimension(:), pointer :: Rmatrices
 
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
