@@ -64,6 +64,9 @@ clean:
 	-rm -f $(OBJDIR)/*.o 
 	-rm -f Deps.mk
 
+clean_all: clean
+	-rm -f -r obj/*
+
 purge: clean
 	-rm -f $(LIB)
 

@@ -90,6 +90,10 @@ clean:
 	-rm -f $(OBJDIR)/*.o 
 	-rm -f $(MODDIR)/*.mod 
 
+.PHONY: clean_all
+clean_all: clean
+	-rm -f -r obj/*
+
 .PHONY: clean_exec
 clean_exec: 
 	-rm -f $(EXEC)
