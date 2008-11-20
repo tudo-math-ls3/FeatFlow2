@@ -881,11 +881,9 @@ contains
     
     ! Release substructures?
     if (brelsub) then
-      if (associated(rblockDiscr%RspatialDiscr)) then
-        do i=1,rblockDiscr%ncomponents
-          call spdiscr_releaseDiscr (rblockDiscr%RspatialDiscr(i))
-        end do
-      end if
+      do i=1,rblockDiscr%ncomponents
+        call spdiscr_releaseDiscr (rblockDiscr%RspatialDiscr(i))
+      end do
     end if
     
     deallocate(rblockDiscr%RspatialDiscr)
