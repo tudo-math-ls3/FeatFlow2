@@ -154,6 +154,11 @@
 !# 13.) collct_deletesection
 !#      -> Removes a section from the collection, deletes all its content
 !#
+!# Auxiliary routines:
+!#
+!#  1.) collct_cleanupvalue
+!#      -> Cleans up a value structure.
+!#
 !# GUILDLINE
 !# ---------
 !# Here a small guidline how and when to use a collection:
@@ -673,9 +678,14 @@ contains
   subroutine collct_donelevel (rcollctLevel)
   
   type(t_collctLevel), intent(INOUT) :: rcollctLevel
+  integer :: i
   
   ! Deallocate the value list on the current level if there is one.
   if (associated(rcollctLevel%p_Rvalues)) then
+    ! Release and deallocate
+    do i=1,size(rcollctLevel%p_Rvalues)
+      call collct_cleanupvalue(rcollctLevel%p_Rvalues(i))
+    end do
     deallocate(rcollctLevel%p_Rvalues)
   end if
   
@@ -1568,6 +1578,58 @@ contains
   
 !<subroutine>
 
+  subroutine collct_cleanupvalue (rvalue)
+
+!<description>
+  ! Cleans up a value structure. Releases all associated memory.
+!</description>  
+  
+!<inputoutput>
+  ! The value to clean up.
+  type(t_collctValue), intent(inout) :: rvalue
+!</inputoutput>
+
+!</subroutine>
+
+    if (rvalue%itype .ne. COLLCT_UNDEFINED) then
+      ! Deleting it is simple: Clear the name and assign all values
+      ! to default values. Then the node is 'dead' and can be reused
+      ! later.
+
+      rvalue%sname = ''
+      rvalue%csvalue = " "
+      nullify(rvalue%p_svalue)
+      rvalue%ivalue = 0
+      rvalue%dvalue = 0.0_DP
+      nullify(rvalue%p_rdiscretisation)
+      nullify(rvalue%p_rtriangulation)
+      nullify(rvalue%p_rvectorScalar)
+      nullify(rvalue%p_rmatrixScalar)
+      nullify(rvalue%p_rvector)
+      nullify(rvalue%p_rmatrix)
+      nullify(rvalue%p_rparlist)
+      nullify(rvalue%p_rlinearSolver)
+      nullify(rvalue%p_rdiscreteBC)
+      nullify(rvalue%p_rboundary)
+      nullify(rvalue%p_rboundaryConditions)
+      nullify(rvalue%p_rparser)
+      nullify(rvalue%p_RfilterChain)
+      nullify(rvalue%p_rcollection)
+      nullify(rvalue%p_rhadapt)
+      nullify(rvalue%p_rafcstab)
+      
+      if (associated(rvalue%p_Iarray)) deallocate(rvalue%p_Iarray)
+      if (associated(rvalue%p_Darray)) deallocate(rvalue%p_Darray)
+
+      rvalue%itype = COLLCT_UNDEFINED
+    end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
   subroutine collct_deletevalue (rcollection, sparameter, ilevel, ssectionName) 
 
 !<description>
@@ -1618,38 +1680,9 @@ contains
   ! Does the value exist?
   if (associated(p_rvalue)) then
   
-    ! Ok, we have the parameter.
-    ! Deleting it is simple: Clear the name and assign all values
-    ! to default values. Then the node is 'dead' and can be reused
-    ! later.
+    ! Ok, we have the parameter. Clean it up.
+    call collct_cleanupvalue(p_rvalue);
 
-    p_rvalue%sname = ''
-    p_rvalue%csvalue = " "
-    nullify(p_rvalue%p_svalue)
-    p_rvalue%ivalue = 0
-    p_rvalue%dvalue = 0.0_DP
-    nullify(p_rvalue%p_rdiscretisation)
-    nullify(p_rvalue%p_rtriangulation)
-    nullify(p_rvalue%p_rvectorScalar)
-    nullify(p_rvalue%p_rmatrixScalar)
-    nullify(p_rvalue%p_rvector)
-    nullify(p_rvalue%p_rmatrix)
-    nullify(p_rvalue%p_rparlist)
-    nullify(p_rvalue%p_rlinearSolver)
-    nullify(p_rvalue%p_rdiscreteBC)
-    nullify(p_rvalue%p_rboundary)
-    nullify(p_rvalue%p_rboundaryConditions)
-    nullify(p_rvalue%p_rparser)
-    nullify(p_rvalue%p_RfilterChain)
-    nullify(p_rvalue%p_rcollection)
-    nullify(p_rvalue%p_rhadapt)
-    nullify(p_rvalue%p_rafcstab)
-    
-    if (associated(p_rvalue%p_Iarray)) deallocate(p_rvalue%p_Iarray)
-    if (associated(p_rvalue%p_Darray)) deallocate(p_rvalue%p_Darray)
-
-    p_rvalue%itype = COLLCT_UNDEFINED
-    
     ! Modify the level info:
     if (present(ssectionName)) then
       call collct_fetchlevel(rcollection, ssectionName, ilv, p_rlevel)     
