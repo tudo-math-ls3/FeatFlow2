@@ -1,4 +1,4 @@
- !##############################################################################
+!##############################################################################
 !# ****************************************************************************
 !# <name> globalsystem </name>
 !# ****************************************************************************
@@ -21,6 +21,10 @@ module globalsystem
   use linearsystemblock
   
   implicit none
+  
+  private
+  
+  public :: glsys_assembleGlobal
 
 contains
  
@@ -209,7 +213,7 @@ contains
                                     ST_NEWBLOCK_ZERO)
       
       ! Set up KLD and NA of the destination matrix
-      call glmatasm_KLD (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1))
+      call glmatasm_KLD (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),Irows)
 
       ! Allocate a KCOL in the destination matrix if we don't have a previous
       ! array in the correct size.
@@ -318,7 +322,7 @@ contains
                                     ST_NEWBLOCK_ZERO)
       
       ! Set up KLD and NA of the destination matrix
-      call glmatasm_KLD (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1))
+      call glmatasm_KLD (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),Irows)
 
       ! Allocate a KCOL in the destination matrix if we don't have a previous
       ! array in the correct size.
@@ -416,470 +420,473 @@ contains
   ! created by transposing them above!
   call lsysbl_releaseMatrix(rlocalMatrix)
   
-  contains
+  end subroutine
+
+! Auxiliary subroutines
   
-    !------------------------------------------------------------------
-    ! Set up general data of the destination matrix
-    
-    subroutine glmatasm_initDestination (rsourceMatrix,rdestMatrix, &
-                                         cmatrixFormat,cdataType)
-
-    ! The source block matrix 
-    type(t_matrixBlock), intent(IN) :: rsourceMatrix
-    
-    ! The matrix to be initialised
-    type(t_matrixBlock), intent(INOUT) :: rdestMatrix
+  !------------------------------------------------------------------
+  ! Set up general data of the destination matrix
   
-    ! Target format of the matrix rdestMatrix. Standard is Format 9.
-    integer, intent(IN) :: cmatrixFormat
-    
-    ! Data type for the entries of rdestMatrix. 
-    ! Standard is double precision.
-    integer, intent(IN) :: cdataType
+  subroutine glmatasm_initDestination (rsourceMatrix,rdestMatrix, &
+                                        cmatrixFormat,cdataType)
 
-      if ((rdestMatrix%nblocksPerCol .lt. 1) .or. &
-          (rdestMatrix%nblocksPerRow .lt. 1)) then
-        ! Create a new 1x1 matrix if necessary.
-        call lsysbl_releaseMatrix (rdestMatrix)
-        call lsysbl_createEmptyMatrix (rdestMatrix,1)
-      end if
-      rdestMatrix%NEQ = rsourceMatrix%NEQ
-      rdestMatrix%NCOLS = rsourceMatrix%NCOLS
-      rdestMatrix%imatrixSpec = rsourceMatrix%imatrixSpec
-      
-      ! There's no appropriate discretisation or boundary condition
-      ! structure for a global matrix! These only apply to
-      ! scalar discretisations.
-      nullify(rdestMatrix%p_rblockDiscrTest)
-      nullify(rdestMatrix%p_rblockDiscrTrial)
-      rdestMatrix%bidenticalTrialAndTest = .true.
-      nullify(rdestMatrix%p_rdiscreteBC)
-      nullify(rdestMatrix%p_rdiscreteBCfict)
-
-      ! Initialise structural information of the submatrix      
-      rdestMatrix%RmatrixBlock(1,1)%NEQ = rsourceMatrix%NEQ
-      rdestMatrix%RmatrixBlock(1,1)%NCOLS = rsourceMatrix%NCOLS
-      rdestMatrix%RmatrixBlock(1,1)%cmatrixFormat = cmatrixFormat
-      rdestMatrix%RmatrixBlock(1,1)%cdataType = cdataType
-      rdestMatrix%RmatrixBlock(1,1)%imatrixSpec = 0
-      rdestMatrix%RmatrixBlock(1,1)%isortStrategy = 0
-      rdestMatrix%RmatrixBlock(1,1)%h_IsortPermutation = ST_NOHANDLE
-      rdestMatrix%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
-
-    end subroutine
+  ! The source block matrix 
+  type(t_matrixBlock), intent(IN) :: rsourceMatrix
   
-    !------------------------------------------------------------------
-    ! Calculates the row-block offsets in the destination matrix
-    subroutine glmatasm_getOffsets (rsourceMatrix,Icolumns,Irows)
+  ! The matrix to be initialised
+  type(t_matrixBlock), intent(INOUT) :: rdestMatrix
 
-    ! The source block matrix 
-    type(t_matrixBlock), intent(IN), target :: rsourceMatrix
-    
-    ! Real column numbers in each block-column of the block matrix.
-    ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Icolumns
+  ! Target format of the matrix rdestMatrix. Standard is Format 9.
+  integer, intent(IN) :: cmatrixFormat
+  
+  ! Data type for the entries of rdestMatrix. 
+  ! Standard is double precision.
+  integer, intent(IN) :: cdataType
 
-    ! Real row numbers in each block-column of the block matrix.
-    ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Irows
+    if ((rdestMatrix%nblocksPerCol .lt. 1) .or. &
+        (rdestMatrix%nblocksPerRow .lt. 1)) then
+      ! Create a new 1x1 matrix if necessary.
+      call lsysbl_releaseMatrix (rdestMatrix)
+      call lsysbl_createEmptyMatrix (rdestMatrix,1)
+    end if
+    rdestMatrix%NEQ = rsourceMatrix%NEQ
+    rdestMatrix%NCOLS = rsourceMatrix%NCOLS
+    rdestMatrix%imatrixSpec = rsourceMatrix%imatrixSpec
+    
+    ! There's no appropriate discretisation or boundary condition
+    ! structure for a global matrix! These only apply to
+    ! scalar discretisations.
+    nullify(rdestMatrix%p_rblockDiscrTest)
+    nullify(rdestMatrix%p_rblockDiscrTrial)
+    rdestMatrix%bidenticalTrialAndTest = .true.
+    nullify(rdestMatrix%p_rdiscreteBC)
+    nullify(rdestMatrix%p_rdiscreteBCfict)
 
-      ! local variables
-      integer :: i,j
-      integer(PREC_VECIDX) :: irow
-      integer(PREC_MATIDX) :: irowoffset
-      
-      Icolumns(:) = 0
-      Irows(:) = 0
-      
-      ! Loop through all matrix blocks.
-      do i=1,rsourceMatrix%nblocksPerCol
-      
-        do j=1,rsourceMatrix%nblocksPerRow
-          ! When checking for the presence of the matrix, don't respect
-          ! the scaling factor; we only want to get the size of the matrix 
-          ! columns/rows!
-          if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j,.true.)) then
-            
-            Icolumns(j+1) = rsourceMatrix%RmatrixBlock(i,j)%NCOLS
-            Irows(i+1) = rsourceMatrix%RmatrixBlock(i,j)%NEQ
-          
-          end if
-        end do
-        
-      end do
-      
-      ! Icolumns gives the number of real columns/rows. Add them together
-      ! to get the real column/row numbers, each block column/row in the
-      ! global matrix starts with.
-      Icolumns(1) = 1
-      Irows(1) = 1
-      do i=2,rsourceMatrix%nblocksPerRow
-        Icolumns(i) = Icolumns(i) + Icolumns(i-1)
-      end do
-      do i=2,rsourceMatrix%nblocksPerCol
-        Irows(i) = Irows(i) + Irows(i-1)
-      end do
-      
-    end subroutine
-
-    !------------------------------------------------------------------
-    ! Calculates NA and the KLD row structure of the global matrix
-    subroutine glmatasm_KLD (rsourceMatrix,rdestMatrix)
-
-    ! The source block matrix 
-    type(t_matrixBlock), intent(IN), target :: rsourceMatrix
-    
-    ! The scalar submatrix which KLD is to be initialised.
-    ! KLD must exist and be filled with 0.
-    type(t_matrixScalar), intent(INOUT) :: rdestMatrix
-    
-      ! local variables
-      integer :: i,j
-      integer(PREC_VECIDX) :: irow
-      integer(PREC_MATIDX) :: irowoffset,narow
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kld,p_KldDest
-      type(t_matrixScalar), pointer :: p_rmatrix
-      
-      ! Create a new, empty KLD.
-      call lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
-                        
-      ! Loop through all matrix blocks.
-      do i=1,rsourceMatrix%nblocksPerCol
-      
-        ! Get the starting position of this block-row in the global matrix
-        irowoffset = Irows(i)-1
-        
-        narow = 0
-        
-        do j=1,rsourceMatrix%nblocksPerRow
-          if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
-            
-            p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
-            call lsyssc_getbase_Kld (p_rmatrix,p_Kld)
-            
-            ! Loop through all lines in the matrix and add the number of
-            ! entries per row to get KLD:
-            do irow = 1,p_rmatrix%NEQ
-              ! The first entriy in KLD is always one; add the length
-              ! of the line to KLD one element shifted, so calculation
-              ! ok KLD is easier later.
-              p_KldDest(1+irow+irowoffset) = &
-                p_KldDest(1+irow+irowoffset) + (p_Kld(irow+1)-p_Kld(irow))
-            end do
-            
-            ! Calculate the number of entries in this matrix-row-block
-            narow = narow + rsourceMatrix%RmatrixBlock(i,j)%NA
-          
-          end if
-        end do
-        
-      end do
-      
-      ! Now we have:
-      ! KLD(1) = 0, 
-      ! KLD(2) = Number of entries in row 1,
-      ! KLD(3) = Number of entries in row 2, etc.
-      ! Sum up the values to get the actual KLD.
-      p_KldDest(1) = 1
-      do irow = 1,rsourceMatrix%NEQ
-        p_KldDest(irow+1) = p_KldDest(irow+1) + p_KldDest(irow)
-      end do
-      
-      ! and so we have NA. 
-      rdestMatrix%NA = p_KldDest(rsourceMatrix%NEQ+1)-1
-    
-    end subroutine
-
-    !------------------------------------------------------------------
-    ! Calculates the KCOL column structure of the global matrix
-    ! The KLD/NA structure must already be present in rdestMatrix!
-    !
-    ! Matrix-structure-9 source -> Matrix-structure-9 destination,
-    subroutine glmatasm_Kcol99dble (rsourceMatrix,rdestMatrix,&
-                                    Icolumns, Irows)
-
-    ! The source block matrix 
-    type(t_matrixBlock), intent(IN), target :: rsourceMatrix
-    
-    ! The scalar submatrix which KLD is to be initialised
-    type(t_matrixScalar), intent(INOUT) :: rdestMatrix
-    
-    ! Real column numbers in each block-column of the block matrix.
-    ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Icolumns
-
-    ! Real row numbers in each block-column of the block matrix.
-    ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Irows
-
-      ! local variables
-      integer :: i,j,h_KldTmp,icol
-      integer(PREC_VECIDX) :: irow,ncols,irowGlobal
-      integer(PREC_MATIDX) :: ioffsetGlobal,ioffsetLocal,narow,isize
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kld,p_KldDest,p_KldTmp
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol,p_KcolDest
-      type(t_matrixScalar), pointer :: p_rmatrix
-      
-      ! Create a copy of KLD which we use for storing the index
-      ! how many entries are already allocated in each row.
-      h_KldTmp = ST_NOHANDLE
-      call storage_copy (rdestMatrix%h_Kld,h_KldTmp)
-      call storage_getbase_int (h_KldTmp,p_KldTmp)
-                        
-      ! Get KCol,Kld
-      call lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
-      call lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
-      
-      ! Loop through all matrix subblocks
-      do i=1,rsourceMatrix%nblocksPerCol
-      
-        ! Global row index?
-        irowGlobal = Irows(i)-1
-        
-        do j=1,rsourceMatrix%nblocksPerRow
-        
-          if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
-    
-            ! Get the submatrix
-            p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
-            
-            ! Get the local matrix pointers / column structure
-            call lsyssc_getbase_Kcol (p_rmatrix,p_Kcol)
-            call lsyssc_getbase_Kld (p_rmatrix,p_Kld)
-            
-            ! Loop through all rows to append them to the current rows.
-            do irow = 1,p_rmatrix%NEQ
-            
-              ! How many elements to append?
-              ncols = p_Kld(irow+1)-p_Kld(irow)
-              
-              ! Position of the data?
-              ioffsetGlobal = p_KldTmp(irowGlobal+irow)
-              ioffsetLocal  = p_Kld(irow)
-              
-              ! Copy matrix data and the column numbers
-              p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
-                p_Kcol(ioffsetLocal:ioffsetLocal+ncols-1)
-              
-              ! Increase the column numbers by the global column number
-              ! of that matrix-block-column
-              p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
-                p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) + Icolumns(j)-1
-              
-              ! Increase the counter/index position array for how 
-              ! many elements are added to that row.
-              p_KldTmp(irowGlobal+irow) = p_KldTmp(irowGlobal+irow) + ncols
-            
-            end do ! irow
-          
-          end if ! neq != 0
-    
-        end do ! j
-      end do ! i
-      
-      ! Release the temp array
-      call storage_free (h_KldTmp)
-                        
-    end subroutine
-
-    !------------------------------------------------------------------
-    ! Transfers the entries of the local matrices into the
-    ! global matrix.
-    ! The KLD/NA structure must already be present in rdestMatrix!
-    !
-    ! Matrix-structure-9 source -> Matrix-structure-9 destination,
-    ! double precision vection
-    subroutine glmatasm_Da99dble (rsourceMatrix,rdestMatrix,&
-                                  Icolumns, Irows)
-
-    ! The source block matrix 
-    type(t_matrixBlock), intent(IN), target :: rsourceMatrix
-    
-    ! The scalar submatrix which KLD is to be initialised
-    type(t_matrixScalar), intent(INOUT) :: rdestMatrix
-    
-    ! Real column numbers in each block-column of the block matrix.
-    ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Icolumns
-
-    ! Real row numbers in each block-column of the block matrix.
-    ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Irows
-
-      ! local variables
-      integer :: i,j,h_KldTmp,icol
-      real(DP) :: dscale
-      integer(PREC_VECIDX) :: irow,ncols,irowGlobal
-      integer(PREC_MATIDX) :: ioffsetGlobal,ioffsetLocal,narow,isize
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kld,p_KldDest,p_KldTmp
-      real(DP), dimension(:), pointer :: p_Da,p_DaDest
-      type(t_matrixScalar), pointer :: p_rmatrix
-      
-      ! Create a copy of KLD which we use for storing the index
-      ! how many entries are already allocated in each row.
-      h_KldTmp = ST_NOHANDLE
-      call storage_copy (rdestMatrix%h_Kld,h_KldTmp)
-      call storage_getbase_int (h_KldTmp,p_KldTmp)
-                        
-      ! Get Kld
-      call lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
-      
-      ! Get destination data arrays
-      call lsyssc_getbase_double (rdestMatrix,p_DaDest)
-    
-      ! Loop through all matrix subblocks
-      do i=1,rsourceMatrix%nblocksPerCol
-      
-        ! Global row index?
-        irowGlobal = Irows(i)-1
-        
-        do j=1,rsourceMatrix%nblocksPerRow
-        
-          if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
-    
-            ! Get the submatrix
-            p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
-            
-            ! Get the local matrix pointers structure
-            call lsyssc_getbase_Kld (p_rmatrix,p_Kld)
-            call lsyssc_getbase_double (p_rmatrix,p_Da)
-            dscale = p_rmatrix%dscaleFactor
-            
-            ! Loop through all rows to append them to the current rows.
-            do irow = 1,p_rmatrix%NEQ
-            
-              ! How many elements to append?
-              ncols = p_Kld(irow+1)-p_Kld(irow)
-              
-              ! Position of the data?
-              ioffsetGlobal = p_KldTmp(irowGlobal+irow)
-              ioffsetLocal  = p_Kld(irow)
-              
-              ! Copy matrix data 
-              p_DaDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
-                dscale * p_Da(ioffsetLocal:ioffsetLocal+ncols-1)
-              
-              ! Increase the counter/index position array for how 
-              ! many elements are added to that row.
-              p_KldTmp(irowGlobal+irow) = p_KldTmp(irowGlobal+irow) + ncols
-            
-            end do ! irow
-          
-          end if ! neq != 0
-    
-        end do ! j
-      end do ! i
-      
-      ! Release the temp array
-      call storage_free (h_KldTmp)
-                        
-    end subroutine
-
-    !------------------------------------------------------------------
-    ! Calculates the KCOL column structure of the global matrix
-    ! and transfers the entries of the local matrices into the
-    ! global matrix.
-    ! The KLD/NA structure must already be present in rdestMatrix!
-    !
-    ! Matrix-structure-9 source -> Matrix-structure-9 destination,
-    ! double precision vection
-    subroutine glmatasm_KcolDa99dble (rsourceMatrix,rdestMatrix,&
-                                      Icolumns, Irows)
-
-    ! The source block matrix 
-    type(t_matrixBlock), intent(IN), target :: rsourceMatrix
-    
-    ! The scalar submatrix which KLD is to be initialised
-    type(t_matrixScalar), intent(INOUT) :: rdestMatrix
-    
-    ! Real column numbers in each block-column of the block matrix.
-    ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Icolumns
-
-    ! Real row numbers in each block-column of the block matrix.
-    ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Irows
-
-      ! local variables
-      integer :: i,j,h_KldTmp,icol
-      real(DP) :: dscale
-      integer(PREC_VECIDX) :: irow,ncols,irowGlobal
-      integer(PREC_MATIDX) :: ioffsetGlobal,ioffsetLocal,narow,isize
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kld,p_KldDest,p_KldTmp
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol,p_KcolDest
-      real(DP), dimension(:), pointer :: p_Da,p_DaDest
-      type(t_matrixScalar), pointer :: p_rmatrix
-      
-      ! Create a copy of KLD which we use for storing the index
-      ! how many entries are already allocated in each row.
-      h_KldTmp = ST_NOHANDLE
-      call storage_copy (rdestMatrix%h_Kld,h_KldTmp)
-      call storage_getbase_int (h_KldTmp,p_KldTmp)
-                        
-      ! Get KCol,Kld
-      call lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
-      call storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
-      
-      ! Get destination data arrays
-      call lsyssc_getbase_double (rdestMatrix,p_DaDest)
-    
-      ! Loop through all matrix subblocks
-      do i=1,rsourceMatrix%nblocksPerCol
-      
-        ! Global row index?
-        irowGlobal = Irows(i)-1
-        
-        do j=1,rsourceMatrix%nblocksPerRow
-        
-          if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
-    
-            ! Get the submatrix
-            p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
-            
-            ! Get the local matrix pointers / column structure
-            call lsyssc_getbase_Kcol (p_rmatrix,p_Kcol)
-            call lsyssc_getbase_Kld (p_rmatrix,p_Kld)
-            call lsyssc_getbase_double (p_rmatrix,p_Da)
-            dscale = p_rmatrix%dscaleFactor
-            
-            ! Loop through all rows to append them to the current rows.
-            do irow = 1,p_rmatrix%NEQ
-            
-              ! How many elements to append?
-              ncols = p_Kld(irow+1)-p_Kld(irow)
-              
-              ! Position of the data?
-              ioffsetGlobal = p_KldTmp(irowGlobal+irow)
-              ioffsetLocal  = p_Kld(irow)
-              
-              ! Copy matrix data and the column numbers
-              p_DaDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
-                dscale * p_Da(ioffsetLocal:ioffsetLocal+ncols-1)
-              p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
-                p_Kcol(ioffsetLocal:ioffsetLocal+ncols-1)
-              
-              ! Increase the column numbers by the global column number
-              ! of that matrix-block-column
-              p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
-                p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) + Icolumns(j)-1
-              
-              ! Increase the counter/index position array for how 
-              ! many elements are added to that row.
-              p_KldTmp(irowGlobal+irow) = p_KldTmp(irowGlobal+irow) + ncols
-            
-            end do ! irow
-          
-          end if ! neq != 0
-    
-        end do ! j
-      end do ! i
-      
-      ! Release the temp array
-      call storage_free (h_KldTmp)
-                        
-    end subroutine
+    ! Initialise structural information of the submatrix      
+    rdestMatrix%RmatrixBlock(1,1)%NEQ = rsourceMatrix%NEQ
+    rdestMatrix%RmatrixBlock(1,1)%NCOLS = rsourceMatrix%NCOLS
+    rdestMatrix%RmatrixBlock(1,1)%cmatrixFormat = cmatrixFormat
+    rdestMatrix%RmatrixBlock(1,1)%cdataType = cdataType
+    rdestMatrix%RmatrixBlock(1,1)%imatrixSpec = 0
+    rdestMatrix%RmatrixBlock(1,1)%isortStrategy = 0
+    rdestMatrix%RmatrixBlock(1,1)%h_IsortPermutation = ST_NOHANDLE
+    rdestMatrix%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
 
   end subroutine
 
+  !------------------------------------------------------------------
+  ! Calculates the row-block offsets in the destination matrix
+  subroutine glmatasm_getOffsets (rsourceMatrix,Icolumns,Irows)
+
+  ! The source block matrix 
+  type(t_matrixBlock), intent(IN), target :: rsourceMatrix
+  
+  ! Real column numbers in each block-column of the block matrix.
+  ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
+  integer, dimension(:), intent(OUT) :: Icolumns
+
+  ! Real row numbers in each block-column of the block matrix.
+  ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
+  integer, dimension(:), intent(OUT) :: Irows
+
+    ! local variables
+    integer :: i,j
+    integer :: irow
+    integer :: irowoffset
+    
+    Icolumns(:) = 0
+    Irows(:) = 0
+    
+    ! Loop through all matrix blocks.
+    do i=1,rsourceMatrix%nblocksPerCol
+    
+      do j=1,rsourceMatrix%nblocksPerRow
+        ! When checking for the presence of the matrix, don't respect
+        ! the scaling factor; we only want to get the size of the matrix 
+        ! columns/rows!
+        if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j,.true.)) then
+          
+          Icolumns(j+1) = rsourceMatrix%RmatrixBlock(i,j)%NCOLS
+          Irows(i+1) = rsourceMatrix%RmatrixBlock(i,j)%NEQ
+        
+        end if
+      end do
+      
+    end do
+    
+    ! Icolumns gives the number of real columns/rows. Add them together
+    ! to get the real column/row numbers, each block column/row in the
+    ! global matrix starts with.
+    Icolumns(1) = 1
+    Irows(1) = 1
+    do i=2,rsourceMatrix%nblocksPerRow
+      Icolumns(i) = Icolumns(i) + Icolumns(i-1)
+    end do
+    do i=2,rsourceMatrix%nblocksPerCol
+      Irows(i) = Irows(i) + Irows(i-1)
+    end do
+    
+  end subroutine
+
+  !------------------------------------------------------------------
+  ! Calculates NA and the KLD row structure of the global matrix
+  subroutine glmatasm_KLD (rsourceMatrix,rdestMatrix,Irows)
+
+  ! The source block matrix 
+  type(t_matrixBlock), intent(IN), target :: rsourceMatrix
+  
+  ! The scalar submatrix which KLD is to be initialised.
+  ! KLD must exist and be filled with 0.
+  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  
+  ! Real row numbers in each block-column of the block matrix.
+  ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
+  integer, dimension(:), intent(IN) :: Irows
+
+    ! local variables
+    integer :: i,j
+    integer :: irow
+    integer :: irowoffset,narow
+    integer, dimension(:), pointer :: p_Kld,p_KldDest
+    type(t_matrixScalar), pointer :: p_rmatrix
+    
+    ! Create a new, empty KLD.
+    call lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
+                      
+    ! Loop through all matrix blocks.
+    do i=1,rsourceMatrix%nblocksPerCol
+    
+      ! Get the starting position of this block-row in the global matrix
+      irowoffset = Irows(i)-1
+      
+      narow = 0
+      
+      do j=1,rsourceMatrix%nblocksPerRow
+        if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
+          
+          p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
+          call lsyssc_getbase_Kld (p_rmatrix,p_Kld)
+          
+          ! Loop through all lines in the matrix and add the number of
+          ! entries per row to get KLD:
+          do irow = 1,p_rmatrix%NEQ
+            ! The first entriy in KLD is always one; add the length
+            ! of the line to KLD one element shifted, so calculation
+            ! ok KLD is easier later.
+            p_KldDest(1+irow+irowoffset) = &
+              p_KldDest(1+irow+irowoffset) + (p_Kld(irow+1)-p_Kld(irow))
+          end do
+          
+          ! Calculate the number of entries in this matrix-row-block
+          narow = narow + rsourceMatrix%RmatrixBlock(i,j)%NA
+        
+        end if
+      end do
+      
+    end do
+    
+    ! Now we have:
+    ! KLD(1) = 0, 
+    ! KLD(2) = Number of entries in row 1,
+    ! KLD(3) = Number of entries in row 2, etc.
+    ! Sum up the values to get the actual KLD.
+    p_KldDest(1) = 1
+    do irow = 1,rsourceMatrix%NEQ
+      p_KldDest(irow+1) = p_KldDest(irow+1) + p_KldDest(irow)
+    end do
+    
+    ! and so we have NA. 
+    rdestMatrix%NA = p_KldDest(rsourceMatrix%NEQ+1)-1
+  
+  end subroutine
+
+  !------------------------------------------------------------------
+  ! Calculates the KCOL column structure of the global matrix
+  ! The KLD/NA structure must already be present in rdestMatrix!
+  !
+  ! Matrix-structure-9 source -> Matrix-structure-9 destination,
+  subroutine glmatasm_Kcol99dble (rsourceMatrix,rdestMatrix,&
+                                  Icolumns, Irows)
+
+  ! The source block matrix 
+  type(t_matrixBlock), intent(IN), target :: rsourceMatrix
+  
+  ! The scalar submatrix which KLD is to be initialised
+  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  
+  ! Real column numbers in each block-column of the block matrix.
+  ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
+  integer, dimension(:), intent(IN) :: Icolumns
+
+  ! Real row numbers in each block-column of the block matrix.
+  ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
+  integer, dimension(:), intent(IN) :: Irows
+
+    ! local variables
+    integer :: i,j,h_KldTmp,icol
+    integer :: irow,ncols,irowGlobal
+    integer :: ioffsetGlobal,ioffsetLocal,narow,isize
+    integer, dimension(:), pointer :: p_Kld,p_KldDest,p_KldTmp
+    integer, dimension(:), pointer :: p_Kcol,p_KcolDest
+    type(t_matrixScalar), pointer :: p_rmatrix
+    
+    ! Create a copy of KLD which we use for storing the index
+    ! how many entries are already allocated in each row.
+    h_KldTmp = ST_NOHANDLE
+    call storage_copy (rdestMatrix%h_Kld,h_KldTmp)
+    call storage_getbase_int (h_KldTmp,p_KldTmp)
+                      
+    ! Get KCol,Kld
+    call lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
+    call lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
+    
+    ! Loop through all matrix subblocks
+    do i=1,rsourceMatrix%nblocksPerCol
+    
+      ! Global row index?
+      irowGlobal = Irows(i)-1
+      
+      do j=1,rsourceMatrix%nblocksPerRow
+      
+        if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
+  
+          ! Get the submatrix
+          p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
+          
+          ! Get the local matrix pointers / column structure
+          call lsyssc_getbase_Kcol (p_rmatrix,p_Kcol)
+          call lsyssc_getbase_Kld (p_rmatrix,p_Kld)
+          
+          ! Loop through all rows to append them to the current rows.
+          do irow = 1,p_rmatrix%NEQ
+          
+            ! How many elements to append?
+            ncols = p_Kld(irow+1)-p_Kld(irow)
+            
+            ! Position of the data?
+            ioffsetGlobal = p_KldTmp(irowGlobal+irow)
+            ioffsetLocal  = p_Kld(irow)
+            
+            ! Copy matrix data and the column numbers
+            p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
+              p_Kcol(ioffsetLocal:ioffsetLocal+ncols-1)
+            
+            ! Increase the column numbers by the global column number
+            ! of that matrix-block-column
+            p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
+              p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) + Icolumns(j)-1
+            
+            ! Increase the counter/index position array for how 
+            ! many elements are added to that row.
+            p_KldTmp(irowGlobal+irow) = p_KldTmp(irowGlobal+irow) + ncols
+          
+          end do ! irow
+        
+        end if ! neq != 0
+  
+      end do ! j
+    end do ! i
+    
+    ! Release the temp array
+    call storage_free (h_KldTmp)
+                      
+  end subroutine
+
+  !------------------------------------------------------------------
+  ! Transfers the entries of the local matrices into the
+  ! global matrix.
+  ! The KLD/NA structure must already be present in rdestMatrix!
+  !
+  ! Matrix-structure-9 source -> Matrix-structure-9 destination,
+  ! double precision vection
+  subroutine glmatasm_Da99dble (rsourceMatrix,rdestMatrix,&
+                                Icolumns, Irows)
+
+  ! The source block matrix 
+  type(t_matrixBlock), intent(IN), target :: rsourceMatrix
+  
+  ! The scalar submatrix which KLD is to be initialised
+  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  
+  ! Real column numbers in each block-column of the block matrix.
+  ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
+  integer, dimension(:), intent(IN) :: Icolumns
+
+  ! Real row numbers in each block-column of the block matrix.
+  ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
+  integer, dimension(:), intent(IN) :: Irows
+
+    ! local variables
+    integer :: i,j,h_KldTmp,icol
+    real(DP) :: dscale
+    integer :: irow,ncols,irowGlobal
+    integer :: ioffsetGlobal,ioffsetLocal,narow,isize
+    integer, dimension(:), pointer :: p_Kld,p_KldDest,p_KldTmp
+    real(DP), dimension(:), pointer :: p_Da,p_DaDest
+    type(t_matrixScalar), pointer :: p_rmatrix
+    
+    ! Create a copy of KLD which we use for storing the index
+    ! how many entries are already allocated in each row.
+    h_KldTmp = ST_NOHANDLE
+    call storage_copy (rdestMatrix%h_Kld,h_KldTmp)
+    call storage_getbase_int (h_KldTmp,p_KldTmp)
+                      
+    ! Get Kld
+    call lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
+    
+    ! Get destination data arrays
+    call lsyssc_getbase_double (rdestMatrix,p_DaDest)
+  
+    ! Loop through all matrix subblocks
+    do i=1,rsourceMatrix%nblocksPerCol
+    
+      ! Global row index?
+      irowGlobal = Irows(i)-1
+      
+      do j=1,rsourceMatrix%nblocksPerRow
+      
+        if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
+  
+          ! Get the submatrix
+          p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
+          
+          ! Get the local matrix pointers structure
+          call lsyssc_getbase_Kld (p_rmatrix,p_Kld)
+          call lsyssc_getbase_double (p_rmatrix,p_Da)
+          dscale = p_rmatrix%dscaleFactor
+          
+          ! Loop through all rows to append them to the current rows.
+          do irow = 1,p_rmatrix%NEQ
+          
+            ! How many elements to append?
+            ncols = p_Kld(irow+1)-p_Kld(irow)
+            
+            ! Position of the data?
+            ioffsetGlobal = p_KldTmp(irowGlobal+irow)
+            ioffsetLocal  = p_Kld(irow)
+            
+            ! Copy matrix data 
+            p_DaDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
+              dscale * p_Da(ioffsetLocal:ioffsetLocal+ncols-1)
+            
+            ! Increase the counter/index position array for how 
+            ! many elements are added to that row.
+            p_KldTmp(irowGlobal+irow) = p_KldTmp(irowGlobal+irow) + ncols
+          
+          end do ! irow
+        
+        end if ! neq != 0
+  
+      end do ! j
+    end do ! i
+    
+    ! Release the temp array
+    call storage_free (h_KldTmp)
+                      
+  end subroutine
+
+  !------------------------------------------------------------------
+  ! Calculates the KCOL column structure of the global matrix
+  ! and transfers the entries of the local matrices into the
+  ! global matrix.
+  ! The KLD/NA structure must already be present in rdestMatrix!
+  !
+  ! Matrix-structure-9 source -> Matrix-structure-9 destination,
+  ! double precision vection
+  subroutine glmatasm_KcolDa99dble (rsourceMatrix,rdestMatrix,&
+                                    Icolumns, Irows)
+
+  ! The source block matrix 
+  type(t_matrixBlock), intent(IN), target :: rsourceMatrix
+  
+  ! The scalar submatrix which KLD is to be initialised
+  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  
+  ! Real column numbers in each block-column of the block matrix.
+  ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
+  integer, dimension(:), intent(IN) :: Icolumns
+
+  ! Real row numbers in each block-column of the block matrix.
+  ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
+  integer, dimension(:), intent(IN) :: Irows
+
+    ! local variables
+    integer :: i,j,h_KldTmp,icol
+    real(DP) :: dscale
+    integer :: irow,ncols,irowGlobal
+    integer :: ioffsetGlobal,ioffsetLocal,narow,isize
+    integer, dimension(:), pointer :: p_Kld,p_KldDest,p_KldTmp
+    integer, dimension(:), pointer :: p_Kcol,p_KcolDest
+    real(DP), dimension(:), pointer :: p_Da,p_DaDest
+    type(t_matrixScalar), pointer :: p_rmatrix
+    
+    ! Create a copy of KLD which we use for storing the index
+    ! how many entries are already allocated in each row.
+    h_KldTmp = ST_NOHANDLE
+    call storage_copy (rdestMatrix%h_Kld,h_KldTmp)
+    call storage_getbase_int (h_KldTmp,p_KldTmp)
+                      
+    ! Get KCol,Kld
+    call lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
+    call storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
+    
+    ! Get destination data arrays
+    call lsyssc_getbase_double (rdestMatrix,p_DaDest)
+  
+    ! Loop through all matrix subblocks
+    do i=1,rsourceMatrix%nblocksPerCol
+    
+      ! Global row index?
+      irowGlobal = Irows(i)-1
+      
+      do j=1,rsourceMatrix%nblocksPerRow
+      
+        if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
+  
+          ! Get the submatrix
+          p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
+          
+          ! Get the local matrix pointers / column structure
+          call lsyssc_getbase_Kcol (p_rmatrix,p_Kcol)
+          call lsyssc_getbase_Kld (p_rmatrix,p_Kld)
+          call lsyssc_getbase_double (p_rmatrix,p_Da)
+          dscale = p_rmatrix%dscaleFactor
+          
+          ! Loop through all rows to append them to the current rows.
+          do irow = 1,p_rmatrix%NEQ
+          
+            ! How many elements to append?
+            ncols = p_Kld(irow+1)-p_Kld(irow)
+            
+            ! Position of the data?
+            ioffsetGlobal = p_KldTmp(irowGlobal+irow)
+            ioffsetLocal  = p_Kld(irow)
+            
+            ! Copy matrix data and the column numbers
+            p_DaDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
+              dscale * p_Da(ioffsetLocal:ioffsetLocal+ncols-1)
+            p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
+              p_Kcol(ioffsetLocal:ioffsetLocal+ncols-1)
+            
+            ! Increase the column numbers by the global column number
+            ! of that matrix-block-column
+            p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
+              p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) + Icolumns(j)-1
+            
+            ! Increase the counter/index position array for how 
+            ! many elements are added to that row.
+            p_KldTmp(irowGlobal+irow) = p_KldTmp(irowGlobal+irow) + ncols
+          
+          end do ! irow
+        
+        end if ! neq != 0
+  
+      end do ! j
+    end do ! i
+    
+    ! Release the temp array
+    call storage_free (h_KldTmp)
+                      
+  end subroutine
 
 end module
