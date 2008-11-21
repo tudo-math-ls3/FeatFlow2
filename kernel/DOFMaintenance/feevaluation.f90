@@ -1551,8 +1551,8 @@ contains
   real(SP), dimension(:), pointer :: p_Fdata
   integer, dimension(:,:), pointer :: p_IdofsTrial
   
-  npoints = ubound(Dvalues,1)
-  nelements = ubound(Dvalues,2)
+  npoints = ubound(Dvalues,2)
+  nelements = ubound(Dvalues,3)
   
   ! What to evaluate?
   Bder = .false.
