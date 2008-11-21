@@ -31,6 +31,7 @@ module feevaluation
   use triasearch
   use element
   use elementpreprocessing
+  use domainintegration
   
   implicit none
 
@@ -64,6 +65,7 @@ module feevaluation
     module procedure fevl_evaluate_sim1
     module procedure fevl_evaluate_sim2
     module procedure fevl_evaluate_sim3
+    module procedure fevl_evaluate_sim4
   end interface
 
 contains
@@ -662,7 +664,8 @@ contains
     end do
     
   else
-    print *,'fevl_evaluate_sim: Unsupported vector precision'
+    call output_line('Unsupported vector precision!',&
+      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_mult2')
     call sys_halt()
   end if
   
@@ -1343,7 +1346,8 @@ contains
     end do
     
   else
-    print *,'fevl_evaluate_sim: Unsupported vector precision'
+    call output_line('Unsupported vector precision!',&
+      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim')
     call sys_halt()
   end if
   
@@ -1365,7 +1369,7 @@ contains
   ! discretisation.
   ! revalElementScalar must specify all information about where and how
   ! to evaluate; e.g. the coordinates of the evaluation points are
-  ! to be fo9und here. The routine will then evaluate the element ieltyp
+  ! to be found here. The routine will then evaluate the element ieltyp
   ! in these points.
   !
   ! This routine is specialised to evaluate in multiple elements. For this
@@ -1473,7 +1477,146 @@ contains
     end do
     
   else
-    print *,'fevl_evaluate_sim: Unsupported vector precision'
+    call output_line('Unsupported vector precision!',&
+      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim')
+    call sys_halt()
+  end if
+  
+  ! Release memory, finish
+  deallocate(DbasTrial)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_evaluate_sim4 (rvectorScalar, &
+                                 rdomainIntSubset, iderType, Dvalues, iterm)
+                                      
+!<description>
+  ! This routine allows to evaluate a finite element solution vector
+  ! rvectorScalar simultaneously in multiple points on multiple elements in a 
+  ! discretisation.
+  ! rdomainIntSubset must specify all information about where and how
+  ! to evaluate; e.g. the coordinates of the evaluation points are
+  ! to be found here.
+  !
+  ! This routine is specialised to evaluate in multiple elements. For this
+  ! purpose, the caller must make sure, that the same finite element type
+  ! is used on all elements where to evaluate!
+  ! So, evaluating 'simultaneously' on some $Q_1$ and some $P_1$ elements
+  ! is not allowed e.g.. 
+  !
+  ! The interface of this routine is designed to be called in callback
+  ! functions during linearform and bilinearform evaluation.
+  ! The target array Dvalues provides a shape which is compatible
+  ! to the callback interface. The variable iterm specifies the
+  ! subarray in Dvalues where values are written to; i.e.
+  ! the result of the evaluation is written to Dvalues(iterm,:,:).
+!</description>
+
+!<input>
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being evaluated.
+  type(t_domainIntSubset), intent(IN)            :: rdomainIntSubset
+
+  ! The scalar solution vector that is to be evaluated.
+  type(t_vectorScalar), intent(IN)               :: rvectorScalar
+  
+  ! Type of function value to evaluate. One of the DER_xxxx constants,
+  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+  integer, intent(IN)                            :: iderType
+  
+  ! Number of the subarray in Dvalues where the result is written to.
+  ! The routine writes the resulting values to Dvalues(iterm,:,:).
+  integer, intent(in)                            :: iterm
+!</input>
+
+!<output>
+  ! Values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(npoints,nelements).
+  real(DP), dimension(:,:,:), intent(OUT) :: Dvalues
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  logical, dimension(EL_MAXNDER) :: Bder
+  real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
+  integer :: indofTrial,npoints,nelements
+  real(DP) :: dval
+  integer :: iel,ipoint,ibas,ieltyp
+  real(DP), dimension(:), pointer :: p_Ddata
+  real(SP), dimension(:), pointer :: p_Fdata
+  integer, dimension(:,:), pointer :: p_IdofsTrial
+  
+  npoints = ubound(Dvalues,1)
+  nelements = ubound(Dvalues,2)
+  
+  ! What to evaluate?
+  Bder = .false.
+  Bder(iderType) = .true.
+  
+  ! Get the pointer to the trail DOF's.
+  p_IdofsTrial => rdomainIntSubset%p_IdofsTrial
+  
+  ! Get the currently active element
+  ieltyp = rvectorScalar%p_rspatialDiscr%RelementDistr( &
+      rdomainIntSubset%ielementDistribution)%celement
+  
+  ! Allocate memory for the basis function values
+  indofTrial = elem_igetNDofLoc(ieltyp)
+  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(ieltyp),npoints,nelements))
+  
+  ! Evaluate the basis functions
+  call elem_generic_sim2 (ieltyp, rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+  
+  if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
+  
+    ! Get the data array from the vector
+    call lsyssc_getbase_double(rvectorScalar,p_Ddata)
+    
+    ! Now that we have the basis functions, we want to have the function values.
+    ! We get them by multiplying the FE-coefficients with the values of the
+    ! basis functions and summing up.
+    do iel=1,nelements
+      do ipoint = 1,npoints
+        ! Calculate the value in the point
+        dval = 0.0_DP
+        do ibas = 1,indofTrial
+          dval = dval + &
+                 p_Ddata(p_IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+        end do
+        ! Save the value in the point
+        Dvalues(iterm,ipoint,iel) = dval
+      end do
+    end do
+    
+  else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
+  
+    ! Get the data array from the vector
+    call lsyssc_getbase_single(rvectorScalar,p_Fdata)
+    
+    ! Now that we have the basis functions, we want to have the function values.
+    ! We get them by multiplying the FE-coefficients with the values of the
+    ! basis functions and summing up.
+    do iel=1,nelements
+      do ipoint = 1,npoints
+        ! Calculate the value in the point
+        dval = 0.0_DP
+        do ibas = 1,indofTrial
+          dval = dval + &
+                 p_Fdata(p_IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+        end do
+        ! Save the value in the point
+        Dvalues(iterm,ipoint,iel) = dval
+      end do
+    end do
+    
+  else
+    call output_line('Unsupported vector precision!',&
+      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim')
     call sys_halt()
   end if
   
