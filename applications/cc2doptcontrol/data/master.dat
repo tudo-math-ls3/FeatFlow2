@@ -1,7 +1,0 @@
-simportdatafiles(6) = 
-  "discretisation.dat"
-  "linsol_cc2d.dat"
-  "output.dat"
-  "paramtriang.dat"
-  "bdconditions.dat"
-  "timediscr.dat"
