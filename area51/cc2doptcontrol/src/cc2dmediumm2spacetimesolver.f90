@@ -146,7 +146,6 @@ module cc2dmediumm2spacetimesolver
   use matrixrestriction
   use paramlist
   use timestepping
-  use l2projection
   
   use collection
   use convection

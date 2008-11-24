@@ -55,7 +55,6 @@ module cc2dmediumm2oneshot
   use matrixrestriction
   use paramlist
   use timestepping
-  use l2projection
   use statistics
   
   use collection
