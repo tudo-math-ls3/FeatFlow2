@@ -49,7 +49,6 @@ module timerhsevaluation
   use matrixrestriction
   use paramlist
   use timestepping
-  use l2projection
   
   use collection
   use convection
