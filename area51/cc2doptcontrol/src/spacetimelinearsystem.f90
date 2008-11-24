@@ -156,7 +156,7 @@ module spacetimelinearsystem
 
   use spacepreconditioner
   use spacepreconditionerinit
-  use cc2dmediumm2timeanalysis
+  use timeanalysis
   use cc2dmediumm2boundary
   use spacediscretisation
   use spacematvecassembly

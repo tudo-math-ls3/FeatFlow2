@@ -41,7 +41,7 @@ module spacetimeinterlevelprojection
   use multilevelprojection
 
   use spacetimediscretisation
-  use cc2dmediumm2postprocessing
+  use postprocessing
 
   implicit none
 

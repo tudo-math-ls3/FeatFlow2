@@ -45,7 +45,7 @@ module cc2dmediumm2init
   use convection
     
   use cc2dmediumm2basic
-  use cc2dmediumm2nonstationary
+  use nonstationaryoptcsolver
   
   implicit none
   

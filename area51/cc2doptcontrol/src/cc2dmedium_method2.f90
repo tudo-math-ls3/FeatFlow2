@@ -60,8 +60,8 @@ module cc2dmedium_method2
   use cc2dmediumm2init
   use cc2dmediumm2boundary
   use spacediscretisation
-  use cc2dmediumm2postprocessing
-  use cc2dmediumm2stationary
+  use postprocessing
+  use stationaryoptcsolver
   
   use externalstorage
   

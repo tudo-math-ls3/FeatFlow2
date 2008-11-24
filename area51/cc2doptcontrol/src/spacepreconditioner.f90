@@ -115,7 +115,7 @@ module spacepreconditioner
   use matrixio
   use vectorio
   
-  use cc2dmediumm2optcanalysis
+  use optcanalysis
   use spacematvecassembly
   
   implicit none

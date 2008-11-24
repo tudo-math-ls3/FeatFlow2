@@ -155,11 +155,11 @@ module linearspacetimesolver
 
   use spacepreconditioner
   use spacepreconditionerinit
-  use cc2dmediumm2stationary
-  use cc2dmediumm2timeanalysis
+  use stationaryoptcsolver
+  use timeanalysis
   use cc2dmediumm2boundary
   use spacediscretisation
-  use cc2dmediumm2postprocessing
+  use postprocessing
   use spacematvecassembly
   use spacepreconditioner
   use spacetimediscretisation
