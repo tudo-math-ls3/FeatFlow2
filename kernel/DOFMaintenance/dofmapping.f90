@@ -122,7 +122,7 @@ contains
     
     end if
 
-  case DEFAULT
+  case default
   
     ! Dimension not supported
     print *,'dof_igetNDofGlob: Invalid discretisation dimension!'
@@ -271,6 +271,7 @@ contains
       case (EL_P1T,EL_Q1T)
         ! DOF's in the edge midpoints
         NDFG_conformal2D_2el = rtriangulation%NMT
+      
       end select
       
     end select

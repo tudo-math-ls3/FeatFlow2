@@ -562,7 +562,12 @@ contains
   if (present(bcompatible)) bcompatible = .false.
   
   ! Vector/Matrix must have the same size and number of blocks and equations
-  if (rvector%NEQ .ne. rmatrix%NEQ) then
+  if(btransposed) then
+    itmp = rmatrix%NEQ
+  else
+    itmp = rmatrix%NCOLS
+  end if
+  if (rvector%NEQ .ne. itmp) then
     if (present(bcompatible)) then
       bcompatible = .false.
       return

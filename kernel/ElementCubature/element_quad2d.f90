@@ -6485,10 +6485,10 @@ contains
   ! The 2D Q1 element is specified by four polynomials on the reference element.
   ! These polynomials are:
   !
-  !  P1(x,y,z) = 1/4 * (1-x) * (1-y)
-  !  P2(x,y,z) = 1/4 * (1+x) * (1-y)
-  !  P3(x,y,z) = 1/4 * (1+x) * (1+y)
-  !  P4(x,y,z) = 1/4 * (1-x) * (1+y)
+  !  P1(x,y) = 1/4 * (1-x) * (1-y)
+  !  P2(x,y) = 1/4 * (1+x) * (1-y)
+  !  P3(x,y) = 1/4 * (1+x) * (1+y)
+  !  P4(x,y) = 1/4 * (1-x) * (1+y)
   !
   ! Each of them calculated that way that Pi(Vj)=delta_ij (Kronecker)
   ! for V1,...,V4 being the four corner vertices of the reference quadrilateral.
@@ -6628,16 +6628,16 @@ contains
   ! The 2D Q2TB element is specified by ten polynomials on the reference element.
   ! These polynomials are:
   !
-  !  p_1 (x,y) =  3/4*y*( x^2 + y - 1) - 1/4
-  !  p_2 (x,y) =  3/4*x*(-y^2 + x + 1) - 1/4
-  !  p_3 (x,y) =  3/4*y*(-x^2 + y + 1) - 1/4
-  !  p_4 (x,y) =  3/4*x*( y^2 + x - 1) - 1/4
-  !  p_5 (x,y) = -3/8*x*(y*(y*( 5*y - 6) - 5*x^2 + 2) + 2)
-  !  p_6 (x,y) = -3/8*y*(x*(x*(-5*x - 6) + 5*y^2 - 2) + 2)
-  !  p_7 (x,y) = -3/8*x*(y*(y*( 5*y + 6) - 5*x^2 + 2) - 2)
-  !  p_8 (x,y) = -3/8*y*(x*(x*(-5*x + 6) + 5*y^2 - 2) - 2)
-  !  p_9 (x,y) = -3/2*(x^2 + y^2) + 2
-  !  p_10(x,y) = 25/4*(3*x^2 - 1)*(3*y^2 - 1)
+  !  P1 (x,y) =  3/4*y*( x^2 + y - 1) - 1/4
+  !  P2 (x,y) =  3/4*x*(-y^2 + x + 1) - 1/4
+  !  P3 (x,y) =  3/4*y*(-x^2 + y + 1) - 1/4
+  !  P4 (x,y) =  3/4*x*( y^2 + x - 1) - 1/4
+  !  P5 (x,y) = -3/8*x*(y*(y*( 5*y - 6) - 5*x^2 + 2) + 2)
+  !  P6 (x,y) = -3/8*y*(x*(x*(-5*x - 6) + 5*y^2 - 2) + 2)
+  !  P7 (x,y) = -3/8*x*(y*(y*( 5*y + 6) - 5*x^2 + 2) - 2)
+  !  P8 (x,y) = -3/8*y*(x*(x*(-5*x + 6) + 5*y^2 - 2) - 2)
+  !  P9 (x,y) = -3/2*(x^2 + y^2) + 2
+  !  P10(x,y) = 25/4*(3*x^2 - 1)*(3*y^2 - 1)
   !
   ! These ten polynomials are constructed in a way such that they fulfill the
   ! following conditions:
