@@ -47,15 +47,15 @@ module cc2dmediumm2nonstationary
   use cc2dmediumm2basic
   use cc2dmedium_callback
 
-  use cc2dmediumm2nonlinearcore
-  use cc2dmediumm2nonlinearcoreinit
+  use spacepreconditioner
+  use spacepreconditionerinit
   use cc2dmediumm2stationary
   use cc2dmediumm2timeanalysis
   use cc2dmediumm2boundary
-  use cc2dmediumm2discretisation
+  use spacediscretisation
   use cc2dmediumm2postprocessing
-  use cc2dmediumm2oneshot
-  use cc2dmediumm2discretisation
+  use nonlinearoneshotsolver
+  use spacediscretisation
     
   implicit none
 

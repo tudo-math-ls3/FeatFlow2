@@ -46,7 +46,7 @@ module cc2dmediumm2postprocessing
   use cc2dmediumm2optcanalysis
   use cc2dmedium_callback
   use cc2dmediumm2boundarydef
-  use cc2dmediumm2matvecassembly
+  use spacematvecassembly
   
   use spacetimediscretisation
   

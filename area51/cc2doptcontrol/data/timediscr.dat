@@ -29,14 +29,14 @@ dtimeMax = 1.0 # 1.0                           # TIMEMX
 # Number of time steps on time level 1.
 # Must be >= 2 for everything except implicit Euler!
 
-niterations = 4                         # NITNS
+niterations = 1                         # NITNS
 
 # Minimum level in time.
-TIMENLMIN = 1
+TIMENLMIN = 4
 
 # Maximum level in time. The calculation is done on this time
 # level combined with the maximum space level NLMAX.
-TIMENLMAX = 3 # 5
+TIMENLMAX = 4 # 5
 
 # ----------------------------------------------------------------------
 
@@ -81,7 +81,7 @@ cspaceTimeSolverType = 2
 # =3: Inexact Newton. Stopping criterion of the linear solver is chosen
 #     adaptively. The stopping criteria of the linear solvers are not used.
 
-ctypePreconditioner = 1
+ctypePreconditioner = 2
 
 # Minimum number of steps
 
@@ -89,12 +89,12 @@ nminIterations     = 1
 
 # Maximum number of steps
       
-nmaxIterations     = 30
+nmaxIterations     = 10 #100 # 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-5 # 8 15 2 10 2 5 1E-8 0.001
+depsRel            = 1E-8 # 8 15 2 10 2 5 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -130,7 +130,7 @@ dinexactNewtonExponent = 2.0
 # Filename prefix for GMV output.
 # ='': Disable GMV output
 
-sgmvFileName = 'gmv/u.gmv'
+sgmvFileName = 'gmv/u1_4.gmv'
 
 # Filename prefix for output of the solution vector. If this is '',
 # the solution vector is not written out.
@@ -154,7 +154,7 @@ slinearSolver        = 'CC-LINEARSOLVER'
 nminIterations = 1
 
 # Maximum number of iterations
-nmaxIterations = 10
+nmaxIterations = 100
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -206,7 +206,7 @@ nminIterations = 1
 
 # Maximum number of time-MG sweeps per nonlinear time-iteration
 
-nmaxIterations = 100
+nmaxIterations = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -257,13 +257,13 @@ dalphamax = 1.0 #1.0
 
 # Type of space-time smoother.
 # =0: Block Jacobi
-# =1: Block SOR (domegaPrecond)
+# =1: Block Forward-Backward SOR (domegaPrecond)
 # =2: Block Forward-Backward Gauss-Seidel (damped)
 # =3: CG (Jacobi)
 # =4: CG (Forward-Backward Gauss-Seidel)
 # =6: Defect correction with UMFPACK preconditioning
 # =7: BiCGStab with Block Forward-Backward Gauss-Seidel preconditioning
-cspaceTimeSmoother = 2 # 2 0 6
+cspaceTimeSmoother = 1 # 2 0 6
 
 # Damping parameter
 domega = 0.9 # 0.5 0.7
@@ -315,7 +315,7 @@ slinearSolver        = 'CC-LINEARSOLVER'
 
 # Type of coarse grid solver.
 # =0: Iterative Defect correction with Block Jacobi prec.
-# =1: Iterative Block SOR(domegaPrecond)
+# =1: Iterative Defect correction with Block SOR([TIME-COARSEPRECOND].domega)
 # =2: Iterative Defect correction with Block Forward-Backward Gauss-Seidel precond.
 # =3: Iterative CG
 # =4: direct (UMFPACK Gauss elimination)
@@ -326,13 +326,16 @@ slinearSolver        = 'CC-LINEARSOLVER'
 ctypeCoarseGridSolver = 5 #5 # 5 4 0 2 5 4
 
 # Minimum number of time-iterations on the coarsest time-mesh
-nminIterations = 1
+nminIterations = 1 #3
 
 # Maximum number of time-iterations on the coarsest time-mesh
 nmaxIterations = 100 20
 
 # Damping parameter
 domega = 1.0 # 1.0 1.0 1.0 1.0
+
+# Relaxation parameter (e.g. for SOR)
+domegaPrecond = 1.0
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -382,7 +385,7 @@ nminIterations = 1 # 3
 # Maximum number of time-iterations on the coarsest time-mesh
 nmaxIterations = 1 # 0 20
 
-# Damping parameter
+# Relaxation parameter (e.g. for SOR)
 domega = 1.0 # 1.0 1.0
 
 # Damping of residuals, i.e. reduction of relative error 

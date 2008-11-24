@@ -40,9 +40,9 @@ module cc2dmediumm2stationary
   use cc2dmediumm2basic
   use cc2dmedium_callback
   
-  use cc2dmediumm2matvecassembly
-  use cc2dmediumm2nonlinearcore
-  use cc2dmediumm2nonlinearcoreinit
+  use spacematvecassembly
+  use spacepreconditioner
+  use spacepreconditionerinit
   use cc2dmediumm2postprocessing
   
   implicit none

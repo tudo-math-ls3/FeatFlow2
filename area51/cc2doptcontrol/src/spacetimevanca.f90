@@ -18,7 +18,7 @@ module spacetimevanca
   use collection
   use vectorio
   
-  use cc2dmediumm2nonlinearcoreinit
+  use spacepreconditionerinit
   use spacetimediscretisation
   use spacetimevectors
   use spacetimelinearsystem

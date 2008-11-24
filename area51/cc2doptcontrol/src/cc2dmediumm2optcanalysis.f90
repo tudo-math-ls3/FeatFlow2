@@ -32,7 +32,7 @@ module cc2dmediumm2optcanalysis
   use pprocerror
   use spacetimevectors
   use cc2dmedium_callback
-  use cc2dmediumm2matvecassembly
+  use spacematvecassembly
     
   implicit none
   
