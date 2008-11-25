@@ -466,7 +466,7 @@ contains
       ! Copy the coordinates. They are the same for all elements.
       do iel=1,nelements
         do ipt=1,npointsPerElement
-          do idim=1,ubound(Dpoints,1)
+          do idim=1,ubound(DpointsRef,1)
             DpointsRef(idim,ipt,iel) = Dpoints(idim,ipt)
           end do
         end do
