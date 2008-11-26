@@ -37,6 +37,7 @@ module boundaryintegral
   use domainintegration
   use collection
   use feevaluation
+  use mprimitives
 
   implicit none
 
