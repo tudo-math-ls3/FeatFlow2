@@ -4452,6 +4452,11 @@ contains
       ! local variables
       real(DP), dimension(:), pointer :: p_Dsource,p_Ddest
       real(SP), dimension(:), pointer :: p_Fsource,p_Fdest    
+
+      if (rx%h_Ddata .eq. ry%h_Ddata) then
+        ! Eehm... forget it.
+        return
+      end if
     
       ! Take care of the data type!
       select case (rx%cdataType)
@@ -11222,6 +11227,11 @@ contains
     real(DP), dimension(:), pointer :: p_Da1,p_Da2
     real(SP), dimension(:), pointer :: p_Fa1,p_Fa2
   
+    if (rsourceMatrix%h_Da .eq. rdestMatrix%h_Da) then
+      ! Eehm... forget it.
+      return
+    end if
+  
     if (rsourceMatrix%h_Da .eq. ST_NOHANDLE) then
       print *,'lsyssc_auxcopy_DA: Source matrix undefined!'
       call sys_halt()
@@ -11279,6 +11289,11 @@ contains
     ! local variables
     integer(PREC_MATIDX), dimension(:), pointer :: p_Kcol1,p_Kcol2
   
+    if (rsourceMatrix%h_Kcol .eq. rdestMatrix%h_Kcol) then
+      ! Eehm... forget it.
+      return
+    end if
+
     call lsyssc_getbase_Kcol (rsourceMatrix,p_Kcol1)
     if (rdestMatrix%h_Kcol .eq. ST_NOHANDLE) then
       call storage_new ('lsyssc_auxcopy_Kcol', 'Kcol', rsourceMatrix%NA, &
@@ -11318,6 +11333,11 @@ contains
     ! local variables
     integer(PREC_VECIDX), dimension(:), pointer :: p_Kld1,p_Kld2
   
+    if (rsourceMatrix%h_Kld .eq. rdestMatrix%h_Kld) then
+      ! Eehm... forget it.
+      return
+    end if
+
     call lsyssc_getbase_Kld (rsourceMatrix,p_Kld1)
     if (rdestMatrix%h_Kld .eq. ST_NOHANDLE) then
       call storage_new ('lsyssc_auxcopy_Kld', 'Kld', &
@@ -11358,6 +11378,11 @@ contains
     ! local variables
     integer(PREC_VECIDX), dimension(:), pointer :: p_Kdiag1,p_Kdiag2
   
+    if (rsourceMatrix%h_Kdiagonal .eq. rdestMatrix%h_Kdiagonal) then
+      ! Eehm... forget it.
+      return
+    end if
+
     call lsyssc_getbase_Kdiagonal (rsourceMatrix,p_Kdiag1)
     if (rdestMatrix%h_Kdiagonal .eq. ST_NOHANDLE) then
       call storage_new ('lsyssc_auxcopy_Kdiagonal', 'Kdiagonal', &
