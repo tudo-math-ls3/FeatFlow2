@@ -1453,22 +1453,22 @@ contains
 
     integer :: iblock,i !,icp
     real(DP) :: dtweight
-    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
     if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
       if (associated(rx%p_rdiscreteBC)) then
-        p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+        p_rdiscreteBC => rx%p_rdiscreteBC
       else
         ! No BC
-        nullify(p_RdiscreteBC)
+        nullify(p_rdiscreteBC)
       end if
     else
-      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+      p_rdiscreteBC => rdiscreteBC
     end if
     
-    if (.not. associated(p_RdiscreteBC)) return
+    if (.not. associated(p_rdiscreteBC)) return
     
     ! If the time-weight is not specified, 1.0 is assumed.
     if (present(dtimeWeight)) then
@@ -1481,10 +1481,10 @@ contains
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    do i=1, rx%p_rdiscreteBC%inumEntriesUsed
+    do i=1, p_rdiscreteBC%inumEntriesUsed
     
       ! What for BC's do we have here?
-      select case (p_RdiscreteBC(i)%itype)
+      select case (p_rdiscreteBC%p_RdiscBCList(i)%itype)
       case (DISCBC_TPUNDEFINED)
         ! Do-nothing
         
@@ -1492,12 +1492,12 @@ contains
         ! Dirichlet boundary conditions. Not time-dependent.
         ! On which component are they defined? The component specifies
         ! the row of the block matrix that is to be altered.
-        iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+        iblock = p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs%icomponent
         
         ! Implement the Dirichlet boundary conditions into that component
         ! of the vector.
         call vecfil_imposeDirichletDefectBC (rx%RvectorBlock(iblock),&
-                                            p_RdiscreteBC(i)%rdirichletBCs)
+            p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs)
         
       case (DISCBC_TPPRESSUREDROP)  
         ! Nothing to do; pressure drop BC's are implemented only into the RHS.
@@ -1512,7 +1512,8 @@ contains
         
       case DEFAULT
         call output_line(&
-            'Unknown boundary condition:'//sys_siL(p_RdiscreteBC(i)%itype,5),&
+            'Unknown boundary condition:'//&
+            sys_siL(p_rdiscreteBC%p_RdiscBCList(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCdef')
         call sys_halt()
         
@@ -1561,22 +1562,22 @@ contains
 
     integer :: i
     real(DP) :: dtweight
-    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
     if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
       if (associated(rx%p_rdiscreteBC)) then
-        p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+        p_rdiscreteBC => rx%p_rdiscreteBC
       else
         ! No BC
-        nullify(p_RdiscreteBC)
+        nullify(p_rdiscreteBC)
       end if
     else
-      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+      p_rdiscreteBC => rdiscreteBC
     end if
     
-    if (.not. associated(p_RdiscreteBC)) return
+    if (.not. associated(p_rdiscreteBC)) return
     
     ! If the time-weight is not specified, 1.0 is assumed.
     if (present(dtimeWeight)) then
@@ -1589,11 +1590,11 @@ contains
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    do i=1, rx%p_rdiscreteBC%inumEntriesUsed
+    do i=1, p_rdiscreteBC%inumEntriesUsed
     
       ! Only implement discrete slip BC's.
-      if (p_RdiscreteBC(i)%itype .eq. DISCBC_TPSLIP) then
-        call vecfil_imposeNLSlipDefectBC (rx,p_RdiscreteBC(i)%rslipBCs)          
+      if (p_rdiscreteBC%p_RdiscBCList(i)%itype .eq. DISCBC_TPSLIP) then
+        call vecfil_imposeNLSlipDefectBC (rx,p_rdiscreteBC%p_RdiscBCList(i)%rslipBCs)          
       end if
       
     end do
