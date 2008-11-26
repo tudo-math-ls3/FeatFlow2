@@ -68,8 +68,18 @@ module elementpreprocessing
   use fsystem
   use triangulation
   use element
+  use basicgeometry
+  use derivatives
+  use transformation
   
   implicit none
+  
+  private
+  
+  public :: elprep_init
+  public :: elprep_prepareSetForEvaluation
+  public :: elprep_releaseElementSet
+  public :: elprep_prepareForEvaluation
 
 contains
 

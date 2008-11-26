@@ -251,250 +251,278 @@ module element
 
   implicit none
   
+  private
+  
+  public :: elem_igetID
+  public :: elem_igetNDofLoc
+  public :: elem_igetNDofLocAssignment
+  public :: elem_igetNVE
+  public :: elem_igetCoordSystem
+  public :: elem_igetTrafoType
+  public :: elem_igetDimension
+  public :: elem_getMaxDerivative
+  public :: elem_getEvaluationTag
+  public :: elem_isNonparametric
+  public :: elem_getPrimaryElement
+  public :: elem_igetShape
+  public :: elem_generic1
+  public :: elem_generic2
+  public :: elem_generic_mult
+  public :: elem_generic_sim1
+  public :: elem_generic_sim2
+  public :: elem_generic
+  public :: elem_generic_sim
+  
+  ! Public entities imported from elementbase.f90
+  public :: t_evalElement
+  public :: t_evalElementSet
+  public :: EL_EVLTAG_COORDS, EL_EVLTAG_REFPOINTS, EL_EVLTAG_REALPOINTS, &
+            EL_EVLTAG_JAC, EL_EVLTAG_DETJ, EL_EVLTAG_TWISTIDX
+  
 !<constants>
 
 !<constantblock description="Internal constants for element ID bitfield.">
   ! Bitmasks for dimension; coincides on purpose with TRAFO_DIM_DIMENSION!
-  integer(I32), parameter :: EL_DIMENSION = 2**8 + 2**9
+  integer(I32), parameter, public :: EL_DIMENSION = 2**8 + 2**9
   
   ! 1D element; coincides on purpose with TRAFO_DIM_1D!
-  integer(I32), parameter :: EL_1D = ishft(NDIM1D,8)
+  integer(I32), parameter, public :: EL_1D = ishft(NDIM1D,8)
 
   ! 2D element; coincides on purpose with TRAFO_DIM_2D!
-  integer(I32), parameter :: EL_2D = ishft(NDIM2D,8)
+  integer(I32), parameter, public :: EL_2D = ishft(NDIM2D,8)
   
   ! 3D element; coincides on purpose with TRAFO_DIM_3D!
-  integer(I32), parameter :: EL_3D = ishft(NDIM3D,8)
+  integer(I32), parameter, public :: EL_3D = ishft(NDIM3D,8)
   
   ! Bitmask for element number including dimension
-  integer(I32), parameter :: EL_ELNRMASK = 255 + EL_DIMENSION
+  integer(I32), parameter, public :: EL_ELNRMASK = 255 + EL_DIMENSION
   
   ! Bitmask specifying a nonparametric element
-  integer(I32), parameter :: EL_NONPARAMETRIC = 2**15
+  integer(I32), parameter, public :: EL_NONPARAMETRIC = 2**15
 !</constantblock>
 
 !<constantblock description="Element identifiers for 1D elements">
 
   ! ID of constant conforming line FE, P0
-  integer(I32), parameter :: EL_P0_1D   = EL_1D + 0
-  integer(I32), parameter :: EL_E000_1D = EL_P0_1D
+  integer(I32), parameter, public :: EL_P0_1D   = EL_1D + 0
+  integer(I32), parameter, public :: EL_E000_1D = EL_P0_1D
   
   ! ID of linear conforming line FE, P1
-  integer(I32), parameter :: EL_P1_1D   = EL_1D + 1
-  integer(I32), parameter :: EL_E001_1D = EL_P1_1D
+  integer(I32), parameter, public :: EL_P1_1D   = EL_1D + 1
+  integer(I32), parameter, public :: EL_E001_1D = EL_P1_1D
   
   ! ID of quadratic conforming line FE, P2
-  integer(I32), parameter :: EL_P2_1D   = EL_1D + 2
-  integer(I32), parameter :: EL_E002_1D = EL_P2_1D
+  integer(I32), parameter, public :: EL_P2_1D   = EL_1D + 2
+  integer(I32), parameter, public :: EL_E002_1D = EL_P2_1D
   
   ! ID of cubic conforming line FE, 3,1-Spline
-  integer(I32), parameter :: EL_S31_1D = EL_1D + 17
+  integer(I32), parameter, public :: EL_S31_1D = EL_1D + 17
   
 !</constantblock>
   
 !<constantblock description="Element identifiers for 2D elements">
 
   ! unspecified element
-  integer(I32), parameter :: EL_UNDEFINED = -1
+  integer(I32), parameter, public :: EL_UNDEFINED = -1
 
   ! ID of constant conforming triangular FE, P0
-  integer(I32), parameter :: EL_P0      = EL_2D + 0
-  integer(I32), parameter :: EL_E000    = EL_P0
-  integer(I32), parameter :: EL_P0_2D   = EL_P0
-  integer(I32), parameter :: EL_E000_2D = EL_P0
+  integer(I32), parameter, public :: EL_P0      = EL_2D + 0
+  integer(I32), parameter, public :: EL_E000    = EL_P0
+  integer(I32), parameter, public :: EL_P0_2D   = EL_P0
+  integer(I32), parameter, public :: EL_E000_2D = EL_P0
 
   ! ID of linear conforming triangular FE, P1
-  integer(I32), parameter :: EL_P1      = EL_2D + 1
-  integer(I32), parameter :: EL_E001    = EL_P1
-  integer(I32), parameter :: EL_P1_2D   = EL_P1
-  integer(I32), parameter :: EL_E001_2D = EL_P1
+  integer(I32), parameter, public :: EL_P1      = EL_2D + 1
+  integer(I32), parameter, public :: EL_E001    = EL_P1
+  integer(I32), parameter, public :: EL_P1_2D   = EL_P1
+  integer(I32), parameter, public :: EL_E001_2D = EL_P1
 
   ! ID of quadratic conforming triangular FE, P2
-  integer(I32), parameter :: EL_P2      = EL_2D + 2
-  integer(I32), parameter :: EL_E002    = EL_P2
-  integer(I32), parameter :: EL_P2_2D   = EL_P2
-  integer(I32), parameter :: EL_E002_2D = EL_P2
+  integer(I32), parameter, public :: EL_P2      = EL_2D + 2
+  integer(I32), parameter, public :: EL_E002    = EL_P2
+  integer(I32), parameter, public :: EL_P2_2D   = EL_P2
+  integer(I32), parameter, public :: EL_E002_2D = EL_P2
 
   ! ID of cubic conforming triangular FE, P3
-  integer(I32), parameter :: EL_P3      = EL_2D + 3
-  integer(I32), parameter :: EL_E003    = EL_P3
-  integer(I32), parameter :: EL_P3_2D   = EL_P3
-  integer(I32), parameter :: EL_E003_2D = EL_P3
+  integer(I32), parameter, public :: EL_P3      = EL_2D + 3
+  integer(I32), parameter, public :: EL_E003    = EL_P3
+  integer(I32), parameter, public :: EL_P3_2D   = EL_P3
+  integer(I32), parameter, public :: EL_E003_2D = EL_P3
 
   ! ID for rotated linear $\tilde P1$ element (Crouzeix-Raviart)
-  integer(I32), parameter :: EL_P1T     = EL_2D + 20
-  integer(I32), parameter :: EL_P1T_2D  = EL_P1T
+  integer(I32), parameter, public :: EL_P1T     = EL_2D + 20
+  integer(I32), parameter, public :: EL_P1T_2D  = EL_P1T
 
   ! ID of constant conforming quadrilateral FE, Q0
-  integer(I32), parameter :: EL_Q0      = EL_2D + 10
-  integer(I32), parameter :: EL_E010    = EL_Q0
-  integer(I32), parameter :: EL_Q0_2D   = EL_Q0
-  integer(I32), parameter :: EL_E010_2D = EL_Q0
+  integer(I32), parameter, public :: EL_Q0      = EL_2D + 10
+  integer(I32), parameter, public :: EL_E010    = EL_Q0
+  integer(I32), parameter, public :: EL_Q0_2D   = EL_Q0
+  integer(I32), parameter, public :: EL_E010_2D = EL_Q0
 
   ! ID of bilinear conforming quadrilateral FE, Q1
-  integer(I32), parameter :: EL_Q1      = EL_2D + 11
-  integer(I32), parameter :: EL_E011    = EL_Q1 
-  integer(I32), parameter :: EL_Q1_2D   = EL_Q1 
-  integer(I32), parameter :: EL_E011_2D = EL_Q1 
+  integer(I32), parameter, public :: EL_Q1      = EL_2D + 11
+  integer(I32), parameter, public :: EL_E011    = EL_Q1 
+  integer(I32), parameter, public :: EL_Q1_2D   = EL_Q1 
+  integer(I32), parameter, public :: EL_E011_2D = EL_Q1 
 
   ! ID of biquadratic conforming quadrilateral FE, Q2
-  integer(I32), parameter :: EL_Q2      = EL_2D + 13
-  integer(I32), parameter :: EL_E013    = EL_Q2
-  integer(I32), parameter :: EL_Q2_2D   = EL_Q2
+  integer(I32), parameter, public :: EL_Q2      = EL_2D + 13
+  integer(I32), parameter, public :: EL_E013    = EL_Q2
+  integer(I32), parameter, public :: EL_Q2_2D   = EL_Q2
 
   ! ID of bicubic conforming quadrilateral FE, Q3
-  integer(I32), parameter :: EL_Q3      = EL_2D + 14
-  integer(I32), parameter :: EL_E014    = EL_Q3
-  integer(I32), parameter :: EL_Q3_2D   = EL_Q3
+  integer(I32), parameter, public :: EL_Q3      = EL_2D + 14
+  integer(I32), parameter, public :: EL_E014    = EL_Q3
+  integer(I32), parameter, public :: EL_Q3_2D   = EL_Q3
   
   ! ID of nonconforming parametric linear P1 element on a quadrilareral
   ! element, given by function value in the midpoint and the two
   ! derivatives.
-  integer(I32), parameter :: EL_QP1     = EL_2D + 21
+  integer(I32), parameter, public :: EL_QP1     = EL_2D + 21
 
   ! General rotated bilinear $\tilde Q1$ element, all variants (conformal, 
   ! nonconformal, parametric, nonparametric).
   ! Simplest variant is: parametric, edge midpoint-value based.
-  integer(I32), parameter :: EL_Q1T     = EL_2D + 30
-  integer(I32), parameter :: EL_Q1T_2D  = EL_Q1T
+  integer(I32), parameter, public :: EL_Q1T     = EL_2D + 30
+  integer(I32), parameter, public :: EL_Q1T_2D  = EL_Q1T
 
   ! General rotated bilinear $\tilde Q1$ element with bubble, 
   ! all variants (conformal, nonconformal, parametric, nonparametric).
-  integer(I32), parameter :: EL_Q1TB    = EL_2D + 31
-  integer(I32), parameter :: EL_Q1TB_2D = EL_Q1TB
+  integer(I32), parameter, public :: EL_Q1TB    = EL_2D + 31
+  integer(I32), parameter, public :: EL_Q1TB_2D = EL_Q1TB
 
   ! General rotated biquadratic $\tilde Q2$ element, all variants.
-  integer(I32), parameter :: EL_Q2T     = EL_2D + 35
-  integer(I32), parameter :: EL_Q2T_2D  = EL_Q2T
+  integer(I32), parameter, public :: EL_Q2T     = EL_2D + 35
+  integer(I32), parameter, public :: EL_Q2T_2D  = EL_Q2T
 
   ! General rotated biquadratic $\tilde Q2$ element with bubble, all variants.
-  integer(I32), parameter :: EL_Q2TB    = EL_2D + 37
-  integer(I32), parameter :: EL_Q2TB_2D = EL_Q2TB
+  integer(I32), parameter, public :: EL_Q2TB    = EL_2D + 37
+  integer(I32), parameter, public :: EL_Q2TB_2D = EL_Q2TB
   
   ! Quadrilateral $Q_1$ element with one hanging node. In the property
   ! bitfield of the element identifier, the local number of the edge where there
   ! is a hanging node must be encoded! (i.e. one must add a corresponding
   ! value to the constant EL_Q1HN1 to get the actual element identifier!)
-  integer(I32), parameter :: EL_Q1HN1 = EL_2D + 40
+  integer(I32), parameter, public :: EL_Q1HN1 = EL_2D + 40
   
   ! Quadrilateral $Q_2$ element with isoparametric mapping from the reference
   ! to the real element. In the property bitfield, one must set the corresponding
   ! bits to identify the edge that should map isoparametric!
-  integer(I32), parameter :: EL_Q2ISO = EL_2D + 50
+  integer(I32), parameter, public :: EL_Q2ISO = EL_2D + 50
 
 !</constantblock>
 
 !<constantblock description="Element identifiers for 3D elements">
 
   ! ID of constant conforming tetrahedral FE, P0
-  integer(I32), parameter :: EL_P0_3D   = EL_3D + 0
-  integer(I32), parameter :: EL_E000_3D = EL_P0_3D
+  integer(I32), parameter, public :: EL_P0_3D   = EL_3D + 0
+  integer(I32), parameter, public :: EL_E000_3D = EL_P0_3D
   
   ! ID of linear conforming tetrahedral FE, P1
-  integer(I32), parameter :: EL_P1_3D   = EL_3D + 1
-  integer(I32), parameter :: EL_E001_3D = EL_P1_3D
+  integer(I32), parameter, public :: EL_P1_3D   = EL_3D + 1
+  integer(I32), parameter, public :: EL_E001_3D = EL_P1_3D
 
   ! ID of constant conforming hexahedral FE, Q0
-  integer(I32), parameter :: EL_Q0_3D   = EL_3D + 10
-  integer(I32), parameter :: EL_E010_3D = EL_Q0_3D
+  integer(I32), parameter, public :: EL_Q0_3D   = EL_3D + 10
+  integer(I32), parameter, public :: EL_E010_3D = EL_Q0_3D
 
   ! ID of trilinear conforming hexahedral FE, Q1
-  integer(I32), parameter :: EL_Q1_3D   = EL_3D + 11
-  integer(I32), parameter :: EL_E011_3D = EL_Q1_3D
+  integer(I32), parameter, public :: EL_Q1_3D   = EL_3D + 11
+  integer(I32), parameter, public :: EL_E011_3D = EL_Q1_3D
   
   ! ID of constant conforming pyramid FE, Y0 = Q0
-  integer(I32), parameter :: EL_Y0_3D   = EL_3D + 60
+  integer(I32), parameter, public :: EL_Y0_3D   = EL_3D + 60
   
   ! ID of sub-trilinear conforming pyramid FE, Y1 \subset Q1
-  integer(I32), parameter :: EL_Y1_3D   = EL_3D + 61
+  integer(I32), parameter, public :: EL_Y1_3D   = EL_3D + 61
   
   ! ID of constant conforming prism FE, R0 = Q0
-  integer(I32), parameter :: EL_R0_3D   = EL_3D + 70
+  integer(I32), parameter, public :: EL_R0_3D   = EL_3D + 70
   
   ! ID of sub-trilinear conforming prism FE, R1 \subset Q1
-  integer(I32), parameter :: EL_R1_3D   = EL_3D + 71
+  integer(I32), parameter, public :: EL_R1_3D   = EL_3D + 71
 
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
   ! parametric, face-midpoint-value based
-  integer(I32), parameter :: EL_Q1T_3D  = EL_3D + 30
-  integer(I32), parameter :: EL_E031_3D = EL_Q1T_3D
+  integer(I32), parameter, public :: EL_Q1T_3D  = EL_3D + 30
+  integer(I32), parameter, public :: EL_E031_3D = EL_Q1T_3D
   
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
   ! parametric, integral mean value based
-  integer(I32), parameter :: EL_E030_3D = EL_Q1T_3D + 2**16
+  integer(I32), parameter, public :: EL_E030_3D = EL_Q1T_3D + 2**16
 
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
   ! non-parametric, integral mean value based
-  integer(I32), parameter :: EL_EM30_3D = EL_Q1T_3D + EL_NONPARAMETRIC + 2**16
+  integer(I32), parameter, public :: EL_EM30_3D = EL_Q1T_3D + EL_NONPARAMETRIC + 2**16
 
 !</constantblock>
 
 !<constantblock description="Special 2D element variants.">
   
   ! ID of rotated linear nonconforming triangular FE, P1~, edge-midpoint based
-  integer(I32), parameter :: EL_E020    = EL_P1T
-  integer(I32), parameter :: EL_E020_2D = EL_E020
+  integer(I32), parameter, public :: EL_E020    = EL_P1T
+  integer(I32), parameter, public :: EL_E020_2D = EL_E020
 
   ! ID of rotated bilinear conforming quadrilateral FE, Q1~, integral
   ! mean value based
-  integer(I32), parameter :: EL_E030    = EL_Q1T + 2**16
-  integer(I32), parameter :: EL_E030_2D = EL_E030
+  integer(I32), parameter, public :: EL_E030    = EL_Q1T + 2**16
+  integer(I32), parameter, public :: EL_E030_2D = EL_E030
 
   ! ID of rotated bilinear conforming quadrilateral FE, Q1~ with bubble, integral
   ! mean value based
-  integer(I32), parameter :: EL_EB30    = EL_Q1TB + 2**16
-  integer(I32), parameter :: EL_EB30_2D = EL_EB30
+  integer(I32), parameter, public :: EL_EB30    = EL_Q1TB + 2**16
+  integer(I32), parameter, public :: EL_EB30_2D = EL_EB30
 
   ! ID of rotated bilinear conforming quadrilateral FE, Q1~, edge-midpoint based
-  integer(I32), parameter :: EL_E031    = EL_Q1T
-  integer(I32), parameter :: EL_E031_2D = EL_E031
+  integer(I32), parameter, public :: EL_E031    = EL_Q1T
+  integer(I32), parameter, public :: EL_E031_2D = EL_E031
 
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
   ! mean value based
-  integer(I32), parameter :: EL_EM30    = EL_Q1T + EL_NONPARAMETRIC+ 2**16
-  integer(I32), parameter :: EL_EM30_2D = EL_EM30
+  integer(I32), parameter, public :: EL_EM30    = EL_Q1T + EL_NONPARAMETRIC+ 2**16
+  integer(I32), parameter, public :: EL_EM30_2D = EL_EM30
 
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
   ! mean value based; 'unpivoted' variant, solving local 4x4 systems directly 
   ! without pivoting. Faster but less stable.
-  integer(I32), parameter :: EL_EM30_UNPIVOTED = EL_Q1T + EL_NONPARAMETRIC + 2**17 + 2**16
+  integer(I32), parameter, public :: EL_EM30_UNPIVOTED = EL_Q1T + EL_NONPARAMETRIC + 2**17 + 2**16
   
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
   ! mean value based; 'unscaled' variant, which does not scale the local
   ! coordinate system on every element. Faster but less stable.
-  integer(I32), parameter :: EL_EM30_UNSCALED = EL_Q1T + EL_NONPARAMETRIC + 2**18 + 2**16
+  integer(I32), parameter, public :: EL_EM30_UNSCALED = EL_Q1T + EL_NONPARAMETRIC + 2**18 + 2**16
 
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
-  integer(I32), parameter :: EL_EM31    = EL_Q1T + EL_NONPARAMETRIC
-  integer(I32), parameter :: EL_EM31_2D = EL_EM31
+  integer(I32), parameter, public :: EL_EM31    = EL_Q1T + EL_NONPARAMETRIC
+  integer(I32), parameter, public :: EL_EM31_2D = EL_EM31
 
   ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~.
-  integer(I32), parameter :: EL_E050    = EL_Q2T
-  integer(I32), parameter :: EL_E050_2D = EL_E050
+  integer(I32), parameter, public :: EL_E050    = EL_Q2T
+  integer(I32), parameter, public :: EL_E050_2D = EL_E050
   
   ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~ with bubble.
-  integer(I32), parameter :: EL_EB50    = EL_Q2TB
-  integer(I32), parameter :: EL_EB50_2D = EL_EB50
+  integer(I32), parameter, public :: EL_EB50    = EL_Q2TB
+  integer(I32), parameter, public :: EL_EB50_2D = EL_EB50
   
   ! Isoparametric $Q_2$ element with one edge mapped nonlinear from the reference
   ! to the real element. Additionally, one bit in the property bitfield must
   ! be set to identify the edge.
-  integer(I32), parameter :: EL_Q2ISO1 = EL_Q2ISO 
+  integer(I32), parameter, public :: EL_Q2ISO1 = EL_Q2ISO 
 
   ! Isoparametric $Q_2$ element with two edges mapped nonlinear from the reference
   ! to the real element. Additionally, two bits in the property bitfield must
   ! be set to identify the edges.
-  integer(I32), parameter :: EL_Q2ISO2 = EL_Q2ISO + 2**16
+  integer(I32), parameter, public :: EL_Q2ISO2 = EL_Q2ISO + 2**16
 
   ! Isoparametric $Q_2$ element with three edges mapped nonlinear from the reference
   ! to the real element. Additionally, three bits in the property bitfield must
   ! be set to identify the edges.
-  integer(I32), parameter :: EL_Q2ISO3 = EL_Q2ISO + 2**17
+  integer(I32), parameter, public :: EL_Q2ISO3 = EL_Q2ISO + 2**17
 
   ! Isoparametric $Q_2$ element with four edges mapped nonlinear from the reference
   ! to the real element. Additionally, four bits in the property bitfield must
   ! be set to identify the edges.
-  integer(I32), parameter :: EL_Q2ISO4 = EL_Q2ISO + 2**16 + 2**17
+  integer(I32), parameter, public :: EL_Q2ISO4 = EL_Q2ISO + 2**16 + 2**17
 
 !</constantblock>
 
@@ -502,34 +530,34 @@ module element
 
   ! Maximum number of basic functions = maximum number of
   ! local DOF's per element.
-  integer, parameter :: EL_MAXNBAS = 21
+  integer, parameter, public :: EL_MAXNBAS = 21
   
   ! Maximum number of derivatives. Corresponds to DER_MAXNDER.
-  integer, parameter :: EL_MAXNDER = DER_MAXNDER
+  integer, parameter, public :: EL_MAXNDER = DER_MAXNDER
 
   ! Maximum number of DOFs per vertice.
-  integer, parameter :: EL_MAXNDOF_PER_VERT = 2
+  integer, parameter, public :: EL_MAXNDOF_PER_VERT = 2
   
   ! Maximum number of DOFs per edge.
-  integer, parameter :: EL_MAXNDOF_PER_EDGE = 2
+  integer, parameter, public :: EL_MAXNDOF_PER_EDGE = 2
   
   ! Maximum number of DOFs per face.
-  integer, parameter :: EL_MAXNDOF_PER_FACE = 1
+  integer, parameter, public :: EL_MAXNDOF_PER_FACE = 1
   
   ! Maximum number of DOFs per element.
-  integer, parameter :: EL_MAXNDOF_PER_ELEM = 4
+  integer, parameter, public :: EL_MAXNDOF_PER_ELEM = 4
 
   ! Number of entries in the Jacobian matrix, defining the mapping between
   ! the reference element and the real element. 1x1-matrix=1 elements
-  integer, parameter :: EL_NJACENTRIES1D = 1
+  integer, parameter, public :: EL_NJACENTRIES1D = 1
 
   ! Number of entries in the Jacobian matrix, defining the mapping between
   ! the reference element and the real element. 2x2-matrix=4 elements
-  integer, parameter :: EL_NJACENTRIES2D = 4
+  integer, parameter, public :: EL_NJACENTRIES2D = 4
 
   ! Number of entries in the Jacobian matrix, defining the mapping between
   ! the reference element and the real element. 3x3-matrix=9 elements
-  integer, parameter :: EL_NJACENTRIES3D = 9
+  integer, parameter, public :: EL_NJACENTRIES3D = 9
   
 !</constantblock>
 
@@ -547,13 +575,11 @@ module element
 
 contains
 
-
   ! ***************************************************************************
 
 !<function>  
 
   integer(I32) function elem_igetID(selemName)
-
   
 !<description>
   ! This routine returns the element id to a given element name.
@@ -566,7 +592,7 @@ contains
 
   !<input>
 
-  !cubature formula name - one of the EL_xxxx constants.
+  ! Element name - one of the EL_xxxx constants.
   character (LEN=*) :: selemName
 
   !</input>

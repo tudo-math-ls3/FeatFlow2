@@ -20,8 +20,12 @@ module elementbase
 
 implicit none
 
-!<constants>
+  !private
+  
+  public :: t_evalElement
+  public :: t_evalElementSet
 
+!<constants>
 
 !<constantblock description="Element evaluation tags. Defines the basis information that is \
 !  necessary to evaluate an element. All tags define bits of a bitfield and can be \
@@ -29,22 +33,22 @@ implicit none
 
   ! Calculate the coordinates of teh points that form the element.
   ! (Usually the corners of the element.)
-  integer(I32), parameter :: EL_EVLTAG_COORDS       = 2**0
+  integer(I32), parameter, public :: EL_EVLTAG_COORDS       = 2**0
 
   ! Calculate the coordinates on the reference element of the points where to evaluate.
-  integer(I32), parameter :: EL_EVLTAG_REFPOINTS    = 2**1
+  integer(I32), parameter, public :: EL_EVLTAG_REFPOINTS    = 2**1
 
   ! Calculate the real coordinates of the points where to evaluate.
-  integer(I32), parameter :: EL_EVLTAG_REALPOINTS   = 2**2
+  integer(I32), parameter, public :: EL_EVLTAG_REALPOINTS   = 2**2
   
   ! Calculate the Jacobian matrix of the points where to evaluate
-  integer(I32), parameter :: EL_EVLTAG_JAC          = 2**3
+  integer(I32), parameter, public :: EL_EVLTAG_JAC          = 2**3
 
   ! Calculate the Jacobian determinant in the points where to evaluate
-  integer(I32), parameter :: EL_EVLTAG_DETJ         = 2**4
+  integer(I32), parameter, public :: EL_EVLTAG_DETJ         = 2**4
   
   ! Calculate the twist indices
-  integer(I32), parameter :: EL_EVLTAG_TWISTIDX     = 2**5
+  integer(I32), parameter, public :: EL_EVLTAG_TWISTIDX     = 2**5
   
 !</constantblock>
 

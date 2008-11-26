@@ -51,6 +51,8 @@ module pprocgradients
   use collection
   use feevaluation
   use genoutput
+  use derivatives
+  use mprimitives
 
   implicit none
 

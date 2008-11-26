@@ -83,6 +83,7 @@ module bcassembly
   use collection, only: t_collection
   use triangulation
   use dofmapping
+  use mprimitives
   use meshregion
   
   implicit none
@@ -1368,7 +1369,7 @@ contains
     integer(I32), dimension(:), allocatable     :: IelementsAtBoundary
     integer(I32), dimension(:), allocatable     :: IelementsAtBoundaryIdx
     
-    real(DP), dimension(DER_MAXNDER)            :: Dvalues
+    real(DP), dimension(EL_MAXNDER)            :: Dvalues
     
     real(DP) :: dpar,dpar1,dpar2,dval,dval1,dval2
     integer :: nve,nnve,nvbd
@@ -2311,7 +2312,7 @@ contains
     ! local variables
     integer :: i,icount
     integer(I32) :: ieltype
-    real(DP), dimension(DER_MAXNDER)            :: Dvalues
+    real(DP), dimension(EL_MAXNDER)            :: Dvalues
     real(DP),dimension(NDIM2D)                  :: Dtangential,Dnormal
     integer                     :: NVT,ipoint1,ipoint2
     integer                    :: ielement

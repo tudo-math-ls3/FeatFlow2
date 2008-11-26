@@ -31,6 +31,7 @@ module pprocnavierstokes
   use linearsystemscalar
   use linearsystemblock
   use spatialdiscretisation
+  use derivatives
   use meshregion
 
   implicit none
