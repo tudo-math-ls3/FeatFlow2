@@ -109,10 +109,6 @@
 !# want to restrict a solution vector using a matrix you will need to do it
 !# by yourself ^_^
 !#
-!# Note:
-!# -----
-!# Currently there are no routines in FEAT2 which can assemble a prolongation
-!# matrix...coming soon...hopefully...
 !# </purpose>
 !##############################################################################
 
@@ -128,18 +124,37 @@ module multilevelprojection
   use element
   
   implicit none
+  
+  private
+  
+  public :: t_interlevelProjectionScalar
+  public :: t_interlevelProjectionBlock
+  public :: mlprj_initProjectionDirect
+  public :: mlprj_initProjectionDiscr
+  public :: mlprj_initProjectionVec
+  public :: mlprj_initProjectionMat
+  public :: mlprj_initL2Projection
+  public :: mlprj_initMatrixProjection
+  public :: mlprj_doneProjection
+  public :: mlprj_getTempMemoryScalar
+  public :: mlprj_getTempMemoryDirect
+  public :: mlprj_getTempMemoryVec
+  public :: mlprj_getTempMemoryMat
+  public :: mlprj_performProlongation
+  public :: mlprj_performRestriction
+  public :: mlprj_performInterpolation
 
 !<constants>
 
 !<constantblock description="Projection Types">
   ! Hard-coded projection operators
-  integer(I32), parameter :: MLP_PROJ_TYPE_HARDCODED = 0
+  integer(I32), parameter, public :: MLP_PROJ_TYPE_HARDCODED = 0
   
   ! L2-projection operators
-  integer(I32), parameter :: MLP_PROJ_TYPE_L2_PROJ   = 1
+  integer(I32), parameter, public :: MLP_PROJ_TYPE_L2_PROJ   = 1
   
   ! Matrix-based projection operators
-  integer(I32), parameter :: MLP_PROJ_TYPE_MATRIX    = 2
+  integer(I32), parameter, public :: MLP_PROJ_TYPE_MATRIX    = 2
 
 !</constantblock>
 
@@ -355,9 +370,6 @@ module multilevelprojection
 
 !</types>
 
-  ! CG-SSOR solver for L2-projection
-  private :: mlprj_aux_CG_SSOR
-
 contains
 
   ! ***************************************************************************
@@ -439,7 +451,8 @@ contains
 !</subroutine>
 
     if (rdiscretisation%ncomponents .eq. 0) then
-      print *,'mlprj_initProjectionDiscr: No discretisation!'
+      call output_line ('No discretisation!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initProjectionDiscr')
       call sys_halt()
     end if
 
@@ -488,7 +501,8 @@ contains
     integer :: i
 
     if (rvector%nblocks .eq. 0) then
-      print *,'mlprj_initProjectionVec: No discretisation!'
+      call output_line ('No discretisation!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initProjectionVec')
       call sys_halt()
     end if
 
@@ -541,7 +555,8 @@ contains
     integer :: i,j
 
     if (rmatrix%nblocksPerRow .eq. 0) then
-      print *,'mlprj_initProjectionMat: No discretisation!'
+      call output_line ('No discretisation!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initProjectionMat')
       call sys_halt()
     end if
 
@@ -657,57 +672,53 @@ contains
   
 !</subroutine>
 
-  ! Check to see if the two discretisation structures fit together
-  if (releDistrCoarse%celement .ne. releDistrFine%celement) then
-    print *,'Element distribution on the coarse and fine grid incompatible!'
-    print *,'Coarse grid: ',releDistrCoarse%celement,&
-            ' Fine grid: ',releDistrFine%celement
-    call sys_halt()
-  end if
+    ! Check to see if the two discretisation structures fit together
+    if (releDistrCoarse%celement .ne. releDistrFine%celement) then
+      call output_line ('Element distributions on the coarse and fine grid incompatible!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getProjectionStrategy')
+      call sys_halt()
+    end if
 
-  ! Copy the template to the actual projection structure.
-  ractProjection = rprojection
-  
-  ! Is any element type to be replaced according to a discretisation?
-  if (ractProjection%ielementTypeProlongation .eq. EL_UNDEFINED) then
-    ractProjection%ielementTypeProlongation = releDistrCoarse%celement
-  end if
+    ! Copy the template to the actual projection structure.
+    ractProjection = rprojection
+    
+    ! Is any element type to be replaced according to a discretisation?
+    if (ractProjection%ielementTypeProlongation .eq. EL_UNDEFINED) then
+      ractProjection%ielementTypeProlongation = releDistrCoarse%celement
+    end if
 
-  if (ractProjection%ielementTypeRestriction .eq. EL_UNDEFINED) then
-    ractProjection%ielementTypeRestriction = releDistrCoarse%celement
-  end if
+    if (ractProjection%ielementTypeRestriction .eq. EL_UNDEFINED) then
+      ractProjection%ielementTypeRestriction = releDistrCoarse%celement
+    end if
 
-  if (ractProjection%ielementTypeInterpolation .eq. EL_UNDEFINED) then
-    ractProjection%ielementTypeInterpolation = releDistrCoarse%celement
-  end if
+    if (ractProjection%ielementTypeInterpolation .eq. EL_UNDEFINED) then
+      ractProjection%ielementTypeInterpolation = releDistrCoarse%celement
+    end if
 
-  ! Check to see if the discretisation structures fit to the projection structure
-  if (ractProjection%ielementTypeProlongation .ne. releDistrCoarse%celement) then
-    ! Here, we can insert some additional code so that E030 is compatible eith EM30
-    ! and so on...
-    print *,'Element distribution of the grid and interlevel projection incompatible!'
-    print *,'Grid: ',releDistrCoarse%celement,&
-            ' Prolongation: ',ractProjection%ielementTypeProlongation
-    call sys_halt()
-  end if
+    ! Check to see if the discretisation structures fit to the projection structure
+    if (ractProjection%ielementTypeProlongation .ne. releDistrCoarse%celement) then
+      ! Here, we can insert some additional code so that E030 is compatible eith EM30
+      ! and so on...
+      call output_line ('Element distribution of the grid and interlevel projection incompatible!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getProjectionStrategy')
+      call sys_halt()
+    end if
 
-  if (ractProjection%ielementTypeRestriction .ne. releDistrCoarse%celement) then
-    ! Here, we can insert some additional code so that E030 is compatible eith EM30
-    ! and so on...
-    print *,'Element distribution of the grid and interlevel projection incompatible!'
-    print *,'Grid: ',releDistrCoarse%celement,&
-            ' Restriction: ',ractProjection%ielementTypeRestriction
-    call sys_halt()
-  end if
+    if (ractProjection%ielementTypeRestriction .ne. releDistrCoarse%celement) then
+      ! Here, we can insert some additional code so that E030 is compatible eith EM30
+      ! and so on...
+      call output_line ('Element distribution of the grid and interlevel projection incompatible!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getProjectionStrategy')
+      call sys_halt()
+    end if
 
-  if (ractProjection%ielementTypeInterpolation .ne. releDistrCoarse%celement) then
-    ! Here, we can insert some additional code so that E030 is compatible eith EM30
-    ! and so on...
-    print *,'Element distribution of the grid and interlevel projection incompatible!'
-    print *,'Grid: ',releDistrCoarse%celement,&
-            ' Interpolation: ',ractProjection%ielementTypeInterpolation
-    call sys_halt()
-  end if
+    if (ractProjection%ielementTypeInterpolation .ne. releDistrCoarse%celement) then
+      ! Here, we can insert some additional code so that E030 is compatible eith EM30
+      ! and so on...
+      call output_line ('Element distribution of the grid and interlevel projection incompatible!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getProjectionStrategy')
+      call sys_halt()
+    end if
 
   end subroutine
 
@@ -767,6 +778,10 @@ contains
         ! the fine mesh mass matrix, as we need them for the internal
         ! solving process.
         nmem = 4*RprojectionScalar(i)%rmatrixMass%NEQ
+      
+      case (MLP_PROJ_TYPE_MATRIX)
+        ! No temporary memory necessary here.
+        nmem = 0
         
       case default
         ! Unknown - so nothing is needed.
@@ -821,29 +836,30 @@ contains
   integer :: i
   integer :: imemmax,imemact
 
-  if (size(RdiscrCoarse) .ne. size(RdiscrFine)) then
-    print *,'mlprj_allocTempVector: Coarse and fine grid incompatible!'
-    call sys_halt()
-  end if
-  
-  ! How much memory do we need?
-  ! As we perform the grid transfer equation-by-equation and element-
-  ! distribution by element-distribution, we need the maximum of all 
-  ! mlprj_getTempMemoryScalar calls!
-  !
-  ! Loop through all blocks:
-  
-  imemmax = 0
-  do i=1,size(RdiscrCoarse)
-    ! How much memory needed for that equation?
-    imemact = mlprj_getTempMemoryScalar (rprojection%rscalarProjection(:,i),&
-                                         RdiscrCoarse(i), RdiscrFine(i))
-            
-    imemmax = max(imemmax,imemact)
-  end do
-  
-  ! Now we know how mich we need:
-  mlprj_getTempMemoryDirect = imemmax
+    if (size(RdiscrCoarse) .ne. size(RdiscrFine)) then
+      call output_line ('Coarse and fine grid incompatible!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryDirect')
+      call sys_halt()
+    end if
+    
+    ! How much memory do we need?
+    ! As we perform the grid transfer equation-by-equation and element-
+    ! distribution by element-distribution, we need the maximum of all 
+    ! mlprj_getTempMemoryScalar calls!
+    !
+    ! Loop through all blocks:
+    
+    imemmax = 0
+    do i=1,size(RdiscrCoarse)
+      ! How much memory needed for that equation?
+      imemact = mlprj_getTempMemoryScalar (rprojection%rscalarProjection(:,i),&
+                                           RdiscrCoarse(i), RdiscrFine(i))
+              
+      imemmax = max(imemmax,imemact)
+    end do
+    
+    ! Now we know how mich we need:
+    mlprj_getTempMemoryDirect = imemmax
   
   end function
   
@@ -883,13 +899,14 @@ contains
 
 !</function>
 
-    ! local variables
-    type(t_spatialDiscretisation), dimension(rvectorCoarse%nblocks) :: RdiscrCoarse
-    type(t_spatialDiscretisation), dimension(rvectorFine%nblocks) :: RdiscrFine
-    integer :: i
+  ! local variables
+  type(t_spatialDiscretisation), dimension(rvectorCoarse%nblocks) :: RdiscrCoarse
+  type(t_spatialDiscretisation), dimension(rvectorFine%nblocks) :: RdiscrFine
+  integer :: i
 
     if ((rvectorCoarse%nblocks .eq. 0) .or. (rvectorFine%nblocks .eq. 0)) then
-      print *,'mlprj_getTempMemoryVec: No discretisation!'
+      call output_line ('No discretisation!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryVec')
       call sys_halt()
     end if
 
@@ -946,13 +963,14 @@ contains
 
 !</function>
 
-    ! local variables; 
-    type(t_spatialDiscretisation), dimension(max(rmatrixCoarse%nblocksPerRow,1)) :: RdiscrCoarse
-    type(t_spatialDiscretisation), dimension(max(rmatrixFine%nBlocksPerRow,1)) :: RdiscrFine
-    integer :: i,j
+  ! local variables; 
+  type(t_spatialDiscretisation), dimension(max(rmatrixCoarse%nblocksPerRow,1)) :: RdiscrCoarse
+  type(t_spatialDiscretisation), dimension(max(rmatrixFine%nBlocksPerRow,1)) :: RdiscrFine
+  integer :: i,j
 
     if ((rmatrixCoarse%nblocksPerRow .eq. 0) .or. (rmatrixFine%nblocksPerRow .eq. 0)) then
-      print *,'mlprj_getTempMemoryVec: No discretisation!'
+      call output_line ('No discretisation!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryMat')
       call sys_halt()
     end if
 
@@ -962,8 +980,9 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrixCoarse,j,i)) then
           if (.not. &
               associated(rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscrTrial)) then
-            print *,'mlprj_getTempMemoryMat: No discretisation structure in coarse &
-                  &matrix at ',i,',',j
+            call output_line ('No discretisation structure in coarse matrix at ' // &
+                trim(sys_siL(i,4)) // ',' // trim(sys_siL(j,4)), &
+                OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryMat')
             call sys_halt()
           end if
           RdiscrCoarse(i) = &
@@ -978,8 +997,9 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrixFine,j,i)) then
           if (.not. &
               associated(rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscrTrial)) then
-            print *,'mlprj_getTempMemoryMat: No discretisation structure in fine matrix&
-                  & at ',i,',',j
+            call output_line ('No discretisation structure in fine matrix at ' // &
+                trim(sys_siL(i,4)) // ',' // trim(sys_siL(j,4)), &
+                OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryMat')
             call sys_halt()
           end if
           RdiscrFine(i) = &
@@ -1061,17 +1081,20 @@ contains
     ! The vectors must be of data type DOUBLE - we don't support anything
     ! different at the moment...
     if (rcoarseVector%cdataType .ne. ST_DOUBLE) then
-      print *,'Coarse grid vector has unsupported data type!'
+      call output_line ('Coarse grid vector has unsupported data type!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
       call sys_halt()
     end if
 
     if (rfineVector%cdataType .ne. ST_DOUBLE) then
-      print *,'Fine grid vector has unsupported data type!'
+      call output_line ('Fine grid vector has unsupported data type!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
       call sys_halt()
     end if
     
     if (lsysbl_isVectorSorted(rfineVector) .or. lsysbl_isVectorSorted(rcoarseVector)) then
-      print *,'Vectors must be unsorted for level change!'
+      call output_line ('Vectors must be unsorted for level change!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
       call sys_halt()
     end if
 
@@ -1079,148 +1102,151 @@ contains
     ! discretisation...
     do i=1,rcoarseVector%nblocks
     
-      if (rcoarseVector%RvectorBlock(i)%NEQ .gt. 0) then
+      ! Skip this block if it is empty
+      if (rcoarseVector%RvectorBlock(i)%NEQ .le. 0) cycle
       
-        ! What type of prolongation do we use here?
-        select case(rprojection%RscalarProjection(1,i)%iprojType)
-        case (MLP_PROJ_TYPE_L2_PROJ)
-          ! Call scalar L2-prolongation
-          call mlprj_prolScalarL2(rprojection%RscalarProjection(1,i), &
-            rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i),rtempVector)
-        
-          ! Continue with next block
-          cycle
-        
-        case (MLP_PROJ_TYPE_MATRIX)
-          ! Matrix-based prolongation
-          call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
-            rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i), &
-            1.0_DP, 0.0_DP, .false.)
-            
-          ! Continue with next block
-          cycle
+      ! What type of prolongation do we use here?
+      select case(rprojection%RscalarProjection(1,i)%iprojType)
+      case (MLP_PROJ_TYPE_L2_PROJ)
+        ! Call scalar L2-prolongation
+        call mlprj_prolScalarL2(rprojection%RscalarProjection(1,i), &
+          rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i),rtempVector)
+      
+        ! Continue with next block
+        cycle
+      
+      case (MLP_PROJ_TYPE_MATRIX)
+        ! Matrix-based prolongation
+        call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
+          rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i), &
+          1.0_DP, 0.0_DP, .false.)
           
-        end select
+        ! Continue with next block
+        cycle
+        
+      end select
+    
+      p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
+      p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
       
-        p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
-        p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
-        
-        ! We need a discretisation:
-        if ((.not. associated(p_rdiscrCoarse)) .or. &
-            (.not. associated(p_rdiscrFine))) then
-          print *,'Intergrid transfer: No discretisation!'
-          call sys_halt()
-        end if
+      ! We need a discretisation:
+      if ((.not. associated(p_rdiscrCoarse)) .or. &
+          (.not. associated(p_rdiscrFine))) then
+        call output_line ('Intergrid transfer: No discretisation!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
+        call sys_halt()
+      end if
 
-        ! Currently, we support only uniform triangulations.
-        if ((p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
-            (p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM)) then
-          print *,'Intergrid transfer supports currently only uniform discretisations!'
-          call sys_halt()
-        end if
-        
-        ! Get the pointers to the vectors
-        call lsyssc_getbase_double (rcoarseVector%RvectorBlock(i),p_DuCoarse)
-        call lsyssc_getbase_double (rfineVector%RvectorBlock(i),p_DuFine)
-        
-        ! Use the first projection structure as template and create
-        ! the actual projection structure for our situation.
-        ! Remember, in a uniform grid we only have one projection structure
-        ! and one element distribution!
-        call mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
-              p_rdiscrCoarse%RelementDistr(1), &
-              p_rdiscrFine%RelementDistr(1), &
-              ractProjection)
+      ! Currently, we support only uniform triangulations.
+      if ((p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
+          (p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM)) then
+        call output_line ('Intergrid transfer supports currently only uniform discretisations!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
+        call sys_halt()
+      end if
       
-        ! Depending on the element type of the trial functions in the
-        ! discretisation, choose the right prolongation and call it.
-        p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
-        p_rtriaFine => p_rdiscrFine%p_rtriangulation
-        select case (elem_getPrimaryElement(ractProjection%ielementTypeProlongation))
-        case (EL_P1_1D)
-          ! P1 prolongation
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                               p_IverticesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
-          call mlprj_prolUniformP1_1D_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
-               p_rtriaCoarse%NEL)
+      ! Get the pointers to the vectors
+      call lsyssc_getbase_double (rcoarseVector%RvectorBlock(i),p_DuCoarse)
+      call lsyssc_getbase_double (rfineVector%RvectorBlock(i),p_DuFine)
+      
+      ! Use the first projection structure as template and create
+      ! the actual projection structure for our situation.
+      ! Remember, in a uniform grid we only have one projection structure
+      ! and one element distribution!
+      call mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
+            p_rdiscrCoarse%RelementDistr(1), &
+            p_rdiscrFine%RelementDistr(1), &
+            ractProjection)
+    
+      ! Depending on the element type of the trial functions in the
+      ! discretisation, choose the right prolongation and call it.
+      p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
+      p_rtriaFine => p_rdiscrFine%p_rtriangulation
+      select case (elem_getPrimaryElement(ractProjection%ielementTypeProlongation))
+      case (EL_P1_1D)
+        ! P1 prolongation
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                             p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                             p_IverticesAtElementFine)
+        call mlprj_prolUniformP1_1D_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
+             p_rtriaCoarse%NEL)
 
-        case (EL_P2_1D)
-          ! P2 prolongation
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                               p_IverticesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
-          call mlprj_prolUniformP2_1D_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
+      case (EL_P2_1D)
+        ! P2 prolongation
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                             p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                             p_IverticesAtElementFine)
+        call mlprj_prolUniformP2_1D_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
 
-        case (EL_S31_1D)
-          ! S31 prolongation
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                               p_IverticesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
-          call storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
-                               p_DvertexCoordsCoarse)
-          call mlprj_prolUniformS31_1D_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
-               p_DvertexCoordsCoarse, p_rtriaCoarse%NVT, &
-               p_rtriaFine%NVT, p_rtriaCoarse%NEL)
+      case (EL_S31_1D)
+        ! S31 prolongation
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                             p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                             p_IverticesAtElementFine)
+        call storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
+                             p_DvertexCoordsCoarse)
+        call mlprj_prolUniformS31_1D_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
+             p_DvertexCoordsCoarse, p_rtriaCoarse%NVT, &
+             p_rtriaFine%NVT, p_rtriaCoarse%NEL)
 
-        case (EL_P1)
-          ! P1 prolongation
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                               p_IverticesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call mlprj_prolUniformP1_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
-               p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL)
-               
-        case (EL_P2)
-          ! P2 prolongation
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                               p_IverticesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call mlprj_prolUniformP2_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse,&
-               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-               p_rtriaCoarse%NEL,p_rtriaCoarse%NVT,p_rtriaFine%NVT)
+      case (EL_P1)
+        ! P1 prolongation
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                             p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                             p_IverticesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call mlprj_prolUniformP1_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
+             p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL)
+             
+      case (EL_P2)
+        ! P2 prolongation
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                             p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call mlprj_prolUniformP2_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementCoarse,&
+             p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+             p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+             p_rtriaCoarse%NEL,p_rtriaCoarse%NVT,p_rtriaFine%NVT)
 
-        case (EL_Q0)
-          ! Q0 prolongation
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call mlprj_prolUniformQ0_double (p_DuCoarse,p_DuFine, &
-               p_IneighboursAtElementFine, &
-               p_rtriaCoarse%NEL)
-               
-        case (EL_Q1)
-          ! Q1 prolongation
-          select case (ractProjection%iprolVariant)
-          case (:1) ! Standard prolongation
-            call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
-                                p_IverticesAtEdgeCoarse)
-            call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                                p_IverticesAtElementCoarse)
-            call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                                p_IverticesAtElementFine)
-            call mlprj_prolUniformQ1_double (p_DuCoarse, p_DuFine, &
-                      p_IverticesAtEdgeCoarse, p_IverticesAtElementCoarse, &
-                      p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)
-             ! 'old' implementation
+      case (EL_Q0)
+        ! Q0 prolongation
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call mlprj_prolUniformQ0_double (p_DuCoarse,p_DuFine, &
+             p_IneighboursAtElementFine, &
+             p_rtriaCoarse%NEL)
+             
+      case (EL_Q1)
+        ! Q1 prolongation
+        select case (ractProjection%iprolVariant)
+        case (:1) ! Standard prolongation
+          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
+                              p_IverticesAtEdgeCoarse)
+          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                              p_IverticesAtElementCoarse)
+          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                              p_IverticesAtElementFine)
+          call mlprj_prolUniformQ1_double (p_DuCoarse, p_DuFine, &
+                    p_IverticesAtEdgeCoarse, p_IverticesAtElementCoarse, &
+                    p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)
+           ! 'old' implementation
 !            CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
 !                                p_IverticesAtElementCoarse)
 !            CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
@@ -1233,177 +1259,177 @@ contains
 !                p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
 !                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,p_rtriaCoarse%NEL)
 
-          case (2:) !Experimental FEAST MIRROR prolongation with zero boundary
-            call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                                p_IverticesAtElementCoarse)
-            call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                                p_IverticesAtElementFine)
-            call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                                p_IneighboursAtElementCoarse)
-            call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                                p_IneighboursAtElementFine)
-            call mlprj_prolUnifQ1FMzero_double (p_DuCoarse,p_DuFine, &
-                p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
-                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-                p_rtriaCoarse%NEL,p_rtriaFine%NEL)
-          end select
-
-        case (EL_Q2)
-          ! Q2 prolongation
-          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-                               
-          call mlprj_prolUniformQ2_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementFine,p_IedgesAtElementFine,&
-               p_IneighboursAtElementFine,&
-               p_rtriaFine%NVT, p_rtriaFine%NMT, p_rtriaCoarse%NEL)  
-               
-        case (EL_QP1)        
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call mlprj_prolUniformQP1_double (p_DuCoarse,p_DuFine, &
-               p_IneighboursAtElementFine,p_rtriaCoarse%NEL,p_rtriaFine%NEL)                       
-                       
-        case (EL_Q1T)
-          ! Q1~ prolongation, DOF's = integral mean value
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          
-          ! Type of prolongation? Extended or not?
-          select case (ractProjection%iprolVariant)
-          case (:1) ! Standard prolongation
-            if (iand(ractProjection%ielementTypeProlongation,int(2**16,I32)) .ne. 0) then
-              ! DOF's = integral mean values
-              call mlprj_prolUniformEx30_double (p_DuCoarse,p_DuFine, &
-                  p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-                  p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-                  p_rtriaCoarse%NEL)
-            else
-              ! DOF's = edge midpoint based
-              call mlprj_prolUniformEx31_double (p_DuCoarse,p_DuFine, &
-                  p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-                  p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-                  p_rtriaCoarse%NEL)
-            end if
-                
-          case (2:) ! Extended prolongation; modified weights, local switch
-                    ! to constant prolongation
-            call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                                       p_IverticesAtElementCoarse)
-            call storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
-                                          p_DvertexCoordsCoarse)
-            call storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
-                                        p_DelementAreaCoarse)
-            ! (what a nasty call...)                                       
-            if (iand(ractProjection%ielementTypeProlongation,int(2**16,I32)) .ne. 0) then
-              ! DOF's = integral mean values
-              call mlprj_prolUniformEx30ext_double (p_DuCoarse,p_DuFine, &
-                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
-                      p_DelementAreaCoarse,&
-                      p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-                      p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-                      p_rtriaCoarse%NEL, &
-                      min(4,ractProjection%iprolVariant)-2, &
-                      ractProjection%dprolARboundEX3Y, &
-                      ractProjection%iprolARIndicatorEX3Y)
-            else
-              ! DOF's = edge midpoint based
-              call mlprj_prolUniformEx31ext_double (p_DuCoarse,p_DuFine, &
-                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
-                      p_DelementAreaCoarse,&
-                      p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-                      p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-                      p_rtriaCoarse%NEL, &
-                      min(4,ractProjection%iprolVariant)-2, &
-                      ractProjection%dprolARboundEX3Y, &
-                      ractProjection%iprolARIndicatorEX3Y)
-            end if
-          end select
-        
-        case (EL_Q2T)
-          ! Q2~ prolongation
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
-                               p_ItwistIndexFine)
-          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
-                               p_ItwistIndexCoarse)
-
-          call mlprj_prolUniformEx50_double (p_DuCoarse,p_DuFine, &
-              p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-              p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexCoarse,p_ItwistIndexFine,&
-              p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL)
-        
-        case (EL_Q2TB)
-          ! Q2~ with bubble prolongation
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
-                               p_ItwistIndexFine)
-          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
-                               p_ItwistIndexCoarse)
-
-          call mlprj_prolUniformEB50_double (p_DuCoarse,p_DuFine, &
-              p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-              p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexCoarse,p_ItwistIndexFine,&
-              p_rtriaCoarse%NMT,p_rtriaFine%NMT,&
-              p_rtriaCoarse%NEL,p_rtriaFine%NEL)
-
-        case (EL_Q0_3D)
-          ! Q0 prolongation
-          call mlprj_prolUniformQ0_3D_double (p_DuCoarse,p_DuFine, p_rtriaCoarse%NEL)
-
-        case (EL_Q1_3D)
-          ! Q1 prolongation
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
-                              p_IverticesAtEdgeCoarse)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtFace, &
-                              p_IverticesAtFaceCoarse)
+        case (2:) !Experimental FEAST MIRROR prolongation with zero boundary
           call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
                               p_IverticesAtElementCoarse)
           call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
                               p_IverticesAtElementFine)
-          call mlprj_prolUniformQ1_3D_double (p_DuCoarse, p_DuFine, &
-                    p_IverticesAtEdgeCoarse, p_IverticesAtFaceCoarse,&
-                    p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, &
-                    p_rtriaCoarse%NMT, p_rtriaCoarse%NAT, p_rtriaCoarse%NEL)
-
-        case (EL_Q1T_3D)
-          ! Q1~ prolongation, DOF's = integral mean value
-          call storage_getbase_int2d(p_rtriaFine%h_IfacesAtElement, &
-                               p_IfacesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
-                               p_IfacesAtElementCoarse)
-          !CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-          !                     p_IneighboursAtElementFine)
           call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          
-          ! Type of prolongation? Extended or not?
+                              p_IneighboursAtElementCoarse)
+          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                              p_IneighboursAtElementFine)
+          call mlprj_prolUnifQ1FMzero_double (p_DuCoarse,p_DuFine, &
+              p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
+              p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+              p_rtriaCoarse%NEL,p_rtriaFine%NEL)
+        end select
+
+      case (EL_Q2)
+        ! Q2 prolongation
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                             p_IverticesAtElementFine)
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+                             
+        call mlprj_prolUniformQ2_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementFine,p_IedgesAtElementFine,&
+             p_IneighboursAtElementFine,&
+             p_rtriaFine%NVT, p_rtriaFine%NMT, p_rtriaCoarse%NEL)  
+             
+      case (EL_QP1)        
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call mlprj_prolUniformQP1_double (p_DuCoarse,p_DuFine, &
+             p_IneighboursAtElementFine,p_rtriaCoarse%NEL,p_rtriaFine%NEL)                       
+                     
+      case (EL_Q1T)
+        ! Q1~ prolongation, DOF's = integral mean value
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        
+        ! Type of prolongation? Extended or not?
+        select case (ractProjection%iprolVariant)
+        case (:1) ! Standard prolongation
+          if (iand(ractProjection%ielementTypeProlongation,int(2**16,I32)) .ne. 0) then
+            ! DOF's = integral mean values
+            call mlprj_prolUniformEx30_double (p_DuCoarse,p_DuFine, &
+                p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                p_rtriaCoarse%NEL)
+          else
+            ! DOF's = edge midpoint based
+            call mlprj_prolUniformEx31_double (p_DuCoarse,p_DuFine, &
+                p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                p_rtriaCoarse%NEL)
+          end if
+              
+        case (2:) ! Extended prolongation; modified weights, local switch
+                  ! to constant prolongation
+          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                                     p_IverticesAtElementCoarse)
+          call storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
+                                        p_DvertexCoordsCoarse)
+          call storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
+                                      p_DelementAreaCoarse)
+          ! (what a nasty call...)                                       
+          if (iand(ractProjection%ielementTypeProlongation,int(2**16,I32)) .ne. 0) then
+            ! DOF's = integral mean values
+            call mlprj_prolUniformEx30ext_double (p_DuCoarse,p_DuFine, &
+                    p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
+                    p_DelementAreaCoarse,&
+                    p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                    p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                    p_rtriaCoarse%NEL, &
+                    min(4,ractProjection%iprolVariant)-2, &
+                    ractProjection%dprolARboundEX3Y, &
+                    ractProjection%iprolARIndicatorEX3Y)
+          else
+            ! DOF's = edge midpoint based
+            call mlprj_prolUniformEx31ext_double (p_DuCoarse,p_DuFine, &
+                    p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
+                    p_DelementAreaCoarse,&
+                    p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                    p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                    p_rtriaCoarse%NEL, &
+                    min(4,ractProjection%iprolVariant)-2, &
+                    ractProjection%dprolARboundEX3Y, &
+                    ractProjection%iprolARIndicatorEX3Y)
+          end if
+        end select
+      
+      case (EL_Q2T)
+        ! Q2~ prolongation
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                             p_ItwistIndexFine)
+        call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                             p_ItwistIndexCoarse)
+
+        call mlprj_prolUniformEx50_double (p_DuCoarse,p_DuFine, &
+            p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+            p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+            p_ItwistIndexCoarse,p_ItwistIndexFine,&
+            p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL)
+      
+      case (EL_Q2TB)
+        ! Q2~ with bubble prolongation
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                             p_ItwistIndexFine)
+        call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                             p_ItwistIndexCoarse)
+
+        call mlprj_prolUniformEB50_double (p_DuCoarse,p_DuFine, &
+            p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+            p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+            p_ItwistIndexCoarse,p_ItwistIndexFine,&
+            p_rtriaCoarse%NMT,p_rtriaFine%NMT,&
+            p_rtriaCoarse%NEL,p_rtriaFine%NEL)
+
+      case (EL_Q0_3D)
+        ! Q0 prolongation
+        call mlprj_prolUniformQ0_3D_double (p_DuCoarse,p_DuFine, p_rtriaCoarse%NEL)
+
+      case (EL_Q1_3D)
+        ! Q1 prolongation
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
+                            p_IverticesAtEdgeCoarse)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtFace, &
+                            p_IverticesAtFaceCoarse)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                            p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                            p_IverticesAtElementFine)
+        call mlprj_prolUniformQ1_3D_double (p_DuCoarse, p_DuFine, &
+                  p_IverticesAtEdgeCoarse, p_IverticesAtFaceCoarse,&
+                  p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, &
+                  p_rtriaCoarse%NMT, p_rtriaCoarse%NAT, p_rtriaCoarse%NEL)
+
+      case (EL_Q1T_3D)
+        ! Q1~ prolongation, DOF's = integral mean value
+        call storage_getbase_int2d(p_rtriaFine%h_IfacesAtElement, &
+                             p_IfacesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
+                             p_IfacesAtElementCoarse)
+        !CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+        !                     p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        
+        ! Type of prolongation? Extended or not?
 !          SELECT CASE (ractProjection%iprolVariant)
 !          CASE (:1) ! Standard prolongation
 !            IF (IAND(ractProjection%ielementTypeProlongation,INT(2**16,I32)) .NE. 0) THEN
@@ -1413,11 +1439,11 @@ contains
 !                  p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
 !                  p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)
 !            ELSE
-              ! DOF's = face midpoint based
-              call mlprj_prolUniformEx3x_3D_double (p_DuCoarse,p_DuFine, &
-                  p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
-                  p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL,&
-                  ractProjection%ielementTypeProlongation)
+            ! DOF's = face midpoint based
+            call mlprj_prolUniformEx3x_3D_double (p_DuCoarse,p_DuFine, &
+                p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
+                p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL,&
+                ractProjection%ielementTypeProlongation)
 !            END IF
 !                
 !          CASE (2:) ! Extended prolongation; modified weights, local switch
@@ -1454,13 +1480,12 @@ contains
 !            END IF
 !          END SELECT
 
-        case DEFAULT
-          print *,'Unsupported prolongation!'
-          call sys_halt()
-        end select
+      case default
+        call output_line ('Unknown element!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
+        call sys_halt()
+      end select
       
-      end if
-
     end do  ! i
 
   end subroutine
@@ -1530,17 +1555,20 @@ contains
     ! The vectors must be of data type DOUBLE - we don't support anything
     ! different at the moment...
     if (rcoarseVector%cdataType .ne. ST_DOUBLE) then
-      print *,'Coarse grid vector has unsupported data type!'
+      call output_line ('Coarse grid vector has unsupported data type!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
       call sys_halt()
     end if
 
     if (rfineVector%cdataType .ne. ST_DOUBLE) then
-      print *,'Fine grid vector has unsupported data type!'
+      call output_line ('Fine grid vector has unsupported data type!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
       call sys_halt()
     end if
     
     if (lsysbl_isVectorSorted(rfineVector) .or. lsysbl_isVectorSorted(rcoarseVector)) then
-      print *,'Vectors must be unsorted for level change!'
+      call output_line ('Vectors must be unsorted for level change!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
       call sys_halt()
     end if
     
@@ -1548,153 +1576,156 @@ contains
     ! discretisation...
     do i=1,rcoarseVector%nblocks
     
-      if (rcoarseVector%RvectorBlock(i)%NEQ .gt. 0) then
+      ! Skip this block if it is empty
+      if (rcoarseVector%RvectorBlock(i)%NEQ .le. 0) cycle
 
-        ! What type of restriction do we use here?
-        select case(rprojection%RscalarProjection(1,i)%iprojType)
-        case(MLP_PROJ_TYPE_L2_PROJ)
-          
-          ! Call scalar L2-restriction
-          call mlprj_restScalarL2(rprojection%RscalarProjection(1,i), &
-            rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i),rtempVector)
+      ! What type of restriction do we use here?
+      select case(rprojection%RscalarProjection(1,i)%iprojType)
+      case(MLP_PROJ_TYPE_L2_PROJ)
         
-          ! Continue with next block
-          cycle
-        
-        case(MLP_PROJ_TYPE_MATRIX)
-          
-          ! Matrix-based restriction
-          call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
-            rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
-            1.0_DP, 0.0_DP, .true.)
-          
-          ! Continue with next block
-          cycle
-          
-        end select
+        ! Call scalar L2-restriction
+        call mlprj_restScalarL2(rprojection%RscalarProjection(1,i), &
+          rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i),rtempVector)
       
-
-        p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
-        p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
-        
-        ! We need a discretisation:
-        if ((.not. associated(p_rdiscrCoarse)) .or. &
-            (.not. associated(p_rdiscrFine))) then
-          print *,'Intergrid transfer: No discretisation!'
-          call sys_halt()
-        end if
-
-        ! Currently, we support only uniform triangulations.
-        if ((p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
-            (p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM)) then
-          print *,'Intergrid transfer supports currently only uniform discretisations!'
-          call sys_halt()
-        end if
-        
-        ! Get the pointers to the vectors
-        call lsyssc_getbase_double (rcoarseVector%RvectorBlock(i),p_DuCoarse)
-        call lsyssc_getbase_double (rfineVector%RvectorBlock(i),p_DuFine)
-        
-        ! Use the first projection structure as template and create
-        ! the actual projection structure for our situation.
-        ! Remember, in a uniform grid we only have one projection structure
-        ! and one element distribution!
-        call mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
-              p_rdiscrCoarse%RelementDistr(1), &
-              p_rdiscrFine%RelementDistr(1), &
-              ractProjection)
+        ! Continue with next block
+        cycle
       
-        ! Depending on the element type of the trial functions in the
-        ! discretisation, choose the right prolongation and call it.
-        p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
-        p_rtriaFine => p_rdiscrFine%p_rtriangulation
-        select case (elem_getPrimaryElement(ractProjection%ielementTypeRestriction))
-        case (EL_P1_1D)
-          ! P1 restriction
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                               p_IverticesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
-          call mlprj_restUniformP1_1D_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse,p_IverticesAtElementFine, &
-               p_rtriaCoarse%NEL)
-               
-        case (EL_P2_1D)
-          ! P2 restriction
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                               p_IverticesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
-          call mlprj_restUniformP2_1D_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse,p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
+      case(MLP_PROJ_TYPE_MATRIX)
+        
+        ! Matrix-based restriction
+        call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
+          rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
+          1.0_DP, 0.0_DP, .true.)
+        
+        ! Continue with next block
+        cycle
+        
+      end select
+    
 
-        case (EL_S31_1D)
-          ! S31 restriction
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                               p_IverticesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
-          call storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
-                               p_DvertexCoordsCoarse)
-          call mlprj_restUniformS31_1D_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse,p_IverticesAtElementFine, &
-               p_DvertexCoordsCoarse,p_rtriaCoarse%NVT, &
-               p_rtriaFine%NVT, p_rtriaCoarse%NEL)
+      p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
+      p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
+      
+      ! We need a discretisation:
+      if ((.not. associated(p_rdiscrCoarse)) .or. &
+          (.not. associated(p_rdiscrFine))) then
+        call output_line ('Intergrid transfer: No discretisation!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
+        call sys_halt()
+      end if
 
-        case (EL_P1)
-          ! P1 restriction
-          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call mlprj_restUniformP1_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementFine,p_IneighboursAtElementFine, &
-               p_rtriaCoarse%NEL,p_rtriaFine%NEL)
+      ! Currently, we support only uniform triangulations.
+      if ((p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
+          (p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM)) then
+        call output_line ('Intergrid transfer supports currently only uniform discretisations!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
+        call sys_halt()
+      end if
+      
+      ! Get the pointers to the vectors
+      call lsyssc_getbase_double (rcoarseVector%RvectorBlock(i),p_DuCoarse)
+      call lsyssc_getbase_double (rfineVector%RvectorBlock(i),p_DuFine)
+      
+      ! Use the first projection structure as template and create
+      ! the actual projection structure for our situation.
+      ! Remember, in a uniform grid we only have one projection structure
+      ! and one element distribution!
+      call mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
+            p_rdiscrCoarse%RelementDistr(1), &
+            p_rdiscrFine%RelementDistr(1), &
+            ractProjection)
+    
+      ! Depending on the element type of the trial functions in the
+      ! discretisation, choose the right prolongation and call it.
+      p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
+      p_rtriaFine => p_rdiscrFine%p_rtriangulation
+      select case (elem_getPrimaryElement(ractProjection%ielementTypeRestriction))
+      case (EL_P1_1D)
+        ! P1 restriction
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                             p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                             p_IverticesAtElementFine)
+        call mlprj_restUniformP1_1D_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementCoarse,p_IverticesAtElementFine, &
+             p_rtriaCoarse%NEL)
+             
+      case (EL_P2_1D)
+        ! P2 restriction
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                             p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                             p_IverticesAtElementFine)
+        call mlprj_restUniformP2_1D_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementCoarse,p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
 
-        case (EL_P2)
-          ! P2 restriction
+      case (EL_S31_1D)
+        ! S31 restriction
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                             p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                             p_IverticesAtElementFine)
+        call storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
+                             p_DvertexCoordsCoarse)
+        call mlprj_restUniformS31_1D_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementCoarse,p_IverticesAtElementFine, &
+             p_DvertexCoordsCoarse,p_rtriaCoarse%NVT, &
+             p_rtriaFine%NVT, p_rtriaCoarse%NEL)
+
+      case (EL_P1)
+        ! P1 restriction
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                             p_IverticesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call mlprj_restUniformP1_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementFine,p_IneighboursAtElementFine, &
+             p_rtriaCoarse%NEL,p_rtriaFine%NEL)
+
+      case (EL_P2)
+        ! P2 restriction
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                             p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call mlprj_restUniformP2_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementCoarse,&
+             p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+             p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+             p_rtriaCoarse%NEL,p_rtriaCoarse%NVT,p_rtriaFine%NVT)
+        
+      case (EL_Q0)
+        ! Q0 restriction
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call mlprj_restUniformQ0_double (p_DuCoarse,p_DuFine, &
+             p_IneighboursAtElementFine, &
+             p_rtriaCoarse%NEL)
+             
+      case (EL_Q1)
+        ! Q1 restriction
+        
+        ! Type of restriction? 
+        select case (ractProjection%irestVariant)
+        case (:0) ! Standard restriction
+          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
+                              p_IverticesAtEdgeCoarse)
           call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                               p_IverticesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call mlprj_restUniformP2_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse,&
-               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-               p_rtriaCoarse%NEL,p_rtriaCoarse%NVT,p_rtriaFine%NVT)
-          
-        case (EL_Q0)
-          ! Q0 restriction
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call mlprj_restUniformQ0_double (p_DuCoarse,p_DuFine, &
-               p_IneighboursAtElementFine, &
-               p_rtriaCoarse%NEL)
-               
-        case (EL_Q1)
-          ! Q1 restriction
-          
-          ! Type of restriction? 
-          select case (ractProjection%irestVariant)
-          case (:0) ! Standard restriction
-            call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
-                                p_IverticesAtEdgeCoarse)
-            call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                                p_IverticesAtElementCoarse)
-            call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                                p_IverticesAtElementFine)
-            call mlprj_restUniformQ1_double (p_DuCoarse, p_DuFine, &
-                      p_IverticesAtEdgeCoarse, p_IverticesAtElementCoarse, &
-                      p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)
-             ! 'old' implementation
+                              p_IverticesAtElementCoarse)
+          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                              p_IverticesAtElementFine)
+          call mlprj_restUniformQ1_double (p_DuCoarse, p_DuFine, &
+                    p_IverticesAtEdgeCoarse, p_IverticesAtElementCoarse, &
+                    p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)
+           ! 'old' implementation
 !            CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
 !                                p_IverticesAtElementFine)
 !            CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
@@ -1702,187 +1733,187 @@ contains
 !            CALL mlprj_restUniformQ1_double (p_DuCoarse,p_DuFine, &
 !                p_IverticesAtElementFine,p_IneighboursAtElementFine,&
 !                p_rtriaFine%NEL)
-          case (1) ! All boundaries are FEAST mirror boundaries
-            call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                                p_IverticesAtElementFine)
-            call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                                p_IneighboursAtElementFine)
-            call mlprj_restUniformQ1FM_double (p_DuCoarse,p_DuFine, &
-                p_IverticesAtElementFine,p_IneighboursAtElementFine,&
-                p_rtriaFine%NEL)
-          case (2:) ! All boundaries are FEAST mirror boundaries with zero boundary
-            call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                                p_IverticesAtElementFine)
-            call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                                p_IneighboursAtElementFine)
-            call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                                p_IverticesAtElementCoarse)
-            call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                                p_IneighboursAtElementCoarse)
-            call mlprj_restUnifQ1FMzero_double (p_DuCoarse,p_DuFine, &
-                p_IverticesAtElementFine,p_IneighboursAtElementFine,&
-                p_IverticesAtElementCoarse,p_IneighboursAtElementCoarse,&
-                p_rtriaFine%NEL,p_rtriaCoarse%NEL)
-            
-          end select
-               
-        case (EL_Q2)
-          ! Q2 restriction
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                               p_IverticesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-                               
-          call mlprj_restUniformQ2_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementCoarse, p_IedgesAtElementCoarse, &
-               p_IedgesAtElementFine, p_IneighboursAtElementFine,&
-               p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NMT,&
-               p_rtriaFine%NMT,p_rtriaCoarse%NEL)
-                       
-        case (EL_QP1)       
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call mlprj_restUniformQP1_double (p_DuCoarse,p_DuFine, &
-               p_IneighboursAtElementFine, p_rtriaCoarse%NEL,p_rtriaFine%NEL)                              
-                              
-        case (EL_Q1T)
-          ! Q1~ restriction
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-
-          ! Type of restriction? Extended or not?
-          select case (ractProjection%irestVariant)
-          case (:1) ! Standard prolongation
-            if (iand(ractProjection%ielementTypeRestriction,int(2**16,I32)) .ne. 0) then
-              ! DOF's = integral mean values
-              call mlprj_restUniformEx30_double (p_DuCoarse,p_DuFine, &
-                  p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-                  p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-                  p_rtriaCoarse%NEL)          
-            else
-              ! DOF's = edge midpoint based
-              call mlprj_restUniformEx31_double (p_DuCoarse,p_DuFine, &
-                  p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-                  p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-                  p_rtriaCoarse%NEL)          
-            end if
-                
-          case (2:) ! Extended prolongation; modified weights, local switch
-                    ! to constant prolongation
-            call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                                       p_IverticesAtElementCoarse)
-            call storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
-                                          p_DvertexCoordsCoarse)
-            call storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
-                                        p_DelementAreaCoarse)
-            ! (what a nasty call...)                                       
-            if (iand(ractProjection%ielementTypeRestriction,int(2**16,I32)) .ne. 0) then
-              ! DOF's = integral mean values
-              call mlprj_restUniformEx30ext_double (p_DuCoarse,p_DuFine, &
-                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
-                      p_DelementAreaCoarse,&
-                      p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-                      p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-                      p_rtriaCoarse%NEL, &
-                      min(4,ractProjection%irestVariant)-2, &
-                      ractProjection%dprolARboundEX3Y, &
-                      ractProjection%iprolARIndicatorEX3Y)
-            else
-              ! DOF's = edge midpoint based
-              call mlprj_restUniformEx31ext_double (p_DuCoarse,p_DuFine, &
-                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
-                      p_DelementAreaCoarse,&
-                      p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-                      p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-                      p_rtriaCoarse%NEL, &
-                      min(4,ractProjection%irestVariant)-2, &
-                      ractProjection%dprolARboundEX3Y, &
-                      ractProjection%iprolARIndicatorEX3Y)
-            end if
-          end select
-
-        case (EL_Q2T)
-          ! Q2~ prolongation
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
-                               p_ItwistIndexFine)
-          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
-                               p_ItwistIndexCoarse)
-
-          call mlprj_restUniformEx50_double (p_DuCoarse,p_DuFine, &
-              p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-              p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexCoarse,p_ItwistIndexFine,&
-              p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL)
-
-        case (EL_Q2TB)
-          ! Q2~ with bubble prolongation
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
-                               p_ItwistIndexFine)
-          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
-                               p_ItwistIndexCoarse)
-
-          call mlprj_restUniformEB50_double (p_DuCoarse,p_DuFine, &
-              p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-              p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexCoarse,p_ItwistIndexFine,&
-              p_rtriaCoarse%NMT,p_rtriaFine%NMT,&
-              p_rtriaCoarse%NEL,p_rtriaFine%NEL)
-
-        case (EL_Q0_3D)
-          ! Q0 restriction
-          call mlprj_restUniformQ0_3D_double (p_DuCoarse,p_DuFine, p_rtriaCoarse%NEL)
-
-        case (EL_Q1_3D)
-          ! Q1 prolongation
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
-                              p_IverticesAtEdgeCoarse)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtFace, &
-                              p_IverticesAtFaceCoarse)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
-                              p_IverticesAtElementCoarse)
+        case (1) ! All boundaries are FEAST mirror boundaries
           call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
                               p_IverticesAtElementFine)
-          call mlprj_restUniformQ1_3D_double (p_DuCoarse, p_DuFine, &
-                    p_IverticesAtEdgeCoarse, p_IverticesAtFaceCoarse,&
-                    p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, &
-                    p_rtriaCoarse%NMT, p_rtriaCoarse%NAT, p_rtriaCoarse%NEL)
-
-        case (EL_Q1T_3D)
-          ! Q1~ restriction
-          call storage_getbase_int2d(p_rtriaFine%h_IfacesAtElement, &
-                               p_IfacesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
-                               p_IfacesAtElementCoarse)
-          !CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-          !                     p_IneighboursAtElementFine)
+          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                              p_IneighboursAtElementFine)
+          call mlprj_restUniformQ1FM_double (p_DuCoarse,p_DuFine, &
+              p_IverticesAtElementFine,p_IneighboursAtElementFine,&
+              p_rtriaFine%NEL)
+        case (2:) ! All boundaries are FEAST mirror boundaries with zero boundary
+          call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                              p_IverticesAtElementFine)
+          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                              p_IneighboursAtElementFine)
+          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                              p_IverticesAtElementCoarse)
           call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
+                              p_IneighboursAtElementCoarse)
+          call mlprj_restUnifQ1FMzero_double (p_DuCoarse,p_DuFine, &
+              p_IverticesAtElementFine,p_IneighboursAtElementFine,&
+              p_IverticesAtElementCoarse,p_IneighboursAtElementCoarse,&
+              p_rtriaFine%NEL,p_rtriaCoarse%NEL)
+          
+        end select
+             
+      case (EL_Q2)
+        ! Q2 restriction
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                             p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+                             
+        call mlprj_restUniformQ2_double (p_DuCoarse,p_DuFine, &
+             p_IverticesAtElementCoarse, p_IedgesAtElementCoarse, &
+             p_IedgesAtElementFine, p_IneighboursAtElementFine,&
+             p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NMT,&
+             p_rtriaFine%NMT,p_rtriaCoarse%NEL)
+                     
+      case (EL_QP1)       
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call mlprj_restUniformQP1_double (p_DuCoarse,p_DuFine, &
+             p_IneighboursAtElementFine, p_rtriaCoarse%NEL,p_rtriaFine%NEL)                              
+                            
+      case (EL_Q1T)
+        ! Q1~ restriction
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+
+        ! Type of restriction? Extended or not?
+        select case (ractProjection%irestVariant)
+        case (:1) ! Standard prolongation
+          if (iand(ractProjection%ielementTypeRestriction,int(2**16,I32)) .ne. 0) then
+            ! DOF's = integral mean values
+            call mlprj_restUniformEx30_double (p_DuCoarse,p_DuFine, &
+                p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                p_rtriaCoarse%NEL)          
+          else
+            ! DOF's = edge midpoint based
+            call mlprj_restUniformEx31_double (p_DuCoarse,p_DuFine, &
+                p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                p_rtriaCoarse%NEL)          
+          end if
+              
+        case (2:) ! Extended prolongation; modified weights, local switch
+                  ! to constant prolongation
+          call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                                     p_IverticesAtElementCoarse)
+          call storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
+                                        p_DvertexCoordsCoarse)
+          call storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
+                                      p_DelementAreaCoarse)
+          ! (what a nasty call...)                                       
+          if (iand(ractProjection%ielementTypeRestriction,int(2**16,I32)) .ne. 0) then
+            ! DOF's = integral mean values
+            call mlprj_restUniformEx30ext_double (p_DuCoarse,p_DuFine, &
+                    p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
+                    p_DelementAreaCoarse,&
+                    p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                    p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                    p_rtriaCoarse%NEL, &
+                    min(4,ractProjection%irestVariant)-2, &
+                    ractProjection%dprolARboundEX3Y, &
+                    ractProjection%iprolARIndicatorEX3Y)
+          else
+            ! DOF's = edge midpoint based
+            call mlprj_restUniformEx31ext_double (p_DuCoarse,p_DuFine, &
+                    p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
+                    p_DelementAreaCoarse,&
+                    p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                    p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                    p_rtriaCoarse%NEL, &
+                    min(4,ractProjection%irestVariant)-2, &
+                    ractProjection%dprolARboundEX3Y, &
+                    ractProjection%iprolARIndicatorEX3Y)
+          end if
+        end select
+
+      case (EL_Q2T)
+        ! Q2~ prolongation
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                             p_ItwistIndexFine)
+        call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                             p_ItwistIndexCoarse)
+
+        call mlprj_restUniformEx50_double (p_DuCoarse,p_DuFine, &
+            p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+            p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+            p_ItwistIndexCoarse,p_ItwistIndexFine,&
+            p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL)
+
+      case (EL_Q2TB)
+        ! Q2~ with bubble prolongation
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                             p_ItwistIndexFine)
+        call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                             p_ItwistIndexCoarse)
+
+        call mlprj_restUniformEB50_double (p_DuCoarse,p_DuFine, &
+            p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+            p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+            p_ItwistIndexCoarse,p_ItwistIndexFine,&
+            p_rtriaCoarse%NMT,p_rtriaFine%NMT,&
+            p_rtriaCoarse%NEL,p_rtriaFine%NEL)
+
+      case (EL_Q0_3D)
+        ! Q0 restriction
+        call mlprj_restUniformQ0_3D_double (p_DuCoarse,p_DuFine, p_rtriaCoarse%NEL)
+
+      case (EL_Q1_3D)
+        ! Q1 prolongation
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtEdge, &
+                            p_IverticesAtEdgeCoarse)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtFace, &
+                            p_IverticesAtFaceCoarse)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                            p_IverticesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                            p_IverticesAtElementFine)
+        call mlprj_restUniformQ1_3D_double (p_DuCoarse, p_DuFine, &
+                  p_IverticesAtEdgeCoarse, p_IverticesAtFaceCoarse,&
+                  p_IverticesAtElementCoarse, p_rtriaCoarse%NVT, &
+                  p_rtriaCoarse%NMT, p_rtriaCoarse%NAT, p_rtriaCoarse%NEL)
+
+      case (EL_Q1T_3D)
+        ! Q1~ restriction
+        call storage_getbase_int2d(p_rtriaFine%h_IfacesAtElement, &
+                             p_IfacesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
+                             p_IfacesAtElementCoarse)
+        !CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+        !                     p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
 
 !          ! Type of restriction? Extended or not?
 !          SELECT CASE (ractProjection%irestVariant)
@@ -1894,11 +1925,11 @@ contains
 !                  p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
 !                  p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)          
 !            ELSE
-              ! DOF's = face midpoint based
-              call mlprj_restUniformEx3x_3D_double (p_DuCoarse,p_DuFine, &
-                  p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
-                  p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL,&
-                  ractProjection%ielementTypeRestriction)          
+            ! DOF's = face midpoint based
+            call mlprj_restUniformEx3x_3D_double (p_DuCoarse,p_DuFine, &
+                p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
+                p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL,&
+                ractProjection%ielementTypeRestriction)          
 !            END IF
 !                
 !          CASE (2:) ! Extended prolongation; modified weights, local switch
@@ -1935,12 +1966,11 @@ contains
 !            END IF
 !          END SELECT
 
-        case DEFAULT
-          print *,'Unsupported restriction!'
-          call sys_halt()
-        end select
-      
-      end if
+      case default
+        call output_line ('Unknown element!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
+        call sys_halt()
+      end select
 
     end do  ! i
 
@@ -2010,17 +2040,20 @@ contains
     ! The vectors must be of data type DOUBLE - we don't support anything
     ! different at the moment...
     if (rcoarseVector%cdataType .ne. ST_DOUBLE) then
-      print *,'Coarse grid vector has unsupported data type!'
+      call output_line ('Coarse grid vector has unsupported data type!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
       call sys_halt()
     end if
 
     if (rfineVector%cdataType .ne. ST_DOUBLE) then
-      print *,'Fine grid vector has unsupported data type!'
+      call output_line ('Fine grid vector has unsupported data type!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
       call sys_halt()
     end if
     
     if (lsysbl_isVectorSorted(rfineVector) .or. lsysbl_isVectorSorted(rcoarseVector)) then
-      print *,'Vectors must be unsorted for level change!'
+      call output_line ('Vectors must be unsorted for level change!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
       call sys_halt()
     end if
 
@@ -2028,177 +2061,180 @@ contains
     ! discretisation...
     do i=1,rcoarseVector%nblocks
     
-      if (rcoarseVector%RvectorBlock(i)%NEQ .gt. 0) then
-        p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
-        p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
-        
-        ! We need a discretisation:
-        if ((.not. associated(p_rdiscrCoarse)) .or. &
-            (.not. associated(p_rdiscrFine))) then
-          print *,'Intergrid transfer: No discretisation!'
-          call sys_halt()
-        end if
-
-        ! Currently, we support only uniform triangulations.
-        if ((p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
-            (p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM)) then
-          print *,'Intergrid transfer supports currently only uniform discretisations!'
-          call sys_halt()
-        end if
-        
-        ! Get the pointers to the vectors
-        call lsyssc_getbase_double (rcoarseVector%RvectorBlock(i),p_DuCoarse)
-        call lsyssc_getbase_double (rfineVector%RvectorBlock(i),p_DuFine)
-        
-        ! Use the first projection structure as template and create
-        ! the actual projection structure for our situation.
-        ! Remember, in a uniform grid we only have one projection structure
-        ! and one element distribution!
-        call mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
-              p_rdiscrCoarse%RelementDistr(1), &
-              p_rdiscrFine%RelementDistr(1), &
-              ractProjection)
+      ! Skip this block if it is empty
+      if (rcoarseVector%RvectorBlock(i)%NEQ .le. 0) cycle
       
-        ! Depending on the element type of the trial functions in the
-        ! discretisation, choose the right prolongation and call it.
-        p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
-        p_rtriaFine => p_rdiscrFine%p_rtriangulation
-        select case (elem_getPrimaryElement(ractProjection%ielementTypeProlongation))
-        case (EL_P1_1D)
-          ! P1 interpolation
-          call mlprj_interpUniformP1_1D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
-
-        case (EL_P2_1D)
-          ! P2 interpolation
-          call mlprj_interpUniformP2_1D_double (p_DuCoarse,p_DuFine,&
-               p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
-
-        case (EL_S31_1D)
-          ! S31 interpolation
-          call mlprj_interpUniS31_1D_double (p_DuCoarse,p_DuFine,&
-               p_rtriaCoarse%NVT, p_rtriaFine%NVT)
-
-        case (EL_P1)
-          ! P1 interpolation
-          call mlprj_interpUniformP1_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
-
-        case (EL_P2)
-          ! P2 interpolation
-          call mlprj_interpUniformP2_double (p_DuCoarse,p_DuFine, &
-                                           p_rtriaCoarse%NVT, p_rtriaCoarse%NMT)
-                                           
-        case (EL_Q0)
-          ! Q0 interpolation
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call mlprj_interpUniformQ0_double (p_DuCoarse,p_DuFine, &
-               p_IneighboursAtElementFine, p_rtriaCoarse%NEL)
-               
-        case (EL_Q1)
-          ! Q1 interpolation
-          call mlprj_interpUniformQ1_double (p_DuCoarse,p_DuFine, p_rtriaCoarse%NVT)
-          
-        case (EL_Q2)
-          ! Q2 interpolation
-          call mlprj_interpUniformQ2_double (p_DuCoarse,p_DuFine, &
-                     p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)          
-                     
-        case (EL_QP1)
-          ! QP1 interpolation
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call mlprj_interpUniformQP1_double (p_DuCoarse,p_DuFine, &
-                  p_IneighboursAtElementFine, p_rtriaCoarse%NEL,p_rtriaFine%NEL)          
-                  
-        case (EL_Q1T)
-          ! Q1~ interpolation, DOF's = integral mean values
-          ! We use the same routine also for interpolating Ex31 solutions - there's
-          ! not too much difference...
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call mlprj_interpUniformEx30_double (p_DuCoarse,p_DuFine, &
-               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-               p_rtriaCoarse%NEL)          
-
-        case (EL_Q2T)
-          ! Q2~ interpolation
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
-                               p_ItwistIndexFine)
-          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
-                               p_ItwistIndexCoarse)
-
-          call mlprj_interpUniformEx50_double (p_DuCoarse,p_DuFine, &
-              p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-              p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexCoarse,p_ItwistIndexFine,&
-              p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL)
-
-        case (EL_Q2TB)
-          ! Q2~ with bubble interpolation
-          call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
-                               p_IedgesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
-                               p_IedgesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
-                               p_ItwistIndexFine)
-          call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
-                               p_ItwistIndexCoarse)
-
-          call mlprj_interpUniformEB50_double (p_DuCoarse,p_DuFine, &
-              p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-              p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-              p_ItwistIndexCoarse,p_ItwistIndexFine,&
-              p_rtriaCoarse%NMT,p_rtriaFine%NMT,&
-              p_rtriaCoarse%NEL,p_rtriaFine%NEL)
-
-        case (EL_Q0_3D)
-          ! Q0 interpolation
-          call mlprj_interpUniformQ0_3D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NEL)
-
-        case (EL_Q1_3D)
-          ! Q1 interpolation
-          call mlprj_interpUniformQ1_3D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
-
-        case (EL_Q1T_3D)
-          ! Q1~ interpolation, DOF's = integral mean values
-          ! We use the same routine also for interpolating Ex31 solutions - there's
-          ! not too much difference...
-          call storage_getbase_int2d(p_rtriaFine%h_IfacesAtElement, &
-                               p_IfacesAtElementFine)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
-                               p_IfacesAtElementCoarse)
-          call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
-                               p_IneighboursAtElementCoarse)
-          call mlprj_interpUniformEx3x_3D_dbl (p_DuCoarse,p_DuFine, &
-                  p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
-                  p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL,&
-                  ractProjection%ielementTypeInterpolation)          
-
-        case DEFAULT
-          print *,'Unsupported interpolation!'
-          call sys_halt()
-        end select
+      p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
+      p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
       
+      ! We need a discretisation:
+      if ((.not. associated(p_rdiscrCoarse)) .or. &
+          (.not. associated(p_rdiscrFine))) then
+        call output_line ('Intergrid transfer: No discretisation!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
+        call sys_halt()
       end if
+
+      ! Currently, we support only uniform triangulations.
+      if ((p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
+          (p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM)) then
+        call output_line ('Intergrid transfer supports currently only uniform discretisations!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
+        call sys_halt()
+      end if
+      
+      ! Get the pointers to the vectors
+      call lsyssc_getbase_double (rcoarseVector%RvectorBlock(i),p_DuCoarse)
+      call lsyssc_getbase_double (rfineVector%RvectorBlock(i),p_DuFine)
+      
+      ! Use the first projection structure as template and create
+      ! the actual projection structure for our situation.
+      ! Remember, in a uniform grid we only have one projection structure
+      ! and one element distribution!
+      call mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
+            p_rdiscrCoarse%RelementDistr(1), &
+            p_rdiscrFine%RelementDistr(1), &
+            ractProjection)
+    
+      ! Depending on the element type of the trial functions in the
+      ! discretisation, choose the right prolongation and call it.
+      p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
+      p_rtriaFine => p_rdiscrFine%p_rtriangulation
+      select case (elem_getPrimaryElement(ractProjection%ielementTypeProlongation))
+      case (EL_P1_1D)
+        ! P1 interpolation
+        call mlprj_interpUniformP1_1D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
+
+      case (EL_P2_1D)
+        ! P2 interpolation
+        call mlprj_interpUniformP2_1D_double (p_DuCoarse,p_DuFine,&
+             p_rtriaCoarse%NVT, p_rtriaCoarse%NEL)
+
+      case (EL_S31_1D)
+        ! S31 interpolation
+        call mlprj_interpUniS31_1D_double (p_DuCoarse,p_DuFine,&
+             p_rtriaCoarse%NVT, p_rtriaFine%NVT)
+
+      case (EL_P1)
+        ! P1 interpolation
+        call mlprj_interpUniformP1_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
+
+      case (EL_P2)
+        ! P2 interpolation
+        call mlprj_interpUniformP2_double (p_DuCoarse,p_DuFine, &
+                                         p_rtriaCoarse%NVT, p_rtriaCoarse%NMT)
+                                         
+      case (EL_Q0)
+        ! Q0 interpolation
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call mlprj_interpUniformQ0_double (p_DuCoarse,p_DuFine, &
+             p_IneighboursAtElementFine, p_rtriaCoarse%NEL)
+             
+      case (EL_Q1)
+        ! Q1 interpolation
+        call mlprj_interpUniformQ1_double (p_DuCoarse,p_DuFine, p_rtriaCoarse%NVT)
+        
+      case (EL_Q2)
+        ! Q2 interpolation
+        call mlprj_interpUniformQ2_double (p_DuCoarse,p_DuFine, &
+                   p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)          
+                   
+      case (EL_QP1)
+        ! QP1 interpolation
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call mlprj_interpUniformQP1_double (p_DuCoarse,p_DuFine, &
+                p_IneighboursAtElementFine, p_rtriaCoarse%NEL,p_rtriaFine%NEL)          
+                
+      case (EL_Q1T)
+        ! Q1~ interpolation, DOF's = integral mean values
+        ! We use the same routine also for interpolating Ex31 solutions - there's
+        ! not too much difference...
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call mlprj_interpUniformEx30_double (p_DuCoarse,p_DuFine, &
+             p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+             p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+             p_rtriaCoarse%NEL)          
+
+      case (EL_Q2T)
+        ! Q2~ interpolation
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                             p_ItwistIndexFine)
+        call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                             p_ItwistIndexCoarse)
+
+        call mlprj_interpUniformEx50_double (p_DuCoarse,p_DuFine, &
+            p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+            p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+            p_ItwistIndexCoarse,p_ItwistIndexFine,&
+            p_rtriaCoarse%NMT,p_rtriaFine%NMT,p_rtriaCoarse%NEL)
+
+      case (EL_Q2TB)
+        ! Q2~ with bubble interpolation
+        call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                             p_IedgesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                             p_IedgesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call storage_getbase_int32(p_rtriaFine%h_ItwistIndex, &
+                             p_ItwistIndexFine)
+        call storage_getbase_int32(p_rtriaCoarse%h_ItwistIndex, &
+                             p_ItwistIndexCoarse)
+
+        call mlprj_interpUniformEB50_double (p_DuCoarse,p_DuFine, &
+            p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+            p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+            p_ItwistIndexCoarse,p_ItwistIndexFine,&
+            p_rtriaCoarse%NMT,p_rtriaFine%NMT,&
+            p_rtriaCoarse%NEL,p_rtriaFine%NEL)
+
+      case (EL_Q0_3D)
+        ! Q0 interpolation
+        call mlprj_interpUniformQ0_3D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NEL)
+
+      case (EL_Q1_3D)
+        ! Q1 interpolation
+        call mlprj_interpUniformQ1_3D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
+
+      case (EL_Q1T_3D)
+        ! Q1~ interpolation, DOF's = integral mean values
+        ! We use the same routine also for interpolating Ex31 solutions - there's
+        ! not too much difference...
+        call storage_getbase_int2d(p_rtriaFine%h_IfacesAtElement, &
+                             p_IfacesAtElementFine)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
+                             p_IfacesAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                             p_IneighboursAtElementCoarse)
+        call mlprj_interpUniformEx3x_3D_dbl (p_DuCoarse,p_DuFine, &
+                p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
+                p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL,&
+                ractProjection%ielementTypeInterpolation)          
+
+      case default
+        call output_line ('Unknown element!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
+        call sys_halt()
+      end select
 
     end do  ! i
 
@@ -2213,29 +2249,6 @@ contains
   ! - different elements
   ! - uniform / conformal / ... discretisations
   ! ***************************************************************************
-
-!!<subroutine>
-!
-!  SUBROUTINE mlprj_prolUniformQ1_double ()
-!  
-!!<description>
-!  ! Prolongate a solution vector from a coarse grid to a fine grid.
-!  ! Q1, uniform triangulation.
-!!</description>
-!  
-!!<input>
-!  
-!!</input>
-!  
-!!<inputoutput>
-!!</inputoutput>
-!  
-!!</subroutine>
-!  
-!  ! local variables
-!
-!  END SUBROUTINE
-
 
   ! ***************************************************************************
   ! Support for 1D P1 element
@@ -9534,8 +9547,8 @@ contains
 !</subroutine>
 
   ! local CG variables
-  real(DP) :: dalpha, dbeta, dgamma, dgamma2,dtol,dt
-  integer :: iter,i,j,k,l,n
+  real(DP) :: dalpha, dbeta, dgamma, dgamma2,dtol
+  integer :: iter,n
   
   ! matrix arrays
   real(DP), dimension(:), pointer :: p_Da
@@ -9582,21 +9595,12 @@ contains
     ! Okay, start the CG iteration
     do iter = 1, nmaxiter
     
-      ! Dtmp := A * Ddir
-      dalpha = 0.0_DP
-      !$omp parallel do default(shared) private(j,dt) reduction(+:dalpha)
-      do i = 1, n
-        dt = 0.0_DP
-        do j = p_Kld(i), p_Kld(i+1)-1
-          dt = dt + p_Da(j)*p_Ddir(p_Kcol(j))
-        end do
-        dalpha = dalpha + p_Ddir(i)*dt
-        p_Dtmp(i) = dt
-      end do
-      !$omp end parallel do
+      ! Calculate:
+      ! 1. Dtmp := A * Ddir
+      ! 2. dalpha := < Ddir, Dtmp >
+      call mlprj_aux_MatVecCG(n,p_Kld,p_Kcol,p_Da,p_Ddir,p_Dtmp,dalpha)
       
       ! Calculate alpha
-      !dalpha = lalg_scalarProductDble(p_Ddir,p_Dtmp,n)
       if(dalpha .eq. 0.0_DP) return
       dalpha = dgamma / dalpha
       
@@ -9627,6 +9631,65 @@ contains
     end do
     
   contains
+  
+  !<subroutine>
+    
+    pure subroutine mlprj_aux_MatVecCG(n,Kld,Kcol,Da,Dx,Dy,dalpha)
+    
+  !<description>
+    ! PRIVATE AUXILIARY ROUTINE
+    ! This routine performs two tasks at once:
+    ! 1. Calculate y := A * x
+    ! 2. Calculate alpha := < x, A*x > = < x, y >
+  !</description>
+  
+  !<input>
+    ! The size of Dx
+    integer, intent(IN) :: n
+    
+    ! The Kld array of the mass matrix.
+    integer, dimension(*), intent(IN) :: Kld
+    
+    ! The Kcol array of the mass matrix.
+    integer, dimension(*), intent(IN) :: Kcol
+
+    ! The DA array of the mass matrix.
+    real(DP), dimension(*), intent(IN) :: Da
+    
+    ! The input vector that is to be multiplied by the matrix.
+    real(DP), dimension(*), intent(IN) :: Dx
+  !</input>
+  
+  !<output>
+    ! The output vector that recieves A*x
+    real(DP), dimension(*), intent(OUT) :: Dy
+    
+    ! The result of the scalar product < x, A*x >
+    real(DP), intent(OUT) :: dalpha
+  !</output>
+  
+  !</subroutine>
+  
+    ! local variables
+    integer :: i,j
+    real(DP) :: dt
+    
+      dalpha = 0.0_DP
+      
+      !$omp parallel do default(shared) private(j,dt) reduction(+:dalpha)
+      do i = 1, n
+        dt = 0.0_DP
+        do j = Kld(i), Kld(i+1)-1
+          dt = dt + Da(j)*Dx(Kcol(j))
+        end do ! j
+        dalpha = dalpha + Dx(i)*dt
+        Dy(i) = dt
+      end do ! i
+      !$omp end parallel do
+  
+    end subroutine ! mlprj_aux_MatVecCG
+  
+  ! ---------------------------------------------------------------------------
 
   !<subroutine>
 
