@@ -51,46 +51,56 @@ module meshregion
   use storage
   use triangulation
   use collection, only: t_collection
-
+  
   implicit none
+
+  private
+  
+  public :: t_meshRegion
+  public :: mshreg_createFromNodalProp
+  public :: mshreg_createFromHitTest
+  public :: mshreg_done
+  public :: mshreg_recalcVerticesFromEdges
+  public :: mshreg_recalcVerticesFromFaces
+  public :: mshreg_recalcEdgesFromFaces
+  public :: mshreg_calcBoundaryNormals2D
+  public :: mshreg_calcBoundaryNormals3D
 
 !<constants>
 
 !<constantblock description="Cell type identificator flags">
 
   ! Identification flag for the vertice index array
-  integer(I32), parameter :: MSHREG_IDX_VERTEX  = 2**0
+  integer(I32), parameter, public :: MSHREG_IDX_VERTEX  = 2**0
 
   ! Identification flag for the edge index array
-  integer(I32), parameter :: MSHREG_IDX_EDGE    = 2**1
+  integer(I32), parameter, public :: MSHREG_IDX_EDGE    = 2**1
 
   ! Identification flag for the face index array
-  integer(I32), parameter :: MSHREG_IDX_FACE    = 2**2
+  integer(I32), parameter, public :: MSHREG_IDX_FACE    = 2**2
 
   ! Identification flag for the element index array
-  integer(I32), parameter :: MSHREG_IDX_ELEMENT = 2**3
+  integer(I32), parameter, public :: MSHREG_IDX_ELEMENT = 2**3
   
   ! Identification flag for no index arrays
-  integer(I32), parameter :: MSHREG_IDX_NONE    = 0
+  integer(I32), parameter, public :: MSHREG_IDX_NONE    = 0
   
   ! Identification flag for all index arrays
-  integer(I32), parameter :: MSHREG_IDX_ALL     = MSHREG_IDX_VERTEX +&
-                                                  MSHREG_IDX_EDGE +&
-                                                  MSHREG_IDX_FACE +&
-                                                  MSHREG_IDX_ELEMENT
+  integer(I32), parameter, public :: MSHREG_IDX_ALL     = MSHREG_IDX_VERTEX +&
+                      MSHREG_IDX_EDGE + MSHREG_IDX_FACE + MSHREG_IDX_ELEMENT
 
 !</constantblock>
 
 !<constantblock description="Mask operator types">
 
   ! Kick the old index array
-  integer(I32), parameter :: MSHREG_MASK_KICK     = 0
+  integer(I32), parameter, public :: MSHREG_MASK_KICK = 0
   
   ! Apply the OR-operator
-  integer(I32), parameter :: MSHREG_MASK_OR       = 1
+  integer(I32), parameter, public :: MSHREG_MASK_OR   = 1
   
   ! Apply the AND-operator
-  integer(I32), parameter :: MSHREG_MASK_AND      = 2
+  integer(I32), parameter, public :: MSHREG_MASK_AND  = 2
 
 !</constantblock>
 
@@ -145,8 +155,6 @@ module meshregion
 !</typeblock>
 
 !</types>
-
-  private :: mshreg_aux_calcIdxArray1, mshreg_aux_calcIdxArray2
 
   contains
 

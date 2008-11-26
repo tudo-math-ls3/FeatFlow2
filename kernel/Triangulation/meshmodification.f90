@@ -19,6 +19,10 @@ module meshmodification
   use triangulation
 
   implicit none
+  
+  private
+  
+  public :: meshmod_disturbMesh
 
 contains
   

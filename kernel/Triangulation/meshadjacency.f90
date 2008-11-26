@@ -46,6 +46,10 @@ module meshadjacency
   use triangulation
 
   implicit none
+  
+  private
+  
+  public :: mshadj_calcElementAdjacency
 
 !<constants>
 
@@ -53,22 +57,22 @@ module meshadjacency
 
   ! Element adjacency is calculated based on the IneighboursAtElement array
   ! from the triangulation.
-  integer(I32), parameter :: MSHADJ_ADJ_NEIGHBOUR       = -1
+  integer(I32), parameter, public :: MSHADJ_ADJ_NEIGHBOUR       = -1
   
   ! Element adjacency is calculated by vertex connectivity, i.e. two elements
   ! are adjacent to each other if they share at least one common vertice.
-  integer(I32), parameter :: MSHADJ_ADJ_BY_VERTEX       = 1
+  integer(I32), parameter, public :: MSHADJ_ADJ_BY_VERTEX       = 1
   
   ! Element adjacency is calculated by edge connectivity, i.e. two elements
   ! are adjacent to each other if they share at least one common edge.
   ! In the case of a 1D grid, this is equal to MSHADJ_ADJ_BY_VERTEX.
-  integer(I32), parameter :: MSHADJ_ADJ_BY_EDGE         = 2
+  integer(I32), parameter, public :: MSHADJ_ADJ_BY_EDGE         = 2
 
   ! Element adjacency is calculated by face connectivity, i.e. two elements
   ! are adjacent to each other if they share at least one common face.
   ! In the case of a 1D grid, this is equal to MSHADJ_ADJ_BY_VERTEX.
   ! In the case of a 2D grid, this is equal to MSHADJ_ADJ_BY_EDGE.
-  integer(I32), parameter :: MSHADJ_ADJ_BY_FACE         = 3
+  integer(I32), parameter, public :: MSHADJ_ADJ_BY_FACE         = 3
 
 !</constantblock>
 
