@@ -39,9 +39,18 @@ module spdiscprojection
   use linearsystemscalar
   use linearsystemblock
   use feevaluation
+  use derivatives
   use linearalgebra
   
   implicit none
+
+  private
+  
+  public :: spdp_projectSolutionScalar
+  public :: spdp_projectSolution
+  public :: spdp_stdProjectionToP1Q1Scalar
+  public :: spdp_projectToVertices
+  public :: spdp_projectToCells
 
 contains
 
@@ -233,7 +242,7 @@ contains
                                  p_IverticesAtElement,&
                                  p_IelementsAtVertexIdx)
      
-      case DEFAULT
+      case default
         print *,'spdp_projectSolutionScalar: Unsupported element in source space!'
         call sys_halt()
       end select
@@ -286,12 +295,12 @@ contains
                                     p_IverticesAtElement,p_IfacesAtElement,&
                                     p_IelementsAtVertexIdx)
                           
-        case DEFAULT
+        case default
         print *,'spdp_projectSolutionScalar: Unsupported element in source space!'
         call sys_halt()
       end select
 
-    case DEFAULT
+    case default
       print *,'spdp_projectSolutionScalar: Unsupported element in destination space!'
       call sys_halt()
     end select

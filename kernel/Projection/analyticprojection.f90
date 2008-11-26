@@ -30,6 +30,13 @@ module analyticprojection
   use linearformevaluation
   
   implicit none
+  
+  private
+  
+  public :: t_configL2ProjectionByMass
+  public :: anprj_analytL2projectionByMass
+  public :: anprj_discrDirect
+  
 
 !<types>
 
