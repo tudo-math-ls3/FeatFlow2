@@ -36,6 +36,7 @@ program poisson
   use poisson2d_method1_fbc
   use poisson2d_method1_hadapt
   use poisson2d_method1_l2prj
+  use poisson2d_method1_prolmat
   use poisson2d_method2
   use poisson2d_method2_collect
   use poisson2d_method2_cmsort
@@ -113,6 +114,12 @@ program poisson
   call output_line ('Calculating Poisson-2D-Problem with method 1 - L2-projection')
   call output_line ('------------------------------------------------------------')
   call poisson2d_1_l2prj
+  
+  ! Call the problem to solve. Poisson 2D method 1 - Prolongation matrix:
+  call output_lbrk ()
+  call output_line ('Calculating Poisson-2D-Problem with method 1 - Prol.-Matrix')
+  call output_line ('-----------------------------------------------------------')
+  call poisson2d_1_prolmat
 
   ! Call the problem to solve. Poisson 2D method 2:
   call output_lbrk ()

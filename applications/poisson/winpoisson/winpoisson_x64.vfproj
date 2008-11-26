@@ -3,7 +3,7 @@
 	<Platforms>
 		<Platform Name="x64"/></Platforms>
 	<Configurations>
-		<Configuration Name="Debug|x64" WorkingDirectory="$(ProjectDir)\..\" OutputDirectory="$(ConfigurationName)_x64" IntermediateDirectory="$(ProjectDir)\$(ConfigurationName)_x64" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+		<Configuration Name="Debug|x64" OutputDirectory="$(ConfigurationName)_x64" IntermediateDirectory="$(ProjectDir)\$(ConfigurationName)_x64" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" FloatingPointExceptionHandling="fpe0" FloatingPointStackCheck="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/$(ProjectName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/$(ProjectName).pdb" SubSystem="subSystemConsole" StackReserveSize="1048576" StackCommitSize="1048576"/>
 				<Tool Name="VFResourceCompilerTool"/>
@@ -12,7 +12,7 @@
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
-		<Configuration Name="Release|x64" WorkingDirectory="$(ProjectDir)\..\" OutputDirectory="$(ConfigurationName)_x64" IntermediateDirectory="$(ProjectDir)\$(ConfigurationName)_x64" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+		<Configuration Name="Release|x64" OutputDirectory="$(ConfigurationName)_x64" IntermediateDirectory="$(ProjectDir)\$(ConfigurationName)_x64" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" GlobalOptimizations="true" InlineFunctionExpansion="expandOnlyInline" Parallelization="true" AdditionalIncludeDirectories="$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/$(ProjectName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" SubSystem="subSystemConsole"/>
 				<Tool Name="VFResourceCompilerTool"/>
@@ -40,6 +40,7 @@
 		<File RelativePath="..\src\poisson2d_method1_l2prj.f90"/>
 		<File RelativePath="..\src\poisson2d_method1_mg.f90"/>
 		<File RelativePath="..\src\poisson2d_method1_ncc.f90"/>
+		<File RelativePath="..\src\poisson2d_method1_prolmat.f90"/>
 		<File RelativePath="..\src\poisson2d_method2.f90"/>
 		<File RelativePath="..\src\poisson2d_method2_cmsort.f90"/>
 		<File RelativePath="..\src\poisson2d_method2_collect.f90"/>
