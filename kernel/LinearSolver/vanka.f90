@@ -167,36 +167,50 @@ module vanka
   use linearsystemscalar
   use linearsystemblock
   use genoutput
-  use vanka_aux
   
   use vanka_navst2d
   use vanka_bouss2d
 
   implicit none
+  
+  private
+  
+  public :: t_vanka
+  public :: vanka_initConformal
+  public :: vanka_doneConformal
+  public :: vanka_conformal
+  
+  ! Public entities imported from vanka_navst2d.f90
+  public :: VANKATP_NAVST2D_DIAG
+  public :: VANKATP_NAVST2D_FULL
+  
+  ! Public entities imported from vanka_bouss2d.f90
+  public :: VANKATP_BOUSS2D_DIAG
+  public :: VANKATP_BOUSS2D_FULL
 
 !<constants>
 
 !<constantblock description="Identifiers for the different problem classes that can be handled by VANKA">
 
   ! General VANKA
-  integer, parameter :: VANKAPC_GENERAL        = 0
+  integer, parameter, public :: VANKAPC_GENERAL        = 0
 
   ! 2D Navier Stokes problem
-  integer, parameter :: VANKAPC_2DNAVIERSTOKES = 1
+  integer, parameter, public :: VANKAPC_2DNAVIERSTOKES = 1
 
   ! 2D Navier Stokes optimal control problem
-  integer, parameter :: VANKAPC_2DNAVIERSTOKESOPTC = 2
+  integer, parameter, public :: VANKAPC_2DNAVIERSTOKESOPTC = 2
 
   ! 3D Navier Stokes problem
-  integer, parameter :: VANKAPC_3DNAVIERSTOKES = 3
+  integer, parameter, public :: VANKAPC_3DNAVIERSTOKES = 3
   
   ! --------------------- NEW IMPLEMENTATION ---------------------
   
   ! 2D Navier-Stokes problem
-  integer, parameter :: VANKAPC_NAVIERSTOKES2D = 10
+  integer, parameter, public :: VANKAPC_NAVIERSTOKES2D = 10
   
   ! 2D Boussinesq problem
-  integer, parameter :: VANKAPC_BOUSSINESQ2D = 11
+  integer, parameter, public :: VANKAPC_BOUSSINESQ2D = 11
 
 !</constantblock>
 
@@ -204,25 +218,25 @@ module vanka
 !<constantblock description="Identifiers for the different VANKA subtypes. Which one is supported depends on the problem class.">
 
   ! Standard VANKA, most suitable for the corresponding situation
-  integer, parameter :: VANKATP_STANDARD  = 0
+  integer, parameter, public :: VANKATP_STANDARD  = 0
 
   ! Diagonal-type VANKA
-  integer, parameter :: VANKATP_DIAGONAL  = 0
+  integer, parameter, public :: VANKATP_DIAGONAL  = 0
 
   ! 'Full' VANKA
-  integer, parameter :: VANKATP_FULL      = 1
+  integer, parameter, public :: VANKATP_FULL      = 1
 
   ! 'Full' VANKA for optimal control problems, primal equation processing
-  integer, parameter :: VANKATP_FULLOPTC_PRIMAL = 2
+  integer, parameter, public :: VANKATP_FULLOPTC_PRIMAL = 2
 
   ! 'Full' VANKA for optimal control problems, dual equation processing
-  integer, parameter :: VANKATP_FULLOPTC_DUAL   = 3
+  integer, parameter, public :: VANKATP_FULLOPTC_DUAL   = 3
 
   ! 'Diagonal' VANKA for optimal control problems
-  integer, parameter :: VANKATP_DIAGOPTC        = 4
+  integer, parameter, public :: VANKATP_DIAGOPTC        = 4
 
   ! Diagonal-type VANKA, solution based
-  integer, parameter :: VANKATP_DIAGONAL_SOLBASED = 5
+  integer, parameter, public :: VANKATP_DIAGONAL_SOLBASED = 5
 
 !</constantblock>
 
@@ -897,7 +911,7 @@ contains
       call vanka_Boussinesq2D (rvanka%rvankaBouss2D, rvector, rrhs, domega,&
           rvanka%csubtype)
 
-    case DEFAULT
+    case default
       call output_line ('Unknown VANKA problem class!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_conformal')
       call sys_halt()  
@@ -2015,7 +2029,7 @@ contains
             end if
           end if
        
-        case DEFAULT
+        case default
           call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokes')
@@ -2075,7 +2089,7 @@ contains
             call sys_halt()
           end if
           
-        case DEFAULT
+        case default
           call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokes')
@@ -8241,7 +8255,7 @@ contains
           call vanka_2DNSSOCQ1TQ0diagCoupConf (rvanka2DNavStOptC, &
               rvector, rrhs, domega,p_IelementList)
               
-        case DEFAULT
+        case default
         
           ! Apply the conformal VANKA that allows different matrices
           ! in A11, A12, A21 and A22!
@@ -11494,7 +11508,7 @@ contains
 !            END IF
 !          END IF
         
-        case DEFAULT
+        case default
           call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_3DNavierStokes')

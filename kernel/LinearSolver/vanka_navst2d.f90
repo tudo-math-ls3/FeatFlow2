@@ -76,15 +76,22 @@ use dofmapping
 
 implicit none
 
+  private
+  
+  public :: t_vankaPointerNavSt2D
+  public :: vanka_initNavierStokes2D
+  public :: vanka_doneNavierStokes2D
+  public :: vanka_NavierStokes2D
+
 !<constants>
 
 !<constantblock description="Vanka type identifiers for the 2D Navier-Stokes Class">
 
   ! Diagonal-type VANKA
-  integer, parameter :: VANKATP_NAVST2D_DIAG  = 0
+  integer, parameter, public :: VANKATP_NAVST2D_DIAG  = 0
 
   ! 'Full' VANKA
-  integer, parameter :: VANKATP_NAVST2D_FULL  = 1
+  integer, parameter, public :: VANKATP_NAVST2D_FULL  = 1
 
 !</constantblock>
 
@@ -102,37 +109,37 @@ implicit none
   ! A structure holding information for the universal 2D Navier-Stokes Vanka driver.
   type t_vankaNavSt2D_uni_diag
     
-    ! Arrays for the DOF-mapping
-    integer, dimension(:,:), pointer :: IdofV => NULL()
-    integer, dimension(:,:), pointer :: IdofP => NULL()
+    ! Arrays for the doF-mapping
+    integer, dimension(:,:), pointer :: IdofV => null()
+    integer, dimension(:,:), pointer :: IdofP => null()
     
     ! Local RHS/Solution vectors
-    real(DP), dimension(:), pointer :: Du1 => NULL()
-    real(DP), dimension(:), pointer :: Du2 => NULL()
-    real(DP), dimension(:), pointer :: Dup => NULL()
-    real(DP), dimension(:), pointer :: Df1 => NULL()
-    real(DP), dimension(:), pointer :: Df2 => NULL()
-    real(DP), dimension(:), pointer :: Dg => NULL()
+    real(DP), dimension(:), pointer :: Du1 => null()
+    real(DP), dimension(:), pointer :: Du2 => null()
+    real(DP), dimension(:), pointer :: Dup => null()
+    real(DP), dimension(:), pointer :: Df1 => null()
+    real(DP), dimension(:), pointer :: Df2 => null()
+    real(DP), dimension(:), pointer :: Dg => null()
     
     ! Main diagonal entries of A
-    real(DP), dimension(:), pointer :: Da1 => NULL()
-    real(DP), dimension(:), pointer :: Da2 => NULL()
+    real(DP), dimension(:), pointer :: Da1 => null()
+    real(DP), dimension(:), pointer :: Da2 => null()
     
     ! B/D matrices
-    real(DP), dimension(:,:), pointer :: Db1 => NULL()
-    real(DP), dimension(:,:), pointer :: Db2 => NULL()
-    real(DP), dimension(:,:), pointer :: Dd1 => NULL()
-    real(DP), dimension(:,:), pointer :: Dd2 => NULL()
+    real(DP), dimension(:,:), pointer :: Db1 => null()
+    real(DP), dimension(:,:), pointer :: Db2 => null()
+    real(DP), dimension(:,:), pointer :: Dd1 => null()
+    real(DP), dimension(:,:), pointer :: Dd2 => null()
     
     ! C matrix entries
-    real(DP), dimension(:), pointer :: Dc => NULL()
+    real(DP), dimension(:), pointer :: Dc => null()
     
     ! Schur-complement entries
-    real(DP), dimension(:), pointer :: Ds => NULL()
+    real(DP), dimension(:), pointer :: Ds => null()
     
     ! Temporary vectors
-    real(DP), dimension(:,:), pointer :: Dt1 => NULL()
-    real(DP), dimension(:,:), pointer :: Dt2 => NULL()
+    real(DP), dimension(:,:), pointer :: Dt1 => null()
+    real(DP), dimension(:,:), pointer :: Dt2 => null()
     
   end type
 
@@ -143,19 +150,19 @@ implicit none
   ! A structure holding information for the universal 2D Navier-Stokes Vanka driver.
   type t_vankaNavSt2D_uni_full
     
-    ! Arrays for the DOF-mapping
-    integer, dimension(:,:), pointer :: IdofV => NULL()
-    integer, dimension(:,:), pointer :: IdofP => NULL()
+    ! Arrays for the doF-mapping
+    integer, dimension(:,:), pointer :: IdofV => null()
+    integer, dimension(:,:), pointer :: IdofP => null()
     
     ! Local RHS/Solution vector
-    real(DP), dimension(:), pointer :: Du => NULL()
-    real(DP), dimension(:), pointer :: Df => NULL()
+    real(DP), dimension(:), pointer :: Du => null()
+    real(DP), dimension(:), pointer :: Df => null()
     
     ! Local matrix
-    real(DP), dimension(:,:), pointer :: Da => NULL()
+    real(DP), dimension(:,:), pointer :: Da => null()
     
     ! Pivot array for LAPACK
-    integer, dimension(:), pointer :: Ipiv => NULL()
+    integer, dimension(:), pointer :: Ipiv => null()
     
   end type
 
@@ -164,87 +171,89 @@ implicit none
 !<typeblock>
   
   ! A structure that saves matrix pointers for the 2D Navier-Stokes Vanka driver.
-  TYPE t_vankaPointerNavSt2D
+  type t_vankaPointerNavSt2D
+  
+    private
     
     ! Pointer to the column structure of the velocity matrix A11/A22
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolA => NULL()
+    integer, dimension(:), pointer              :: p_KcolA => null()
     
     ! Pointer to the row structure of the velocity matrix A11/A22
-    INTEGER, DIMENSION(:), POINTER              :: p_KldA => NULL()
+    integer, dimension(:), pointer              :: p_KldA => null()
     
     ! Pointer to diagonal entries in the velocity matrix A11/A22
-    INTEGER, DIMENSION(:), POINTER              :: p_KdiagonalA => NULL()
+    integer, dimension(:), pointer              :: p_KdiagonalA => null()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA11 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA11 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A22
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA22 => null()
 
     ! Pointer to the column structure of the matrix A12/A21
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolA12 => NULL()
+    integer, dimension(:), pointer              :: p_KcolA12 => null()
     
     ! Pointer to the row structure of the matrix A12/A21
-    INTEGER, DIMENSION(:), POINTER              :: p_KldA12 => NULL()
+    integer, dimension(:), pointer              :: p_KldA12 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A12
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA12 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA12 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A21
-    REAL(DP), DIMENSION(:), POINTER             :: p_DA21 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA21 => null()
 
     ! Pointer to the column structure of the B-matrices.
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolB => NULL()
+    integer, dimension(:), pointer              :: p_KcolB => null()
     
     ! Pointer to the row structure of the B-matrices
-    INTEGER, DIMENSION(:), POINTER              :: p_KldB => NULL()
+    integer, dimension(:), pointer              :: p_KldB => null()
     
     ! Pointer to the entries of the B1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB1 => null()
 
     ! Pointer to the entries of the B2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB2 => null()
 
     ! Pointer to the column structure of the D-matrices.
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolD => NULL()
+    integer, dimension(:), pointer              :: p_KcolD => null()
     
     ! Pointer to the row structure of the D-matrices
-    INTEGER, DIMENSION(:), POINTER              :: p_KldD => NULL()
+    integer, dimension(:), pointer              :: p_KldD => null()
 
     ! Pointer to the entries of the D1-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD1 => null()
 
     ! Pointer to the entries of the D2-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD2 => null()
 
     ! Pointer to the column structure of the C-matrix.
-    INTEGER, DIMENSION(:), POINTER              :: p_KcolC => NULL()
+    integer, dimension(:), pointer              :: p_KcolC => null()
     
     ! Pointer to the row structure of the C-matrix.
-    INTEGER, DIMENSION(:), POINTER              :: p_KldC => NULL()
+    integer, dimension(:), pointer              :: p_KldC => null()
     
     ! Pointer to diagonal entries in the C-matrix
-    INTEGER, DIMENSION(:), POINTER              :: p_KdiagonalC => NULL()
+    integer, dimension(:), pointer              :: p_KdiagonalC => null()
     
     ! Pointer to the entries of the C-matrix
-    REAL(DP), DIMENSION(:), POINTER             :: p_DC => NULL()
+    real(DP), dimension(:), pointer             :: p_DC => null()
 
     ! Spatial discretisation structure for velocity
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrV => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => null()
     
     ! Spatial discretisation structure for pressure
-    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrP => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => null()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
-    REAL(DP), DIMENSION(3,3) :: Dmultipliers
+    real(DP), dimension(3,3) :: Dmultipliers
     
     ! Structure for the universal diagonal 2D Navier-Stokes Vanka
-    TYPE(t_vankaNavSt2D_uni_diag) :: runi_diag
+    type(t_vankaNavSt2D_uni_diag) :: runi_diag
     
     ! Structure for the universal full 2D Navier-Stokes Vanka
-    TYPE(t_vankaNavSt2D_uni_full) :: runi_full
+    type(t_vankaNavSt2D_uni_full) :: runi_full
 
-  END TYPE
+  end type
   
 !</typeblock>
 
@@ -254,7 +263,7 @@ contains
 
 !<subroutine>
   
-  SUBROUTINE vanka_initNavierStokes2D (rmatrix,rvanka,csubtype)
+  subroutine vanka_initNavierStokes2D (rmatrix,rvanka,csubtype)
   
 !<description>
   ! Initialises the VANKA variant for 2D Navier-Stokes problems 
@@ -266,110 +275,110 @@ contains
 
 !<input>
   ! The system matrix of the linear system.
-  TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
+  type(t_matrixBlock), intent(IN), target :: rmatrix
 
   ! Desired subtype
-  INTEGER, INTENT(IN) :: csubtype  
+  integer, intent(IN) :: csubtype  
 !</input>
 
 !<inputoutput>
   ! t_vankaPointerNavSt2D structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerNavSt2D), INTENT(INOUT) :: rvanka
+  type(t_vankaPointerNavSt2D), intent(INOUT) :: rvanka
 !</inputoutput>
 
 !</subroutine>
 
-  INTEGER :: i,j,nmaxdofV,nmaxdofP,ndofV,ndofP,nmaxdof,nmaxel
+  integer :: i,nmaxdofV,nmaxdofP,ndofV,ndofP,nmaxdof,nmaxel
   integer(I32) :: elV, elP
-  TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscr
+  type(t_blockDiscretisation), pointer :: p_rblockDiscr
   type(t_elementDistribution), pointer :: p_relementDistrV, p_relementDistrP
   
     ! Matrix must be 3x3.
-    IF ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) THEN
-      CALL output_line ('System matrix is not 3x3.',&
+    if ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) then
+      call output_line ('System matrix is not 3x3.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initNavierStokes2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
-    ! TODO: Do more checks
+    ! TOdo: Do more checks
     
     ! The structure of A(1,3) must be identical to A(3,1) and
     ! that of A(2,3) must be identical to A(3,2).
-    IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(2,3)%NA) .OR. &
-        (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(2,3)%NEQ)) THEN
-      CALL output_line ('Structure of B1 and B2 different!',&
+    if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(2,3)%NA) .OR. &
+        (rmatrix%RmatrixBlock(1,3)%NEQ .ne. rmatrix%RmatrixBlock(2,3)%NEQ)) then
+      call output_line ('Structure of B1 and B2 different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initNavierStokes2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rmatrix%RmatrixBlock(3,1)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
-        (rmatrix%RmatrixBlock(3,1)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NEQ)) THEN
-      CALL output_line ('Structure of D1 and D2 different!',&
+    if ((rmatrix%RmatrixBlock(3,1)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
+        (rmatrix%RmatrixBlock(3,1)%NEQ .ne. rmatrix%RmatrixBlock(3,2)%NEQ)) then
+      call output_line ('Structure of D1 and D2 different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initNavierStokes2D')
-      CALL sys_halt()
-    END IF      
+      call sys_halt()
+    end if      
   
     ! Fill the output structure with data of the matrices.
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
         rvanka%p_DA11)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
         rvanka%p_DA22)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
         rvanka%p_DB1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),&
         rvanka%p_DB2)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),&
         rvanka%p_DD1)
-    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),&
+    call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),&
         rvanka%p_DD2)
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
         rvanka%p_KcolA)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
         rvanka%p_KldA )
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),&
         rvanka%p_KcolB)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
         rvanka%p_KldB)
-    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(3,1),&
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(3,1),&
         rvanka%p_KcolD)
-    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,1), &
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,1), &
         rvanka%p_KldD)
-    IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
+    if (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+      call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
                               rvanka%p_KdiagonalA)
-    ELSE
+    else
       rvanka%p_KdiagonalA => rvanka%p_KldA
-    END IF
+    end if
     
     ! Are the A12/A21 matrices present?
-    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
+    if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
       
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
           rvanka%p_DA12 )
       
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
           rvanka%p_DA21 )
-    END IF
+    end if
     
     ! Is the C-Matrix present?
-    IF (lsysbl_isSubmatrixPresent(rmatrix,3,3)) THEN
+    if (lsysbl_isSubmatrixPresent(rmatrix,3,3)) then
     
-      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
           rvanka%p_DC)
 
-      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(3,3),&
+      call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(3,3),&
           rvanka%p_KcolC)
-      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,3), &
+      call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,3), &
           rvanka%p_KldC)
 
-      IF (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(3,3), &
+      if (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+        call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(3,3), &
                                 rvanka%p_KdiagonalC)
-      ELSE
+      else
         rvanka%p_KdiagonalC => rvanka%p_KldC
-      END IF
+      end if
     
-    END IF
+    end if
     
     ! Get the multiplication factors of the submatrices.
     rvanka%Dmultipliers(1:3,1:3) = &
@@ -378,37 +387,37 @@ contains
     ! Get the block discretisation structure from the matrix.
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
     
-    IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
-      CALL output_line ('No discretisation!',&
+    if (.NOT. associated(p_rblockDiscr)) then
+      call output_line ('No discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initNavierStokes2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Get the discretisation structure of V and P from the block
     ! discretisation structure.
     rvanka%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(1)
     rvanka%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
     
-    IF (p_rblockDiscr%RspatialDiscr(1)%inumFESpaces .NE. &
-        p_rblockDiscr%RspatialDiscr(2)%inumFESpaces) THEN
-      CALL output_line (&
+    if (p_rblockDiscr%RspatialDiscr(1)%inumFESpaces .ne. &
+        p_rblockDiscr%RspatialDiscr(2)%inumFESpaces) then
+      call output_line (&
           'Discretisation structures of X- and Y-velocity incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initNavierStokes2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF ((rvanka%p_rspatialDiscrP%inumFESpaces .NE. 1) .AND. &
-        (rvanka%p_rspatialDiscrP%inumFESpaces .NE. &
-          rvanka%p_rspatialDiscrV%inumFESpaces)) THEN
+    if ((rvanka%p_rspatialDiscrP%inumFESpaces .ne. 1) .AND. &
+        (rvanka%p_rspatialDiscrP%inumFESpaces .ne. &
+          rvanka%p_rspatialDiscrV%inumFESpaces)) then
       ! Either there must be only one element type for the pressure, or there one
       ! pressure element distribution for every velocity element distribution!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
-      CALL output_line (&
+      call output_line (&
           'Discretisation structures of velocity and pressure incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initNavierStokes2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Loop through all discretisations
     nmaxdofV = 0
@@ -422,13 +431,13 @@ contains
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
-      IF (rvanka%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
+      if (rvanka%p_rspatialDiscrP%inumFESpaces .GT. 1) then
         p_relementDistrP => &
             rvanka%p_rspatialDiscrP%RelementDistr(i)
-      ELSE
+      else
         p_relementDistrP => &
             rvanka%p_rspatialDiscrP%RelementDistr(1)
-      END IF
+      end if
       
       ! Get the number of elements
       nmaxel = max(nmaxel,p_relementDistrV%NEL)
@@ -439,9 +448,9 @@ contains
       
       ! Check if we have a specialised variant for this combination - and if yes,
       ! then continue with the next element distribution.
-      if((elV .EQ. EL_Q1T) .and. (elP .EQ. EL_Q0)) cycle
+      if((elV .eq. EL_Q1T) .and. (elP .eq. EL_Q0)) cycle
       
-      ! Otherwise get the number of local DOFs
+      ! Otherwise get the number of local doFs
       ndofV = elem_igetNDofLoc(elV)
       ndofP = elem_igetNDofLoc(elP)
       
@@ -491,13 +500,13 @@ contains
     
     end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_doneNavierStokes2D (rvanka)
+  subroutine vanka_doneNavierStokes2D (rvanka)
   
 !<description>
   ! Releases the VANKA variant for 2D Navier-Stokes problems 
@@ -506,7 +515,7 @@ contains
 
 !<inputoutput>
   ! t_vankaPointerNavSt2D structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerNavSt2D), INTENT(INOUT) :: rvanka
+  type(t_vankaPointerNavSt2D), intent(INOUT) :: rvanka
 !</inputoutput>
 
 !</subroutine>
@@ -539,13 +548,13 @@ contains
     if(associated(rvanka%runi_full%Da)) deallocate(rvanka%runi_full%Da)
     if(associated(rvanka%runi_full%Ipiv)) deallocate(rvanka%runi_full%Ipiv)
 
-  END subroutine
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE vanka_NavierStokes2D (rvanka,rvector,rrhs,domega,csubtype)
+  subroutine vanka_NavierStokes2D (rvanka,rvector,rrhs,domega,csubtype)
   
 !<description>
   ! This routine applies the VANKA variant for 2D Navier-Stokes problems
@@ -565,36 +574,36 @@ contains
 
 !<input>
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_BOUSS2D_xxxx constants, e.g. VANKATP_BOUSS2D_DIAG.
-  INTEGER, INTENT(IN)                     :: csubtype
+  integer, intent(IN)                     :: csubtype
   
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(INOUT)         :: rvector
+  type(t_vectorBlock), intent(INOUT)         :: rvector
 
   ! t_vanka structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerNavSt2D), INTENT(INOUT) :: rvanka
+  type(t_vankaPointerNavSt2D), intent(INOUT) :: rvanka
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER :: ielementdist, ndofV, ndofP
+    integer :: ielementdist, ndofV, ndofP
     integer(I32) :: elV, elP
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementList
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrV
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrP
+    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+    type(t_elementDistribution), pointer :: p_relementDistrV
+    type(t_elementDistribution), pointer :: p_relementDistrP
     
     ! Loop through the element distributions of the velocity.
-    DO ielementdist = 1,rvanka%p_rspatialDiscrV%inumFESpaces
+    do ielementdist = 1,rvanka%p_rspatialDiscrV%inumFESpaces
     
       ! Get the corresponding element distributions of U, V and P.
       p_relementDistrV => &
@@ -602,75 +611,75 @@ contains
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
-      IF (rvanka%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
+      if (rvanka%p_rspatialDiscrP%inumFESpaces .GT. 1) then
         p_relementDistrP => &
             rvanka%p_rspatialDiscrP%RelementDistr(ielementdist)
-      ELSE
+      else
         p_relementDistrP => &
             rvanka%p_rspatialDiscrP%RelementDistr(1)
-      END IF
+      end if
       
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as 'primary' element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
-      CALL storage_getbase_int (p_relementDistrV%h_IelementList,p_IelementList)
+      call storage_getbase_int (p_relementDistrV%h_IelementList,p_IelementList)
       
       ! Which element combination do we have now?
       elV = elem_getPrimaryElement(p_relementDistrV%celement)
       elP = elem_getPrimaryElement(p_relementDistrP%celement)
-      IF ((elV .EQ. EL_Q1T) .AND. (elP .EQ. EL_Q0)) THEN
+      if ((elV .eq. EL_Q1T) .AND. (elP .eq. EL_Q0)) then
         ! Q1~/Q1~/Q0 discretisation
         
         ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
-        SELECT CASE (csubtype)
-        CASE (VANKATP_NAVST2D_DIAG)
+        select case (csubtype)
+        case (VANKATP_NAVST2D_DIAG)
           ! Call the jacobi-style vanka
-          CALL vanka_NS2D_Q1TQ0_js(rvanka, &
+          call vanka_NS2D_Q1TQ0_js(rvanka, &
                   rvector, rrhs, domega, p_IelementList)
 
-        CASE (VANKATP_NAVST2D_FULL)
-          IF (.NOT. ASSOCIATED(rvanka%p_DA12)) THEN
+        case (VANKATP_NAVST2D_FULL)
+          if (.NOT. associated(rvanka%p_DA12)) then
             ! Call the block-diagonal vanka
-            CALL vanka_NS2D_Q1TQ0_bd(rvanka, &
+            call vanka_NS2D_Q1TQ0_bd(rvanka, &
                   rvector, rrhs, domega, p_IelementList)
-          ELSE
+          else
             ! Call the fully coupled vanka
-            CALL vanka_NS2D_Q1TQ0_fc(rvanka, &
+            call vanka_NS2D_Q1TQ0_fc(rvanka, &
                   rvector, rrhs, domega, p_IelementList)
-          END IF
+          end if
         
-        CASE DEFAULT
-          CALL output_line ('Unknown VANKA subtype!',&
+        case default
+          call output_line ('Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_NavierStokes2D')
-          CALL sys_halt()  
+          call sys_halt()  
         
-        END SELECT
+        end select
     
-      ELSE
-        ! Get the number of local DOFs
+      else
+        ! Get the number of local doFs
         ndofV = elem_igetNDofLoc(elV)
         ndofP = elem_igetNDofLoc(elP)
         
         ! Choose the universal 2D Navier-Stokes Vanka
-        SELECT CASE(csubtype)
-        CASE (VANKATP_NAVST2D_DIAG)
-          CALL vanka_NS2D_universal_diag(rvanka, rvector, rrhs, domega, &
+        select case(csubtype)
+        case (VANKATP_NAVST2D_DIAG)
+          call vanka_NS2D_universal_diag(rvanka, rvector, rrhs, domega, &
               p_IelementList, ndofV, ndofP)
         
-        CASE (VANKATP_NAVST2D_FULL)
-          CALL vanka_NS2D_universal_full(rvanka, rvector, rrhs, domega, &
+        case (VANKATP_NAVST2D_FULL)
+          call vanka_NS2D_universal_full(rvanka, rvector, rrhs, domega, &
               p_IelementList, ndofV, ndofP)
-        END SELECT
-      END IF
+        end select
+      end if
       
-    END DO
+    end do
       
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
 
-  SUBROUTINE vanka_NS2D_Q1TQ0_js(rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_NS2D_Q1TQ0_js(rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -682,31 +691,31 @@ contains
 
 !<input>
   ! t_vankaPointerNavSt2D structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerNavSt2D), INTENT(IN) :: rvanka
+  type(t_vankaPointerNavSt2D), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER, DIMENSION(:), INTENT(IN)       :: IelementList
+  integer, dimension(:), intent(IN)       :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
-  ! How many local DOFs do we have?
+  ! How many local doFs do we have?
   integer, parameter :: ndofV = 4   ! Dofs per velocity
   integer, parameter :: ndofP = 1   ! Dofs per pressure
   integer, parameter :: ndof = 2*ndofV+ndofP
   
-  ! DOFs
+  ! doFs
   integer, dimension(ndofV) :: IdofV
   integer, dimension(ndofP) :: IdofP
   
@@ -1131,7 +1140,7 @@ contains
 
   ! ***************************************************************************
   
-  SUBROUTINE vanka_NS2D_Q1TQ0_bd(rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_NS2D_Q1TQ0_bd(rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -1143,26 +1152,26 @@ contains
 
 !<input>
   ! t_vankaPointerNavSt2D structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerNavSt2D), INTENT(IN) :: rvanka
+  type(t_vankaPointerNavSt2D), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER, DIMENSION(:), INTENT(IN)       :: IelementList
+  integer, dimension(:), intent(IN)       :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
 
-  ! How many local DOFs do we have?
+  ! How many local doFs do we have?
   integer, parameter :: ndofV = 4   ! Dofs per velocity
   integer, parameter :: ndofP = 1   ! Dofs per pressure
   integer, parameter :: ndof = 2*ndofV+ndofP
@@ -1577,11 +1586,11 @@ contains
 
     end if
 
-  END SUBROUTINE
+  end subroutine
 
   ! ***************************************************************************
   
-  SUBROUTINE vanka_NS2D_Q1TQ0_fc(rvanka, rvector, rrhs, domega, IelementList)
+  subroutine vanka_NS2D_Q1TQ0_fc(rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
   ! This routine applies the specialised diagonal VANKA algorithm for
@@ -1593,21 +1602,21 @@ contains
 
 !<input>
   ! t_vankaPointerNavSt2D structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerNavSt2D), INTENT(IN) :: rvanka
+  type(t_vankaPointerNavSt2D), intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER, DIMENSION(:), INTENT(IN)       :: IelementList
+  integer, dimension(:), intent(IN)       :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -1698,7 +1707,7 @@ contains
         ! Get the element number which is to be processed.
         iel = IelementList(ielidx)
         
-        ! Get all DOFs for this element
+        ! Get all doFs for this element
         IdofV(:) = p_IedgesAtElement(:,iel)
         IdofP(1) = iel
 
@@ -2004,7 +2013,7 @@ contains
 
   ! ***************************************************************************
 
-  SUBROUTINE vanka_NS2D_universal_diag(rvanka, rvector, rrhs, domega, &
+  subroutine vanka_NS2D_universal_diag(rvanka, rvector, rrhs, domega, &
                                        IelementList, ndofV, ndofP)
   
 !<description>
@@ -2017,24 +2026,24 @@ contains
 
 !<input>
   ! t_vankaPointerNavSt2D structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerNavSt2D), TARGET, INTENT(IN) :: rvanka
+  type(t_vankaPointerNavSt2D), target, intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER, DIMENSION(:), INTENT(IN)       :: IelementList
+  integer, dimension(:), intent(IN)       :: IelementList
   
-  ! The number of local DOFs.
+  ! The number of local doFs.
   integer, intent(IN)                     :: ndofV, ndofP
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -2122,9 +2131,9 @@ contains
       NELtodo = MIN(NEL-NELdone,VANKA_NAVST2D_NELEMSIM)
       
       ! Perform the DOF-mapping for the pressure and
-      CALL dof_locGlobMapping_mult(rvanka%p_rspatialDiscrV,&
+      call dof_locGlobMapping_mult(rvanka%p_rspatialDiscrV,&
           IelementList(NELdone+1:NELdone+NELtodo), p_runi%IdofV)
-      CALL dof_locGlobMapping_mult(rvanka%p_rspatialDiscrP,&
+      call dof_locGlobMapping_mult(rvanka%p_rspatialDiscrP,&
           IelementList(NELdone+1:NELdone+NELtodo), p_runi%IdofP)
     
       ! General case
@@ -2310,7 +2319,7 @@ contains
 
   ! ***************************************************************************
   
-  SUBROUTINE vanka_NS2D_universal_full(rvanka, rvector, rrhs, domega, &
+  subroutine vanka_NS2D_universal_full(rvanka, rvector, rrhs, domega, &
                                        IelementList, ndofV, ndofP)
   
 !<description>
@@ -2323,24 +2332,24 @@ contains
 
 !<input>
   ! t_vankaPointerNavSt2D structure that saves algorithm-specific parameters.
-  TYPE(t_vankaPointerNavSt2D), target, INTENT(IN) :: rvanka
+  type(t_vankaPointerNavSt2D), target, intent(IN) :: rvanka
 
   ! The right-hand-side vector of the system
-  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  type(t_vectorBlock), intent(IN)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  REAL(DP), INTENT(IN)                    :: domega
+  real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  INTEGER, DIMENSION(:), INTENT(IN)       :: IelementList
+  integer, dimension(:), intent(IN)       :: IelementList
   
-  ! The number of local DOFs.
+  ! The number of local doFs.
   integer, intent(IN)                     :: ndofV, ndofP
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  type(t_vectorBlock), intent(IN)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -2425,9 +2434,9 @@ contains
       NELtodo = MIN(NEL-NELdone,VANKA_NAVST2D_NELEMSIM)
       
       ! Perform the DOF-mapping for the pressure and
-      CALL dof_locGlobMapping_mult(rvanka%p_rspatialDiscrV,&
+      call dof_locGlobMapping_mult(rvanka%p_rspatialDiscrV,&
           IelementList(NELdone+1:NELdone+NELtodo), p_runi%IdofV)
-      CALL dof_locGlobMapping_mult(rvanka%p_rspatialDiscrP,&
+      call dof_locGlobMapping_mult(rvanka%p_rspatialDiscrP,&
           IelementList(NELdone+1:NELdone+NELtodo), p_runi%IdofP)
 
       ! General case

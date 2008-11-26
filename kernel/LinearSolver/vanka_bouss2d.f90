@@ -81,6 +81,12 @@ use linearsystemblock
 
 implicit none
 
+  private
+  
+  public :: t_vankaPointerBouss2D
+  public :: vanka_initBoussinesq2D
+  public :: vanka_Boussinesq2D
+
 !<constants>
 
 !<constantblock description="Vanka type identifiers for the 2D Boussinesq Class">
@@ -88,10 +94,10 @@ implicit none
 !</constantblock>
 
   ! Diagonal-type VANKA
-  integer, parameter :: VANKATP_BOUSS2D_DIAG  = 0
+  integer, parameter, public :: VANKATP_BOUSS2D_DIAG  = 0
 
   ! 'Full' VANKA
-  integer, parameter :: VANKATP_BOUSS2D_FULL  = 1
+  integer, parameter, public :: VANKATP_BOUSS2D_FULL  = 1
 
 !<constants>
 
@@ -102,108 +108,110 @@ implicit none
   
   ! A structure that saves matrix pointers for the 2D-Boussinesq Vanka driver.
   type t_vankaPointerBouss2D
+  
+    private
     
     ! Pointer to the column structure of the velocity matrix A11/A22
-    integer, dimension(:), pointer              :: p_KcolA => NULL()
+    integer, dimension(:), pointer              :: p_KcolA => null()
     
     ! Pointer to the row structure of the velocity matrix A11/A22
-    integer, dimension(:), pointer              :: p_KldA => NULL()
+    integer, dimension(:), pointer              :: p_KldA => null()
     
     ! Pointer to diagonal entries in the velocity matrix A11/A22
-    integer, dimension(:), pointer              :: p_KdiagonalA => NULL()
+    integer, dimension(:), pointer              :: p_KdiagonalA => null()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    real(DP), dimension(:), pointer             :: p_DA11 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA11 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A22
-    real(DP), dimension(:), pointer             :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA22 => null()
 
     ! Pointer to the column structure of the matrix A12/A21
-    integer, dimension(:), pointer              :: p_KcolA12 => NULL()
+    integer, dimension(:), pointer              :: p_KcolA12 => null()
     
     ! Pointer to the row structure of the matrix A12/A21
-    integer, dimension(:), pointer              :: p_KldA12 => NULL()
+    integer, dimension(:), pointer              :: p_KldA12 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A12
-    real(DP), dimension(:), pointer             :: p_DA12 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA12 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A21
-    real(DP), dimension(:), pointer             :: p_DA21 => NULL()
+    real(DP), dimension(:), pointer             :: p_DA21 => null()
 
     ! Pointer to the column structure of the B/D-matrices.
-    integer, dimension(:), pointer              :: p_KcolB => NULL()
+    integer, dimension(:), pointer              :: p_KcolB => null()
     
     ! Pointer to the row structure of the B/D-matrices
-    integer, dimension(:), pointer              :: p_KldB => NULL()
+    integer, dimension(:), pointer              :: p_KldB => null()
     
     ! Pointer to the entries of the B1-matrix
-    real(DP), dimension(:), pointer             :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB1 => null()
 
     ! Pointer to the entries of the B2-matrix
-    real(DP), dimension(:), pointer             :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DB2 => null()
     
     ! Pointer to the entries of the D1-matrix
-    real(DP), dimension(:), pointer             :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD1 => null()
 
     ! Pointer to the entries of the D2-matrix
-    real(DP), dimension(:), pointer             :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DD2 => null()
 
     ! Pointer to the column structure of the C-matrix.
-    integer, dimension(:), pointer              :: p_KcolC => NULL()
+    integer, dimension(:), pointer              :: p_KcolC => null()
     
     ! Pointer to the row structure of the C-matrix.
-    integer, dimension(:), pointer              :: p_KldC => NULL()
+    integer, dimension(:), pointer              :: p_KldC => null()
     
     ! Pointer to diagonal entries in the C-matrix
-    integer, dimension(:), pointer              :: p_KdiagonalC => NULL()
+    integer, dimension(:), pointer              :: p_KdiagonalC => null()
     
     ! Pointer to the entries of the C-matrix
-    real(DP), dimension(:), pointer             :: p_DC => NULL()
+    real(DP), dimension(:), pointer             :: p_DC => null()
 
     ! Pointer to the column structure of the M1/M2-matrices.
-    integer, dimension(:), pointer              :: p_KcolM => NULL()
+    integer, dimension(:), pointer              :: p_KcolM => null()
     
     ! Pointer to the row structure of the M1/M2-matrices
-    integer, dimension(:), pointer              :: p_KldM => NULL()
+    integer, dimension(:), pointer              :: p_KldM => null()
     
     ! Pointer to the entries of the M1-matrix
-    real(DP), dimension(:), pointer             :: p_DM1 => NULL()
+    real(DP), dimension(:), pointer             :: p_DM1 => null()
 
     ! Pointer to the entries of the M2-matrix
-    real(DP), dimension(:), pointer             :: p_DM2 => NULL()
+    real(DP), dimension(:), pointer             :: p_DM2 => null()
 
     ! Pointer to the column structure of the M3-matrix.
-    integer, dimension(:), pointer              :: p_KcolM3 => NULL()
+    integer, dimension(:), pointer              :: p_KcolM3 => null()
     
     ! Pointer to the row structure of the M3-matrix.
-    integer, dimension(:), pointer              :: p_KldM3 => NULL()
+    integer, dimension(:), pointer              :: p_KldM3 => null()
     
     ! Pointer to the entries of the M3-matrix
-    real(DP), dimension(:), pointer             :: p_DM3 => NULL()
+    real(DP), dimension(:), pointer             :: p_DM3 => null()
 
     ! Pointer to the column structure of the N-matrix.
-    integer, dimension(:), pointer              :: p_KcolN => NULL()
+    integer, dimension(:), pointer              :: p_KcolN => null()
     
     ! Pointer to the row structure of the N-matrix
-    integer, dimension(:), pointer              :: p_KldN => NULL()
+    integer, dimension(:), pointer              :: p_KldN => null()
     
     ! Pointer to diagonal entries in the N-matrix
-    integer, dimension(:), pointer              :: p_KdiagonalN => NULL()
+    integer, dimension(:), pointer              :: p_KdiagonalN => null()
     
     ! Pointer to the entries of the N-matrix
-    real(DP), dimension(:), pointer             :: p_DN => NULL()
+    real(DP), dimension(:), pointer             :: p_DN => null()
 
     ! Spatial discretisation structure for X-velocity
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => null()
     
     ! Spatial discretisation structure for Y-velocity
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => null()
     
     ! Spatial discretisation structure for pressure
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => null()
     
     ! Spatial discretisation structure for temperature
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrT => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrT => null()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
     real(DP), dimension(4,4) :: Dmultipliers
@@ -522,17 +530,15 @@ contains
                   rvector, rrhs, domega, p_IelementList)
           end if
         
-        case DEFAULT
-          call output_line (&
-              'Unknown VANKA subtype!',&
+        case default
+          call output_line ('Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_Boussinesq2D')
           call sys_halt()  
         
         end select
     
       else
-        call output_line (&
-            'Unsupported discretisation!',&
+        call output_line ('Unsupported discretisation!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_Boussinesq2D')
         call sys_halt()
         
