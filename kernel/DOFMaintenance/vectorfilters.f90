@@ -1173,19 +1173,19 @@ contains
 
     integer :: iblock,i
     real(DP) :: dtweight
-    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
     if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
       if (associated(rx%p_rdiscreteBC)) then
-        p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+        p_rdiscreteBC => rx%p_rdiscreteBC
       else
         ! No BC
         nullify(p_RdiscreteBC)
       end if
     else
-      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+      p_RdiscreteBC => rdiscreteBC
     end if
     
     if (.not. associated(p_RdiscreteBC)) return
@@ -1201,10 +1201,10 @@ contains
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    do i=1, rx%p_rdiscreteBC%inumEntriesUsed
+    do i=1, p_rdiscreteBC%inumEntriesUsed
     
       ! What for BC's do we have here?
-      select case (p_RdiscreteBC(i)%itype)
+      select case (p_rdiscreteBC%p_RdiscBCList(i)%itype)
       case (DISCBC_TPUNDEFINED)
         ! Do-nothing
         
@@ -1212,12 +1212,12 @@ contains
         ! Dirichlet boundary conditions. Not time-dependent.
         ! On which component are they defined? The component specifies
         ! the row of the block matrix that is to be altered.
-        iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+        iblock = p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs%icomponent
         
         ! Implement the Dirichlet boundary conditions into that component
         ! of the vector.
         call vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
-                                      p_RdiscreteBC(i)%rdirichletBCs)
+            p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs)
         
       case (DISCBC_TPPRESSUREDROP)  
         ! Nothing to do; pressure drop BC's are implemented only into the RHS.
@@ -1230,7 +1230,8 @@ contains
         
       case DEFAULT
         call output_line(&
-            'Unknown boundary condition:'//sys_siL(p_RdiscreteBC(i)%itype,5),&
+            'Unknown boundary condition:'//&
+            sys_siL(p_rdiscreteBC%p_RdiscBCList(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCsol')
                 
         call sys_halt()
@@ -1277,14 +1278,14 @@ contains
 
     integer :: iblock,i
     real(DP) :: dtweight
-    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
     if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
-      p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+      p_RdiscreteBC => rx%p_rdiscreteBC
     else
-      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+      p_RdiscreteBC => rdiscreteBC
     end if
     
     if (.not. associated(p_RdiscreteBC)) return
@@ -1298,10 +1299,10 @@ contains
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    do i=1, rx%p_rdiscreteBC%inumEntriesUsed
+    do i=1, p_rdiscreteBC%inumEntriesUsed
     
       ! What for BC's do we have here?
-      select case (p_RdiscreteBC(i)%itype)
+      select case (p_rdiscreteBC%p_RdiscBCList(i)%itype)
       case (DISCBC_TPUNDEFINED)
         ! Do-nothing
         
@@ -1309,12 +1310,12 @@ contains
         ! Dirichlet boundary conditions. Not time-dependent.
         ! On which component are they defined? The component specifies
         ! the row of the block matrix that is to be altered.
-        iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+        iblock = p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs%icomponent
         
         ! Implement the Dirichlet boundary conditions into that component
         ! of the vector.
         call vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
-                                      p_RdiscreteBC(i)%rdirichletBCs)
+                                      p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs)
       
       case (DISCBC_TPPRESSUREDROP)  
         ! Nothing to do.
@@ -1323,11 +1324,13 @@ contains
         ! Nothing to do.
         
       case (DISCBC_TPFEASTMIRROR)
-        call vecfil_imposeFeastMirrorBC (rx,p_RdiscreteBC(i)%rfeastMirrorBCs)
+        call vecfil_imposeFeastMirrorBC (rx,&
+            p_rdiscreteBC%p_RdiscBCList(i)%rfeastMirrorBCs)
         
       case DEFAULT
         call output_line(&
-            'Unknown boundary condition:'//sys_siL(p_RdiscreteBC(i)%itype,5),&
+            'Unknown boundary condition:'//&
+            sys_siL(p_rdiscreteBC%p_RdiscBCList(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCrhs')
                 
         call sys_halt()
@@ -1375,19 +1378,19 @@ contains
 
     integer :: i
     real(DP) :: dtweight
-    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
     if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
       if (associated(rx%p_rdiscreteBC)) then
-        p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+        p_RdiscreteBC => rx%p_rdiscreteBC
       else
         ! No BC
         nullify(p_RdiscreteBC)
       end if
     else
-      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+      p_RdiscreteBC => rdiscreteBC
     end if
     
     if (.not. associated(p_RdiscreteBC)) return
@@ -1403,12 +1406,12 @@ contains
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
-    do i=1, rx%p_rdiscreteBC%inumEntriesUsed
+    do i=1, p_rdiscreteBC%inumEntriesUsed
     
       ! Only implement discrete pressure drop BC's.
-      if (p_RdiscreteBC(i)%itype .eq. DISCBC_TPPRESSUREDROP) then
+      if (p_rdiscreteBC%p_RdiscBCList(i)%itype .eq. DISCBC_TPPRESSUREDROP) then
         call vecfil_imposePressureDropBC (rx,dtweight,&
-                                          p_RdiscreteBC(i)%rpressureDropBCs)        
+            p_rdiscreteBC%p_RdiscBCList(i)%rpressureDropBCs)        
       end if
       
     end do
