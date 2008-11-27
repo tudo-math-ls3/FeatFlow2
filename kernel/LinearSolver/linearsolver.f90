@@ -441,6 +441,59 @@ module linearsolver
   use matrixio
   
   implicit none
+  
+  !private
+  
+  public :: t_linsolNode
+  public :: t_linsolSubnodeILU01x1
+  public :: t_linsolSubnodeSSOR
+  public :: t_linsolSubnodeDefCorr
+  public :: t_linsolSubnodeEMS
+  public :: t_linsolSubnodeVANKA
+  public :: t_linsolSubnodeBiCGStab
+  public :: t_linsolSubnodeCG
+  public :: t_linsolSubnodeUMFPACK4
+  public :: t_linsolSubNodeJinWeiTam
+  public :: t_linsolSubnodeGMRES
+  public :: t_linsolSubnodeMILUs1x1
+  public :: t_linsolMGTiming
+  public :: t_linsolMGLevelInfo
+  public :: t_linsolSubnodeMultigrid
+  public :: t_linsolMGLevelInfo2
+  public :: t_linsolSubnodeMultigrid2
+  public :: t_linsol_alterSolverConfig
+  public :: linsol_setMatrices
+  public :: linsol_matricesCompatible
+  public :: linsol_setOnelevelMatrixDirect
+  public :: linsol_initStructure
+  public :: linsol_initData
+  public :: linsol_updateStructure
+  public :: linsol_updateData
+  public :: linsol_doneData
+  public :: linsol_doneStructure
+  public :: linsol_releaseSolver
+  public :: linsol_alterSolver
+  public :: linsol_testConvergence
+  public :: linsol_testDivergence
+  public :: linsol_precondDefect
+  public :: linsol_solveAdaptively
+  public :: linsol_convertToSmoother
+  public :: linsol_initSolverGeneral
+
+  public :: linsol_initDefCorr
+  public :: linsol_initJacobi
+  public :: linsol_initJinWeiTam
+  public :: linsol_initSOR
+  public :: linsol_initSSOR
+  public :: linsol_initVANKA
+  public :: linsol_initUMFPACK4
+  public :: linsol_initMILUs1x1
+  public :: linsol_initBiCGStab
+  public :: linsol_initCG
+  public :: linsol_initGMRES
+  public :: linsol_initMultigrid
+  public :: linsol_initMultigrid2
+  public :: linsol_initEMS
 
 ! *****************************************************************************
 ! *****************************************************************************
@@ -451,62 +504,62 @@ module linearsolver
 !<constantblock description="Algorithm identifiers">
 
   ! Undefined algorithm
-  integer, parameter :: LINSOL_ALG_UNDEFINED     = 0
+  integer, parameter, public :: LINSOL_ALG_UNDEFINED     = 0
   
   ! Preconditioned defect correction (Richardson iteration);
   ! $x_{n+1} = x_n + \omega P^{-1} (b-Ax)$
-  integer, parameter :: LINSOL_ALG_DEFCORR       = 1
+  integer, parameter, public :: LINSOL_ALG_DEFCORR       = 1
   
   ! Jacobi iteration $x_1 = x_0 + \omega D^{-1} (b-Ax_0)$
-  integer, parameter :: LINSOL_ALG_JACOBI        = 2
+  integer, parameter, public :: LINSOL_ALG_JACOBI        = 2
   
   ! SOR/GS iteration $x_1 = x_0 + (D+\omega L)^{-1}(b-Ax_0)$
-  integer, parameter :: LINSOL_ALG_SOR           = 4
+  integer, parameter, public :: LINSOL_ALG_SOR           = 4
   
   ! SSOR iteration
-  integer, parameter :: LINSOL_ALG_SSOR          = 5
+  integer, parameter, public :: LINSOL_ALG_SSOR          = 5
   
   ! CG iteration (preconditioned) 
-  integer, parameter :: LINSOL_ALG_CG            = 6
+  integer, parameter, public :: LINSOL_ALG_CG            = 6
   
   ! BiCGStab iteration (preconditioned) 
-  integer, parameter :: LINSOL_ALG_BICGSTAB      = 7
+  integer, parameter, public :: LINSOL_ALG_BICGSTAB      = 7
 
   ! GMRES iteration (preconditioned) 
-  integer, parameter :: LINSOL_ALG_GMRES         = 8
+  integer, parameter, public :: LINSOL_ALG_GMRES         = 8
   
   ! Multigrid iteration
-  integer, parameter :: LINSOL_ALG_MULTIGRID     = 9
+  integer, parameter, public :: LINSOL_ALG_MULTIGRID     = 9
 
   ! UMFPACK2
-  integer, parameter :: LINSOL_ALG_UMFPACK2      = 10
+  integer, parameter, public :: LINSOL_ALG_UMFPACK2      = 10
 
   ! UMFPACK4
-  integer, parameter :: LINSOL_ALG_UMFPACK4      = 11
+  integer, parameter, public :: LINSOL_ALG_UMFPACK4      = 11
   
   ! Jin-Wei-Tam iteration
-  integer, parameter :: LINSOL_ALG_JINWEITAM     = 12
+  integer, parameter, public :: LINSOL_ALG_JINWEITAM     = 12
   
   ! Multigrid iteration
-  integer, parameter :: LINSOL_ALG_MULTIGRID2    = 13
+  integer, parameter, public :: LINSOL_ALG_MULTIGRID2    = 13
   
   ! EMS iteration
-  integer, parameter :: LINSOL_ALG_EMS           = 17
+  integer, parameter, public :: LINSOL_ALG_EMS           = 17
 
   ! ILU(0) iteration (scalar system)
-  integer, parameter :: LINSOL_ALG_ILU01x1       = 50
+  integer, parameter, public :: LINSOL_ALG_ILU01x1       = 50
   
   ! (M)ILU(s) iteration (scalar system)
-  integer, parameter :: LINSOL_ALG_MILUS1x1      = 51
+  integer, parameter, public :: LINSOL_ALG_MILUS1x1      = 51
   
   ! SPAI(0) iteration (scalar system)
-  integer, parameter :: LINSOL_ALG_SPAI01x1      = 52
+  integer, parameter, public :: LINSOL_ALG_SPAI01x1      = 52
 
   ! SPAI(k) iteration (scalar system)
-  integer, parameter :: LINSOL_ALG_SPAIK1x1      = 53
+  integer, parameter, public :: LINSOL_ALG_SPAIK1x1      = 53
   
   ! VANKA iteration
-  integer, parameter :: LINSOL_ALG_VANKA         = 54
+  integer, parameter, public :: LINSOL_ALG_VANKA         = 54
   
 !</constantblock>
 
@@ -515,32 +568,32 @@ module linearsolver
 !<constantblock description="Flags for matrix compatibility check.">
 
   ! Matrices are compatible to a solver node.
-  integer, parameter :: LINSOL_COMP_OK               = 0
+  integer, parameter, public :: LINSOL_COMP_OK               = 0
   
   ! Matrices generally not compatible, no special reason.
-  integer, parameter :: LINSOL_COMP_ERRGENERAL       = 1
+  integer, parameter, public :: LINSOL_COMP_ERRGENERAL       = 1
   
   ! One of the submatrices is solved in transposed structure,
   ! but one of the subsolvers cannot handle that.
-  integer, parameter :: LINSOL_COMP_ERRTRANSPOSED    = 2
+  integer, parameter, public :: LINSOL_COMP_ERRTRANSPOSED    = 2
 
   ! Some of the submatrices are not saved transposed although
   ! they have to be. (Usual error for special VANKA solvers.)
-  integer, parameter :: LINSOL_COMP_ERRNOTTRANSPOSED = 3
+  integer, parameter, public :: LINSOL_COMP_ERRNOTTRANSPOSED = 3
 
   ! One of the submatrices is a block matrix,
   ! but one of the subsolvers can only handle scalar matrices.
-  integer, parameter :: LINSOL_COMP_ERRNOTSCALAR     = 4
+  integer, parameter, public :: LINSOL_COMP_ERRNOTSCALAR     = 4
   
   ! One of the diagonal submatrices (pivot) is zero, but
   ! the solver cannot handle saddle-point matrices.
-  integer, parameter :: LINSOL_COMP_ERRZEROPIVOT     = 5
+  integer, parameter, public :: LINSOL_COMP_ERRZEROPIVOT     = 5
   
   ! One of the submatrices has unsupported matrix type.
-  integer, parameter :: LINSOL_COMP_ERRMATTYPE       = 6
+  integer, parameter, public :: LINSOL_COMP_ERRMATTYPE       = 6
   
   ! The block matrix is rectangular.
-  integer, parameter :: LINSOL_COMP_ERRMATRECT       = 7
+  integer, parameter, public :: LINSOL_COMP_ERRMATRECT       = 7
   
 !</constantblock>
 
@@ -553,14 +606,14 @@ module linearsolver
   ! If depsAbs>0: use abs stopping criterion.
   ! If both are > 0: use both, i.e. the iteration stops when both,
   !    the relative AND the absolute stopping criterium holds
-  integer, parameter :: LINSOL_STOP_STANDARD     = 0
+  integer, parameter, public :: LINSOL_STOP_STANDARD     = 0
 
   ! Use 'minimum' stopping criterion.
   ! If depsRel>0: use relative stopping criterion.
   ! If depsAbs>0: use abs stopping criterion.
   ! If both are > 0: use one of them, i.e. the iteration stops when the
   !    either the relative OR the absolute stopping criterium holds
-  integer, parameter :: LINSOL_STOP_ONEOF        = 1
+  integer, parameter, public :: LINSOL_STOP_ONEOF        = 1
   
 !</constantblock>
 
@@ -569,29 +622,29 @@ module linearsolver
 !<constantblock description="Bitfield identifiers for the ability of a linear solver">
 
   ! Solver can handle scalar systems
-  integer(I32), parameter :: LINSOL_ABIL_SCALAR       = 2**0
+  integer(I32), parameter, public :: LINSOL_ABIL_SCALAR       = 2**0
 
   ! Solver can handle block systems
-  integer(I32), parameter :: LINSOL_ABIL_BLOCK        = 2**1
+  integer(I32), parameter, public :: LINSOL_ABIL_BLOCK        = 2**1
 
   ! Solver can handle multiple levels
-  integer(I32), parameter :: LINSOL_ABIL_MULTILEVEL   = 2**2
+  integer(I32), parameter, public :: LINSOL_ABIL_MULTILEVEL   = 2**2
   
   ! Solver allows checking the defect during the iteration.
   ! Solvers not capable of this perform only a fixed number of solution
   ! steps (e.g. UMFPACK performs always one step).
-  integer(I32), parameter :: LINSOL_ABIL_CHECKDEF     = 2**3
+  integer(I32), parameter, public :: LINSOL_ABIL_CHECKDEF     = 2**3
   
   ! Solver is a direct solver (e.g. UMFPACK, ILU).
   ! Otherwise the solver is of iterative nature and might perform
   ! multiple steps to solve the problem.
-  integer(I32), parameter :: LINSOL_ABIL_DIRECT       = 2**4
+  integer(I32), parameter, public :: LINSOL_ABIL_DIRECT       = 2**4
   
   ! Solver might use subsolvers (preconditioners, smoothers,...)
-  integer(I32), parameter :: LINSOL_ABIL_USESUBSOLVER = 2**5
+  integer(I32), parameter, public :: LINSOL_ABIL_USESUBSOLVER = 2**5
   
   ! Solver supports filtering
-  integer(I32), parameter :: LINSOL_ABIL_USEFILTER    = 2**6
+  integer(I32), parameter, public :: LINSOL_ABIL_USEFILTER    = 2**6
   
 !</constantblock>
 
@@ -600,19 +653,19 @@ module linearsolver
 !<constantblock description="Error constants returned by initialisation routines">
 
   ! Initialisation routine went fine
-  integer, parameter :: LINSOL_ERR_NOERROR       = 0
+  integer, parameter, public :: LINSOL_ERR_NOERROR       = 0
 
   ! Warning: Singular matrix
-  integer, parameter :: LINSOL_ERR_SINGULAR      = -1
+  integer, parameter, public :: LINSOL_ERR_SINGULAR      = -1
 
   ! Error during the initialisation: Not enough memory
-  integer, parameter :: LINSOL_ERR_NOMEMORY      = 1
+  integer, parameter, public :: LINSOL_ERR_NOMEMORY      = 1
 
   ! General error during the initialisation
-  integer, parameter :: LINSOL_ERR_INITERROR     = 2
+  integer, parameter, public :: LINSOL_ERR_INITERROR     = 2
 
   ! Matrix-structure has changed between initStructure and initData
-  integer, parameter :: LINSOL_ERR_MATRIXHASCHANGED = 3
+  integer, parameter, public :: LINSOL_ERR_MATRIXHASCHANGED = 3
   
 !</constantblock>
 
@@ -621,90 +674,90 @@ module linearsolver
 !<constantblock description="Variants of the VANKA solver">
 
   ! General VANKA solver
-  integer, parameter :: LINSOL_VANKA_GENERAL           = 0   
+  integer, parameter, public :: LINSOL_VANKA_GENERAL           = 0   
   
   ! General VANKA solver. Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANKA_GENERALDIRECT     = 1
+  integer, parameter, public :: LINSOL_VANKA_GENERALDIRECT     = 1
 
   ! Simple VANKA, 2D Navier-Stokes problem, general discretisation
-  integer, parameter :: LINSOL_VANKA_2DNAVST           = 2
+  integer, parameter, public :: LINSOL_VANKA_2DNAVST           = 2
 
   ! Simple VANKA, 2D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANKA_2DNAVSTDIRECT     = 3
+  integer, parameter, public :: LINSOL_VANKA_2DNAVSTDIRECT     = 3
 
   ! Full VANKA, 2D Navier-Stokes problem, general discretisation
-  integer, parameter :: LINSOL_VANKA_2DFNAVST          = 4
+  integer, parameter, public :: LINSOL_VANKA_2DFNAVST          = 4
 
   ! Full VANKA, 2D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANKA_2DFNAVSTDIRECT    = 5
+  integer, parameter, public :: LINSOL_VANKA_2DFNAVSTDIRECT    = 5
 
   ! Simple VANKA, 2D Navier-Stokes problem, general discretisation,
   ! Solution-based variant.
-  integer, parameter :: LINSOL_VANKA_2DNAVSTSB         = 6
+  integer, parameter, public :: LINSOL_VANKA_2DNAVSTSB         = 6
 
   ! Simple VANKA, 2D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
   ! Solution-based variant.
-  integer, parameter :: LINSOL_VANKA_2DNAVSTDIRECTSB   = 7
+  integer, parameter, public :: LINSOL_VANKA_2DNAVSTDIRECTSB   = 7
 
   ! Full VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
-  integer, parameter :: LINSOL_VANKA_2DFNAVSTOC        = 20
+  integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOC        = 20
 
   ! Full VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANKA_2DFNAVSTOCDIRECT  = 21
+  integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIRECT  = 21
 
   ! Diagonal VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
-  integer, parameter :: LINSOL_VANKA_2DFNAVSTOCDIAG    = 22
+  integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIAG    = 22
 
   ! Diagonal VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANKA_2DFNAVSTOCDIAGDIR = 23
+  integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIAGDIR = 23
 
   ! Simple VANKA, 3D Navier-Stokes problem, general discretisation
-  integer, parameter :: LINSOL_VANKA_3DNAVST           = 30
+  integer, parameter, public :: LINSOL_VANKA_3DNAVST           = 30
 
   ! Simple VANKA, 3D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANKA_3DNAVSTDIRECT     = 31
+  integer, parameter, public :: LINSOL_VANKA_3DNAVSTDIRECT     = 31
 
   ! Full VANKA, 3D Navier-Stokes problem, general discretisation
-  integer, parameter :: LINSOL_VANKA_3DFNAVST          = 32
+  integer, parameter, public :: LINSOL_VANKA_3DFNAVST          = 32
 
   ! Full VANKA, 3D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  integer, parameter :: LINSOL_VANKA_3DFNAVSTDIRECT    = 33
+  integer, parameter, public :: LINSOL_VANKA_3DFNAVSTDIRECT    = 33
 
 
   ! Simple VANKA, 2D Boussinesq problem, general discretisation
-  integer, parameter :: LINSOL_VANKA_BOUSS2D_DIAG          = 101
+  integer, parameter, public :: LINSOL_VANKA_BOUSS2D_DIAG          = 101
 
   ! Full VANKA, 2D Boussinesq problem, general discretisation
-  integer, parameter :: LINSOL_VANKA_BOUSS2D_FULL          = 102
+  integer, parameter, public :: LINSOL_VANKA_BOUSS2D_FULL          = 102
 
   ! Simple VANKA, 2D Navier-Stokes problem, general discretisation
-  integer, parameter :: LINSOL_VANKA_NAVST2D_DIAG          = 111
+  integer, parameter, public :: LINSOL_VANKA_NAVST2D_DIAG          = 111
 
   ! Full VANKA, 2D Navier-Stokes problem, general discretisation
-  integer, parameter :: LINSOL_VANKA_NAVST2D_FULL          = 112
+  integer, parameter, public :: LINSOL_VANKA_NAVST2D_FULL          = 112
 
 !</constantblock>
 
@@ -713,10 +766,10 @@ module linearsolver
 !<constantblock description="Variants of the BiCGStab solver">
 
   ! BiCGStab with Left-Preconditioning (or without preconditioning)
-  integer, parameter :: LINSOL_BICGSTAB_LEFT_PRECOND           = 0
+  integer, parameter, public :: LINSOL_BICGSTAB_LEFT_PRECOND           = 0
   
   ! BiCGStab with Right-Preconditioning
-  integer, parameter :: LINSOL_BICGSTAB_RIGHT_PRECOND          = 1
+  integer, parameter, public :: LINSOL_BICGSTAB_RIGHT_PRECOND          = 1
   
 !</constantblock>
 
@@ -725,7 +778,7 @@ module linearsolver
 !<constantblock description="default values for the GMRES(m) solver">
 
   ! One or two Gram-Schmidt calls per GMRES iteration
-  logical, parameter :: LINSOL_GMRES_DEF_TWICE_GS              = .false.
+  logical, parameter, public :: LINSOL_GMRES_DEF_TWICE_GS              = .false.
     
 !</constantblock>
 
@@ -734,13 +787,13 @@ module linearsolver
 !<constantblock description="Possible commands for linsol_slterSolver">
 
   ! Dummy command, do-nothing.
-  integer, parameter :: LINSOL_ALTER_NOTHING                   = 0
+  integer, parameter, public :: LINSOL_ALTER_NOTHING                   = 0
   
   ! Change VANKA subtype.
   ! In the configuration block, there must be specified:
   ! Iconfig(1) = identifier for VANKA subtype to be changed.
   ! Iconfig(2) = destination subtype of VANKA solver
-  integer, parameter :: LINSOL_ALTER_CHANGEVANKA               = 1
+  integer, parameter, public :: LINSOL_ALTER_CHANGEVANKA               = 1
     
 !</constantblock>
 
@@ -1748,7 +1801,7 @@ contains
     call linsol_setMatrixMultigrid (rsolverNode, Rmatrices)
   case (LINSOL_ALG_MULTIGRID2)
     call linsol_setMatrixMultigrid2 (rsolverNode, Rmatrices)
-  case DEFAULT
+  case default
   end select
 
   end subroutine
@@ -1872,7 +1925,7 @@ contains
     ! Ask EMS if the matrices are ok.
     call linsol_matCompatEMS (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
 
-  case DEFAULT
+  case default
     ! Nothing special. Let's assume that the matrices are ok.
     ccompatible = LINSOL_COMP_OK
     CcompatibleDetail(:) = ccompatible
@@ -2377,7 +2430,7 @@ contains
       call linsol_doneMultigrid2 (p_rsolverNode)
     case (LINSOL_ALG_EMS)
       call linsol_doneEMS (p_rsolverNode)
-    case DEFAULT
+    case default
     end select
     
     ! Clean up the associated matrix structure.
@@ -2534,7 +2587,7 @@ contains
         end if
       end if
     
-    case DEFAULT
+    case default
       ! Standard stopping criterion.
       ! Iteration stops if both the absolute and the relative criterium holds.
       loutput = .true.
@@ -4234,7 +4287,7 @@ contains
               end do
             end if
 
-          case DEFAULT
+          case default
             print *,'Jacobi: Unsupported vector format.'
             call sys_halt()
           end select
@@ -4286,17 +4339,17 @@ contains
               end do
             end if
 
-          case DEFAULT
+          case default
             print *,'Jacobi: Unsupported vector format.'
             call sys_halt()
           end select
 
-        case DEFAULT
+        case default
           print *,'Jacobi: Unsupported matrix format.'
           call sys_halt()
         end select
       
-      case DEFAULT
+      case default
         print *,'Jacobi: Unsupported matrix format.'
         call sys_halt()
       end select
@@ -4543,7 +4596,7 @@ contains
             dSum = dSum + p_Fmatrix(ientry)
           end do
           
-        case DEFAULT
+        case default
           print *,'Jin-Wei-Tam: Unsupported matrix format'
           ierror = LINSOL_ERR_INITERROR
         
@@ -4643,7 +4696,7 @@ contains
           dvecSum = dvecSum + p_Fvector(ieq)
         end do
 
-      case DEFAULT      
+      case default      
         print *,'Jin-Wei-Tam: Unsupported Vector format'
         call sys_halt()
         
@@ -4709,7 +4762,7 @@ contains
                   (dvecSum + (p_Fvector(ieq) / p_Dmatrix(p_Kdiag(ieq))))
             end do
 
-          case DEFAULT
+          case default
             print *,'Jin-Wei-Tam: Unsupported vector format.'
             call sys_halt()
           end select
@@ -4747,17 +4800,17 @@ contains
                   (dvecSum + (p_Fvector(ieq) / p_Fmatrix(p_Kdiag(ieq))))
             end do
 
-          case DEFAULT
+          case default
             print *,'Jin-Wei-Tam: Unsupported vector format.'
             call sys_halt()
           end select
 
-        case DEFAULT
+        case default
           print *,'Jin-Wei-Tam: Unsupported matrix format.'
           call sys_halt()
         end select
       
-      case DEFAULT
+      case default
         print *,'Jin-Wei-Tam: Unsupported matrix format.'
         call sys_halt()
       end select
@@ -5004,17 +5057,17 @@ contains
                                              p_Kdiagonal,rsolverNode%domega,&
                                              p_Dvector,p_rmatrix%dscaleFactor)
             
-          case DEFAULT
+          case default
             print *,'SOR: Unsupported vector format.'
             call sys_halt()
           end select
           
-        case DEFAULT
+        case default
           print *,'SOR: Unsupported matrix format.'
           call sys_halt()
         end select
       
-      case DEFAULT
+      case default
         print *,'SOR: Unsupported matrix format.'
         call sys_halt()
       end select
@@ -5352,17 +5405,17 @@ contains
                                              bscale,p_Dvector,&
                                              p_rmatrix%dscaleFactor)
             
-          case DEFAULT
+          case default
             print *,'SSOR: Unsupported vector format.'
             call sys_halt()
           end select
           
-        case DEFAULT
+        case default
           print *,'SSOR: Unsupported matrix format.'
           call sys_halt()
         end select
       
-      case DEFAULT
+      case default
         print *,'SSOR: Unsupported matrix format.'
         call sys_halt()
       end select
@@ -6354,7 +6407,7 @@ contains
   case (-1)
     ! no memory
     ierror = LINSOL_ERR_NOMEMORY
-  case DEFAULT
+  case default
     ! don't know what went wrong
     ierror = LINSOL_ERR_INITERROR
   end select
@@ -6531,7 +6584,7 @@ contains
   case (-11)
     ! no memory
     ierror = LINSOL_ERR_MATRIXHASCHANGED
-  case DEFAULT
+  case default
     ! don't know what went wrong
     ierror = LINSOL_ERR_INITERROR
   end select
@@ -6780,7 +6833,7 @@ contains
       ! Scale defect by omega
       call lsysbl_scaleVector(rd, rsolverNode%domega)
       
-    case DEFAULT
+    case default
       ! We had an error. Don't know which one.
       rsolverNode%iresult = -1
     end select
@@ -7022,7 +7075,7 @@ contains
       print *,'Warning: (M)ILU(s) decomposition singular!'
     case (0)
       ! everything ok
-    case DEFAULT
+    case default
       ierror = LINSOL_ERR_INITERROR
       return
     end select

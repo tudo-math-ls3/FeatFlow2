@@ -26,10 +26,20 @@
 module linearsolverautoinitialise
 
   use fsystem
+  use genoutput
+  use spatialdiscretisation
   use linearsolver
+  use multilevelprojection
+  use filtersupport
   use paramlist
 
   implicit none
+  
+  private
+  
+  public :: linsolinit_CC2DMultigrid
+  public :: linsolinit_initFromFile
+  public :: linsolinit_initParams
 
 contains
 
@@ -272,9 +282,11 @@ contains
     call parlst_querysection(rparamList, ssolverName, p_rsection) 
     
     if (.not. associated(p_rsection)) then
-      print *,'Cannot create linear solver; no section '''&
-              //trim(ssolverName)//'''!'
+      call output_line ('Cannot create linear solver; no section ''' &
+          // trim(ssolverName) // '''!', OU_CLASS_ERROR, OU_MODE_STD, &
+          'linsolinit_initFromFile')
       call sys_halt()
+
     end if
     
     ! Ok, we have the section where we can get parameters from.
@@ -459,13 +471,17 @@ contains
       
       ! We need an interlevel projection structure!
       if (.not. present(rinterlevelProjection)) then
-        print *,'Cannot create linear solver; no interlevel projection structure!'
+        call output_line ('Cannot create linear solver; ' // &
+            'no interlevel projection structure!', OU_CLASS_ERROR, OU_MODE_STD, &
+            'linsolinit_initFromFile')
         call sys_halt()
       end if
       
       ! Initialise the coarse grid solver - if there is one. There must be one!
       if (scoarsegridsolver .eq. '') then
-        print *,'Cannot create linear solver; no coarse grid solver for MG!'
+        call output_line ('Cannot create linear solver; ' // &
+            'no coarse grid solver for MG!', OU_CLASS_ERROR, OU_MODE_STD, &
+            'linsolinit_initFromFile')
         call sys_halt()
       end if
       call linsolinit_initFromFile (p_rcoarsegridsolver,rparamList,&
@@ -516,9 +532,11 @@ contains
         
       end do
     
-    case DEFAULT
-      print *,'Cannot create linear solver; unsupported solver type isolverType=',&
-              isolverType
+    case default
+      call output_line ('Cannot create linear solver; ' // &
+            'unsupported solver type isolverType = ' // &
+            trim(sys_si(isolverType,8)), &
+             OU_CLASS_ERROR, OU_MODE_STD, 'linsolinit_initFromFile')
       call sys_halt()
     
     end select ! isolverType
@@ -617,8 +635,9 @@ contains
     call parlst_querysection(rparamList, ssection, p_rsection) 
     
     if (.not. associated(p_rsection)) then
-      print *,'Cannot create linear solver; no section '''&
-              //trim(ssection)//'''!'
+      call output_line ('Cannot create linear solver; no section ''' &
+          // trim(ssection) // '''!', OU_CLASS_ERROR, OU_MODE_STD, &
+          'linsolinit_initParams')
       call sys_halt()
     end if
     
@@ -736,7 +755,7 @@ contains
            rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax,&
            rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax)
     
-    case DEFAULT
+    case default
     
       ! Initialise the main solver parameters
     
