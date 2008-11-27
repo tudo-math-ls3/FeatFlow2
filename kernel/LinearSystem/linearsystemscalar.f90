@@ -3295,10 +3295,13 @@ contains
 
 !</subroutine>
 
-  ! local variables
-  integer :: NEQ
-  logical :: bvirt_trans = .false.
-  logical :: btrans = .false.
+    ! local variables
+    integer :: NEQ
+    logical :: bvirt_trans
+    logical :: btrans
+  
+    bvirt_trans = .false.
+    btrans = .false.
   
     ! Should we multiply by the matrix transpose?
     if(present(btranspose)) btrans = btranspose
