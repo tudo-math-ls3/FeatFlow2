@@ -122,6 +122,7 @@ module multilevelprojection
   use triangulation
   use geometryaux
   use element
+  use quicksolver
   
   implicit none
   
@@ -327,11 +328,11 @@ module multilevelprojection
     ! Maximum number of iterations
     integer                     :: nmaxL2Iter = 50
     
-    ! Relaxation parameter for internal SSOR preconditioner
-    real(DP)                    :: drelaxL2 = 1.0_DP
+    ! Relaxation parameter for SOR solver
+    real(DP)                    :: drelaxL2 = 1.2_DP
     
     ! Absolute tolerance for L2-projection
-    real(DP)                    :: depsL2 = 1E-10_DP
+    real(DP)                    :: depsL2 = 1E-15_DP
 
     ! -------------------------------------------------------------------------
     ! Matrix-based Projection Structures
@@ -774,10 +775,10 @@ contains
         
       case (MLP_PROJ_TYPE_L2_PROJ)
         ! In this case, we will definately need additional memory.
-        ! The amount of memory we need is four vectors at the size of
+        ! The amount of memory we need is two vectors at the size of
         ! the fine mesh mass matrix, as we need them for the internal
         ! solving process.
-        nmem = 4*RprojectionScalar(i)%rmatrixMass%NEQ
+        nmem = 2*RprojectionScalar(i)%rmatrixMass%NEQ
       
       case (MLP_PROJ_TYPE_MATRIX)
         ! No temporary memory necessary here.
@@ -9508,264 +9509,6 @@ contains
      ! That's it
      
   end subroutine
-  
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  subroutine mlprj_aux_CG_SSOR(p_Dx,p_Dwork,rmass,drelax,deps,nmaxiter)
-  
-!<description>
-  ! PRIVATE AUXILIARY ROUTINE
-  ! Solves a system with a mass matrix using a CG solver with built-in SSOR
-  ! preconditioner.
-!</description>
-
-!<input>
-  ! The mass matrix of the system.
-  type(t_matrixScalar), intent(IN) :: rmass
-  
-  ! The relaxation parameter that is to be used. Must be in range (0,2).
-  real(DP), intent(IN) :: drelax
-  
-  ! The absolute tolerance.
-  real(DP), intent(IN) :: deps
-  
-  ! The maximum number of allowed CG iterations.
-  integer, intent(IN) :: nmaxiter
-!</input>
-
-!<inputoutput>
-  ! On entry, the right hand side of the system.
-  ! On exit, the solution of the system.
-  real(DP), dimension(:), pointer :: p_Dx
-  
-  ! A work array with a length of at least 3 * rmass%NEQ entries.
-  real(DP), dimension(:), pointer :: p_Dwork
-!</inputoutput>
-
-!</subroutine>
-
-  ! local CG variables
-  real(DP) :: dalpha, dbeta, dgamma, dgamma2,dtol
-  integer :: iter,n
-  
-  ! matrix arrays
-  real(DP), dimension(:), pointer :: p_Da
-  integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
-  
-  ! temporary sub-vectors
-  real(DP), dimension(:), pointer :: p_Ddef, p_Ddir, p_Dtmp
-  
-    ! Choose tolerance
-    dtol = max(deps**2, SYS_EPSREAL**2)
-  
-    ! First of all, get the number of equations
-    n = rmass%NEQ
-    
-    ! Now get the matrix arrays
-    call lsyssc_getbase_double(rmass, p_Da)
-    call lsyssc_getbase_Kcol(rmass, p_Kcol)
-    call lsyssc_getbase_Kld(rmass, p_Kld)
-    call lsyssc_getbase_Kdiagonal(rmass, p_Kdiag)
-    
-    ! Get the sub-vectors
-    p_Ddef => p_Dwork(    1 :   n)  ! defect (/gradient) vector
-    p_Ddir => p_Dwork(  n+1 : 2*n)  ! descend direction vector
-    p_Dtmp => p_Dwork(2*n+1 : 3*n)  ! temporary vector
-    
-    ! First of all, copy Dx to Ddef
-    call lalg_copyVectorDble(p_Dx,p_Ddef,n)
-    
-    ! And clear the solution vector
-    call lalg_clearVectorDble(p_Dx,n)
-    
-    ! copy Ddef to Ddir
-    call lalg_copyVectorDble(p_Ddef,p_Ddir,n)
-    
-    ! Apply preconditioner onto Ddir
-    call mlprj_aux_precSSOR(n,p_Ddir,p_Kld,p_Kcol,p_Kdiag,p_Da,drelax)
-    
-    ! Calculate gamma
-    dgamma = lalg_scalarProductDble(p_Ddef,p_Ddir,n)
-    
-    ! Check against tolerance
-    if(dgamma .le. dtol) return
-    
-    ! Okay, start the CG iteration
-    do iter = 1, nmaxiter
-    
-      ! Calculate:
-      ! 1. Dtmp := A * Ddir
-      ! 2. dalpha := < Ddir, Dtmp >
-      call mlprj_aux_MatVecCG(n,p_Kld,p_Kcol,p_Da,p_Ddir,p_Dtmp,dalpha)
-      
-      ! Calculate alpha
-      if(dalpha .eq. 0.0_DP) return
-      dalpha = dgamma / dalpha
-      
-      ! Calculate Dx = Dx + alpha*Ddir
-      call lalg_vectorLinearCombDble(p_Ddir,p_Dx,dalpha,1.0_DP,n)
-      
-      ! Jump out here if the maximum number of iterations is reached
-      if(iter .eq. nmaxiter) return
-      
-      ! Calculate Ddef = Ddef - alpha*Dtmp
-      call lalg_vectorLinearCombDble(p_Dtmp,p_Ddef,-dalpha,1.0_DP,n)
-
-      ! Copy Ddef to Dtmp
-      call lalg_copyVectorDble(p_Ddef,p_Dtmp,n)
-      
-      ! Apply preconditioner onto Dtmp
-      call mlprj_aux_precSSOR(n,p_Dtmp,p_Kld,p_Kcol,p_Kdiag,p_Da,drelax)
-      
-      ! Calculate new gamma and beta
-      dgamma2 = dgamma
-      dgamma = lalg_scalarProductDble(p_Ddef,p_Dtmp,n)
-      if(dgamma .le. dtol) return
-      dbeta = dgamma / dgamma2
-      
-      ! Calculate Ddir = Dtmp + beta*Ddir
-      call lalg_vectorLinearCombDble(p_Dtmp,p_Ddir,1.0_DP,dbeta,n)
-    
-    end do
-    
-  contains
-  
-  !<subroutine>
-    
-    pure subroutine mlprj_aux_MatVecCG(n,Kld,Kcol,Da,Dx,Dy,dalpha)
-    
-  !<description>
-    ! PRIVATE AUXILIARY ROUTINE
-    ! This routine performs two tasks at once:
-    ! 1. Calculate y := A * x
-    ! 2. Calculate alpha := < x, A*x > = < x, y >
-  !</description>
-  
-  !<input>
-    ! The size of Dx
-    integer, intent(IN) :: n
-    
-    ! The Kld array of the mass matrix.
-    integer, dimension(*), intent(IN) :: Kld
-    
-    ! The Kcol array of the mass matrix.
-    integer, dimension(*), intent(IN) :: Kcol
-
-    ! The DA array of the mass matrix.
-    real(DP), dimension(*), intent(IN) :: Da
-    
-    ! The input vector that is to be multiplied by the matrix.
-    real(DP), dimension(*), intent(IN) :: Dx
-  !</input>
-  
-  !<output>
-    ! The output vector that recieves A*x
-    real(DP), dimension(*), intent(OUT) :: Dy
-    
-    ! The result of the scalar product < x, A*x >
-    real(DP), intent(OUT) :: dalpha
-  !</output>
-  
-  !</subroutine>
-  
-    ! local variables
-    integer :: i,j
-    real(DP) :: dt
-    
-      dalpha = 0.0_DP
-      
-      !$omp parallel do default(shared) private(j,dt) reduction(+:dalpha)
-      do i = 1, n
-        dt = 0.0_DP
-        do j = Kld(i), Kld(i+1)-1
-          dt = dt + Da(j)*Dx(Kcol(j))
-        end do ! j
-        dalpha = dalpha + Dx(i)*dt
-        Dy(i) = dt
-      end do ! i
-      !$omp end parallel do
-  
-    end subroutine ! mlprj_aux_MatVecCG
-  
-  ! ---------------------------------------------------------------------------
-
-  !<subroutine>
-
-    pure subroutine mlprj_aux_precSSOR(n,Dx,Kld,Kcol,Kdiag,Da,drlx)
-
-  !<description>
-    ! PRIVATE AUXILIARY ROUTINE
-    ! Applies the SSOR preconditioner onto a defect vector.
-  !</description>
-  
-  !<inputoutput>
-    ! The defect vector that is to be preconditioned.
-    real(DP), dimension(*), intent(INOUT) :: Dx
-  !</inputoutput> 
-  
-  !<input>
-    ! The size of Dx
-    integer, intent(IN) :: n
-    
-    ! The Kld array of the mass matrix.
-    integer, dimension(*), intent(IN) :: Kld
-    
-    ! The Kcol array of the mass matrix.
-    integer, dimension(*), intent(IN) :: Kcol
-    
-    ! The Kdiagonal array of the mass matrix.
-    integer, dimension(*), intent(IN) :: Kdiag
-
-    ! The DA array of the mass matrix.
-    real(DP), dimension(*), intent(IN) :: Da
-    
-    ! The relaxation parameter for SSOR. If set to 0, Jacobi is used instead.
-    real(DP), intent(IN) :: drlx
-  !</input>
-  
-  !</subroutine>
-    
-    integer :: i,j,k
-    real(DP) :: dt
-    
-      ! Is the relax set to 0? Use Jacobi then.
-      if(drlx .eq. 0.0_DP) then
-        
-        !$omp parallel do default(shared)
-        do i = 1, n
-          Dx(i) = Dx(i) / Da(Kdiag(i))
-        end do
-        !$omp end parallel do
-        
-        return
-        
-      end if
-    
-      ! Forward insertion
-      do i = 1, n
-        dt = 0.0_DP
-        k = Kdiag(i)
-        do j = Kld(i), k-1
-          dt = dt + Da(j)*Dx(Kcol(j))
-        end do
-        Dx(i) = (Dx(i) - drlx*dt) / Da(k)
-      end do
-      
-      ! Backward insertion
-      do i = n, 1, -1
-        dt = 0.0_DP
-        k = Kdiag(i)
-        do j = Kld(i+1)-1, k+1, -1
-          dt = dt + Da(j)*Dx(Kcol(j))
-        end do
-        Dx(i) = Dx(i) - ((drlx*dt) / Da(k))
-      end do
-    
-    end subroutine ! mlprj_aux_precSSOR
-  
-  end subroutine ! mlprj_aux_CG_SSOR
 
   ! ***************************************************************************
   
@@ -9797,11 +9540,14 @@ contains
   
 !</subroutine>
 
-  real(DP), dimension(:), pointer :: p_Dfine, p_Dtmp
+  ! local variables
+  real(DP) :: dtol
+  integer :: niter, cinfo
+  real(DP), dimension(:), pointer :: p_Dtmp
   
     ! Make sure the temporary vector's size is sufficient. For the
-    ! prolongation, 3*NEQ is sufficient.
-    if(rtempVector%NEQ .lt. 3*rfineVector%NEQ) then
+    ! prolongation, NEQ is sufficient.
+    if(rtempVector%NEQ .lt. rfineVector%NEQ) then
       
       ! The temporary vector is too small...
       call output_line('Temporary vector is too small!', &
@@ -9818,11 +9564,12 @@ contains
     
     ! Now get the temporary and fine mesh vector's data arrays
     call lsyssc_getbase_double(rtempVector, p_Dtmp)
-    call lsyssc_getbase_double(rfineVector, p_Dfine)
     
-    ! And call the CG-SSOR solver...
-    call mlprj_aux_CG_SSOR(p_Dfine, p_Dtmp, rprojection%rmatrixMass,&
-        rprojection%drelaxL2, rprojection%depsL2, rprojection%nmaxL2Iter)
+    ! Call the SOR solver
+    niter = rprojection%nmaxL2Iter
+    dtol = rprojection%depsL2
+    call qsol_solveSOR(rprojection%rmatrixMass, rfineVector, p_Dtmp, &
+                       cinfo, niter, dtol, rprojection%drelaxL2)
     
     ! That's it
 
@@ -9859,17 +9606,18 @@ contains
 !</subroutine>
 
   ! vector data arrays
-  integer :: n
+  integer :: n, niter, cinfo
   real(DP), dimension(:), pointer :: p_Dtmp, p_Dwork, p_Dfine, p_Dcoarse
+  real(DP) :: dtol
 
-  ! variables concerning the 2-Level-Mass matrix
+  ! variables concerning the mass matrices
   integer :: i,j,k
   real(DP), dimension(:), pointer :: p_Da
-  integer, dimension(:), pointer :: p_Kcol, p_Kld
+  integer, dimension(:), pointer :: p_Kcol, p_Kld, p_Kdiag
 
     ! Make sure the temporary vector's size is sufficient. For the
-    ! restriction, we need 4*NEQ.
-    if(rtempVector%NEQ .lt. 4*rfineVector%NEQ) then
+    ! restriction, we need 2*NEQ.
+    if(rtempVector%NEQ .lt. 2*rfineVector%NEQ) then
       
       ! The temporary vector is too small...
       call output_line('Temporary vector is too small!', &
@@ -9896,9 +9644,17 @@ contains
     ! at least 4*n, we can use the rest as a work array:
     p_Dwork => p_Dtmp(n+1:)
     
-    ! And call the CG-SSOR solver...
-    call mlprj_aux_CG_SSOR(p_Dtmp, p_Dwork, rprojection%rmatrixMass,&
-        rprojection%drelaxL2, rprojection%depsL2, rprojection%nmaxL2Iter)
+    ! Get the arrays from the mass matrix
+    call lsyssc_getbase_double(rprojection%rmatrixMass, p_Da)
+    call lsyssc_getbase_Kcol(rprojection%rmatrixMass, p_Kcol)
+    call lsyssc_getbase_Kld(rprojection%rmatrixMass, p_Kld)
+    call lsyssc_getbase_Kdiagonal(rprojection%rmatrixMass, p_Kdiag)
+
+    ! And call the SOR solver
+    niter = rprojection%nmaxL2iter
+    dtol = rprojection%depsL2
+    call qsol_solveSOR(n, p_Kld, p_Kcol, p_Kdiag, p_Da, p_Dtmp, p_Dwork, &
+                       cinfo, niter, dtol, rprojection%drelaxL2)
     
     ! If everything went well, p_Dtmp(1:n) now contains the solution of
     ! the Mass system. The only thing we now need to do is to multiply

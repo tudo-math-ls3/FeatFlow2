@@ -8,10 +8,9 @@
 !# The routines in this module are all one-call solvers which do not need
 !# any initialisation and do not allocate memory.
 !# The solvers implemented in this module are not meant as an alternative to
-!# the linearsolver module, they are meant as 'low-level' solvers for module
-!# which cannot use the linearsolver module for whatever reason, e.g. the
-!# multilevelprojection module, which itself is included by the linearsolver
-!# module.
+!# the ones in the linearsolver module, they are meant as 'low-level' solvers
+!# for other kernel modules which cannot use the linearsolver module for
+!# whatever reason.
 !#
 !# As the routines do not allocate memory, the caller is responsible to pass
 !# a working array to the solver which is used to store temporary vectors.
@@ -20,21 +19,29 @@
 !#
 !#  1.) qsol_solveCG
 !#      -> Solves a linear system using an unpreconditioned CG solver.
-!#         This solver needs 3*n working memory.
+!#         Supported Matrix types: Format-7 / Format-9 CSR
+!#         Working Memory: 3*n
 !#
 !#  2.) qsol_solveCG_SSOR
 !#      -> Solves a linear system using a CG solver with built-in SSOR
-!#         preconditioner. This solver needs 3*n working memory.
+!#         preconditioner.
+!#         Supported Matrix types: Format-9 CSR
+!#         Working memory: 3*n
 !#
 !#  3.) qsol_solveSOR
 !#      -> Solves a linear system using a SOR solver.
-!#         This solver needs 1*n working memory.
+!#         Supported Matrix types: Format-9 CSR
+!#         Working memory: n
 !#
 !#  4.) qsol_precSOR
 !#      -> Applies the SOR preconditioner onto a defect vector.
+!#         Supported Matrix types: Format-9 CSR
+!#         Working memory: 0
 !#
 !#  5.) qsol_precSSOR
 !#      -> Applies the SSOR preconditioner onto a defect vector.
+!#         Supported Matrix types: Format-9 CSR
+!#         Working memory: 0
 !#
 !# </purpose>
 !##############################################################################
@@ -43,16 +50,27 @@ module quicksolver
 
 use fsystem
 use linearalgebra
+use linearsystemscalar
 
 implicit none
 
 private
 
 public :: qsol_solveCG
+public :: qsol_solveCG_lsyssc
+public :: qsol_solveCG_double
 public :: qsol_solveCG_SSOR
+public :: qsol_solveCG_SSOR_lsyssc
+public :: qsol_solveCG_SSOR_double
 public :: qsol_solveSOR
+public :: qsol_solveSOR_lsyssc
+public :: qsol_solveSOR_double
 public :: qsol_precSOR
+public :: qsol_precSOR_lsyssc
+public :: qsol_precSOR_double
 public :: qsol_precSSOR
+public :: qsol_precSSOR_lsyssc
+public :: qsol_precSSOR_double
 
 !<constants>
 
@@ -69,13 +87,98 @@ public :: qsol_precSSOR
 
 !</constants>
 
+  interface qsol_solveCG
+    module procedure qsol_solveCG_lsyssc
+    module procedure qsol_solveCG_double
+  end interface
+  
+  interface qsol_solveCG_SSOR
+    module procedure qsol_solveCG_SSOR_lsyssc
+    module procedure qsol_solveCG_SSOR_double
+  end interface
+
+  interface qsol_solveSOR
+    module procedure qsol_solveSOR_lsyssc
+    module procedure qsol_solveSOR_double
+  end interface
+
+  interface qsol_precSOR
+    module procedure qsol_precSOR_lsyssc
+    module procedure qsol_precSOR_double
+  end interface
+
+  interface qsol_precSSOR
+    module procedure qsol_precSSOR_lsyssc
+    module procedure qsol_precSSOR_double
+  end interface
+
 contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine qsol_solveCG(n, Kld, Kcol, Da, Dx, Dwork, cinfo, niter, dtol)
+  subroutine qsol_solveCG_lsyssc(rmat, rvec, Dwork, cinfo, niter, dtol)
+
+!<description>
+  ! This routine is a one-call CG solver.
+!</description>
+
+!<input>
+  ! The system matrix.
+  type(t_matrixScalar), intent(IN) :: rmat
+!</input>
+
+!<output>
+  ! One of the QSOL_INFO_XXXX constants describing the result.
+  integer, intent(OUT) :: cinfo
+!</output>
+
+!<inputoutput>
+  ! On entry, the vector containing the right-hand-side of the linear system.
+  ! On exit, the vector containing the solution of the linear system.
+  type(t_vectorScalar), intent(INOUT) :: rvec
+  
+  ! Work array. Its length must be at least 3*n.
+  real(DP), dimension(:), target, intent(INOUT) :: Dwork
+  
+  ! On entry, the maximum number of allowed iterations. Must be > 0.
+  ! On exit, the total number of performed iterations.
+  integer, intent(INOUT) :: niter
+  
+  ! On entry, the absolute tolerance in euclidian norm that is to be reached.
+  !   If set to a value <= 0, no residual checks are performed, and the solver
+  !   always performs niter iterations, unless an error occurs.
+  ! On exit,
+  !   if dtol was  > 0 on entry, the absolute final defect,
+  !   if dtol was <= 0 on entry, dtol is left unchanged.
+  real(DP), intent(INOUT) :: dtol
+!</inputoutput>
+
+!</suboutine>
+
+  ! local variables
+  integer, dimension(:), pointer :: p_Kld, p_Kcol
+  real(DP), dimension(:), pointer :: p_Da, p_Dx
+  
+    ! Get the arrays
+    call lsyssc_getbase_Kld(rmat, p_Kld)
+    call lsyssc_getbase_Kcol(rmat, p_Kcol)
+
+    call lsyssc_getbase_double(rmat, p_Da)
+    call lsyssc_getbase_double(rvec, p_Dx)
+    
+    ! Call double version
+    call qsol_solveCG_double(rmat%NEQ, p_Kld, p_Kcol, p_Da, p_Dx, Dwork, &
+                             cinfo, niter, dtol)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine qsol_solveCG_double(n, Kld, Kcol, Da, Dx, Dwork, cinfo, niter, dtol)
 
 !<description>
   ! This routine is a one-call CG solver.
@@ -97,7 +200,7 @@ contains
 
 !<output>
   ! One of the QSOL_INFO_XXXX constants describing the result.
-  integer, intent(INOUT) :: cinfo
+  integer, intent(OUT) :: cinfo
 !</output>
 
 !<inputoutput>
@@ -108,8 +211,8 @@ contains
   ! Work array. Its length must be at least 3*n.
   real(DP), dimension(:), target, intent(INOUT) :: Dwork
   
-  ! On entry, the maximum number of allowed CG iterations. Must be > 0.
-  ! On exit, the total number of performed CG iterations.
+  ! On entry, the maximum number of allowed iterations. Must be > 0.
+  ! On exit, the total number of performed iterations.
   integer, intent(INOUT) :: niter
   
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
@@ -245,8 +348,81 @@ contains
 
 !<subroutine>
 
-  subroutine qsol_solveCG_SSOR(n, Kld, Kcol, Kdiag, Da, Dx, Dwork, cinfo, &
-                               niter, dtol, drelax)
+  subroutine qsol_solveCG_SSOR_lsyssc(rmat, rvec, Dwork, cinfo, niter, dtol, &
+                                      drelax)
+
+!<description>
+  ! This routine is a one-call CG solver.
+!</description>
+
+!<input>
+  ! The system matrix.
+  type(t_matrixScalar), intent(IN) :: rmat
+
+  ! OPTIONAL: The relaxation parameter of the SSOR preconditioner.
+  ! If given, must be in range (0,2). If not given, 1 is used.
+  real(DP), optional, intent(IN) :: drelax
+!</input>
+
+!<output>
+  ! One of the QSOL_INFO_XXXX constants describing the result.
+  integer, intent(OUT) :: cinfo
+!</output>
+
+!<inputoutput>
+  ! On entry, the vector containing the right-hand-side of the linear system.
+  ! On exit, the vector containing the solution of the linear system.
+  type(t_vectorScalar), intent(INOUT) :: rvec
+  
+  ! Work array. Its length must be at least 3*n.
+  real(DP), dimension(:), target, intent(INOUT) :: Dwork
+  
+  ! On entry, the maximum number of allowed iterations. Must be > 0.
+  ! On exit, the total number of performed iterations.
+  integer, intent(INOUT) :: niter
+  
+  ! On entry, the absolute tolerance in euclidian norm that is to be reached.
+  !   If set to a value <= 0, no residual checks are performed, and the solver
+  !   always performs niter iterations, unless an error occurs.
+  ! On exit,
+  !   if dtol was  > 0 on entry, the absolute final defect,
+  !   if dtol was <= 0 on entry, dtol is left unchanged.
+  real(DP), intent(INOUT) :: dtol
+!</inputoutput>
+
+!</suboutine>
+
+  ! local variables
+  integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
+  real(DP), dimension(:), pointer :: p_Da, p_Dx
+  real(DP) :: drlx
+  
+    if(present(drelax)) then
+      drlx = drelax
+    else
+      drlx = 1.0_DP
+    end if
+  
+    ! Get the arrays
+    call lsyssc_getbase_Kld(rmat, p_Kld)
+    call lsyssc_getbase_Kcol(rmat, p_Kcol)
+    call lsyssc_getbase_Kdiagonal(rmat, p_Kdiag)
+
+    call lsyssc_getbase_double(rmat, p_Da)
+    call lsyssc_getbase_double(rvec, p_Dx)
+    
+    ! Call double version
+    call qsol_solveCG_SSOR_double(rmat%NEQ, p_Kld, p_Kcol, p_Kdiag, p_Da, &
+                                  p_Dx, Dwork, cinfo, niter, dtol, drlx)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine qsol_solveCG_SSOR_double(n, Kld, Kcol, Kdiag, Da, Dx, Dwork, &
+                                      cinfo, niter, dtol, drelax)
 
 !<description>
   ! This routine is a one-call CG solver with built-in SSOR preconditioner.
@@ -268,14 +444,14 @@ contains
   ! The data array of the matrix.
   real(DP), dimension(:), intent(IN) :: Da
 
-  ! The relaxation parameter of the SSOR preconditioner.
+  ! OPTIONAL: The relaxation parameter of the SSOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
   real(DP), optional, intent(IN) :: drelax
 !</input>
 
 !<output>
   ! One of the QSOL_INFO_XXXX constants describing the result.
-  integer, intent(INOUT) :: cinfo
+  integer, intent(OUT) :: cinfo
 !</output>
 
 !<inputoutput>
@@ -286,8 +462,8 @@ contains
   ! Work array. Its length must be at least 3*n.
   real(DP), dimension(:), target, intent(INOUT) :: Dwork
   
-  ! On entry, the maximum number of allowed CG iterations. Must be > 0.
-  ! On exit, the total number of performed CG iterations.
+  ! On entry, the maximum number of allowed iterations. Must be > 0.
+  ! On exit, the total number of performed iterations.
   integer, intent(INOUT) :: niter
   
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
@@ -481,13 +657,13 @@ contains
   ! The size of Dx
   integer, intent(IN) :: n
   
-  ! The Kld array of the mass matrix.
+  ! The Kld array of the matrix.
   integer, dimension(*), intent(IN) :: Kld
   
-  ! The Kcol array of the mass matrix.
+  ! The Kcol array of the matrix.
   integer, dimension(*), intent(IN) :: Kcol
 
-  ! The DA array of the mass matrix.
+  ! The DA array of the matrix.
   real(DP), dimension(*), intent(IN) :: Da
   
   ! The input vector that is to be multiplied by the matrix.
@@ -527,8 +703,80 @@ contains
 
 !<subroutine>
 
-  subroutine qsol_solveSOR(n, Kld, Kcol, Kdiag, Da, Dx, Dwork, cinfo, &
-                           niter, dtol, drelax)
+  subroutine qsol_solveSOR_lsyssc(rmat, rvec, Dwork, cinfo, niter, dtol, drelax)
+
+!<description>
+  ! This routine is a one-call SOR solver.
+!</description>
+
+!<input>
+  ! The system matrix.
+  type(t_matrixScalar), intent(IN) :: rmat
+
+  ! OPTIONAL: The relaxation parameter of the SOR solver.
+  ! If given, must be in range (0,2). If not given, 1 is used.
+  real(DP), optional, intent(IN) :: drelax
+!</input>
+
+!<output>
+  ! One of the QSOL_INFO_XXXX constants describing the result.
+  integer, intent(OUT) :: cinfo
+!</output>
+
+!<inputoutput>
+  ! On entry, the vector containing the right-hand-side of the linear system.
+  ! On exit, the vector containing the solution of the linear system.
+  type(t_vectorScalar), intent(INOUT) :: rvec
+  
+  ! Work array. Its length must be at least 3*n.
+  real(DP), dimension(:), target, intent(INOUT) :: Dwork
+  
+  ! On entry, the maximum number of allowed iterations. Must be > 0.
+  ! On exit, the total number of performed iterations.
+  integer, intent(INOUT) :: niter
+  
+  ! On entry, the absolute tolerance in euclidian norm that is to be reached.
+  !   If set to a value <= 0, no residual checks are performed, and the solver
+  !   always performs niter iterations, unless an error occurs.
+  ! On exit,
+  !   if dtol was  > 0 on entry, the absolute final defect,
+  !   if dtol was <= 0 on entry, dtol is left unchanged.
+  real(DP), intent(INOUT) :: dtol
+!</inputoutput>
+
+!</suboutine>
+
+  ! local variables
+  integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
+  real(DP), dimension(:), pointer :: p_Da, p_Dx
+  real(DP) :: drlx
+  
+    if(present(drelax)) then
+      drlx = drelax
+    else
+      drlx = 1.0_DP
+    end if
+  
+    ! Get the arrays
+    call lsyssc_getbase_Kld(rmat, p_Kld)
+    call lsyssc_getbase_Kcol(rmat, p_Kcol)
+    call lsyssc_getbase_Kdiagonal(rmat, p_Kdiag)
+
+    call lsyssc_getbase_double(rmat, p_Da)
+    call lsyssc_getbase_double(rvec, p_Dx)
+    
+    ! Call double version
+    call qsol_solveSOR_double(rmat%NEQ, p_Kld, p_Kcol, p_Kdiag, p_Da, &
+                              p_Dx, Dwork, cinfo, niter, dtol, drlx)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine qsol_solveSOR_double(n, Kld, Kcol, Kdiag, Da, Dx, Dwork, cinfo, &
+                                  niter, dtol, drelax)
 
 !<description>
   ! This routine is a one-call SOR solver.
@@ -550,14 +798,14 @@ contains
   ! The data array of the matrix.
   real(DP), dimension(*), intent(IN) :: Da
 
-  ! The relaxation parameter of the SOR solver.
+  ! OPTIONAL: The relaxation parameter of the SOR solver.
   ! If given, must be in range (0,2). If not given, 1 is used.
   real(DP), optional, intent(IN) :: drelax
 !</input>
 
 !<output>
   ! One of the QSOL_INFO_XXXX constants describing the result.
-  integer, intent(INOUT) :: cinfo
+  integer, intent(OUT) :: cinfo
 !</output>
 
 !<inputoutput>
@@ -568,8 +816,8 @@ contains
   ! Work array. Its length must be at least 1*n.
   real(DP), dimension(*), target, intent(INOUT) :: Dwork
   
-  ! On entry, the maximum number of allowed CG iterations. Must be > 0.
-  ! On exit, the total number of performed CG iterations.
+  ! On entry, the maximum number of allowed iterations. Must be > 0.
+  ! On exit, the total number of performed iterations.
   integer, intent(INOUT) :: niter
   
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
@@ -584,8 +832,8 @@ contains
 !</suboutine>
 
   ! local variables
-  integer :: ite,i,j,k
-  real(DP) :: drlx,daux,daii,ddef,dtol2
+  integer :: ite,i,j
+  real(DP) :: drlx,daux,ddef,dtol2
   
     ! Choose relaxation parameter
     if(present(drelax)) then
@@ -618,11 +866,11 @@ contains
     !
     ! So (hopefully) there shouldn't be any problems here.
 
-    ! Copy the rhs to work array and set iteration vector to D^-1 * b
+    ! Copy the rhs to work array and reset iteration vector
     !$omp parallel do
     do i = 1, n
       Dwork(i) = Dx(i)
-      Dx(i) = Dx(i) / Da(Kdiag(i))
+      Dx(i) = 0.0_DP
     end do
     !$omp end parallel do
     
@@ -682,7 +930,58 @@ contains
 
 !<subroutine>
 
-  pure subroutine qsol_precSOR(n,Kld,Kcol,Kdiag,Da,Dx,drelax)
+  subroutine qsol_precSOR_lsyssc(rmat,rvec,drelax)
+
+!<description>
+  ! Applies the SOR preconditioner onto a defect vector.
+!</description>
+
+!<input>
+  ! The system matrix.
+  type(t_matrixScalar), intent(IN) :: rmat
+  
+  ! OPTIONAL: The relaxation parameter of the SOR preconditioner.
+  ! If given, must be in range (0,2). If not given, 1 is used.
+  real(DP), optional, intent(IN) :: drelax
+!<input>
+
+!<inputoutput>
+  ! The vector that is to be preconditioned.
+  type(t_vectorScalar), intent(INOUT) :: rvec
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
+  real(DP), dimension(:), pointer :: p_Da, p_Dx
+  real(DP) :: drlx
+  
+    if(present(drelax)) then
+      drlx = drelax
+    else
+      drlx = 1.0_DP
+    end if
+  
+    ! Get the arrays
+    call lsyssc_getbase_Kld(rmat, p_Kld)
+    call lsyssc_getbase_Kcol(rmat, p_Kcol)
+    call lsyssc_getbase_Kdiagonal(rmat, p_Kdiag)
+
+    call lsyssc_getbase_double(rmat, p_Da)
+    call lsyssc_getbase_double(rvec, p_Dx)
+    
+    ! Call double version
+    call qsol_precSOR_double(rmat%NEQ, p_Kld, p_Kcol, p_Kdiag, p_Da, &
+                              p_Dx, drlx)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine qsol_precSOR_double(n,Kld,Kcol,Kdiag,Da,Dx,drelax)
 
 !<description>
   ! Applies the SOR preconditioner onto a defect vector.
@@ -704,7 +1003,8 @@ contains
   ! The data array of the matrix
   real(DP), dimension(*), intent(IN) :: Da
   
-  ! OPTIONAL: The relaxation parameter of SOR. If not given, 1 is used.
+  ! OPTIONAL: The relaxation parameter of the SOR preconditioner.
+  ! If given, must be in range (0,2). If not given, 1 is used.
   real(DP), optional, intent(IN) :: drelax
 !<input>
 
@@ -753,12 +1053,63 @@ contains
     end if
 
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine qsol_precSSOR_lsyssc(rmat,rvec,drelax)
+
+!<description>
+  ! Applies the SSOR preconditioner onto a defect vector.
+!</description>
+
+!<input>
+  ! The system matrix.
+  type(t_matrixScalar), intent(IN) :: rmat
+  
+  ! OPTIONAL: The relaxation parameter of the SSOR preconditioner.
+  ! If given, must be in range (0,2). If not given, 1 is used.
+  real(DP), optional, intent(IN) :: drelax
+!<input>
+
+!<inputoutput>
+  ! The vector that is to be preconditioned.
+  type(t_vectorScalar), intent(INOUT) :: rvec
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
+  real(DP), dimension(:), pointer :: p_Da, p_Dx
+  real(DP) :: drlx
+  
+    if(present(drelax)) then
+      drlx = drelax
+    else
+      drlx = 1.0_DP
+    end if
+  
+    ! Get the arrays
+    call lsyssc_getbase_Kld(rmat, p_Kld)
+    call lsyssc_getbase_Kcol(rmat, p_Kcol)
+    call lsyssc_getbase_Kdiagonal(rmat, p_Kdiag)
+
+    call lsyssc_getbase_double(rmat, p_Da)
+    call lsyssc_getbase_double(rvec, p_Dx)
+    
+    ! Call double version
+    call qsol_precSSOR_double(rmat%NEQ, p_Kld, p_Kcol, p_Kdiag, p_Da, &
+                              p_Dx, drlx)
+
+  end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  pure subroutine qsol_precSSOR(n,Kld,Kcol,Kdiag,Da,Dx,drelax)
+  pure subroutine qsol_precSSOR_double(n,Kld,Kcol,Kdiag,Da,Dx,drelax)
 
 !<description>
   ! Applies the SSOR preconditioner onto a defect vector.
@@ -780,7 +1131,8 @@ contains
   ! The data array of the matrix
   real(DP), dimension(*), intent(IN) :: Da
   
-  ! OPTIONAL: The relaxation parameter of SSOR. If not given, 1 is used.
+  ! OPTIONAL: The relaxation parameter of the SSOR preconditioner.
+  ! If given, must be in range (0,2). If not given, 1 is used.
   real(DP), optional, intent(IN) :: drelax
 !<input>
 
