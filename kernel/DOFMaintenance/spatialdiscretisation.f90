@@ -462,9 +462,35 @@ contains
       
     case (NDIM3D)
 
-      call output_line ('3D not supported.', &
-        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_getLumpCubature')  
-      call sys_halt()
+      select case (elem_getPrimaryElement(ielementType))
+      case (EL_P0_3D)
+        ! Use Gauss 1X1
+        ccubType = CUB_G1_3D_T
+
+      case (EL_P1_3D)
+        ! Use trapezoidal rule
+        ccubType = CUB_TRZ_3D_T
+
+!      Not implemented in 3D
+!      case (EL_P1T)
+!        ! Use Gauss-3pt
+!        ccubType = CUB_G3_T
+
+      case (EL_Q0_3D)
+        ! Use Gauss 1X1
+        ccubType = CUB_G1_3D
+
+      case (EL_Q1_3D)
+        ! Use trapezoidal rule
+        ccubType = CUB_TRZ_3D
+
+      case (EL_Q1T_3D)
+        ! Use midpoint rule
+        ccubType = CUB_MIDAREA_3D
+        
+      case DEFAULT
+        ccubType = 0
+      end select        
       
     case DEFAULT
       ccubType = 0
