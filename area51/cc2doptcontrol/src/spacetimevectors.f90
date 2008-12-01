@@ -88,6 +88,7 @@ module spacetimevectors
   use vectorio
   
   use timediscretisation
+  use mprimitives
 
   implicit none
 

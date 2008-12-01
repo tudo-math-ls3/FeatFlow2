@@ -2455,6 +2455,7 @@ contains
         call parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEPRECOND', &
                                     'domega', domegaPrecond, 1.0_DP)
         
+        nullify(p_rprecond)
         select case (ctypeCoarseGridSolver)
         case (0)
           ! Block Jacobi preconditioner
@@ -2508,7 +2509,7 @@ contains
           call sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
           p_rcgrSolver%domega = domega
           
-        case DEFAULT
+        case default
           print *,'Unknown solver: ',ctypeCoarseGridSolver
           stop
         end select

@@ -2544,7 +2544,7 @@ contains
     p_rsolverNode%calgorithm = SPTILS_ALG_BlockFBSOR
     
     ! Initialise the ability bitfield with the ability of this solver:
-    p_rsolverNode%ccapability = SPTILS_ABIL_DIRECT
+    p_rsolverNode%ccapability = 0
 
     ! Save the relaxation parameter
     p_rsolverNode%domega = domega
@@ -7144,7 +7144,6 @@ end subroutine
 
       if (rsolverNode%ioutputLevel .ge. 2) then
         if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-                  
         call output_line ('Space-Time-Smoother: Step '//trim(sys_siL(i-1,10))//&
             ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
       end if
@@ -7177,8 +7176,14 @@ end subroutine
             rx,rtemp, -1.0_DP,1.0_DP,SPTID_FILTER_DEFECT,dres)
         if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
                   
-        call output_line ('Space-Time-Smoother: Step '//trim(sys_siL(i-1,10))//&
+        if (iand(rsolverNode%ccapability,SPTILS_ABIL_DIRECT) .ne. 0) then
+          call output_line ('Space-Time-Smoother: Step '//trim(sys_siL(i-1,10))//&
             ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
+        else
+          call output_line ('Space-Time-Smoother: Step '//&
+            trim(sys_siL(rsolverNode%nmaxIterations,10))//&
+            ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
+        end if
       end if
     end if
     

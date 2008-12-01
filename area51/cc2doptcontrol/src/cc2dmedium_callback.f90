@@ -933,6 +933,10 @@ contains
         !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * Dpoints(1,:,:)
         !END IF
         Dvalues(:,:) = Dpoints(1,:,:)
+        
+        Dvalues (:,:) = 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
+        
+        
 !      CASE (1:2)
 !        ! Target flow is specified by a block vector.
 !        !
@@ -1147,6 +1151,8 @@ contains
         !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * (-Dpoints(2,:,:))
         !END IF
         Dvalues(:,:) = (-Dpoints(2,:,:))
+        
+        Dvalues(:,:) = 0.0_DP
         
 !      CASE (1:2)
 !        ! Target flow is specified by a block vector.
