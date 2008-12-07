@@ -3202,35 +3202,36 @@ end subroutine
     if (DcoordsRef(1) .lt. 0.0) then
       ! X-coord of point is negative, so multiply with -1
       Dmirror(1) = -1.0_DP
-      DcoordsRef(1) = -DcoordsRef(1)
+      DcoordsRef(1) = -DcoordsRef(1) - Dlen(1)
+    else
+      DcoordsRef(1) =  DcoordsRef(1) - Dlen(1)
     end if
     
     if (DcoordsRef(2) .lt. 0.0) then
       ! Y-coord of point is negative, so multiply with -1
       Dmirror(2) = -1.0_DP
-      DcoordsRef(2) = -DcoordsRef(2)
+      DcoordsRef(2) = -DcoordsRef(2) - Dlen(2)
+    else
+      DcoordsRef(2) =  DcoordsRef(2) - Dlen(2)
     end if
     
     ! If both coordinates are greater than half of the correspoding
     ! rectangle's egde length, then the projection is the rectangle's corner.
-    
-    if ((DcoordsRef(1) .ge. Dlen(1)) .and. (DcoordsRef(2) .ge. Dlen(2))) then
+    if ((DcoordsRef(1) .ge. 0.0_DP) .and. (DcoordsRef(2) .ge. 0.0_DP)) then
     
       ! Save square's corner
-      DcoordsRef = Dlen
+      DcoordsRef = 0.0_DP
     
     else
       ! In all other cases, the projection is on an edge of the square.
-      ! Now find out which coordinate is greater.
-      if (DcoordsRef(1) .ge. DcoordsRef(2)) then
-        ! The X-coordinate is greater than the Y-coordinate.
-        ! Now we need to set the X-coordinate to half of the rectangle's edge
-        ! length and then we have our projection.
-        DcoordsRef(1) = Dlen(1)
+      ! Now find out which distance is greater.
+      if (abs(DcoordsRef(1)) .le. abs(DcoordsRef(2))) then
+        ! The Y-distance is greater than the X-distance.
+        DcoordsRef(1) = 0.0_DP
       
       else
         ! Otherwise correct Y-coordinate
-        DcoordsRef(2) = Dlen(2)
+        DcoordsRef(2) = 0.0_DP
       
       end if
     
@@ -3238,8 +3239,8 @@ end subroutine
     
     ! The projection itself is calculated, now we need to mirror the projection
     ! into the quadrant where our original point was in.
-    DcoordsRef(1) = DcoordsRef(1) * Dmirror(1)
-    DcoordsRef(2) = DcoordsRef(2) * Dmirror(2)
+    DcoordsRef(1) = (DcoordsRef(1) + Dlen(1)) * Dmirror(1)
+    DcoordsRef(2) = (DcoordsRef(2) + Dlen(2)) * Dmirror(2)
     
     ! And transform the projection back into world coordinates
     call bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
