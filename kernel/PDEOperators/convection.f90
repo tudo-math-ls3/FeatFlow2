@@ -151,6 +151,11 @@ module convection
     ! =0.0: don't incorporate convective part (=Stokes problem)
     ! =1.0: incorporate full convective part (=Navier Stokes problem)
     real(DP) :: ddelta = 1.0_DP
+
+    ! Weighting factor for the transposed convective part.
+    ! =0.0: don't incorporate transposed convective part
+    ! =1.0: incorporate full transposed convective part
+    real(DP) :: ddeltaTransposed = 0.0_DP
     
     ! Weighting factor of the complete operator.
     ! For time-dependent problems, this can be set to the step size
@@ -162,6 +167,10 @@ module convection
     ! the convective operator $u\Nabla u$, used for preconditioning).
     ! A value of 0.0 deactivates the Newton matrix.
     real(DP) :: dnewton = 0.0_DP
+    
+    ! Weighting factor for the transposed Newton matrix ((\Nabla u)^t\cdot)
+    ! A value of 0.0 deactivates the transposed Newton matrix.
+    real(DP) :: dnewtonTransposed = 0.0_DP
     
     ! Calculation of local H.
     ! In 3D, there are 2 different methods to calculate the local H which
@@ -3374,7 +3383,12 @@ contains
 !<description>
   ! Standard streamline diffusion method to set up the operator
   !  
-  ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
+  ! $$ dtheta  *  (                dalpha * MASS  
+  !                  +              dbeta * STOKES  
+  !                  +             ddelta * u_1 * grad(.) 
+  !                  +            dnewton * (.) * grad(u_1)
+  !                  +   ddeltaTransposed * grad(.)^T * u_1
+  !                  +  dnewtonTransposed * grad(u_1)^T * (.) ) $$
   !
   ! in a matrix or to build a defect vector.
   ! 2D-version (X- and Y-velocity).
@@ -3442,8 +3456,6 @@ contains
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
   real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
-
-
 
 !</input>
 
@@ -3550,7 +3562,7 @@ contains
 
     ! If Newton must be calculated, make sure A12 and A21 exists and that
     ! all A11, A12, A21 and A22 are independent of each other!
-    if (rconfig%dnewton .ne. 0.0_DP) then
+    if ((rconfig%dnewton .ne. 0.0_DP) .or. (rconfig%dnewtonTransposed .ne. 0.0_DP)) then
       if (.not. lsysbl_isSubmatrixPresent(rmatrix,1,2) .or. &
           .not. lsysbl_isSubmatrixPresent(rmatrix,2,1)) then
         print *,'SD: For the Newton matrix, A12 and A21 must be defined!'
@@ -3623,7 +3635,8 @@ contains
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
-                    rconfig%dnewton, rconfig%bALE, &
+                    rconfig%dnewton, rconfig%ddeltaTransposed, &
+                    rconfig%dnewtonTransposed, rconfig%bALE, &
                     p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity)
                     
     else
@@ -3632,7 +3645,8 @@ contains
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix, cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
-                    rconfig%dnewton, rconfig%bALE, DmeshVelocity=DmeshVelocity)
+                    rconfig%dnewton, rconfig%ddeltaTransposed, rconfig%dnewtonTransposed, &
+                    rconfig%bALE, DmeshVelocity=DmeshVelocity)
 
       !!! DEBUG:
       !call matio_writeMatrixHR (rmatrix, 'matrix',&
@@ -3654,12 +3668,18 @@ contains
   subroutine conv_strdiff2dALEblk_double ( &
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
-                  dupsam,dnu,dalpha,dbeta,dtheta, ddelta, dnewton, bALE, &
+                  dupsam,dnu,dalpha,dbeta,dtheta, ddelta, dnewton, &
+                  ddeltaTransposed,dnewtonTransposed, bALE, &
                   Du1,Du2,Ddef1,Ddef2, DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   !  
-  ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
+  ! $$ dtheta  *  (                dalpha * MASS  
+  !                  +              dbeta * STOKES  
+  !                  +             ddelta * u_1 * grad(.) 
+  !                  +            dnewton * (.) * grad(u_1)
+  !                  +   ddeltaTransposed * grad(.)^T * u_1
+  !                  +  dnewtonTransposed * grad(u_1)^T * (.) ) $$
   !
   ! in a matrix or to build a defect vector with that.
   ! 2D-version (X- and Y-velocity), uniform $\tilde Q_1$ discretisation,
@@ -3781,6 +3801,14 @@ contains
   ! Newton part. A value != 0.0 activates Newton; in this case the submatrices
   ! A12 and A21 must be present in rmatrix.
   real(DP), intent(IN) :: dnewton
+
+  ! Weighting factor of the transposed convection matrix. A value of 0.0 deactivates
+  ! this operator.
+  real(DP), intent(IN) :: ddeltaTransposed
+  
+  ! Weighting factor of the transposed Newton matrix. A value of 0.0 deactivates
+  ! this operator.
+  real(DP), intent(IN) :: dnewtonTransposed
       
   ! Whether or not to use the ALE method
   logical, intent(IN) :: bALE
@@ -4063,7 +4091,8 @@ contains
     ! in the submatrices A12 and A21.
     allocate(Kentry(indof,indof,nelementsPerBlock))
     
-    if (dnewton .ne. 0.0_DP) then
+    if ((dnewton .ne. 0.0_DP) .or. (dnewtonTransposed .ne. 0.0_DP) &
+        .or. (ddeltaTransposed .ne. 0.0_DP)) then
       allocate(Kentry12(indof,indof,nelementsPerBlock))
     end if
     
@@ -4074,7 +4103,8 @@ contains
     ! and therefore not always used!
     allocate(Dentry(indof,indof,nelementsPerBlock))
     
-    if (dnewton .ne. 0.0_DP) then
+    if ((dnewton .ne. 0.0_DP) .or. (dnewtonTransposed .ne. 0.0_DP) &
+        .or. (ddeltaTransposed .ne. 0.0_DP)) then
       allocate(DentryA11(indof,indof,nelementsPerBlock))
       allocate(DentryA12(indof,indof,nelementsPerBlock))
       allocate(DentryA21(indof,indof,nelementsPerBlock))
@@ -4090,7 +4120,7 @@ contains
     ! Indicate that cubature points must still be initialised in the element set.
     bcubPtsInitialised = .false.
     
-    if (dnewton .ne. 0.0_DP) then
+    if ((dnewton .ne. 0.0_DP) .or. (dnewtonTransposed .ne. 0.0_DP)) then
       allocate(DvelocityUderiv(NDIM2D,ncubp,nelementsPerBlock))
       allocate(DvelocityVderiv(NDIM2D,ncubp,nelementsPerBlock))
     end if
@@ -4309,7 +4339,8 @@ contains
       ! If the Newton part is to be calculated, we also need the matrix positions
       ! in A12 and A21. We can skip this part if the column structure is
       ! exactly the same!
-      if (dnewton .ne. 0.0_DP) then
+      if ((dnewton .ne. 0.0_DP) .or. (dnewtonTransposed .ne. 0.0_DP) &
+          .or. (ddeltaTransposed .ne. 0.0_DP)) then
         if (associated(p_Kcol,p_Kcol12)) then
         
           Kentry12(:,:,:) = Kentry(:,:,:)
@@ -4492,7 +4523,7 @@ contains
         end do ! IEL
         
         ! Compute X- and Y-derivative of the velocity?
-        if (dnewton .ne. 0.0_DP) then
+        if ((dnewton .ne. 0.0_DP) .or. (dnewtonTransposed .ne. 0.0_DP)) then
         
           do IEL=1,IELmax-IELset+1
           
@@ -4567,7 +4598,7 @@ contains
         end do ! IEL
       
         ! Compute X- and Y-derivative of the velocity?
-        if (dnewton .ne. 0.0_DP) then
+        if ((dnewton .ne. 0.0_DP) .or. (dnewtonTransposed .ne. 0.0_DP)) then
         
           do IEL=1,IELmax-IELset+1
           
@@ -4667,7 +4698,7 @@ contains
         
         ! Subtract the X- and Y-derivative of the mesh velocity to the
         ! velocity derivative field if Newton is active.
-        if (dnewton .ne. 0.0_DP) then
+        if ((dnewton .ne. 0.0_DP) .or. (dnewtonTransposed .ne. 0.0_DP)) then
         
           do IEL=1,IELmax-IELset+1
           
@@ -4715,7 +4746,8 @@ contains
       !
       ! Clear the local matrices. If the Newton part is to be calculated,
       ! we must clear everything, otherwise only Dentry.
-      if (dnewton .ne. 0) then
+      if ((dnewton .ne. 0.0_DP) .or. (dnewtonTransposed .ne. 0.0_DP) &
+          .or. (ddeltaTransposed .ne. 0.0_DP)) then
         Dentry = 0.0_DP
         DentryA11 = 0.0_DP
         DentryA12 = 0.0_DP
@@ -4732,6 +4764,11 @@ contains
         ! Loop over the elements in the current set.
         do IEL=1,IELmax-IELset+1
       
+          ! Nonlinearity: 
+          !    ddelta * u_1 * grad(.) 
+          !  = ddelta * [ (DU1) (dx)            ] 
+          !             [            (DU2) (dy) ] 
+          !
           ! Loop over all cubature points on the current element
           do ICUBP = 1, ncubp
 
@@ -4966,6 +5003,12 @@ contains
       ! Should we assemble the Newton matrices?
       if (dnewton .ne. 0.0_DP) then
       
+        ! Newton operator
+        !
+        !    dnewton * (.) * grad(u_1)
+        !  = dnewton * [ (dx DU1) (dy DU1) ] 
+        !              [ (dx DU2) (dy DU2) ]
+        !
         ! Loop over the elements in the current set.
         do IEL=1,IELmax-IELset+1
 
@@ -5044,10 +5087,10 @@ contains
                 !   dv/dx * phi_j*phi_i -> A21
                 !   dv/dy * phi_j*phi_i -> A22
                 
-                AH11 = du1locx * HBASJ1*HBASI1
-                AH12 = du1locy * HBASJ1*HBASI1
-                AH21 = du2locx * HBASJ1*HBASI1
-                AH22 = du2locy * HBASJ1*HBASI1
+                AH11 = dnewton * du1locx * HBASJ1*HBASI1
+                AH12 = dnewton * du1locy * HBASJ1*HBASI1
+                AH21 = dnewton * du2locx * HBASJ1*HBASI1
+                AH22 = dnewton * du2locy * HBASJ1*HBASI1
       
                 ! Weighten the calculated value AHxy by the cubature
                 ! weight OM and add it to the local matrices. After the
@@ -5069,7 +5112,180 @@ contains
 
       end if
 
+      ! Transposed convection operator
+      !
+      !  ddeltaTransposed * grad(.)^T * u_1
+      !  = ddeltaTransposed * [ (DU1+DU2) dx               ]
+      !                       [               (DU1+DU2) dy ]
+      !
+      ! Should we assemble the transposed convection matrices?
+      if (ddeltaTransposed .ne. 0.0_DP) then
+      
+        ! Loop over the elements in the current set.
+        do IEL=1,IELmax-IELset+1
 
+          ! Loop over all cubature points on the current element
+          do ICUBP = 1, ncubp
+
+            ! Calculate the current weighting factor in the cubature formula
+            ! in that cubature point.
+            !
+            ! Normally, we have to take the absolut value of the determinant 
+            ! of the mapping here!
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
+            ! But because this routine only works in 2D, we can skip
+            ! the ABS here!
+
+            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+
+            ! Current velocity in this cubature point:
+            du1loc = Dvelocity (1,ICUBP,IEL)
+            du2loc = Dvelocity (2,ICUBP,IEL)
+            
+            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! which corresponds to the basis functions Phi_i:
+
+            do IDOFE=1,indof
+            
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! (our "O")  for function value and first derivatives for the 
+              ! current DOF into HBASIy:
+            
+              HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
+              HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
+              HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
+             
+              ! Inner loop over the DOF's j=1..indof, which corresponds to
+              ! the basis function Phi_j:
+
+              do JDOFE=1,indof
+                
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! (out "X") for function value and first derivatives for the 
+                ! current DOF into HBASJy:
+              
+                HBASJ1 = Dbas(JDOFE,1,ICUBP,IEL)
+                HBASJ2 = Dbas(JDOFE,2,ICUBP,IEL)
+                HBASJ3 = Dbas(JDOFE,3,ICUBP,IEL)
+
+                ! Finally calculate the contribution to the system
+                ! matrices A11, A12, A21 and A22.
+                
+                AH11 = ddeltaTransposed * du1loc * HBASJ2*HBASI1
+                AH12 = ddeltaTransposed * du2loc * HBASJ2*HBASI1
+                AH21 = ddeltaTransposed * du1loc * HBASJ3*HBASI1
+                AH22 = ddeltaTransposed * du2loc * HBASJ3*HBASI1
+      
+                ! Weighten the calculated value AHxy by the cubature
+                ! weight OM and add it to the local matrices. After the
+                ! loop over all DOF's is finished, each entry contains
+                ! the calculated integral.
+
+                DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
+                DentryA12(JDOFE,IDOFE,IEL) = DentryA12(JDOFE,IDOFE,IEL)+OM*AH12
+                DentryA21(JDOFE,IDOFE,IEL) = DentryA21(JDOFE,IDOFE,IEL)+OM*AH21
+                DentryA22(JDOFE,IDOFE,IEL) = DentryA22(JDOFE,IDOFE,IEL)+OM*AH22
+                
+              end do ! IDOFE
+              
+            end do ! JDOFE
+
+          end do ! ICUBP 
+        
+        end do ! IEL
+
+      end if
+
+      ! Transposed Newton operator
+      !
+      !  dnewtonTransposed * grad(u_1)^T * (.) ) $$
+      !  = dnewtonTransposed * [ (dx DU1) (dx DU2) ] 
+      !                        [ (dy DU1) (dy DU2) ]
+      !
+      ! Should we assemble the transposed Newton matrices?
+      if (dnewtonTransposed .ne. 0.0_DP) then
+      
+        ! Loop over the elements in the current set.
+        do IEL=1,IELmax-IELset+1
+
+          ! Loop over all cubature points on the current element
+          do ICUBP = 1, ncubp
+
+            ! Calculate the current weighting factor in the cubature formula
+            ! in that cubature point.
+            !
+            ! Normally, we have to take the absolut value of the determinant 
+            ! of the mapping here!
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that's normal!
+            ! But because this routine only works in 2D, we can skip
+            ! the ABS here!
+
+            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+
+            ! Current velocity in this cubature point:
+            du1locx = DvelocityUderiv (1,ICUBP,IEL)
+            du1locy = DvelocityUderiv (2,ICUBP,IEL)
+            du2locx = DvelocityVderiv (1,ICUBP,IEL)
+            du2locy = DvelocityVderiv (2,ICUBP,IEL)
+            
+            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! which corresponds to the basis functions Phi_i:
+
+            do IDOFE=1,indof
+            
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! (our "O")  for function value and first derivatives for the 
+              ! current DOF into HBASIy:
+            
+              HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
+             
+              ! Inner loop over the DOF's j=1..indof, which corresponds to
+              ! the basis function Phi_j:
+
+              do JDOFE=1,indof
+                
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! (out "X") for function value and first derivatives for the 
+                ! current DOF into HBASJy:
+              
+                HBASJ1 = Dbas(JDOFE,1,ICUBP,IEL)
+
+                ! Finally calculate the contribution to the system
+                ! matrices A11, A12, A21 and A22.
+                !
+                ! With the velocity V=(u,v), we have to assemble:
+                ! grad(V)^t*U, which is realised in each cubature point as:
+                !   du/dx * phi_j*phi_i -> A11
+                !   dv/dx * phi_j*phi_i -> A12
+                !   du/dy * phi_j*phi_i -> A21
+                !   dv/dy * phi_j*phi_i -> A22
+                
+                AH11 = dnewtonTransposed * du1locx * HBASJ1*HBASI1
+                AH12 = dnewtonTransposed * du2locx * HBASJ1*HBASI1
+                AH21 = dnewtonTransposed * du1locy * HBASJ1*HBASI1
+                AH22 = dnewtonTransposed * du2locy * HBASJ1*HBASI1
+      
+                ! Weighten the calculated value AHxy by the cubature
+                ! weight OM and add it to the local matrices. After the
+                ! loop over all DOF's is finished, each entry contains
+                ! the calculated integral.
+
+                DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
+                DentryA12(JDOFE,IDOFE,IEL) = DentryA12(JDOFE,IDOFE,IEL)+OM*AH12
+                DentryA21(JDOFE,IDOFE,IEL) = DentryA21(JDOFE,IDOFE,IEL)+OM*AH21
+                DentryA22(JDOFE,IDOFE,IEL) = DentryA22(JDOFE,IDOFE,IEL)+OM*AH22
+                
+              end do ! IDOFE
+              
+            end do ! JDOFE
+
+          end do ! ICUBP 
+        
+        end do ! IEL
+
+      end if
         
       ! Now we have set up "local" system matrices. We can either    
       ! include it into the real matrix or we can use it to simply   
@@ -5090,7 +5306,7 @@ contains
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
       
         ! With or without Newton?
-        if (dnewton .eq. 0.0_DP) then
+        if ((dnewton .eq. 0.0_DP) .and. (dnewtonTransposed .eq. 0.0_DP)) then
         
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and (if different from A11) also into A22.
@@ -5134,12 +5350,12 @@ contains
                 ! DentryA11 (:,:,:) -> Newton part of A11
                 p_Da11(Kentry(JDOFE,IDOFE,IEL)) = p_Da11(Kentry(JDOFE,IDOFE,IEL)) + &
                     dtheta * ( Dentry(JDOFE,IDOFE,IEL) + &
-                               dnewton*DentryA11(JDOFE,IDOFE,IEL) )
+                               DentryA11(JDOFE,IDOFE,IEL) )
 
                 ! DentryA22 (:,:,:) -> Newton part of A22
                 p_Da22(Kentry(JDOFE,IDOFE,IEL)) = p_Da22(Kentry(JDOFE,IDOFE,IEL)) + &
                     dtheta * ( Dentry(JDOFE,IDOFE,IEL) + &
-                               dnewton*DentryA22(JDOFE,IDOFE,IEL) )
+                               DentryA22(JDOFE,IDOFE,IEL) )
               end do
             end do
           end do
@@ -5154,11 +5370,11 @@ contains
                 !
                 ! Dentry (:,:,:) -> Newton part of A12
                 p_Da12(Kentry12(JDOFE,IDOFE,IEL)) = p_Da12(Kentry12(JDOFE,IDOFE,IEL)) + &
-                    dtheta * dnewton * DentryA12(JDOFE,IDOFE,IEL) 
+                    dtheta * DentryA12(JDOFE,IDOFE,IEL) 
 
                 ! Dentry (:,:,:) -> Newton part of A21
                 p_Da21(Kentry12(JDOFE,IDOFE,IEL)) = p_Da21(Kentry12(JDOFE,IDOFE,IEL)) + &
-                    dtheta * dnewton * DentryA21(JDOFE,IDOFE,IEL) 
+                    dtheta * DentryA21(JDOFE,IDOFE,IEL) 
               end do
             end do
           end do
@@ -5179,7 +5395,7 @@ contains
       if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
         
         ! With or without Newton?
-        if (dnewton .eq. 0.0_DP) then
+        if ((dnewton .eq. 0.0_DP) .and. (dnewtonTransposed .eq. 0.0_DP)) then
           !%OMP CRITICAL
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
@@ -5215,11 +5431,11 @@ contains
                 
                 ! Newton part
                 Ddef1(IDFG)= Ddef1(IDFG) &
-                           - dtheta*dnewton*DentryA11(JDOFE,IDOFE,IEL)*Du1(JDFG) &
-                           - dtheta*dnewton*DentryA12(JDOFE,IDOFE,IEL)*Du2(JDFG)
+                           - dtheta*DentryA11(JDOFE,IDOFE,IEL)*Du1(JDFG) &
+                           - dtheta*DentryA12(JDOFE,IDOFE,IEL)*Du2(JDFG)
                 Ddef2(IDFG)= Ddef2(IDFG) &
-                           - dtheta*dnewton*DentryA21(JDOFE,IDOFE,IEL)*Du1(JDFG) &
-                           - dtheta*dnewton*DentryA22(JDOFE,IDOFE,IEL)*Du2(JDFG)
+                           - dtheta*DentryA21(JDOFE,IDOFE,IEL)*Du1(JDFG) &
+                           - dtheta*DentryA22(JDOFE,IDOFE,IEL)*Du2(JDFG)
 
               end do
             end do
@@ -5237,7 +5453,7 @@ contains
     call elprep_releaseElementSet(revalElementSet)
 
     deallocate(DlocalDelta)
-    if (dnewton .ne. 0.0_DP) then
+    if ((dnewton .ne. 0.0_DP) .or. (dnewtonTransposed .ne. 0.0_DP)) then
       deallocate(DentryA22)
       deallocate(DentryA21)
       deallocate(DentryA12)

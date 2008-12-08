@@ -4547,7 +4547,14 @@ contains
               rsourceMatrix%RmatrixBlock(i,j), &
               rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1),&
               cdupStructure, cdupContent)
-                                       
+               
+        else if (lsysbl_isSubmatrixPresent(rdestMatrix,&
+            i-ifirstY+1,j-ifirstX+1)) then
+        
+          ! Release the submatrix in the destination matrix if present
+          call lsyssc_releaseMatrix (&
+              rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1))
+        
         end if
       end do
     end do
