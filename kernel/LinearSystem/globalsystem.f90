@@ -491,8 +491,6 @@ contains
 
     ! local variables
     integer :: i,j
-    integer :: irow
-    integer :: irowoffset
     
     Icolumns(:) = 0
     Irows(:) = 0
@@ -623,9 +621,9 @@ contains
   integer, dimension(:), intent(IN) :: Irows
 
     ! local variables
-    integer :: i,j,h_KldTmp,icol
+    integer :: i,j,h_KldTmp
     integer :: irow,ncols,irowGlobal
-    integer :: ioffsetGlobal,ioffsetLocal,narow,isize
+    integer :: ioffsetGlobal,ioffsetLocal
     integer, dimension(:), pointer :: p_Kld,p_KldDest,p_KldTmp
     integer, dimension(:), pointer :: p_Kcol,p_KcolDest
     type(t_matrixScalar), pointer :: p_rmatrix
@@ -717,10 +715,10 @@ contains
   integer, dimension(:), intent(IN) :: Irows
 
     ! local variables
-    integer :: i,j,h_KldTmp,icol
+    integer :: i,j,h_KldTmp
     real(DP) :: dscale
     integer :: irow,ncols,irowGlobal
-    integer :: ioffsetGlobal,ioffsetLocal,narow,isize
+    integer :: ioffsetGlobal,ioffsetLocal
     integer, dimension(:), pointer :: p_Kld,p_KldDest,p_KldTmp
     real(DP), dimension(:), pointer :: p_Da,p_DaDest
     type(t_matrixScalar), pointer :: p_rmatrix
@@ -811,10 +809,10 @@ contains
   integer, dimension(:), intent(IN) :: Irows
 
     ! local variables
-    integer :: i,j,h_KldTmp,icol
+    integer :: i,j,h_KldTmp
     real(DP) :: dscale
     integer :: irow,ncols,irowGlobal
-    integer :: ioffsetGlobal,ioffsetLocal,narow,isize
+    integer :: ioffsetGlobal,ioffsetLocal
     integer, dimension(:), pointer :: p_Kld,p_KldDest,p_KldTmp
     integer, dimension(:), pointer :: p_Kcol,p_KcolDest
     real(DP), dimension(:), pointer :: p_Da,p_DaDest
