@@ -254,7 +254,6 @@ contains
 
 !</subroutine>
 
-    integer :: i,j
     type(t_blockDiscretisation), pointer :: p_rblockDiscr
     
     ! Matrix must be 4x4.
