@@ -217,10 +217,7 @@
 !# 26.) tria_genRefTags2lv
 !#      -> Calculates refinement tags according to the uniform 2-level refinement
 !#
-!# 27.) tria_smallestCommonElement
-!#      -> Calculates the element with the lowest elements number connected to an edge
-!#
-!# 28.) tria_hangingNodeRefinement
+!# 27.) tria_hangingNodeRefinement
 !#      -> Performs a local hanging-node refinement of quadrilateral elements
 !#
 !# Auxiliary routines for connector lists
@@ -3407,7 +3404,7 @@ contains
         
         end do
       
-      else if (nquads .eq. rsourceTriangulation%NEL) then
+      elseif (nquads .eq. rsourceTriangulation%NEL) then
         
         ! Pure QUAD mesh
         do iel = 1, rsourceTriangulation%NEL
@@ -3912,6 +3909,8 @@ contains
       integer :: h_ImidpointAtFace
       real(DP) :: x,y,z
       
+!print *, rsourceTriangulation%NABD
+
       ! Get the arrays with information of the source mesh.
       call storage_getbase_double2d(&
           rsourceTriangulation%h_DvertexCoords, p_DcoordSource)
@@ -4065,7 +4064,6 @@ contains
         end do
 
       end if
-
 
       ! Calculate the number of vertices after regular subdivision.
       ! That is a little bit tricky since only quadrilateral faces
@@ -4964,10 +4962,6 @@ contains
       ! This routine refines the boundary definition of rsourceTriangulation
       ! according to the 2-level ordering algorithm to generate a new 
       ! IverticesAtBoundary. 
-      ! If rboundary is specified, the parameter values of the boundary vertices are 
-      ! updated and the coordinates of the boundary points are corrected according 
-      ! to the analytic boundary. the boundary vertices are not sorted for their
-      ! parameter value!
       
       ! The source triangulation to be refined
       type(t_triangulation), intent(IN) :: rsourceTriangulation
@@ -5729,7 +5723,7 @@ contains
     if (p_InodePos(1,ileft) .eq. inode) then
       ! Return the index in the node array.
       iindex = p_InodePos(2,ileft)
-    else if (p_InodePos(1,iright) .eq. inode) then
+    elseif (p_InodePos(1,iright) .eq. inode) then
       ! Return the index in the node array.
       iindex = p_InodePos(2,iright)
     else
@@ -5737,7 +5731,7 @@ contains
         ipos = (ileft+iright)/2
         if (p_InodePos(1,ipos) .gt. inode) then
           iright = ipos
-        else if (p_InodePos(1,ipos) .lt. inode) then
+        elseif (p_InodePos(1,ipos) .lt. inode) then
           ileft = ipos
         else
           ! We found the node. Return the index in the node array.
@@ -8606,78 +8600,6 @@ contains
     end subroutine calcRefTags2D
   
   end subroutine tria_genRefTags2lv
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine tria_smallestCommonElement(rtriangulation, iVGlobal1, iVGlobal2, iel, iSCElement)
-  
-!<description>
-  ! this routine computes the element with the lowest element number
-  ! that contains the edge consisting of vertices iVGlobal1 and iVGlobal2
-  ! and returns it in iSCElement
-!</description>
-
-!<input>  
-  integer, intent(IN) :: iVGlobal1, iVGlobal2, iel
-  type(t_triangulation), intent(IN) :: rtriangulation  
-!</input>
-  
-!<output>  
-  integer, intent(OUT) :: iSCElement  
-!</output>
-  
-!</subroutine>
-
-    ! local variables
-    integer, dimension(:), pointer :: p_IelementsAtVertexIdx
-    integer, dimension(:), pointer :: p_IelementsAtVertex
-  
-    integer :: ive11, ive12, ive21, ive22
-    
-    ! used for looping
-    integer :: i,j
-    
-    integer :: iel1, iel2
-    
-    ! get the elements at vertex array
-    call storage_getbase_int(rtriangulation%h_IelementsAtVertex,&
-                             p_IelementsAtVertex)
-    ! Get the index array.
-    call storage_getbase_int(rtriangulation%h_IelementsAtVertexIdx,&
-                             p_IelementsAtVertexIdx)
-    
-    iSCElement = iel
-    
-    ive11 = p_IelementsAtVertexIdx(iVGlobal1)
-    ive12 = p_IelementsAtVertexIdx(iVGlobal1+1)-1
-    
-    ive21 = p_IelementsAtVertexIdx(iVGlobal2)       
-    ive22 = p_IelementsAtVertexIdx(iVGlobal2+1)-1
-    
-    ! loop over all the elements attached to vertex iVGloval1
-    do i = ive11, ive12
-      
-      ! current element at vertex iVGlobal1
-      iel1 = p_IelementsAtVertex(i)
-      
-      ! loop over all elements attached to vertex iVGlobal2
-      do j = ive21, ive22
-        
-        ! get the current element at vertex iVGlobal2
-        iel2 = p_IelementsAtVertex(j) 
-        
-        ! check the vertices share element iel1
-        if( (iel2 .eq. iel1) .and.&
-            (iel2 .lt. iSCElement) ) then
-          iSCElement = iel2      
-        end if
-        
-      end do ! end j
-    end do ! end i       
-    
-  end subroutine tria_smallestCommonElement
 
   ! ***************************************************************************************
 
@@ -11563,7 +11485,7 @@ contains
             
           end if
           
-        else if (p_IneighboursAtElement(ive,iel) .lt. iel) then
+        elseif (p_IneighboursAtElement(ive,iel) .lt. iel) then
         
           ! There is a neighbour and it has a smaller number than the current element --
           ! so we haven't had that edge! Store the two adjacent elements.
@@ -12770,7 +12692,7 @@ contains
 !<description>
   ! This routine generates NnelAtElements and the array IelementsAtVertex.
   ! For this purpose, the following arrays are used:
-  ! IverticesAtElement.
+  !   IverticesAtElement.
   ! If necessary, new memory is allocated.
 !</description>
     
@@ -12806,12 +12728,12 @@ contains
     end if
     
     ! Get the index array.
-    call storage_getbase_int (rtriangulation%h_IelementsAtVertexIdx,&
-                              p_IelementsAtVertexIdx)
+    call storage_getbase_int(&
+        rtriangulation%h_IelementsAtVertexIdx, p_IelementsAtVertexIdx)
     
     ! Get some data arrays about the vertices.
-    call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
-                                p_IverticesAtElement)
+    call storage_getbase_int2d(&
+        rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
     ! Fill the index array with zero.
     call lalg_clearVectorInt (p_IelementsAtVertexIdx)
@@ -12824,7 +12746,7 @@ contains
       do ive = 1, rtriangulation%NNVE
         ! ivt is the ive-th vertex at element iel
         ivt = p_IverticesAtElement(ive,iel)
-        
+
         ! check if ivt is 'empty'
         if(ivt .eq. 0) exit
         
@@ -12839,10 +12761,9 @@ contains
     rtriangulation%NNelAtVertex = 0
     
     ! In the next step we sum up the number of elements at two
-    ! successive vertices to create the index array
-    ! thus at the penultimate position of p_IelementsAtVertexIdx
-    ! we find the length of p_IelementsAtVertex.
-    ! Simultaneously calculate NNelAtVertex.
+    ! successive vertices to create the index array thus at the
+    ! penultimate position of p_IelementsAtVertexIdx we find the
+    ! length of p_IelementsAtVertex. Calculate NNelAtVertex.
     do ivt = 2, rtriangulation%NVT+1
       rtriangulation%NNelAtVertex = max(rtriangulation%NNelAtVertex, &
                                         p_IelementsAtVertexIdx(ivt))
@@ -12853,10 +12774,9 @@ contains
     
     ! set the size
     isize = p_IelementsAtVertexIdx(rtriangulation%NVT+1)-1
-   
-    
-    ! Isize contains now the length of the array where we store the adjacency
-    ! information (IelementsAtVertex).
+       
+    ! Isize contains now the length of the array where we store
+    ! the adjacency information (IelementsAtVertex).
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IelementsAtVertex .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementsAtVertex3D', 'IelementsAtVertex', &
@@ -12871,12 +12791,12 @@ contains
     end if
     
     ! get the pointer to the array
-    call storage_getbase_int (rtriangulation%h_IelementsAtVertex,&
-                              p_IelementsAtVertex)
+    call storage_getbase_int(&
+        rtriangulation%h_IelementsAtVertex, p_IelementsAtVertex)
     
     
-    ! Duplicate the p_IelementsAtVertexIdx array. We use that as pointer and index
-    ! when new elements at a vertex are found.
+    ! Duplicate the p_IelementsAtVertexIdx array. We use that as pointer 
+    ! and index if new elements at a vertex are found.
     haux1 = ST_NOHANDLE
     call storage_copy (rtriangulation%h_IelementsAtVertexIdx, haux1)
     call storage_getbase_int (haux1, p_Iaux1)
@@ -12911,6 +12831,12 @@ contains
   
   subroutine tria_genNeighboursAtElement3D(rtriangulation)
 
+!<description>
+  ! This routine generates the array IneighboursAtElement.
+  ! For this purpose, a list of element connectors is generated.
+  ! If necessary, new memory is allocated.
+!</description>
+
 !<inputoutput>
   ! The triangulation structure to be updated.
     type(t_triangulation), intent(INOUT) :: rtriangulation
@@ -12919,8 +12845,7 @@ contains
 !</subroutine>
     
     ! local variables
-    integer :: iElements, nae, iel, j
-  
+    integer :: j,iel,iElements  
     integer, dimension(2) :: Isize
     
     ! a pointer to the array this routine is supposed to build
@@ -12929,15 +12854,12 @@ contains
     ! the list of connectors
     type(t_connector3D), dimension(:), pointer :: p_IConnectList
     
-    ! function body ...
-    
-    nae = rtriangulation%NNAE
-
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IneighboursAtElement .eq. ST_NOHANDLE) then
-      Isize = (/nae, rtriangulation%NEL/)
-      call storage_new2D('tria_genNeighboursAtElement3D', 'KADJ', Isize, &
-          ST_INT, rtriangulation%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT)
+      Isize = (/rtriangulation%NNAE, rtriangulation%NEL/)
+      call storage_new2D('tria_genNeighboursAtElement3D','KADJ',&
+          Isize, ST_INT,&
+          rtriangulation%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT)
     else
       call storage_getsize2D(rtriangulation%h_IneighboursAtElement, Isize)
       if (Isize(2) .ne. rtriangulation%NEL) then
@@ -12950,8 +12872,8 @@ contains
     end if
     
     ! get a pointer to the memory just allocated
-    call storage_getbase_int2d(rtriangulation%h_IneighboursAtElement, &
-                               p_IneighboursAtElement)
+    call storage_getbase_int2d(&
+        rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
     
     ! fill vector with zeros
     call lalg_clearVectorInt2D(p_IneighboursAtElement)   
@@ -12978,11 +12900,11 @@ contains
       ! check if all 4 vertices that define the face are equal.
       ! For mixed triangulations the fourth vertex may be zero but
       ! this is the case for both items of the connector list
-      j=0
+      j = 0
       do while(p_IConnectList(iel-1)%I_conData(j+1) .eq. &
                p_IConnectList(iel)%I_conData(j+1) )
         ! increment counter
-        j=j+1 
+        j = j+1 
       end do
       
       ! assign information
@@ -13003,7 +12925,7 @@ contains
     
     ! free list of connectors
     deallocate(p_IConnectList)
-    
+
   end subroutine tria_genNeighboursAtElement3D
 
   !************************************************************************   
@@ -13013,15 +12935,15 @@ contains
   subroutine tria_genEdgesAtElement3D(rtriangulation)    
 
 !<description>
-  ! this routine creates the information
-  ! which edges belong to an element
-  ! and stores them in IedgesAtElement
-  ! Furthermore the edge numbering is calculated. That means,
-  ! it generates information about the edges adjacent to
-  ! each element IedgesAtElement (KMID) and calculates the correct NMT.
+  ! This routine creates the information which edges belong to an 
+  ! element and stores them in IedgesAtElement. Furthermore the 
+  ! edge numbering is calculated. That means, information about 
+  ! the edges adjacent to each element IedgesAtElement (KMID) is
+  ! generated and the correct value of NMT is calculated.
   ! For this purpose, the following arrays are used:
-  ! IverticesAtElement, IneighboursAtElement.
-  ! If necessary, new memory is allocated.  
+  !    IverticesAtElement, IneighboursAtElement,
+  !    IelementsAtVertexIdx, IelementsAtVertex.
+  ! If necessary, new memory is allocated.
 !</description>
 
 !<inputoutput>
@@ -13035,12 +12957,12 @@ contains
   
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:), pointer :: p_IelementsAtVertexIdx
     integer, dimension(:), pointer :: p_IelementsAtVertex
-    integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(2) :: Isize
     
-    integer :: iVertex1, iVertex2, iVGlobal1, iVGlobal2
+    integer :: iloc1, iloc2, ivt1, ivt2
     integer :: iedge, iel, ied, iSCElement
 
     ! list of local edges
@@ -13071,38 +12993,38 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtElement3D')
       call sys_halt()
     end if
-    
-    ! Get the arrays.
-    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,&
-                                p_IverticesAtElement)
-    
-    call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
-                                p_IneighboursAtElement)
 
-    ! get the elements at vertex array
-    call storage_getbase_int (rtriangulation%h_IelementsAtVertex,&
-                              p_IelementsAtVertex)
+    if ((rtriangulation%h_IelementsAtVertexIdx .eq. ST_NOHANDLE) .or.&
+        (rtriangulation%h_IelementsAtVertex .eq. ST_NOHANDLE)) then
+      call output_line ('IelementsAtVertex/Idx not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtElement3D')
+      call sys_halt()
+    end if
+    
+    ! get the arrays.
+    call storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    
+    call storage_getbase_int2D(&
+        rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)   
+    
+    call storage_getbase_int(&
+        rtriangulation%h_IelementsAtVertex, p_IelementsAtVertex)
 
-    ! Get the index array.
-    call storage_getbase_int (rtriangulation%h_IelementsAtVertexIdx,&
-                              p_IelementsAtVertexIdx)
-    
-    
+    call storage_getbase_int(&
+        rtriangulation%h_IelementsAtVertexIdx, p_IelementsAtVertexIdx)
+
+
     ! size of I_edgesAtElement
     Isize=(/rtriangulation%NNEE, rtriangulation%NEL/)
     
-    ! allocate memory 
-    call storage_new2D ('tria_genEdgesAtElement3D', 'KMID', Isize,&
-        ST_INT, rtriangulation%h_IedgesAtElement, ST_NEWBLOCK_NOINIT)
+    ! allocate memory and initialize it with zeros
+    call storage_new2D('tria_genEdgesAtElement3D', 'KMID', Isize,&
+        ST_INT, rtriangulation%h_IedgesAtElement, ST_NEWBLOCK_ZERO)
     
     ! get the pointer to the memory
-    call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,&
-                                p_IedgesAtElement)
-
-    ! Fill IedgesAtElement with 0. That's important in case some
-    ! elements in the array are not tackled when searching for edges
-    ! (e.g. in meshes where tetrahedra and hexahedra are mixed).
-    call lalg_clearVectorInt2D (p_IedgesAtElement)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     
     ! iedge counts the edges and specifies the last given edge number.
     iedge = 0
@@ -13118,18 +13040,17 @@ contains
         do ied = 1, TRIA_NNETET3D
           
           ! get the local vertex indices of the current edge
-          iVertex1 = IedgesTet(1,ied)
-          iVertex2 = IedgesTet(2,ied)
+          iloc1 = IedgesTet(1,ied)
+          iloc2 = IedgesTet(2,ied)
           
           ! get the corresponding global vertex numbers
-          iVGlobal1 = p_IverticesAtElement(iVertex1,iel)
-          iVGlobal2 = p_IverticesAtElement(iVertex2,iel)
+          ivt1 = p_IverticesAtElement(iloc1,iel)
+          ivt2 = p_IverticesAtElement(iloc2,iel)
           
-          ! get the element with the lowest element number
-          ! that contains the edge consisting of the
-          ! vertices iVGlobal1 and iVGlobal2
-          call tria_smallestCommonElement(rtriangulation, iVGlobal1,&
-                                          iVGlobal2, iel, iSCElement) 
+          ! get the element with the lowest element number that contains 
+          ! the edge consisting of the vertices ivt1 and ivt2
+          iSCElement = findSmallestCommonElement(p_IelementsAtVertexIdx,&
+                                                 p_IelementsAtVertex, ivt1, ivt2, iel)
           
           ! if the smallest common element index greater or equal
           ! to the current iel the edge does not yet have an index
@@ -13143,13 +13064,12 @@ contains
             p_IedgesAtElement(ied,iel) = iedge
             
           else
-            ! the smallest common element index is less than the current iel
-            ! the edge already has a number, so                   
-            ! search for edge (iVertex1,iVertex2) in the smallest common element
-
+            ! the smallest common element index is less than the current
+            ! iel the edge already has a number, so search for edge 
+            ! (iloc1,iloc2) in the smallest common element
             p_IedgesAtElement(ied,iel) = findEdgeInSmallestCommonElement(&
                                             p_IverticesAtElement, p_IedgesAtElement,&
-                                            IVglobal1, iVGlobal2, iSCElement)
+                                            ivt1, ivt2, iSCElement)
           end if
         end do
 
@@ -13160,18 +13080,17 @@ contains
         do ied = 1, TRIA_NNEPYR3D
           
           ! get the local vertex indices of the current edge
-          iVertex1 = IedgesPyr(1,ied)
-          iVertex2 = IedgesPyr(2,ied)
+          iloc1 = IedgesPyr(1,ied)
+          iloc2 = IedgesPyr(2,ied)
           
           ! get the corresponding global vertex numbers
-          iVGlobal1 = p_IverticesAtElement(iVertex1,iel)
-          iVGlobal2 = p_IverticesAtElement(iVertex2,iel)
+          ivt1 = p_IverticesAtElement(iloc1,iel)
+          ivt2 = p_IverticesAtElement(iloc2,iel)
           
-          ! get the element with the lowest element number
-          ! that contains the edge consisting of the
-          ! vertices iVGlobal1 and iVGlobal2
-          call tria_smallestCommonElement(rtriangulation, iVGlobal1,&
-                                          iVGlobal2, iel, iSCElement) 
+          ! get the element with the lowest element number that contains 
+          ! the edge consisting of the vertices ivt1 and ivt2
+          iSCElement = findSmallestCommonElement(p_IelementsAtVertexIdx,&
+                                                 p_IelementsAtVertex, ivt1, ivt2, iel)
           
           ! if the smallest common element index greater or equal to
           ! the current iel the edge does not yet have an index
@@ -13185,13 +13104,12 @@ contains
             p_IedgesAtElement(ied,iel) = iedge
             
           else
-            ! the smallest common element index is less than the current iel
-            ! the edge already has a number, so                   
-            ! search for edge (iVertex1,iVertex2) in the smallest common element
-            
+            ! the smallest common element index is less than the current
+            ! iel the edge already has a number, so search for edge 
+            ! (iloc1,iloc2) in the smallest common element
             p_IedgesAtElement(ied,iel) = findEdgeInSmallestCommonElement(&
                                             p_IverticesAtElement, p_IedgesAtElement,&
-                                            IVglobal1, iVGlobal2, iSCElement)
+                                            ivt1, ivt2, iSCElement)
           end if
         end do
 
@@ -13202,18 +13120,17 @@ contains
         do ied = 1, TRIA_NNEPRIS3D
           
           ! get the local vertex indices of the current edge
-          iVertex1 = IedgesPri(1,ied)
-          iVertex2 = IedgesPri(2,ied)
+          iloc1 = IedgesPri(1,ied)
+          iloc2 = IedgesPri(2,ied)
           
           ! get the corresponding global vertex numbers
-          iVGlobal1 = p_IverticesAtElement(iVertex1,iel)
-          iVGlobal2 = p_IverticesAtElement(iVertex2,iel)
+          ivt1 = p_IverticesAtElement(iloc1,iel)
+          ivt2 = p_IverticesAtElement(iloc2,iel)
           
-          ! get the element with the lowest element number
-          ! that contains the edge consisting of the
-          ! vertices iVGlobal1 and iVGlobal2
-          call tria_smallestCommonElement(rtriangulation, iVGlobal1,&
-                                          iVGlobal2, iel, iSCElement) 
+          ! get the element with the lowest element number that contains 
+          ! the edge consisting of the vertices ivt1 and ivt2
+          iSCElement = findSmallestCommonElement(p_IelementsAtVertexIdx,&
+                                                 p_IelementsAtVertex, ivt1, ivt2, iel)
           
           ! if the smallest common element index greater or equal to
           ! the current iel the edge does not yet have an index
@@ -13227,13 +13144,12 @@ contains
             p_IedgesAtElement(ied,iel) = iedge
             
           else
-            ! the smallest common element index is less than the current iel
-            ! the edge already has a number, so                   
-            ! search for edge (iVertex1,iVertex2) in the smallest common element
-            
+            ! the smallest common element index is less than the current
+            ! iel the edge already has a number, so search for edge 
+            ! (iloc1,iloc2) in the smallest common element
             p_IedgesAtElement(ied,iel) = findEdgeInSmallestCommonElement(&
                                             p_IverticesAtElement, p_IedgesAtElement,&
-                                            IVglobal1, iVGlobal2, iSCElement)
+                                            ivt1, ivt2, iSCElement)
           end if
         end do
 
@@ -13244,19 +13160,18 @@ contains
         do ied = 1, TRIA_NNEHEXA3D
           
           ! get the local vertex indices of the current edge
-          iVertex1 = IedgesHex(1,ied)
-          iVertex2 = IedgesHex(2,ied)
+          iloc1 = IedgesHex(1,ied)
+          iloc2 = IedgesHex(2,ied)
           
           ! get the corresponding global vertex numbers
-          iVGlobal1 = p_IverticesAtElement(iVertex1,iel)
-          iVGlobal2 = p_IverticesAtElement(iVertex2,iel)
+          ivt1 = p_IverticesAtElement(iloc1,iel)
+          ivt2 = p_IverticesAtElement(iloc2,iel)
           
-          ! get the element with the lowest element number
-          ! that contains the edge consisting of the
-          ! vertices iVGlobal1 and iVGlobal2
-          call tria_smallestCommonElement(rtriangulation, iVGlobal1,&
-                                          iVGlobal2, iel, iSCElement) 
-                    
+          ! get the element with the lowest element number that contains 
+          ! the edge consisting of the vertices ivt1 and ivt2
+          iSCElement = findSmallestCommonElement(p_IelementsAtVertexIdx,&
+                                                 p_IelementsAtVertex, ivt1, ivt2, iel)
+          
           ! if the smallest common element index greater or equal to
           ! the current iel the edge does not yet have an index
           ! so assign an index to the edge                   
@@ -13269,13 +13184,12 @@ contains
             p_IedgesAtElement(ied,iel) = iedge
             
           else
-            ! the smallest common element index is less than the current iel
-            ! the edge already has a number, so                   
-            ! search for edge (iVertex1,iVertex2) in the smallest common element
-            
+            ! the smallest common element index is less than the current
+            ! iel the edge already has a number, so search for edge 
+            ! (iloc1,iloc2) in the smallest common element
             p_IedgesAtElement(ied,iel) = findEdgeInSmallestCommonElement(&
                                             p_IverticesAtElement, p_IedgesAtElement,&
-                                            IVglobal1, iVGlobal2, iSCElement)
+                                            ivt1, ivt2, iSCElement)
           end if
         end do
 
@@ -13293,12 +13207,53 @@ contains
 
     ! ---------------------------------------------------------------
 
+    function findSmallestCommonElement(IelementsAtVertexIdx, IelementsAtVertex,&
+                                       ivt1, ivt2, iel) result(iSCElement)
+
+      integer, dimension(:), intent(in) :: IelementsAtVertexIdx
+      integer, dimension(:), intent(in) :: IelementsAtVertex
+      integer, intent(in) :: ivt1,ivt2,iel
+
+      integer :: iSCElement
+
+      ! local variables
+      integer :: iel1,iel2,i,j
+      
+      ! Initialise smallest common element
+      iSCElement = iel
+
+      ! loop over all the elements attached to vertex ivt1
+      do i = IelementsAtVertexIdx(ivt1), IelementsAtVertexIdx(ivt1+1)-1
+        
+        ! current element at vertex ivt1
+        iel1 = IelementsAtVertex(i)
+        
+        ! loop over all elements attached to vertex ivt2
+        do j = IelementsAtVertexIdx(ivt2), IelementsAtVertexIdx(ivt2+1)-1
+          
+          ! get the current element at vertex iVGlobal2
+          iel2 = IelementsAtVertex(j) 
+          
+          ! check the vertices share element iel1
+          if( (iel2 .eq. iel1) .and.&
+              (iel2 .lt. iSCElement) ) then
+            iSCElement = iel2      
+          end if
+
+        end do ! end j
+      end do ! end i     
+
+    end function findSmallestCommonElement
+
+    ! ---------------------------------------------------------------
+
     function findEdgeInSmallestCommonElement(IverticesAtElement, IedgesAtElement,&
-                                             iVGlobal1, IVGlobal2, iel) result(iedge)
+                                             ivt1, ivt2, iel) result(iedge)
 
       integer, dimension(:,:), intent(in) :: IverticesAtElement
       integer, dimension(:,:), intent(in) :: IedgesAtElement
-      integer, intent(in) :: iVGlobal1,iVGlobal2,iel
+      integer, intent(in) :: ivt1,ivt2,iel
+
       integer :: iedge
 
       ! local variables
@@ -13314,10 +13269,10 @@ contains
           iVertexAtEdge1 = IVerticesAtElement(IedgesTet(1,i), iel)
           iVertexAtEdge2 = IVerticesAtElement(IedgesTet(2,i), iel)
           
-          if( (iVGlobal1 .eq. iVertexAtEdge1) .and. & 
-              (iVGlobal2 .eq. iVertexAtEdge2) .or. &
-              (iVGlobal1 .eq. iVertexAtEdge2) .and. &
-              (iVGlobal2 .eq. iVertexAtEdge1)) then
+          if( (ivt1 .eq. iVertexAtEdge1) .and. & 
+              (ivt2 .eq. iVertexAtEdge2) .or. &
+              (ivt1 .eq. iVertexAtEdge2) .and. &
+              (ivt2 .eq. iVertexAtEdge1)) then
             
             ! assign the edge number
             iedge = IedgesAtElement(i,iel)
@@ -13333,10 +13288,10 @@ contains
           iVertexAtEdge1 = IVerticesAtElement(IedgesPyr(1,i), iel)
           iVertexAtEdge2 = IVerticesAtElement(IedgesPyr(2,i), iel)
           
-          if( (iVGlobal1 .eq. iVertexAtEdge1) .and. & 
-              (iVGlobal2 .eq. iVertexAtEdge2) .or. &
-              (iVGlobal1 .eq. iVertexAtEdge2) .and. &
-              (iVGlobal2 .eq. iVertexAtEdge1)) then
+          if( (ivt1 .eq. iVertexAtEdge1) .and. & 
+              (ivt2 .eq. iVertexAtEdge2) .or. &
+              (ivt1 .eq. iVertexAtEdge2) .and. &
+              (ivt2 .eq. iVertexAtEdge1)) then
             
             ! assign the edge number
             iedge = IedgesAtElement(i,iel)
@@ -13352,10 +13307,10 @@ contains
           iVertexAtEdge1 = IVerticesAtElement(IedgesPri(1,i), iel)
           iVertexAtEdge2 = IVerticesAtElement(IedgesPri(2,i), iel)
           
-          if( (iVGlobal1 .eq. iVertexAtEdge1) .and. & 
-              (iVGlobal2 .eq. iVertexAtEdge2) .or. &
-              (iVGlobal1 .eq. iVertexAtEdge2) .and. &
-              (iVGlobal2 .eq. iVertexAtEdge1)) then
+          if( (ivt1 .eq. iVertexAtEdge1) .and. & 
+              (ivt2 .eq. iVertexAtEdge2) .or. &
+              (ivt1 .eq. iVertexAtEdge2) .and. &
+              (ivt2 .eq. iVertexAtEdge1)) then
             
             ! assign the edge number
             iedge = IedgesAtElement(i,iel)
@@ -13371,10 +13326,10 @@ contains
           iVertexAtEdge1 = IVerticesAtElement(IedgesHex(1,i), iel)
           iVertexAtEdge2 = IVerticesAtElement(IedgesHex(2,i), iel)
           
-          if( (iVGlobal1 .eq. iVertexAtEdge1) .and. & 
-              (iVGlobal2 .eq. iVertexAtEdge2) .or. &
-              (iVGlobal1 .eq. iVertexAtEdge2) .and. &
-              (iVGlobal2 .eq. iVertexAtEdge1)) then
+          if( (ivt1 .eq. iVertexAtEdge1) .and. & 
+              (ivt2 .eq. iVertexAtEdge2) .or. &
+              (ivt1 .eq. iVertexAtEdge2) .and. &
+              (ivt2 .eq. iVertexAtEdge1)) then
             
             ! assign the edge number
             iedge = IedgesAtElement(i,iel)
@@ -13399,12 +13354,13 @@ contains
   subroutine tria_genFacesAtElement3D(rtriangulation)
 
 !<description>
-  ! this routine builds the FacesAtElement array and
-  ! assigns global face numbers
+  ! This routine builds the FacesAtElement array and
+  ! assigns global face numbers.
+  ! For this purpose, the following arrays are used:
+  !    IneighboursAtElement, IverticesAtElement.
+  ! If necessary, new memory is allocated.
 !</description>
   
-  ! it is super easy just use IneighboursAtElement(iface,iel)
-
 !<inputoutput>  
   type(t_triangulation), intent(INOUT) :: rtriangulation  
 !</inputoutput>
@@ -13413,34 +13369,45 @@ contains
 
     ! local variables
     integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:,:), pointer :: p_IfacesAtElement
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
+    integer, dimension(:,:), pointer :: p_IfacesAtElement
     integer, dimension(2) :: Isize    
-    integer :: ifaceNeighbour, iel, iface, ifaceGlobal, ineighbour, ifaceNumber
+    integer :: iel,jel,iface,jface,ifaceGlobal
 
-    
-    ! face numbering starts at 1
-    IFaceGlobal = 0
-    
-    ! allocate memory and get pointers
-    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-    
-    call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
-        p_IneighboursAtElement)
-    
+    ! Is everything here we need?
+    if (rtriangulation%h_IverticesAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IverticesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genFacesAtElement3D')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IneighboursAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IneighboursAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genFacesAtElement3D')
+      call sys_halt()
+    end if
+
+    ! Get the arrays.
+    call storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+
+    ! allocate memory
     Isize = (/rtriangulation%NNAE, rtriangulation%NEL/)
-    
-    ! allocate memory and fill array with zeros.
     if(rtriangulation%h_IfacesAtElement .eq. ST_NOHANDLE) then
       call storage_new2d('tria_genFacesAtElement3D', 'IfacesAtElement',&
-          Isize, ST_INT, rtriangulation%h_IfacesAtElement, ST_NEWBLOCK_ZERO)
+          Isize, ST_INT, rtriangulation%h_IfacesAtElement, ST_NEWBLOCK_NOINIT)
     end if
     
-    ! get the pointer
-    call storage_getbase_int2D(rtriangulation%h_IfacesAtElement,&
-        p_IfacesAtElement)
+    ! get the pointer and fill the array with zero
+    call storage_getbase_int2D(&
+        rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
+    call lalg_clearVector(p_IfacesAtElement)
     
+    ! initialize the global face number
+    ifaceGlobal = 0
+
     ! loop over all elements
     do iel = 1, rtriangulation%NEL
       
@@ -13448,12 +13415,12 @@ contains
       do iface = 1, tria_getNAE(p_IverticesAtElement, iel)
         
         ! check if a face number was already assigned
-        if(p_IneighboursAtElement(iface,iel) .eq. 0 .or. &
-            p_IneighboursAtElement(iface,iel) >  iel) then
+        if((p_IneighboursAtElement(iface,iel) .eq. 0) .or. &
+            (p_IneighboursAtElement(iface,iel) >  iel)) then
           
           ! a face number was not yet assigned
-          ! increment face number
-          IFaceGlobal = ifaceGlobal + 1
+          ! thus increment face number
+          ifaceGlobal = ifaceGlobal + 1
           
           ! assign the global face number
           p_IfacesAtElement(iface,iel) = ifaceGlobal
@@ -13463,28 +13430,27 @@ contains
           ! a face number was already assigned
           
           ! get the element number of the neighbour
-          ineighbour = p_IneighboursAtElement(iface,iel)
+          jel = p_IneighboursAtElement(iface,iel)
           
-          IFaceNeighbour = 1
-          do 
-            if(iel .eq. p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
-            IFaceNeighbour = ifaceNeighbour + 1
+          ! initialise the local face number of the neighbouring element
+          jface = 1
+          
+          ! determine the local face number of the neighbouring element
+          do while(iel .ne. p_IneighboursAtElement(jface,jel))
+            jface = jface+1
           end do
           
-          IFaceNumber = p_IfacesAtElement(ifaceNeighbour,ineighbour)
-          
           ! assign the global face number
-          p_IfacesAtElement(iface,iel) = ifaceNumber
+          p_IfacesAtElement(iface,iel) = p_IfacesAtElement(jface,jel)
           
         end if
         
       end do ! end iface
-      
     end do ! end iel
     
     ! number of faces in total
     rtriangulation%NAT = ifaceGlobal
-    
+
   end subroutine tria_genFacesAtElement3D
 
   !************************************************************************   
@@ -13494,10 +13460,11 @@ contains
   subroutine tria_genElementsAtEdge3D(rtriangulation)
   
 !<description>
-  ! This routine generates information about the elements adjacent to each 
-  ! edge IelementsAtEdge (KMID) and NNelAtEdge. 
+  ! This routine generates information about the elements adjacent
+  ! to each edge IelementsAtEdge (KMID) and NNelAtEdge. 
   ! For this purpose, the following arrays are used:
-  ! IverticesAtElement, IneighboursAtElement.
+  !    IverticesAtElement, IneighboursAtElement,
+  !    IedgesAtElement.
   ! NMT must be set up correctly.
   ! If necessary, new memory is allocated.
 !</description>
@@ -13545,12 +13512,12 @@ contains
     end if
     
     ! Get the arrays.
-    call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,&
-        p_IedgesAtElement)
-    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-    call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
-        p_IneighboursAtElement)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
     
     if(rtriangulation%h_IelementsAtEdgeIdx3D .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementsAtEdge3D', 'IelementsAtVertexIdx', &
@@ -13559,12 +13526,10 @@ contains
     end if
     
     ! Fill the index array with zero.
-    call storage_clear (rtriangulation%h_IelementsAtEdgeIdx3D)
-    
-    
-    call storage_getbase_int(rtriangulation%h_IelementsAtEdgeIdx3D,&
-        p_IelementsAtEdgeIdx3D)
-    
+    call storage_getbase_int(&
+        rtriangulation%h_IelementsAtEdgeIdx3D, p_IelementsAtEdgeIdx3D)
+    call lalg_clearVector(p_IelementsAtEdgeIdx3D)
+
     ! first we calculate the number of elements at each edge simply by counting
     
     ! loop over all elements
@@ -13588,8 +13553,8 @@ contains
     rtriangulation%NNelAtEdge = 0
     
     ! In the next step we sum up the number of elements at two
-    ! successive edges to create the index array,
-    ! thus at the penultimate position of p_IelementsAtEdgeIdx3D
+    ! successive edges to create the index array, thus at
+    ! the penultimate position of p_IelementsAtEdgeIdx3D
     ! we find the length of p_IelementsAtEdge3D.
     !
     ! Simultaneously calculate NNelAtEdge.
@@ -13608,21 +13573,18 @@ contains
     if(rtriangulation%h_IelementsAtEdge3D .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementsAtEdge3D', 'IelementsAtEdge3D', &
           Isize, ST_INT,&
-          rtriangulation%h_IelementsAtEdge3D, ST_NEWBLOCK_NOINIT)
+          rtriangulation%h_IelementsAtEdge3D, ST_NEWBLOCK_ZERO)
     end if
-    
-    ! Fill the index array with zero.
-    call storage_clear (rtriangulation%h_IelementsAtEdge3D)
     
     ! get the pointer  
     call storage_getbase_int(rtriangulation%h_IelementsAtEdge3D,&
         p_IelementsAtEdge3D)
     
-    ! Duplicate the p_IelementsAtVertexIdx array. We use that as pointer and index
-    ! when new elements at a vertex are found.
+    ! Duplicate the p_IelementsAtVertexIdx array. We use that as 
+    ! pointer and index when new elements at a vertex are found.
     haux1 = ST_NOHANDLE
-    call storage_copy (rtriangulation%h_IelementsAtEdgeIdx3D,haux1)
-    call storage_getbase_int (haux1,p_Iaux1)  
+    call storage_copy (rtriangulation%h_IelementsAtEdgeIdx3D, haux1)
+    call storage_getbase_int (haux1, p_Iaux1)  
     
     do iel = 1, rtriangulation%NEL
       ! loop over all local edges
@@ -13641,7 +13603,7 @@ contains
       end do ! end iedge
     end do ! end ive
     
-    call storage_free(haux1)  
+    call storage_free(haux1)
 
   end subroutine tria_genElementsAtEdge3D
 
@@ -13652,7 +13614,11 @@ contains
   subroutine tria_genVerticesAtEdge3D(rtriangulation)  
 
 !<description>
-! this routine assigns the Vertices at Edge array
+  ! This routine assigns the Vertices at Edge array.
+  ! For this purpose, the following arrays are used:
+  !    IedgesAtElement, IverticesAtElement,
+  !    IelementsAtEdgeIdx3D, IelementsAtEdge3D.
+  ! If necessary, new memory is allocated.
 !</description>
 
 !<inputoutput>  
@@ -13667,11 +13633,8 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IelementsAtEdgeIdx3D
     integer, dimension(:), pointer :: p_IelementsAtEdge3D
-    integer :: iel 
-    integer :: ilocEdge
-    integer :: iedge,iglobalEdge
-    integer :: iVertexGlobal1, iVertexGlobal2
-    integer, dimension(2)    :: Isize
+    integer :: iel,ilocEdge,iedge,iglobalEdge,ivt1,ivt2
+    integer, dimension(2) :: Isize
     
     ! list of local edges
     integer, dimension(2,TRIA_NNETET3D), parameter :: IedgesTet =&
@@ -13688,32 +13651,51 @@ contains
                        3,7, 4,8, 5,6, 6,7, 7,8, 8,5/),&
                      (/2,TRIA_NNEHEXA3D/))
        
-    ! get the arrays
-    call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,&
-        p_IedgesAtElement)
-    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-    call storage_getbase_int(rtriangulation%h_IelementsAtEdgeIdx3D,&
-        p_IelementsAtEdgeIdx3D)
-    call storage_getbase_int(rtriangulation%h_IelementsAtEdge3D,&
-        p_IelementsAtEdge3D)
-    
-    Isize = (/2,rtriangulation%NMT/)
+    ! Is everything here we need?
+    if (rtriangulation%h_IverticesAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IverticesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtEdge3D')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IedgesAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IedgesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtEdge3D')
+      call sys_halt()
+    end if
+
+    if ((rtriangulation%h_IelementsAtEdgeIdx3D .eq. ST_NOHANDLE) .or.&
+        (rtriangulation%h_IelementsAtEdge3D .eq. ST_NOHANDLE)) then
+      call output_line ('IelementsAtEdge3D/Idx3D not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtEdge3D')
+      call sys_halt()
+    end if
+
+    ! Get the arrays.
+    call storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
+    call storage_getbase_int(&
+        rtriangulation%h_IelementsAtEdgeIdx3D, p_IelementsAtEdgeIdx3D)
+    call storage_getbase_int(&
+        rtriangulation%h_IelementsAtEdge3D, p_IelementsAtEdge3D)
     
     ! allocate memory
     if(rtriangulation%h_IverticesAtEdge .eq. ST_NOHANDLE) then
+      Isize = (/2, rtriangulation%NMT/)
       call storage_new2d('tria_genElementsAtEdge3D', 'IverticesAtEdge',&
           Isize, ST_INT,  rtriangulation%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
     end if
     
-    ! Set pointer
-    call storage_getbase_int2D (rtriangulation%h_IverticesAtEdge,&
-        p_IverticesAtEdge)
+    ! get the pointer to the memory
+    call storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtEdge, p_IverticesAtEdge)
     
     
     ! loop over all edges (with global edge numbers)
     do iedge = 1, rtriangulation%NMT
-
+      
       ! get an element that is attached to that edge
       iel = p_IelementsAtEdge3D(p_IelementsAtEdgeIdx3D(iedge))
       
@@ -13724,19 +13706,18 @@ contains
         do ilocEdge = 1, TRIA_NNETET3D
           ! get the global edge number
           iglobalEdge = p_IedgesAtElement(ilocEdge,iel)
+          
           ! check if this edge's global number equal to the current edge
           if(iedge .eq. iglobalEdge) then
-            ! get the global indices of the vertices attached to that edge
-            iVertexGlobal1 = p_IverticesAtElement(IedgesTet(1,ilocEdge),iel)
-            iVertexGlobal2 = p_IverticesAtElement(IedgesTet(2,ilocEdge),iel)
+            ! get the global indices of the vertices attached to that
+            ! edge and assign the vertex numbers to the edge array
+            p_IverticesAtEdge(1,iedge) = p_IverticesAtElement(IedgesTet(1,ilocEdge),iel)
+            p_IverticesAtEdge(2,iedge) = p_IverticesAtElement(IedgesTet(2,ilocEdge),iel)
             
-            ! assign the vertex numbers            
-            p_IverticesAtEdge(1,iedge)=iVertexGlobal1
-            p_IverticesAtEdge(2,iedge)=iVertexGlobal2
-            
+            ! That's it
             exit
-          end if ! iedge .eq. iglobalEdge
-        end do ! end ilocEdge
+          end if
+        end do
 
 
       case (TRIA_NVEPYR3D)
@@ -13745,19 +13726,18 @@ contains
         do ilocEdge = 1, TRIA_NNEPYR3D
           ! get the global edge number
           iglobalEdge = p_IedgesAtElement(ilocEdge,iel)
+
           ! check if this edge's global number equal to the current edge
           if(iedge .eq. iglobalEdge) then
-            ! get the global indices of the vertices attached to that edge
-            iVertexGlobal1 = p_IverticesAtElement(IedgesPyr(1,ilocEdge),iel)
-            iVertexGlobal2 = p_IverticesAtElement(IedgesPyr(2,ilocEdge),iel)
+            ! get the global indices of the vertices attached to that
+            ! edge and assign the vertex numbers to the edge array
+            p_IverticesAtEdge(1,iedge) = p_IverticesAtElement(IedgesPyr(1,ilocEdge),iel)
+            p_IverticesAtEdge(2,iedge) = p_IverticesAtElement(IedgesPyr(2,ilocEdge),iel)
             
-            ! assign the vertex numbers            
-            p_IverticesAtEdge(1,iedge)=iVertexGlobal1
-            p_IverticesAtEdge(2,iedge)=iVertexGlobal2
-            
+            ! That's it
             exit
-          end if ! iedge .eq. iglobalEdge
-        end do ! end ilocEdge
+          end if
+        end do
 
 
       case (TRIA_NVEPRIS3D)
@@ -13766,19 +13746,18 @@ contains
         do ilocEdge = 1, TRIA_NNEPRIS3D
           ! get the global edge number
           iglobalEdge = p_IedgesAtElement(ilocEdge,iel)
+
           ! check if this edge's global number equal to the current edge
           if(iedge .eq. iglobalEdge) then
-            ! get the global indices of the vertices attached to that edge
-            iVertexGlobal1 = p_IverticesAtElement(IedgesPri(1,ilocEdge),iel)
-            iVertexGlobal2 = p_IverticesAtElement(IedgesPri(2,ilocEdge),iel)
+            ! get the global indices of the vertices attached to that
+            ! edge and assign the vertex numbers to the edge array
+            p_IverticesAtEdge(1,iedge) = p_IverticesAtElement(IedgesPri(1,ilocEdge),iel)
+            p_IverticesAtEdge(2,iedge) = p_IverticesAtElement(IedgesPri(2,ilocEdge),iel)
             
-            ! assign the vertex numbers            
-            p_IverticesAtEdge(1,iedge)=iVertexGlobal1
-            p_IverticesAtEdge(2,iedge)=iVertexGlobal2
-            
+            ! That's it
             exit
-          end if ! iedge .eq. iglobalEdge
-        end do ! end ilocEdge
+          end if
+        end do
 
 
       case (TRIA_NVEHEXA3D)
@@ -13787,21 +13766,20 @@ contains
         do ilocEdge = 1, TRIA_NNEHEXA3D
           ! get the global edge number
           iglobalEdge = p_IedgesAtElement(ilocEdge,iel)
+          
           ! check if this edge's global number equal to the current edge
           if(iedge .eq. iglobalEdge) then
-            ! get the global indices of the vertices attached to that edge
-            iVertexGlobal1 = p_IverticesAtElement(IedgesHex(1,ilocEdge),iel)
-            iVertexGlobal2 = p_IverticesAtElement(IedgesHex(2,ilocEdge),iel)
+            ! get the global indices of the vertices attached to that
+            ! edge and assign the vertex numbers to the edge array
+            p_IverticesAtEdge(1,iedge) = p_IverticesAtElement(IedgesHex(1,ilocEdge),iel)
+            p_IverticesAtEdge(2,iedge) = p_IverticesAtElement(IedgesHex(2,ilocEdge),iel)
             
-            ! assign the vertex numbers            
-            p_IverticesAtEdge(1,iedge)=iVertexGlobal1
-            p_IverticesAtEdge(2,iedge)=iVertexGlobal2
-            
+            ! That's it
             exit
-          end if ! iedge .eq. iglobalEdge
-        end do ! end ilocEdge
-      
+          end if
+        end do
         
+
       case DEFAULT
         call output_line('Unsupported type of element shape',&
                          OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtEdge3D')
@@ -14293,8 +14271,8 @@ contains
 !<description>
   ! This routine generates the facesAtBoundary information
   ! by using two conditions:
-  !                          1) a boundary face consists solely of boundary vertices
-  !                          2) it is not connected to more than one hexa(or whatever element)
+  !    1) a boundary face consists solely of boundary vertices
+  !    2) it is not connected to more than one hexa(or whatever element)
 !</description>
 
 !<inputoutput>
@@ -14310,11 +14288,8 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtFace
     integer, dimension(:), pointer :: p_IfacesAtBoundary
     integer, dimension(:), pointer :: p_IboundaryCpFacesIdx    
-    integer :: ive
-    integer :: iface, inumElements, iel, inumVertices
-    integer :: iglobIndex, NFBD, findex, iBdyComp
-    
-    NFBD = 0
+    integer :: ive, nve, iface, inumVertices
+    integer :: iglobIndex, findex, iBdyComp
     
     ! Is everything here we need?
     if (rtriangulation%h_InodalProperty .eq. ST_NOHANDLE) then
@@ -14335,14 +14310,13 @@ contains
       call sys_halt()
     end if
 
-    ! allocate memory
+    ! Allocate memory
     if(rtriangulation%h_IboundaryCpFacesIdx .eq. ST_NOHANDLE) then
       call storage_new ('tria_genFacesAtBoundary3D', 'IboundaryCpFacesIdx', &
           rtriangulation%NBCT+rtriangulation%NblindBCT+1, ST_INT, &
           rtriangulation%h_IboundaryCpFacesIdx, ST_NEWBLOCK_NOINIT)
     end if      
-
-
+    
     ! Get the arrays.
     call storage_getbase_int (rtriangulation%h_InodalProperty,&
         p_InodalProperty)
@@ -14357,82 +14331,61 @@ contains
     call lalg_clearVectorInt(p_IboundaryCpFacesIdx)
     p_IboundaryCpFacesIdx(1)=1
     
-    ! loop over all faces
-    ! to count the number of faces on the boundary 
-    ! we save this number in NFBD
+    ! loop over all faces to count the number of faces on the boundary 
     do iface = 1, rtriangulation%NAT
     
-      ! used to count the number of adjacent elements
-      inumElements = 0
-      
-      ! count the number of adjacent elements
-      do iel=1,2
-        if(p_IelementsAtFace(iel,iface) > 0) then
-          inumElements = inumElements + 1
-        end if
-      end do ! end iel
-      
-      
-      ! used to count the number of vertices
-      inumVertices = 0
-    
-      ! count the number of boundary vertices at this face
-      if (p_IverticesAtFace(4,iface) .eq. 0) then
+      ! Check if we are a boundary face
+      if (p_IelementsAtFace(1,iface)*p_IelementsAtFace(2,iface) .eq. 0) then
+        ! Get the number of the boundary component
+        iBdyComp = p_InodalProperty(p_IverticesAtFace(1,iface))
         
-        do ive = 1,3
-          iglobIndex = p_IverticesAtFace(ive,iface)
-          
-          if(p_InodalProperty(iglobIndex) > 0) then
-            inumVertices = inumVertices + 1
-            ! save the number of the boundary component
-            iBdyComp = p_InodalProperty(iglobIndex)
-          end if
-        end do ! end ive
-
-        if(inumVertices .eq. 3 .and. inumElements < 2) then
-          ! boundary face; otherwise it is an inner face
-          ! increase the number of entries for the 
-          ! corresponding boundary component
-          p_IboundaryCpFacesIdx(iBdyComp+1)=&
-              p_IboundaryCpFacesIdx(iBdyComp+1) + 1  
-        end if
-
-      else
-
-        do ive = 1,4
-          iglobIndex = p_IverticesAtFace(ive,iface)
-          
-          if(p_InodalProperty(iglobIndex) > 0) then
-            inumVertices = inumVertices + 1
-            ! save the number of the boundary component
-            iBdyComp = p_InodalProperty(iglobIndex)
-          end if
-        end do ! end ive
-
-        if(inumVertices .eq. 4 .and. inumElements < 2) then
-          ! boundary face; otherwise it is an inner face
-          ! increase the number of entries for the 
-          ! corresponding boundary component
-          p_IboundaryCpFacesIdx(iBdyComp+1)=&
-              p_IboundaryCpFacesIdx(iBdyComp+1) + 1  
-        end if
-
+        ! increase the number of entries for the 
+        ! corresponding boundary component
+        p_IboundaryCpFacesIdx(iBdyComp+1) = &
+            p_IboundaryCpFacesIdx(iBdyComp+1) + 1
       end if
+
+!!$      bboundaryFace = (p_IelementsAtFace(1,iface) * &
+!!$                       p_IelementsAtFace(2,iface) .eq. 0)
+!!$
+!!$      ! Get the number of the boundary component
+!!$      iBdyComp = p_InodalProperty(p_IverticesAtFace(1,iface))
+
+!!$      ! used to count the number of vertices
+!!$      inumVertices = 0
+!!$    
+!!$      ! count the number of boundary vertices at this face
+!!$      nve = merge(3, 4, p_IverticesAtFace(4,iface) .eq. 0)
+!!$      
+!!$      do ive = 1,nve
+!!$        iglobIndex = p_IverticesAtFace(ive,iface)
+!!$        
+!!$        if(p_InodalProperty(iglobIndex) > 0) then
+!!$          inumVertices = inumVertices + 1
+!!$          ! save the number of the boundary component
+!!$          iBdyComp = p_InodalProperty(iglobIndex)
+!!$        end if
+!!$      end do ! end ive
+      
+!!$      if(inumVertices .eq. nve .and. bboundaryFace) then
+!!$        ! boundary face; otherwise it is an inner face
+!!$        ! increase the number of entries for the 
+!!$        ! corresponding boundary component
+!!$        p_IboundaryCpFacesIdx(iBdyComp+1)=&
+!!$            p_IboundaryCpFacesIdx(iBdyComp+1) + 1  
+!!$      end if
       
     end do ! end iface
     
-
     ! add up the entries to compute the actual index array
     do ive = 2, rtriangulation%NBCT+rtriangulation%NblindBCT+1
       p_IboundaryCpFacesIdx(ive) = p_IboundaryCpFacesIdx(ive) +&
                                    p_IboundaryCpFacesIdx(ive-1)
     end do ! end ive
     
-    ! number of faces on the boundary
-    NFBD = p_IboundaryCpFacesIdx(rtriangulation%NBCT+rtriangulation%NblindBCT+1) - 1
-    
     ! assign the number of faces on the boundary
-    rtriangulation%NABD = NFBD
+    rtriangulation%NABD = p_IboundaryCpFacesIdx(rtriangulation%NBCT+ &
+                                                rtriangulation%NblindBCT+1) - 1
     
     ! shift the indices... we do the old trick
     p_IboundaryCpFacesIdx(2:rtriangulation%NBCT+rtriangulation%NblindBCT+1) = &
@@ -14441,7 +14394,8 @@ contains
     ! allocate memory for the p_IfacesAtBoundary array
     if(rtriangulation%h_IfacesAtBoundary .eq. ST_NOHANDLE) then
       call storage_new ('tria_genFacesAtBoundary3D', 'IfacesAtBoundary', &
-          NFBD, ST_INT, rtriangulation%h_IfacesAtBoundary, ST_NEWBLOCK_NOINIT)
+          rtriangulation%NABD, ST_INT,&
+          rtriangulation%h_IfacesAtBoundary, ST_NEWBLOCK_NOINIT)
     end if
     
     ! woohoo memory is allocates so get the pointer
@@ -14455,64 +14409,43 @@ contains
     ! loop over all faces
     do iface = 1, rtriangulation%NAT
     
-      ! used to count the number of adjacent elements
-      inumElements = 0
-      
-      ! count the number of adjacent elements
-      do iel=1,2
-        if(p_IelementsAtFace(iel,iface) > 0) then
-          inumElements = inumElements + 1
-        end if
-      end do ! end iel
-      
-
-      ! used to count the number of vertices
-      inumVertices = 0
-      
-      ! count the number of boundary vertices at this face
-      if (p_IverticesAtFace(4,iface) .eq. 0) then
+      ! Check if we are a boundary face
+      if (p_IelementsAtFace(1,iface)*p_IelementsAtFace(2,iface) .eq. 0) then
+        ! Get the number of the boundary component
+        iBdyComp = p_InodalProperty(p_IverticesAtFace(1,iface))
         
-        do ive = 1,3
-          iglobIndex = p_IverticesAtFace(ive,iface)
-          
-          if(p_InodalProperty(iglobIndex) > 0)&
-              inumVertices = inumVertices + 1
-        end do ! end ive
-
-        if(inumVertices .eq. 3 .and. inumElements < 2) then
-          ! we have identified a boundary face
-          ! get the boundary component
-          iBdyComp = p_InodalProperty(iglobIndex)
-          ! so write its number in the array
-          findex = p_IboundaryCpFacesIdx(iBdyComp+1)
-          p_IfacesAtBoundary(findex) = iface
-          ! increase the free position in the index array
-          p_IboundaryCpFacesIdx(iBdyComp+1) = &
-              p_IboundaryCpFacesIdx(iBdyComp+1) + 1
-        end if
-
-      else
-
-        do ive = 1,4
-          iglobIndex = p_IverticesAtFace(ive,iface)
-          
-          if(p_InodalProperty(iglobIndex) > 0)&
-              inumVertices = inumVertices + 1
-        end do ! end ive
-        
-        if(inumVertices .eq. 4 .and. inumElements < 2) then
-          ! we have identified a boundary face
-          ! get the boundary component
-          iBdyComp = p_InodalProperty(iglobIndex)
-          ! so write its number in the array
-          findex = p_IboundaryCpFacesIdx(iBdyComp+1)
-          p_IfacesAtBoundary(findex) = iface
-          ! increase the free position in the index array
-          p_IboundaryCpFacesIdx(iBdyComp+1) = &
-              p_IboundaryCpFacesIdx(iBdyComp+1) + 1
-        end if
-        
+        ! Get the index number of the face
+        findex = p_IboundaryCpFacesIdx(iBdyComp+1)
+        p_IfacesAtBoundary(findex) = iface
+        ! increase the free position in the index array
+        p_IboundaryCpFacesIdx(iBdyComp+1) = &
+            p_IboundaryCpFacesIdx(iBdyComp+1) + 1
       end if
+
+!!$      ! used to count the number of vertices
+!!$      inumVertices = 0
+!!$      
+!!$      ! count the number of boundary vertices at this face
+!!$      nve = merge(3, 4, p_IverticesAtFace(4,iface) .eq. 0)
+!!$      
+!!$      do ive = 1, nve
+!!$        iglobIndex = p_IverticesAtFace(ive,iface)
+!!$        
+!!$        if(p_InodalProperty(iglobIndex) > 0)&
+!!$            inumVertices = inumVertices + 1
+!!$      end do ! end ive
+!!$      
+!!$      if(inumVertices .eq. nve .and. bboundaryFace) then
+!!$        ! we have identified a boundary face
+!!$        ! get the boundary component
+!!$        iBdyComp = p_InodalProperty(iglobIndex)
+!!$        ! so write its number in the array
+!!$        findex = p_IboundaryCpFacesIdx(iBdyComp+1)
+!!$        p_IfacesAtBoundary(findex) = iface
+!!$        ! increase the free position in the index array
+!!$        p_IboundaryCpFacesIdx(iBdyComp+1) = &
+!!$            p_IboundaryCpFacesIdx(iBdyComp+1) + 1
+!!$      end if
       
     end do ! end iface    
     
@@ -14525,7 +14458,7 @@ contains
   subroutine tria_genFacesAtVertex3D(rtriangulation)
 
 !<description>
-  ! this routine builds the FacesAtVertex list 
+  ! This routine builds the FacesAtVertex list 
 !</description>
 
 !<inputoutput>  
@@ -14638,7 +14571,7 @@ contains
   subroutine tria_genFacesAtEdge3D (rtriangulation) 
   
 !<description>
-  ! this routine builds the FacesAtEdge array 
+  ! This routine builds the FacesAtEdge array 
 !</description>
 
 !<inputoutput>  
@@ -14755,7 +14688,7 @@ contains
   subroutine tria_genEdgesAtFace3D(rtriangulation)  
 
 !<description>
-  ! this routine builds the EdgesAtFace array 
+  ! This routine builds the EdgesAtFace array 
 !</description>
   
 !<inputoutput>  
@@ -15010,7 +14943,11 @@ contains
   subroutine tria_genElementsAtFace3D(rtriangulation) 
 
 !<description>
-  ! this routine builds the ElementsAtFace array 
+  ! This routine builds the ElementsAtFace array.
+  ! For this purpose, the following arrays are used:
+  !    IverticesAtElement, IneighboursAtElement,
+  !    IfacesAtElement.
+  ! If necessary, new memory is allocated.
 !</description>
   
 !<inputoutput>  
@@ -15020,36 +14957,52 @@ contains
 !</subroutine>
   
     ! local variables
-    integer, dimension(:,:), pointer  :: p_IverticesAtElement
-    integer, dimension(:,:), pointer :: p_IfacesAtElement
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IfacesAtElement
     integer, dimension(:,:), pointer :: p_IelementsAtFace
-    integer :: iface
-    integer :: iel, ifaceNumber
+    integer :: iface,iel,jel,ifaceNumber
     integer, dimension(2) :: Isize
     
-    ! size of target array  
-    Isize = (/2,rtriangulation%NAT/)
-    
-    ! get pointers to some needed connectivity information
-    call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
-        p_IneighboursAtElement)
-    
-    call storage_getbase_int2D (rtriangulation%h_IfacesAtElement,&
-        p_IfacesAtElement)
 
-    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
+    ! Is everything here we need?
+    if (rtriangulation%h_IneighboursAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IneighboursAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtFace3D')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IverticesAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IverticesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtFace3D')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IfacesAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IfacesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtFace3D')
+      call sys_halt()
+    end if
+
+    ! Get the arrays.
+    call storage_getbase_int2D(&
+        rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
     
     ! allocate memory
+    Isize = (/2,rtriangulation%NAT/)
     if(rtriangulation%h_IelementsAtFace .eq. ST_NOHANDLE) then
       call storage_new2d('tria_genElementsAtFace3D', 'IelementsAtFace', &
           Isize, ST_INT, &
           rtriangulation%h_IelementsAtFace, ST_NEWBLOCK_NOINIT)
     end if
     
-    call storage_getbase_int2D (rtriangulation%h_IelementsAtFace,&
-        p_IelementsAtFace)
+    ! get the pointer
+    call storage_getbase_int2D(&
+        rtriangulation%h_IelementsAtFace, p_IelementsAtFace)
     
     
     ! loop over all elements
@@ -15057,30 +15010,32 @@ contains
       ! loop over all faces of this element
       do iface = 1, tria_getNAE(p_IverticesAtElement, iel)
         
+        ! get the number of the neighbouring element
+        jel = p_IneighboursAtElement(iface,iel)
+
         ! if there is no neighbour at this element
-        if(p_IneighboursAtElement(iface,iel) .eq. 0) then
+        if(jel .eq. 0) then
           
-          IFaceNumber = p_IfacesAtElement(iface,iel)
+          ifaceNumber = p_IfacesAtElement(iface,iel)
           
           p_IelementsAtFace(1,ifaceNumber) = iel
           p_IelementsAtFace(2,ifaceNumber) = 0
           
-        else if (p_IneighboursAtElement(iface,iel) < iel) then
+        elseif (jel < iel) then
           
-          ! There is a neighbour and it has a smaller number than the current element --
-          ! so we haven't had that face! Store the two adjacent elements.
+          ! There is a neighbour and it has a smaller number than the
+          ! current element. That is, we haven't had that face!
+          ! Store the two adjacent elements.
           
-          IFaceNumber = p_IfacesAtElement(iface,iel)
+          ifaceNumber = p_IfacesAtElement(iface,iel)
           
           p_IelementsAtFace(1,ifaceNumber) = iel
-          
-          p_IelementsAtFace(2,ifaceNumber) = &
-              p_IneighboursAtElement(iface,iel)      
-          
+          p_IelementsAtFace(2,ifaceNumber) = jel
+         
         end if
         
       end do ! end iface
-    end do ! end iel  
+    end do ! end iel
     
   end subroutine tria_genElementsAtFace3D
 
@@ -15091,7 +15046,11 @@ contains
   subroutine tria_genVerticesAtFace3D(rtriangulation)
 
 !<description>
-  ! this routine builds the VerticesAtFace array and
+  ! This routine builds the VerticesAtFace array.
+  ! For this purpose, the following arrays are used:
+  !    IverticesAtElement, IneighboursAtElement,
+  !    IfacesAtElement.
+  ! If necessary, new memory is allocated.
 !</description>
   
 !<inputoutput>  
@@ -15106,7 +15065,7 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtFace
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
     integer, dimension(2) :: Isize
-    integer :: iel,iface,ive,ivt,ifaceGlobal,ineighbour,ifaceNumber,ifaceNeighbour
+    integer :: iel,jel,iface,jface,ive,ivt,ifaceGlobal,ifaceNumber
 
     ! list of local face numbers
     integer, dimension(4,TRIA_NAETET3D), parameter :: IfacesTet =&
@@ -15122,21 +15081,35 @@ contains
              reshape((/1,2,3,4, 1,5,6,2, 2,6,7,3,&
                        3,7,8,4, 1,4,8,5, 5,8,7,6/), (/4,TRIA_NAEHEXA3D/))
     
+    ! Is everything here we need?
+    if (rtriangulation%h_IverticesAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IverticesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtFace3D')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IneighboursAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IneighboursAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtFace3D')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IfacesAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IfacesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtFace3D')
+      call sys_halt()
+    end if
     
-    ! allocate memory and get pointers
-    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-    
-    call storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
-        p_IneighboursAtElement)
-    
-    call storage_getbase_int2D (rtriangulation%h_IfacesAtElement,&
-        p_IfacesAtElement)
-    
-    ! init isize  
-    Isize = (/4,rtriangulation%NAT/)
+    ! Get the arrays.
+    call storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
     
     ! allocate memory
+    Isize = (/4, rtriangulation%NAT/)
     if(rtriangulation%h_IverticesAtFace .eq. ST_NOHANDLE) then
       call storage_new2d('tria_genElementsAtEdge3D', 'IverticesAtFace', &
           Isize, ST_INT, &
@@ -15144,10 +15117,11 @@ contains
     end if
     
     ! get the pointer
-    call storage_getbase_int2D(rtriangulation%h_IverticesAtFace,&
-        p_IverticesAtFace)
+    call storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtFace, p_IverticesAtFace)
     
-    IFaceGlobal = 0
+    ! initialize the global face number
+    ifaceGlobal = 0
     
     ! loop over all elements
     do iel = 1, rtriangulation%NEL
@@ -15160,15 +15134,17 @@ contains
         do iface = 1, TRIA_NAETET3D
         
           ! check if a face number was already assigned
-          if(p_IneighboursAtElement(iface,iel) .eq. 0 .or. &
-             p_IneighboursAtElement(iface,iel) >  iel) then
+          if((p_IneighboursAtElement(iface,iel) .eq. 0) .or. &
+              (p_IneighboursAtElement(iface,iel) >  iel)) then
           
             ! a face number was not yet assigned
-            ! increment face number
-            IFaceGlobal = ifaceGlobal + 1
+            ! thus increment face number
+            ifaceGlobal = ifaceGlobal + 1
             
             ! assign the vertices at this face
-            p_IverticesAtFace(1:3,ifaceGlobal) = p_IverticesAtElement(IfacesTet(1:3,iface),iel)
+            do ive = 1, 3
+              p_IverticesAtFace(ive,ifaceGlobal) = p_IverticesAtElement(IfacesTet(ive,iface),iel)
+            end do
             p_IverticesAtFace(4,  ifaceGlobal) = 0
             
           else
@@ -15176,22 +15152,24 @@ contains
             ! a face number was already assigned
             
             ! get the element number of the neighbour
-            ineighbour = p_IneighboursAtElement(iface,iel)
+            jel = p_IneighboursAtElement(iface,iel)
             
-            IFaceNeighbour = 1
+            ! initialise the local face number of the neighbouring element
+            jface = 1
             
-            ! number of the face
-            do 
-              if(iel .eq. p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
-              IFaceNeighbour = ifaceNeighbour + 1
+            ! determine the local face number of the neighbouring element
+            do while(iel .ne. p_IneighboursAtElement(jface,jel))
+              jface = jface+1
             end do
             
             ! index of the face in the array is obtained by nmt and nvt
-            IFaceNumber = p_IfacesAtElement(ifaceNeighbour,ineighbour)
+            ifaceNumber = p_IfacesAtElement(jface,jel)
             
             ! assign the vertices at this face
-            p_IverticesAtFace(1:3,ifaceNumber) = p_IverticesAtElement(IfacesTet(1:3,iface),iel)
-            p_IverticesAtFace(4,  ifaceGlobal) = 0
+            do ive = 1, 3
+            p_IverticesAtFace(ive,ifaceNumber) = p_IverticesAtElement(IfacesTet(ive,iface),iel)
+          end do
+            p_IverticesAtFace(4,  ifaceNumber) = 0
 
           end if
         end do ! end iface
@@ -15203,12 +15181,12 @@ contains
         do iface = 1, TRIA_NAEPYR3D
         
           ! check if a face number was already assigned
-          if(p_IneighboursAtElement(iface,iel) .eq. 0 .or. &
-             p_IneighboursAtElement(iface,iel) >  iel) then
+          if((p_IneighboursAtElement(iface,iel) .eq. 0) .or. &
+             (p_IneighboursAtElement(iface,iel) >  iel)) then
           
             ! a face number was not yet assigned
-            ! increment face number
-            IFaceGlobal = ifaceGlobal + 1
+            ! thus increment face number
+            ifaceGlobal = ifaceGlobal + 1
             
             ! assign the vertices at this face
             do ive = 1, 4
@@ -15225,18 +15203,18 @@ contains
             ! a face number was already assigned
             
             ! get the element number of the neighbour
-            ineighbour = p_IneighboursAtElement(iface,iel)
+            jel = p_IneighboursAtElement(iface,iel)
             
-            IFaceNeighbour = 1
+            ! initialise the local face number of the neighbouring element
+            jface = 1
             
-            ! number of the face
-            do 
-              if(iel .eq. p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
-              IFaceNeighbour = ifaceNeighbour + 1
+            ! determine the local face number of the neighbouring element
+            do while(iel .ne. p_IneighboursAtElement(jface,jel))
+              jface = jface+1
             end do
             
             ! index of the face in the array is obtained by nmt and nvt
-            IFaceNumber = p_IfacesAtElement(ifaceNeighbour,ineighbour)
+            ifaceNumber = p_IfacesAtElement(jface,jel)
             
             ! assign the vertices at this face
             do ive = 1, 4
@@ -15258,12 +15236,12 @@ contains
         do iface = 1, TRIA_NAEPRIS3D
         
           ! check if a face number was already assigned
-          if(p_IneighboursAtElement(iface,iel) .eq. 0 .or. &
-             p_IneighboursAtElement(iface,iel) >  iel) then
+          if((p_IneighboursAtElement(iface,iel) .eq. 0) .or. &
+             (p_IneighboursAtElement(iface,iel) >  iel)) then
           
             ! a face number was not yet assigned
-            ! increment face number
-            IFaceGlobal = ifaceGlobal + 1
+            ! thus increment face number
+            ifaceGlobal = ifaceGlobal + 1
             
             ! assign the vertices at this face
             do ive = 1, 4
@@ -15280,18 +15258,18 @@ contains
             ! a face number was already assigned
             
             ! get the element number of the neighbour
-            ineighbour = p_IneighboursAtElement(iface,iel)
+            jel = p_IneighboursAtElement(iface,iel)
             
-            IFaceNeighbour = 1
+            ! initialise the local face number of the neighbouring element
+            jface = 1
             
-            ! number of the face
-            do 
-              if(iel .eq. p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
-              IFaceNeighbour = ifaceNeighbour + 1
+            ! determine the local face number of the neighbouring element
+            do while(iel .ne. p_IneighboursAtElement(jface,jel))
+              jface = jface+1
             end do
             
             ! index of the face in the array is obtained by nmt and nvt
-            IFaceNumber = p_IfacesAtElement(ifaceNeighbour,ineighbour)
+            ifaceNumber = p_IfacesAtElement(jface,jel)
             
             ! assign the vertices at this face
             do ive = 1, 4
@@ -15313,36 +15291,40 @@ contains
         do iface = 1, TRIA_NAEHEXA3D
         
           ! check if a face number was already assigned
-          if(p_IneighboursAtElement(iface,iel) .eq. 0 .or. &
-             p_IneighboursAtElement(iface,iel) >  iel) then
+          if((p_IneighboursAtElement(iface,iel) .eq. 0) .or. &
+             (p_IneighboursAtElement(iface,iel) >  iel)) then
           
             ! a face number was not yet assigned
-            ! increment face number
-            IFaceGlobal = ifaceGlobal + 1
+            ! thus increment face number
+            ifaceGlobal = ifaceGlobal + 1
             
             ! assign the vertices at this face
-            p_IverticesAtFace(1:4,ifaceGlobal) = p_IverticesAtElement(IfacesHex(1:4,iface),iel)
+            do ive = 1, 4
+              p_IverticesAtFace(ive,ifaceGlobal) = p_IverticesAtElement(IfacesHex(ive,iface),iel)
+            end do
             
           else
             
             ! a face number was already assigned
             
             ! get the element number of the neighbour
-            ineighbour = p_IneighboursAtElement(iface,iel)
+            jel = p_IneighboursAtElement(iface,iel)
             
-            IFaceNeighbour = 1
+            ! initialise the local face number of the neighbouring element
+            jface = 1
             
-            ! number of the face
-            do 
-              if(iel .eq. p_IneighboursAtElement(ifaceNeighbour,ineighbour)) exit
-              IFaceNeighbour = ifaceNeighbour + 1
+            ! determine the local face number of the neighbouring element
+            do while(iel .ne. p_IneighboursAtElement(jface,jel))
+              jface = jface+1
             end do
             
             ! index of the face in the array is obtained by nmt and nvt
-            IFaceNumber = p_IfacesAtElement(ifaceNeighbour,ineighbour)
+            ifaceNumber = p_IfacesAtElement(jface,jel)
             
             ! assign the vertices at this face
-            p_IverticesAtFace(1:4,ifaceNumber) = p_IverticesAtElement(IfacesHex(1:4,iface),iel)
+            do ive = 1, 4
+              p_IverticesAtFace(ive,ifaceNumber) = p_IverticesAtElement(IfacesHex(ive,iface),iel)
+            end do
             
           end if
         end do ! end iface
@@ -15512,7 +15494,7 @@ contains
   subroutine tria_buildConnectorList(IConnectList, rtriangulation)
 
 !<description>
-  ! this routine builds the connector list used 
+  ! This routine builds the connector list used 
   ! in the neighbours at elements routine
 !</description>
 
@@ -15878,8 +15860,8 @@ contains
   subroutine tria_sortElements3D(IConnectList, iElements)
   
 !<description>
-  ! this subroutine establishes the lexicographic ordering 
-  !  on the list of connectors in 3D
+  ! This subroutine establishes the lexicographic
+  ! ordering on the list of connectors in 3D
 !</description>
 
 !<input>    
@@ -15908,8 +15890,8 @@ contains
   subroutine tria_sortElements3DInt(IConnectList, iElements)
 
 !<description>
-  ! this subroutine establishes the sorted numbering 
-  !  on the list of connectors in 3D
+  ! This subroutine establishes the sorted numbering 
+  ! on the list of connectors in 3D
 !</description>
     
   ! parameter values
@@ -15969,9 +15951,8 @@ contains
   recursive subroutine tria_mergesort(IConnectList, l, r, pos)
     
 !<description>
-  ! this routine sorts a connector list
-  ! it is used as an auxilliary routine
-  ! during the Neighbours at elements routine
+  ! This routine sorts a connector list it is used as an 
+  ! auxilliary routine during the Neighbours at elements routine
 !</description>
     
 !<input>
@@ -16107,82 +16088,6 @@ contains
     deallocate(p_R)
     
   end subroutine tria_merge
-  
-!!$  !************************************************************************     
-!!$  
-!!$!<subroutine>
-!!$
-!!$  recursive subroutine tria_quickSortInt(IConnector, l, r)
-!!$    
-!!$      
-!!$!<description>
-!!$  ! this routine builds the connector list used 
-!!$  ! in the neighbours at elements 
-!!$  ! routine
-!!$!</description>
-!!$        
-!!$!<input>    
-!!$  integer, intent(IN) :: l,r
-!!$!</input>  
-!!$
-!!$!<inputoutput>
-!!$  integer, dimension(:), intent(INOUT) :: IConnector
-!!$!</inputoutput>
-!!$
-!!$!</subroutine>   
-!!$
-!!$    ! local variables
-!!$    integer :: m, lpos, rpos, pivot
-!!$    integer :: temp  
-!!$    
-!!$    if( l < r) then
-!!$      
-!!$      ! counter from left
-!!$      lpos = l+1
-!!$      
-!!$      ! counter from right
-!!$      rpos = r
-!!$      
-!!$      ! assign the pivot element
-!!$      pivot = IConnector(l)
-!!$      
-!!$      do while(lpos .le. rpos)
-!!$        
-!!$        ! we find an element less than pivot => increment
-!!$        if(IConnector(lpos) .le. pivot) then
-!!$          lpos=lpos+1
-!!$          ! we find an element greater than => decrement
-!!$        elseif(IConnector(rpos) > pivot) then
-!!$          rpos=rpos-1
-!!$          ! ok swap the elements  
-!!$        else
-!!$          ! swap connectors
-!!$          temp = IConnector(lpos)
-!!$          
-!!$          IConnector(lpos) = IConnector(rpos)
-!!$          
-!!$          IConnector(rpos) = temp
-!!$        end if
-!!$        
-!!$      end do
-!!$      
-!!$      ! swap pivot element            
-!!$      temp = IConnector(l)
-!!$      
-!!$      IConnector(l) = IConnector(rpos)
-!!$      
-!!$      IConnector(rpos) = temp
-!!$      
-!!$      ! assign new pivot position
-!!$      m = rpos
-!!$      
-!!$      ! recursively sort the two subarrays
-!!$      call tria_quickSortInt(IConnector, l, m-1)
-!!$      call tria_quickSortInt(IConnector, m+1,r)
-!!$      
-!!$    end if
-!!$    
-!!$  end subroutine tria_quickSortInt
 
   !************************************************************************     
 
@@ -16223,7 +16128,7 @@ contains
     
       if(p_Iarray(Imid) > Ivalue) then
         Iuboundloc = Imid-1
-      else if(p_Iarray(Imid) < Ivalue) then
+      elseif(p_Iarray(Imid) < Ivalue) then
         Ilboundloc = Imid+1
       else ! found Ivalue
         tria_BinSearch = 1
