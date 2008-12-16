@@ -2491,6 +2491,9 @@ contains
           ! UMFACK Gauss elimination
           call sptils_initUMFPACK4 (rproblem,p_rcgrSolver)
           p_rcgrSolver%domega = domega
+          
+          ! DEBUG!!!
+          !p_rcgrSolver%p_rsubnodeUMFPACK4%cwriteMatrix = 1
 
         case (5)
           ! Forward backward Gauss Seidel as preconditioner

@@ -346,6 +346,18 @@ contains
     
     dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
 
+    ! Clear the coefficients
+    rmatrixComponents%Diota(:,:) = 0.0_DP
+    rmatrixComponents%Dalpha(:,:) = 0.0_DP
+    rmatrixComponents%Dtheta(:,:) = 0.0_DP
+    rmatrixComponents%Dgamma(:,:) = 0.0_DP
+    rmatrixComponents%Dnewton(:,:) = 0.0_DP
+    rmatrixComponents%DgammaT(:,:) = 0.0_DP
+    rmatrixComponents%DnewtonT(:,:) = 0.0_DP
+    rmatrixComponents%Deta(:,:) = 0.0_DP
+    rmatrixComponents%Dtau(:,:) = 0.0_DP
+    rmatrixComponents%Dkappa(:,:) = 0.0_DP
+
     ! The first and last substep is a little bit special concerning
     ! the matrix!
     if (isubstep .eq. 0) then
@@ -360,97 +372,6 @@ contains
       if (irelpos .eq. 0) then
       
         ! The diagonal matrix.
-!        rmatrixComponents%iprimalSol = 2
-!        rmatrixComponents%idualSol = 2
-!
-!        rmatrixComponents%diota1 = 1.0_DP
-!        rmatrixComponents%diota2 = 0.0_DP
-!
-!        rmatrixComponents%dkappa1 = 1.0_DP
-!        rmatrixComponents%dkappa2 = 0.0_DP
-!        
-!        rmatrixComponents%dalpha1 = 0.0_DP
-!        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/dtstep
-!        
-!        rmatrixComponents%dtheta1 = 0.0_DP !dtheta*dtstep
-!        rmatrixComponents%dtheta2 = dtheta
-!        
-!        IF (.NOT. bconvectionExplicit) THEN
-!        
-!          rmatrixComponents%dgamma1 = 0.0_DP
-!          rmatrixComponents%dgamma2 = &
-!              - dtheta * REAL(1-rproblem%iequation,DP)
-!          
-!          rmatrixComponents%dnewton1 = 0.0_DP
-!          rmatrixComponents%dnewton2 = &
-!                dtheta * REAL(1-rproblem%iequation,DP)
-!                
-!        ELSE
-!
-!          rmatrixComponents%dgamma1 = 0.0_DP
-!          rmatrixComponents%dgamma2 = 0.0_DP
-!          
-!          rmatrixComponents%dnewton1 = 0.0_DP
-!          rmatrixComponents%dnewton2 = 0.0_DP
-!
-!        END IF
-!
-!        rmatrixComponents%deta1 = 0.0_DP
-!        rmatrixComponents%deta2 = 1.0_DP
-!        
-!        rmatrixComponents%dtau1 = 0.0_DP
-!        rmatrixComponents%dtau2 = 1.0_DP
-!        
-!        rmatrixComponents%dmu1 = 0.0_DP
-!        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-!            dtheta * (-dequationType)
-!            
-!        rmatrixComponents%dp1 = 0.0_DP
-!
-!        IF (.NOT. bconvectionExplicit) THEN
-!        
-!          ! In the 0'th timestep, there is no RHS in the dual equation
-!          ! and therefore no coupling between the primal and dual solution!
-!          ! That is because of the initial condition, which fixes the primal solution
-!          ! => dual solution has no influence on the primal one
-!          ! Therefore, the following weights must be commented out, otherwise
-!          ! the solver cannot converge in the 0'th timestep!
-!          ! Instead, the dual solution of this 0'th timestep only depends
-!          ! on the dual solution of the 1st timestep and is computed assuming that
-!          ! the initial condition meets the target flow (y_0 = z_0).
-!          !
-!          ! rmatrixComponents%dmu1 = dprimalDualCoupling * &
-!          !     dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
-!
-!          IF (dnewton .EQ. 0.0_DP) THEN
-!            rmatrixComponents%dr21 = 0.0_DP
-!            rmatrixComponents%dr22 = 0.0_DP
-!          ELSE
-!            rmatrixComponents%dr21 = ddualPrimalCoupling * &
-!                dtheta * ( dequationType)
-!            rmatrixComponents%dr22 = ddualPrimalCoupling * &
-!                dtheta * (-dequationType)
-!          END IF
-!          
-!        ELSE
-!        
-!          !rmatrixComponents%dr21 = 0.0_DP
-!          !rmatrixComponents%dr22 = 0.0_DP
-!
-!          ! Must this be used instead of the above two lines?!?!?!?!?!?!?!?!?!?!?!?
-!          IF (dnewton .EQ. 0.0_DP) THEN
-!            rmatrixComponents%dr21 = 0.0_DP
-!            rmatrixComponents%dr22 = 0.0_DP
-!          ELSE
-!            rmatrixComponents%dr21 = ddualPrimalCoupling * &
-!                ( dequationType) * dtheta 
-!            rmatrixComponents%dr22 = ddualPrimalCoupling * &
-!                (-dequationType) * dtheta 
-!          END IF
-!
-!        END IF
-
-        ! The diagonal matrix.
         if (.not. bconvectionExplicit) then
           rmatrixComponents%iprimalSol = 2
           rmatrixComponents%idualSol = 2
@@ -459,72 +380,55 @@ contains
           rmatrixComponents%idualSol = 3
         end if
 
-        rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = 0.0_DP
-
-        rmatrixComponents%dkappa1 = 0.0_DP
-        rmatrixComponents%dkappa2 = 0.0_DP
+        rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
+        rmatrixComponents%dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
-        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/dtstep
-        
-        rmatrixComponents%dtheta1 = dtheta
-        rmatrixComponents%dtheta2 = dtheta
+        rmatrixComponents%Dtheta(1,1) = dtheta
+        rmatrixComponents%Dtheta(2,2) = dtheta
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%dgamma1 = &
+          rmatrixComponents%Dgamma(1,1) = &
               dtheta * real(1-rproblem%iequation,DP)
-          rmatrixComponents%dgamma2 = &
+          rmatrixComponents%Dgamma(2,2) = &
               - dtheta * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%dnewton1 = dtheta * dnewton
-          rmatrixComponents%dnewton2 = &
+          rmatrixComponents%Dnewton(1,1) = dtheta * dnewton
+          rmatrixComponents%DnewtonT(2,2) = &
                 dtheta * real(1-rproblem%iequation,DP)
                 
-        else
-        
-          rmatrixComponents%dgamma1 = 0.0_DP
-          rmatrixComponents%dgamma2 = 0.0_DP
-          
-          rmatrixComponents%dnewton1 = 0.0_DP
-          rmatrixComponents%dnewton2 = 0.0_DP
-        
         end if
 
-        rmatrixComponents%deta1 = 1.0_DP
-        rmatrixComponents%deta2 = 1.0_DP
+        rmatrixComponents%Deta(1,1) = 1.0_DP
+        rmatrixComponents%Deta(2,2) = 1.0_DP
         
-        rmatrixComponents%dtau1 = 1.0_DP
-        rmatrixComponents%dtau2 = 1.0_DP
+        rmatrixComponents%Dtau(1,1) = 1.0_DP
+        rmatrixComponents%Dtau(2,2) = 1.0_DP
         
         ! Only difference to the usual diagonal: No coupling mass matrix
         ! from dual to the primal velocity.
-        rmatrixComponents%dmu1 = 0.0_DP
-        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+        rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * dtheta 
         
         if (.not. bconvectionExplicit) then
 
-          if (dnewton .eq. 0.0_DP) then
-            rmatrixComponents%dr21 = 0.0_DP
-            rmatrixComponents%dr22 = 0.0_DP
-          else
-            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+          if (dnewton .ne. 0.0_DP) then
+            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
-            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !    ( dequationType) * dtheta 
+            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
           end if
           
         else
         
-          if (dnewton .eq. 0.0_DP) then
-            rmatrixComponents%dr21 = 0.0_DP
-            rmatrixComponents%dr22 = 0.0_DP
-          else
-            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+          if (dnewton .ne. 0.0_DP) then
+            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
-            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !    ( dequationType) * dtheta 
+            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
           end if
         
@@ -548,65 +452,40 @@ contains
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
 
-        rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = 0.0_DP
-
-        rmatrixComponents%dkappa1 = 0.0_DP
-        rmatrixComponents%dkappa2 = 0.0_DP
+        rmatrixComponents%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/dtstep
-        
-        rmatrixComponents%dtheta1 = 0.0_DP
-        rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
+        rmatrixComponents%Dtheta(2,2) = (1.0_DP-dtheta) 
         
         if (.not. bconvectionExplicit) then
         
-          rmatrixComponents%dgamma1 = 0.0_DP
-          rmatrixComponents%dgamma2 = &
+          rmatrixComponents%Dgamma(2,2) = &
               - (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%dnewton1 = 0.0_DP
-          rmatrixComponents%dnewton2 = &
+          rmatrixComponents%DnewtonT(2,2) = &
                 (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
         else
 
-          rmatrixComponents%dgamma1 = 0.0_DP
-          rmatrixComponents%dgamma2 = &
+          rmatrixComponents%Dgamma(2,2) = &
               - dtheta * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%dnewton1 = 0.0_DP
-          rmatrixComponents%dnewton2 = &
+          rmatrixComponents%DnewtonT(2,2) = &
                 dtheta * real(1-rproblem%iequation,DP)
 
         end if
 
-        rmatrixComponents%deta1 = 0.0_DP
-        rmatrixComponents%deta2 = 0.0_DP
-        
-        rmatrixComponents%dtau1 = 0.0_DP
-        rmatrixComponents%dtau2 = 0.0_DP
-        
-        rmatrixComponents%dmu1 = 0.0_DP
-        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+        rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta)
             
         if (.not. bconvectionExplicit) then
 
-          if (dnewton .eq. 0.0_DP) then
-            rmatrixComponents%dr21 = 0.0_DP
-            rmatrixComponents%dr22 = 0.0_DP
-          else
-            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+          if (dnewton .ne. 0.0_DP) then
+            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * ( dequationType)
-            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !    (1.0_DP-dtheta) * ( dequationType)
+            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * (-dequationType)
           end if
-        
-        else
-
-          rmatrixComponents%dr21 = 0.0_DP
-          rmatrixComponents%dr22 = 0.0_DP
         
         end if
             
@@ -634,52 +513,30 @@ contains
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
 
-        rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = 0.0_DP
-
-        rmatrixComponents%dkappa1 = 0.0_DP
-        rmatrixComponents%dkappa2 = 0.0_DP
+        rmatrixComponents%Dalpha(1,1) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/dtstep
-        rmatrixComponents%dalpha2 = 0.0_DP
-        
-        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
-        rmatrixComponents%dtheta2 = 0.0_DP
+        rmatrixComponents%Dtheta(1,1) = (1.0_DP-dtheta) 
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%dgamma1 = &
+          rmatrixComponents%Dgamma(1,1) = &
               (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
-          rmatrixComponents%dgamma2 = 0.0_DP
           
-          rmatrixComponents%dnewton1 = &
+          rmatrixComponents%Dnewton(1,1) = &
               (1.0_DP-dtheta) * dnewton
-          rmatrixComponents%dnewton2 = 0.0_DP
 
         else
         
-          rmatrixComponents%dgamma1 = &
+          rmatrixComponents%Dgamma(1,1) = &
               dtheta * real(1-rproblem%iequation,DP)
-          rmatrixComponents%dgamma2 = 0.0_DP
           
-          rmatrixComponents%dnewton1 = &
+          rmatrixComponents%Dnewton(1,1) = &
               dtheta * dnewton
-          rmatrixComponents%dnewton2 = 0.0_DP
         
         end if
 
-        rmatrixComponents%deta1 = 0.0_DP
-        rmatrixComponents%deta2 = 0.0_DP
-        
-        rmatrixComponents%dtau1 = 0.0_DP
-        rmatrixComponents%dtau2 = 0.0_DP
-        
-        rmatrixComponents%dmu1 = dprimalDualCoupling * &
+        rmatrixComponents%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
-        rmatrixComponents%dmu2 = 0.0_DP
-        
-        rmatrixComponents%dr21 = 0.0_DP
-        rmatrixComponents%dr22 = 0.0_DP
 
       else if (irelpos .eq. 0) then    
 
@@ -692,71 +549,55 @@ contains
           rmatrixComponents%idualSol = 3
         end if
 
-        rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = 0.0_DP
-
-        rmatrixComponents%dkappa1 = 0.0_DP
-        rmatrixComponents%dkappa2 = 0.0_DP
+        rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
+        rmatrixComponents%Dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
-        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/dtstep
-        
-        rmatrixComponents%dtheta1 = dtheta
-        rmatrixComponents%dtheta2 = dtheta
+        rmatrixComponents%Dtheta(1,1) = dtheta
+        rmatrixComponents%Dtheta(2,2) = dtheta
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%dgamma1 = &
+          rmatrixComponents%Dgamma(1,1) = &
               dtheta * real(1-rproblem%iequation,DP)
-          rmatrixComponents%dgamma2 = &
+          rmatrixComponents%Dgamma(2,2) = &
               - dtheta * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%dnewton1 = dtheta * dnewton
-          rmatrixComponents%dnewton2 = &
+          rmatrixComponents%Dnewton(1,1) = dtheta * dnewton
+          rmatrixComponents%DnewtonT(2,2) = &
                 dtheta * real(1-rproblem%iequation,DP)
                 
-        else
-        
-          rmatrixComponents%dgamma1 = 0.0_DP
-          rmatrixComponents%dgamma2 = 0.0_DP
-          
-          rmatrixComponents%dnewton1 = 0.0_DP
-          rmatrixComponents%dnewton2 = 0.0_DP
-        
         end if
 
-        rmatrixComponents%deta1 = 1.0_DP
-        rmatrixComponents%deta2 = 1.0_DP
+        rmatrixComponents%Deta(1,1) = 1.0_DP
+        rmatrixComponents%Deta(2,2) = 1.0_DP
         
-        rmatrixComponents%dtau1 = 1.0_DP
-        rmatrixComponents%dtau2 = 1.0_DP
+        rmatrixComponents%Dtau(1,1) = 1.0_DP
+        rmatrixComponents%Dtau(2,2) = 1.0_DP
         
-        rmatrixComponents%dmu1 = dprimalDualCoupling * &
+        rmatrixComponents%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
-        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+        rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * dtheta 
             
         if (.not. bconvectionExplicit) then
 
-          if (dnewton .eq. 0.0_DP) then
-            rmatrixComponents%dr21 = 0.0_DP
-            rmatrixComponents%dr22 = 0.0_DP
-          else
-            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+          if (dnewton .ne. 0.0_DP) then
+            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
-            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !    ( dequationType) * dtheta 
+            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
           end if
           
         else
         
-          if (dnewton .eq. 0.0_DP) then
-            rmatrixComponents%dr21 = 0.0_DP
-            rmatrixComponents%dr22 = 0.0_DP
-          else
-            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+          if (dnewton .ne. 0.0_DP) then
+            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
-            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !    ( dequationType) * dtheta 
+            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
           end if
         
@@ -778,66 +619,41 @@ contains
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
-        rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = 0.0_DP
-
-        rmatrixComponents%dkappa1 = 0.0_DP
-        rmatrixComponents%dkappa2 = 0.0_DP
+        rmatrixComponents%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/dtstep
-        
-        rmatrixComponents%dtheta1 = 0.0_DP
-        rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
+        rmatrixComponents%Dtheta(2,2) = (1.0_DP-dtheta) 
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%dgamma1 = 0.0_DP
-          rmatrixComponents%dgamma2 = &
+          rmatrixComponents%Dgamma(2,2) = &
               - (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%dnewton1 = 0.0_DP
-          rmatrixComponents%dnewton2 = &
+          rmatrixComponents%DnewtonT(2,2) = &
               (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
               
         else
         
-          rmatrixComponents%dgamma1 = 0.0_DP
-          rmatrixComponents%dgamma2 = &
+          rmatrixComponents%Dgamma(2,2) = &
               - dtheta * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%dnewton1 = 0.0_DP
-          rmatrixComponents%dnewton2 = &
+          rmatrixComponents%DnewtonT(2,2) = &
                 dtheta * real(1-rproblem%iequation,DP)
         
         end if
 
-        rmatrixComponents%deta1 = 0.0_DP
-        rmatrixComponents%deta2 = 0.0_DP
-        
-        rmatrixComponents%dtau1 = 0.0_DP
-        rmatrixComponents%dtau2 = 0.0_DP
-        
-        rmatrixComponents%dmu1 = 0.0_DP
-        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+        rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta) 
             
         if (.not. bconvectionExplicit) then
         
-          if (dnewton .eq. 0.0_DP) then
-            rmatrixComponents%dr21 = 0.0_DP
-            rmatrixComponents%dr22 = 0.0_DP
-          else
-            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+          if (dnewton .ne. 0.0_DP) then
+            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * ( dequationType)
-            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !    (1.0_DP-dtheta) * ( dequationType)
+            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * (-dequationType)
           end if
-          
-        else
-        
-          rmatrixComponents%dr21 = 0.0_DP
-          rmatrixComponents%dr22 = 0.0_DP
           
         end if
             
@@ -862,50 +678,28 @@ contains
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
 
-        rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = 0.0_DP
-
-        rmatrixComponents%dkappa1 = 0.0_DP
-        rmatrixComponents%dkappa2 = 0.0_DP
+        rmatrixComponents%Dalpha(1,1) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/dtstep
-        rmatrixComponents%dalpha2 = 0.0_DP
-        
-        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
-        rmatrixComponents%dtheta2 = 0.0_DP
+        rmatrixComponents%Dtheta(1,1) = (1.0_DP-dtheta) 
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%dgamma1 = &
+          rmatrixComponents%Dgamma(1,1) = &
               (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
-          rmatrixComponents%dgamma2 = 0.0_DP
           
-          rmatrixComponents%dnewton1 = (1.0_DP-dtheta) * dnewton
-          rmatrixComponents%dnewton2 = 0.0_DP
+          rmatrixComponents%Dnewton(1,1) = (1.0_DP-dtheta) * dnewton
           
         else
         
-          rmatrixComponents%dgamma1 = &
+          rmatrixComponents%Dgamma(1,1) = &
               dtheta * real(1-rproblem%iequation,DP)
-          rmatrixComponents%dgamma2 = 0.0_DP
           
-          rmatrixComponents%dnewton1 = dtheta * dnewton
-          rmatrixComponents%dnewton2 = 0.0_DP
+          rmatrixComponents%Dnewton(1,1) = dtheta * dnewton
           
         end if
 
-        rmatrixComponents%deta1 = 0.0_DP
-        rmatrixComponents%deta2 = 0.0_DP
-        
-        rmatrixComponents%dtau1 = 0.0_DP
-        rmatrixComponents%dtau2 = 0.0_DP
-        
-        rmatrixComponents%dmu1 = dprimalDualCoupling * &
+        rmatrixComponents%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
-        rmatrixComponents%dmu2 = 0.0_DP
-
-        rmatrixComponents%dr21 = 0.0_DP
-        rmatrixComponents%dr22 = 0.0_DP
 
       else if (irelpos .eq. 0) then    
 
@@ -913,154 +707,59 @@ contains
         rmatrixComponents%iprimalSol = 2
         rmatrixComponents%idualSol = 2
 
-        rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = 0.0_DP 
-
-        rmatrixComponents%dkappa1 = 0.0_DP
-        rmatrixComponents%dkappa2 = 0.0_DP
-        
         ! Current formulation:
         ! -(gamma+1/dt)*M*y + (M+dt*nu*L)*lambda = -(gamma+1/dt)*z
         
-        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
-        rmatrixComponents%dalpha2 = 1.0_DP/dtstep
+        rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
+        rmatrixComponents%Dalpha(2,2) = 1.0_DP/dtstep
         
         ! No 'time coupling' here; because of the terminal condition,
         ! the mass matrix resembles not the time dependence!
         
-        rmatrixComponents%dtheta1 = dtheta
-        rmatrixComponents%dtheta2 = dtheta
+        rmatrixComponents%Dtheta(1,1) = dtheta
+        rmatrixComponents%Dtheta(2,2) = dtheta
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%dgamma1 = &
+          rmatrixComponents%Dgamma(1,1) = &
               dtheta * real(1-rproblem%iequation,DP)
-          rmatrixComponents%dgamma2 = &
+          rmatrixComponents%Dgamma(2,2) = &
               - dtheta * real(1-rproblem%iequation,DP) 
           
-          rmatrixComponents%dnewton1 = dtheta * dnewton
-          rmatrixComponents%dnewton2 = &
+          rmatrixComponents%Dnewton(1,1) = dtheta * dnewton
+          rmatrixComponents%DnewtonT(2,2) = &
                 dtheta * real(1-rproblem%iequation,DP) 
                 
-        else
-        
-          rmatrixComponents%dgamma1 = 0.0_DP
-          rmatrixComponents%dgamma2 = 0.0_DP
-          
-          rmatrixComponents%dnewton1 = 0.0_DP
-          rmatrixComponents%dnewton2 = 0.0_DP
-        
         end if        
 
-        rmatrixComponents%deta1 = 1.0_DP
-        rmatrixComponents%deta2 = 1.0_DP
+        rmatrixComponents%Deta(1,1) = 1.0_DP
+        rmatrixComponents%Deta(2,2) = 1.0_DP
         
-        rmatrixComponents%dtau1 = 1.0_DP
-        rmatrixComponents%dtau2 = 1.0_DP
+        rmatrixComponents%Dtau(1,1) = 1.0_DP
+        rmatrixComponents%Dtau(2,2) = 1.0_DP
         
-        rmatrixComponents%dmu1 = dprimalDualCoupling * &
+        rmatrixComponents%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
-        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+        rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * dtheta * (1.0_DP + p_rspaceTimeDiscr%dgammaC / dtstep)
             
         if (.not. bconvectionExplicit) then
         
           ! Weight the mass matrix by GAMMA instead of delta(T).
           ! That's the only difference to the implementation above!
-          if (dnewton .eq. 0.0_DP) then
-            rmatrixComponents%dr21 = 0.0_DP
-            rmatrixComponents%dr22 = 0.0_DP
-          else
-            rmatrixComponents%dr21 = ddualPrimalCoupling * &
+          if (dnewton .ne. 0.0_DP) then
+            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
-            rmatrixComponents%dr22 = ddualPrimalCoupling * &
+            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !    ( dequationType) * dtheta 
+            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
           end if
-
-        else
-        
-          rmatrixComponents%dr21 = 0.0_DP
-          rmatrixComponents%dr22 = 0.0_DP
 
         end if
 
       end if        
         
-!      IF (irelpos .EQ. -1) THEN
-!      
-!        ! Matrix on the left of the diagonal.
-!        !
-!        ! Create the matrix
-!        !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
-!
-!        rmatrixComponents%diota1 = 0.0_DP
-!        rmatrixComponents%diota2 = 0.0_DP
-!
-!        rmatrixComponents%dkappa1 = 0.0_DP
-!        rmatrixComponents%dkappa2 = 0.0_DP
-!        
-!        rmatrixComponents%dalpha1 = -1.0_DP
-!        rmatrixComponents%dalpha2 = 0.0_DP
-!        
-!        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) * p_rspaceTimeDiscr%dtstep
-!        rmatrixComponents%dtheta2 = 0.0_DP
-!        
-!        rmatrixComponents%dgamma1 = &
-!            (1.0_DP-dtheta) * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!        rmatrixComponents%dgamma2 = 0.0_DP
-!        
-!        rmatrixComponents%dnewton1 = 0.0_DP
-!        rmatrixComponents%dnewton2 = 0.0_DP
-!
-!        rmatrixComponents%deta1 = 0.0_DP
-!        rmatrixComponents%deta2 = 0.0_DP
-!        
-!        rmatrixComponents%dtau1 = 0.0_DP
-!        rmatrixComponents%dtau2 = 0.0_DP
-!        
-!        rmatrixComponents%dmu1 = dprimalDualCoupling * &
-!            p_rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
-!        rmatrixComponents%dmu2 = 0.0_DP
-!
-!      ELSE IF (irelpos .EQ. 0) THEN    
-!
-!        ! The diagonal matrix.
-!
-!        rmatrixComponents%diota1 = 0.0_DP
-!        rmatrixComponents%diota2 = 0.0_DP
-!
-!        rmatrixComponents%dkappa1 = 0.0_DP
-!        rmatrixComponents%dkappa2 = 0.0_DP
-!        
-!        rmatrixComponents%dalpha1 = 1.0_DP
-!        rmatrixComponents%dalpha2 = 1.0_DP
-!        
-!        rmatrixComponents%dtheta1 = dtheta * p_rspaceTimeDiscr%dtstep
-!        rmatrixComponents%dtheta2 = dtheta * p_rspaceTimeDiscr%dtstep
-!        
-!        rmatrixComponents%dgamma1 = &
-!            dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!        rmatrixComponents%dgamma2 = &
-!            - dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!        
-!        rmatrixComponents%dnewton1 = 0.0_DP
-!        rmatrixComponents%dnewton2 = &
-!              dtheta * p_rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!
-!        rmatrixComponents%deta1 = p_rspaceTimeDiscr%dtstep
-!        rmatrixComponents%deta2 = p_rspaceTimeDiscr%dtstep
-!        
-!        rmatrixComponents%dtau1 = 1.0_DP
-!        rmatrixComponents%dtau2 = 1.0_DP
-!        
-!        rmatrixComponents%dmu1 = dprimalDualCoupling * &
-!            dtheta * p_rspaceTimeDiscr%dtstep / p_rspaceTimeDiscr%dalphaC
-!        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-!            dtheta * (-p_rspaceTimeDiscr%dgammaC)
-!            !dtheta * (-p_rspaceTimeDiscr%dtstep) ! probably wrong!
-!
-!      END IF
-
     end if
     
     ! The dumin/dumax parameters are the same for all equations. 
@@ -1614,16 +1313,16 @@ contains
     if (rproblem%roptcontrol%ispaceTimeFormulation .ne. 0) &
       dequationType = -1.0_DP
       
-    rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/dtstep
-    rmatrixComponents%dtheta1 = dtheta
+    rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
+    rmatrixComponents%Dtheta(1,1) = dtheta
     
     if (.not. bconvectionExplicit) then
-      rmatrixComponents%dgamma1 = &
+      rmatrixComponents%Dgamma(1,1) = &
           dtheta * real(1-rproblem%iequation,DP)
     end if
 
-    rmatrixComponents%deta1 = 1.0_DP
-    rmatrixComponents%dtau1 = 1.0_DP
+    rmatrixComponents%Deta(1,1) = 1.0_DP
+    rmatrixComponents%Dtau(1,1) = 1.0_DP
         
     ! Create by substraction: rd = 0*rd - (- A11 x1) = A11 x1
     call lsysbl_clearVector (rb)

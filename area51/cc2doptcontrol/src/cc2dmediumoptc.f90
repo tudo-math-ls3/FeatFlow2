@@ -11,7 +11,7 @@
 !#
 !#  $$- \nu Delta(y) + y*\Nabla(y) + \Nabla p = f $$
 !#  $$ \Nabla \cdot y = 0$$
-!#  $$- \nu Delta(\lambda) - y*\Nabla(\lambda) + \lambda\Nabla y + \Nabla \xi = y-z $$
+!#  $$- \nu Delta(\lambda) - y*\Nabla(\lambda) + (\Nabla y)^t\lambda + \Nabla \xi = y-z $$
 !#  $$ \Nabla \cdot \lambda = 0$$
 !#              
 !#

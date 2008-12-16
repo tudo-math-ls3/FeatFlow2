@@ -173,20 +173,26 @@ contains
     ! of those terms which wshould appear in the matrix to a value <> 0,
     ! that's enough for the memory allocation.
     
-    rmatrixAssembly%dtheta1 = 1.0_DP   ! A velocity block
-    rmatrixAssembly%deta1 = 1.0_DP     ! A gradient block
-    rmatrixAssembly%dtau1 = 1.0_DP     ! A divergence block
-    rmatrixAssembly%dkappa1 = 1.0_DP   ! Pressure block
+    rmatrixAssembly%Dtheta(1,1) = 1.0_DP   ! A velocity block
+    rmatrixAssembly%Deta(1,1) = 1.0_DP     ! A gradient block
+    rmatrixAssembly%Dtau(1,1) = 1.0_DP     ! A divergence block
+    rmatrixAssembly%Dkappa(1,1) = 1.0_DP   ! Pressure block
     ! A Newton block, if we have Navier-Stokes. For the case
     ! that we use Newton
-    rmatrixAssembly%dnewton1 = real(1-rproblem%iequation,DP)
+    rmatrixAssembly%Dnewton(1,1) = real(1-rproblem%iequation,DP)
     
-    rmatrixAssembly%dtheta2 = 1.0_DP   ! A velocity block
-    rmatrixAssembly%deta2 = 1.0_DP     ! A gradient block
-    rmatrixAssembly%dtau2 = 1.0_DP     ! A divergence block
+    rmatrixAssembly%Dtheta(2,2) = 1.0_DP   ! A velocity block
+    rmatrixAssembly%Deta(2,2) = 1.0_DP     ! A gradient block
+    rmatrixAssembly%Dtau(2,2) = 1.0_DP     ! A divergence block
     ! A Newton block, if we have Navier-Stokes
-    rmatrixAssembly%dnewton2 = real(1-rproblem%iequation,DP)
-    rmatrixAssembly%dkappa2 = 1.0_DP   ! Pressure block
+    rmatrixAssembly%Dnewton(2,2) = real(1-rproblem%iequation,DP)
+    rmatrixAssembly%Dkappa(2,2) = 1.0_DP   ! Pressure block
+    
+    rmatrixAssembly%Dalpha(1,1) = 1.0_DP
+    rmatrixAssembly%Dalpha(2,1) = 1.0_DP
+    rmatrixAssembly%Dalpha(1,2) = 1.0_DP
+    rmatrixAssembly%Dalpha(2,2) = 1.0_DP
+    rmatrixAssembly%Dnewton(2,1) = real(1-rproblem%iequation,DP)
     
     rmatrixAssembly%p_rdiscretisation => rlevelInfo%rdiscretisation
     rmatrixAssembly%p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM

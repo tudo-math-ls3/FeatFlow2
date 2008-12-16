@@ -5227,10 +5227,6 @@ contains
         ! Assemble the matrix in rblockTemp.
         ! Note that the weights of the matrices must be set before, otherwise
         ! the assembly routines would complain about missing matrices :-)
-        rblockTemp%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
-        rblockTemp%RmatrixBlock(2,2)%dscaleFactor = 1.0_DP
-        rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 1.0_DP
-        rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 1.0_DP
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             rblockTemp,rmatrixComponents,rvector1,rvector2,rvector3) 
 
@@ -5244,10 +5240,10 @@ contains
           ! Mass matrices in the dual equation not needed since the band
           ! below the diagonal couples only the timesteps of the primal equation.
           ! This saves some memory as the matrices are =0 anyway.
-          rblockTemp%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
-          rblockTemp%RmatrixBlock(2,2)%dscaleFactor = 1.0_DP
-          rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 0.0_DP
-          rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 0.0_DP
+!          rblockTemp%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
+!          rblockTemp%RmatrixBlock(2,2)%dscaleFactor = 1.0_DP
+!          rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 0.0_DP
+!          rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 0.0_DP
         case (1)
           ! Specify the matrix as 'off-diagonal' matrix because it's not on the
           ! main diagonal of the supermatrix.
@@ -5256,17 +5252,17 @@ contains
           ! Mass matrices in the primal equation not needed since the band
           ! above the diagonal couples only the timesteps of the dual equation.
           ! This saves some memory as the matrices are =0 anyway.
-          rblockTemp%RmatrixBlock(1,1)%dscaleFactor = 0.0_DP
-          rblockTemp%RmatrixBlock(2,2)%dscaleFactor = 0.0_DP
-          rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 1.0_DP
-          rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 1.0_DP
+!          rblockTemp%RmatrixBlock(1,1)%dscaleFactor = 0.0_DP
+!          rblockTemp%RmatrixBlock(2,2)%dscaleFactor = 0.0_DP
+!          rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 1.0_DP
+!          rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 1.0_DP
         case DEFAULT
           rblockTemp%imatrixSpec = LSYSBS_MSPEC_GENERAL
           
-          rblockTemp%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
-          rblockTemp%RmatrixBlock(2,2)%dscaleFactor = 1.0_DP
-          rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 1.0_DP
-          rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 1.0_DP
+!          rblockTemp%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
+!          rblockTemp%RmatrixBlock(2,2)%dscaleFactor = 1.0_DP
+!          rblockTemp%RmatrixBlock(4,4)%dscaleFactor = 1.0_DP
+!          rblockTemp%RmatrixBlock(5,5)%dscaleFactor = 1.0_DP
         end select
 
         ! Include the boundary conditions into that matrix.

@@ -776,7 +776,7 @@ contains
             ! the primal equation -- as long as there is not a full identity
             ! matrix in the pressure matrix (what would be the case for 
             ! the initial condition).
-            if (rmatrixAssembly%dkappa1 .eq. 0.0_DP) then
+            if (rmatrixAssembly%Dkappa(1,1) .eq. 0.0_DP) then
               ! Switch the pressure matrix on and clear it; we don't know what is inside.
               p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
               call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
@@ -789,7 +789,7 @@ contains
             end if
 
             ! Also in the dual equation, as the BC type coincides
-            if (rmatrixAssembly%dkappa2 .eq. 0.0_DP) then
+            if (rmatrixAssembly%Dkappa(2,2) .eq. 0.0_DP) then
               ! Switch the pressure matrix on and clear it; we don't know what is inside.
               p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
               call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(6,6))
@@ -817,7 +817,7 @@ contains
               ! the primal equation -- as long as there is not a full identity
               ! matrix in the pressure matrix (what would be the case for 
               ! the initial condition).
-              if (rmatrixAssembly%dkappa1 .eq. 0.0_DP) then
+              if (rmatrixAssembly%Dkappa(1,1) .eq. 0.0_DP) then
                 ! Switch the pressure matrix on and clear it; we don't know what is inside.
                 p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
                 call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
@@ -830,7 +830,7 @@ contains
               end if
 
               ! Also in the dual equation, as the BC type coincides
-              if (rmatrixAssembly%dkappa2 .eq. 0.0_DP) then
+              if (rmatrixAssembly%Dkappa(2,2) .eq. 0.0_DP) then
                 ! Switch the pressure matrix on and clear it; we don't know what is inside.
                 p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
                 call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(6,6))

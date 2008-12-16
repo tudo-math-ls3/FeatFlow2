@@ -649,7 +649,7 @@ contains
       ! Control u = P[min/max](-1/alpha lambda)
       call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
       call lsyssc_scaleVector (rprjVector%RvectorBlock(4),-1.0_DP/rproblem%roptControl%dalphaC)
-      if (rproblem%roptControl%ccontrolConstraints .eq. 1) then
+      if (rproblem%roptControl%ccontrolConstraints .ne. 0) then
         call cc_projectControlTimestep (rprjVector%RvectorBlock(4),&
           rproblem%roptControl%dumin1,rproblem%roptControl%dumax1)
       end if
@@ -657,7 +657,7 @@ contains
 
       call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
       call lsyssc_scaleVector (rprjVector%RvectorBlock(5),-1.0_DP/rproblem%roptControl%dalphaC)
-      if (rproblem%roptControl%ccontrolConstraints .eq. 1) then
+      if (rproblem%roptControl%ccontrolConstraints .ne. 0) then
         call cc_projectControlTimestep (rprjVector%RvectorBlock(5),&
           rproblem%roptControl%dumin2,rproblem%roptControl%dumax2)
       end if

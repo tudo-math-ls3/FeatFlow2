@@ -73,6 +73,8 @@
 !# 18.) sptivec_scalarProductWeighted
 !#     -> Calculate the weighted scalar product of two vectors
 !#
+!# 19.) sptivec_printVector
+!#      -> Prints a space-time vector to the terminal
 !# </purpose>
 !##############################################################################
 
@@ -89,6 +91,7 @@ module spacetimevectors
   
   use timediscretisation
   use mprimitives
+  use vectorio
 
   implicit none
 
@@ -1634,6 +1637,53 @@ contains
     
     deallocate(p_Ddata)
     
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_printVector (rx)
+
+!<description>
+  ! Prints a vector to the terminal
+!</desctiprion>
+
+!<input>
+  ! Vector to print
+  type(t_spacetimeVector), intent(IN)   :: rx
+!</input>
+
+!</subroutine>
+
+    integer :: i
+    integer(PREC_VECIDX), dimension(1) :: Isize
+    type(t_vectorBlock) :: rxBlock,ryBlock
+    
+    ! DEBUG!!!
+    real(DP), dimension(:), pointer :: p_Dx,p_Dy
+    
+    Isize(1) = rx%NEQ
+
+    ! Allocate a 'little bit' of memory for the subvectors
+    call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
+    
+    ! DEBUG!!!
+    call lsysbl_getbase_double (rxBlock,p_Dx)
+
+    ! Loop through the substeps, load the data in, perform the linear combination
+    ! and write out again.
+    do i=1,rx%NEQtime
+      
+      call sptivec_getTimestepData (rx, i, rxBlock)
+      call vecio_writeBlockVectorHR (rxBlock, '', .false.,&
+          OU_TERMINAL, '', '(E15.5)')
+
+    end do
+
+    ! Release temp memory    
+    call lsysbl_releaseVector (rxBlock)
+      
   end subroutine
 
 end module

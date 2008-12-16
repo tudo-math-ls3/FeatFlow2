@@ -215,6 +215,10 @@ module cc2dmediumm2basic
     ! =0: No constraints.
     ! =1: Constant constraints on u active: 
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
+    !     Implemented by cubature point.
+    ! =2: Constant constraints on u active: 
+    !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
+    !     Implementation by DOF.
     integer :: ccontrolConstraints = 0
 
     ! Constraints on u_1
