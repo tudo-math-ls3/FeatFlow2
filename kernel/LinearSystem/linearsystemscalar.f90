@@ -5021,21 +5021,43 @@ contains
         rdestMatrix%h_Kld  = rsourceMatrix%h_Kld
         rdestMatrix%h_Kdiagonal = rsourceMatrix%h_Kdiagonal
         
+        ! Indicate via the matrixSpec-flag that we are not
+        ! the owner of the structure. Exception: If there is no
+        ! structure, there is no ownership!
+        if ((rsourceMatrix%h_Kcol .ne. 0) .and.&
+            (rsourceMatrix%h_Kld .ne. 0) .and.&
+            (rsourceMatrix%h_Kdiagonal .ne. 0)) then
+          rdestMatrix%imatrixSpec = ior(rdestMatrix%imatrixSpec,&
+                                        LSYSSC_MSPEC_STRUCTUREISCOPY)
+        else
+          rdestMatrix%imatrixSpec = iand(rdestMatrix%imatrixSpec,&
+                                        not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+        end if
+      
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
         ! Overwrite structural data
         rdestMatrix%h_Kcol = rsourceMatrix%h_Kcol
         rdestMatrix%h_Kld  = rsourceMatrix%h_Kld
       
+        ! Indicate via the matrixSpec-flag that we are not
+        ! the owner of the structure. Exception: If there is no
+        ! structure, there is no ownership!
+        if ((rsourceMatrix%h_Kcol .ne. 0) .and.&
+            (rsourceMatrix%h_Kld .ne. 0)) then
+          rdestMatrix%imatrixSpec = ior(rdestMatrix%imatrixSpec,&
+                                        LSYSSC_MSPEC_STRUCTUREISCOPY)
+        else
+          rdestMatrix%imatrixSpec = iand(rdestMatrix%imatrixSpec,&
+                                        not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+        end if
+
       case (LSYSSC_MATRIXD,LSYSSC_MATRIX1)
-        ! Nothing to do
+        ! Nothing to do. No ownership.
+        rdestMatrix%imatrixSpec = iand(rdestMatrix%imatrixSpec,&
+                                      not(LSYSSC_MSPEC_STRUCTUREISCOPY))
 
       end select
       
-      ! Indicate via the matrixSpec-flag that we are not
-      ! the owner of the structure.
-      rdestMatrix%imatrixSpec = ior(rdestMatrix%imatrixSpec,&
-                                    LSYSSC_MSPEC_STRUCTUREISCOPY)
-    
     end subroutine
 
     !--------------------------------------------------------
@@ -5263,14 +5285,22 @@ contains
       select case (rsourceMatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
           LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
+        
         rdestMatrix%h_Da = rsourceMatrix%h_Da
+        
+        ! Indicate via the matrixSpec-flag that we are not
+        ! the owner of the structure. Only exception: If the handle
+        ! is zero, there is nothing that can be owned!
+        if (rsourceMatrix%h_Da .ne. 0) then
+          rdestMatrix%imatrixSpec = ior(rdestMatrix%imatrixSpec,&
+                                        LSYSSC_MSPEC_CONTENTISCOPY)
+        else
+          rdestMatrix%imatrixSpec = iand(rdestMatrix%imatrixSpec,&
+                                        not(LSYSSC_MSPEC_CONTENTISCOPY))
+        end if
+      
       end select
       
-      ! Indicate via the matrixSpec-flag that we are not
-      ! the owner of the structure.
-      rdestMatrix%imatrixSpec = ior(rdestMatrix%imatrixSpec,&
-                                    LSYSSC_MSPEC_CONTENTISCOPY)
-    
     end subroutine
 
     !--------------------------------------------------------
@@ -11335,6 +11365,7 @@ contains
 
     ! local variables
     integer(PREC_VECIDX), dimension(:), pointer :: p_Kld1,p_Kld2
+    integer :: NEQ
   
     if (rsourceMatrix%h_Kld .eq. rdestMatrix%h_Kld) then
       ! Eehm... forget it.
@@ -11343,8 +11374,16 @@ contains
 
     call lsyssc_getbase_Kld (rsourceMatrix,p_Kld1)
     if (rdestMatrix%h_Kld .eq. ST_NOHANDLE) then
+    
+      ! Get the correct array length
+      if (iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+        NEQ = rsourceMatrix%NCOLS
+      else
+        NEQ = rsourceMatrix%NEQ
+      end if
+
       call storage_new ('lsyssc_auxcopy_Kld', 'Kld', &
-          rsourceMatrix%NEQ+1_PREC_VECIDX, &
+          NEQ+1_PREC_VECIDX, &
           ST_INT, rdestMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
     end if
     call lsyssc_getbase_Kld (rdestMatrix,p_Kld2)
@@ -11380,6 +11419,7 @@ contains
   
     ! local variables
     integer(PREC_VECIDX), dimension(:), pointer :: p_Kdiag1,p_Kdiag2
+    integer :: NEQ
   
     if (rsourceMatrix%h_Kdiagonal .eq. rdestMatrix%h_Kdiagonal) then
       ! Eehm... forget it.
@@ -11388,9 +11428,15 @@ contains
 
     call lsyssc_getbase_Kdiagonal (rsourceMatrix,p_Kdiag1)
     if (rdestMatrix%h_Kdiagonal .eq. ST_NOHANDLE) then
+      ! Get the correct array length
+      if (iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+        NEQ = rsourceMatrix%NCOLS
+      else
+        NEQ = rsourceMatrix%NEQ
+      end if
+
       call storage_new ('lsyssc_auxcopy_Kdiagonal', 'Kdiagonal', &
-          rsourceMatrix%NEQ, &
-          ST_INT, rdestMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
+          NEQ, ST_INT, rdestMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
     end if
     call lsyssc_getbase_Kdiagonal (rdestMatrix,p_Kdiag2)
     
@@ -11402,7 +11448,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_allocEmptyMatrix (rmatrixScalar,iclear,cdataType)
+  subroutine lsyssc_allocEmptyMatrix (rmatrixScalar,iclear,bignoreExisting,cdataType)
   
 !<description>
   ! This routine allocates memory for the matrix entries without computing
@@ -11420,6 +11466,10 @@ contains
   !                         for UMFPACK who needs a non-zero
   !                         matrix for symbolic factorisation.)
   integer, intent(IN) :: iclear
+  
+  ! OPTIONAL: If set to TRUE, existing matrices are ignored.
+  ! Standard value is FALSE which stops the application with an error.
+  logical, intent(in), optional :: bignoreExisting
   
   ! OPTIONAL: Data type of the matrix (ST_SINGLE, ST_DOUBLE)
   ! If not present, the standard data type cdataType-variable in the matrix
@@ -11441,6 +11491,9 @@ contains
   real(DP), dimension(:), pointer :: p_Da
   
   if (rmatrixScalar%h_DA .ne. ST_NOHANDLE) then
+    if (present(bignoreExisting)) then
+      if (bignoreExisting) return
+    end if
     print *,'lsyssc_allocEmptyMatrix: Cannot create empty matrix; exists already!'
     call sys_halt()
   end if
