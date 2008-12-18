@@ -746,13 +746,26 @@ contains
               rmatrixComponents%Dtheta(i,j),rmatrixComponents%Dgamma(i,j),&
               rmatrixComponents%Dnewton(i,j),rmatrixComponents%DgammaT(i,j),&
               rmatrixComponents%DnewtonT(i,j),rmatrixComponents%Deta(i,j),&
-              rmatrixComponents%Dtau(i,j),rmatrixComponents%Dkappa(i,j))
+              rmatrixComponents%Dtau(i,j),rmatrixComponents%Dkappa(i,j),&
+              (i .eq. 2) .and. (j .eq. 2))
           call lsysbl_updateMatStrucInfo(rtempMatrix)
           call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,(i-1)*3+1,(j-1)*3+1)
           call lsysbl_releaseMatrix (rtempMatrix)
         end do
       end do
+      
       call lsysbl_allocEmptyMatrix (rmatrix,LSYSSC_SETM_UNDEFINED,.true.)
+
+      ! Share the B-matrices of the dual equation with those of the primal
+      ! equation; we need them only once since they are the same, even if
+      ! boundary conditions are imposed.
+      call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,3),rmatrix%RmatrixBlock(4,6),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(2,3),rmatrix%RmatrixBlock(5,6),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      rmatrix%RmatrixBlock(4,6)%dscaleFactor = rmatrixComponents%Deta(2,2)
+      rmatrix%RmatrixBlock(5,6)%dscaleFactor = rmatrixComponents%Deta(2,2)
+
     end if   
    
     if (iand(coperation,CCMASM_COMPUTE) .ne. 0) then
@@ -781,7 +794,7 @@ contains
       call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
           rmatrixComponents%Diota(1,1),rmatrixComponents%Dalpha(1,1),&
           rmatrixComponents%Dtheta(1,1),&
-          rmatrixComponents%Deta(1,1),rmatrixComponents%Dtau(1,1))
+          rmatrixComponents%Deta(1,1),rmatrixComponents%Dtau(1,1),.false.)
 
 
       ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
@@ -844,7 +857,7 @@ contains
       call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
           rmatrixComponents%Diota(2,2),rmatrixComponents%Dalpha(2,2),&
           rmatrixComponents%Dtheta(2,2),&
-          rmatrixComponents%Deta(2,2),rmatrixComponents%Dtau(2,2))
+          rmatrixComponents%Deta(2,2),rmatrixComponents%Dtau(2,2),.true.)
 
       ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
       ! u*grad(.)+grad(u)*(.) to the velocity.
@@ -890,7 +903,7 @@ contains
       call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
           rmatrixComponents%Diota(2,1),rmatrixComponents%Dalpha(2,1),&
           rmatrixComponents%Dtheta(2,1),&
-          rmatrixComponents%Deta(2,1),rmatrixComponents%Dtau(2,1))
+          rmatrixComponents%Deta(2,1),rmatrixComponents%Dtau(2,1),.false.)
           
       select case (rmatrixComponents%idualSol)
       case (1)
@@ -976,7 +989,8 @@ contains
     ! -----------------------------------------------------
     
     subroutine allocSubmatrix (rmatrixComponents,cmatrixType,rsubmatrix,&
-        diota,dalpha,dtheta,dgamma,dnewton,dgammaT,dnewtonT,deta,dtau,dkappa)
+        diota,dalpha,dtheta,dgamma,dnewton,dgammaT,dnewtonT,deta,dtau,dkappa,&
+        bignoreEta)
         
     ! Allocates memory for a submatrix of the system matrix.
     ! The submatrix can then be inserted into a larger system matrix.
@@ -1001,6 +1015,12 @@ contains
     ! Switches that pressure-matrix on/off.
     real(DP), intent(in) :: dkappa
        
+    ! If set to TRUE, the assembly of the data in the B-matrices will be skipped.
+    ! This can be used if the B-matrices of one equation share their information
+    ! with B-matrices from another equation and thus do not need to be assembled
+    ! twice.
+    logical, intent(in) :: bignoreEta
+
       ! local variables
       logical :: bdecoupled,bfulltensor
        
@@ -1102,7 +1122,7 @@ contains
       ! block matrix, while we create empty space for the entries. 
       ! Later, the B-matrices are copied into here and modified for boundary
       ! conditions.
-      if (deta .ne. 0.0_DP) then
+      if ((deta .ne. 0.0_DP) .and. .not. bignoreEta) then
         call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1, &
                                       rsubmatrix%RmatrixBlock(1,3),&
                                       LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
@@ -1155,7 +1175,7 @@ contains
     ! -----------------------------------------------------
     
     subroutine assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rmatrix,&
-        diota,dalpha,dtheta,deta,dtau)
+        diota,dalpha,dtheta,deta,dtau,bignoreEta)
         
     ! Assembles a matrix containing only linear terms. The matrix is a
     ! submatrix of a larger system matrix and can then be inserted 
@@ -1186,6 +1206,12 @@ contains
     
     ! Coefficient in front of the B^T-matrices
     real(DP), intent(in) :: dtau
+        
+    ! If set to TRUE, the assembly of the data in the B-matrices will be skipped.
+    ! This can be used if the B-matrices of one equation share their information
+    ! with B-matrices from another equation and thus do not need to be assembled
+    ! twice.
+    logical, intent(in) :: bignoreEta
         
     ! local variables
     logical :: bshared
@@ -1295,7 +1321,7 @@ contains
       !
       ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
       ! memory if necessary.
-      if (deta .ne. 0.0_DP) then
+      if ((deta .ne. 0.0_DP) .and. .not. bignoreEta) then
         call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1, &
                                       rmatrix%RmatrixBlock(1,3),&
                                       LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
@@ -3358,26 +3384,20 @@ contains
     ! nonlinearity.
     select case (rmatrixComponents%iprimalSol)
     case (1)
-      call lsysbl_deriveSubvector(rvector1,rvectorPrimal, &
-          1,2,.true.)
+      call lsysbl_deriveSubvector(rvector1,rvectorPrimal, 1,2,.true.)
     case (2)
-      call lsysbl_deriveSubvector(rvector2,rvectorPrimal, &
-          1,2,.true.)
+      call lsysbl_deriveSubvector(rvector2,rvectorPrimal, 1,2,.true.)
     case (3)
-      call lsysbl_deriveSubvector(rvector3,rvectorPrimal, &
-          1,2,.true.)
+      call lsysbl_deriveSubvector(rvector3,rvectorPrimal, 1,2,.true.)
     end select
 
     select case (rmatrixComponents%idualSol)
     case (1)
-      call lsysbl_deriveSubvector(rvector1,rvectorDual, &
-          4,5,.true.)
+      call lsysbl_deriveSubvector(rvector1,rvectorDual, 4,5,.true.)
     case (2)
-      call lsysbl_deriveSubvector(rvector2,rvectorDual, &
-          4,5,.true.)
+      call lsysbl_deriveSubvector(rvector2,rvectorDual, 4,5,.true.)
     case (3)
-      call lsysbl_deriveSubvector(rvector3,rvectorDual, &
-          4,5,.true.)
+      call lsysbl_deriveSubvector(rvector3,rvectorDual, 4,5,.true.)
     end select
     
     ! Create a 2x2 matrix based on the structure of the FE space.
@@ -3498,7 +3518,7 @@ contains
 
       ! Yes, that's a Newton matrix. That means, we have to multiply the
       ! vector with the derivative of the projection operator:
-      ! b-P[a,b]'(lambda).
+      ! b-(-P[a,b]'(-1/alpha lambda)).
       ! For that purpose, we have to assemble special mass matrices:
       call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
           rd,dcx*rmatrixComponents%Dalpha(1,2),rvectorDual,0)
@@ -4167,7 +4187,7 @@ contains
     real(DP), intent(IN) :: dcx
     
     ! Velocity vector field that should be used for the assembly of the
-    ! nonlinearity. Block 1 and 1 in that block vector are used as velocity 
+    ! nonlinearity. Block 1 and 2 in that block vector are used as velocity 
     ! field and shall contain the dual velocity field.
     type(t_vectorBlock), intent(IN), target :: rvelocityVector
 
@@ -4189,7 +4209,8 @@ contains
 
         call lsysbl_createEmptyMatrix (rtempMatrix,2)
 
-        if (cprojectionType .eq. 0) then
+        if ((cprojectionType .eq. 0) .or. &
+            (rmatrixComponents%ccontrolConstraints .eq. 0)) then
         
           call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
               rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
@@ -4205,12 +4226,15 @@ contains
 !            call lsyssc_scaleMatrix (rtempMatrix%RmatrixBlock(2,2),rmatrixComponents%dmu1)
 !          end if
 
-          ! Filter the matrix. All the rows corresponding to DOF's that violate
-          ! the bounds must be set to zero.
-          call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(4),&
-              rmatrixComponents%dalphaC,rmatrixComponents%dumin1,rmatrixComponents%dumax1)
-          call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(5),&
-              rmatrixComponents%dalphaC,rmatrixComponents%dumin2,rmatrixComponents%dumax2)
+          if (rmatrixComponents%ccontrolConstraints .ne. 0) then
+            ! In the case when we have constraints, filter the matrix. 
+            ! All the rows corresponding to DOF's that violate
+            ! the bounds must be set to zero.
+            call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(1),&
+                rmatrixComponents%dalphaC,rmatrixComponents%dumin1,rmatrixComponents%dumax1)
+            call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(2),&
+                rmatrixComponents%dalphaC,rmatrixComponents%dumin2,rmatrixComponents%dumax2)
+          end if
             
         else
 

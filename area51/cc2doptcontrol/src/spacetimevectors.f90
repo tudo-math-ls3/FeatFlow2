@@ -1656,7 +1656,7 @@ contains
 
 !</subroutine>
 
-    integer :: i
+    integer :: i,j
     integer(PREC_VECIDX), dimension(1) :: Isize
     type(t_vectorBlock) :: rxBlock,ryBlock
     
@@ -1676,8 +1676,12 @@ contains
     do i=1,rx%NEQtime
       
       call sptivec_getTimestepData (rx, i, rxBlock)
-      call vecio_writeBlockVectorHR (rxBlock, '', .false.,&
-          OU_TERMINAL, '', '(E15.5)')
+      call output_lbrk()
+      do j=1,size(p_Dx)
+        call output_line (sys_sdEP(p_Dx(j),20,10))
+      end do
+      !call vecio_writeBlockVectorHR (rxBlock, '', .false.,&
+      !    OU_TERMINAL, '', '(E15.5)')
 
     end do
 

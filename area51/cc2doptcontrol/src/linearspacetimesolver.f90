@@ -787,6 +787,14 @@ module linearspacetimesolver
     ! form if bwriteMatrix=true.
     character(len=SYS_STRLEN) :: sfilename = "matrix.txt"
 
+    ! When writing a matrix: X/Y-position of the first block  or (0,0) for auto.
+    integer :: ixfirst = 0
+    integer :: iyfirst = 0
+
+    ! When writing a matrix: X/Y-position of the last block  or (0,0) for auto.
+    integer :: ixlast = 0
+    integer :: iylast = 0
+
     ! <!--
     ! The following variables are internal variables and not to be used
     ! by any application
@@ -4952,6 +4960,8 @@ contains
     integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
     integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
     real(DP), dimension(:), pointer :: p_DA
+    integer :: ixfirst,ixlast,iyfirst,iylast
+    type(t_matrixBlock) :: rsubmatrix,rtempSubmatrix
 
     ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
     ! of a call to the solver routines.
@@ -4966,6 +4976,32 @@ contains
     ! can be feed to UMFPACK.
     call assembleGlobalSpaceTimeMatrix (rsolverNode%p_rproblem,&
         rsolverNode%rmatrix,rmatrixGlobal)
+
+    ! Extract a submatrix for file output?
+    if (rsolverNode%p_rsubnodeUMFPACK4%cwriteMatrix .gt. 0) then
+      
+      ixfirst = rsolverNode%p_rsubnodeUMFPACK4%ixfirst
+      ixlast  = rsolverNode%p_rsubnodeUMFPACK4%ixlast
+      iyfirst = rsolverNode%p_rsubnodeUMFPACK4%iyfirst
+      iylast  = rsolverNode%p_rsubnodeUMFPACK4%iylast
+      if ((ixfirst .ne. 0) .or. (ixlast .ne. 0) .or. &
+          (iyfirst .ne. 0) .or. (iylast .ne. 0)) then
+        if (ixfirst .eq. 0) ixfirst = 1
+        if (iyfirst .eq. 0) iyfirst = 1
+        if (ixlast .eq. 0) ixlast = rmatrixGlobal%nblocksPerRow
+        if (iylast .eq. 0) iylast = rmatrixGlobal%nblocksPerCol
+        call lsysbl_deriveSubmatrix (rmatrixGlobal,rsubmatrix,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,&
+            iyfirst,iylast,ixfirst,ixlast)
+            
+        ! Assemble a separate submatrix
+        call glsys_assembleGlobal (rsubmatrix, rtempsubMatrix, .true., .true.)
+
+        ! The global block matrix is not needed anymore.
+        call lsysbl_releaseMatrix (rsubmatrix)
+      end if
+    end if
+
     call glsys_assembleGlobal (rmatrixGlobal, rtempMatrix, .true., .true.)
     
     ! The global block matrix is not needed anymore.
@@ -4984,12 +5020,16 @@ contains
     !CALL matio_writeBlockMatrixMaple (rtempMatrix, 'A',&
     !                             0, 'matrix.txt', '(E20.10)')
 
-    ! Now start to modify the temp matrix for UMFPACK's needs.  
-    p_rmatrix => rtempMatrix%RmatrixBlock(1,1)
-    
-    !CALL matio_spyMatrix('matrix','matrix',p_rmatrix,.TRUE.)
-
     if (rsolverNode%p_rsubnodeUMFPACK4%cwriteMatrix .gt. 0) then
+      
+      ! Extract a submatrix?
+      if ((ixfirst .ne. 0) .or. (ixlast .ne. 0) .or. &
+          (iyfirst .ne. 0) .or. (iylast .ne. 0)) then
+        p_rmatrix => rtempsubMatrix%RmatrixBlock(1,1)
+      else
+        p_rmatrix => rtempMatrix%RmatrixBlock(1,1)
+      end if
+    
       call lsyssc_getbase_double (p_rmatrix,p_DA)
       where (abs(p_Da) .lt. 1.0E-12_DP) p_Da = 0.0_DP
       call matio_writeMatrixHR (p_rmatrix, 'matrix',&
@@ -4998,7 +5038,20 @@ contains
       if (rsolverNode%p_rsubnodeUMFPACK4%cwriteMatrix .eq. 2) then
         call sys_halt()
       end if
+  
+      ! Cleanup    
+      if ((ixfirst .ne. 0) .or. (ixlast .ne. 0) .or. &
+          (iyfirst .ne. 0) .or. (iylast .ne. 0)) then
+        ! Change the pointer back to the original matrix
+        call lsysbl_releaseMatrix (rtempsubMatrix)
+      end if
+      
     end if
+
+    ! Now start to modify the temp matrix for UMFPACK's needs.  
+    p_rmatrix => rtempMatrix%RmatrixBlock(1,1)
+    
+    !CALL matio_spyMatrix('matrix','matrix',p_rmatrix,.TRUE.)
 
     ! Modify Kcol/Kld of the matrix. Subtract 1 to get them 0-based.
     call lsyssc_addIndex (p_rmatrix%h_Kcol,-1_I32)

@@ -934,8 +934,9 @@ contains
         !END IF
         Dvalues(:,:) = Dpoints(1,:,:)
         
-        Dvalues (:,:) = 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
-        
+        !Dvalues (:,:) = 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) * dtime
+        !Dvalues (:,:) = 2.0_DP/3.0_DP
+        Dvalues (:,:) = 0.3_DP * 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
         
 !      CASE (1:2)
 !        ! Target flow is specified by a block vector.

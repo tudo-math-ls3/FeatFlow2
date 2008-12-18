@@ -2493,7 +2493,9 @@ contains
           p_rcgrSolver%domega = domega
           
           ! DEBUG!!!
-          !p_rcgrSolver%p_rsubnodeUMFPACK4%cwriteMatrix = 1
+          p_rcgrSolver%p_rsubnodeUMFPACK4%cwriteMatrix = 1
+          p_rcgrSolver%p_rsubnodeUMFPACK4%ixfirst = 7
+          p_rcgrSolver%p_rsubnodeUMFPACK4%iyfirst = 7
 
         case (5)
           ! Forward backward Gauss Seidel as preconditioner
@@ -2972,12 +2974,16 @@ contains
         call sptils_initData (p_rsolverNode,ierror)
         call stat_stopTimer (rtimeFactorisationStep)
         
+        !call sptivec_printVector (rd)
+        
         call stat_clearTimer (rtimerMGStep)
         call stat_startTimer (rtimerMGStep)
         call sptils_precondDefect (p_rsolverNode,rd)
         call sptils_doneData (p_rsolverNode)
         
         call stat_stopTimer (rtimerMGStep)
+        
+        !call sptivec_printVector (rd)
         
         ! Sum up time data for statistics.
         call stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeSmoothing,&
