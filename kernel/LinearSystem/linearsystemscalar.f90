@@ -4366,6 +4366,7 @@ contains
         call storage_free (ry%h_Ddata)
         
       ry%h_Ddata = rx%h_Ddata
+      ry%iidxFirstEntry = rx%iidxFirstEntry 
       ry%bisCopy = .true.
       
     case (LSYSSC_DUP_COPY)
@@ -4397,6 +4398,7 @@ contains
       if (rx%bisCopy) then
         ! rx shares it's data and thus ry will also.
         ry%h_Ddata = rx%h_Ddata
+        ry%iidxFirstEntry = rx%iidxFirstEntry
         ry%bisCopy = .true.
       else
         ! The data belongs to rx and thus it must also belong to ry --
