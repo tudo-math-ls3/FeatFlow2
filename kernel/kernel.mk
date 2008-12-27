@@ -41,11 +41,6 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90 \
 	vanka_aux.f90 vanka_navst2d.f90 vanka_bouss2d.f90 uuid.f90 \
 	fpersistence.f90 quicksolver.f90
 
-# Include HDF5 subsystem if required
-ifeq ($(HDF5),YES)
-KERNELSRC:=$(KERNELSRC) h5lite.f90 linearsystemh5io.f90
-endif
-
 # path for the make where to look for which files
 
 vpath %.f $(KERNEL)/System $(KERNEL)/BasicGeometry \

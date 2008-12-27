@@ -386,6 +386,4 @@ endif
 	@echo '                 (See Globals.mk for details)'
 	@echo ' FFCORE=xxx    - overwrites the autodetected value for FFCORE by xxx'
 	@echo '                 (See Globals.mk for details)'
-	@echo ' HDF5=YES      - compile and link HDF5 libraries'
-	@echo '                 (See Globals.mk for details)'
 
