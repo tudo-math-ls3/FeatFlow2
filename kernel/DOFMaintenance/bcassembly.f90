@@ -3353,11 +3353,11 @@ contains
         p_rspatDisc%RelementDistr(1)%celement))
       
       ! P0/Q0 elements (and 2D QP1 element)
-      case (EL_P0_1D,EL_P0,EL_Q0,EL_QP1,EL_P0_3D,EL_Q0_3D)
+      case (EL_P0_1D,EL_P0,EL_Q0,EL_QP1,EL_P0_3D,EL_Q0_3D,EL_Y0_3D,EL_R0_3D)
         ndofs = iregionNEL
       
       ! P1/Q1 elements (and 1D S31 element)
-      case (EL_P1_1D,EL_S31_1D,EL_P1,EL_Q1,EL_P1_3D,EL_Q1_3D)
+      case (EL_P1_1D,EL_S31_1D,EL_P1,EL_Q1,EL_P1_3D,EL_Q1_3D,EL_Y1_3D,EL_R1_3D)
         ndofs = iregionNVT
       
       ! 1D P2 element
@@ -3460,6 +3460,24 @@ contains
         ! 3D Q1 element
         case (EL_Q1_3D)
           do j=1,8
+            if (p_IvertsAtElem(j,iel) .eq. ivt) then
+              idof = IdofGlob(j)
+              exit
+            end if
+          end do
+
+        ! 3D Y1 element
+        case (EL_Y1_3D)
+          do j=1,5
+            if (p_IvertsAtElem(j,iel) .eq. ivt) then
+              idof = IdofGlob(j)
+              exit
+            end if
+          end do
+
+        ! 3D R1 element
+        case (EL_R1_3D)
+          do j=1,6
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
               exit
