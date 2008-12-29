@@ -166,19 +166,37 @@ module cubature
 
 !<constantblock variable="ccubType" description="3D formulas, tetra">
   ! 1-point Gauss formula, 3D, degree = 1, ncubp = 1
-  integer, parameter :: CUB_G1_3D_T = 350
+  integer, parameter :: CUB_G1_3D_T = 351
   
   ! trapezoidal rule, 3D, degree = 2, ncubp = 4
-  integer, parameter :: CUB_TRZ_3D_T = 351
+  integer, parameter :: CUB_TRZ_3D_T = 352
   
   ! 4-point Stroud rule, 3D, degree = 2, ncubp = 4
-  integer, parameter :: CUB_S2_3D_T = 352
+  integer, parameter :: CUB_S2_3D_T = 353
   
   ! 10-point Stroud rule, 3D, degree = 3, ncubp = 10
-  integer, parameter :: CUB_S3_3D_T = 353
+  integer, parameter :: CUB_S3_3D_T = 354
   
   ! 15-point Stroud rule, 3D, degree = 5, ncubp = 15
-  integer, parameter :: CUB_S5_3D_T = 354
+  integer, parameter :: CUB_S5_3D_T = 355
+  
+!</constantblock>
+
+!<constantblock variable="ccubType" description="3D formulas, pyramid">
+  ! 1-point Gauss formula, 3D, degree = 1, ncubp = 1
+  integer, parameter :: CUB_G1_3D_Y = 401
+  
+  ! trapezoidal rule, 3D, degree = 2, ncubp = 5
+  integer, parameter :: CUB_TRZ_3D_Y = 402
+  
+!</constantblock>
+
+!<constantblock variable="ccubType" description="3D formulas, prism">
+  ! 1-point Gauss formula, 3D, degree = 1, ncubp = 1
+  integer, parameter :: CUB_G1_3D_R = 451
+  
+  ! trapezoidal rule, 3D, degree = 2, ncubp = 6
+  integer, parameter :: CUB_TRZ_3D_R = 452
   
 !</constantblock>
 
@@ -308,6 +326,18 @@ contains
     cub_igetID=CUB_S3_3D_T
   case("S5_3D_T")
     cub_igetID=CUB_S5_3D_T
+  
+  ! 3D-formulas, pyramid
+  case("G1_3D_Y")
+    cub_igetID=CUB_G1_3D_Y
+  case("TRZ_3D_Y")
+    cub_igetID=CUB_TRZ_3D_Y
+  
+  ! 3D-formulas, prism
+  case("G1_3D_R")
+    cub_igetID=CUB_G1_3D_R
+  case("TRZ_3D_R")
+    cub_igetID=CUB_TRZ_3D_R
 
   case default
     print *,'Error: Unknown cubature formula: ',scubname
@@ -400,6 +430,18 @@ contains
     case (CUB_G3_3D)
       n = 27
     
+    ! -= 3D Pyramid Formulas =-
+    case (CUB_G1_3D_Y)
+      n = 1
+    case (CUB_TRZ_3D_Y)
+      n = 5
+    
+    ! -= 3D Prism Formulas =-
+    case (CUB_G1_3D_R)
+      n = 1
+    case (CUB_TRZ_3D_R)
+      n = 6
+    
     case default
       print *, 'Error: Unknown cubature formula'
       call sys_halt()
@@ -437,7 +479,7 @@ contains
     else if(ccubType .le. 200) then
       ! 1D Line
       ishp = BGEOM_SHAPE_LINE
-    else if(ccubType .le. 250) then
+    else if(ccubType .lt. 250) then
       ! 2D Quadrilateral
       ishp = BGEOM_SHAPE_QUAD
     else if(ccubType .le. 300) then
@@ -1837,6 +1879,80 @@ contains
     Domega(15) = 0.0088183421516755_DP
     
     ncubp = 15
+
+  ! pyramid
+  case(CUB_G1_3D_Y)
+    Dxi(1,1) = 0.0_DP
+    Dxi(1,2) = 0.0_DP
+    Dxi(1,3) = 0.5_DP
+    
+    Domega(1) = 1.3333333333333333_DP
+    
+    ncubp = 1
+  
+  case(CUB_TRZ_3D_Y)
+    Dxi(1,1) = -1.0_DP
+    Dxi(1,2) = -1.0_DP
+    Dxi(1,3) =  0.0_DP
+    Dxi(2,1) =  1.0_DP
+    Dxi(2,2) = -1.0_DP
+    Dxi(2,3) =  0.0_DP
+    Dxi(3,1) =  1.0_DP
+    Dxi(3,2) =  1.0_DP
+    Dxi(3,3) =  0.0_DP
+    Dxi(4,1) = -1.0_DP
+    Dxi(4,2) =  1.0_DP
+    Dxi(4,3) =  0.0_DP
+    Dxi(5,1) =  0.0_DP
+    Dxi(5,2) =  0.0_DP
+    Dxi(5,3) =  1.0_DP
+    
+    Domega(1) = 0.26666666666666666_DP
+    Domega(2) = 0.26666666666666666_DP
+    Domega(3) = 0.26666666666666666_DP
+    Domega(4) = 0.26666666666666666_DP
+    Domega(5) = 0.26666666666666666_DP
+    
+    ncubp = 5
+  
+  ! prism
+  case(CUB_G1_3D_R)
+    Dxi(1,1) = 0.3333333333333333_DP
+    Dxi(1,2) = 0.3333333333333333_DP
+    Dxi(1,3) = 0.0_DP
+    
+    Domega(1) = 1.0_DP
+    
+    ncubp = 1
+  
+  case(CUB_TRZ_3D_R)
+    Dxi(1,1) =  0.0_DP
+    Dxi(1,2) =  0.0_DP
+    Dxi(1,3) = -1.0_DP
+    Dxi(2,1) =  1.0_DP
+    Dxi(2,2) =  0.0_DP
+    Dxi(2,3) = -1.0_DP
+    Dxi(3,1) =  0.0_DP
+    Dxi(3,2) =  1.0_DP
+    Dxi(3,3) = -1.0_DP
+    Dxi(4,1) =  0.0_DP
+    Dxi(4,2) =  0.0_DP
+    Dxi(4,3) =  1.0_DP
+    Dxi(5,1) =  1.0_DP
+    Dxi(5,2) =  0.0_DP
+    Dxi(5,3) =  1.0_DP
+    Dxi(6,1) =  0.0_DP
+    Dxi(6,2) =  1.0_DP
+    Dxi(6,3) =  1.0_DP
+    
+    Domega(1) = 0.16666666666666666_DP
+    Domega(2) = 0.16666666666666666_DP
+    Domega(3) = 0.16666666666666666_DP
+    Domega(4) = 0.16666666666666666_DP
+    Domega(5) = 0.16666666666666666_DP
+    Domega(6) = 0.16666666666666666_DP
+    
+    ncubp = 6
 
   case default 
     print *,'Error: unknown cubature formula: ',ccubType
