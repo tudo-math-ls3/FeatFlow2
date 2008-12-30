@@ -1049,6 +1049,46 @@ contains
                                 DpointRef(1),DpointRef(2),DpointRef(3),&
                                 DpointReal(1),DpointReal(2),DpointReal(3))
       end if
+
+    case (TRAFO_ID_MLINPYRAMID)
+    
+      ! Prepare the calculation of the Jacobi determinants
+      call trafo_prepJac_pyra3d(Dcoords, DjacPrep)
+
+      ! Calculate with or without coordinates?
+      if (.not. present(DpointReal)) then
+        
+        ! Calculate the Jacobian matrix and determinant
+        call trafo_calcJac_pyra3d (DjacPrep,Djac(:),ddetj, &
+                              DpointRef(1),DpointRef(2),DpointRef(3))
+      
+      else
+        
+        ! Calculate the Jacobian matrix and determinant
+        call trafo_calcTrafo_pyra3d (DjacPrep,Djac(:),ddetj, &
+                                DpointRef(1),DpointRef(2),DpointRef(3),&
+                                DpointReal(1),DpointReal(2),DpointReal(3))
+      end if
+      
+    case (TRAFO_ID_MLINPRISM)
+    
+      ! Prepare the calculation of the Jacobi determinants
+      call trafo_prepJac_prism3d(Dcoords, DjacPrep)
+
+      ! Calculate with or without coordinates?
+      if (.not. present(DpointReal)) then
+        
+        ! Calculate the Jacobian matrix and determinant
+        call trafo_calcJac_prism3d (DjacPrep,Djac(:),ddetj, &
+                              DpointRef(1),DpointRef(2),DpointRef(3))
+      
+      else
+        
+        ! Calculate the Jacobian matrix and determinant
+        call trafo_calcTrafo_prism3d (DjacPrep,Djac(:),ddetj, &
+                                DpointRef(1),DpointRef(2),DpointRef(3),&
+                                DpointReal(1),DpointReal(2),DpointReal(3))
+      end if
     
     end select
   
@@ -1377,6 +1417,60 @@ contains
         do ipt=1,npointsPerEl
           ! Calculate the Jacobian matrix and determinant
           call trafo_calcTrafo_hexa3d(DjacPrep,Djac(:,ipt),Ddetj(ipt),&
+              DpointsRef(1,ipt),DpointsRef(2,ipt),DpointsRef(3,ipt),&
+              DpointsReal(1,ipt),DpointsReal(2,ipt),DpointsReal(3,ipt))
+        end do ! ipt
+        
+      end if
+
+    case (TRAFO_ID_MLINPYRAMID)
+    
+      ! Prepare the calculation of the Jacobi determinants
+      call trafo_prepJac_pyra3D(Dcoords, DjacPrep)
+
+      ! Calculate with or without coordinates?
+      if (.not. present(DpointsReal)) then
+      
+        ! Loop over the points
+        do ipt=1,npointsPerEl
+          ! Calculate the Jacobian matrix and determinant
+          call trafo_calcJac_pyra3D (DjacPrep,Djac(:,ipt),Ddetj(ipt), &
+              DpointsRef(1,ipt),DpointsRef(2,ipt),DpointsRef(3,ipt))
+        end do ! ipt
+        
+      else
+        
+        ! Loop over the points
+        do ipt=1,npointsPerEl
+          ! Calculate the Jacobian matrix and determinant
+          call trafo_calcTrafo_pyra3d(DjacPrep,Djac(:,ipt),Ddetj(ipt),&
+              DpointsRef(1,ipt),DpointsRef(2,ipt),DpointsRef(3,ipt),&
+              DpointsReal(1,ipt),DpointsReal(2,ipt),DpointsReal(3,ipt))
+        end do ! ipt
+        
+      end if
+
+    case (TRAFO_ID_MLINPRISM)
+    
+      ! Prepare the calculation of the Jacobi determinants
+      call trafo_prepJac_prism3D(Dcoords, DjacPrep)
+
+      ! Calculate with or without coordinates?
+      if (.not. present(DpointsReal)) then
+      
+        ! Loop over the points
+        do ipt=1,npointsPerEl
+          ! Calculate the Jacobian matrix and determinant
+          call trafo_calcJac_prism3D (DjacPrep,Djac(:,ipt),Ddetj(ipt), &
+              DpointsRef(1,ipt),DpointsRef(2,ipt),DpointsRef(3,ipt))
+        end do ! ipt
+        
+      else
+        
+        ! Loop over the points
+        do ipt=1,npointsPerEl
+          ! Calculate the Jacobian matrix and determinant
+          call trafo_calcTrafo_prism3d(DjacPrep,Djac(:,ipt),Ddetj(ipt),&
               DpointsRef(1,ipt),DpointsRef(2,ipt),DpointsRef(3,ipt),&
               DpointsReal(1,ipt),DpointsReal(2,ipt),DpointsReal(3,ipt))
         end do ! ipt
@@ -1793,6 +1887,86 @@ contains
           do ipt=1,npointsPerEl
             ! Calculate the Jacobian matrix and determinant
             call trafo_calcTrafo_hexa3d (DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+                DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel),DpointsRef(3,ipt,iel),&
+                DpointsReal(1,ipt,iel),DpointsReal(2,ipt,iel),DpointsReal(3,ipt,iel))
+          end do ! ipt
+          
+        end do ! iel
+        !$OMP END PARALLEL DO
+        
+      end if
+
+    case (TRAFO_ID_MLINPYRAMID)
+    
+      ! Calculate with or without coordinates?
+      if (.not. present(DpointsReal)) then
+      
+        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        do iel = 1,nelements
+          ! Prepare the calculation of the Jacobi determinants
+          call trafo_prepJac_pyra3D(Dcoords(:,:,iel), DjacPrep)
+          
+          ! Loop over the points
+          do ipt=1,npointsPerEl
+            ! Calculate the Jacobian matrix and determinant
+            call trafo_calcJac_pyra3D (DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+                DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel),DpointsRef(3,ipt,iel))
+          end do ! ipt
+          
+        end do !iel
+        !$OMP END PARALLEL DO
+        
+      else
+
+        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        do iel = 1, nelements
+          ! Prepare the calculation of the Jacobi determinants
+          call trafo_prepJac_pyra3D(Dcoords(:,:,iel), DjacPrep)
+          
+          ! Loop over the points
+          do ipt=1,npointsPerEl
+            ! Calculate the Jacobian matrix and determinant
+            call trafo_calcTrafo_pyra3d (DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+                DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel),DpointsRef(3,ipt,iel),&
+                DpointsReal(1,ipt,iel),DpointsReal(2,ipt,iel),DpointsReal(3,ipt,iel))
+          end do ! ipt
+          
+        end do ! iel
+        !$OMP END PARALLEL DO
+        
+      end if
+
+    case (TRAFO_ID_MLINPRISM)
+    
+      ! Calculate with or without coordinates?
+      if (.not. present(DpointsReal)) then
+      
+        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        do iel = 1,nelements
+          ! Prepare the calculation of the Jacobi determinants
+          call trafo_prepJac_prism3D(Dcoords(:,:,iel), DjacPrep)
+          
+          ! Loop over the points
+          do ipt=1,npointsPerEl
+            ! Calculate the Jacobian matrix and determinant
+            call trafo_calcJac_prism3D (DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+                DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel),DpointsRef(3,ipt,iel))
+          end do ! ipt
+          
+        end do !iel
+        !$OMP END PARALLEL DO
+        
+      else
+
+        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        do iel = 1, nelements
+          ! Prepare the calculation of the Jacobi determinants
+          call trafo_prepJac_prism3D(Dcoords(:,:,iel), DjacPrep)
+          
+          ! Loop over the points
+          do ipt=1,npointsPerEl
+            ! Calculate the Jacobian matrix and determinant
+            call trafo_calcTrafo_prism3d (DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
                 DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel),DpointsRef(3,ipt,iel),&
                 DpointsReal(1,ipt,iel),DpointsReal(2,ipt,iel),DpointsReal(3,ipt,iel))
           end do ! ipt

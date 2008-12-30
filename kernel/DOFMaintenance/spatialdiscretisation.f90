@@ -321,50 +321,65 @@ contains
   integer, intent(IN)                       :: ccubType
   
   ! The element type the cubature formula should be checked against
-   integer(I32), intent(IN)                       :: ielementType
+  integer(I32), intent(IN)                       :: ielementType
 !</input>
   
 !</subroutine>
 
-  integer :: NVE, idim
   logical :: bcompatible
+  integer(I32) :: ishapeEL, ishapeCUB
+  
+    ! Get the shape identifiers for both the element and the cubature formula
+    ishapeEL = elem_igetShape(ielementType)
+    ishapeCUB = cub_igetShape(ccubType)
+    
+    ! The element and cubature formula are compatible if both shapes are equal,
+    ! and of course the shape must be valid.
+    bcompatible = (ishapeEL .eq. ishapeCUB) .and. &
+                  (ishapeEL .ne. BGEOM_SHAPE_UNKNOWN)
 
-  ! Get from the element distribution the trial space and from that
-  ! the number of vertices, the element expects.
-  NVE = elem_igetNVE(ielementType)
-  idim = elem_igetDimension(ielementType)
-  
-  bcompatible = .true.
-  
-  ! Now we directly access the cubature constants in cubature.f90!
-  ! This is the only point in the kernel where this is necessary.
-  
-  ! 1D: Line?
-  if (ccubType .le. 99) then
-    if ((NVE .ne. 2) .or. (idim .ne. NDIM1D)) bcompatible = .false.
-  end if
 
-  ! 2D: Quad?
-  if ((ccubType .ge. 200) .and. (ccubType .le. 249)) then
-    ! Tri?
-    if ((NVE .ne. 4) .or. (idim .ne. NDIM2D)) bcompatible = .false.
-  end if
-  
-  ! 2D: Tri?
-  if ((ccubType .ge. 250) .and. (ccubType .le. 299)) then
-    ! Quad?
-    if ((NVE .ne. 3) .or. (idim .ne. NDIM2D)) bcompatible = .false.
-  end if
-  
-  ! 3D: Hexa?
-  if ((ccubType .ge. 300) .and. (ccubType .le. 349)) then
-    if ((NVE .ne. 8) .or. (idim .ne. NDIM3D)) bcompatible = .false.
-  end if
-  
-  ! 3D: Tetra?
-  if ((ccubType .ge. 350) .and. (ccubType .le. 499)) then
-    if ((NVE .ne. 4) .or. (idim .ne. NDIM3D)) bcompatible = .false.
-  end if
+! 'Old' Implementation follows
+
+!  integer :: NVE, idim
+!  logical :: bcompatible
+!
+!  ! Get from the element distribution the trial space and from that
+!  ! the number of vertices, the element expects.
+!  NVE = elem_igetNVE(ielementType)
+!  idim = elem_igetDimension(ielementType)
+!  
+!  bcompatible = .true.
+!  
+!  ! Now we directly access the cubature constants in cubature.f90!
+!  ! This is the only point in the kernel where this is necessary.
+!  
+!  ! 1D: Line?
+!  if (ccubType .le. 99) then
+!    if ((NVE .ne. 2) .or. (idim .ne. NDIM1D)) bcompatible = .false.
+!  end if
+!
+!  ! 2D: Quad?
+!  if ((ccubType .ge. 200) .and. (ccubType .le. 249)) then
+!    ! Tri?
+!    if ((NVE .ne. 4) .or. (idim .ne. NDIM2D)) bcompatible = .false.
+!  end if
+!  
+!  ! 2D: Tri?
+!  if ((ccubType .ge. 250) .and. (ccubType .le. 299)) then
+!    ! Quad?
+!    if ((NVE .ne. 3) .or. (idim .ne. NDIM2D)) bcompatible = .false.
+!  end if
+!  
+!  ! 3D: Hexa?
+!  if ((ccubType .ge. 300) .and. (ccubType .le. 349)) then
+!    if ((NVE .ne. 8) .or. (idim .ne. NDIM3D)) bcompatible = .false.
+!  end if
+!  
+!  ! 3D: Tetra?
+!  if ((ccubType .ge. 350) .and. (ccubType .le. 499)) then
+!    if ((NVE .ne. 4) .or. (idim .ne. NDIM3D)) bcompatible = .false.
+!  end if
   
   ! Q2T with bubble does not work with G1X1, Trapezoidal rule and
   ! G2X2 -- Laplace matrices would be indefinite because of the definition

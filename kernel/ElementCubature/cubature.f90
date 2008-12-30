@@ -165,7 +165,7 @@ module cubature
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, tetra">
-  ! 1-point Gauss formula, 3D, degree = 1, ncubp = 1
+  ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
   integer, parameter :: CUB_G1_3D_T = 351
   
   ! trapezoidal rule, 3D, degree = 2, ncubp = 4
@@ -183,7 +183,7 @@ module cubature
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, pyramid">
-  ! 1-point Gauss formula, 3D, degree = 1, ncubp = 1
+  ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
   integer, parameter :: CUB_G1_3D_Y = 401
   
   ! trapezoidal rule, 3D, degree = 2, ncubp = 5
@@ -192,11 +192,16 @@ module cubature
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, prism">
-  ! 1-point Gauss formula, 3D, degree = 1, ncubp = 1
+  ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
   integer, parameter :: CUB_G1_3D_R = 451
   
   ! trapezoidal rule, 3D, degree = 2, ncubp = 6
   integer, parameter :: CUB_TRZ_3D_R = 452
+  
+  ! 3x2-point Gauss formula, 3D, degree = 3 (maybe even 4?), ncubp = 6
+  ! This formula is the 'cross-product' of the 2D CUB_G3_T formula
+  ! for triangles and the 1D CUB_G2_1D formula.
+  integer, parameter :: CUB_G2_3D_R = 453
   
 !</constantblock>
 
@@ -338,6 +343,8 @@ contains
     cub_igetID=CUB_G1_3D_R
   case("TRZ_3D_R")
     cub_igetID=CUB_TRZ_3D_R
+  case("G2_3D_R")
+    cub_igetID=CUB_G2_3D_R
 
   case default
     print *,'Error: Unknown cubature formula: ',scubname
@@ -439,7 +446,7 @@ contains
     ! -= 3D Prism Formulas =-
     case (CUB_G1_3D_R)
       n = 1
-    case (CUB_TRZ_3D_R)
+    case (CUB_TRZ_3D_R,CUB_G2_3D_R)
       n = 6
     
     case default
@@ -1944,6 +1951,35 @@ contains
     Dxi(6,1) =  0.0_DP
     Dxi(6,2) =  1.0_DP
     Dxi(6,3) =  1.0_DP
+    
+    Domega(1) = 0.16666666666666666_DP
+    Domega(2) = 0.16666666666666666_DP
+    Domega(3) = 0.16666666666666666_DP
+    Domega(4) = 0.16666666666666666_DP
+    Domega(5) = 0.16666666666666666_DP
+    Domega(6) = 0.16666666666666666_DP
+    
+    ncubp = 6
+  
+  case(CUB_G2_3D_R)
+    Dxi(1,1)  =  0.5_DP
+    Dxi(1,2)  =  0.0_DP
+    Dxi(1,3)  = -0.577350269189626_DP
+    Dxi(2,1)  =  0.5_DP
+    Dxi(2,2)  =  0.5_DP
+    Dxi(2,3)  = -0.577350269189626_DP
+    Dxi(3,1)  =  0.0_DP
+    Dxi(3,2)  =  0.5_DP
+    Dxi(3,3)  = -0.577350269189626_DP
+    Dxi(4,1)  =  0.5_DP
+    Dxi(4,2)  =  0.0_DP
+    Dxi(4,3)  =  0.577350269189626_DP
+    Dxi(5,1)  =  0.5_DP
+    Dxi(5,2)  =  0.5_DP
+    Dxi(5,3)  =  0.577350269189626_DP
+    Dxi(6,1)  =  0.0_DP
+    Dxi(6,2)  =  0.5_DP
+    Dxi(6,3)  =  0.577350269189626_DP
     
     Domega(1) = 0.16666666666666666_DP
     Domega(2) = 0.16666666666666666_DP

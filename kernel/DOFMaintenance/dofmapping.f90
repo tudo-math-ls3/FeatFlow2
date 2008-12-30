@@ -296,10 +296,10 @@ contains
     
     ! The number of global DOF's depends on the element type...
     select case (elem_getPrimaryElement(ieltype))
-    case (EL_P0_3D, EL_Q0_3D)
+    case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
       ! DOF's in the cell midpoints
       NDFG_uniform3D = rtriangulation%NEL
-    case (EL_P1_3D, EL_Q1_3D)
+    case (EL_P1_3D, EL_Q1_3D, EL_Y1_3D, EL_R1_3D)
       ! DOF's in the vertices
       NDFG_uniform3D = rtriangulation%NVT
     case (EL_Q1T_3D)
@@ -639,11 +639,11 @@ contains
         ieltype = rdiscretisation%RelementDistr(1)%celement
         
         select case (elem_getPrimaryElement(ieltype))
-        case (EL_P0_3D, EL_Q0_3D)
+        case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
           ! DOF's for Q0
           call dof_locGlobUniMult_P0Q0_3D(IelIdx, IdofGlob)
           return
-        case (EL_P1_3D, EL_Q1_3D)
+        case (EL_P1_3D, EL_Q1_3D, EL_Y1_3D, EL_R1_3D)
           ! DOF's in the vertices
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           call dof_locGlobUniMult_P1Q1_3D(p_2darray, IelIdx, IdofGlob)
