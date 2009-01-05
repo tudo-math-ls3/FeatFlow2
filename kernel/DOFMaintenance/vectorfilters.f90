@@ -1141,7 +1141,7 @@ contains
 
 !<subroutine>
 
-  subroutine vecfil_discreteBCsol (rx,dtimeWeight,rdiscreteBC)
+  subroutine vecfil_discreteBCsol (rx,rdiscreteBC)
 
 !<description>
   ! This routine realises the 'impose discrete boundary conditions to solution'
@@ -1152,12 +1152,6 @@ contains
 !</description>
   
 !<input>
-  ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
-  ! boundary conditions before these are added to the vector rx.
-  ! The parameter can be omitted in stationary simulations or when filtering
-  ! vectors during the solution process of a linear system.
-  real(DP), intent(IN), optional :: dtimeWeight
-
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
@@ -1172,7 +1166,6 @@ contains
 !</subroutine>
 
     integer :: iblock,i
-    real(DP) :: dtweight
     type(t_discreteBC), pointer :: p_rdiscreteBC
 
     if (.not. present(rdiscreteBC)) then
@@ -1189,15 +1182,6 @@ contains
     end if
     
     if (.not. associated(p_RdiscreteBC)) return
-    
-    ! If the time-weight is not specified, 1.0 is assumed.
-    if (present(dtimeWeight)) then
-      dtweight = dtimeWeight
-    else
-      dtweight = 1.0_DP
-    end if
-    ! Note: Time-step weight not used by any filter up to now!
-    ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
@@ -1247,7 +1231,7 @@ contains
 
 !<subroutine>
 
-  subroutine vecfil_discreteBCrhs (rx,dtimeWeight,rdiscreteBC)
+  subroutine vecfil_discreteBCrhs (rx,rdiscreteBC)
 
 !<description>
   ! This routine realises the 'impose discrete boundary conditions to RHS'
@@ -1258,11 +1242,6 @@ contains
 !</description>
   
 !<input>
-  ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
-  ! boundary conditions before these are added to the vector rx.
-  ! The parameter can be omitted in stationary simulations.
-  real(DP), intent(IN), optional :: dtimeWeight
-
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
@@ -1277,7 +1256,6 @@ contains
 !</subroutine>
 
     integer :: iblock,i
-    real(DP) :: dtweight
     type(t_discreteBC), pointer :: p_rdiscreteBC
 
     if (.not. present(rdiscreteBC)) then
@@ -1289,13 +1267,6 @@ contains
     end if
     
     if (.not. associated(p_RdiscreteBC)) return
-    
-    ! If the time-weight is not specified, 1.0 is assumed.
-    if (present(dtimeWeight)) then
-      dtweight = dtimeWeight
-    else
-      dtweight = 1.0_DP
-    end if
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
@@ -1424,7 +1395,7 @@ contains
 
 !<subroutine>
 
-  subroutine vecfil_discreteBCdef (rx,dtimeWeight,rdiscreteBC)
+  subroutine vecfil_discreteBCdef (rx,rdiscreteBC)
 
 !<description>
   ! This routine realises the 'impose discrete boundary conditions to defect'
@@ -1435,12 +1406,6 @@ contains
 !</description>
   
 !<input>
-  ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
-  ! boundary conditions before these are added to the vector rx.
-  ! The parameter can be omitted in stationary simulations or when filtering
-  ! vectors during the solution process of a linear system.
-  real(DP), intent(IN), optional :: dtimeWeight
-
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
@@ -1455,7 +1420,6 @@ contains
 !</subroutine>
 
     integer :: iblock,i !,icp
-    real(DP) :: dtweight
     type(t_discreteBC), pointer :: p_rdiscreteBC
 
     if (.not. present(rdiscreteBC)) then
@@ -1472,15 +1436,6 @@ contains
     end if
     
     if (.not. associated(p_rdiscreteBC)) return
-    
-    ! If the time-weight is not specified, 1.0 is assumed.
-    if (present(dtimeWeight)) then
-      dtweight = dtimeWeight
-    else
-      dtweight = 1.0_DP
-    end if
-    ! Note: Time-step weight not used by any filter up to now!
-    ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
@@ -1529,7 +1484,7 @@ contains
 
 !<subroutine>
 
-  subroutine vecfil_discreteNLSlipBCdef (rx,dtimeWeight,rdiscreteBC)
+  subroutine vecfil_discreteNLSlipBCdef (rx,rdiscreteBC)
 
 !<description>
   ! Implements discrete nonlinear slip BC's into a defect vector.
@@ -1545,11 +1500,6 @@ contains
 !</description>
   
 !<input>
-  ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
-  ! boundary conditions before these are added to the vector rx.
-  ! The parameter can be omitted in stationary simulations.
-  real(DP), intent(IN), optional :: dtimeWeight
-
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the vector.
@@ -1564,7 +1514,6 @@ contains
 !</subroutine>
 
     integer :: i
-    real(DP) :: dtweight
     type(t_discreteBC), pointer :: p_rdiscreteBC
 
     if (.not. present(rdiscreteBC)) then
@@ -1581,15 +1530,6 @@ contains
     end if
     
     if (.not. associated(p_rdiscreteBC)) return
-    
-    ! If the time-weight is not specified, 1.0 is assumed.
-    if (present(dtimeWeight)) then
-      dtweight = dtimeWeight
-    else
-      dtweight = 1.0_DP
-    end if
-    ! Note: Time-step weight not used by any filter up to now!
-    ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
@@ -1611,7 +1551,7 @@ contains
 
 !<subroutine>
 
-  subroutine vecfil_discreteFBCsol (rx,dtimeWeight,rdiscreteFBC)
+  subroutine vecfil_discreteFBCsol (rx,rdiscreteFBC)
 
 !<description>
   ! This routine realises the 'impose discrete fictitious boundary conditions 
@@ -1623,12 +1563,6 @@ contains
 !</description>
   
 !<input>
-  ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
-  ! boundary conditions before these are added to the vector rx.
-  ! The parameter can be omitted in stationary simulations or when filtering
-  ! vectors during the solution process of a linear system.
-  real(DP), intent(IN), optional :: dtimeWeight
-
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default fictitious boundary conditions associated 
   ! to the vector rx are imposed to the matrix.
@@ -1643,7 +1577,6 @@ contains
 !</subroutine>
 
     integer :: iblock,i,j
-    real(DP) :: dtweight
     type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBC
 
     if (.not. present(rdiscreteFBC)) then
@@ -1660,15 +1593,6 @@ contains
     end if
     
     if (.not. associated(p_RdiscreteFBC)) return
-    
-    ! If the time-weight is not specified, 1.0 is assumed.
-    if (present(dtimeWeight)) then
-      dtweight = dtimeWeight
-    else
-      dtweight = 1.0_DP
-    end if
-    ! Note: Time-step weight not used by any filter up to now!
-    ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
     do i=1,size(p_RdiscreteFBC)
@@ -1714,7 +1638,7 @@ contains
 
 !<subroutine>
 
-  subroutine vecfil_discreteFBCrhs (rx,dtimeWeight,rdiscreteFBC)
+  subroutine vecfil_discreteFBCrhs (rx,rdiscreteFBC)
 
 !<description>
   ! This routine realises the 'impose discrete fictitious boundary conditions 
@@ -1726,11 +1650,6 @@ contains
 !</description>
   
 !<input>
-  ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
-  ! boundary conditions before these are added to the vector rx.
-  ! The parameter can be omitted in stationary simulations.
-  real(DP), intent(IN), optional :: dtimeWeight
-
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
@@ -1745,7 +1664,6 @@ contains
 !</subroutine>
 
     integer :: iblock,i,j
-    real(DP) :: dtweight
     type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBC
 
     if (.not. present(rdiscreteFBC)) then
@@ -1762,13 +1680,6 @@ contains
     end if
     
     if (.not. associated(p_RdiscreteFBC)) return
-    
-    ! If the time-weight is not specified, 1.0 is assumed.
-    if (present(dtimeWeight)) then
-      dtweight = dtimeWeight
-    else
-      dtweight = 1.0_DP
-    end if
     
     ! Now loop through all entries in this list:
     do i=1,size(p_RdiscreteFBC)
@@ -1814,7 +1725,7 @@ contains
 
 !<subroutine>
 
-  subroutine vecfil_discreteFBCdef (rx,dtimeWeight,rdiscreteFBC)
+  subroutine vecfil_discreteFBCdef (rx,rdiscreteFBC)
 
 !<description>
   ! This routine realises the 'impose discrete fictitious boundary conditions 
@@ -1826,12 +1737,6 @@ contains
 !</description>
   
 !<input>
-  ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
-  ! boundary conditions before these are added to the vector rx.
-  ! The parameter can be omitted in stationary simulations or when filtering
-  ! vectors during the solution process of a linear system.
-  real(DP), intent(IN), optional :: dtimeWeight
-
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
@@ -1846,7 +1751,6 @@ contains
 !</subroutine>
 
     integer :: iblock,i,j
-    real(DP) :: dtweight
     type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBC
 
     if (.not. present(rdiscreteFBC)) then
@@ -1863,15 +1767,6 @@ contains
     end if
     
     if (.not. associated(p_RdiscreteFBC)) return
-    
-    ! If the time-weight is not specified, 1.0 is assumed.
-    if (present(dtimeWeight)) then
-      dtweight = dtimeWeight
-    else
-      dtweight = 1.0_DP
-    end if
-    ! Note: Time-step weight not used by any filter up to now!
-    ! Perhaps in a later implementation it's needed anywhere...
     
     ! Now loop through all entries in this list:
     do i=1,size(p_RdiscreteFBC)
