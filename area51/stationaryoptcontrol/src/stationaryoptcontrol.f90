@@ -51,13 +51,13 @@ program poisson
   call output_lbrk ()
   call output_line ('Calculating Poisson-2D-Problem with method 0 - simple')
   call output_line ('-----------------------------------------------------')
-  !call poisson2d_0_simple
+  call poisson2d_0_simple
 
   ! Call the problem to solve. Stokes 2D method 1 - simple:
   call output_lbrk ()
   call output_line ('Calculating Stokes-2D-Problem with method 0 - simple')
   call output_line ('-----------------------------------------------------')
-  !call stokes2d_0_simple
+  call stokes2d_0_simple
 
   ! Call the problem to solve. Navier-Stokes 2D method 1 - simple:
   call output_lbrk ()

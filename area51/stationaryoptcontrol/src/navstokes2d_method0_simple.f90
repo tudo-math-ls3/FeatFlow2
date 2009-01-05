@@ -851,7 +851,7 @@ contains
       
       ! Prepare an UMFPACK solver for the system
       call linsol_initUMFPACK4(p_rsolverNode)
-      p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 1
+      !p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 1
     
       ! Set the output level of the solver to 2 for some output
       p_rsolverNode%ioutputLevel = 2
