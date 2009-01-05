@@ -14,7 +14,7 @@
 !#
 !#                                 -Laplace(y) + y grad y + grad(p) = f + u
 !#                                                           -div y = 0
-!#  -Laplace(lambda) + y grad lambda + (grad y)^t lambda + grad(xi) = u - z
+!#  -Laplace(lambda) + y grad lambda + (grad y)^t lambda + grad(xi) = y - z
 !#                                                      -div lambda = 0
 !#                                                                u = P(-1/alpha l)
 !#
@@ -36,10 +36,6 @@
 !#         = b     , for all x with h(x) > b
 !#
 !# for a function g=g(x) defines the projection to the interval [a,b].
-!#
-!#
-!# Note: The implementatino of the Newton operator is incomplete and not
-!# working. The documentation may be outdated -- this is a test code.
 !#
 !##############################################################################
 
@@ -321,7 +317,7 @@ contains
     dmax2 = 1E99_DP
     
     ! Viscosity constant
-    dnu = 1.0_DP/100.0_DP !/200.0_DP
+    dnu = 1.0_DP !/100.0_DP !/200.0_DP
     
     ! Discretisation. 1=EM30, 2=Q2
     idiscretisation = 1
