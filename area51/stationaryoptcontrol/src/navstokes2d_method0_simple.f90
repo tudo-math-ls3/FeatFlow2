@@ -297,27 +297,27 @@ contains
     ! Ok, let's start. 
     !
     ! We want to solve our Poisson problem on level... 
-    NLMAX = 5
+    NLMAX = 7
     
     ! Newton iteration counter
     nmaxiterations = 1000
     
     ! Relaxation parameter
-    dalpha = 1.0_DP
+    dalpha = 0.01_DP
     
     ! Control active or not.
     bcontrolactive = .true.
     bdualcoupledtoprimal = .true.
     
     ! Bounds on the control
-    bboundsActive = .false.
+    bboundsActive = .true.
     dmin1 = -1E99_DP
     dmax1 = 1E99_DP
     dmin2 = -1E99_DP
-    dmax2 = 1E99_DP
+    dmax2 = 0.0_DP
     
     ! Viscosity constant
-    dnu = 1.0_DP !/100.0_DP !/200.0_DP
+    dnu = 1.0_DP/100.0_DP !/200.0_DP
     
     ! Discretisation. 1=EM30, 2=Q2
     idiscretisation = 1
@@ -498,6 +498,13 @@ contains
     call lsysbl_clearVector (rvectorBlock)
     
     call vecfil_discreteBCsol (rvectorBlock,rdiscreteBC)
+
+    ! Prepare an UMFPACK solver for the lienar systems
+    call linsol_initUMFPACK4(p_rsolverNode)
+    !p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 1
+  
+    ! Set the output level of the solver to 2 for some output
+    p_rsolverNode%ioutputLevel = 2
     
     do ite = 1,nmaxIterations+1
     
@@ -849,13 +856,6 @@ contains
       
       call matfil_discreteBC (rmatrixBlock,rdiscreteBC)
       
-      ! Prepare an UMFPACK solver for the system
-      call linsol_initUMFPACK4(p_rsolverNode)
-      !p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 1
-    
-      ! Set the output level of the solver to 2 for some output
-      p_rsolverNode%ioutputLevel = 2
-      
       ! Attach the system matrix to the solver.
       ! First create an array with the matrix data (on all levels, but we
       ! only have one level here), then call the initialisation 
@@ -870,8 +870,12 @@ contains
       ! Initialise structure/data of the solver. This allows the
       ! solver to allocate memory / perform some precalculation
       ! to the problem.
-      call linsol_initStructure (p_rsolverNode, ierror)
-      if (ierror .ne. LINSOL_ERR_NOERROR) stop
+      if (ite .eq. 1) then
+        ! In the first iteration, initialise the linear solver
+        call linsol_initStructure (p_rsolverNode, ierror)
+        if (ierror .ne. LINSOL_ERR_NOERROR) stop
+      end if
+      
       call linsol_initData (p_rsolverNode, ierror)
       if (ierror .ne. LINSOL_ERR_NOERROR) stop
       
@@ -880,11 +884,6 @@ contains
       
       ! Release solver data and structure
       call linsol_doneData (p_rsolverNode)
-      call linsol_doneStructure (p_rsolverNode)
-      
-      ! Release the solver node and all subnodes attached to it (if at all):
-      call linsol_releaseSolver (p_rsolverNode)
-      
       ! Sum up the correction to the current solution.
       call lsysbl_vectorLinearComb (rtempRhsBlock,rvectorBlock,1.0_DP,1.0_DP)
       
@@ -892,6 +891,14 @@ contains
       call vecfil_discreteBCsol (rvectorBlock,rdiscreteBC)
       
     end do
+
+    ! Clean up the linear solver    
+    if (ite .ge. 1) then
+      call linsol_doneStructure (p_rsolverNode)
+    end if
+    
+    ! Release the solver node and all subnodes attached to it (if at all):
+    call linsol_releaseSolver (p_rsolverNode)
     
     ! Release our discrete version of the boundary conditions
     call bcasm_releaseDiscreteBC (rdiscreteBC)
