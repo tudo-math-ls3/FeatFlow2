@@ -570,10 +570,10 @@ contains
     
     ! Bounds on the control
     bboundsActive = .false.
-    dmin1 = -0.05_DP
-    dmax1 = 0.05_DP
-    dmin2 = -0.4_DP
-    dmax2 = 0.0_DP
+    dmin1 = -0.3_DP
+    dmax1 = 0.3_DP
+    dmin2 = -0.3_DP
+    dmax2 = 0.3_DP
     
     ! Viscosity constant
     dnu = 1.0_DP/400.0_DP !/200.0_DP
@@ -627,6 +627,10 @@ contains
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
     call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+    
+    ! Print mesh statistics
+    call tria_infoStatistics(rtriangulation,.true.)
+    call output_lbrk()
     
     ! Set up a block discretisation structure for two components:
     ! Primal and dual solution vector.
