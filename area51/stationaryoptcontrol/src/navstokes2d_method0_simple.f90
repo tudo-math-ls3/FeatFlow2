@@ -65,11 +65,138 @@ module navstokes2d_method0_simple
   
   implicit none
 
+
+  ! Encapsules a target flow
+
+  type t_targetFlow
+  
+    ! Type of the target flow.
+    ! =0: Poiseuille-flow
+    ! =1: Precalculated solution
+    integer :: itype
+    
+    ! Triangulation of the target flow. Underlying domain is the 
+    ! same as in the main problem.
+    type(t_triangulation) :: rtriangulation
+    
+    ! Underlying discretisation
+    type(t_blockDiscretisation) :: rdiscretisation
+  
+    ! Block vector encapsuling the flow
+    type(t_vectorBlock) :: rvector
+  
+  end type
+
+
 contains
+
+  ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine getBC (rdiscretisation,ibcType,rdiscreteBC,bprimaldual)
+  subroutine initTargetFlow (rtargetFlow,itype,rboundary,smesh,ilevel,sfilename)
+  
+!<description>
+  ! Initialises a target flow.
+!</description>
+  
+!<output>
+  ! Target flow structure.
+  type(t_targetFlow), intent(out) :: rtargetFlow
+!</output>
+  
+!<input>
+  ! Type of the target flow.
+  ! =0: Poiseuille-flow
+  ! =1: Precalculated solution in file sfilename.
+  integer, intent(in) :: itype
+
+  ! Underlying domain.
+  type(t_boundary), intent(in), target :: rboundary
+  
+  ! Filename of the mesh
+  character(len=*), intent(in) :: smesh
+  
+  ! Level of the solution.
+  integer, intent(in) :: ilevel
+  
+  ! Filename of the solution file.
+  character(len=*), intent(in) :: sfilename
+!</input>
+
+!</subroutine>
+
+    character(len=SYS_STRLEN) :: sarray
+
+    rtargetFlow%itype = itype
+    
+    ! Read from file!
+    if (itype .eq. 1) then
+      
+      ! Get the mesh
+      call tria_readTriFile2D (rtargetFlow%rtriangulation, smesh, rboundary)
+       
+      ! Refine it.
+      call tria_quickRefine2LevelOrdering (ilevel-1,rtargetFlow%rtriangulation,rboundary)
+      
+      ! And create information about adjacencies and everything one needs from
+      ! a triangulation.
+      call tria_initStandardMeshFromRaw (rtargetFlow%rtriangulation,rboundary)
+      
+      ! Set up a block discretisation structure for two components:
+      ! Primal and dual solution vector.
+      call spdiscr_initBlockDiscr2D (rtargetFlow%rdiscretisation,3,&
+                                     rtargetFlow%rtriangulation, rboundary)
+
+      call spdiscr_initDiscr_simple (rtargetFlow%rdiscretisation%RspatialDiscr(1), &
+          EL_EM30,CUB_G3X3,rtargetFlow%rtriangulation, rboundary)
+      call spdiscr_duplicateDiscrSc (rtargetFlow%rdiscretisation%RspatialDiscr(1), &
+          rtargetFlow%rdiscretisation%RspatialDiscr(2), .true.)
+      call spdiscr_deriveSimpleDiscrSc (rtargetFlow%rdiscretisation%RspatialDiscr(1), &
+          EL_Q0,CUB_G2X2,rtargetFlow%rdiscretisation%RspatialDiscr(3))
+      
+      ! Read the solution vector.
+      call lsysbl_createVecBlockByDiscr(rtargetFlow%rdiscretisation,&
+          rtargetFlow%rvector)
+      call vecio_readBlockVectorHR (rtargetFlow%rvector, sarray, .true.,&
+                                    0, sfilename, .true.)
+      
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine doneTargetFlow (rtargetFlow)
+  
+!<description>
+  ! Cleans up a target flow.
+!</description>
+  
+!<inputoutput>
+  ! Target flow structure.
+  type(t_targetFlow), intent(inout) :: rtargetFlow
+!</inputoutput>
+  
+!</subroutine>
+
+    if (rtargetFlow%itype .eq. 1) then
+      call lsysbl_releaseVector (rtargetFlow%rvector)
+      call spdiscr_releaseBlockDiscr (rtargetFlow%rdiscretisation)
+      call tria_done (rtargetFlow%rtriangulation)
+    end if
+    
+    rtargetFlow%itype = 0
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getBC (rdiscretisation,ibcType,rdiscreteBC,bprimaldual,bpureDirichlet)
   
 !<description>
   ! Assemble the boundary conditions for a given discretisation.
@@ -82,6 +209,7 @@ contains
   ! Type of boundary conditions.
   ! =0: Channel without flow.
   ! =1: Channel with inflow.
+  ! =2: Driven Cavity
   integer, intent(in) :: ibcType
   
   ! TRUE: Both, primal and dual. FALSE: Only primal
@@ -91,6 +219,10 @@ contains
 !<output>
   ! Receives the discrete boundary conditions
   type(t_discreteBC), intent(out) :: rdiscreteBC
+
+  ! Set to TRUE if there are no Neumann boundary components in the
+  ! flow configuration of the target flow.
+  logical, intent(out), optional :: bpureDirichlet
 !</output>
 
 !</subroutine>
@@ -102,98 +234,221 @@ contains
     logical :: binflowBC
 
     binflowBC = ibcType .eq. 1
+    if (present(bpureDirichlet)) then
+      bpureDirichlet = ibcType .eq. 2
+    end if
 
-    ! -----
-    ! Boundary conditions
-    !
-    ! In our example, we have pure Dirichlet-0-BC on all boundary components.
-    
     call bcasm_initDiscreteBC(rdiscreteBC)
-    
-    ! Edge 1 of boundary component 1 the domain.
-    call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValuesZero_2D)
-                             
-    ! Now to the edge 2 of boundary component 1 the domain.
-    call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValuesZero_2D)
 
-    if (binflowBC) then
+    if ((ibcType .eq. 0) .or. (ibcType .eq. 1)) then
+      ! -----
+      ! Boundary conditions
+      !
+      ! In our example, we have pure Dirichlet-0-BC on all boundary components.
+      
+      ! Edge 1 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+                               
+      ! Now to the edge 2 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+
+      if (binflowBC) then
+        ! Now to the edge 2 of boundary component 1 the domain.
+        call boundary_createRegion(rdiscretisation%p_rboundary,1,4,rboundaryRegion)
+        rboundaryRegion%iproperties = 0
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                          rboundaryRegion,rdiscreteBC,&
+                                          getBoundaryValuesX_2D)
+      end if
+                               
+      ! Edge 3 of boundary component 1.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+      
+      ! Edge 4 of boundary component 1. That's it.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+
+      if (binflowBC) then
+        ! Edge 4 of boundary component 1. That's it.
+        call boundary_createRegion(rdiscretisation%p_rboundary,1,4,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                          rboundaryRegion,rdiscreteBC,&
+                                          getBoundaryValuesY_2D)
+      end if
+
+      if (.not. bprimaldual) return
+
+      ! ---
+      ! The same for the dual variable.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = 0
+      call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+                               
+      ! Now to the edge 2 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+
+      if (binflowBC) then
+        ! Now to the edge 2 of boundary component 1 the domain.
+        call boundary_createRegion(rdiscretisation%p_rboundary,1,4,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+                                          rboundaryRegion,rdiscreteBC,&
+                                          getBoundaryValuesZero_2D)
+      end if
+                               
+      ! Edge 3 of boundary component 1.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+      
+      ! Edge 4 of boundary component 1. That's it.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+
+      if (binflowBC) then
+        ! Edge 4 of boundary component 1. That's it.
+        call boundary_createRegion(rdiscretisation%p_rboundary,1,4,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
+                                          rboundaryRegion,rdiscreteBC,&
+                                          getBoundaryValuesZero_2D)
+      end if
+    else if (ibcType .eq. 2) then
+      ! -----
+      ! Boundary conditions
+      !
+      ! Dirichlet-0-BC on all boundary components except the upper edge
+      
+      ! Edge 1 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+
+      ! Edge 2 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,2,rboundaryRegion)
+      rboundaryRegion%iproperties = 0
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+                               
+      ! Now to the edge 2 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValues1_2D)
+
       ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(rdiscretisation%p_rboundary,1,4,rboundaryRegion)
       rboundaryRegion%iproperties = 0
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
-                                        getBoundaryValuesX_2D)
-    end if
-                             
-    ! Edge 3 of boundary component 1.
-    call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValuesZero_2D)
-    
-    ! Edge 4 of boundary component 1. That's it.
-    call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValuesZero_2D)
-
-    if (binflowBC) then
-      ! Edge 4 of boundary component 1. That's it.
-      call boundary_createRegion(rdiscretisation%p_rboundary,1,4,rboundaryRegion)
+                                        getBoundaryValuesZero_2D)
+                               
+      ! Edge 3 of boundary component 1.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
       call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                         rboundaryRegion,rdiscreteBC,&
-                                        getBoundaryValuesY_2D)
-    end if
+                                        getBoundaryValuesZero_2D)
+      
+      ! Edge 3 of boundary component 1.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,2,rboundaryRegion)
+      rboundaryRegion%iproperties = 0
+      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
 
-    if (.not. bprimaldual) return
+      ! Edge 4 of boundary component 1. That's it.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
 
-    ! ---
-    ! The same for the dual variable.
-    call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
-    rboundaryRegion%iproperties = 0
-    call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValuesZero_2D)
-                             
-    ! Now to the edge 2 of boundary component 1 the domain.
-    call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
-    call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValuesZero_2D)
-
-    if (binflowBC) then
-      ! Now to the edge 2 of boundary component 1 the domain.
+      ! Edge 4 of boundary component 1. That's it.
       call boundary_createRegion(rdiscretisation%p_rboundary,1,4,rboundaryRegion)
+      rboundaryRegion%iproperties = 0
+      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+      if (.not. bprimaldual) return
+
+      ! ---
+      ! The same for the dual variable.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
       call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValuesZero_2D)
-    end if
-                             
-    ! Edge 3 of boundary component 1.
-    call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
-    call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValuesZero_2D)
-    
-    ! Edge 4 of boundary component 1. That's it.
-    call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
-    call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValuesZero_2D)
 
-    if (binflowBC) then
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,2,rboundaryRegion)
+      rboundaryRegion%iproperties = 0
+      call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+                               
+      ! Now to the edge 2 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+
+      ! Now to the edge 2 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,4,rboundaryRegion)
+      rboundaryRegion%iproperties = 0
+      call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+
+      ! Edge 3 of boundary component 1.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+
+      ! Edge 3 of boundary component 1.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,2,rboundaryRegion)
+      rboundaryRegion%iproperties = 0
+      call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+      
+      ! Edge 4 of boundary component 1. That's it.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+
       ! Edge 4 of boundary component 1. That's it.
       call boundary_createRegion(rdiscretisation%p_rboundary,1,4,rboundaryRegion)
+      rboundaryRegion%iproperties = 0
       call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValuesZero_2D)
@@ -269,6 +524,7 @@ contains
     ! Error indicator during initialisation of the solver
     integer :: ierror    
     integer :: ibctype
+    integer :: itargetFlow
     
     ! Data for the Newton iteration
     integer :: ite, nmaxiterations, idiscretisation
@@ -290,6 +546,9 @@ contains
     ! Boundary conditions
     type(t_discreteBC), target :: rdiscreteBC
     
+    type(t_targetFlow), target :: rtargetFlow
+    logical :: bpureDirichlet
+    
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
     real(DP), dimension(:), pointer :: p_Ddata,p_DdataX,p_DdataY
@@ -297,10 +556,10 @@ contains
     ! Ok, let's start. 
     !
     ! We want to solve our Poisson problem on level... 
-    NLMAX = 7
+    NLMAX = 6
     
     ! Newton iteration counter
-    nmaxiterations = 1000
+    nmaxiterations = 20
     
     ! Relaxation parameter
     dalpha = 0.01_DP
@@ -310,14 +569,14 @@ contains
     bdualcoupledtoprimal = .true.
     
     ! Bounds on the control
-    bboundsActive = .true.
-    dmin1 = -1E99_DP
-    dmax1 = 1E99_DP
-    dmin2 = -1E99_DP
+    bboundsActive = .false.
+    dmin1 = -0.05_DP
+    dmax1 = 0.05_DP
+    dmin2 = -0.4_DP
     dmax2 = 0.0_DP
     
     ! Viscosity constant
-    dnu = 1.0_DP/100.0_DP !/200.0_DP
+    dnu = 1.0_DP/400.0_DP !/200.0_DP
     
     ! Discretisation. 1=EM30, 2=Q2
     idiscretisation = 1
@@ -341,11 +600,23 @@ contains
     bexactderiv = .false.
     
     ! Activate inflow BC's
-    ibctype = 1
+    ! =0: no inflow
+    ! =1: Poiseuille
+    ! =2: Driven Cavity
+    ibctype = 2
+    
+    ! Type of the target flow.
+    ! =0: Poiseuille
+    ! =1: Read from file
+    itargetFlow = 1
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
     call boundary_read_prm(rboundary, './pre/QUAD.prm')
+
+    ! Create the target flow.
+    call initTargetFlow (rtargetFlow,itargetFlow,rboundary,&
+        './pre/QUAD.tri',7,'./solution.00080')
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
@@ -419,7 +690,7 @@ contains
     call stdop_assembleSimpleMatrix (rmatrixB2,DER_FUNC,DER_DERIV_Y,-1.0_DP,.true.)
 
     ! Assemble the boundary conditions
-    call getBC (rdiscretisation,ibctype,rdiscreteBC,.true.)
+    call getBC (rdiscretisation,ibctype,rdiscreteBC,.true.,bpureDirichlet)
 
     ! -----
     ! Linear system: Basic structure.
@@ -442,13 +713,17 @@ contains
                                   coeff_RHS_primal_2D)
     call lsyssc_clearVector (rrhsBlock%RvectorBlock(3))
                                   
-    ! Create the RHS vector -z of the dual equation
+    ! Create the RHS vector -z of the dual equation.
+    ! For that purpose, transfer the target flow parameters via the collection
+    ! to the callback routine.
+    rcollection%IquickAccess(1) = rtargetFlow%itype
+    rcollection%p_rvectorQuickAccess1 => rtargetFlow%rvector
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
                                   rlinform,.true.,rrhsBlock%RvectorBlock(4),&
-                                  coeff_RHSx_dual_2D)
+                                  coeff_RHSx_dual_2D,rcollection)
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
                                   rlinform,.true.,rrhsBlock%RvectorBlock(5),&
-                                  coeff_RHSy_dual_2D)
+                                  coeff_RHSy_dual_2D,rcollection)
     call lsyssc_clearVector (rrhsBlock%RvectorBlock(6))
   
     ! Implement BC's
@@ -679,8 +954,19 @@ contains
       call lsyssc_duplicateMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(2,3),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 
-      call lsyssc_transposeMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(3,1),LSYSSC_TR_VIRTUAL)
-      call lsyssc_transposeMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
+      call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(3,1))
+      call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(3,2))
+      call lsyssc_transposeMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(3,1))
+      call lsyssc_transposeMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(3,2))
+
+      if (bpureDirichlet) then
+        ! Fixed pressure; create zero diag matrix and fix first DOF.
+        call lsyssc_releaseMatrix (rmatrixBlock%RmatrixBlock(3,3))
+        call lsyssc_createDiagMatrixStruc (rmatrixBlock%RmatrixBlock(3,3),&
+            rmatrixBlock%RmatrixBlock(1,3)%NCOLS,LSYSSC_MATRIX9)
+        call lsyssc_allocEmptyMatrix(rmatrixBlock%RmatrixBlock(3,3),LSYSSC_SETM_ZERO)
+        call mmod_replaceLinesByUnitBlk (rmatrixBlock,3,(/1/))
+      end if
 
       ! ---
       ! Dual equation
@@ -707,8 +993,19 @@ contains
       call lsyssc_duplicateMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(5,6),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 
-      call lsyssc_transposeMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(6,4),LSYSSC_TR_VIRTUAL)
-      call lsyssc_transposeMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(6,5),LSYSSC_TR_VIRTUAL)
+      call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(6,4))
+      call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(6,5))
+      call lsyssc_transposeMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(6,4))
+      call lsyssc_transposeMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(6,5))
+
+      if (bpureDirichlet) then
+        ! Fixed pressure; create zero diag matrix and fix first DOF.
+        call lsyssc_releaseMatrix (rmatrixBlock%RmatrixBlock(6,6))
+        call lsyssc_createDiagMatrixStruc (rmatrixBlock%RmatrixBlock(6,6),&
+            rmatrixBlock%RmatrixBlock(4,6)%NCOLS,LSYSSC_MATRIX9)
+        call lsyssc_allocEmptyMatrix(rmatrixBlock%RmatrixBlock(6,6),LSYSSC_SETM_ZERO)
+        call mmod_replaceLinesByUnitBlk (rmatrixBlock,6,(/1/))
+      end if
 
       if (bdualcoupledtoprimal) then
         call lsyssc_duplicateMatrix (rmatrixMass,rmatrixBlock%RmatrixBlock(4,1),&
@@ -1033,6 +1330,9 @@ contains
     ! Release the triangulation. 
     call tria_done (rtriangulation)
     
+    ! Clean up the target flow
+    call doneTargetFlow (rtargetFlow)
+    
     ! Finally release the domain, that's it.
     call boundary_release (rboundary)
     
@@ -1133,4 +1433,5 @@ contains
 
   end subroutine 
   
+
 end module
