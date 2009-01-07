@@ -22,6 +22,9 @@
 !#
 !# 4.) mmod_mergeLines
 !#        -> Merges some rows in a scalar matrix.
+!#
+!# 5.) mmod_replaceLinesByUnitBlk
+!#     -> Replaces some rows in a block matrix by unit vectors
 !# </purpose>
 !##############################################################################
 
@@ -30,6 +33,7 @@ module matrixmodification
   use fsystem
   use storage
   use linearsystemscalar
+  use linearsystemblock
   use genoutput
   
   implicit none
@@ -1185,4 +1189,49 @@ contains
     end subroutine mergeColumns_format9
   end subroutine mmod_mergeLines
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine mmod_replaceLinesByUnitBlk (rmatrix,iblockRow,Irows)
+  
+  !<description>
+    ! This routine replaces some lines in a given block matrix by unit vectors.
+  !</description>
+
+  !<input>
+    ! Number of the block row where some lines should be replaced by unit
+    ! vectors
+    integer, intent(in) :: iblockRow
+
+    ! A list of row numbers of all the rows in block row iblockRow which are 
+    ! to be replaced by unit vectors. These numbers are not global DOF's 
+    ! but the starting indices relative to the block row iblockRow
+    ! (e.g. "1" identifies the first row in the block row iblockrow).
+    integer(PREC_MATIDX), intent(IN), dimension(:) :: Irows
+  !</input>
+
+  !<inputoutput>
+    ! The matrix which is to be modified.
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
+  !</inputoutput>
+
+  !</subroutine>
+
+    integer :: icol
+    
+    ! Loop through all column matrices
+    do icol = 1,rmatrix%nblocksPerCol
+      if (lsysbl_isSubmatrixPresent(rmatrix,iblockRow,icol)) then
+        ! Replace by unit or zero vectors
+        if (icol .eq. iblockRow) then
+          call mmod_replaceLinesByUnit (rmatrix%RmatrixBlock(iblockRow,icol),Irows)
+        else
+          call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(iblockRow,icol),Irows)
+        end if
+      end if
+    end do
+    
+  end subroutine
+    
 end module matrixmodification
