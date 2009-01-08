@@ -24,7 +24,7 @@
 !#     -> Project a scalar vector from primal space to the vertices of the
 !#        underlying mesh.
 !#
-!# 5.) spdp_projectToToCells
+!# 5.) spdp_projectToCells
 !#     -> Project a scalar vector from primal space to the cells of the
 !#        underlying mesh.
 !# </purpose>
@@ -1066,7 +1066,7 @@ contains
         call fevl_evaluate_mult1 (DER_FUNC, Deval, rvector, iel, DpointsRef)
         
         ! Now incorporate the evaluation into the global array
-        p_Dvalues(iel) = Deval(iel)
+        p_Dvalues(iel) = Deval(1)
         
         ! Go for the next element in this distribution
         
