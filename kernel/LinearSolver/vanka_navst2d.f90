@@ -61,6 +61,20 @@
 !#
 !#                      u := A^-1 * (f_u - B * p)
 !#
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!# Pressure-DOF based Vanka information
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!# This module offers a so called 'pressure-DOF based Vanka' variant, which,
+!# in contrast to the other Vanka variants, is a 'black-box' algorithm which
+!# does not need any additional information about the underlying discretisation
+!# and therefore *should* work for all 2D Navier-Stokes systems, indepentent
+!# of the element combination that is used for the velocity and pressure.
+!#
+!# Instead of looping over the elements of a mesh and performing the
+!# DOF-mapping for each element to determine the set of DOFs which is used
+!# for a local system, this Vanka variant loops over the DOFs in pressure
+!# space.
+!# 
 !# </purpose>
 !##############################################################################
 
@@ -92,6 +106,9 @@ implicit none
 
   ! 'Full' VANKA
   integer, parameter, public :: VANKATP_NAVST2D_FULL  = 1
+  
+  ! Pressure-DOF based VANKA
+  integer, parameter, public :: VANKATP_NAVST2D_PDOF  = 2
 
 !</constantblock>
 
@@ -252,6 +269,15 @@ implicit none
     
     ! Structure for the universal full 2D Navier-Stokes Vanka
     type(t_vankaNavSt2D_uni_full) :: runi_full
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Support for Pressure-DOF based Vanka
+    
+    ! Total number of DOFs in pressure space
+    integer :: ndofPres = 0
+    
+    ! Pointer to an array storing the Schur-Complements
+    real(DP), dimension(:), pointer :: p_Dschur => null()
 
   end type
   
@@ -419,6 +445,29 @@ contains
       call sys_halt()
     end if
     
+    ! Do we use pressure-DOF based Vanka?
+    if(csubtype .eq. VANKATP_NAVST2D_PDOF) then
+    
+      ! Yes, we do. In this case we need to allocate an array for the local
+      ! Schur-Complement matrices.
+      
+      ! Determine the total number of DOFs in pressure space - this is equal
+      ! to the number of rows (equations) of the matrix located in block (3,1)
+      rvanka%ndofPres = rmatrix%RmatrixBlock(3,1)%NEQ
+      
+      ! Allocate the array. We do not initialise the content of the array - this
+      ! is done later.
+      allocate(rvanka%p_Dschur(rvanka%ndofPres))
+
+      ! Perform the data-depenent initialisation
+      call vanka_initDataNS2D_pdof(rvanka)
+      
+      ! And we can immediately return here as the rest of the code in this
+      ! routine is only used by the other Vanka variants.
+      return
+    
+    end if
+    
     ! Loop through all discretisations
     nmaxdofV = 0
     nmaxdofP = 0
@@ -547,6 +596,8 @@ contains
     if(associated(rvanka%runi_full%Df)) deallocate(rvanka%runi_full%Df)
     if(associated(rvanka%runi_full%Da)) deallocate(rvanka%runi_full%Da)
     if(associated(rvanka%runi_full%Ipiv)) deallocate(rvanka%runi_full%Ipiv)
+    
+    if(associated(rvanka%p_Dschur)) deallocate(rvanka%p_Dschur)
 
   end subroutine
 
@@ -598,9 +649,23 @@ contains
     ! local variables
     integer :: ielementdist, ndofV, ndofP
     integer(I32) :: elV, elP
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     type(t_elementDistribution), pointer :: p_relementDistrV
     type(t_elementDistribution), pointer :: p_relementDistrP
+    
+    ! Do we use the pressure-DOF based Vanka?
+    if(csubtype .eq. VANKATP_NAVST2D_PDOF) then
+      
+      ! Yes, we do. So call the corresponding routine here.
+      ! The pressure-DOF based Vanka is a 'black-box' algorithm which does
+      ! not need any information about the underlying discretisations.
+      call vanka_NS2D_pdof(rrhs, domega, rvector, rvanka)
+      
+      ! And return here, as the rest of the code in this routine is only
+      ! used by the other Vanka variants.
+      return
+      
+    end if
     
     ! Loop through the element distributions of the velocity.
     do ielementdist = 1,rvanka%p_rspatialDiscrV%inumFESpaces
@@ -671,10 +736,426 @@ contains
           call vanka_NS2D_universal_full(rvanka, rvector, rrhs, domega, &
               p_IelementList, ndofV, ndofP)
         end select
+        
       end if
       
     end do
       
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine vanka_initDataNS2D_pdof(rvanka)
+
+!<description>
+  ! This routine performs a matrix-data-dependent initialisation of the
+  ! pressure-DOF based Vanka.
+!</description>
+
+!<inputoutput>
+
+  ! t_vanka structure that saves algorithm-specific parameters.
+  type(t_vankaPointerNavSt2D), intent(INOUT) :: rvanka
+  
+!</inputoutput>
+
+!</subroutine>
+
+  ! Multiplication factors
+  real(DP), dimension(3,3) :: Dmult
+  
+  ! Quick access for the matrix arrays
+  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldC,p_KldD,&
+      p_KcolA,p_KcolA12,p_KcolB,p_KcolC,p_KcolD,p_KdiagA,p_KdiagC
+  real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22,p_DB1,p_DB2,&
+      p_DD1,p_DD2,p_DC, p_DS
+
+  ! Temporary local matrices
+  real(DP), dimension(:,:), allocatable :: DA
+  real(DP), dimension(:), allocatable :: DB
+  
+  ! pivot array for LAPACK
+  integer, dimension(:), allocatable :: Ipivot
+  
+  ! local variables
+  logical :: bHaveA12, bHaveC
+  real(DP) :: dc,daux1,daux2
+  integer :: idofp,idofu,i,j1,j2,k,id1,id2,nmaxdofV,ndofV,info
+
+    ! Let's assume we do not have the optional matrices
+    bHaveA12 = .FALSE.
+    bHaveC = .FALSE.
+    
+    ! Get the pointers from the vanka structure
+    p_KldA => rvanka%p_KldA
+    p_KcolA => rvanka%p_KcolA
+    p_KdiagA => rvanka%p_KdiagonalA
+    p_DA11 => rvanka%p_DA11
+    p_DA22 => rvanka%p_DA22
+    p_KldB => rvanka%p_KldB
+    p_KcolB => rvanka%p_KcolB
+    p_DB1 => rvanka%p_DB1
+    p_DB2 => rvanka%p_DB2
+    p_KldD => rvanka%p_KldD
+    p_KcolD => rvanka%p_KcolD
+    p_DD1 => rvanka%p_DD1
+    p_DD2 => rvanka%p_DD2
+    
+    if(associated(rvanka%p_DA12)) then
+      bHaveA12 = .TRUE.
+      p_KldA12 => rvanka%p_KldA12
+      p_KcolA12 => rvanka%p_KcolA12
+      p_DA12 => rvanka%p_DA12
+      p_DA21 => rvanka%p_DA21
+    end if
+    
+    if(associated(rvanka%p_DC)) then
+      bHaveC = .TRUE.
+      p_KldC => rvanka%p_KldC
+      p_KcolC => rvanka%p_KcolC
+      p_KdiagC => rvanka%p_KdiagonalC
+      p_DC => rvanka%p_DC
+    end if
+    
+    ! Get the Schur-complement array
+    p_DS => rvanka%p_Dschur
+    
+    ! Get the multiplication factors
+    Dmult = rvanka%Dmultipliers
+    
+    ! First of all determine the maximum number of velocity DOFs that one
+    ! pressure DOF may be adjacent to.
+    nmaxdofV = 0
+    do idofp = 1, rvanka%ndofPres
+      nmaxdofV = max(nmaxdofV, p_KldD(idofp+1)-p_KldD(idofp))
+    end do ! idofp
+    nmaxdofV = 2*nmaxdofV
+    
+    ! Okay, let's allocate the temporary data
+    allocate(DA(nmaxdofV,nmaxdofV))
+    allocate(DB(nmaxdofV))
+    allocate(Ipivot(nmaxdofV))
+    
+    ! Let's loop over the pressure DOFs
+    do idofp = 1, rvanka%ndofPres
+    
+      ! Format the local matrices
+      DA = 0.0_DP
+      DB = 0.0_DP
+      dc = 0.0_DP
+      
+      ! Format the Schur-complement entry for this pressure DOF
+      p_DS(idofP) = 0.0_DP
+      
+      ! Fetch the number of velocity DOFs adjacent to this pressure DOF
+      ndofV = p_KldD(idofp+1) - p_KldD(idofp)
+      
+      ! If the C matrix exists, grab it's main diagonal entry
+      if(bHaveC) then
+        dc = Dmult(3,3)*p_DC(p_KdiagC(idofp))
+      end if
+      
+      ! Let's loop over all velocity DOFs which are adjacent to the current
+      ! pressure DOF.
+      do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+      
+        ! Get the index of the velocity DOF
+        idofu = p_KcolD(id1)
+        
+        ! Let's fetch the local A11/A22 matrices
+        do i = p_KldA(idofu), p_KldA(idofu+1)-1
+        
+          ! Get the column index
+          k = p_KcolA(i)
+          
+          ! Let's see if this corresponds to one of our local velocity DOFs
+          do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
+            if(k .eq. p_KcolD(id2)) then
+              ! Okay, incorporate the entries into the local matrix
+              j1 = id1 - p_KldD(idofp) + 1
+              j2 = id2 - p_KldD(idofp) + 1
+              DA(      j1,      j2) = Dmult(1,1)*p_DA11(i)
+              DA(ndofV+j1,ndofV+j2) = Dmult(2,2)*p_DA22(i)
+              exit
+            end if
+          end do ! id2
+        end do ! i
+
+        ! Do the A12/A21 matrices exist? If yes, then we also need to grab
+        ! their local sub-matrices.
+        if(bHaveA12) then
+          ! Let's fetch the local A12/A21 matrices
+          do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+          
+            ! Get the column index
+            k = p_KcolA12(i)
+            
+            ! Let's see if this corresponds to one of our local velocity DOFs
+            do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
+              if(k .eq. p_KcolD(id2)) then
+                ! Okay, incorporate the entries into the local matrix
+                j1 = id1 - p_KldD(idofp) + 1
+                j2 = id2 - p_KldD(idofp) + 1
+                DA(      j1,ndofV+j2) = Dmult(1,2)*p_DA12(i)
+                DA(ndofV+j1,      j2) = Dmult(2,1)*p_DA21(i)
+                exit
+              end if
+            end do ! id2
+          end do ! i
+        end if
+
+        ! Let's fetch the local B matrices
+        do i = p_KldB(idofu), p_KldB(idofu+1)
+          if(p_KcolB(i) .eq. idofP) then
+            j1 = id1 - p_KldD(idofp) + 1
+            DB(      j1) = Dmult(1,3)*p_DB1(i)
+            DB(ndofV+j1) = Dmult(2,3)*p_DB2(i)
+            exit
+          end if
+        end do ! i
+      
+      end do ! id1
+      
+      ! Okay, try to solve the local system A*X=B
+      call DGESV(2*ndofV,1,DA,nmaxdofV,Ipivot,DB,nmaxdofV,info)
+      
+      ! Did LAPACK fail? If yes, simply continue with the next pressure DOF.
+      if(info .ne. 0) cycle
+      
+      ! Okay, let's calculate the Schur-complement dc = C - D * A^-1 * B
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      k = 1
+      do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+        daux1 = daux1 + p_DD1(id1)*DB(k)
+        daux2 = daux2 + p_DD2(id1)*DB(ndofV+k)
+        k = k+1
+      end do
+      dc = dc - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
+      
+      ! Now if the Schur-complement matrix is regular, we'll store the inverse
+      ! in the corresponding entry in p_DS.
+      if(abs(dc) .gt. SYS_EPSREAL) p_DS(idofP) = 1.0_DP / dc
+      
+    end do ! idofp
+    
+    ! And release the temporary memory
+    deallocate(Ipivot)
+    deallocate(DB)
+    deallocate(DA)
+    
+    ! That's it
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine vanka_NS2D_pdof (rrhs,domega,rvector,rvanka)
+  
+!<description>
+  ! This routine applies the pressure-DOF based Vanka algorithm onto a 2D
+  ! Navier-Stokes system Ax = b.
+  ! In contrast to the other Vanka variants, this algorithm is a 'black-box'
+  ! method which does not need any information about the discretisations.
+!</description>
+
+!<input>
+  ! The right-hand-side vector of the system
+  type(t_vectorBlock), intent(IN)         :: rrhs
+  
+  ! Relaxation parameter. Standard=1.0_DP.
+  real(DP), intent(IN)                    :: domega
+!</input>
+
+!<inputoutput>
+  ! The initial solution vector. Is replaced by a new iterate.
+  type(t_vectorBlock), intent(INOUT)         :: rvector
+
+  ! t_vanka structure that saves algorithm-specific parameters.
+  type(t_vankaPointerNavSt2D), intent(INOUT) :: rvanka
+!</inputoutput>
+
+!</subroutine>
+
+  ! Multiplication factors
+  real(DP), dimension(3,3) :: Dmult
+  
+  ! Quick access for the matrix arrays
+  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldC,p_KldD,&
+      p_KcolA,p_KcolA12,p_KcolB,p_KcolC,p_KcolD,p_KdiagA,p_KdiagC
+  real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22,p_DB1,p_DB2,&
+      p_DD1,p_DD2,p_DC, p_DS
+
+  ! Quick access for the vector arrays
+  real(DP), dimension(:), pointer :: p_DrhsU,p_DrhsV,p_DrhsP,&
+                                     p_DvecU,p_DvecV,p_DvecP
+  
+  ! local variables
+  logical :: bHaveA12, bHaveC
+  integer :: idofp,idofu,i,j,id1
+  real(DP) :: dt,daux1,daux2,dfu,dfv,dfp,dd1u,dd2v,dcu,dcv
+
+    ! Get the pointers to the vector data
+    call lsyssc_getbase_double(rvector%RvectorBlock(1), p_DvecU)
+    call lsyssc_getbase_double(rvector%RvectorBlock(2), p_DvecV)
+    call lsyssc_getbase_double(rvector%RvectorBlock(3), p_DvecP)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(1), p_DrhsU)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(2), p_DrhsV)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
+    
+    ! Let's assume we do not have the optional matrices
+    bHaveA12 = .FALSE.
+    bHaveC = .FALSE.
+    
+    ! Get the pointers from the vanka structure
+    p_KldA => rvanka%p_KldA
+    p_KcolA => rvanka%p_KcolA
+    p_KdiagA => rvanka%p_KdiagonalA
+    p_DA11 => rvanka%p_DA11
+    p_DA22 => rvanka%p_DA22
+    p_KldB => rvanka%p_KldB
+    p_KcolB => rvanka%p_KcolB
+    p_DB1 => rvanka%p_DB1
+    p_DB2 => rvanka%p_DB2
+    p_KldD => rvanka%p_KldD
+    p_KcolD => rvanka%p_KcolD
+    p_DD1 => rvanka%p_DD1
+    p_DD2 => rvanka%p_DD2
+    
+    if(associated(rvanka%p_DA12)) then
+      bHaveA12 = .TRUE.
+      p_KldA12 => rvanka%p_KldA12
+      p_KcolA12 => rvanka%p_KcolA12
+      p_DA12 => rvanka%p_DA12
+      p_DA21 => rvanka%p_DA21
+    end if
+    
+    if(associated(rvanka%p_DC)) then
+      bHaveC = .TRUE.
+      p_KldC => rvanka%p_KldC
+      p_KcolC => rvanka%p_KcolC
+      p_KdiagC => rvanka%p_KdiagonalC
+      p_DC => rvanka%p_DC
+    end if
+    
+    ! Get the Schur-complement array
+    p_DS => rvanka%p_Dschur
+    
+    ! Get the multiplication factors
+    Dmult = rvanka%Dmultipliers
+
+    ! TODO: Derive special cases for bHaveA12 and bHaveC here...
+
+    !if((.not. bHaveA12) .and. (.not. bHaveC)) then
+      ! So let's loop over all pressure DOFs
+      do idofp = 1, rvanka%ndofPres
+      
+        ! Get the corresponding RHS entry in pressure space
+        dfp = p_DrhsP(idofP)
+        
+        ! Does the C matrix exist? If yes, then update the local RHS:
+        ! f_p := f_p - C*p
+        if(bHaveC) then
+          daux1 = 0.0_DP
+          do i = p_KldC(idofp), p_KldC(idofp+1)-1
+            daux1 = daux1 + p_DC(i)*p_DvecP(p_KcolC(i))
+          end do
+          dfp = dfp - Dmult(3,3)*daux1
+        end if
+        
+        ! Reset auxiliary variables - these will recieve (D * A^-1 * f_u) in
+        ! the next loop.
+        dd1u = 0.0_DP
+        dd2v = 0.0_DP
+        
+        ! Now let's loop over the entries of row idofp in the D-matrices
+        do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+        
+          ! The column index gives us the index of a velocity DOF which is
+          ! adjacent to the current pressure dof - so get its index.
+          idofu = p_KcolD(id1)
+          
+          ! Fetch local RHS entries for this velocity DOF
+          dfu = p_DrhsU(idofu)
+          dfv = p_DrhsV(idofu)
+          
+          ! The first thing we want to do is to perform:
+          ! f_u := f_u - B1*p
+          ! f_v := f_v - B2*p
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
+          do i = p_KldB(idofu), p_KldB(idofu+1)-1
+            dt = p_DvecP(p_KcolB(i))
+            daux1 = daux1 + p_DB1(i)*dt
+            daux2 = daux2 + p_DB2(i)*dt
+          end do
+          dfu = dfu - Dmult(1,3)*daux1
+          dfv = dfv - Dmult(2,3)*daux2
+          
+          ! Now we'll also subtract A*u from the local RHS
+          ! f_u := f_u - A11*u
+          ! f_v := f_v - A22*v
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
+          do i = p_KldA(idofu), p_KldA(idofu+1)-1
+            j = p_KcolA(i)
+            daux1 = daux1 + p_DA11(i)*p_DvecU(j)
+            daux2 = daux2 + p_DA22(i)*p_DvecV(j)
+          end do
+          dfu = dfu - Dmult(1,1)*daux1
+          dfv = dfv - Dmult(2,2)*daux2
+          
+          ! Do the A12/A21 matrices exist? If yes, then we will also need to
+          ! update the local defect by these matrices.
+          if(bHaveA12) then
+            ! f_u := f_u - A11*u
+            ! f_v := f_v - A22*v
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+              j = p_KcolA12(i)
+              daux1 = daux1 + p_DA12(i)*p_DvecV(j)
+              daux2 = daux2 + p_DA21(i)*p_DvecU(j)
+            end do
+            dfu = dfu - Dmult(1,2)*daux1
+            dfv = dfv - Dmult(2,1)*daux2
+          end if
+
+          ! Now we have built up the local defect for the velocity space, so
+          ! we can now solve the local system and by the same time update the
+          ! velocity vector components.
+          
+          ! Get the main diagonal entries of the A-matrices
+          i = p_KdiagA(idofu)
+          
+          ! And update the velocity DOFs:
+          ! u := u + omega * (A11)^-1 * f_u
+          ! v := v + omega * (A22)^-1 * f_v
+          p_DvecU(idofu) = p_DvecU(idofu) + domega*dfu / (Dmult(1,1)*p_DA11(i))
+          p_DvecV(idofu) = p_DvecV(idofu) + domega*dfv / (Dmult(2,2)*p_DA22(i))
+          
+          ! Finally, update the auxiliary variables for the local defect in
+          ! pressure space using the new velocity.
+          dd1u = dd1u + p_DD1(id1)*p_DvecU(idofu)
+          dd2v = dd2v + p_DD2(id1)*p_DvecV(idofu)
+        
+        end do ! id1
+        
+        ! Okay, let's calculate the correction entry for the pressure DOF
+        ! p := p + omega * S^-1 * (f_p - D * A^-1 * f_u)
+        p_DvecP(idofp) = p_DvecP(idofp) + domega*p_DS(idofp) * &
+                        (dfp - Dmult(3,1)*dd1u - Dmult(3,2)*dd2v)
+      
+      end do ! idofp
+
+    !end if
+    
+    ! That's it
+
   end subroutine
 
   ! ***************************************************************************

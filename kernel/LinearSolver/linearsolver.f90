@@ -758,6 +758,9 @@ module linearsolver
 
   ! Full VANKA, 2D Navier-Stokes problem, general discretisation
   integer, parameter, public :: LINSOL_VANKA_NAVST2D_FULL          = 112
+  
+  ! Pressure-DOF based VANKA, 2D Navier-Stokes problem
+  integer, parameter, public :: LINSOL_VANKA_NAVST2D_PDOF          = 113
 
 !</constantblock>
 
@@ -5967,6 +5970,12 @@ contains
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_FULL)
+
+    case (LINSOL_VANKA_NAVST2D_PDOF)
+      ! Pressure-DOF based VANKA for Navier-Stokes
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_PDOF)
 
     case (LINSOL_VANKA_BOUSS2D_DIAG)
       ! Diagonal-type VANKA for Boussinesq

@@ -183,6 +183,7 @@ module vanka
   ! Public entities imported from vanka_navst2d.f90
   public :: VANKATP_NAVST2D_DIAG
   public :: VANKATP_NAVST2D_FULL
+  public :: VANKATP_NAVST2D_PDOF
   
   ! Public entities imported from vanka_bouss2d.f90
   public :: VANKATP_BOUSS2D_DIAG
@@ -267,10 +268,10 @@ module vanka
     real(DP), dimension(:), pointer :: p_DA
     
     ! Pointer to the column structure
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+    integer, dimension(:), pointer :: p_Kcol
     
     ! Pointer to the row structure
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kld
   end type
   
 !</typeblock>
@@ -294,7 +295,7 @@ module vanka
     type(t_matrixPointer79Vanka), dimension(:,:),pointer :: p_Rmatrices
     
     ! Maximum number of local DOF's.
-    integer(PREC_DOFIDX)                              :: nmaxLocalDOFs
+    integer                              :: nmaxLocalDOFs
     
     ! Total number of local DOF's
     integer                                           :: ndofsPerElement
@@ -302,16 +303,16 @@ module vanka
     ! Number of local DOF's in the element distributions of all blocks.
     ! Note that this VANKA supports only uniform discretisations, so
     ! each entry corresponds to one block in the solution vector.
-    integer(PREC_DOFIDX), dimension(:), pointer :: p_InDofsLocal => NULL()
+    integer, dimension(:), pointer :: p_InDofsLocal => NULL()
     
     ! Offset indices of the blocks in the solution vector. IblockOffset(i)
     ! points to the beginning of the i'th block of the solution vector.
-    integer(PREC_DOFIDX), dimension(:), pointer :: p_IblockOffset => NULL()
+    integer, dimension(:), pointer :: p_IblockOffset => NULL()
     
     ! Temporary array that saves the DOF's that are in processing when
     ! looping over an element set.
     ! DIMENSION(nmaxLocalDOFs,VANKA_NELEMSIM,nblocks)
-    integer(PREC_DOFIDX), dimension(:,:,:), pointer :: p_IelementDOFs => NULL()
+    integer, dimension(:,:,:), pointer :: p_IelementDOFs => NULL()
 
   end type
   
@@ -325,14 +326,14 @@ module vanka
   type t_vankaPointer2DNavSt
     ! Pointer to the column structure of the velocity matrix A11 and A22
     ! A11 and A22 must have the same structure.
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA => NULL()
+    integer, dimension(:), pointer :: p_KcolA => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22.
     ! They must have the same structure.
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA => NULL()
+    integer, dimension(:), pointer :: p_KldA => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A11
     real(DP), dimension(:), pointer             :: p_DA => NULL()
@@ -342,13 +343,13 @@ module vanka
     real(DP), dimension(:), pointer             :: p_DA22 => NULL()
 
     ! Pointer to the column structure of the velocity matrix A11 and A22
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12 => NULL()
+    integer, dimension(:), pointer :: p_KcolA12 => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12 => NULL()
+    integer, dimension(:), pointer :: p_KldA12 => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA12 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA12 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A12 or NULL
     ! if not present
@@ -359,10 +360,10 @@ module vanka
     real(DP), dimension(:), pointer             :: p_DA21 => NULL()
 
     ! Pointer to the column structure of the B/D-matrices.
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB => NULL()
+    integer, dimension(:), pointer :: p_KcolB => NULL()
     
     ! Pointer to the row structure of the B/D-matrices
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB => NULL()
+    integer, dimension(:), pointer :: p_KldB => NULL()
     
     ! Pointer to the entries of the B1-matrix
     real(DP), dimension(:), pointer             :: p_DB1 => NULL()
@@ -381,7 +382,7 @@ module vanka
     real(DP), dimension(:), pointer             :: p_DA33 => NULL()
 
     ! Pointer to diagonal entries of A33
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA33 => NULL()
 
     ! Spatial discretisation structure for X-velocity
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => NULL()
@@ -413,13 +414,13 @@ module vanka
   
   type t_vankaPointer2DNavStOptC
     ! Pointer to the column structure of the velocity matrix A11 and A22
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA11 => NULL()
+    integer, dimension(:), pointer :: p_KcolA11 => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA11 => NULL()
+    integer, dimension(:), pointer :: p_KldA11 => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA11 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA11 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A11
     real(DP), dimension(:), pointer             :: p_DA11 => NULL()
@@ -429,13 +430,13 @@ module vanka
     real(DP), dimension(:), pointer             :: p_DA22 => NULL()
 
     ! Pointer to the column structure of the velocity matrix A11 and A22
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12 => NULL()
+    integer, dimension(:), pointer :: p_KcolA12 => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12 => NULL()
+    integer, dimension(:), pointer :: p_KldA12 => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA12 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA12 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A12 or NULL
     ! if not present
@@ -458,24 +459,24 @@ module vanka
     real(DP), dimension(:), pointer             :: p_DA33 => NULL()
 
     ! Pointer to diagonal entries of A33
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA33 => NULL()
 
     ! Pointer to the matrix entries of the pressure identity matrix A66
     ! (if it exists).
     real(DP), dimension(:), pointer             :: p_DA66 => NULL()
 
     ! Pointer to diagonal entries of A66
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA66 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA66 => NULL()
 
 
     ! Pointer to the column structure of the matrix A45 and A54
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA45 => NULL()
+    integer, dimension(:), pointer :: p_KcolA45 => NULL()
     
     ! Pointer to the row structure of the matrix A45 and A54
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA45 => NULL()
+    integer, dimension(:), pointer :: p_KldA45 => NULL()
     
     ! Pointer to diagonal entries in the matrix A45 and A54
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA45 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA45 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A45 or NULL
     ! if not present
@@ -487,13 +488,13 @@ module vanka
 
 
     ! Pointer to the column structure of the mass matrix
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolM => NULL()
+    integer, dimension(:), pointer :: p_KcolM => NULL()
     
     ! Pointer to the row structure of the mass matrix
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldM => NULL()
+    integer, dimension(:), pointer :: p_KldM => NULL()
     
     ! Pointer to diagonal entries in the mass matrix
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalM => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalM => NULL()
 
     ! Pointer to the matrix entries of the mass matrix at position
     ! (1,4) and (2,5) in the pimal system, or NULL if not present.
@@ -518,10 +519,10 @@ module vanka
 
 
     ! Pointer to the column structure of the B/D-matrices.
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB => NULL()
+    integer, dimension(:), pointer :: p_KcolB => NULL()
     
     ! Pointer to the row structure of the B/D-matrices
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB => NULL()
+    integer, dimension(:), pointer :: p_KldB => NULL()
     
     ! Pointer to the entries of the B1-matrix
     real(DP), dimension(:), pointer             :: p_DB1 => NULL()
@@ -563,14 +564,14 @@ module vanka
   type t_vankaPointer3DNavSt
     ! Pointer to the column structure of the velocity matrix A11, A22 and A33
     ! A11, A22 and A33 must have the same structure.
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA => NULL()
+    integer, dimension(:), pointer :: p_KcolA => NULL()
     
     ! Pointer to the row structure of the velocity matrix A11, A22 and A33.
     ! They must have the same structure.
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA => NULL()
+    integer, dimension(:), pointer :: p_KldA => NULL()
     
     ! Pointer to diagonal entries in the velocity matrix A11, A22 and A33
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A11
     real(DP), dimension(:), pointer             :: p_DA => NULL()
@@ -584,13 +585,13 @@ module vanka
     real(DP), dimension(:), pointer             :: p_DA33 => NULL()
 
 !    ! Pointer to the column structure of the velocity matrix A12 and A21
-!    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12 => NULL()
+!    INTEGER, DIMENSION(:), POINTER :: p_KcolA12 => NULL()
 !    
 !    ! Pointer to the row structure of the velocity matrix A12 and A21
-!    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12 => NULL()
+!    INTEGER, DIMENSION(:), POINTER :: p_KldA12 => NULL()
 !    
 !    ! Pointer to diagonal entries in the velocity matrix A12 and A21
-!    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA12 => NULL()
+!    INTEGER, DIMENSION(:), POINTER :: p_KdiagonalA12 => NULL()
 !
 !    ! Pointer to the matrix entries of the velocity matrix A12 or NULL
 !    ! if not present
@@ -601,10 +602,10 @@ module vanka
 !    REAL(DP), DIMENSION(:), POINTER             :: p_DA21 => NULL()
 
     ! Pointer to the column structure of the B/D-matrices.
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB => NULL()
+    integer, dimension(:), pointer :: p_KcolB => NULL()
     
     ! Pointer to the row structure of the B/D-matrices
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB => NULL()
+    integer, dimension(:), pointer :: p_KldB => NULL()
     
     ! Pointer to the entries of the B1-matrix
     real(DP), dimension(:), pointer             :: p_DB1 => NULL()
@@ -629,7 +630,7 @@ module vanka
     real(DP), dimension(:), pointer             :: p_DA44 => NULL()
 
     ! Pointer to diagonal entries of A33
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA44 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA44 => NULL()
 
     ! Spatial discretisation structure for X-velocity
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => NULL()
@@ -1137,10 +1138,10 @@ contains
 
   ! local variables
   integer :: i,j
-  integer(PREC_ELEMENTIDX) :: IELmax, IELset, iel, ieldistr
-  integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+  integer :: IELmax, IELset, iel, ieldistr
+  integer, dimension(:), pointer :: p_IelementList
   real(DP), dimension(:), pointer                 :: p_Drhs,p_Dvector
-  integer(PREC_VECIDX), dimension(:), pointer     :: p_Ipermutation
+  integer, dimension(:), pointer     :: p_Ipermutation
   type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     
   ! Saved matrix and the vector(s) must be compatible!
@@ -1248,7 +1249,7 @@ contains
                                 intent(IN)       :: Rmatrices
 
   ! Number of elements that should be processed in this sweep.
-  integer(PREC_ELEMENTIDX), intent(IN)           :: nelements
+  integer, intent(IN)           :: nelements
   
   ! Number of blocks in the vectors
   integer, intent(IN)                            :: nblocks
@@ -1256,17 +1257,17 @@ contains
   ! Offset position of the blocks in the vector.
   ! Block i starts at position IblockOffset(i)+1 in Dvector / Drhs.
   ! IblockOffset(nblocks+1) gives the number of equations in Dvector/Drhs.
-  integer(PREC_DOFIDX), dimension(max(nblocks,1)+1), intent(IN) :: IblockOffset
+  integer, dimension(max(nblocks,1)+1), intent(IN) :: IblockOffset
   
   ! Number of local DOF's in each block.
-  integer(PREC_DOFIDX), dimension(nblocks), intent(IN)   :: InDofsLocal
+  integer, dimension(nblocks), intent(IN)   :: InDofsLocal
   
   ! Total number of local DOF's per element
   integer, intent(IN)                                    :: ndofsPerElement
   
   ! List of DOF's on every element for every block.
   ! DIMENSION(nmaxDOFs,nelements,nblocks)
-  integer(PREC_DOFIDX), dimension(:,:,:), intent(IN)     :: IelementDOFs
+  integer, dimension(:,:,:), intent(IN)     :: IelementDOFs
   
 !</input>
 
@@ -1402,12 +1403,12 @@ contains
     ! end loop
 
     ! local variables
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
     integer, dimension(max(nblocks,1)+1) :: IlocalIndex
-    integer(PREC_DOFIDX), dimension(ndofsPerElement) :: IlocalDOF,IglobalDOF
+    integer, dimension(ndofsPerElement) :: IlocalDOF,IglobalDOF
     integer :: i,j,k,iidx,iminiDOF
-    integer(PREC_VECIDX) :: irow,idof
-    integer(PREC_MATIDX) :: icol
+    integer :: irow,idof
+    integer :: icol
     
     ! Memory for our local system; let's hope it's not too big :)
     real(DP), dimension(ndofsPerElement,ndofsPerElement) :: Daa
@@ -1919,7 +1920,7 @@ contains
 
     ! local variables
     integer :: ielementdist
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     type(t_elementDistribution), pointer :: p_relementDistrU
     type(t_elementDistribution), pointer :: p_relementDistrV
     type(t_elementDistribution), pointer :: p_relementDistrP 
@@ -2275,26 +2276,26 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer     :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -2304,7 +2305,7 @@ contains
     ! Local arrays for informations about one element
     real(DP), dimension(4) :: AA,BB1,BB2,DD1,DD2
     real(DP), dimension(9) :: FF,UU
-    integer(PREC_VECIDX), dimension(4) :: idofGlobal
+    integer, dimension(4) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -2685,26 +2686,26 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer     :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -2714,7 +2715,7 @@ contains
     ! Local arrays for informations about one element
     real(DP), dimension(4) :: AA,BB1,BB2,DD1,DD2
     real(DP), dimension(9) :: FF,UU
-    integer(PREC_VECIDX), dimension(4) :: idofGlobal
+    integer, dimension(4) :: idofGlobal
     
     ! WARNING: DOCUMENTATION PARTIALLY WRONG AND INCOMPLETE!
     ! Preconditioner was build from FEAT1 in a quick-and-dirty way...
@@ -3081,7 +3082,7 @@ contains
   real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -3092,26 +3093,26 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer     :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -3120,7 +3121,7 @@ contains
     ! Local arrays for informations about one element
     real(DP), dimension(4) :: AA,BB1,BB2,DD1,DD2
     real(DP), dimension(9) :: FF,UU
-    integer(PREC_VECIDX), dimension(4) :: idofGlobal
+    integer, dimension(4) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -3870,7 +3871,7 @@ contains
   real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -3881,28 +3882,28 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12,p_KdiagonalA12
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA12
+    integer, dimension(:), pointer :: p_KldA12,p_KdiagonalA12
     real(DP), dimension(:), pointer             :: p_DA,p_DA12,p_DA21,p_DA22
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer     :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -3911,7 +3912,7 @@ contains
     ! Local arrays for informations about one element
     real(DP), dimension(2*4) :: AA,BB1,BB2,DD1,DD2
     real(DP), dimension(9) :: FF,UU
-    integer(PREC_VECIDX), dimension(4) :: idofGlobal
+    integer, dimension(4) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -4481,7 +4482,7 @@ contains
   real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -4492,29 +4493,29 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
     integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
     integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
     integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
     
@@ -4522,7 +4523,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
+    integer     :: ioffsetv,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -4922,7 +4923,7 @@ contains
   real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -4933,31 +4934,31 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA,p_DA12,p_DA21,p_DA22
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12,p_KdiagonalA12
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolA12
+    integer, dimension(:), pointer :: p_KldA12,p_KdiagonalA12
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
     integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
     integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
     integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
     
@@ -4965,7 +4966,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
+    integer     :: ioffsetv,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -5399,32 +5400,32 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_VERTEXIDX)   :: NVT
-    integer(PREC_EDGEIDX)    :: NMT
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer :: NEL
+    integer   :: NVT
+    integer    :: NMT
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
     integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
     integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
     integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
     
@@ -5432,7 +5433,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer     :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j,isubdof
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -5847,7 +5848,7 @@ contains
   real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -5858,32 +5859,32 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_VERTEXIDX)   :: NVT
-    integer(PREC_EDGEIDX)    :: NMT
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer :: NEL
+    integer   :: NVT
+    integer    :: NMT
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
     integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
     integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
     integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
     
@@ -5891,7 +5892,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp
+    integer     :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j,isubdof
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -6313,32 +6314,32 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_VERTEXIDX)   :: NVT
-    integer(PREC_EDGEIDX)    :: NMT
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer :: NEL
+    integer   :: NVT
+    integer    :: NMT
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
     integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
     integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
     integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
     
@@ -6346,7 +6347,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
+    integer     :: ioffsetv,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,isubdof,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -6766,7 +6767,7 @@ contains
   real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -6777,32 +6778,32 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_VERTEXIDX)   :: NVT
-    integer(PREC_EDGEIDX)    :: NMT
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer :: NEL
+    integer   :: NVT
+    integer    :: NMT
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
     integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
     integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
     integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
-    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
     
@@ -6810,7 +6811,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetp,j
+    integer     :: ioffsetv,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,isubdof,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -7253,7 +7254,7 @@ contains
   real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -7264,33 +7265,33 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA11
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA11
+    integer, dimension(:), pointer :: p_KcolA11
+    integer, dimension(:), pointer :: p_KldA11
     real(DP), dimension(:), pointer             :: p_DA11,p_DA12,p_DA21,p_DA22
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolA12
+    integer, dimension(:), pointer :: p_KldA12
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     real(DP), dimension(:), pointer             :: p_Da33
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33
+    integer, dimension(:), pointer :: p_KdiagonalA33
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
     integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
     integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
     integer, parameter :: nnld = 2*nnvel + nnpressure
-    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
     
@@ -7303,7 +7304,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! Offset information in arrays.
-    integer(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
+    integer     :: ioffsetu,ioffsetv,ioffsetp,j
     
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     real(DP) :: daux
@@ -8193,7 +8194,7 @@ contains
 
     ! local variables
     integer :: ielementdist
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     type(t_elementDistribution), pointer :: p_relementDistrU
     type(t_elementDistribution), pointer :: p_relementDistrV
     type(t_elementDistribution), pointer :: p_relementDistrP 
@@ -8332,7 +8333,7 @@ contains
   real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -8343,7 +8344,7 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     real(DP) :: dmult11,dmult22,dmult44,dmult55
     real(DP) :: dmultb1,dmultb2,dmultb3,dmultb4
@@ -8351,26 +8352,26 @@ contains
     real(DP) :: dmult33,dmult66
     real(DP) :: di1,di2
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA11,p_Da22,p_Da44,p_Da55
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1,p_DB2
     real(DP), dimension(:), pointer             :: p_DB3,p_DB4
     real(DP), dimension(:), pointer             :: p_DD1,p_DD2
     real(DP), dimension(:), pointer             :: p_DD3,p_DD4
     real(DP), dimension(:), pointer             :: p_DA33,p_DA66
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
+    integer, dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp
-    integer(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
+    integer     :: ioffsetu,ioffsetv,ioffsetp
+    integer     :: ioffsetl1,ioffsetl2,ioffsetxi
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -8381,7 +8382,7 @@ contains
     real(DP), dimension(9) :: FFp,UUp
     real(DP), dimension(4) :: AA33,AA44,BB3,BB4,DD3,DD4
     real(DP), dimension(9) :: FFd,UUd
-    integer(PREC_VECIDX), dimension(4) :: idofGlobal
+    integer, dimension(4) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -8844,7 +8845,7 @@ contains
   real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -8855,33 +8856,33 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA11
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA11
+    integer, dimension(:), pointer :: p_KcolA11
+    integer, dimension(:), pointer :: p_KldA11
     real(DP), dimension(:), pointer             :: p_DA11,p_DA12,p_DA21,p_DA22
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA45
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA45
+    integer, dimension(:), pointer :: p_KcolA45
+    integer, dimension(:), pointer :: p_KldA45
     real(DP), dimension(:), pointer             :: p_DA44,p_DA45,p_DA54,p_DA55
     real(DP), dimension(:), pointer             :: p_DR41,p_DR52,p_DR51,p_DR42
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolM
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldM
+    integer, dimension(:), pointer :: p_KcolA12
+    integer, dimension(:), pointer :: p_KldA12
+    integer, dimension(:), pointer :: p_KcolM
+    integer, dimension(:), pointer :: p_KldM
     real(DP), dimension(:), pointer             :: p_DM
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     real(DP), dimension(:), pointer             :: p_Da33,p_Da66
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
+    integer, dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -8891,7 +8892,7 @@ contains
     integer, parameter :: nndualpressure = 1 ! QQ0 = 1 DOF's per dual pressure
     integer, parameter :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF's per element
     integer, parameter :: nnld = 2*nnprimal
-    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
     
@@ -8908,10 +8909,10 @@ contains
     
     ! Offset information in arrays.
     ! Primal variables
-    integer(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
+    integer     :: ioffsetu,ioffsetv,ioffsetp,j
     
     ! Dual variables
-    integer(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
+    integer     :: ioffsetl1,ioffsetl2,ioffsetxi
     
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     real(DP) :: daux,daux2
@@ -9706,7 +9707,7 @@ contains
   real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 
   ! Identifier for the part of the equation, where VANKA should be
   ! applied.
@@ -9725,32 +9726,32 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA11
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA11
+    integer, dimension(:), pointer :: p_KcolA11
+    integer, dimension(:), pointer :: p_KldA11
     real(DP), dimension(:), pointer             :: p_DA11,p_DA12,p_DA21,p_DA22
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA45
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA45
+    integer, dimension(:), pointer :: p_KcolA45
+    integer, dimension(:), pointer :: p_KldA45
     real(DP), dimension(:), pointer             :: p_DA44,p_DA45,p_DA54,p_DA55
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA12
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA12
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolM
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldM
+    integer, dimension(:), pointer :: p_KcolA12
+    integer, dimension(:), pointer :: p_KldA12
+    integer, dimension(:), pointer :: p_KcolM
+    integer, dimension(:), pointer :: p_KldM
     real(DP), dimension(:), pointer             :: p_DM
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DD1
     real(DP), dimension(:), pointer             :: p_DD2
     real(DP), dimension(:), pointer             :: p_Da33,p_Da66
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
+    integer, dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -9760,7 +9761,7 @@ contains
     integer, parameter :: nndualpressure = 1 ! QQ0 = 1 DOF's per dual pressure
     integer, parameter :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF's per element
     integer, parameter :: nnld = 2*nnprimal
-    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
     
@@ -9777,10 +9778,10 @@ contains
     
     ! Offset information in arrays.
     ! Primal variables
-    integer(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
+    integer     :: ioffsetu,ioffsetv,ioffsetp,j
     
     ! Dual variables
-    integer(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
+    integer     :: ioffsetl1,ioffsetl2,ioffsetxi
     
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     real(DP) :: daux,daux2
@@ -11414,7 +11415,7 @@ contains
 
     ! local variables
     integer :: ielementdist
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     type(t_elementDistribution), pointer :: p_relementDistrU
     type(t_elementDistribution), pointer :: p_relementDistrV
     type(t_elementDistribution), pointer :: p_relementDistrW
@@ -11704,14 +11705,14 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DB3
@@ -11720,12 +11721,12 @@ contains
     real(DP), dimension(:), pointer             :: p_DD3
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_FACEIDX), dimension(:,:), pointer :: p_IfacesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IfacesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetw,ioffsetp
+    integer     :: ioffsetv,ioffsetw,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 6
     integer, parameter :: lofsw = 12
@@ -11736,7 +11737,7 @@ contains
     ! Local arrays for informations about one element
     real(DP), dimension(6) :: AA,BB1,BB2,BB3,DD1,DD2,DD3
     real(DP), dimension(19) :: FF,UU
-    integer(PREC_VECIDX), dimension(6) :: idofGlobal
+    integer, dimension(6) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -11983,7 +11984,7 @@ contains
   real(DP), intent(IN)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -11994,14 +11995,14 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DB3
@@ -12010,12 +12011,12 @@ contains
     real(DP), dimension(:), pointer             :: p_DD3
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_FACEIDX), dimension(:,:), pointer :: p_IfacesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IfacesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetw,ioffsetp
+    integer     :: ioffsetv,ioffsetw,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 6
     integer, parameter :: lofsw = 12
@@ -12025,7 +12026,7 @@ contains
     ! Local arrays for informations about one element
     real(DP), dimension(6) :: AA,BB1,BB2,BB3,DD1,DD2,DD3
     real(DP), dimension(19) :: FF,UU
-    integer(PREC_VECIDX), dimension(6) :: idofGlobal
+    integer, dimension(6) :: idofGlobal
     
     ! Get pointers to the system matrix, so we don't have to write
     ! so much - and it's probably faster.
@@ -12684,7 +12685,7 @@ contains
   real(DP), intent(IN)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer(PREC_ELEMENTIDX), dimension(:)     :: IelementList
+  integer, dimension(:)     :: IelementList
 !</input>
 
 !<inputoutput>
@@ -12695,14 +12696,14 @@ contains
 !</subroutine>
 
     ! local vairables
-    integer(PREC_ELEMENTIDX) :: iel,ielidx
+    integer :: iel,ielidx
     integer :: inode,idof
     
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
     real(DP), dimension(:), pointer             :: p_DA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolB
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldB
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
     real(DP), dimension(:), pointer             :: p_DB1
     real(DP), dimension(:), pointer             :: p_DB2
     real(DP), dimension(:), pointer             :: p_DB3
@@ -12711,15 +12712,15 @@ contains
     real(DP), dimension(:), pointer             :: p_DD3
     
     ! Triangulation information
-    integer(PREC_ELEMENTIDX) :: NEL
-    integer(PREC_FACEIDX), dimension(:,:), pointer :: p_IfacesAtElement
+    integer :: NEL
+    integer, dimension(:,:), pointer :: p_IfacesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
     integer, parameter :: nnvel = 6      ! Q1T = 6 DOF's per velocity
     integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
     integer, parameter :: nnld = 3*nnvel+nnpressure
-    integer(PREC_VECIDX), dimension(nnvel) :: IdofGlobal
+    integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
     
@@ -12727,7 +12728,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer(PREC_VECIDX)     :: ioffsetv,ioffsetw,ioffsetp,j
+    integer     :: ioffsetv,ioffsetw,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsw = 2*nnvel
