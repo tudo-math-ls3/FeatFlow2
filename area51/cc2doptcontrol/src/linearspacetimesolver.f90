@@ -7172,6 +7172,9 @@ end subroutine
       iiterations = 1
     end if
     
+    ! DEBUG!!!
+    !call sptivec_saveToFileSequence (rx,'(''smoothin.txt.'',I5.5)',.true.)
+    
     do i=1,iiterations
     
       call sptivec_copyVector(rb,rtemp)
@@ -7212,6 +7215,9 @@ end subroutine
       call sptivec_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
       
     end do
+    
+    ! DEBUG!!!
+    !call sptivec_saveToFileSequence (rx,'(''smoothout.txt.'',I5.5)',.true.)
     
     rsolverNode%rtimeSpacePrecond = stat_rcloneTimer (rtimer)
 

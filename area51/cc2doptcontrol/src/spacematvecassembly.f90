@@ -836,13 +836,13 @@ contains
       select case (rmatrixComponents%idualSol)
       case (1)
         call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector1, &
-            rmatrixComponents%Dalpha(1,2),0)
+            rmatrixComponents%Dalpha(1,2))
       case (2)
         call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector2, &
-            rmatrixComponents%Dalpha(1,2),0)
+            rmatrixComponents%Dalpha(1,2))
       case (3)
         call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector3, &
-            rmatrixComponents%Dalpha(1,2),0)
+            rmatrixComponents%Dalpha(1,2))
       end select
 
       ! Reintegrate the computed matrix
@@ -1586,7 +1586,7 @@ contains
     ! -----------------------------------------------------
 
     subroutine assembleProjectedMassBlocks (rmatrixComponents,rmatrix, &
-        rvector, dweight,cprojectionType)
+        rvector, dweight)
         
     ! Assembles a 2x2 block matrix with
     ! probably nonlinear mass matrices on the diagonal.
@@ -1608,12 +1608,6 @@ contains
     ! Weight for the (projected) mass matrices when adding them to the
     ! system.
     real(DP), intent(in) :: dweight
-    
-    ! Type of projection.
-    ! =0: Simple DOF-based projection, rows in the mass matrices are
-    !     replaced by zero (faster)
-    ! =1: Reassembly of the mass matrices, projection based on cubature points.
-    integer, intent(in) :: cprojectionType
     
       ! local variables
       type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
@@ -1648,10 +1642,9 @@ contains
             call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(2,2),dweight)
           end if
           
-        else if ((rmatrixComponents%ccontrolConstraints .eq. 1) .and. &
-                 (rmatrixComponents%cmatrixType .eq. 1)) then
+        else if (rmatrixComponents%cmatrixType .eq. 1) then
           
-          if (cprojectionType .eq. 0) then
+          if (rmatrixComponents%ccontrolConstraints .eq. 1) then
           
             ! Copy the entries of the mass matrix. Share the structure.
             ! We must not share the entries as these might be changed by the caller
@@ -1676,7 +1669,7 @@ contains
             call massmatfilter (rmatrix%RmatrixBlock(2,2),rvector%RvectorBlock(5),&
                 rmatrixComponents%dalphaC,rmatrixComponents%dumin2,rmatrixComponents%dumax2)
                 
-          else
+          else if (rmatrixComponents%ccontrolConstraints .eq. 2) then
           
             ! Exact reassembly of the mass matrices.
           
@@ -1735,8 +1728,20 @@ contains
             ! Now we can forget about the collection again.
             call collct_done (rcollection)
             
+          else
+          
+            call output_line ('Unsupported ccontrolConstraints flag.', &
+                              OU_CLASS_ERROR,OU_MODE_STD,'assembleProjectedMassBlocks')
+            call sys_halt()
+            
           end if
 
+        else
+        
+          call output_line ('Unsupported cmatrixType.', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'assembleProjectedMassBlocks')
+          call sys_halt()
+          
         end if
         
       else
