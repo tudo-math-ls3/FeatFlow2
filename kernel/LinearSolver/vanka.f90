@@ -184,6 +184,7 @@ module vanka
   public :: VANKATP_NAVST2D_DIAG
   public :: VANKATP_NAVST2D_FULL
   public :: VANKATP_NAVST2D_PDOF
+  public :: VANKATP_NAVST2D_PDOF_FAST
   
   ! Public entities imported from vanka_bouss2d.f90
   public :: VANKATP_BOUSS2D_DIAG

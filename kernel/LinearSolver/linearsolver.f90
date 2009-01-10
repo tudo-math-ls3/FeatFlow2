@@ -761,6 +761,9 @@ module linearsolver
   
   ! Pressure-DOF based VANKA, 2D Navier-Stokes problem
   integer, parameter, public :: LINSOL_VANKA_NAVST2D_PDOF          = 113
+  
+  ! Pressure-DOF based VANKA, 2D Navier-Stokes problem, fast variant
+  integer, parameter, public :: LINSOL_VANKA_NAVST2D_PDOF_FAST     = 114
 
 !</constantblock>
 
@@ -5976,6 +5979,12 @@ contains
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_PDOF)
+
+    case (LINSOL_VANKA_NAVST2D_PDOF_FAST)
+      ! Pressure-DOF based VANKA for Navier-Stokes, fast variant
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_PDOF_FAST)
 
     case (LINSOL_VANKA_BOUSS2D_DIAG)
       ! Diagonal-type VANKA for Boussinesq
@@ -12350,6 +12359,8 @@ contains
             ! --------------- NEW IMPLEMENTATION ---------------
             LINSOL_VANKA_NAVST2D_DIAG,&
             LINSOL_VANKA_NAVST2D_FULL,&
+            LINSOL_VANKA_NAVST2D_PDOF,&
+            LINSOL_VANKA_NAVST2D_PDOF_FAST,&
             LINSOL_VANKA_BOUSS2D_DIAG,&
             LINSOL_VANKA_BOUSS2D_FULL&
             )
