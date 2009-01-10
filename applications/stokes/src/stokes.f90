@@ -36,6 +36,7 @@ program stokes
   use stokes3d_method0_simple
   use stokes3d_method1_mg
   
+  use navst2d_method1_mg
   use navst3d_method1_mg
   
   implicit none
@@ -66,13 +67,13 @@ program stokes
 
   ! Call the problem to solve. 2d stokes 2:
   call output_lbrk()
-  call output_line('Calculating 2D Stokes-Problem 2 - simple VANCA')
+  call output_line('Calculating 2D Stokes-Problem 2 - simple VANKA')
   call output_line('----------------------------------------------')
   call stokes2d_2_sv
 
   ! Call the problem to solve. 2d stokes 2:
   call output_lbrk()
-  call output_line('Calculating 2D Stokes-Problem 2 - general VANCA')
+  call output_line('Calculating 2D Stokes-Problem 2 - general VANKA')
   call output_line('-----------------------------------------------')
   call stokes2d_2_gv
 
@@ -88,11 +89,20 @@ program stokes
   call output_line('-------------------------------------------')
   call stokes3d_1_mg
 
+  ! As the following two examples are Navier-Stokes examples rather than
+  ! Stokes, they're commented out by default.
+
+  ! Call the problem to solve. 2d navier-stokes 1:
+!  call output_lbrk()
+!  call output_line('Calculating 2D Navier-Stokes-Problem 1 - multigrid')
+!  call output_line('--------------------------------------------------')
+!  call navst2d_1_mg
+
   ! Call the problem to solve. 3d navier-stokes 1:
-  !CALL output_lbrk()
-  !CALL output_line('Calculating 3D Navier-Stokes-Problem 1 - multigrid')
-  !CALL output_line('--------------------------------------------------')
-  !CALL navst3d_1_mg
+!  call output_lbrk()
+!  call output_line('Calculating 3D Navier-Stokes-Problem 1 - multigrid')
+!  call output_line('--------------------------------------------------')
+!  call navst3d_1_mg
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
