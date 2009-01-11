@@ -2590,7 +2590,7 @@ contains
             j = p_KcolB(i)
             daux = p_DvecP(j)
             daux1 = daux1 + p_DB1(i)*daux
-            daux2 = daux2 + p_DB2(i)*daux2
+            daux2 = daux2 + p_DB2(i)*daux
             do l = 1, ndofP
               if(j .eq. IdofP(l)) then
                 Da(  k,p+l) = Dmult(1,3)*p_DB1(i)
