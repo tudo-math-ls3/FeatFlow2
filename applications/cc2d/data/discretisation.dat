@@ -19,7 +19,7 @@
 #     The file is expected as unformatted binary file.
 #     (smaller, but processor dependent and not human readable!)
 # =3: Analytical initial solution. Create the solution by calling
-#     the callback functions coeff_AnalyticSolution_Y, 
+#     the callback functions coeff_AnalyticSolution_X, 
 #     coeff_AnalyticSolution_Y and coeff_AnalyticSolution_P
 #     in cccallback.f90.
 
