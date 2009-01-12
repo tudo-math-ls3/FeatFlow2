@@ -58,16 +58,23 @@ module discretefbc
 !<constantblock description="Type identifiers for the callback routine during discretisation of FBC's">
   
   ! Calculate the function value in corner vertices of elements in the object
-  integer, parameter :: DISCFBC_NEEDFUNC         = 0
+  integer, parameter :: DISCFBC_NEEDFUNC           = 0
 
   ! Calculate the function value in a edge midpoints of elements in the object
-  integer, parameter :: DISCFBC_NEEDFUNCMID      = 1
+  integer, parameter :: DISCFBC_NEEDFUNCMID        = 1
   
   ! Calculate the integral mean value on edges in the object
-  integer, parameter :: DISCFBC_NEEDINTMEAN      = 2
+  integer, parameter :: DISCFBC_NEEDINTMEAN        = 2
 
   ! Calculate the function value in midpoints of elements in the object
-  integer, parameter :: DISCFBC_NEEDFUNCELMID    = 3
+  integer, parameter :: DISCFBC_NEEDFUNCELMID      = 3
+
+  ! Calculate the function value in the face midpoints of elements in the object
+  integer, parameter :: DISCFBC_NEEDFUNCFACEMID    = 4
+  
+  ! Calculate the integral mean value on the faces in the object
+  integer, parameter :: DISCFBC_NEEDFACEINTMEAN    = 5
+  
 
 !</constantblock>
   
