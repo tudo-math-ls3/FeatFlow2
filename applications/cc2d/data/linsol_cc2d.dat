@@ -40,6 +40,14 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 #     (i.e. automatically chooses the best suitable VANKA variant).
 #     'direct' method, bypassing the defect correction approach.
 #     (-> specialised variant of 10, but faster)
+#
+# The following smoothers are some new Vanka implementations.
+# Warning: You use the following ones at your own risk!
+# = 101: diagonal Vanka (a new implementation of 3)
+# = 102: full Vanka (a new implementation of 5)
+# = 103: pressure-DOF based Vanka, a black-box Vanka implementation for
+#        2D Navier-Stokes systems
+# = 104: SP-SOR (experimental), a SOR-like smoother for saddle-point systems
 
 ismootherType = 3
 

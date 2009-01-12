@@ -581,7 +581,7 @@ contains
         ! Initialise the smoothers.
         select case (ismootherType)
         
-        case (0:5)
+        case (0:5,101:104)
 
           nullify(p_rsmoother)
         
@@ -599,6 +599,15 @@ contains
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVST)
           case (5)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTDIRECT)
+          ! --- NEW IMPLEMENTATION ---
+          case (101)
+            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)
+          case (102)
+            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_FULL)
+          case (103)
+            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_PDOF)
+          case (104)
+            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_PDOF_FAST)
           end select
           
           ! Initialise the parameters -- if there are any.
@@ -1040,7 +1049,12 @@ contains
               ! On the other levels, tweak the matrix if the general VANKA is
               ! chosen as smoother; it needs transposed matrices.
               if ((rnonlinearIteration%rprecSpecials%ismootherType .eq. 0) .or. &
-                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 1)) then
+                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 1) .or. &
+              ! --- NEW IMPLEMENTATION ---
+                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 101) .or. &
+                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 102) .or. &
+                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 103) .or. &
+                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 104)) then
                 btranspose = .true.
               end if              
               
