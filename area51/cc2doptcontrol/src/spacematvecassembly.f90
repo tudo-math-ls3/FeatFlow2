@@ -3501,7 +3501,7 @@ contains
       call lsysbl_scaleVector(rtempVectorX,-rmatrixComponents%Dalpha(1,2))
       
       ! Project that to the allowed range.
-      if (rmatrixComponents%ccontrolConstraints .eq. 1) then
+      if (rmatrixComponents%ccontrolConstraints .ne. 0) then
         call cc_projectControlTimestep (rtempVectorX%RvectorBlock(1),&
             rmatrixComponents%dumin1,rmatrixComponents%dumax1)
         call cc_projectControlTimestep (rtempVectorX%RvectorBlock(2),&
