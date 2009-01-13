@@ -1105,8 +1105,9 @@ contains
       ! Copy the resulting vector rvector1 to the output.
       call lsysbl_copyVector (rvector1,rvector)
       
-      ! Release the temp vector
+      ! Release the temp vectors
       call lsysbl_releaseVector (rvector1)
+      call lsysbl_releaseVector (rtempVector)
       
     end if
 
