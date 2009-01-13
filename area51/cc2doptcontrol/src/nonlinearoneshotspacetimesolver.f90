@@ -2851,240 +2851,240 @@ contains
     iglobIter = 0
     ilinearIterations = 0
     
-!    do while ((iglobIter .lt. nminIterations) .or. &
-!              ((((ddefNorm .gt. depsRel*dinitDefNorm) .or. (ddefNorm .ge. depsAbs)) .and.&
-!                (abs(ddefNorm-dlastDefNorm) .ge. depsDiff*dlastDefNorm)) &
-!              .and. (iglobIter .lt. nmaxIterations)))
-!    
-!      iglobIter = iglobIter+1
-!      
-!      ! Project the solution down to all levels, so the nonlinearity
-!      ! on the lower levels can be calculated correctly.
-!      ! Use the memory in rtempvectorX and rtempvectorB as temp memory;
-!      ! it's large enough.
-!      call lsysbl_duplicateVector (rtempvectorX,rtempVecFine,&
-!          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!      call lsysbl_duplicateVector (rtempvectorB,rtempVecCoarse,&
-!          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!
-!      do ilev=size(RspatialPrecond)-1,1,-1
-!        call lsysbl_enforceStructureDiscr(&
-!            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%rdiscretisation,rtempVecFine)
-!        rtempVecFine%p_rdiscreteBC =>&
-!            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteBC
-!        rtempVecFine%p_rdiscreteBCfict =>&
-!            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteFBC
-!            
-!        call lsysbl_enforceStructureDiscr(&
-!            RspaceTimeDiscr(ilev)%p_rlevelInfo%rdiscretisation,rtempVecCoarse)
-!        rtempVecCoarse%p_rdiscreteBC =>&
-!            RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteBC
-!        rtempVecCoarse%p_rdiscreteBCfict =>&
-!            RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteFBC
-!
-!        ! Interpolate down
-!        call sptipr_performInterpolation (RinterlevelProjection(ilev+1),&
-!            RspaceTimePrecondMatrix(ilev)%p_rsolution, RspaceTimePrecondMatrix(ilev+1)%p_rsolution,&
-!            rtempVecCoarse,rtempVecFine)
-!            
-!        ! Set boundary conditions
-!        call tbc_implementBCsolution (rproblem,RspaceTimeDiscr(ilev),&
-!            RspaceTimePrecondMatrix(ilev)%p_rsolution,rtempVecCoarse)
-!      end do
-!      
-!      call lsysbl_releaseVector(rtempVecFine)
-!      call lsysbl_releaseVector(rtempVecCoarse)
+    do while ((iglobIter .lt. nminIterations) .or. &
+              ((((ddefNorm .gt. depsRel*dinitDefNorm) .or. (ddefNorm .ge. depsAbs)) .and.&
+                (abs(ddefNorm-dlastDefNorm) .ge. depsDiff*dlastDefNorm)) &
+              .and. (iglobIter .lt. nmaxIterations)))
+    
+      iglobIter = iglobIter+1
+      
+      ! Project the solution down to all levels, so the nonlinearity
+      ! on the lower levels can be calculated correctly.
+      ! Use the memory in rtempvectorX and rtempvectorB as temp memory;
+      ! it's large enough.
+      call lsysbl_duplicateVector (rtempvectorX,rtempVecFine,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      call lsysbl_duplicateVector (rtempvectorB,rtempVecCoarse,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      do ilev=size(RspatialPrecond)-1,1,-1
+        call lsysbl_enforceStructureDiscr(&
+            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%rdiscretisation,rtempVecFine)
+        rtempVecFine%p_rdiscreteBC =>&
+            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteBC
+        rtempVecFine%p_rdiscreteBCfict =>&
+            RspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteFBC
+            
+        call lsysbl_enforceStructureDiscr(&
+            RspaceTimeDiscr(ilev)%p_rlevelInfo%rdiscretisation,rtempVecCoarse)
+        rtempVecCoarse%p_rdiscreteBC =>&
+            RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteBC
+        rtempVecCoarse%p_rdiscreteBCfict =>&
+            RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteFBC
+
+        ! Interpolate down
+        call sptipr_performInterpolation (RinterlevelProjection(ilev+1),&
+            RspaceTimePrecondMatrix(ilev)%p_rsolution, RspaceTimePrecondMatrix(ilev+1)%p_rsolution,&
+            rtempVecCoarse,rtempVecFine)
+            
+        ! Set boundary conditions
+        call tbc_implementBCsolution (rproblem,RspaceTimeDiscr(ilev),&
+            RspaceTimePrecondMatrix(ilev)%p_rsolution,rtempVecCoarse)
+      end do
+      
+      call lsysbl_releaseVector(rtempVecFine)
+      call lsysbl_releaseVector(rtempVecCoarse)
+          
+!      IF (rproblem%MT_outputLevel .GE. 2) THEN
+!        CALL output_line ('Writing solution to file '//&
+!            './ns/tmpsolution'//TRIM(sys_siL(iglobIter-1,10)))
+!        CALL sptivec_saveToFileSequence(&
+!            myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
+!            '(''./ns/tmpsolution'//TRIM(sys_siL(iglobIter-1,10))//'.'',I5.5)',&
+!            .TRUE.,rtempVectorX)
 !          
-!!      IF (rproblem%MT_outputLevel .GE. 2) THEN
-!!        CALL output_line ('Writing solution to file '//&
-!!            './ns/tmpsolution'//TRIM(sys_siL(iglobIter-1,10)))
-!!        CALL sptivec_saveToFileSequence(&
-!!            myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
-!!            '(''./ns/tmpsolution'//TRIM(sys_siL(iglobIter-1,10))//'.'',I5.5)',&
-!!            .TRUE.,rtempVectorX)
-!!          
-!!        DO ilev=1,SIZE(RspatialPrecond)
-!!          CALL cc_postprocSpaceTimeGMV(rproblem,myRspaceTimeDiscr(ilev),&
-!!              myRspaceTimeDiscr(ilev)%p_rsolution,&
-!!              './gmv/iteration'//TRIM(sys_siL(iglobIter-1,10))//'level'//TRIM(sys_siL(ilev,10))//&
-!!              '.gmv')
-!!        END DO
-!!      END IF
-!      
-!      if (ctypePreconditioner .eq. CCPREC_INEXACTNEWTON) then
-!      
-!        ! Determine the stopping criterion for the inexact Newton.
-!        ! This is an adaptive stopping criterion depending on the current
-!        ! defect. In detail, we calculate:
-!        !
-!        !   |b-Ax_{i+1}|         ( |b-Ax_i| ) exp             ( |b-Ax_i| )
-!        !   ------------ = min { ( -------- )     , depsrel * ( -------- ) }
-!        !     |b-Ax_0|           ( |b-Ax_0| )                 ( |b-Ax_0| )
-!        !
-!        ! see e.g. [Michael Hinze, Habilitation, p. 51]
-!        !
-!        ! Switch off the relative stopping criterion in the linear solver:
-!        
-!        p_rsolverNode%depsRel = 0.0_DP
-!        
-!        ! Calculate the new absolute stopping criterion:
-!        
-!        dtempdef = ddefNorm / dinitDefNorm
-!        
-!        p_rsolverNode%depsAbs = min(dtempDef**dinexactNewtonExponent,&
-!                                    dinexactNewtonEpsRel*dtempdef) * dinitDefNorm
-!        
-!        ! For the coarse grid solver, we choose the same stopping criterion.
-!        ! But just for safetyness, the coarse grid solver should gain at least
-!        ! one digit!
-!        p_rcgrSolver%depsRel = 1.0E-1_DP
-!        p_rcgrSolver%depsAbs = p_rsolverNode%depsAbs
-!      
+!        DO ilev=1,SIZE(RspatialPrecond)
+!          CALL cc_postprocSpaceTimeGMV(rproblem,myRspaceTimeDiscr(ilev),&
+!              myRspaceTimeDiscr(ilev)%p_rsolution,&
+!              './gmv/iteration'//TRIM(sys_siL(iglobIter-1,10))//'level'//TRIM(sys_siL(ilev,10))//&
+!              '.gmv')
+!        END DO
+!      END IF
+      
+      if (ctypePreconditioner .eq. CCPREC_INEXACTNEWTON) then
+      
+        ! Determine the stopping criterion for the inexact Newton.
+        ! This is an adaptive stopping criterion depending on the current
+        ! defect. In detail, we calculate:
+        !
+        !   |b-Ax_{i+1}|         ( |b-Ax_i| ) exp             ( |b-Ax_i| )
+        !   ------------ = min { ( -------- )     , depsrel * ( -------- ) }
+        !     |b-Ax_0|           ( |b-Ax_0| )                 ( |b-Ax_0| )
+        !
+        ! see e.g. [Michael Hinze, Habilitation, p. 51]
+        !
+        ! Switch off the relative stopping criterion in the linear solver:
+        
+        p_rsolverNode%depsRel = 0.0_DP
+        
+        ! Calculate the new absolute stopping criterion:
+        
+        dtempdef = ddefNorm / dinitDefNorm
+        
+        p_rsolverNode%depsAbs = min(dtempDef**dinexactNewtonExponent,&
+                                    dinexactNewtonEpsRel*dtempdef) * dinitDefNorm
+        
+        ! For the coarse grid solver, we choose the same stopping criterion.
+        ! But just for safetyness, the coarse grid solver should gain at least
+        ! one digit!
+        p_rcgrSolver%depsRel = 1.0E-1_DP
+        p_rcgrSolver%depsAbs = p_rsolverNode%depsAbs
+      
+      end if
+
+      if (rproblem%MT_outputLevel .ge. 1) then
+        ! Value of the functional
+        call cc_optc_nonstatFunctional (rproblem,&
+            rspaceTimeMatrix%p_rsolution,&
+            rtempVector,RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
+            RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
+            Derror)
+        call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))
+        call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))
+        call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
+        call output_line ('J(y,u)        = '//trim(sys_sdEL(Derror(4),10)))
+        if (ctypePreconditioner .eq. CCPREC_INEXACTNEWTON) then
+          call output_lbrk ()
+          call output_line ('Inexact Newton: Stopping criterion = '//&
+              trim(sys_sdEL(p_rsolverNode%depsAbs,10)))
+        end if
+        call output_separator (OU_SEP_EQUAL)
+      end if
+            
+      call stat_clearTimer (rtimerMGStep)
+
+      ! DEBUG!!!
+      !CALL sptivec_copyVector (rd,rtemp)
+      
+      ! Preconditioning of the defect: d=C^{-1}d
+      if (associated(p_rsolverNode)) then
+
+        call stat_clearTimer (rtimeFactorisationStep)
+        call stat_startTimer (rtimeFactorisationStep)
+        call sptils_initData (p_rsolverNode,ierror)
+        call stat_stopTimer (rtimeFactorisationStep)
+        
+        !call sptivec_printVector (rd)
+        
+        call stat_clearTimer (rtimerMGStep)
+        call stat_startTimer (rtimerMGStep)
+        call sptils_precondDefect (p_rsolverNode,rd)
+        call sptils_doneData (p_rsolverNode)
+        
+        call stat_stopTimer (rtimerMGStep)
+        
+        !call sptivec_printVector (rd)
+        
+        ! Sum up time data for statistics.
+        call stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeSmoothing,&
+            rtimeSmoothing)
+        call stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeCoarseGridSolver,&
+            rtimeCoarseGridSolver)
+        call stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeLinearAlgebra,&
+            rtimeLinearAlgebra)
+        call stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeProlRest,&
+            rtimeProlRest)
+        call stat_addtimers (p_rsolverNode%rtimeSpacePrecond,rtimeSpacePrecond)
+        
+        call output_lbrk ()
+        call output_line ("Time for smoothing          : "//&
+            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeSmoothing%delapsedReal,10))
+        call output_line ("Time for coarse grid solving: "//&
+            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeCoarseGridSolver%delapsedReal,10))
+        call output_line ("Time for linear algebra     : "//&
+            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeLinearAlgebra%delapsedReal,10))
+        call output_line ("Time for prol/rest          : "//&
+            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeProlRest%delapsedReal,10))
+        call output_lbrk ()
+        call output_line ("Time for prec. in space     : "//&
+            sys_sdL(p_rsolverNode%rtimeSpacePrecond%delapsedReal,10))
+        
+        ! Count the number of linear iterations and the time for
+        ! preconditioning
+        ilinearIterations = ilinearIterations + p_rsolverNode%iiterations
+        call stat_addtimers (rtimerMGStep,rtimerPreconditioner)
+        call stat_addtimers (rtimeFactorisationStep,rtimeFactorisation)
+        
+      end if
+      
+      !CALL output_line('Linear defect:')
+      !CALL cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rd, rtemp, &
+      !  -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,.TRUE.)
+      !CALL output_separator (OU_SEP_MINUS)
+      
+      ! Filter the defect for boundary conditions in space and time.
+      ! Normally this is done before the preconditioning -- but by doing it
+      ! afterwards, the initial conditions can be seen more clearly!
+      !CALL tbc_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
+      !CALL tbc_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
+      
+      ! Add the defect: x = x + omega*d          
+      call sptivec_vectorLinearComb (rd,rx,domega,1.0_DP)
+      
+      ! Do we have Neumann boundary?
+      bneumann = p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary
+      
+      if (.not. bneumann) then
+        ! Normalise the primal and dual pressure to integral mean value zero.
+        call tbc_pressureToL20 (rx,rtempVectorX)
+      end if
+      
+      ! Implement the initial condition to the new solution vector
+      call tbc_implementInitCond (rproblem, rx, rinitialCondSol, rtempvectorX)    
+      
+      ! Are bounds to the control active? If yes, restrict the control
+      ! to the allowed range.
+!      if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
+!        call cc_projectControl (rproblem,rx)
 !      end if
-!
-!      if (rproblem%MT_outputLevel .ge. 1) then
-!        ! Value of the functional
-!        call cc_optc_nonstatFunctional (rproblem,&
-!            rspaceTimeMatrix%p_rsolution,&
-!            rtempVector,RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
-!            RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
-!            Derror)
-!        call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))
-!        call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))
-!        call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
-!        call output_line ('J(y,u)        = '//trim(sys_sdEL(Derror(4),10)))
-!        if (ctypePreconditioner .eq. CCPREC_INEXACTNEWTON) then
-!          call output_lbrk ()
-!          call output_line ('Inexact Newton: Stopping criterion = '//&
-!              trim(sys_sdEL(p_rsolverNode%depsAbs,10)))
-!        end if
-!        call output_separator (OU_SEP_EQUAL)
-!      end if
-!            
-!      call stat_clearTimer (rtimerMGStep)
-!
-!      ! DEBUG!!!
-!      !CALL sptivec_copyVector (rd,rtemp)
-!      
-!      ! Preconditioning of the defect: d=C^{-1}d
-!      if (associated(p_rsolverNode)) then
-!
-!        call stat_clearTimer (rtimeFactorisationStep)
-!        call stat_startTimer (rtimeFactorisationStep)
-!        call sptils_initData (p_rsolverNode,ierror)
-!        call stat_stopTimer (rtimeFactorisationStep)
-!        
-!        !call sptivec_printVector (rd)
-!        
-!        call stat_clearTimer (rtimerMGStep)
-!        call stat_startTimer (rtimerMGStep)
-!        call sptils_precondDefect (p_rsolverNode,rd)
-!        call sptils_doneData (p_rsolverNode)
-!        
-!        call stat_stopTimer (rtimerMGStep)
-!        
-!        !call sptivec_printVector (rd)
-!        
-!        ! Sum up time data for statistics.
-!        call stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeSmoothing,&
-!            rtimeSmoothing)
-!        call stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeCoarseGridSolver,&
-!            rtimeCoarseGridSolver)
-!        call stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeLinearAlgebra,&
-!            rtimeLinearAlgebra)
-!        call stat_addtimers (p_rsolverNode%p_rsubnodeMultigrid%rtimeProlRest,&
-!            rtimeProlRest)
-!        call stat_addtimers (p_rsolverNode%rtimeSpacePrecond,rtimeSpacePrecond)
-!        
-!        call output_lbrk ()
-!        call output_line ("Time for smoothing          : "//&
-!            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeSmoothing%delapsedReal,10))
-!        call output_line ("Time for coarse grid solving: "//&
-!            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeCoarseGridSolver%delapsedReal,10))
-!        call output_line ("Time for linear algebra     : "//&
-!            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeLinearAlgebra%delapsedReal,10))
-!        call output_line ("Time for prol/rest          : "//&
-!            sys_sdL(p_rsolverNode%p_rsubnodeMultigrid%rtimeProlRest%delapsedReal,10))
-!        call output_lbrk ()
-!        call output_line ("Time for prec. in space     : "//&
-!            sys_sdL(p_rsolverNode%rtimeSpacePrecond%delapsedReal,10))
-!        
-!        ! Count the number of linear iterations and the time for
-!        ! preconditioning
-!        ilinearIterations = ilinearIterations + p_rsolverNode%iiterations
-!        call stat_addtimers (rtimerMGStep,rtimerPreconditioner)
-!        call stat_addtimers (rtimeFactorisationStep,rtimeFactorisation)
-!        
-!      end if
-!      
-!      !CALL output_line('Linear defect:')
-!      !CALL cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rd, rtemp, &
-!      !  -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddefNorm,.TRUE.)
-!      !CALL output_separator (OU_SEP_MINUS)
-!      
-!      ! Filter the defect for boundary conditions in space and time.
-!      ! Normally this is done before the preconditioning -- but by doing it
-!      ! afterwards, the initial conditions can be seen more clearly!
-!      !CALL tbc_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
-!      !CALL tbc_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
-!      
-!      ! Add the defect: x = x + omega*d          
-!      call sptivec_vectorLinearComb (rd,rx,domega,1.0_DP)
-!      
-!      ! Do we have Neumann boundary?
-!      bneumann = p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary
-!      
-!      if (.not. bneumann) then
-!        ! Normalise the primal and dual pressure to integral mean value zero.
-!        call tbc_pressureToL20 (rx,rtempVectorX)
-!      end if
-!      
-!      ! Implement the initial condition to the new solution vector
-!      call tbc_implementInitCond (rproblem, rx, rinitialCondSol, rtempvectorX)    
-!      
-!      ! Are bounds to the control active? If yes, restrict the control
-!      ! to the allowed range.
-!!      if (rproblem%roptcontrol%ccontrolContraints .eq. 1) then
-!!        call cc_projectControl (rproblem,rx)
-!!      end if
-!
-!      ! Call a parser that parses the script file commandfile.txt.
-!      ! This allows in-program modification of the problem sructure.
-!      rproblem%rdataOneshot%iglobIter = iglobIter
-!      rproblem%rdataOneshot%ddefNorm = ddefNorm
-!      rproblem%rdataOneshot%p_rx => rx
-!      rproblem%rdataOneshot%p_rb => rb
-!      
-!      call scr_readScript ('commandfile.txt',0,rproblem)
-!      
-!      iglobIter = rproblem%rdataOneshot%iglobIter
-!      ddefNorm = rproblem%rdataOneshot%ddefNorm
-!      
-!      ! Remember the last defect norm for the stopping criterion
-!      dlastDefNorm = ddefNorm
-!      
-!      ! Assemble the new defect: d=b-Ax
-!      call sptivec_copyVector (rb,rd)
-!      !CALL cc_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
-!      !    rx, rd, ddefNorm)
-!      if (rproblem%MT_outputLevel .ge. 2) call output_line('Nonlinear defect:')
-!      
-!      call cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
-!        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,&
-!        ddefNorm,rproblem%MT_outputLevel .ge. 2)
-!          
-!      ! Filter the defect for boundary conditions in space and time.
-!      !CALL tbc_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
-!      !CALL tbc_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
-!      
-!      call output_separator (OU_SEP_EQUAL)
-!      call output_line ('Iteration: '//trim(sys_siL(iglobIter,10))//&
-!          '                          Defect of supersystem:  '//adjustl(sys_sdEP(ddefNorm,20,10)))
-!      call output_line ('Time for computation of this iterate: '//&
-!          trim(sys_sdL(rtimerMGStep%delapsedReal+rtimeFactorisationStep%delapsedReal,10)))
-!      call output_separator (OU_SEP_EQUAL)
-!
-!    end do
+
+      ! Call a parser that parses the script file commandfile.txt.
+      ! This allows in-program modification of the problem sructure.
+      rproblem%rdataOneshot%iglobIter = iglobIter
+      rproblem%rdataOneshot%ddefNorm = ddefNorm
+      rproblem%rdataOneshot%p_rx => rx
+      rproblem%rdataOneshot%p_rb => rb
+      
+      call scr_readScript ('commandfile.txt',0,rproblem)
+      
+      iglobIter = rproblem%rdataOneshot%iglobIter
+      ddefNorm = rproblem%rdataOneshot%ddefNorm
+      
+      ! Remember the last defect norm for the stopping criterion
+      dlastDefNorm = ddefNorm
+      
+      ! Assemble the new defect: d=b-Ax
+      call sptivec_copyVector (rb,rd)
+      !CALL cc_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
+      !    rx, rd, ddefNorm)
+      if (rproblem%MT_outputLevel .ge. 2) call output_line('Nonlinear defect:')
+      
+      call cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, rx, rd, &
+        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,&
+        ddefNorm,rproblem%MT_outputLevel .ge. 2)
+          
+      ! Filter the defect for boundary conditions in space and time.
+      !CALL tbc_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
+      !CALL tbc_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
+      
+      call output_separator (OU_SEP_EQUAL)
+      call output_line ('Iteration: '//trim(sys_siL(iglobIter,10))//&
+          '                          Defect of supersystem:  '//adjustl(sys_sdEP(ddefNorm,20,10)))
+      call output_line ('Time for computation of this iterate: '//&
+          trim(sys_sdL(rtimerMGStep%delapsedReal+rtimeFactorisationStep%delapsedReal,10)))
+      call output_separator (OU_SEP_EQUAL)
+
+    end do
     
     call stat_stopTimer (rtimerNonlinear)
     
