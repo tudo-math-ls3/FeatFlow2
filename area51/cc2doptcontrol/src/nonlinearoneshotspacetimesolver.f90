@@ -695,7 +695,7 @@ contains
     call trhsevl_assembleRHS (rproblem, p_rspaceTimeDiscr, rd, .true.)
       
     ! Implement the initial condition into the RHS/solution.
-    call tbc_implementInitCond (rproblem, rd, rinitialCondRHS, rtempvectorD)    
+    call tbc_implementInitCondRHS (rproblem, rd, rinitialCondRHS, rtempvectorD)    
     call tbc_implementInitCond (rproblem, rx, rinitialCondSol, rtempvectorD)    
 
     ! Release the rhs vector with the init. condition again.
@@ -1668,7 +1668,7 @@ contains
     call trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rb, .false.)
 
     ! Implement the initial condition into the RHS.
-    call tbc_implementInitCond (rproblem, rb, rinitialCondRHS, rtempvector)    
+    call tbc_implementInitCondRHS (rproblem, rb, rinitialCondRHS, rtempvector)    
     call tbc_implementInitCond (rproblem, rx, rinitialCondSol, rtempvector)    
 
     ! Now work with rd, our 'defect' vector
@@ -1695,7 +1695,7 @@ contains
     call trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rd, .false.)
 
     ! Implement the initial condition into the RHS.
-    call tbc_implementInitCond (rproblem, rd, rinitialCondRHS, rtempvector)    
+    call tbc_implementInitCondRHS (rproblem, rd, rinitialCondRHS, rtempvector)    
     call tbc_implementInitCond (rproblem, rx, rinitialCondSol, rtempvector)    
 
     ! Assemble the defect
@@ -2101,7 +2101,7 @@ contains
     call trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rb, .false.)
 
     ! Implement the initial condition into the RHS.
-    call tbc_implementInitCond (rproblem, rb, rinitialCondRHS, rtempvector)    
+    call tbc_implementInitCondRHS (rproblem, rb, rinitialCondRHS, rtempvector)    
     call tbc_implementInitCond (rproblem, rx, rinitialCondSol, rtempvector)    
 
     ! Now work with rd, our 'defect' vector
@@ -2180,7 +2180,7 @@ contains
     call trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rd, .false.)
 
     ! Implement the initial condition into the RHS.
-    call tbc_implementInitCond (rproblem, rd, rinitialCondRHS, rtempvector)    
+    call tbc_implementInitCondRHS (rproblem, rd, rinitialCondRHS, rtempvector)    
     call tbc_implementInitCond (rproblem, rx, rinitialCondSol, rtempvector)    
 
     ! Assemble the defect
@@ -2775,7 +2775,7 @@ contains
       RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, .false.)
 
     ! Implement the initial condition into the RHS.
-    call tbc_implementInitCond (rproblem, rb, rinitialCondRHS, rtempvector)
+    call tbc_implementInitCondRHS (rproblem, rb, rinitialCondRHS, rtempvector)
     call tbc_implementInitCond (rproblem, rx, rinitialCondSol, rtempvector)
         
     ! DEBUG!!!
@@ -3097,7 +3097,7 @@ contains
     call trhsevl_assembleRHS (rproblem, p_rspaceTimeDiscr, rd, .true.)
 
     ! Implement the initial condition into the RHS/Solution.
-    call tbc_implementInitCond (rproblem, rd, rinitialCondRHS, rtempvector)    
+    call tbc_implementInitCondRHS (rproblem, rd, rinitialCondRHS, rtempvector)    
     call tbc_implementInitCond (rproblem, rx, rinitialCondSol, rtempvector)
 
     ! Assemble the defect
