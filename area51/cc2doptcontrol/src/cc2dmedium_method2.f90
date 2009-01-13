@@ -370,7 +370,7 @@ contains
     
     ! Information about external storage usage
     call output_lbrk ()
-    call exstor_info ()
+    call exstor_info (bprintHandles=.true.)
     
     ! Clean up the external storage management
     call exstor_done ()

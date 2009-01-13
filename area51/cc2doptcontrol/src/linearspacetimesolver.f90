@@ -2662,10 +2662,6 @@ contains
         p_rspaceTimeDiscr%NEQtime,&
         p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
 
-    call sptivec_initVector (rsolverNode%p_rsubnodeBlockFBSOR%rtempVector,&
-        p_rspaceTimeDiscr%NEQtime,&
-        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
-
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
     
@@ -2744,6 +2740,10 @@ contains
 !</inputoutput>
   
 !</subroutine>
+
+    if (rsolverNode%p_rsubnodeBlockFBSOR%rtempVector%NEQ .ne. 0) then
+      call sptivec_releaseVector (rsolverNode%p_rsubnodeBlockFBSOR%rtempVector)
+    end if
 
   end subroutine
   
@@ -3421,8 +3421,8 @@ contains
 !</subroutine>
   
     ! Release memory if still associated
-    call sptils_doneDataBlockFBSOR (rsolverNode)
-    call sptils_doneStructureBlockFBSOR (rsolverNode)
+    call sptils_doneDataBlockFBGS (rsolverNode)
+    call sptils_doneStructureBlockFBGS (rsolverNode)
     
     ! Release the subnode structure
     deallocate(rsolverNode%p_rsubnodeBlockFBGS)
