@@ -586,6 +586,10 @@ contains
     call storage_new1D ('mlop_create2LvlMatStruct9_conf', 'KLD', &
                         NEQ+1, ST_INT, rmatrixScalar%h_KLD, ST_NEWBLOCK_NOINIT)
                         
+    ! And allocate Kdiagonal - although it is not needed, it has to allocated.
+    call storage_new1D ('mlop_create2LvlMatStruct9_conf', 'KLD', &
+                        NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
+
     ! This must be a storage_getbase, no lsyssc_getbase, since this is the
     ! matrix construction routine!
     call storage_getbase_int(rmatrixScalar%h_Kld,p_KLD)
