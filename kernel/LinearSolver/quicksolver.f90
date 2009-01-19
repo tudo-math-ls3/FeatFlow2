@@ -31,7 +31,7 @@
 !#  3.) qsol_solveSOR
 !#      -> Solves a linear system using a SOR solver.
 !#         Supported Matrix types: Format-9 CSR
-!#         Working memory: 2*n
+!#         Working memory: n
 !#
 !#  4.) qsol_precSOR
 !#      -> Applies the SOR preconditioner onto a defect vector.
@@ -759,23 +759,11 @@ contains
       drlx = 1.0_DP
     end if
 
-    ! Make sure the work array has sufficient length. If the relaxation
-    ! parameter is 1, then a length of n is sufficient - otherwise we need
-    ! 2*n.
-    if(drelax .eq. 1.0_DP) then
-      ! n is sufficient
-      if(size(Dwork,1) .lt. rmat%NEQ) then
-        call output_line ('ERROR: Insufficient work array!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'qsol_solveSOR_lsyssc')
-        call sys_halt()
-      end if
-    else
-      ! 2*n is sufficient
-      if(size(Dwork,1) .lt. 2*rmat%NEQ) then
-        call output_line ('ERROR: Insufficient work array!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'qsol_solveSOR_lsyssc')
-        call sys_halt()
-      end if
+    ! Make sure the work array has sufficient length.
+    if(size(Dwork,1) .lt. rmat%NEQ) then
+      call output_line ('ERROR: Insufficient work array!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'qsol_solveSOR_lsyssc')
+      call sys_halt()
     end if
   
     ! Get the arrays
@@ -872,7 +860,7 @@ contains
     end if
     
     ! Remark:
-    ! This GS/SOR implementation does not check the real defect against the
+    ! This SOR implementation does not check the real defect against the
     ! specified tolerance.
     ! The real defect vector in the k-th iteration would be:
     !
@@ -882,7 +870,7 @@ contains
     !
     !  q_k := b - L * x_k - (D + U) * x_{k-1}
     !
-    ! As we assume that GS/SOR converges monotonely, is should hold that:
+    ! But as we assume that SOR converges monotonely, it should hold that:
     !
     !  || d_k || <= || q_k ||
     !
@@ -896,152 +884,49 @@ contains
     end do
     !$omp end parallel do
     
+    ! Launch the SOR solver.
+    do ite = 1, niter
     
-    ! Important question: Is the relaxation parameter 1?
-    if(drlx .eq. 1.0_DP) then
+      ! Reset the defect
+      ddef = 0.0_DP
     
-      ! Launch the Gauss-Seidel solver - this is the easy case which
-      ! only needs n working memory.
-      do ite = 1, niter
-      
-        ! Reset the defect
-        ddef = 0.0_DP
-      
-        ! Loop over all matrix rows
-        do i = 1, n
+      ! Loop over all matrix rows
+      do i = 1, n
 
-          ! Get b(i)
-          daux = Dwork(i)
+        ! Get b(i)
+        daux = Dwork(i)
 
-          ! aux = b(i) - A(i,.) * x(.)
-          do j = Kld(i), Kld(i+1)-1
-            daux = daux - Da(j)*Dx(Kcol(j))
-          end do
-          
-          ! Calculate new x(i)
-          Dx(i) = Dx(i) + daux / Da(Kdiag(i))
-
-          ! Update defect
-          ddef = ddef + daux*daux
-          
+        ! aux = b(i) - A(i,.) * x(.)
+        do j = Kld(i), Kld(i+1)-1
+          daux = daux - Da(j)*Dx(Kcol(j))
         end do
         
-        ! Check defect
-        if(ddef .le. dtol2) then
-          
-          ! Okay, we're done
-          cinfo = QSOL_INFO_SUCCESS
-          
-          ! Store 'final defect'
-          dtol = sqrt(ddef)
-          
-          ! Store number of iterations
-          niter = ite
-          
-          ! Get out
-          return
-          
-        end if
-      
-      end do
-    
-    else if(dtol .le. 0.0_DP) then
-    
-      ! Launch the SOR solver w/o defect control.
-      ! This is the 'not-as-nice-as-GS-but-still-accepteable' case.
-      do ite = 1, niter
-      
-        ! Loop over all matrix rows
-        do i = 1, n
+        ! Calculate new x(i)
+        Dx(i) = Dx(i) + drlx*daux / Da(Kdiag(i))
 
-          ! Get b(i)
-          daux = Dwork(i)
-          
-          ! Get pointer to main diagonal entry
-          k = Kdiag(i)
-          
-          do j = Kld(i), k-1
-            daux = daux - Da(j)*Dwork(n+Kcol(j))
-          end do
-          do j = k, Kld(i+1)-1
-            daux = daux - Da(j)*Dx(Kcol(j))
-          end do
-          
-          ! Calculate correction entry
-          daux = daux / Da(k)
-          
-          ! Store old x(i) + relaxed correction entry
-          Dwork(n+i) = Dx(i) + drlx * daux
-
-          ! Calculate new x(i)
-          Dx(i) = Dx(i) + daux
-         
-        end do
-      
-      end do
-    
-    else
-    
-      ! Launch the SOR solver with defect control
-      ! This is the not-so-nice case.
-      do ite = 1, niter
-      
-        ! Reset the defect
-        ddef = 0.0_DP
-      
-        ! Loop over all matrix rows
-        do i = 1, n
-
-          ! Get b(i)
-          daux = Dwork(i)
-          daux2 = 0.0_DP
-          
-          ! Get pointer to main diagonal entry
-          k = Kdiag(i)
-          
-          do j = Kld(i), k-1
-            l = Kcol(j)
-            daux = daux - Da(j)*Dx(l)
-            daux2 = daux2 + Da(j)*Dwork(n+l)
-          end do
-          do j = k, Kld(i+1)-1
-            daux = daux - Da(j)*Dx(Kcol(j))
-          end do
-          
-          ! Calculate correction entry
-          daux2 = (daux-daux2) / Da(k)
-          
-          ! Store relaxed correction entry
-          Dwork(n+i) = drlx * daux2
-
-          ! Calculate new x(i)
-          Dx(i) = Dx(i) + daux2
-         
-          ! Update defect
-          ddef = ddef + daux*daux
-
-        end do
+        ! Update defect
+        ddef = ddef + daux*daux
         
-        ! Check defect
-        if(ddef .le. dtol2) then
-          
-          ! Okay, we're done
-          cinfo = QSOL_INFO_SUCCESS
-          
-          ! Store 'final defect'
-          dtol = sqrt(ddef)
-          
-          ! Store number of iterations
-          niter = ite
-          
-          ! Get out
-          return
-          
-        end if
-      
       end do
+      
+      ! Check defect
+      if(ddef .le. dtol2) then
+        
+        ! Okay, we're done
+        cinfo = QSOL_INFO_SUCCESS
+        
+        ! Store 'final defect'
+        dtol = sqrt(ddef)
+        
+        ! Store number of iterations
+        niter = ite
+        
+        ! Get out
+        return
+        
+      end if
     
-    end if
+    end do
     
     ! Maximum number of iterations reached
     cinfo = QSOL_INFO_MAX_ITER

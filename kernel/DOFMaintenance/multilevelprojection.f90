@@ -775,10 +775,10 @@ contains
         
       case (MLP_PROJ_TYPE_L2_PROJ)
         ! In this case, we will definately need additional memory.
-        ! The amount of memory we need is three vectors at the size of
+        ! The amount of memory we need is two vectors at the size of
         ! the fine mesh mass matrix, as we need them for the internal
         ! solving process.
-        nmem = 3*RprojectionScalar(i)%rmatrixMass%NEQ
+        nmem = 2*RprojectionScalar(i)%rmatrixMass%NEQ
       
       case (MLP_PROJ_TYPE_MATRIX)
         ! No temporary memory necessary here.
@@ -9546,8 +9546,8 @@ contains
   real(DP), dimension(:), pointer :: p_Dtmp
   
     ! Make sure the temporary vector's size is sufficient. For the
-    ! prolongation, 2*NEQ is sufficient.
-    if(rtempVector%NEQ .lt. 2*rfineVector%NEQ) then
+    ! prolongation, NEQ is sufficient.
+    if(rtempVector%NEQ .lt. rfineVector%NEQ) then
       
       ! The temporary vector is too small...
       call output_line('Temporary vector is too small!', &
@@ -9616,8 +9616,8 @@ contains
   integer, dimension(:), pointer :: p_Kcol, p_Kld, p_Kdiag
 
     ! Make sure the temporary vector's size is sufficient. For the
-    ! restriction, we need 3*NEQ.
-    if(rtempVector%NEQ .lt. 3*rfineVector%NEQ) then
+    ! restriction, we need 2*NEQ.
+    if(rtempVector%NEQ .lt. 2*rfineVector%NEQ) then
       
       ! The temporary vector is too small...
       call output_line('Temporary vector is too small!', &
@@ -9641,7 +9641,7 @@ contains
     
     ! Okay, now the fine mesh vector has been copied into p_Dtmp(1:n).
     ! Now we need to assign the work array. As the length of p_Dtmp is
-    ! at least 3*n, we can use the rest as a work array:
+    ! at least 2*n, we can use the rest as a work array:
     p_Dwork => p_Dtmp(n+1:)
     
     ! Get the arrays from the mass matrix
