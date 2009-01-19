@@ -358,13 +358,8 @@ contains
                                       spreconditioner,nlevels,RfilterChain)
       end if
 
-      ! Try to get the solver subtype from the parameter list.
-      ! This allows switching between right- and left preconditioned BiCGStab.
-      call parlst_getvalue_int (p_rsection, 'iSolverSubtype', isolverSubtype,0)
-
       ! Init the solver node
-      call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_Rfilter,&
-        isolverSubtype)
+      call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_Rfilter)
       
     case (LINSOL_ALG_GMRES)
       ! GMRES solver
@@ -658,15 +653,6 @@ contains
         rsolverNode%p_rsubnodeSSOR%bscale = i1 .eq. 1
       end if
       
-    case (LINSOL_ALG_BICGSTAB)
-      ! BiCGStab solver
-
-      ! Try to get the solver subtype from the parameter list.
-      ! This allows switching between right- and left preconditioned BiCGStab.
-      call parlst_getvalue_int (p_rsection, 'isolverSubtype', &
-        rsolverNode%p_rsubnodeBiCGStab%cprecondType,&
-        rsolverNode%p_rsubnodeBiCGStab%cprecondType)
-
     case (LINSOL_ALG_GMRES)
       ! GMRES solver
 

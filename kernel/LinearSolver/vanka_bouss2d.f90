@@ -9,10 +9,10 @@
 !#
 !#                     / A11 A12 B1 M1 \
 !#                     | A21 A22 B2 M2 |
-!#                     | D1  D2  C  M3 |
+!#                     | D1  D2  C  K  |
 !#                     \ 0   0   0  N  /
 !#
-!# The following matrices are optional: A12, A21, C, M1, M2, M3
+!# The following matrices are optional: A12, A21, C, M1, M2, K
 !# It is silently assumed that the following conditions hold:
 !#
 !# 1.) A11 and A22 have the same matrix structure.
@@ -20,12 +20,15 @@
 !# 2.) Either both A12 and A21 exist or none of them.
 !#     If they exist, then they have the same matrix structure.
 !#
-!# 3.) B1, B2, D1 and D2 have the same matrix structure and both
-!#     D1 and D2 are 'virtually transposed'.
+!# 3.) B1 and B2 have the same matrix structure.
 !#
-!# 4.) Either both M1 and M2 exist or none of them.
+!# 4.) D1 and D2 have the same matrix structure.
+!#
+!# 5.) Either both M1 and M2 exist or none of them.
 !#     If they exist, then they have the same matrix structure.
 !#
+!# Please note that in contrast to the 'old' Navier-Stokes Vanka methods,
+!# the D-matrices must NOT be virtually transposed!
 !#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !# Solving the local Boussinesq System
@@ -34,7 +37,7 @@
 !# 
 !#                   / A11 A12 B1 M1 \   / u1 \   / f_u1 \
 !#                   | A21 A22 B2 M2 | * | u2 | = | f_u2 |
-!#                   | D1  D2  C  M3 |   | p  |   | f_p  |
+!#                   | D1  D2  C  K  |   | p  |   | f_p  |
 !#                   \ 0   0   0  N  /   \ t  /   \ f_t  /
 !#
 !# First, we will rewrite our system:
@@ -47,9 +50,9 @@
 !#
 !# Now our system looks as follows:
 !#
-!#                   / A B M  \   / u \   / f_u \
-!#                   | D C M3 | * | p | = | f_p |
-!#                   \ 0 0 N  /   \ t /   \ f_t /
+!#                   / A B M \   / u \   / f_u \
+!#                   | D C K | * | p | = | f_p |
+!#                   \ 0 0 N /   \ t /   \ f_t /
 !#
 !# 
 !# 1.) Solve the last equation to get the temperature t:
@@ -62,7 +65,7 @@
 !#
 !# 3.) Calculate pressure:
 !#
-!#          p := S^-1 * (D * A^-1 * (f_u - M * t) + M3 * t - f_p)
+!#          p := S^-1 * (D * A^-1 * (f_u - M * t) + K * t - f_p)
 !#
 !# 4.) Calculate velocity:
 !#
@@ -77,6 +80,7 @@ use fsystem
 use genoutput
 use mprimitives
 use spatialdiscretisation
+use linearsystemscalar
 use linearsystemblock
 
 implicit none
@@ -94,10 +98,16 @@ implicit none
 !</constantblock>
 
   ! Diagonal-type VANKA
-  integer, parameter, public :: VANKATP_BOUSS2D_DIAG  = 0
+  integer, parameter, public :: VANKATP_BOUSS2D_DIAG       = 0
 
   ! 'Full' VANKA
-  integer, parameter, public :: VANKATP_BOUSS2D_FULL  = 1
+  integer, parameter, public :: VANKATP_BOUSS2D_FULL       = 1
+  
+  ! Pressure-DOF based VANKA
+  integer, parameter, public :: VANKATP_BOUSS2D_PDOF       = 2
+  
+  ! Pressure-DOF based VANKA, fast variant ("SPSOR")
+  integer, parameter, public :: VANKATP_BOUSS2D_PDOF_FAST  = 3
 
 !<constants>
 
@@ -149,6 +159,12 @@ implicit none
 
     ! Pointer to the entries of the B2-matrix
     real(DP), dimension(:), pointer             :: p_DB2 => null()
+
+    ! Pointer to the column structure of the D-matrices.
+    integer, dimension(:), pointer              :: p_KcolD => null()
+    
+    ! Pointer to the row structure of the D-matrices
+    integer, dimension(:), pointer              :: p_KldD => null()
     
     ! Pointer to the entries of the D1-matrix
     real(DP), dimension(:), pointer             :: p_DD1 => null()
@@ -180,14 +196,14 @@ implicit none
     ! Pointer to the entries of the M2-matrix
     real(DP), dimension(:), pointer             :: p_DM2 => null()
 
-    ! Pointer to the column structure of the M3-matrix.
-    integer, dimension(:), pointer              :: p_KcolM3 => null()
+    ! Pointer to the column structure of the K-matrix.
+    integer, dimension(:), pointer              :: p_KcolK => null()
     
-    ! Pointer to the row structure of the M3-matrix.
-    integer, dimension(:), pointer              :: p_KldM3 => null()
+    ! Pointer to the row structure of the K-matrix.
+    integer, dimension(:), pointer              :: p_KldK => null()
     
-    ! Pointer to the entries of the M3-matrix
-    real(DP), dimension(:), pointer             :: p_DM3 => null()
+    ! Pointer to the entries of the K-matrix
+    real(DP), dimension(:), pointer             :: p_DK => null()
 
     ! Pointer to the column structure of the N-matrix.
     integer, dimension(:), pointer              :: p_KcolN => null()
@@ -216,6 +232,21 @@ implicit none
     ! Multiplication factors for the submatrices; taken from the system matrix.
     real(DP), dimension(4,4) :: Dmultipliers
     
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Support for Pressure-DOF based Vanka
+    
+    ! Total number of DOFs in velocity space component
+    integer :: ndofVelo = 0
+    
+    ! Total number of DOFs in pressure space
+    integer :: ndofPres = 0
+    
+    ! Total number of DOFs in temperature space
+    integer :: ndofTemp = 0
+    
+    ! Pointer to an array storing the Schur-Complements
+    real(DP), dimension(:), pointer :: p_Dschur => null()
+
   end type
   
 !</typeblock>
@@ -304,6 +335,10 @@ contains
         rvanka%p_KcolB)
     call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
         rvanka%p_KldB)
+    call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(3,1),&
+        rvanka%p_KcolD)
+    call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,1), &
+        rvanka%p_KldD)
     call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,4),&
         rvanka%p_KcolN)
     call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,4), &
@@ -366,22 +401,51 @@ contains
           
     end if
     
-    ! Is the M3-Matrix present?
+    ! Is the K-Matrix present?
     if(lsysbl_isSubmatrixPresent(rmatrix,3,4)) then
 
       call lsyssc_getbase_double(rmatrix%RmatrixBlock(3,4),&
-          rvanka%p_DM3)
+          rvanka%p_DK)
           
       call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(3,4),&
-          rvanka%p_KcolM3)
+          rvanka%p_KcolK)
       call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,4), &
-          rvanka%p_KldM3)
+          rvanka%p_KldK)
     
     end if
 
     ! Get the multiplication factors of the submatrices.
     rvanka%Dmultipliers(1:4,1:4) = &
         rmatrix%RmatrixBlock(1:4,1:4)%dscaleFactor
+        
+    ! Do we use the pressure-DOF based Vanka?
+    if((csubtype .eq. VANKATP_BOUSS2D_PDOF_FAST)) then
+    
+      ! Yes, we do. In this case we need to allocate an array for the local
+      ! Schur-Complement matrices.
+      
+      ! Determine the total number of DOFs in pressure space - this is equal
+      ! to the number of rows (equations) of the matrix located in block (3,1)
+      rvanka%ndofPres = rmatrix%RmatrixBlock(3,1)%NEQ
+      
+      ! And determine the total number of DOFs in one velocity component -
+      ! this is needed by the 'fast' variant.
+      rvanka%ndofVelo = rmatrix%RmatrixBlock(1,1)%NEQ
+      
+      ! And one more time for the temperature...
+      rvanka%ndofTemp = rmatrix%RmatrixBlock(4,4)%NEQ
+      
+      ! Allocate the array.
+      allocate(rvanka%p_Dschur(rvanka%ndofPres))
+
+      ! Perform the data-depenent initialisation
+      call vanka_initDataBS2D_pdof(rvanka)
+      
+      ! And we can immediately return here as the rest of the code in this
+      ! routine is only used by the other Vanka variants.
+      return
+
+    end if
 
     ! Get the block discretisation structure from the matrix.
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
@@ -426,7 +490,30 @@ contains
 
 !<subroutine>
   
-  subroutine vanka_Boussinesq2D (rvanka2DBouss,rvector,rrhs,domega,csubtype)
+  subroutine vanka_doneBoussinesq2D (rvanka)
+  
+!<description>
+  ! Releases the VANKA variant for 2D Boussinesq problems 
+  ! for conformal discretisations.
+!</description>
+
+!<inputoutput>
+  ! t_vankaPointerBouss2D structure that saves algorithm-specific parameters.
+  type(t_vankaPointerBouss2D), intent(INOUT) :: rvanka
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release Schur-complement array
+    if(associated(rvanka%p_Dschur)) deallocate(rvanka%p_Dschur)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine vanka_Boussinesq2D (rvanka,rvector,rrhs,domega,csubtype)
   
 !<description>
   ! This routine applies the VANKA variant for 2D Boussinesq problems
@@ -462,40 +549,64 @@ contains
   type(t_vectorBlock), intent(INOUT)         :: rvector
 
   ! t_vanka structure that saves algorithm-specific parameters.
-  type(t_vankaPointerBouss2D), intent(INOUT) :: rvanka2DBouss
+  type(t_vankaPointerBouss2D), intent(INOUT) :: rvanka
 !</inputoutput>
 
 !</subroutine>
 
-    ! local variables
-    integer :: ielementdist
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
-    type(t_elementDistribution), pointer :: p_relementDistrU
-    type(t_elementDistribution), pointer :: p_relementDistrV
-    type(t_elementDistribution), pointer :: p_relementDistrP
-    type(t_elementDistribution), pointer :: p_relementDistrT
+  ! local variables
+  integer :: ielementdist
+  integer, dimension(:), pointer :: p_IelementList
+  type(t_elementDistribution), pointer :: p_relementDistrU
+  type(t_elementDistribution), pointer :: p_relementDistrV
+  type(t_elementDistribution), pointer :: p_relementDistrP
+  type(t_elementDistribution), pointer :: p_relementDistrT
     
-    ! 2D Boussinesq problem.
+    ! Do we use the pressure-DOF based Vanka?
+    if(csubtype .eq. VANKATP_BOUSS2D_PDOF) then
+      
+      ! Yes, we do. So call the corresponding routine here.
+      ! The pressure-DOF based Vanka is a 'black-box' algorithm which does
+      ! not need any information about the underlying discretisations.
+      !call vanka_BS2D_pdof(rrhs, domega, rvector, rvanka)
+      print *, 'ERROR: vanka_Boussinesq2D'
+      stop
+      
+      ! And return here, as the rest of the code in this routine is only
+      ! used by the other Vanka variants.
+      return
+    
+    else if(csubtype .eq. VANKATP_BOUSS2D_PDOF_FAST) then
+    
+      ! Yes, we do, but we use the 'fast variant'.
+      !call vanka_BS2D_pdof_fast(rrhs, domega, rvector, rvanka)
+      print *, 'ERROR: vanka_Boussinesq2D'
+      stop
+      
+      ! And return here.
+      return
+    
+    end if
 
     ! Loop through the element distributions of the velocity.
-    do ielementdist = 1,rvanka2DBouss%p_rspatialDiscrU%inumFESpaces
+    do ielementdist = 1,rvanka%p_rspatialDiscrU%inumFESpaces
     
       ! Get the corresponding element distributions of U, V and P.
       p_relementDistrU => &
-          rvanka2DBouss%p_rspatialDiscrU%RelementDistr(ielementdist)
+          rvanka%p_rspatialDiscrU%RelementDistr(ielementdist)
       p_relementDistrV => &
-          rvanka2DBouss%p_rspatialDiscrV%RelementDistr(ielementdist)
+          rvanka%p_rspatialDiscrV%RelementDistr(ielementdist)
       p_relementDistrT => &
-          rvanka2DBouss%p_rspatialDiscrT%RelementDistr(ielementdist)
+          rvanka%p_rspatialDiscrT%RelementDistr(ielementdist)
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka2DBouss%p_rspatialDiscrP%inumFESpaces .gt. 1) then
+      if (rvanka%p_rspatialDiscrP%inumFESpaces .gt. 1) then
         p_relementDistrP => &
-            rvanka2DBouss%p_rspatialDiscrP%RelementDistr(ielementdist)
+            rvanka%p_rspatialDiscrP%RelementDistr(ielementdist)
       else
         p_relementDistrP => &
-            rvanka2DBouss%p_rspatialDiscrP%RelementDistr(1)
+            rvanka%p_rspatialDiscrP%RelementDistr(1)
       end if
       
       ! Get the list of the elements to process.
@@ -515,17 +626,17 @@ contains
         select case (csubtype)
         case (VANKATP_BOUSS2D_DIAG)
           ! Call the jacobi-style vanka
-          call vanka_BS2D_Q1TQ0Q1_js(rvanka2DBouss, &
+          call vanka_BS2D_Q1TQ0Q1_js(rvanka, &
                   rvector, rrhs, domega, p_IelementList)
 
         case (VANKATP_BOUSS2D_FULL)
-          if (.not. associated(rvanka2DBouss%p_DA12)) then
+          if (.not. associated(rvanka%p_DA12)) then
             ! Call the block-diagonal vanka
-            call vanka_BS2D_Q1TQ0Q1_bd(rvanka2DBouss, &
+            call vanka_BS2D_Q1TQ0Q1_bd(rvanka, &
                   rvector, rrhs, domega, p_IelementList)
           else
             ! Call the fully coupled vanka
-            call vanka_BS2D_Q1TQ0Q1_fc(rvanka2DBouss, &
+            call vanka_BS2D_Q1TQ0Q1_fc(rvanka, &
                   rvector, rrhs, domega, p_IelementList)
           end if
         
@@ -545,6 +656,228 @@ contains
       
     end do
       
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine vanka_initDataBS2D_pdof(rvanka)
+
+!<description>
+  ! This routine performs a matrix-data-dependent initialisation of the
+  ! pressure-DOF based Vanka.
+!</description>
+
+!<inputoutput>
+
+  ! t_vankaPointerBouss2D structure that saves algorithm-specific parameters.
+  type(t_vankaPointerBouss2D), intent(INOUT) :: rvanka
+  
+!</inputoutput>
+
+!</subroutine>
+
+  ! Multiplication factors
+  real(DP), dimension(4,4) :: Dmult
+  
+  ! Quick access for the matrix arrays
+  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldC,p_KldD,&
+      p_KcolA,p_KcolA12,p_KcolB,p_KcolC,p_KcolD,p_KdiagA,p_KdiagC
+  real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22,p_DB1,p_DB2,&
+      p_DD1,p_DD2,p_DC, p_DS
+
+  ! Temporary local matrices
+  !real(DP), dimension(:,:), allocatable :: DA
+  !real(DP), dimension(:), allocatable :: DB
+  real(DP), dimension(:,:), pointer :: DA
+  real(DP), dimension(:), pointer :: DB
+  
+  ! pivot array for LAPACK
+  !integer, dimension(:), allocatable :: Ipivot
+  integer, dimension(:), pointer :: Ipivot
+  
+  ! local variables
+  logical :: bHaveA12, bHaveC
+  real(DP) :: dc,daux1,daux2
+  integer :: idofp,idofu,i,j1,j2,k,id1,id2,nmaxdofV,ndofV,info
+
+    ! Let's assume we do not have the optional matrices
+    bHaveA12 = .FALSE.
+    bHaveC = .FALSE.
+    
+    ! Get the pointers from the vanka structure
+    p_KldA => rvanka%p_KldA
+    p_KcolA => rvanka%p_KcolA
+    p_KdiagA => rvanka%p_KdiagonalA
+    p_DA11 => rvanka%p_DA11
+    p_DA22 => rvanka%p_DA22
+    p_KldB => rvanka%p_KldB
+    p_KcolB => rvanka%p_KcolB
+    p_DB1 => rvanka%p_DB1
+    p_DB2 => rvanka%p_DB2
+    p_KldD => rvanka%p_KldD
+    p_KcolD => rvanka%p_KcolD
+    p_DD1 => rvanka%p_DD1
+    p_DD2 => rvanka%p_DD2
+    
+    if(associated(rvanka%p_DA12)) then
+      bHaveA12 = .TRUE.
+      p_KldA12 => rvanka%p_KldA12
+      p_KcolA12 => rvanka%p_KcolA12
+      p_DA12 => rvanka%p_DA12
+      p_DA21 => rvanka%p_DA21
+    end if
+    
+    if(associated(rvanka%p_DC)) then
+      bHaveC = .TRUE.
+      p_KldC => rvanka%p_KldC
+      p_KcolC => rvanka%p_KcolC
+      p_KdiagC => rvanka%p_KdiagonalC
+      p_DC => rvanka%p_DC
+    end if
+    
+    ! Get the Schur-complement array
+    p_DS => rvanka%p_Dschur
+    
+    ! Get the multiplication factors
+    Dmult = rvanka%Dmultipliers
+    
+    ! First of all determine the maximum number of velocity DOFs that one
+    ! pressure DOF may be adjacent to.
+    nmaxdofV = 0
+    do idofp = 1, rvanka%ndofPres
+      nmaxdofV = max(nmaxdofV, p_KldD(idofp+1)-p_KldD(idofp))
+    end do ! idofp
+    nmaxdofV = 2*nmaxdofV
+    
+    ! Okay, let's allocate the temporary data
+    allocate(DA(nmaxdofV,nmaxdofV))
+    allocate(DB(nmaxdofV))
+    allocate(Ipivot(nmaxdofV))
+    
+    ! Let's loop over the pressure DOFs
+    do idofp = 1, rvanka%ndofPres
+    
+      ! Format the local matrices
+      DA = 0.0_DP
+      DB = 0.0_DP
+      dc = 0.0_DP
+      
+      ! Format the Schur-complement entry for this pressure DOF
+      p_DS(idofP) = 0.0_DP
+      
+      ! Fetch the number of velocity DOFs adjacent to this pressure DOF
+      ndofV = p_KldD(idofp+1) - p_KldD(idofp)
+      
+      ! If the C matrix exists, grab it's main diagonal entry
+      if(bHaveC) then
+        dc = Dmult(3,3)*p_DC(p_KdiagC(idofp))
+      end if
+      
+      ! Let's loop over all velocity DOFs which are adjacent to the current
+      ! pressure DOF.
+      do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+      
+        ! Get the index of the velocity DOF
+        idofu = p_KcolD(id1)
+        
+        ! Let's fetch the local A11/A22 matrices
+        do i = p_KldA(idofu), p_KldA(idofu+1)-1
+        
+          ! Get the column index
+          k = p_KcolA(i)
+          
+          ! Let's see if this corresponds to one of our local velocity DOFs
+          do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
+            if(k .eq. p_KcolD(id2)) then
+              ! Okay, incorporate the entries into the local matrix
+              j1 = id1 - p_KldD(idofp) + 1
+              j2 = id2 - p_KldD(idofp) + 1
+              DA(      j1,      j2) = Dmult(1,1)*p_DA11(i)
+              DA(ndofV+j1,ndofV+j2) = Dmult(2,2)*p_DA22(i)
+              exit
+            end if
+          end do ! id2
+        end do ! i
+
+        ! Do the A12/A21 matrices exist? If yes, then we also need to grab
+        ! their local sub-matrices.
+        if(bHaveA12) then
+          ! Let's fetch the local A12/A21 matrices
+          do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+          
+            ! Get the column index
+            k = p_KcolA12(i)
+            
+            ! Let's see if this corresponds to one of our local velocity DOFs
+            do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
+              if(k .eq. p_KcolD(id2)) then
+                ! Okay, incorporate the entries into the local matrix
+                j1 = id1 - p_KldD(idofp) + 1
+                j2 = id2 - p_KldD(idofp) + 1
+                DA(      j1,ndofV+j2) = Dmult(1,2)*p_DA12(i)
+                DA(ndofV+j1,      j2) = Dmult(2,1)*p_DA21(i)
+                exit
+              end if
+            end do ! id2
+          end do ! i
+        end if
+
+        ! Let's fetch the local B matrices
+        do i = p_KldB(idofu), p_KldB(idofu+1)
+          if(p_KcolB(i) .eq. idofP) then
+            j1 = id1 - p_KldD(idofp) + 1
+            DB(      j1) = Dmult(1,3)*p_DB1(i)
+            DB(ndofV+j1) = Dmult(2,3)*p_DB2(i)
+            exit
+          end if
+        end do ! i
+      
+      end do ! id1
+      
+      ! Okay, try to solve the local system A*X=B
+      call DGESV(2*ndofV,1,DA,nmaxdofV,Ipivot,DB,nmaxdofV,info)
+      
+      ! Did LAPACK fail? If yes, simply continue with the next pressure DOF.
+      if(info .ne. 0) cycle
+      
+      ! Okay, let's calculate the Schur-complement dc = C - D * A^-1 * B
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      k = 1
+      do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+        daux1 = daux1 + p_DD1(id1)*DB(k)
+        daux2 = daux2 + p_DD2(id1)*DB(ndofV+k)
+        k = k+1
+      end do
+      dc = dc - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
+      
+      ! Now if the Schur-complement matrix is regular, we'll store the inverse
+      ! in the corresponding entry in p_DS.
+      
+      ! Remark:
+      ! For some unknown reason the Intel Fortran Compiler 10.1 somehow screws
+      ! up with the following IF-statement when compiling in Release-Mode under
+      ! Windows:
+      !
+      !   if(dabs(dc) .gt. SYS_EPSREAL) p_DS(idofP) = 1.0_DP / dc
+      !
+      ! The problem has been 'solved' by using the following equivalent
+      ! alternative:
+      if((dc .gt. SYS_EPSREAL) .or. (dc .lt. -SYS_EPSREAL)) then
+        p_DS(idofP) = 1.0_DP / dc
+      end if
+      
+    end do ! idofp
+    
+    ! And release the temporary memory
+    deallocate(Ipivot)
+    deallocate(DB)
+    deallocate(DA)
+    
+    ! That's it
+  
   end subroutine
 
   ! ***************************************************************************
@@ -598,32 +931,31 @@ contains
   integer, dimension(ndofT) :: IdofT
   
   ! Variables for the local system
-  real(DP), dimension(ndof) :: Du, Df
-  real(DP), dimension(ndofV) :: Da1, Da2
+  real(DP), dimension(ndofV) :: Da1, Da2, Du1, Du2, Df1, Df2
   real(DP), dimension(ndofV,ndofP) :: Db1,Db2
   real(DP), dimension(ndofP,ndofV) :: Dd1, Dd2
-  real(DP), dimension(ndofP) :: Dc
+  real(DP), dimension(ndofP) :: Dc, Ds, Dup, Dfp
   real(DP), dimension(ndofV,ndofT) :: Dm1, Dm2
-  real(DP), dimension(ndofP,ndofT) :: Dm3
-  real(DP), dimension(ndofT) :: Dn
+  real(DP), dimension(ndofP,ndofT) :: Dk
+  real(DP), dimension(ndofT) :: Dn, Dut, Dft
   
   ! temporary vectors
-  real(DP), dimension(ndofV) :: Dt1, Dt2, Dg1, Dg2
-  real(DP) :: dS
+  real(DP), dimension(ndofP,ndofV) :: Dt1, Dt2
   
   ! Multiplication factors
   real(DP), dimension(4,4) :: Dmult
   
   ! Quick access for the matrix arrays
-  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldC,p_KldM,p_KldM3,p_KldN,&
-      p_KcolA,p_KcolA12,p_KcolB,p_KcolC,p_KcolM,p_KcolM3,p_KcolN,p_KdiagA,p_KdiagC,p_KdiagN
+  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldD,p_KldC,&
+      p_KldM,p_KldK,p_KldN,p_KcolA,p_KcolA12,p_KcolB,p_KcolD,p_KcolC,&
+      p_KcolM,p_KcolK,p_KcolN,p_KdiagA,p_KdiagC,p_KdiagN
   real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22,p_DB1,p_DB2,&
-      p_DD1,p_DD2,p_DC,p_DM1,p_DM2,p_DM3,p_DN
+      p_DD1,p_DD2,p_DC,p_DM1,p_DM2,p_DK,p_DN
     
     ! local variables
-    integer :: i,j,iel,ielidx,i1,i2,k,l,o
-    real(DP) :: daux
-    logical :: bHaveA12, bHaveC, bHaveM3, bHaveM
+    integer :: i,j,iel,ielidx,i1,i2,k,l
+    real(DP) :: daux,daux1, daux2
+    logical :: bHaveA12, bHaveC, bHaveK, bHaveM
 
     ! Get pointers to the  triangulation information
     call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
@@ -645,7 +977,7 @@ contains
     bHaveA12 = .false.
     bHaveC = .false.
     bHaveM = .false.
-    bHaveM3 = .false.
+    bHaveK = .false.
     
     ! Get the pointers from the vanka structure
     p_KldA => rvanka%p_KldA
@@ -657,6 +989,8 @@ contains
     p_KcolB => rvanka%p_KcolB
     p_DB1 => rvanka%p_DB1
     p_DB2 => rvanka%p_DB2
+    p_KldD => rvanka%p_KldD
+    p_KcolD => rvanka%p_KcolD
     p_DD1 => rvanka%p_DD1
     p_DD2 => rvanka%p_DD2
     p_KldN => rvanka%p_KldN
@@ -688,602 +1022,30 @@ contains
       p_DM2 => rvanka%p_DM2
     end if
     
-    if(associated(rvanka%p_DM3)) then
-      bHaveM3 = .true.
-      p_KldM3 => rvanka%p_KldM3
-      p_KcolM3 => rvanka%p_KcolM3
-      p_DM3 => rvanka%p_DM3
+    if(associated(rvanka%p_DK)) then
+      bHaveK = .true.
+      p_Kldk => rvanka%p_KldK
+      p_KcolK => rvanka%p_KcolK
+      p_DK => rvanka%p_DK
     end if
     
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
     
     ! Clear the optional matrices
-    Dc = 0.0_DP
+    Dc  = 0.0_DP
     Dm1 = 0.0_DP
     Dm2 = 0.0_DP
-    Dm3 = 0.0_DP
+    Dk  = 0.0_DP
     
     ! Now which of the optional matrices are present?
     ! In the following if-tree we will take care of the most common combinations,
     ! and if none of them fits, there is an else-case which can take care of any
     ! combination - but it's a bit slower.
-    if((.not. bHaveA12) .and. (.not. bHaveC) .and. bHaveM .and. (.not. bHaveM3)) then
-      ! Only M1/M2 are present
-      do ielidx=1, size(IelementList)
-      
-        ! Get the element number which is to be processed.
-        iel = IelementList(ielidx)
-        
-        ! Get all DOFs for this element
-        IdofV(:) = p_IedgesAtElement(:,iel)
-        IdofP(1) = iel
-        IdofT(:) = p_IverticesAtElement(:,iel)
-
-        ! First of all, fetch the local RHS
-        do i = 1, ndofV
-          Df(i)       = p_DrhsU(IdofV(i))   ! f_u
-          Df(ndofV+i) = p_DrhsV(IdofV(i))   ! f_v
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          Df(o+i) = p_DrhsP(IdofP(i))       ! f_p
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          Df(o+i) = p_DrhsT(IdofT(i))       ! f_t
-        end do
-        
-        ! Now fetch the main diagonal of A
-        do i = 1, ndofV
-          j = p_KdiagA(IdofV(i))
-          Da1(i) = Dmult(1,1)*p_DA11(j)
-          Da2(i) = Dmult(2,2)*p_DA22(j)
-        end do
-        
-        ! Let's update the local RHS vector by subtracting A*u from it:
-        ! f_u := f_u - A11*u
-        ! f_v := f_v - A22*v
-        do k = 1, ndofV
-          i1 = p_KldA(IdofV(k))
-          i2 = p_KldA(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolA(i)
-            Df(k)       = Df(k)       - Dmult(1,1)*p_DA11(i)*p_DvecU(j)
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,2)*p_DA22(i)*p_DvecV(j)
-          end do
-        end do
-        
-        ! Now we also need to subtract B*p from our RHS, and by the same time,
-        ! we also have to subtract D*u - and we will build the local B/D matrices.
-        ! f_u := f_u - B1*p
-        ! f_v := f_v - B2*p
-        ! f_p := f_p - D1*u - D2*v
-        do k = 1, ndofV
-          i1 = p_KldB(IdofV(k))
-          i2 = p_KldB(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolB(i)
-            daux = p_DvecP(j)
-            Df(k)       = Df(k)       - Dmult(1,3)*p_DB1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,3)*p_DB2(i)*daux
-            do l = 1, ndofP
-              if(j .ne. IdofP(l)) cycle
-              
-              ! Get the local entries of the B/D matrices
-              Db1(k,l) = Dmult(1,3)*p_DB1(i)
-              Db2(k,l) = Dmult(2,3)*p_DB2(i)
-              Dd1(l,k) = Dmult(3,1)*p_DD1(i)
-              Dd2(l,k) = Dmult(3,2)*p_DD2(i)
-              
-              ! Update f_p
-              Df(2*ndofV+l) = Df(2*ndofV+l) - Dd1(l,k)*p_DvecU(IdofV(k)) &
-                                            - Dd2(l,k)*p_DvecV(IdofV(k))
-            end do
-          end do
-        end do
-         
-        ! Now subtract M*t from our local RHS
-        ! f_u := f_u - M1*t
-        ! f_v := f_v - M2*t
-        do k = 1, ndofV
-          i1 = p_KldM(IdofV(k))
-          i2 = p_KldM(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolM(i)
-            daux = p_DvecT(j)
-            Df(k)       = Df(k)       - Dmult(1,4)*p_DM1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,4)*p_DM2(i)*daux
-            do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local entries of the M1/M2 matrices
-              Dm1(k,l) = Dmult(1,4)*p_DM1(i)
-              Dm2(k,l) = Dmult(2,4)*p_DM2(i)
-            end do
-          end do
-        end do
-        
-        ! Okay, one task is still left - the N-matrix...
-        ! f_t := f_t - N*t
-        o = 2*ndofV+ndofP
-        do k = 1, ndofT
-          i1 = p_KldN(IdofT(k))
-          i2 = p_KldN(IdofT(k)+1)-1
-          do i = i1, i2
-            Df(o+k) = Df(o+k) - Dmult(4,4)*p_DN(i)*p_DvecT(p_KcolN(i))
-          end do
-          ! Fetch the main diagonal entry of N
-          Dn(k) = Dmult(4,4)*p_DN(p_KdiagN(IdofT(k)))
-        end do
-
-        Da1(1) = 1.0_DP / Da1(1)
-        Da1(2) = 1.0_DP / Da1(2)
-        Da1(3) = 1.0_DP / Da1(3)
-        Da1(4) = 1.0_DP / Da1(4)
-        Da2(1) = 1.0_DP / Da2(1)
-        Da2(2) = 1.0_DP / Da2(2)
-        Da2(3) = 1.0_DP / Da2(3)
-        Da2(4) = 1.0_DP / Da2(4)
-
-        ! Calculate temperature
-        ! t := N^-1 * f_t
-        Du(10) = Df(10) / Dn(1)
-        Du(11) = Df(11) / Dn(2)
-        Du(12) = Df(12) / Dn(3)
-        Du(13) = Df(13) / Dn(4)
-        
-        ! Calculate new RHS 
-        ! g_u := f_u - M*t
-        Dg1(1) = Df(1)-Dm1(1,1)*Du(10)-Dm1(1,2)*Du(11)-Dm1(1,3)*Du(12)-Dm1(1,4)*Du(13)
-        Dg1(2) = Df(2)-Dm1(2,1)*Du(10)-Dm1(2,2)*Du(11)-Dm1(2,3)*Du(12)-Dm1(2,4)*Du(13)
-        Dg1(3) = Df(3)-Dm1(3,1)*Du(10)-Dm1(3,2)*Du(11)-Dm1(3,3)*Du(12)-Dm1(3,4)*Du(13)
-        Dg1(4) = Df(4)-Dm1(4,1)*Du(10)-Dm1(4,2)*Du(11)-Dm1(4,3)*Du(12)-Dm1(4,4)*Du(13)
-        Dg2(1) = Df(5)-Dm2(1,1)*Du(10)-Dm2(1,2)*Du(11)-Dm2(1,3)*Du(12)-Dm2(1,4)*Du(13)
-        Dg2(2) = Df(6)-Dm2(2,1)*Du(10)-Dm2(2,2)*Du(11)-Dm2(2,3)*Du(12)-Dm2(2,4)*Du(13)
-        Dg2(3) = Df(7)-Dm2(3,1)*Du(10)-Dm2(3,2)*Du(11)-Dm2(3,3)*Du(12)-Dm2(3,4)*Du(13)
-        Dg2(4) = Df(8)-Dm2(4,1)*Du(10)-Dm2(4,2)*Du(11)-Dm2(4,3)*Du(12)-Dm2(4,4)*Du(13)
-        
-        ! Precalculate D * A^-1
-        Dt1(1) = Dd1(1,1)*Da1(1)
-        Dt1(2) = Dd1(1,2)*Da1(2)
-        Dt1(3) = Dd1(1,3)*Da1(3)
-        Dt1(4) = Dd1(1,4)*Da1(4)
-        Dt2(1) = Dd2(1,1)*Da2(1)
-        Dt2(2) = Dd2(1,2)*Da2(2)
-        Dt2(3) = Dd2(1,3)*Da2(3)
-        Dt2(4) = Dd2(1,4)*Da2(4)
-
-        ! Calculate Schur-Complement of A
-        ! S := D * A^-1 * B 
-        dS = &
-           + Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1) &
-           + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
-        
-        ! Calculate pressure
-        ! p := D * A^-1 * g_u + f_p
-        Du(9) = (-Df(9) &
-           + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
-           + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4)) / dS
-        
-        ! Calculate X- and Y-velocity
-        ! u := A^-1 * (g_u - B * p)
-        Du(1) = Da1(1)*(Dg1(1) - Db1(1,1)*Du(9))
-        Du(2) = Da1(2)*(Dg1(2) - Db1(2,1)*Du(9))
-        Du(3) = Da1(3)*(Dg1(3) - Db1(3,1)*Du(9))
-        Du(4) = Da1(4)*(Dg1(4) - Db1(4,1)*Du(9))
-        Du(5) = Da2(1)*(Dg2(1) - Db2(1,1)*Du(9))
-        Du(6) = Da2(2)*(Dg2(2) - Db2(2,1)*Du(9))
-        Du(7) = Da2(3)*(Dg2(3) - Db2(3,1)*Du(9))
-        Du(8) = Da2(4)*(Dg2(4) - Db2(4,1)*Du(9))
-        
-        ! Incorporate our local solution into the global one.
-        do i = 1, ndofV
-          j = IdofV(i)
-          p_DvecU(j) = p_DvecU(j) + domega * Du(i)
-          p_DvecV(j) = p_DvecV(j) + domega * Du(ndofV+i)
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          j = IdofP(i)
-          p_DvecP(j) = p_DvecP(j) + domega * Du(o+i)
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          j = IdofT(i)
-          p_DvecT(j) = p_DvecT(j) + domega * Du(o+i)
-        end do
-      
-      end do ! ielidx
-      
-    else if((.not. bHaveA12) .and. (.not. bHaveC) .and. (.not. bHaveM) .and. bHaveM3) then
-      ! Only M3 is present
-      do ielidx=1, size(IelementList)
-      
-        ! Get the element number which is to be processed.
-        iel = IelementList(ielidx)
-        
-        ! Get all DOFs for this element
-        IdofV(:) = p_IedgesAtElement(:,iel)
-        IdofP(1) = iel
-        IdofT(:) = p_IverticesAtElement(:,iel)
-
-        ! First of all, fetch the local RHS
-        do i = 1, ndofV
-          Df(i)       = p_DrhsU(IdofV(i))   ! f_u
-          Df(ndofV+i) = p_DrhsV(IdofV(i))   ! f_v
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          Df(o+i) = p_DrhsP(IdofP(i))       ! f_p
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          Df(o+i) = p_DrhsT(IdofT(i))       ! f_t
-        end do
-        
-        ! Now fetch the main diagonal of A
-        do i = 1, ndofV
-          j = p_KdiagA(IdofV(i))
-          Da1(i) = Dmult(1,1)*p_DA11(j)
-          Da2(i) = Dmult(2,2)*p_DA22(j)
-        end do
-        
-        ! Let's update the local RHS vector by subtracting A*u from it:
-        ! f_u := f_u - A11*u
-        ! f_v := f_v - A22*v
-        do k = 1, ndofV
-          i1 = p_KldA(IdofV(k))
-          i2 = p_KldA(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolA(i)
-            Df(k)       = Df(k)       - Dmult(1,1)*p_DA11(i)*p_DvecU(j)
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,2)*p_DA22(i)*p_DvecV(j)
-          end do
-        end do
-        
-        ! Now we also need to subtract B*p from our RHS, and by the same time,
-        ! we also have to subtract D*u - and we will build the local B/D matrices.
-        ! f_u := f_u - B1*p
-        ! f_v := f_v - B2*p
-        ! f_p := f_p - D1*u - D2*v
-        do k = 1, ndofV
-          i1 = p_KldB(IdofV(k))
-          i2 = p_KldB(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolB(i)
-            daux = p_DvecP(j)
-            Df(k)       = Df(k)       - Dmult(1,3)*p_DB1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,3)*p_DB2(i)*daux
-            do l = 1, ndofP
-              if(j .ne. IdofP(l)) cycle
-              
-              ! Get the local entries of the B/D matrices
-              Db1(k,l) = Dmult(1,3)*p_DB1(i)
-              Db2(k,l) = Dmult(2,3)*p_DB2(i)
-              Dd1(l,k) = Dmult(3,1)*p_DD1(i)
-              Dd2(l,k) = Dmult(3,2)*p_DD2(i)
-              
-              ! Update f_p
-              Df(2*ndofV+l) = Df(2*ndofV+l) - Dd1(l,k)*p_DvecU(IdofV(k)) &
-                                            - Dd2(l,k)*p_DvecV(IdofV(k))
-            end do
-          end do
-        end do
-        
-        ! f_p := f_p - M3*t
-        o = 2*ndofV
-        do k = 1, ndofP
-          i1 = p_KldM3(IdofP(k))
-          i2 = p_KldM3(IdofP(k)+1)-1
-          do i = i1, i2
-            j = p_KcolM3(i)
-            Df(o+k) = Df(o+k) - Dmult(3,4)*p_DM3(i)*p_DvecT(j)
-            do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local M3 entry
-              Dm3(k,l) = Dmult(3,4)*p_DM3(i)
-            end do
-          end do
-        end do
-        
-        ! Okay, one task is still left - the N-matrix...
-        ! f_t := f_t - N*t
-        o = 2*ndofV+ndofP
-        do k = 1, ndofT
-          i1 = p_KldN(IdofT(k))
-          i2 = p_KldN(IdofT(k)+1)-1
-          do i = i1, i2
-            Df(o+k) = Df(o+k) - Dmult(4,4)*p_DN(i)*p_DvecT(p_KcolN(i))
-          end do
-          ! Fetch the main diagonal entry of N
-          Dn(k) = Dmult(4,4)*p_DN(p_KdiagN(IdofT(k)))
-        end do
-
-        ! Invert A1 and A2
-        Da1(1) = 1.0_DP / Da1(1)
-        Da1(2) = 1.0_DP / Da1(2)
-        Da1(3) = 1.0_DP / Da1(3)
-        Da1(4) = 1.0_DP / Da1(4)
-        Da2(1) = 1.0_DP / Da2(1)
-        Da2(2) = 1.0_DP / Da2(2)
-        Da2(3) = 1.0_DP / Da2(3)
-        Da2(4) = 1.0_DP / Da2(4)
-
-        ! Calculate temperature
-        ! t := N^-1 * f_t
-        Du(10) = Df(10) / Dn(1)
-        Du(11) = Df(11) / Dn(2)
-        Du(12) = Df(12) / Dn(3)
-        Du(13) = Df(13) / Dn(4)
-        
-        ! Calculate new RHS 
-        ! g_u := f_u
-        Dg1(1) = Df(1)
-        Dg1(2) = Df(2)
-        Dg1(3) = Df(3)
-        Dg1(4) = Df(4)
-        Dg2(1) = Df(5)
-        Dg2(2) = Df(6)
-        Dg2(3) = Df(7)
-        Dg2(4) = Df(8)
-        
-        ! Precalculate D * A^-1
-        Dt1(1) = Dd1(1,1)*Da1(1)
-        Dt1(2) = Dd1(1,2)*Da1(2)
-        Dt1(3) = Dd1(1,3)*Da1(3)
-        Dt1(4) = Dd1(1,4)*Da1(4)
-        Dt2(1) = Dd2(1,1)*Da2(1)
-        Dt2(2) = Dd2(1,2)*Da2(2)
-        Dt2(3) = Dd2(1,3)*Da2(3)
-        Dt2(4) = Dd2(1,4)*Da2(4)
-
-        ! Calculate Schur-Complement of A
-        ! S := D * A^-1 * B 
-        dS = &
-           + Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1) &
-           + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
-        
-        ! Calculate pressure
-        ! p := D * A^-1 * g_u + M3 * t - f_p
-        Du(9) = (-Df(9) &
-           + Dm3(1,1)*Du(10) + Dm3(1,2)*Du(11) &
-           + Dm3(1,3)*Du(12) + Dm3(1,4)*Du(13) &
-           + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
-           + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4)) / dS
-        
-        ! Calculate X- and Y-velocity
-        ! u := A^-1 * (g_u - B * p)
-        Du(1) = Da1(1)*(Dg1(1) - Db1(1,1)*Du(9))
-        Du(2) = Da1(2)*(Dg1(2) - Db1(2,1)*Du(9))
-        Du(3) = Da1(3)*(Dg1(3) - Db1(3,1)*Du(9))
-        Du(4) = Da1(4)*(Dg1(4) - Db1(4,1)*Du(9))
-        Du(5) = Da2(1)*(Dg2(1) - Db2(1,1)*Du(9))
-        Du(6) = Da2(2)*(Dg2(2) - Db2(2,1)*Du(9))
-        Du(7) = Da2(3)*(Dg2(3) - Db2(3,1)*Du(9))
-        Du(8) = Da2(4)*(Dg2(4) - Db2(4,1)*Du(9))
-
-        ! Incorporate our local solution into the global one.
-        do i = 1, ndofV
-          j = IdofV(i)
-          p_DvecU(j) = p_DvecU(j) + domega * Du(i)
-          p_DvecV(j) = p_DvecV(j) + domega * Du(ndofV+i)
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          j = IdofP(i)
-          p_DvecP(j) = p_DvecP(j) + domega * Du(o+i)
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          j = IdofT(i)
-          p_DvecT(j) = p_DvecT(j) + domega * Du(o+i)
-        end do
-      
-      end do ! ielidx
-      
-    else if((.not. bHaveA12) .and. bHaveC .and. (.not. bHaveM) .and. bHaveM3) then
-      ! Only C and M3 are present
-      do ielidx=1, size(IelementList)
-      
-        ! Get the element number which is to be processed.
-        iel = IelementList(ielidx)
-        
-        ! Get all DOFs for this element
-        IdofV(:) = p_IedgesAtElement(:,iel)
-        IdofP(1) = iel
-        IdofT(:) = p_IverticesAtElement(:,iel)
-
-        ! First of all, fetch the local RHS
-        do i = 1, ndofV
-          Df(i)       = p_DrhsU(IdofV(i))   ! f_u
-          Df(ndofV+i) = p_DrhsV(IdofV(i))   ! f_v
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          Df(o+i) = p_DrhsP(IdofP(i))       ! f_p
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          Df(o+i) = p_DrhsT(IdofT(i))       ! f_t
-        end do
-        
-        ! Now fetch the main diagonal of A
-        do i = 1, ndofV
-          j = p_KdiagA(IdofV(i))
-          Da1(i) = Dmult(1,1)*p_DA11(j)
-          Da2(i) = Dmult(2,2)*p_DA22(j)
-        end do
-        
-        ! Let's update the local RHS vector by subtracting A*u from it:
-        ! f_u := f_u - A11*u
-        ! f_v := f_v - A22*v
-        do k = 1, ndofV
-          i1 = p_KldA(IdofV(k))
-          i2 = p_KldA(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolA(i)
-            Df(k)       = Df(k)       - Dmult(1,1)*p_DA11(i)*p_DvecU(j)
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,2)*p_DA22(i)*p_DvecV(j)
-          end do
-        end do
-        
-        ! Now we also need to subtract B*p from our RHS, and by the same time,
-        ! we also have to subtract D*u - and we will build the local B/D matrices.
-        ! f_u := f_u - B1*p
-        ! f_v := f_v - B2*p
-        ! f_p := f_p - D1*u - D2*v
-        do k = 1, ndofV
-          i1 = p_KldB(IdofV(k))
-          i2 = p_KldB(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolB(i)
-            daux = p_DvecP(j)
-            Df(k)       = Df(k)       - Dmult(1,3)*p_DB1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,3)*p_DB2(i)*daux
-            do l = 1, ndofP
-              if(j .ne. IdofP(l)) cycle
-              
-              ! Get the local entries of the B/D matrices
-              Db1(k,l) = Dmult(1,3)*p_DB1(i)
-              Db2(k,l) = Dmult(2,3)*p_DB2(i)
-              Dd1(l,k) = Dmult(3,1)*p_DD1(i)
-              Dd2(l,k) = Dmult(3,2)*p_DD2(i)
-              
-              ! Update f_p
-              Df(2*ndofV+l) = Df(2*ndofV+l) - Dd1(l,k)*p_DvecU(IdofV(k)) &
-                                            - Dd2(l,k)*p_DvecV(IdofV(k))
-            end do
-          end do
-        end do
-        
-        ! f_p := f_p - C*p
-        o = 2*ndofV
-        do k = 1, ndofP
-          i1 = p_KldC(IdofP(k))
-          i2 = p_KldC(IdofP(k)+1)-1
-          do i = i1, i2
-            Df(o+k) = Df(o+k) - Dmult(3,3)*p_DC(i)*p_DvecP(p_KcolC(i))
-          end do
-          ! Get the main diagonal entry of C
-          Dc(k) = Dmult(3,3)*p_DC(p_KdiagC(IdofP(k)))
-        end do
-        
-        ! Yes, so update the local RHS
-        ! f_p := f_p - M3*t
-        o = 2*ndofV
-        do k = 1, ndofP
-          i1 = p_KldM3(IdofP(k))
-          i2 = p_KldM3(IdofP(k)+1)-1
-          do i = i1, i2
-            j = p_KcolM3(i)
-            Df(o+k) = Df(o+k) - Dmult(3,4)*p_DM3(i)*p_DvecT(j)
-            do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local M3 entry
-              Dm3(k,l) = Dmult(3,4)*p_DM3(i)
-            end do
-          end do
-        end do
-        
-        ! Okay, one task is still left - the N-matrix...
-        ! f_t := f_t - N*t
-        o = 2*ndofV+ndofP
-        do k = 1, ndofT
-          i1 = p_KldN(IdofT(k))
-          i2 = p_KldN(IdofT(k)+1)-1
-          do i = i1, i2
-            Df(o+k) = Df(o+k) - Dmult(4,4)*p_DN(i)*p_DvecT(p_KcolN(i))
-          end do
-          ! Fetch the main diagonal entry of N
-          Dn(k) = Dmult(4,4)*p_DN(p_KdiagN(IdofT(k)))
-        end do
-
-        ! Invert A1 and A2
-        Da1(1) = 1.0_DP / Da1(1)
-        Da1(2) = 1.0_DP / Da1(2)
-        Da1(3) = 1.0_DP / Da1(3)
-        Da1(4) = 1.0_DP / Da1(4)
-        Da2(1) = 1.0_DP / Da2(1)
-        Da2(2) = 1.0_DP / Da2(2)
-        Da2(3) = 1.0_DP / Da2(3)
-        Da2(4) = 1.0_DP / Da2(4)
-
-        ! Calculate temperature
-        ! t := N^-1 * f_t
-        Du(10) = Df(10) / Dn(1)
-        Du(11) = Df(11) / Dn(2)
-        Du(12) = Df(12) / Dn(3)
-        Du(13) = Df(13) / Dn(4)
-        
-        ! Calculate new RHS 
-        ! g_u := f_u
-        Dg1(1) = Df(1)
-        Dg1(2) = Df(2)
-        Dg1(3) = Df(3)
-        Dg1(4) = Df(4)
-        Dg2(1) = Df(5)
-        Dg2(2) = Df(6)
-        Dg2(3) = Df(7)
-        Dg2(4) = Df(8)
-        
-        ! Precalculate D * A^-1
-        Dt1(1) = Dd1(1,1)*Da1(1)
-        Dt1(2) = Dd1(1,2)*Da1(2)
-        Dt1(3) = Dd1(1,3)*Da1(3)
-        Dt1(4) = Dd1(1,4)*Da1(4)
-        Dt2(1) = Dd2(1,1)*Da2(1)
-        Dt2(2) = Dd2(1,2)*Da2(2)
-        Dt2(3) = Dd2(1,3)*Da2(3)
-        Dt2(4) = Dd2(1,4)*Da2(4)
-
-        ! Calculate Schur-Complement of A
-        ! S := -C + D * A^-1 * B 
-        dS = -Dc(1) &
-           + Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1) &
-           + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
-        
-        ! Calculate pressure
-        ! p := D * A^-1 * g_u + M3 * t - f_p
-        Du(9) = (-Df(9) &
-           + Dm3(1,1)*Du(10) + Dm3(1,2)*Du(11) &
-           + Dm3(1,3)*Du(12) + Dm3(1,4)*Du(13) &
-           + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
-           + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4)) / dS
-        
-        ! Calculate X- and Y-velocity
-        ! u := A^-1 * (g_u - B * p)
-        Du(1) = Da1(1)*(Dg1(1) - Db1(1,1)*Du(9))
-        Du(2) = Da1(2)*(Dg1(2) - Db1(2,1)*Du(9))
-        Du(3) = Da1(3)*(Dg1(3) - Db1(3,1)*Du(9))
-        Du(4) = Da1(4)*(Dg1(4) - Db1(4,1)*Du(9))
-        Du(5) = Da2(1)*(Dg2(1) - Db2(1,1)*Du(9))
-        Du(6) = Da2(2)*(Dg2(2) - Db2(2,1)*Du(9))
-        Du(7) = Da2(3)*(Dg2(3) - Db2(3,1)*Du(9))
-        Du(8) = Da2(4)*(Dg2(4) - Db2(4,1)*Du(9))
-
-        ! Incorporate our local solution into the global one.
-        do i = 1, ndofV
-          j = IdofV(i)
-          p_DvecU(j) = p_DvecU(j) + domega * Du(i)
-          p_DvecV(j) = p_DvecV(j) + domega * Du(ndofV+i)
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          j = IdofP(i)
-          p_DvecP(j) = p_DvecP(j) + domega * Du(o+i)
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          j = IdofT(i)
-          p_DvecT(j) = p_DvecT(j) + domega * Du(o+i)
-        end do
-      
-      end do ! ielidx
-
-    else
+!    if((.not. bHaveA12) .and. (.not. bHaveC) .and. bHaveM .and. (.not. bHaveK)) then
+!    else if((.not. bHaveA12) .and. (.not. bHaveC) .and. (.not. bHaveM) .and. bHaveK) then
+!    else if((.not. bHaveA12) .and. bHaveC .and. (.not. bHaveM) .and. bHaveK) then
+!    else
       ! General case
       do ielidx=1, size(IelementList)
       
@@ -1297,23 +1059,14 @@ contains
 
         ! First of all, fetch the local RHS
         do i = 1, ndofV
-          Df(i)       = p_DrhsU(IdofV(i))   ! f_u
-          Df(ndofV+i) = p_DrhsV(IdofV(i))   ! f_v
+          Df1(i) = p_DrhsU(IdofV(i))   ! f_u
+          Df2(i) = p_DrhsV(IdofV(i))   ! f_v
         end do
-        o = 2*ndofV
         do i = 1, ndofP
-          Df(o+i) = p_DrhsP(IdofP(i))       ! f_p
+          Dfp(i) = p_DrhsP(IdofP(i))   ! f_p
         end do
-        o = 2*ndofV + ndofP
         do i = 1, ndofT
-          Df(o+i) = p_DrhsT(IdofT(i))       ! f_t
-        end do
-        
-        ! Now fetch the main diagonal of A
-        do i = 1, ndofV
-          j = p_KdiagA(IdofV(i))
-          Da1(i) = Dmult(1,1)*p_DA11(j)
-          Da2(i) = Dmult(2,2)*p_DA22(j)
+          Dft(i) = p_DrhsT(IdofT(i))   ! f_t
         end do
         
         ! Let's update the local RHS vector by subtracting A*u from it:
@@ -1322,11 +1075,19 @@ contains
         do k = 1, ndofV
           i1 = p_KldA(IdofV(k))
           i2 = p_KldA(IdofV(k)+1)-1
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do i = i1, i2
             j = p_KcolA(i)
-            Df(k)       = Df(k)       - Dmult(1,1)*p_DA11(i)*p_DvecU(j)
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,2)*p_DA22(i)*p_DvecV(j)
+            daux1 = daux1 + p_DA11(i)*p_DvecU(j)
+            daux2 = daux2 + p_DA22(i)*p_DvecV(j)
           end do
+          Df1(k) = Df1(k) - Dmult(1,1)*daux1
+          Df2(k) = Df2(k) - Dmult(2,2)*daux2
+          ! Get the main diagonal entries
+          j = p_KdiagA(IdofV(k))
+          Da1(k) = Dmult(1,1)*p_DA11(j)
+          Da2(k) = Dmult(2,2)*p_DA22(j)
         end do
         
         ! What about A12/A21?
@@ -1336,54 +1097,79 @@ contains
           do k = 1, ndofV
             i1 = p_KldA12(IdofV(k))
             i2 = p_KldA12(IdofV(k)+1)-1
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
             do i = i1, i2
               j = p_KcolA12(i)
-              Df(k)       = Df(k)       - Dmult(1,2)*p_DA12(i)*p_DvecV(j)
-              Df(ndofV+k) = Df(ndofV+k) - Dmult(2,1)*p_DA21(i)*p_DvecU(j)
+              daux1 = daux1 + p_DA12(i)*p_DvecV(j)
+              daux2 = daux2 + p_DA21(i)*p_DvecU(j)
             end do
+            Df1(k) = Df1(k) - Dmult(1,2)*daux1
+            Df2(k) = Df2(k) - Dmult(2,1)*daux2
           end do
         end if
         
         ! Now we also need to subtract B*p from our RHS, and by the same time,
-        ! we also have to subtract D*u - and we will build the local B/D matrices.
+        ! we will build the local B matrices.
         ! f_u := f_u - B1*p
         ! f_v := f_v - B2*p
-        ! f_p := f_p - D1*u - D2*v
         do k = 1, ndofV
           i1 = p_KldB(IdofV(k))
           i2 = p_KldB(IdofV(k)+1)-1
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do i = i1, i2
             j = p_KcolB(i)
             daux = p_DvecP(j)
-            Df(k)       = Df(k)       - Dmult(1,3)*p_DB1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,3)*p_DB2(i)*daux
+            daux1 = daux1 + p_DB1(i)*daux
+            daux2 = daux2 + p_DB2(i)*daux
             do l = 1, ndofP
-              if(j .ne. IdofP(l)) cycle
-              
-              ! Get the local entries of the B/D matrices
-              Db1(k,l) = Dmult(1,3)*p_DB1(i)
-              Db2(k,l) = Dmult(2,3)*p_DB2(i)
-              Dd1(l,k) = Dmult(3,1)*p_DD1(i)
-              Dd2(l,k) = Dmult(3,2)*p_DD2(i)
-              
-              ! Update f_p
-              Df(2*ndofV+l) = Df(2*ndofV+l) - Dd1(l,k)*p_DvecU(IdofV(k)) &
-                                            - Dd2(l,k)*p_DvecV(IdofV(k))
+              if(j .eq. IdofP(l)) then
+                Db1(k,l) = Dmult(1,3)*p_DB1(i)
+                Db2(k,l) = Dmult(2,3)*p_DB2(i)
+                exit
+              end if
             end do
           end do
+          Df1(k) = Df1(k) - Dmult(1,3)*daux1
+          Df2(k) = Df2(k) - Dmult(2,3)*daux2
+        end do
+        
+        ! Now we also need to subtract D*u from our RHS, and by the same time,
+        ! we will build the local D matrices.
+        ! f_p := f_p - D1*u - D2*v
+        do k = 1, ndofP
+          i1 = p_KldD(IdofP(k))
+          i2 = p_KldD(IdofP(k)+1)-1
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
+          do i = i1, i2
+            j = p_KcolD(i)
+            daux1 = daux1 + p_DD1(i)*p_DvecU(j)
+            daux2 = daux2 + p_DD2(i)*p_DvecV(j)
+            do l = 1, ndofV
+              if(j .eq. IdofV(l)) then
+                Dd1(k,l) = Dmult(3,1)*p_DD1(i)
+                Dd2(k,l) = Dmult(3,2)*p_DD2(i)
+                exit
+              end if
+            end do
+          end do
+          Dfp(k) = Dfp(k) - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
         end do
         
         ! Do we have a C-matrix?
         if(bHaveC) then
           ! Yes, so update the local RHS
           ! f_p := f_p - C*p
-          o = 2*ndofV
           do k = 1, ndofP
             i1 = p_KldC(IdofP(k))
             i2 = p_KldC(IdofP(k)+1)-1
+            daux1 = 0.0_DP
             do i = i1, i2
-              Df(o+k) = Df(o+k) - Dmult(3,3)*p_DC(i)*p_DvecP(p_KcolC(i))
+              daux1 = daux1 + p_DC(i)*p_DvecP(p_KcolC(i))
             end do
+            Dfp(k) = Dfp(k) - Dmult(3,3)*daux1
             ! Get the main diagonal entry of C
             Dc(k) = Dmult(3,3)*p_DC(p_KdiagC(IdofP(k)))
           end do
@@ -1397,138 +1183,144 @@ contains
           do k = 1, ndofV
             i1 = p_KldM(IdofV(k))
             i2 = p_KldM(IdofV(k)+1)-1
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
             do i = i1, i2
               j = p_KcolM(i)
               daux = p_DvecT(j)
-              Df(k)       = Df(k)       - Dmult(1,4)*p_DM1(i)*daux
-              Df(ndofV+k) = Df(ndofV+k) - Dmult(2,4)*p_DM2(i)*daux
+              daux1 = daux1 + p_DM1(i)*daux
+              daux2 = daux2 + p_DM2(i)*daux
               do l = 1, ndofT
-                if(j .ne. IdofT(l)) cycle
-                
-                ! Get the local entries of the M1/M2 matrices
-                Dm1(k,l) = Dmult(1,4)*p_DM1(i)
-                Dm2(k,l) = Dmult(2,4)*p_DM2(i)
+                if(j .eq. IdofT(l)) then
+                  Dm1(k,l) = Dmult(1,4)*p_DM1(i)
+                  Dm2(k,l) = Dmult(2,4)*p_DM2(i)
+                  exit
+                end if
               end do
             end do
+            Df1(k) = Df1(k) - Dmult(1,4)*daux1
+            Df2(k) = Df2(k) - Dmult(2,4)*daux2
           end do
         end if
         
-        ! What about M3? Does it exist?
-        if(bHaveM3) then
+        ! What about K? Does it exist?
+        if(bHaveK) then
           ! Yes, so update the local RHS
-          ! f_p := f_p - M3*t
-          o = 2*ndofV
+          ! f_p := f_p - K*t
           do k = 1, ndofP
-            i1 = p_KldM3(IdofP(k))
-            i2 = p_KldM3(IdofP(k)+1)-1
+            i1 = p_KldK(IdofP(k))
+            i2 = p_KldK(IdofP(k)+1)-1
+            daux1 = 0.0_DP
             do i = i1, i2
-              j = p_KcolM3(i)
-              Df(o+k) = Df(o+k) - Dmult(3,4)*p_DM3(i)*p_DvecT(j)
+              j = p_KcolK(i)
+              daux1 = daux1 + p_DK(i)*p_DvecT(j)
               do l = 1, ndofT
-                if(j .ne. IdofT(l)) cycle
-                
-                ! Get the local M3 entry
-                Dm3(k,l) = Dmult(3,4)*p_DM3(i)
+                if(j .eq. IdofT(l)) then
+                  Dk(k,l) = Dmult(3,4)*p_DK(i)
+                  exit
+                end if
               end do
             end do
+            Dfp(k) = Dfp(k) - Dmult(3,4)*daux1
           end do
         end if
         
         ! Okay, one task is still left - the N-matrix...
         ! f_t := f_t - N*t
-        o = 2*ndofV+ndofP
         do k = 1, ndofT
           i1 = p_KldN(IdofT(k))
           i2 = p_KldN(IdofT(k)+1)-1
+          daux1 = 0.0_DP
           do i = i1, i2
-            Df(o+k) = Df(o+k) - Dmult(4,4)*p_DN(i)*p_DvecT(p_KcolN(i))
+            daux1 = daux1 + p_DN(i)*p_DvecT(p_KcolN(i))
           end do
+          Dft(k) = Dft(k) - Dmult(4,4)*daux1
           ! Fetch the main diagonal entry of N
           Dn(k) = Dmult(4,4)*p_DN(p_KdiagN(IdofT(k)))
         end do
 
         ! Invert A1 and A2
-        Da1(1) = 1.0_DP / Da1(1)
-        Da1(2) = 1.0_DP / Da1(2)
-        Da1(3) = 1.0_DP / Da1(3)
-        Da1(4) = 1.0_DP / Da1(4)
-        Da2(1) = 1.0_DP / Da2(1)
-        Da2(2) = 1.0_DP / Da2(2)
-        Da2(3) = 1.0_DP / Da2(3)
-        Da2(4) = 1.0_DP / Da2(4)
+        do i = 1, ndofV
+          Da1(i) = 1.0_DP / Da1(i)
+          Da2(i) = 1.0_DP / Da2(i)
+        end do
 
         ! Calculate temperature
         ! t := N^-1 * f_t
-        Du(10) = Df(10) / Dn(1)
-        Du(11) = Df(11) / Dn(2)
-        Du(12) = Df(12) / Dn(3)
-        Du(13) = Df(13) / Dn(4)
+        do i = 1, ndofT
+          Dut(i) = Dft(i) / Dn(i)
+        end do
         
         ! Calculate new RHS 
-        ! g_u := f_u - M*t
-        Dg1(1) = Df(1)-Dm1(1,1)*Du(10)-Dm1(1,2)*Du(11)-Dm1(1,3)*Du(12)-Dm1(1,4)*Du(13)
-        Dg1(2) = Df(2)-Dm1(2,1)*Du(10)-Dm1(2,2)*Du(11)-Dm1(2,3)*Du(12)-Dm1(2,4)*Du(13)
-        Dg1(3) = Df(3)-Dm1(3,1)*Du(10)-Dm1(3,2)*Du(11)-Dm1(3,3)*Du(12)-Dm1(3,4)*Du(13)
-        Dg1(4) = Df(4)-Dm1(4,1)*Du(10)-Dm1(4,2)*Du(11)-Dm1(4,3)*Du(12)-Dm1(4,4)*Du(13)
-        Dg2(1) = Df(5)-Dm2(1,1)*Du(10)-Dm2(1,2)*Du(11)-Dm2(1,3)*Du(12)-Dm2(1,4)*Du(13)
-        Dg2(2) = Df(6)-Dm2(2,1)*Du(10)-Dm2(2,2)*Du(11)-Dm2(2,3)*Du(12)-Dm2(2,4)*Du(13)
-        Dg2(3) = Df(7)-Dm2(3,1)*Du(10)-Dm2(3,2)*Du(11)-Dm2(3,3)*Du(12)-Dm2(3,4)*Du(13)
-        Dg2(4) = Df(8)-Dm2(4,1)*Du(10)-Dm2(4,2)*Du(11)-Dm2(4,3)*Du(12)-Dm2(4,4)*Du(13)
+        ! f_u := f_u - M1*t
+        ! f_v := f_v - M2*t
+        do i = 1, ndofV
+          do j = 1, ndofT
+            Df1(i) = Df1(i) - Dm1(i,j)*Dut(j)
+            Df2(i) = Df2(i) - Dm2(i,j)*Dut(j)
+          end do
+        end do
         
         ! Precalculate D * A^-1
-        Dt1(1) = Dd1(1,1)*Da1(1)
-        Dt1(2) = Dd1(1,2)*Da1(2)
-        Dt1(3) = Dd1(1,3)*Da1(3)
-        Dt1(4) = Dd1(1,4)*Da1(4)
-        Dt2(1) = Dd2(1,1)*Da2(1)
-        Dt2(2) = Dd2(1,2)*Da2(2)
-        Dt2(3) = Dd2(1,3)*Da2(3)
-        Dt2(4) = Dd2(1,4)*Da2(4)
+        do i = 1, ndofV
+          do j = 1, ndofP
+            Dt1(j,i) = Dd1(j,i)*Da1(i)
+            Dt2(j,i) = Dd2(j,i)*Da2(i)
+          end do
+        end do
 
         ! Calculate Schur-Complement of A
         ! S := -C + D * A^-1 * B 
-        dS = -Dc(1) &
-           + Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1) &
-           + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
+        do j = 1, ndofP
+          Ds(j) = -Dc(j)
+          do i = 1, ndofV
+            Ds(j) = Ds(j) + Dt1(j,i)*Db1(i,j) &
+                          + Dt2(j,i)*Db2(i,j)
+          end do
+        end do
         
         ! Calculate pressure
-        ! p := D * A^-1 * g_u + M3 * t - f_p
-        Du(9) = (-Df(9) &
-           + Dm3(1,1)*Du(10) + Dm3(1,2)*Du(11) &
-           + Dm3(1,3)*Du(12) + Dm3(1,4)*Du(13) &
-           + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
-           + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4)) / dS
+        ! p := S^-1 * (D * A^-1 * f_u + K * t - f_p)
+        do j = 1, ndofP
+          daux = -Dfp(j)
+          do i = 1, ndofV
+            daux = daux + Dt1(j,i)*Df1(i) &
+                        + Dt2(j,i)*Df2(i)
+          end do
+          do i = 1, ndofT
+            daux = daux + Dk(j,i)*Dut(i)
+          end do
+          Dup(j) = daux / Ds(j)
+        end do
         
         ! Calculate X- and Y-velocity
         ! u := A^-1 * (g_u - B * p)
-        Du(1) = Da1(1)*(Dg1(1) - Db1(1,1)*Du(9))
-        Du(2) = Da1(2)*(Dg1(2) - Db1(2,1)*Du(9))
-        Du(3) = Da1(3)*(Dg1(3) - Db1(3,1)*Du(9))
-        Du(4) = Da1(4)*(Dg1(4) - Db1(4,1)*Du(9))
-        Du(5) = Da2(1)*(Dg2(1) - Db2(1,1)*Du(9))
-        Du(6) = Da2(2)*(Dg2(2) - Db2(2,1)*Du(9))
-        Du(7) = Da2(3)*(Dg2(3) - Db2(3,1)*Du(9))
-        Du(8) = Da2(4)*(Dg2(4) - Db2(4,1)*Du(9))
+        do i = 1, ndofV
+          do j = 1, ndofP
+            Df1(i) = Df1(i) - Db1(i,j)*Dup(j)
+            Df2(i) = Df2(i) - Db2(i,j)*Dup(j)
+          end do
+          Du1(i) = Da1(i)*Df1(i)
+          Du2(i) = Da2(i)*Df2(i)
+        end do
 
         ! Incorporate our local solution into the global one.
         do i = 1, ndofV
           j = IdofV(i)
-          p_DvecU(j) = p_DvecU(j) + domega * Du(i)
-          p_DvecV(j) = p_DvecV(j) + domega * Du(ndofV+i)
+          p_DvecU(j) = p_DvecU(j) + domega * Du1(i)
+          p_DvecV(j) = p_DvecV(j) + domega * Du2(i)
         end do
-        o = 2*ndofV
         do i = 1, ndofP
           j = IdofP(i)
-          p_DvecP(j) = p_DvecP(j) + domega * Du(o+i)
+          p_DvecP(j) = p_DvecP(j) + domega * Dup(i)
         end do
-        o = 2*ndofV + ndofP
         do i = 1, ndofT
           j = IdofT(i)
-          p_DvecT(j) = p_DvecT(j) + domega * Du(o+i)
+          p_DvecT(j) = p_DvecT(j) + domega * Dut(i)
         end do
       
       end do ! ielidx
-    end if
+    !end if
 
   end subroutine
 
@@ -1583,34 +1375,37 @@ contains
   integer, dimension(ndofT) :: IdofT
   
   ! Variables for the local system
-  real(DP), dimension(ndof) :: Du, Df
+  real(DP), dimension(ndofV) :: Du1, Du2, Df1, Df2
+  real(DP), dimension(ndofP) :: Dup, Dfp
+  real(DP), dimension(ndofT) :: Dut, Dft
   real(DP), dimension(ndofV,ndofV) :: Da1, Da2
   real(DP), dimension(ndofV,ndofP) :: Db1,Db2
   real(DP), dimension(ndofP,ndofV) :: Dd1, Dd2
   real(DP), dimension(ndofP,ndofP) :: Dc
   real(DP), dimension(ndofV,ndofT) :: Dm1, Dm2
-  real(DP), dimension(ndofP,ndofT) :: Dm3
+  real(DP), dimension(ndofP,ndofT) :: Dk
   real(DP), dimension(ndofT,ndofT) :: Dn
   
   ! Local variables
   real(DP), dimension(ndofV,ndofV) :: Di1,Di2
   real(DP), dimension(ndofT,ndofT) :: Dj
-  real(DP), dimension(ndofV) :: Dg1, Dg2, Dt1, Dt2
-  real(DP) :: Ds
+  real(DP), dimension(ndofP,ndofV) :: Dt1, Dt2
+  real(DP), dimension(ndofP,ndofP) :: Ds, Dsi
   
   ! Multiplication factors
   real(DP), dimension(4,4) :: Dmult
   
   ! Quick access for the matrix arrays
-  integer, dimension(:), pointer :: p_KldA,p_KldB,p_KldC,p_KldM,p_KldM3,p_KldN,&
-      p_KcolA,p_KcolB,p_KcolC,p_KcolM,p_KcolM3,p_KcolN,p_KdiagA,p_KdiagC,p_KdiagN
+  integer, dimension(:), pointer :: p_KldA,p_KldB,p_KldC,p_KldD,p_KldM,&
+      p_KldK,p_KldN,p_KcolA,p_KcolB,p_KcolC,p_KcolD,p_KcolM,p_KcolK,&
+      p_KcolN,p_KdiagA,p_KdiagC,p_KdiagN
   real(DP), dimension(:), pointer :: p_DA11,p_DA22,p_DB1,p_DB2,&
-      p_DD1,p_DD2,p_DC,p_DM1,p_DM2,p_DM3,p_DN
+      p_DD1,p_DD2,p_DC,p_DM1,p_DM2,p_DK,p_DN
   
   ! local variables
-  integer :: i,j,iel,ielidx,i1,i2,k,l,o
-  real(DP) :: daux
-  logical :: bHaveC, bHaveM, bHaveM3
+  integer :: i,j,iel,ielidx,i1,i2,k,l
+  real(DP) :: daux, daux1, daux2
+  logical :: bHaveC, bHaveM, bHaveK
 
     ! Get pointers to the  triangulation information
     call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
@@ -1631,7 +1426,7 @@ contains
     ! Let's assume we do not have the optional matrices
     bHaveC = .false.
     bHaveM = .false.
-    bHaveM3 = .false.
+    bHaveK = .false.
     
     ! Get the pointers from the vanka structure
     p_KldA => rvanka%p_KldA
@@ -1643,6 +1438,8 @@ contains
     p_KcolB => rvanka%p_KcolB
     p_DB1 => rvanka%p_DB1
     p_DB2 => rvanka%p_DB2
+    p_KldD => rvanka%p_KldD
+    p_KcolD => rvanka%p_KcolD
     p_DD1 => rvanka%p_DD1
     p_DD2 => rvanka%p_DD2
     p_KldN => rvanka%p_KldN
@@ -1666,24 +1463,26 @@ contains
       p_DM2 => rvanka%p_DM2
     end if
     
-    if(associated(rvanka%p_DM3)) then
-      bHaveM3 = .true.
-      p_KldM3 => rvanka%p_KldM3
-      p_KcolM3 => rvanka%p_KcolM3
-      p_DM3 => rvanka%p_DM3
+    if(associated(rvanka%p_DK)) then
+      bHaveK = .true.
+      p_KldK => rvanka%p_KldK
+      p_KcolK => rvanka%p_KcolK
+      p_DK => rvanka%p_DK
     end if
     
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
     
     ! Clear the optional matrices
-    Dc = 0.0_DP
+    Dc  = 0.0_DP
     Dm1 = 0.0_DP
     Dm2 = 0.0_DP
-    Dm3 = 0.0_DP
+    Dk  = 0.0_DP
     
-    if((.not. bHaveC) .and. bHaveM .and. (.not. bHaveM3)) then
-      ! Only M1/M2 exist
+    !if((.not. bHaveC) .and. bHaveM .and. (.not. bHaveM3)) then
+    !else if(bHaveC .and. (.not. bHaveM) .and. bHaveM3) then
+    !else if((.not. bHaveC) .and. (.not. bHaveM) .and. bHaveM3) then
+    !else
       ! General case
       do ielidx=1, size(IelementList)
       
@@ -1697,16 +1496,14 @@ contains
 
         ! First of all, fetch the local RHS
         do i = 1, ndofV
-          Df(i)       = p_DrhsU(IdofV(i))   ! f_u
-          Df(ndofV+i) = p_DrhsV(IdofV(i))   ! f_v
+          Df1(i) = p_DrhsU(IdofV(i))   ! f_u
+          Df2(i) = p_DrhsV(IdofV(i))   ! f_v
         end do
-        o = 2*ndofV
         do i = 1, ndofP
-          Df(o+i) = p_DrhsP(IdofP(i))       ! f_p
+          Dfp(i) = p_DrhsP(IdofP(i))   ! f_p
         end do
-        o = 2*ndofV + ndofP
         do i = 1, ndofT
-          Df(o+i) = p_DrhsT(IdofT(i))       ! f_t
+          Dft(i) = p_DrhsT(IdofT(i))   ! f_t
         end do
         
         ! Let's update the local RHS vector by subtracting A*u from it:
@@ -1715,677 +1512,92 @@ contains
         do k = 1, ndofV
           i1 = p_KldA(IdofV(k))
           i2 = p_KldA(IdofV(k)+1)-1
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do i = i1, i2
             j = p_KcolA(i)
-            Df(k)       = Df(k)       - Dmult(1,1)*p_DA11(i)*p_DvecU(j)
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,2)*p_DA22(i)*p_DvecV(j)
+            daux1 = daux1 + p_DA11(i)*p_DvecU(j)
+            daux2 = daux2 + p_DA22(i)*p_DvecV(j)
             do l = 1, ndofV
-              if(j .ne. IdofV(l)) cycle
-              
-              ! Get the local entries of the A1/A2 matrices
-              Da1(k,l) = Dmult(1,1)*p_DA11(i)
-              Da2(k,l) = Dmult(2,2)*p_DA22(i)
+              if(j .eq. IdofV(l)) then
+                Da1(k,l) = Dmult(1,1)*p_DA11(i)
+                Da2(k,l) = Dmult(2,2)*p_DA22(i)
+                exit
+              end if
             end do
           end do
+          Df1(k) = Df1(k) - Dmult(1,1)*daux1
+          Df2(k) = Df2(k) - Dmult(2,2)*daux2
         end do
         
         ! Now we also need to subtract B*p from our RHS, and by the same time,
-        ! we also have to subtract D*u - and we will build the local B/D matrices.
+        ! we will build the local B matrices.
         ! f_u := f_u - B1*p
         ! f_v := f_v - B2*p
-        ! f_p := f_p - D1*u - D2*v
         do k = 1, ndofV
           i1 = p_KldB(IdofV(k))
           i2 = p_KldB(IdofV(k)+1)-1
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do i = i1, i2
             j = p_KcolB(i)
             daux = p_DvecP(j)
-            Df(k)       = Df(k)       - Dmult(1,3)*p_DB1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,3)*p_DB2(i)*daux
+            daux1 = daux1 + p_DB1(i)*daux
+            daux2 = daux2 + p_DB2(i)*daux
             do l = 1, ndofP
-              if(j .ne. IdofP(l)) cycle
-              
-              ! Get the local entries of the B/D matrices
-              Db1(k,l) = Dmult(1,3)*p_DB1(i)
-              Db2(k,l) = Dmult(2,3)*p_DB2(i)
-              Dd1(l,k) = Dmult(3,1)*p_DD1(i)
-              Dd2(l,k) = Dmult(3,2)*p_DD2(i)
-              
-              ! Update f_p
-              Df(2*ndofV+l) = Df(2*ndofV+l) - Dd1(l,k)*p_DvecU(IdofV(k)) &
-                                            - Dd2(l,k)*p_DvecV(IdofV(k))
+              if(j .eq. IdofP(l)) then
+                Db1(k,l) = Dmult(1,3)*p_DB1(i)
+                Db2(k,l) = Dmult(2,3)*p_DB2(i)
+                exit
+              end if
             end do
           end do
+          Df1(k) = Df1(k) - Dmult(1,3)*daux1
+          Df2(k) = Df2(k) - Dmult(2,3)*daux2
         end do
         
-        ! Now subtract M*t from our local RHS
-        ! f_u := f_u - M1*t
-        ! f_v := f_v - M2*t
-        do k = 1, ndofV
-          i1 = p_KldM(IdofV(k))
-          i2 = p_KldM(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolM(i)
-            daux = p_DvecT(j)
-            Df(k)       = Df(k)       - Dmult(1,4)*p_DM1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,4)*p_DM2(i)*daux
-            do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local entries of the M1/M2 matrices
-              Dm1(k,l) = Dmult(1,4)*p_DM1(i)
-              Dm2(k,l) = Dmult(2,4)*p_DM2(i)
-            end do
-          end do
-        end do
-      
-        ! Okay, one task is still left - the N-matrix...
-        ! f_t := f_t - N*t
-        o = 2*ndofV+ndofP
-        do k = 1, ndofT
-          i1 = p_KldN(IdofT(k))
-          i2 = p_KldN(IdofT(k)+1)-1
-          do i = i1, i2
-            j = p_KcolN(i)
-            Df(o+k) = Df(o+k) - Dmult(4,4)*p_DN(i)*p_DvecT(j)
-            do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local entries of the N matrix
-              Dn(k,l) = Dmult(4,4)*p_DN(i)
-            end do
-          end do
-        end do
-
-        ! Invert A1, A2 and N
-        call mprim_invert4x4MatrixDirectDble(Da1, Di1)
-        call mprim_invert4x4MatrixDirectDble(Da2, Di2)
-        call mprim_invert4x4MatrixDirectDble(Dn, Dj)
-
-        ! Calculate temperature
-        ! t := N^-1 * f_t
-        Du(10) = Dj(1,1)*Df(10)+Dj(1,2)*Df(11)+Dj(1,3)*Df(12)+Dj(1,4)*Df(13)
-        Du(11) = Dj(2,1)*Df(10)+Dj(2,2)*Df(11)+Dj(2,3)*Df(12)+Dj(2,4)*Df(13)
-        Du(12) = Dj(3,1)*Df(10)+Dj(3,2)*Df(11)+Dj(3,3)*Df(12)+Dj(3,4)*Df(13)
-        Du(13) = Dj(4,1)*Df(10)+Dj(4,2)*Df(11)+Dj(4,3)*Df(12)+Dj(4,4)*Df(13)
-        
-        ! Calculate new RHS
-        ! g_u := f_u - M*t
-        Dg1(1) = Df(1)-Dm1(1,1)*Du(10)-Dm1(1,2)*Du(11)-Dm1(1,3)*Du(12)-Dm1(1,4)*Du(13)
-        Dg1(2) = Df(2)-Dm1(2,1)*Du(10)-Dm1(2,2)*Du(11)-Dm1(2,3)*Du(12)-Dm1(2,4)*Du(13)
-        Dg1(3) = Df(3)-Dm1(3,1)*Du(10)-Dm1(3,2)*Du(11)-Dm1(3,3)*Du(12)-Dm1(3,4)*Du(13)
-        Dg1(4) = Df(4)-Dm1(4,1)*Du(10)-Dm1(4,2)*Du(11)-Dm1(4,3)*Du(12)-Dm1(4,4)*Du(13)
-        Dg2(1) = Df(5)-Dm2(1,1)*Du(10)-Dm2(1,2)*Du(11)-Dm2(1,3)*Du(12)-Dm2(1,4)*Du(13)
-        Dg2(2) = Df(6)-Dm2(2,1)*Du(10)-Dm2(2,2)*Du(11)-Dm2(2,3)*Du(12)-Dm2(2,4)*Du(13)
-        Dg2(3) = Df(7)-Dm2(3,1)*Du(10)-Dm2(3,2)*Du(11)-Dm2(3,3)*Du(12)-Dm2(3,4)*Du(13)
-        Dg2(4) = Df(8)-Dm2(4,1)*Du(10)-Dm2(4,2)*Du(11)-Dm2(4,3)*Du(12)-Dm2(4,4)*Du(13)
-        
-        ! Precalculate D * A^-1
-        Dt1(1) = Dd1(1,1)*Di1(1,1)+Dd1(1,2)*Di1(2,1)+Dd1(1,3)*Di1(3,1)+Dd1(1,4)*Di1(4,1)
-        Dt1(2) = Dd1(1,1)*Di1(1,2)+Dd1(1,2)*Di1(2,2)+Dd1(1,3)*Di1(3,2)+Dd1(1,4)*Di1(4,2)
-        Dt1(3) = Dd1(1,1)*Di1(1,3)+Dd1(1,2)*Di1(2,3)+Dd1(1,3)*Di1(3,3)+Dd1(1,4)*Di1(4,3)
-        Dt1(4) = Dd1(1,1)*Di1(1,4)+Dd1(1,2)*Di1(2,4)+Dd1(1,3)*Di1(3,4)+Dd1(1,4)*Di1(4,4)
-        Dt2(1) = Dd2(1,1)*Di2(1,1)+Dd2(1,2)*Di2(2,1)+Dd2(1,3)*Di2(3,1)+Dd2(1,4)*Di2(4,1)
-        Dt2(2) = Dd2(1,1)*Di2(1,2)+Dd2(1,2)*Di2(2,2)+Dd2(1,3)*Di2(3,2)+Dd2(1,4)*Di2(4,2)
-        Dt2(3) = Dd2(1,1)*Di2(1,3)+Dd2(1,2)*Di2(2,3)+Dd2(1,3)*Di2(3,3)+Dd2(1,4)*Di2(4,3)
-        Dt2(4) = Dd2(1,1)*Di2(1,4)+Dd2(1,2)*Di2(2,4)+Dd2(1,3)*Di2(3,4)+Dd2(1,4)*Di2(4,4)
-        
-        ! Calculate Schur-Complement of A
-        ! S := D * A^-1 * B 
-        dS = Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1)&
-           + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
-        
-        ! Calculate pressure
-        ! p := D * A^-1 * g_u - f_p
-        Du(9) = (-Df(9) &
-              + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
-              + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4)) / dS
-
-        ! Update RHS
-        ! g_u := g_u - B * p
-        Dg1(1) = Dg1(1) - Db1(1,1)*Du(9)
-        Dg1(2) = Dg1(2) - Db1(2,1)*Du(9)
-        Dg1(3) = Dg1(3) - Db1(3,1)*Du(9)
-        Dg1(4) = Dg1(4) - Db1(4,1)*Du(9)
-        Dg2(1) = Dg2(1) - Db2(1,1)*Du(9)
-        Dg2(2) = Dg2(2) - Db2(2,1)*Du(9)
-        Dg2(3) = Dg2(3) - Db2(3,1)*Du(9)
-        Dg2(4) = Dg2(4) - Db2(4,1)*Du(9)
-        
-        ! Calculate X- and Y-velocity
-        ! u := A^-1 * g_u
-        Du(1) = Di1(1,1)*Dg1(1)+Di1(1,2)*Dg1(2)+Di1(1,3)*Dg1(3)+Di1(1,4)*Dg1(4)
-        Du(2) = Di1(2,1)*Dg1(1)+Di1(2,2)*Dg1(2)+Di1(2,3)*Dg1(3)+Di1(2,4)*Dg1(4)
-        Du(3) = Di1(3,1)*Dg1(1)+Di1(3,2)*Dg1(2)+Di1(3,3)*Dg1(3)+Di1(3,4)*Dg1(4)
-        Du(4) = Di1(4,1)*Dg1(1)+Di1(4,2)*Dg1(2)+Di1(4,3)*Dg1(3)+Di1(4,4)*Dg1(4)
-        Du(5) = Di2(1,1)*Dg2(1)+Di2(1,2)*Dg2(2)+Di2(1,3)*Dg2(3)+Di2(1,4)*Dg2(4)
-        Du(6) = Di2(2,1)*Dg2(1)+Di2(2,2)*Dg2(2)+Di2(2,3)*Dg2(3)+Di2(2,4)*Dg2(4)
-        Du(7) = Di2(3,1)*Dg2(1)+Di2(3,2)*Dg2(2)+Di2(3,3)*Dg2(3)+Di2(3,4)*Dg2(4)
-        Du(8) = Di2(4,1)*Dg2(1)+Di2(4,2)*Dg2(2)+Di2(4,3)*Dg2(3)+Di2(4,4)*Dg2(4)
-        
-        ! Incorporate our local solution into the global one.
-        do i = 1, ndofV
-          j = IdofV(i)
-          p_DvecU(j) = p_DvecU(j) + domega * Du(i)
-          p_DvecV(j) = p_DvecV(j) + domega * Du(ndofV+i)
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          j = IdofP(i)
-          p_DvecP(j) = p_DvecP(j) + domega * Du(o+i)
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          j = IdofT(i)
-          p_DvecT(j) = p_DvecT(j) + domega * Du(o+i)
-        end do
-      
-      end do ! ielidx
-      
-    else if(bHaveC .and. (.not. bHaveM) .and. bHaveM3) then
-      ! C and M3 exist
-      do ielidx=1, size(IelementList)
-      
-        ! Get the element number which is to be processed.
-        iel = IelementList(ielidx)
-        
-        ! Get all DOFs for this element
-        IdofV(:) = p_IedgesAtElement(:,iel)
-        IdofP(1) = iel
-        IdofT(:) = p_IverticesAtElement(:,iel)
-
-        ! First of all, fetch the local RHS
-        do i = 1, ndofV
-          Df(i)       = p_DrhsU(IdofV(i))   ! f_u
-          Df(ndofV+i) = p_DrhsV(IdofV(i))   ! f_v
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          Df(o+i) = p_DrhsP(IdofP(i))       ! f_p
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          Df(o+i) = p_DrhsT(IdofT(i))       ! f_t
-        end do
-        
-        ! Let's update the local RHS vector by subtracting A*u from it:
-        ! f_u := f_u - A11*u
-        ! f_v := f_v - A22*v
-        do k = 1, ndofV
-          i1 = p_KldA(IdofV(k))
-          i2 = p_KldA(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolA(i)
-            Df(k)       = Df(k)       - Dmult(1,1)*p_DA11(i)*p_DvecU(j)
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,2)*p_DA22(i)*p_DvecV(j)
-            do l = 1, ndofV
-              if(j .ne. IdofV(l)) cycle
-              
-              ! Get the local entries of the A1/A2 matrices
-              Da1(k,l) = Dmult(1,1)*p_DA11(i)
-              Da2(k,l) = Dmult(2,2)*p_DA22(i)
-            end do
-          end do
-        end do
-        
-        ! Now we also need to subtract B*p from our RHS, and by the same time,
-        ! we also have to subtract D*u - and we will build the local B/D matrices.
-        ! f_u := f_u - B1*p
-        ! f_v := f_v - B2*p
+        ! Now we also need to subtract D*u from our RHS, and by the same time,
+        ! we will build the local D matrices.
         ! f_p := f_p - D1*u - D2*v
-        do k = 1, ndofV
-          i1 = p_KldB(IdofV(k))
-          i2 = p_KldB(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolB(i)
-            daux = p_DvecP(j)
-            Df(k)       = Df(k)       - Dmult(1,3)*p_DB1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,3)*p_DB2(i)*daux
-            do l = 1, ndofP
-              if(j .ne. IdofP(l)) cycle
-              
-              ! Get the local entries of the B/D matrices
-              Db1(k,l) = Dmult(1,3)*p_DB1(i)
-              Db2(k,l) = Dmult(2,3)*p_DB2(i)
-              Dd1(l,k) = Dmult(3,1)*p_DD1(i)
-              Dd2(l,k) = Dmult(3,2)*p_DD2(i)
-              
-              ! Update f_p
-              Df(2*ndofV+l) = Df(2*ndofV+l) - Dd1(l,k)*p_DvecU(IdofV(k)) &
-                                            - Dd2(l,k)*p_DvecV(IdofV(k))
-            end do
-          end do
-        end do
-        
-        ! f_p := f_p - C*p
-        o = 2*ndofV
         do k = 1, ndofP
-          i1 = p_KldC(IdofP(k))
-          i2 = p_KldC(IdofP(k)+1)-1
+          i1 = p_KldD(IdofP(k))
+          i2 = p_KldD(IdofP(k)+1)-1
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do i = i1, i2
-            j = p_KcolC(i)
-            Df(o+k) = Df(o+k) - Dmult(3,3)*p_DC(i)*p_DvecP(j)
-            do l = 1, ndofP
-              if(j .ne. IdofP(l)) cycle
-              
-              ! Get the local entries of the C matrix
-              Dc(k,l) = Dmult(3,3)*p_DC(i)
-            end do
-          end do
-        end do
-        
-        ! f_p := f_p - M3*t
-        o = 2*ndofV
-        do k = 1, ndofP
-          i1 = p_KldM3(IdofP(k))
-          i2 = p_KldM3(IdofP(k)+1)-1
-          do i = i1, i2
-            j = p_KcolM3(i)
-            Df(o+k) = Df(o+k) - Dmult(3,4)*p_DM3(i)*p_DvecT(j)
-            do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local M3 entry
-              Dm3(k,l) = Dmult(3,4)*p_DM3(i)
-            end do
-          end do
-        end do
-        
-        ! Okay, one task is still left - the N-matrix...
-        ! f_t := f_t - N*t
-        o = 2*ndofV+ndofP
-        do k = 1, ndofT
-          i1 = p_KldN(IdofT(k))
-          i2 = p_KldN(IdofT(k)+1)-1
-          do i = i1, i2
-            j = p_KcolN(i)
-            Df(o+k) = Df(o+k) - Dmult(4,4)*p_DN(i)*p_DvecT(j)
-            do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local entries of the N matrix
-              Dn(k,l) = Dmult(4,4)*p_DN(i)
-            end do
-          end do
-        end do
-
-        ! Invert A1, A2 and N
-        call mprim_invert4x4MatrixDirectDble(Da1, Di1)
-        call mprim_invert4x4MatrixDirectDble(Da2, Di2)
-        call mprim_invert4x4MatrixDirectDble(Dn, Dj)
-
-        ! Calculate temperature
-        ! t := N^-1 * f_t
-        Du(10) = Dj(1,1)*Df(10)+Dj(1,2)*Df(11)+Dj(1,3)*Df(12)+Dj(1,4)*Df(13)
-        Du(11) = Dj(2,1)*Df(10)+Dj(2,2)*Df(11)+Dj(2,3)*Df(12)+Dj(2,4)*Df(13)
-        Du(12) = Dj(3,1)*Df(10)+Dj(3,2)*Df(11)+Dj(3,3)*Df(12)+Dj(3,4)*Df(13)
-        Du(13) = Dj(4,1)*Df(10)+Dj(4,2)*Df(11)+Dj(4,3)*Df(12)+Dj(4,4)*Df(13)
-        
-        ! Calculate new RHS
-        ! g_u := f_u
-        Dg1(1) = Df(1)
-        Dg1(2) = Df(2)
-        Dg1(3) = Df(3)
-        Dg1(4) = Df(4)
-        Dg2(1) = Df(5)
-        Dg2(2) = Df(6)
-        Dg2(3) = Df(7)
-        Dg2(4) = Df(8)
-        
-        ! Precalculate D * A^-1
-        Dt1(1) = Dd1(1,1)*Di1(1,1)+Dd1(1,2)*Di1(2,1)+Dd1(1,3)*Di1(3,1)+Dd1(1,4)*Di1(4,1)
-        Dt1(2) = Dd1(1,1)*Di1(1,2)+Dd1(1,2)*Di1(2,2)+Dd1(1,3)*Di1(3,2)+Dd1(1,4)*Di1(4,2)
-        Dt1(3) = Dd1(1,1)*Di1(1,3)+Dd1(1,2)*Di1(2,3)+Dd1(1,3)*Di1(3,3)+Dd1(1,4)*Di1(4,3)
-        Dt1(4) = Dd1(1,1)*Di1(1,4)+Dd1(1,2)*Di1(2,4)+Dd1(1,3)*Di1(3,4)+Dd1(1,4)*Di1(4,4)
-        Dt2(1) = Dd2(1,1)*Di2(1,1)+Dd2(1,2)*Di2(2,1)+Dd2(1,3)*Di2(3,1)+Dd2(1,4)*Di2(4,1)
-        Dt2(2) = Dd2(1,1)*Di2(1,2)+Dd2(1,2)*Di2(2,2)+Dd2(1,3)*Di2(3,2)+Dd2(1,4)*Di2(4,2)
-        Dt2(3) = Dd2(1,1)*Di2(1,3)+Dd2(1,2)*Di2(2,3)+Dd2(1,3)*Di2(3,3)+Dd2(1,4)*Di2(4,3)
-        Dt2(4) = Dd2(1,1)*Di2(1,4)+Dd2(1,2)*Di2(2,4)+Dd2(1,3)*Di2(3,4)+Dd2(1,4)*Di2(4,4)
-        
-        ! Calculate Schur-Complement of A
-        ! S := -C + D * A^-1 * B 
-        dS = -Dc(1,1)+Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1)&
-                     +Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
-        
-        ! Calculate pressure
-        ! p := D * A^-1 * g_u + M3 * t - f_p
-        Du(9) = (-Df(9) &
-              + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
-              + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4) &
-              + Dm3(1,1)*Du(10) + Dm3(1,2)*Du(11) &
-              + Dm3(1,3)*Du(12) + Dm3(1,4)*Du(13)) / dS
-
-        ! Update RHS
-        ! g_u := g_u - B * p
-        Dg1(1) = Dg1(1) - Db1(1,1)*Du(9)
-        Dg1(2) = Dg1(2) - Db1(2,1)*Du(9)
-        Dg1(3) = Dg1(3) - Db1(3,1)*Du(9)
-        Dg1(4) = Dg1(4) - Db1(4,1)*Du(9)
-        Dg2(1) = Dg2(1) - Db2(1,1)*Du(9)
-        Dg2(2) = Dg2(2) - Db2(2,1)*Du(9)
-        Dg2(3) = Dg2(3) - Db2(3,1)*Du(9)
-        Dg2(4) = Dg2(4) - Db2(4,1)*Du(9)
-        
-        ! Calculate X- and Y-velocity
-        ! u := A^-1 * g_u
-        Du(1) = Di1(1,1)*Dg1(1)+Di1(1,2)*Dg1(2)+Di1(1,3)*Dg1(3)+Di1(1,4)*Dg1(4)
-        Du(2) = Di1(2,1)*Dg1(1)+Di1(2,2)*Dg1(2)+Di1(2,3)*Dg1(3)+Di1(2,4)*Dg1(4)
-        Du(3) = Di1(3,1)*Dg1(1)+Di1(3,2)*Dg1(2)+Di1(3,3)*Dg1(3)+Di1(3,4)*Dg1(4)
-        Du(4) = Di1(4,1)*Dg1(1)+Di1(4,2)*Dg1(2)+Di1(4,3)*Dg1(3)+Di1(4,4)*Dg1(4)
-        Du(5) = Di2(1,1)*Dg2(1)+Di2(1,2)*Dg2(2)+Di2(1,3)*Dg2(3)+Di2(1,4)*Dg2(4)
-        Du(6) = Di2(2,1)*Dg2(1)+Di2(2,2)*Dg2(2)+Di2(2,3)*Dg2(3)+Di2(2,4)*Dg2(4)
-        Du(7) = Di2(3,1)*Dg2(1)+Di2(3,2)*Dg2(2)+Di2(3,3)*Dg2(3)+Di2(3,4)*Dg2(4)
-        Du(8) = Di2(4,1)*Dg2(1)+Di2(4,2)*Dg2(2)+Di2(4,3)*Dg2(3)+Di2(4,4)*Dg2(4)
-        
-        ! Incorporate our local solution into the global one.
-        do i = 1, ndofV
-          j = IdofV(i)
-          p_DvecU(j) = p_DvecU(j) + domega * Du(i)
-          p_DvecV(j) = p_DvecV(j) + domega * Du(ndofV+i)
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          j = IdofP(i)
-          p_DvecP(j) = p_DvecP(j) + domega * Du(o+i)
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          j = IdofT(i)
-          p_DvecT(j) = p_DvecT(j) + domega * Du(o+i)
-        end do
-      
-      end do ! ielidx
-      
-    else if((.not. bHaveC) .and. (.not. bHaveM) .and. bHaveM3) then
-      ! Only M3 exists
-      do ielidx=1, size(IelementList)
-      
-        ! Get the element number which is to be processed.
-        iel = IelementList(ielidx)
-        
-        ! Get all DOFs for this element
-        IdofV(:) = p_IedgesAtElement(:,iel)
-        IdofP(1) = iel
-        IdofT(:) = p_IverticesAtElement(:,iel)
-
-        ! First of all, fetch the local RHS
-        do i = 1, ndofV
-          Df(i)       = p_DrhsU(IdofV(i))   ! f_u
-          Df(ndofV+i) = p_DrhsV(IdofV(i))   ! f_v
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          Df(o+i) = p_DrhsP(IdofP(i))       ! f_p
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          Df(o+i) = p_DrhsT(IdofT(i))       ! f_t
-        end do
-        
-        ! Let's update the local RHS vector by subtracting A*u from it:
-        ! f_u := f_u - A11*u
-        ! f_v := f_v - A22*v
-        do k = 1, ndofV
-          i1 = p_KldA(IdofV(k))
-          i2 = p_KldA(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolA(i)
-            Df(k)       = Df(k)       - Dmult(1,1)*p_DA11(i)*p_DvecU(j)
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,2)*p_DA22(i)*p_DvecV(j)
+            j = p_KcolD(i)
+            daux1 = daux1 + p_DD1(i)*p_DvecU(j)
+            daux2 = daux2 + p_DD2(i)*p_DvecV(j)
             do l = 1, ndofV
-              if(j .ne. IdofV(l)) cycle
-              
-              ! Get the local entries of the A1/A2 matrices
-              Da1(k,l) = Dmult(1,1)*p_DA11(i)
-              Da2(k,l) = Dmult(2,2)*p_DA22(i)
+              if(j .eq. IdofV(l)) then
+                Dd1(k,l) = Dmult(3,1)*p_DD1(i)
+                Dd2(k,l) = Dmult(3,2)*p_DD2(i)
+                exit
+              end if
             end do
           end do
-        end do
-        
-        ! Now we also need to subtract B*p from our RHS, and by the same time,
-        ! we also have to subtract D*u - and we will build the local B/D matrices.
-        ! f_u := f_u - B1*p
-        ! f_v := f_v - B2*p
-        ! f_p := f_p - D1*u - D2*v
-        do k = 1, ndofV
-          i1 = p_KldB(IdofV(k))
-          i2 = p_KldB(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolB(i)
-            daux = p_DvecP(j)
-            Df(k)       = Df(k)       - Dmult(1,3)*p_DB1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,3)*p_DB2(i)*daux
-            do l = 1, ndofP
-              if(j .ne. IdofP(l)) cycle
-              
-              ! Get the local entries of the B/D matrices
-              Db1(k,l) = Dmult(1,3)*p_DB1(i)
-              Db2(k,l) = Dmult(2,3)*p_DB2(i)
-              Dd1(l,k) = Dmult(3,1)*p_DD1(i)
-              Dd2(l,k) = Dmult(3,2)*p_DD2(i)
-              
-              ! Update f_p
-              Df(2*ndofV+l) = Df(2*ndofV+l) - Dd1(l,k)*p_DvecU(IdofV(k)) &
-                                            - Dd2(l,k)*p_DvecV(IdofV(k))
-            end do
-          end do
-        end do
-        
-        ! f_p := f_p - M3*t
-        o = 2*ndofV
-        do k = 1, ndofP
-          i1 = p_KldM3(IdofP(k))
-          i2 = p_KldM3(IdofP(k)+1)-1
-          do i = i1, i2
-            j = p_KcolM3(i)
-            Df(o+k) = Df(o+k) - Dmult(3,4)*p_DM3(i)*p_DvecT(j)
-            do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local M3 entry
-              Dm3(k,l) = Dmult(3,4)*p_DM3(i)
-            end do
-          end do
-        end do
-        
-        ! Okay, one task is still left - the N-matrix...
-        ! f_t := f_t - N*t
-        o = 2*ndofV+ndofP
-        do k = 1, ndofT
-          i1 = p_KldN(IdofT(k))
-          i2 = p_KldN(IdofT(k)+1)-1
-          do i = i1, i2
-            j = p_KcolN(i)
-            Df(o+k) = Df(o+k) - Dmult(4,4)*p_DN(i)*p_DvecT(j)
-            do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local entries of the N matrix
-              Dn(k,l) = Dmult(4,4)*p_DN(i)
-            end do
-          end do
-        end do
-
-        ! Invert A1, A2 and N
-        call mprim_invert4x4MatrixDirectDble(Da1, Di1)
-        call mprim_invert4x4MatrixDirectDble(Da2, Di2)
-        call mprim_invert4x4MatrixDirectDble(Dn, Dj)
-
-        ! Calculate temperature
-        ! t := N^-1 * f_t
-        Du(10) = Dj(1,1)*Df(10)+Dj(1,2)*Df(11)+Dj(1,3)*Df(12)+Dj(1,4)*Df(13)
-        Du(11) = Dj(2,1)*Df(10)+Dj(2,2)*Df(11)+Dj(2,3)*Df(12)+Dj(2,4)*Df(13)
-        Du(12) = Dj(3,1)*Df(10)+Dj(3,2)*Df(11)+Dj(3,3)*Df(12)+Dj(3,4)*Df(13)
-        Du(13) = Dj(4,1)*Df(10)+Dj(4,2)*Df(11)+Dj(4,3)*Df(12)+Dj(4,4)*Df(13)
-        
-        ! Calculate new RHS
-        ! g_u := f_u
-        Dg1(1) = Df(1)
-        Dg1(2) = Df(2)
-        Dg1(3) = Df(3)
-        Dg1(4) = Df(4)
-        Dg2(1) = Df(5)
-        Dg2(2) = Df(6)
-        Dg2(3) = Df(7)
-        Dg2(4) = Df(8)
-        
-        ! Precalculate D * A^-1
-        Dt1(1) = Dd1(1,1)*Di1(1,1)+Dd1(1,2)*Di1(2,1)+Dd1(1,3)*Di1(3,1)+Dd1(1,4)*Di1(4,1)
-        Dt1(2) = Dd1(1,1)*Di1(1,2)+Dd1(1,2)*Di1(2,2)+Dd1(1,3)*Di1(3,2)+Dd1(1,4)*Di1(4,2)
-        Dt1(3) = Dd1(1,1)*Di1(1,3)+Dd1(1,2)*Di1(2,3)+Dd1(1,3)*Di1(3,3)+Dd1(1,4)*Di1(4,3)
-        Dt1(4) = Dd1(1,1)*Di1(1,4)+Dd1(1,2)*Di1(2,4)+Dd1(1,3)*Di1(3,4)+Dd1(1,4)*Di1(4,4)
-        Dt2(1) = Dd2(1,1)*Di2(1,1)+Dd2(1,2)*Di2(2,1)+Dd2(1,3)*Di2(3,1)+Dd2(1,4)*Di2(4,1)
-        Dt2(2) = Dd2(1,1)*Di2(1,2)+Dd2(1,2)*Di2(2,2)+Dd2(1,3)*Di2(3,2)+Dd2(1,4)*Di2(4,2)
-        Dt2(3) = Dd2(1,1)*Di2(1,3)+Dd2(1,2)*Di2(2,3)+Dd2(1,3)*Di2(3,3)+Dd2(1,4)*Di2(4,3)
-        Dt2(4) = Dd2(1,1)*Di2(1,4)+Dd2(1,2)*Di2(2,4)+Dd2(1,3)*Di2(3,4)+Dd2(1,4)*Di2(4,4)
-        
-        ! Calculate Schur-Complement of A
-        ! S := D * A^-1 * B 
-        dS = Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1)&
-           + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
-        
-        ! Calculate pressure
-        ! p := D * A^-1 * g_u + M3 * t - f_p
-        Du(9) = (-Df(9) &
-              + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
-              + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4) &
-              + Dm3(1,1)*Du(10) + Dm3(1,2)*Du(11) &
-              + Dm3(1,3)*Du(12) + Dm3(1,4)*Du(13)) / dS
-
-        ! Update RHS
-        ! g_u := g_u - B * p
-        Dg1(1) = Dg1(1) - Db1(1,1)*Du(9)
-        Dg1(2) = Dg1(2) - Db1(2,1)*Du(9)
-        Dg1(3) = Dg1(3) - Db1(3,1)*Du(9)
-        Dg1(4) = Dg1(4) - Db1(4,1)*Du(9)
-        Dg2(1) = Dg2(1) - Db2(1,1)*Du(9)
-        Dg2(2) = Dg2(2) - Db2(2,1)*Du(9)
-        Dg2(3) = Dg2(3) - Db2(3,1)*Du(9)
-        Dg2(4) = Dg2(4) - Db2(4,1)*Du(9)
-        
-        ! Calculate X- and Y-velocity
-        ! u := A^-1 * g_u
-        Du(1) = Di1(1,1)*Dg1(1)+Di1(1,2)*Dg1(2)+Di1(1,3)*Dg1(3)+Di1(1,4)*Dg1(4)
-        Du(2) = Di1(2,1)*Dg1(1)+Di1(2,2)*Dg1(2)+Di1(2,3)*Dg1(3)+Di1(2,4)*Dg1(4)
-        Du(3) = Di1(3,1)*Dg1(1)+Di1(3,2)*Dg1(2)+Di1(3,3)*Dg1(3)+Di1(3,4)*Dg1(4)
-        Du(4) = Di1(4,1)*Dg1(1)+Di1(4,2)*Dg1(2)+Di1(4,3)*Dg1(3)+Di1(4,4)*Dg1(4)
-        Du(5) = Di2(1,1)*Dg2(1)+Di2(1,2)*Dg2(2)+Di2(1,3)*Dg2(3)+Di2(1,4)*Dg2(4)
-        Du(6) = Di2(2,1)*Dg2(1)+Di2(2,2)*Dg2(2)+Di2(2,3)*Dg2(3)+Di2(2,4)*Dg2(4)
-        Du(7) = Di2(3,1)*Dg2(1)+Di2(3,2)*Dg2(2)+Di2(3,3)*Dg2(3)+Di2(3,4)*Dg2(4)
-        Du(8) = Di2(4,1)*Dg2(1)+Di2(4,2)*Dg2(2)+Di2(4,3)*Dg2(3)+Di2(4,4)*Dg2(4)
-        
-        ! Incorporate our local solution into the global one.
-        do i = 1, ndofV
-          j = IdofV(i)
-          p_DvecU(j) = p_DvecU(j) + domega * Du(i)
-          p_DvecV(j) = p_DvecV(j) + domega * Du(ndofV+i)
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          j = IdofP(i)
-          p_DvecP(j) = p_DvecP(j) + domega * Du(o+i)
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          j = IdofT(i)
-          p_DvecT(j) = p_DvecT(j) + domega * Du(o+i)
-        end do
-      
-      end do ! ielidx
-
-    else
-      ! General case
-      do ielidx=1, size(IelementList)
-      
-        ! Get the element number which is to be processed.
-        iel = IelementList(ielidx)
-        
-        ! Get all DOFs for this element
-        IdofV(:) = p_IedgesAtElement(:,iel)
-        IdofP(1) = iel
-        IdofT(:) = p_IverticesAtElement(:,iel)
-
-        ! First of all, fetch the local RHS
-        do i = 1, ndofV
-          Df(i)       = p_DrhsU(IdofV(i))   ! f_u
-          Df(ndofV+i) = p_DrhsV(IdofV(i))   ! f_v
-        end do
-        o = 2*ndofV
-        do i = 1, ndofP
-          Df(o+i) = p_DrhsP(IdofP(i))       ! f_p
-        end do
-        o = 2*ndofV + ndofP
-        do i = 1, ndofT
-          Df(o+i) = p_DrhsT(IdofT(i))       ! f_t
-        end do
-        
-        ! Let's update the local RHS vector by subtracting A*u from it:
-        ! f_u := f_u - A11*u
-        ! f_v := f_v - A22*v
-        do k = 1, ndofV
-          i1 = p_KldA(IdofV(k))
-          i2 = p_KldA(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolA(i)
-            Df(k)       = Df(k)       - Dmult(1,1)*p_DA11(i)*p_DvecU(j)
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,2)*p_DA22(i)*p_DvecV(j)
-            do l = 1, ndofV
-              if(j .ne. IdofV(l)) cycle
-              
-              ! Get the local entries of the A1/A2 matrices
-              Da1(k,l) = Dmult(1,1)*p_DA11(i)
-              Da2(k,l) = Dmult(2,2)*p_DA22(i)
-            end do
-          end do
-        end do
-        
-        ! Now we also need to subtract B*p from our RHS, and by the same time,
-        ! we also have to subtract D*u - and we will build the local B/D matrices.
-        ! f_u := f_u - B1*p
-        ! f_v := f_v - B2*p
-        ! f_p := f_p - D1*u - D2*v
-        do k = 1, ndofV
-          i1 = p_KldB(IdofV(k))
-          i2 = p_KldB(IdofV(k)+1)-1
-          do i = i1, i2
-            j = p_KcolB(i)
-            daux = p_DvecP(j)
-            Df(k)       = Df(k)       - Dmult(1,3)*p_DB1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,3)*p_DB2(i)*daux
-            do l = 1, ndofP
-              if(j .ne. IdofP(l)) cycle
-              
-              ! Get the local entries of the B/D matrices
-              Db1(k,l) = Dmult(1,3)*p_DB1(i)
-              Db2(k,l) = Dmult(2,3)*p_DB2(i)
-              Dd1(l,k) = Dmult(3,1)*p_DD1(i)
-              Dd2(l,k) = Dmult(3,2)*p_DD2(i)
-              
-              ! Update f_p
-              Df(2*ndofV+l) = Df(2*ndofV+l) - Dd1(l,k)*p_DvecU(IdofV(k)) &
-                                            - Dd2(l,k)*p_DvecV(IdofV(k))
-            end do
-          end do
+          Dfp(k) = Dfp(k) - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
         end do
         
         ! Do we have a C-matrix?
         if(bHaveC) then
           ! Yes, so update the local RHS
           ! f_p := f_p - C*p
-          o = 2*ndofV
           do k = 1, ndofP
             i1 = p_KldC(IdofP(k))
             i2 = p_KldC(IdofP(k)+1)-1
+            daux1 = 0.0_DP
             do i = i1, i2
               j = p_KcolC(i)
-              Df(o+k) = Df(o+k) - Dmult(3,3)*p_DC(i)*p_DvecP(j)
+              daux1 = daux1 + p_DC(i)*p_DvecP(j)
               do l = 1, ndofP
-                if(j .ne. IdofP(l)) cycle
-                
-                ! Get the local entries of the C matrix
-                Dc(k,l) = Dmult(3,3)*p_DC(i)
+                if(j .eq. IdofP(l)) then
+                  Dc(k,l) = Dmult(3,3)*p_DC(i)
+                  exit
+                end if
               end do
             end do
+            Dfp(k) = Dfp(k) - Dmult(3,3)*daux1
           end do
         end if
         
@@ -2396,59 +1608,65 @@ contains
           do k = 1, ndofV
             i1 = p_KldM(IdofV(k))
             i2 = p_KldM(IdofV(k)+1)-1
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
             do i = i1, i2
               j = p_KcolM(i)
               daux = p_DvecT(j)
-              Df(k)       = Df(k)       - Dmult(1,4)*p_DM1(i)*daux
-              Df(ndofV+k) = Df(ndofV+k) - Dmult(2,4)*p_DM2(i)*daux
+              daux1 = daux1 + p_DM1(i)*daux
+              daux2 = daux2 + p_DM2(i)*daux
               do l = 1, ndofT
-                if(j .ne. IdofT(l)) cycle
-                
-                ! Get the local entries of the M1/M2 matrices
-                Dm1(k,l) = Dmult(1,4)*p_DM1(i)
-                Dm2(k,l) = Dmult(2,4)*p_DM2(i)
+                if(j .eq. IdofT(l)) then
+                  Dm1(k,l) = Dmult(1,4)*p_DM1(i)
+                  Dm2(k,l) = Dmult(2,4)*p_DM2(i)
+                  exit
+                end if
               end do
             end do
+            Df1(k) = Df1(k) - Dmult(1,4)*daux1
+            Df2(k) = Df2(k) - Dmult(2,4)*daux2
           end do
         end if
         
-        ! What about M3? Does it exist?
-        if(bHaveM3) then
+        ! What about K? Does it exist?
+        if(bHaveK) then
           ! Yes, so update the local RHS
-          ! f_p := f_p - M3*t
-          o = 2*ndofV
+          ! f_p := f_p - K*t
           do k = 1, ndofP
-            i1 = p_KldM3(IdofP(k))
-            i2 = p_KldM3(IdofP(k)+1)-1
+            i1 = p_KldK(IdofP(k))
+            i2 = p_KldK(IdofP(k)+1)-1
+            daux1 = 0.0_DP
             do i = i1, i2
-              j = p_KcolM3(i)
-              Df(o+k) = Df(o+k) - Dmult(3,4)*p_DM3(i)*p_DvecT(j)
+              j = p_KcolK(i)
+              daux1 = daux1 + p_DK(i)*p_DvecT(j)
               do l = 1, ndofT
-                if(j .ne. IdofT(l)) cycle
-                
-                ! Get the local M3 entry
-                Dm3(k,l) = Dmult(3,4)*p_DM3(i)
+                if(j .eq. IdofT(l)) then
+                  Dk(k,l) = Dmult(3,4)*p_DK(i)
+                  exit
+                end if
               end do
             end do
+            Dfp(k) = Dfp(k) - Dmult(3,4)*daux1
           end do
         end if
         
         ! Okay, one task is still left - the N-matrix...
         ! f_t := f_t - N*t
-        o = 2*ndofV+ndofP
         do k = 1, ndofT
           i1 = p_KldN(IdofT(k))
           i2 = p_KldN(IdofT(k)+1)-1
+          daux1 = 0.0_DP
           do i = i1, i2
             j = p_KcolN(i)
-            Df(o+k) = Df(o+k) - Dmult(4,4)*p_DN(i)*p_DvecT(j)
+            daux1 = daux1 + p_DN(i)*p_DvecT(j)
             do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local entries of the N matrix
-              Dn(k,l) = Dmult(4,4)*p_DN(i)
+              if(j .eq. IdofT(l)) then
+                Dn(k,l) = Dmult(4,4)*p_DN(i)
+                exit
+              end if
             end do
           end do
+          Dft(k) = Dft(k) - Dmult(4,4)*daux1
         end do
 
         ! Invert A1, A2 and N
@@ -2458,86 +1676,109 @@ contains
 
         ! Calculate temperature
         ! t := N^-1 * f_t
-        Du(10) = Dj(1,1)*Df(10)+Dj(1,2)*Df(11)+Dj(1,3)*Df(12)+Dj(1,4)*Df(13)
-        Du(11) = Dj(2,1)*Df(10)+Dj(2,2)*Df(11)+Dj(2,3)*Df(12)+Dj(2,4)*Df(13)
-        Du(12) = Dj(3,1)*Df(10)+Dj(3,2)*Df(11)+Dj(3,3)*Df(12)+Dj(3,4)*Df(13)
-        Du(13) = Dj(4,1)*Df(10)+Dj(4,2)*Df(11)+Dj(4,3)*Df(12)+Dj(4,4)*Df(13)
+        do i = 1, ndofT
+          Dut(i) = 0.0_DP
+          do j = 1, ndofT
+            Dut(i) = Dut(i) + Dj(i,j)*Dft(j)
+          end do
+        end do
         
-        ! Calculate new RHS
-        ! g_u := f_u - M*t
-        Dg1(1) = Df(1)-Dm1(1,1)*Du(10)-Dm1(1,2)*Du(11)-Dm1(1,3)*Du(12)-Dm1(1,4)*Du(13)
-        Dg1(2) = Df(2)-Dm1(2,1)*Du(10)-Dm1(2,2)*Du(11)-Dm1(2,3)*Du(12)-Dm1(2,4)*Du(13)
-        Dg1(3) = Df(3)-Dm1(3,1)*Du(10)-Dm1(3,2)*Du(11)-Dm1(3,3)*Du(12)-Dm1(3,4)*Du(13)
-        Dg1(4) = Df(4)-Dm1(4,1)*Du(10)-Dm1(4,2)*Du(11)-Dm1(4,3)*Du(12)-Dm1(4,4)*Du(13)
-        Dg2(1) = Df(5)-Dm2(1,1)*Du(10)-Dm2(1,2)*Du(11)-Dm2(1,3)*Du(12)-Dm2(1,4)*Du(13)
-        Dg2(2) = Df(6)-Dm2(2,1)*Du(10)-Dm2(2,2)*Du(11)-Dm2(2,3)*Du(12)-Dm2(2,4)*Du(13)
-        Dg2(3) = Df(7)-Dm2(3,1)*Du(10)-Dm2(3,2)*Du(11)-Dm2(3,3)*Du(12)-Dm2(3,4)*Du(13)
-        Dg2(4) = Df(8)-Dm2(4,1)*Du(10)-Dm2(4,2)*Du(11)-Dm2(4,3)*Du(12)-Dm2(4,4)*Du(13)
+        ! Calculate new RHS 
+        ! f_u := f_u - M1*t
+        ! f_v := f_v - M2*t
+        do i = 1, ndofV
+          do j = 1, ndofT
+            Df1(i) = Df1(i) - Dm1(i,j)*Dut(j)
+            Df2(i) = Df2(i) - Dm2(i,j)*Dut(j)
+          end do
+        end do
         
         ! Precalculate D * A^-1
-        Dt1(1) = Dd1(1,1)*Di1(1,1)+Dd1(1,2)*Di1(2,1)+Dd1(1,3)*Di1(3,1)+Dd1(1,4)*Di1(4,1)
-        Dt1(2) = Dd1(1,1)*Di1(1,2)+Dd1(1,2)*Di1(2,2)+Dd1(1,3)*Di1(3,2)+Dd1(1,4)*Di1(4,2)
-        Dt1(3) = Dd1(1,1)*Di1(1,3)+Dd1(1,2)*Di1(2,3)+Dd1(1,3)*Di1(3,3)+Dd1(1,4)*Di1(4,3)
-        Dt1(4) = Dd1(1,1)*Di1(1,4)+Dd1(1,2)*Di1(2,4)+Dd1(1,3)*Di1(3,4)+Dd1(1,4)*Di1(4,4)
-        Dt2(1) = Dd2(1,1)*Di2(1,1)+Dd2(1,2)*Di2(2,1)+Dd2(1,3)*Di2(3,1)+Dd2(1,4)*Di2(4,1)
-        Dt2(2) = Dd2(1,1)*Di2(1,2)+Dd2(1,2)*Di2(2,2)+Dd2(1,3)*Di2(3,2)+Dd2(1,4)*Di2(4,2)
-        Dt2(3) = Dd2(1,1)*Di2(1,3)+Dd2(1,2)*Di2(2,3)+Dd2(1,3)*Di2(3,3)+Dd2(1,4)*Di2(4,3)
-        Dt2(4) = Dd2(1,1)*Di2(1,4)+Dd2(1,2)*Di2(2,4)+Dd2(1,3)*Di2(3,4)+Dd2(1,4)*Di2(4,4)
+        do i = 1, ndofV
+          do j = 1, ndofP
+            Dt1(j,i) = 0.0_DP
+            Dt2(j,i) = 0.0_DP
+            do k = 1, ndofV
+              Dt1(j,i) = Dt1(j,i) + Dd1(j,k)*Di1(k,i)
+              Dt2(j,i) = Dt2(j,i) + Dd2(j,k)*Di2(k,i)
+            end do
+          end do
+        end do
         
         ! Calculate Schur-Complement of A
         ! S := -C + D * A^-1 * B 
-        dS = -Dc(1,1)+Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1)&
-                     +Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
+        do j = 1, ndofP
+          do k = 1, ndofP
+            Ds(j,k) = -Dc(j,k)
+            do i = 1, ndofV
+              Ds(j,k) = Ds(j,k) + Dt1(j,i)*Db1(i,k) &
+                                + Dt2(j,i)*Db2(i,k)
+            end do
+          end do
+        end do
         
+        ! Invert S
+        Dsi(1,1) = 1.0_DP / Ds(1,1)
+        
+        ! Update pressure RHS
+        do j = 1, ndofP
+          daux = -Dfp(j)
+          do i = 1, ndofV
+            daux = daux + Dt1(j,i)*Df1(i) &
+                        + Dt2(j,i)*Df2(i)
+          end do
+          do i = 1, ndofT
+            daux = daux + Dk(j,i)*Dut(i)
+          end do
+          Dfp(j) = daux
+        end do
+          
         ! Calculate pressure
-        ! p := D * A^-1 * g_u + M3 * t - f_p
-        Du(9) = (-Df(9) &
-              + Dt1(1)*Dg1(1)+Dt1(2)*Dg1(2)+Dt1(3)*Dg1(3)+Dt1(4)*Dg1(4) &
-              + Dt2(1)*Dg2(1)+Dt2(2)*Dg2(2)+Dt2(3)*Dg2(3)+Dt2(4)*Dg2(4) &
-              + Dm3(1,1)*Du(10) + Dm3(1,2)*Du(11) &
-              + Dm3(1,3)*Du(12) + Dm3(1,4)*Du(13)) / dS
+        ! p := S^-1 * f_p
+        do j = 1, ndofP
+          Dup(j) = 0.0_DP
+          do i = 1, ndofP
+            Dup(j) = Dup(j) + Dsi(j,i)*Dfp(i)
+          end do
+        end do
 
-        ! Update RHS
-        ! g_u := g_u - B * p
-        Dg1(1) = Dg1(1) - Db1(1,1)*Du(9)
-        Dg1(2) = Dg1(2) - Db1(2,1)*Du(9)
-        Dg1(3) = Dg1(3) - Db1(3,1)*Du(9)
-        Dg1(4) = Dg1(4) - Db1(4,1)*Du(9)
-        Dg2(1) = Dg2(1) - Db2(1,1)*Du(9)
-        Dg2(2) = Dg2(2) - Db2(2,1)*Du(9)
-        Dg2(3) = Dg2(3) - Db2(3,1)*Du(9)
-        Dg2(4) = Dg2(4) - Db2(4,1)*Du(9)
+        ! Update velocity RHS
+        ! f_u := f_u - B * p
+        do i = 1, ndofV
+          do j = 1, ndofP
+            Df1(i) = Df1(i) - Db1(i,j)*Dup(j)
+            Df2(i) = Df2(i) - Db2(i,j)*Dup(j)
+          end do
+        end do
         
         ! Calculate X- and Y-velocity
-        ! u := A^-1 * g_u
-        Du(1) = Di1(1,1)*Dg1(1)+Di1(1,2)*Dg1(2)+Di1(1,3)*Dg1(3)+Di1(1,4)*Dg1(4)
-        Du(2) = Di1(2,1)*Dg1(1)+Di1(2,2)*Dg1(2)+Di1(2,3)*Dg1(3)+Di1(2,4)*Dg1(4)
-        Du(3) = Di1(3,1)*Dg1(1)+Di1(3,2)*Dg1(2)+Di1(3,3)*Dg1(3)+Di1(3,4)*Dg1(4)
-        Du(4) = Di1(4,1)*Dg1(1)+Di1(4,2)*Dg1(2)+Di1(4,3)*Dg1(3)+Di1(4,4)*Dg1(4)
-        Du(5) = Di2(1,1)*Dg2(1)+Di2(1,2)*Dg2(2)+Di2(1,3)*Dg2(3)+Di2(1,4)*Dg2(4)
-        Du(6) = Di2(2,1)*Dg2(1)+Di2(2,2)*Dg2(2)+Di2(2,3)*Dg2(3)+Di2(2,4)*Dg2(4)
-        Du(7) = Di2(3,1)*Dg2(1)+Di2(3,2)*Dg2(2)+Di2(3,3)*Dg2(3)+Di2(3,4)*Dg2(4)
-        Du(8) = Di2(4,1)*Dg2(1)+Di2(4,2)*Dg2(2)+Di2(4,3)*Dg2(3)+Di2(4,4)*Dg2(4)
+        ! u := A^-1 * f_u
+        do i = 1, ndofV
+          Du1(i) = 0.0_DP
+          Du2(i) = 0.0_DP
+          do j = 1, ndofV
+            Du1(i) = Du1(i) + Di1(i,j)*Df1(j)
+            Du2(i) = Du2(i) + Di2(i,j)*Df2(j)
+          end do
+        end do
         
         ! Incorporate our local solution into the global one.
         do i = 1, ndofV
           j = IdofV(i)
-          p_DvecU(j) = p_DvecU(j) + domega * Du(i)
-          p_DvecV(j) = p_DvecV(j) + domega * Du(ndofV+i)
+          p_DvecU(j) = p_DvecU(j) + domega * Du1(i)
+          p_DvecV(j) = p_DvecV(j) + domega * Du2(i)
         end do
-        o = 2*ndofV
         do i = 1, ndofP
           j = IdofP(i)
-          p_DvecP(j) = p_DvecP(j) + domega * Du(o+i)
+          p_DvecP(j) = p_DvecP(j) + domega * Dup(i)
         end do
-        o = 2*ndofV + ndofP
         do i = 1, ndofT
           j = IdofT(i)
-          p_DvecT(j) = p_DvecT(j) + domega * Du(o+i)
+          p_DvecT(j) = p_DvecT(j) + domega * Dut(i)
         end do
       
       end do ! ielidx
-    end if
+    !end if
 
   end subroutine
 
@@ -2599,15 +1840,16 @@ contains
   real(DP), dimension(4,4) :: Dmult
   
   ! Quick access for the matrix arrays
-  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldC,p_KldM,p_KldM3,p_KldN,&
-      p_KcolA,p_KcolA12,p_KcolB,p_KcolC,p_KcolM,p_KcolM3,p_KcolN
+  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldD,p_KldC,&
+      p_KldM,p_KldK,p_KldN,p_KcolA,p_KcolA12,p_KcolB,p_KcolD,p_KcolC,&
+      p_KcolM,p_KcolK,p_KcolN
   real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22,p_DB1,p_DB2,&
-      p_DD1,p_DD2,p_DC,p_DM1,p_DM2,p_DM3,p_DN
+      p_DD1,p_DD2,p_DC,p_DM1,p_DM2,p_DK,p_DN
   
   ! local variables
   integer :: i,j,iel,ielidx,i1,i2,k,l,o,p
-  real(DP) :: daux
-  logical :: bHaveC, bHaveM, bHaveM3
+  real(DP) :: daux, daux1, daux2
+  logical :: bHaveC, bHaveM, bHaveK
   
   ! variables for LAPACK's DGESV routine
   integer, dimension(ndof) :: Ipivot
@@ -2632,7 +1874,7 @@ contains
     ! Let's assume we do not have the optional matrices
     bHaveC = .false.
     bHaveM = .false.
-    bHaveM3 = .false.
+    bHaveK = .false.
     
     ! Get the pointers from the vanka structure
     p_KldA => rvanka%p_KldA
@@ -2647,6 +1889,8 @@ contains
     p_KcolB => rvanka%p_KcolB
     p_DB1 => rvanka%p_DB1
     p_DB2 => rvanka%p_DB2
+    p_KldD => rvanka%p_KldD
+    p_KcolD => rvanka%p_KcolD
     p_DD1 => rvanka%p_DD1
     p_DD2 => rvanka%p_DD2
     p_KldN => rvanka%p_KldN
@@ -2668,11 +1912,11 @@ contains
       p_DM2 => rvanka%p_DM2
     end if
     
-    if(associated(rvanka%p_DM3)) then
-      bHaveM3 = .true.
-      p_KldM3 => rvanka%p_KldM3
-      p_KcolM3 => rvanka%p_KcolM3
-      p_DM3 => rvanka%p_DM3
+    if(associated(rvanka%p_DK)) then
+      bHaveK = .true.
+      p_KldK => rvanka%p_KldK
+      p_KcolK => rvanka%p_KcolK
+      p_DK => rvanka%p_DK
     end if
     
     ! Get the multiplication factors
@@ -2713,18 +1957,22 @@ contains
       do k = 1, ndofV
         i1 = p_KldA(IdofV(k))
         i2 = p_KldA(IdofV(k)+1)-1
+        daux1 = 0.0_DP
+        daux2 = 0.0_DP
         do i = i1, i2
           j = p_KcolA(i)
-          Df(k)       = Df(k)       - Dmult(1,1)*p_DA11(i)*p_DvecU(j)
-          Df(ndofV+k) = Df(ndofV+k) - Dmult(2,2)*p_DA22(i)*p_DvecV(j)
+          daux1 = daux1 + p_DA11(i)*p_DvecU(j)
+          daux2 = daux2 + p_DA22(i)*p_DvecV(j)
           do l = 1, ndofV
-            if(j .ne. IdofV(l)) cycle
-            
-            ! Get the local entries of the A matrices
-            Da(  k,  l) = Dmult(1,1)*p_DA11(i)
-            Da(p+k,p+l) = Dmult(2,2)*p_DA22(i)
+            if(j .eq. IdofV(l)) then
+              Da(  k,  l) = Dmult(1,1)*p_DA11(i)
+              Da(p+k,p+l) = Dmult(2,2)*p_DA22(i)
+              exit
+            end if
           end do
         end do
+        Df(      k) = Df(      k) - Dmult(1,1)*daux1
+        Df(ndofV+k) = Df(ndofV+k) - Dmult(2,2)*daux2
       end do
 
       ! f_u := f_u - A12*v
@@ -2732,49 +1980,75 @@ contains
       do k = 1, ndofV
         i1 = p_KldA12(IdofV(k))
         i2 = p_KldA12(IdofV(k)+1)-1
+        daux1 = 0.0_DP
+        daux2 = 0.0_DP
         do i = i1, i2
           j = p_KcolA12(i)
-          Df(k)       = Df(k)       - Dmult(1,2)*p_DA12(i)*p_DvecV(j)
-          Df(ndofV+k) = Df(ndofV+k) - Dmult(2,1)*p_DA21(i)*p_DvecU(j)
+          daux1 = daux1 + p_DA12(i)*p_DvecV(j)
+          daux2 = daux2 + p_DA21(i)*p_DvecU(j)
           do l = 1, ndofV
-            if(j .ne. IdofV(l)) cycle
-            
-            ! Get the local entries of the A matrices
-            Da(  k,p+l) = Dmult(1,2)*p_DA12(i)
-            Da(p+k,  l) = Dmult(2,1)*p_DA21(i)
+            if(j .eq. IdofV(l)) then
+              Da(  k,p+l) = Dmult(1,2)*p_DA12(i)
+              Da(p+k,  l) = Dmult(2,1)*p_DA21(i)
+              exit
+            end if
           end do
         end do
+        Df(      k) = Df(      k) - Dmult(1,2)*daux1
+        Df(ndofV+k) = Df(ndofV+k) - Dmult(2,1)*daux2
       end do
       
       ! Now we also need to subtract B*p from our RHS, and by the same time,
-      ! we also have to subtract D*u - and we will build the local B/D matrices.
+      ! we will build the local B matrices.
       ! f_u := f_u - B1*p
       ! f_v := f_v - B2*p
-      ! f_p := f_p - D1*u - D2*v
       o = ndofV
       p = 2*ndofV
       do k = 1, ndofV
         i1 = p_KldB(IdofV(k))
         i2 = p_KldB(IdofV(k)+1)-1
+        daux1 = 0.0_DP
+        daux2 = 0.0_DP
         do i = i1, i2
           j = p_KcolB(i)
           daux = p_DvecP(j)
-          Df(k)       = Df(k)       - Dmult(1,3)*p_DB1(i)*daux
-          Df(ndofV+k) = Df(ndofV+k) - Dmult(2,3)*p_DB2(i)*daux
+          daux1 = daux1 + p_DB1(i)*daux
+          daux2 = daux2 + p_DB2(i)*daux
           do l = 1, ndofP
-            if(j .ne. IdofP(l)) cycle
-            
-            ! Get the local entries of the B/D matrices
-            Da(  k,p+l) = Dmult(1,3)*p_DB1(i)
-            Da(o+k,p+l) = Dmult(2,3)*p_DB2(i)
-            Da(p+l,  k) = Dmult(3,1)*p_DD1(i)
-            Da(p+l,o+k) = Dmult(3,2)*p_DD2(i)
-            
-            ! Update f_p
-            Df(2*ndofV+l) = Df(2*ndofV+l) - Da(p+l,k)*p_DvecU(IdofV(k)) &
-                                          - Da(p+l,k)*p_DvecV(IdofV(k))
+            if(j .eq. IdofP(l)) then
+              Da(  k,p+l) = Dmult(1,3)*p_DB1(i)
+              Da(o+k,p+l) = Dmult(2,3)*p_DB2(i)
+              exit
+            end if
           end do
         end do
+        Df(      k) = Df(      k) - Dmult(1,3)*daux1
+        Df(ndofV+k) = Df(ndofV+k) - Dmult(2,3)*daux2
+      end do
+      
+      ! Now we also need to subtract D*u from our RHS, and by the same time,
+      ! we will build the local D matrices.
+      ! f_p := f_p - D1*u - D2*v
+      o = ndofV
+      p = 2*ndofV
+      do k = 1, ndofP
+        i1 = p_KldD(IdofP(k))
+        i2 = p_KldD(IdofP(k)+1)-1
+        daux1 = 0.0_DP
+        daux2 = 0.0_DP
+        do i = i1, i2
+          j = p_KcolD(i)
+          daux1 = daux1 + p_DD1(i)*p_DvecU(j)
+          daux2 = daux2 + p_DD2(i)*p_DvecV(j)
+          do l = 1, ndofV
+            if(j .eq. IdofV(l)) then
+              Da(p+k,  l) = Dmult(3,1)*p_DD1(i)
+              Da(p+k,o+l) = Dmult(3,2)*p_DD2(i)
+              exit
+            end if
+          end do
+        end do
+        Df(p+k) = Df(p+k) - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
       end do
       
       ! Do we have a C-matrix?
@@ -2785,16 +2059,18 @@ contains
         do k = 1, ndofP
           i1 = p_KldC(IdofP(k))
           i2 = p_KldC(IdofP(k)+1)-1
+          daux1 = 0.0_DP
           do i = i1, i2
             j = p_KcolC(i)
-            Df(o+k) = Df(o+k) - Dmult(3,3)*p_DC(i)*p_DvecP(j)
+            daux1 = daux1 + p_DC(i)*p_DvecP(j)
             do l = 1, ndofP
-              if(j .ne. IdofP(l)) cycle
-              
-              ! Get the local entries of the C matrix
-              Da(o+k,o+l) = Dmult(3,3)*p_DC(i)
+              if(j .eq. IdofP(l)) then
+                Da(o+k,o+l) = Dmult(3,3)*p_DC(i)
+                exit
+              end if
             end do
           end do
+          Df(o+k) = Df(o+k) - Dmult(3,3)*daux1
         end do
       end if
       
@@ -2808,41 +2084,47 @@ contains
         do k = 1, ndofV
           i1 = p_KldM(IdofV(k))
           i2 = p_KldM(IdofV(k)+1)-1
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do i = i1, i2
             j = p_KcolM(i)
             daux = p_DvecT(j)
-            Df(k)       = Df(k)       - Dmult(1,4)*p_DM1(i)*daux
-            Df(ndofV+k) = Df(ndofV+k) - Dmult(2,4)*p_DM2(i)*daux
+            daux1 = daux1 + p_DM1(i)*daux
+            daux2 = daux2 + p_DM2(i)*daux
             do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local entries of the M1/M2 matrices
-              Da(  k,p+l) = Dmult(1,4)*p_DM1(i)
-              Da(o+k,p+l) = Dmult(2,4)*p_DM2(i)
+              if(j .eq. IdofT(l)) then
+                Da(  k,p+l) = Dmult(1,4)*p_DM1(i)
+                Da(o+k,p+l) = Dmult(2,4)*p_DM2(i)
+                exit
+              end if
             end do
           end do
+          Df(      k) = Df(      k) - Dmult(1,4)*daux1
+          Df(ndofV+k) = Df(ndofV+k) - Dmult(2,4)*daux2
         end do
       end if
       
-      ! What about M3? Does it exist?
-      if(bHaveM3) then
+      ! What about K? Does it exist?
+      if(bHaveK) then
         ! Yes, so update the local RHS
-        ! f_p := f_p - M3*t
+        ! f_p := f_p - K*t
         o = 2*ndofV
         p = 2*ndofV+ndofP
         do k = 1, ndofP
-          i1 = p_KldM3(IdofP(k))
-          i2 = p_KldM3(IdofP(k)+1)-1
+          i1 = p_KldK(IdofP(k))
+          i2 = p_KldK(IdofP(k)+1)-1
+          daux1 = 0.0_DP
           do i = i1, i2
-            j = p_KcolM3(i)
-            Df(o+k) = Df(o+k) - Dmult(3,4)*p_DM3(i)*p_DvecT(j)
+            j = p_KcolK(i)
+            daux1 = daux1 + p_DK(i)*p_DvecT(j)
             do l = 1, ndofT
-              if(j .ne. IdofT(l)) cycle
-              
-              ! Get the local M3 entry
-              Da(o+k,p+l) = Dmult(3,4)*p_DM3(i)
+              if(j .eq. IdofT(l)) then
+                Da(o+k,p+l) = Dmult(3,4)*p_DK(i)
+                exit
+              end if
             end do
           end do
+          Df(o+k) = Df(o+k) - Dmult(3,4)*daux1
         end do
       end if
       
@@ -2852,16 +2134,18 @@ contains
       do k = 1, ndofT
         i1 = p_KldN(IdofT(k))
         i2 = p_KldN(IdofT(k)+1)-1
+        daux1 = 0.0_DP
         do i = i1, i2
           j = p_KcolN(i)
-          Df(o+k) = Df(o+k) - Dmult(4,4)*p_DN(i)*p_DvecT(j)
+          daux1 = daux1 + p_DN(i)*p_DvecT(j)
           do l = 1, ndofT
-            if(j .ne. IdofT(l)) cycle
-            
-            ! Get the local entries of the N matrix
-            Da(o+k,o+l) = Dmult(4,4)*p_DN(i)
+            if(j .eq. IdofT(l)) then
+              Da(o+k,o+l) = Dmult(4,4)*p_DN(i)
+              exit
+            end if
           end do
         end do
+        Df(o+k) = Df(o+k) - Dmult(4,4)*daux1
       end do
 
       ! Solve the local system
