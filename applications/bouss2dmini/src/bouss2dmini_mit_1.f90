@@ -256,7 +256,7 @@ contains
       ! velocity...
       call spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-          EL_EM30, CUB_G2X2, Rlevels(i)%rtriangulation, rboundary)
+          EL_EM30, CUB_G3X3, Rlevels(i)%rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
@@ -269,10 +269,10 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-          EL_Q0, CUB_G2X2, Rlevels(i)%rdiscretisation%RspatialDiscr(3))
+          EL_Q0, CUB_G3X3, Rlevels(i)%rdiscretisation%RspatialDiscr(3))
     
       call spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-          EL_Q1, CUB_G2X2, Rlevels(i)%rdiscretisation%RspatialDiscr(4))
+          EL_Q1, CUB_G3X3, Rlevels(i)%rdiscretisation%RspatialDiscr(4))
 
     end do
 
@@ -350,10 +350,10 @@ contains
       
       ! Furthermore, put B1^T and B2^T to the block matrix.
       call lsyssc_transposeMatrix (Rlevels(i)%rmatrixB1, &
-          Rlevels(i)%rmatrix%RmatrixBlock(3,1),LSYSSC_TR_VIRTUAL)
+          Rlevels(i)%rmatrix%RmatrixBlock(3,1),LSYSSC_TR_ALL)
 
       call lsyssc_transposeMatrix (Rlevels(i)%rmatrixB2, &
-          Rlevels(i)%rmatrix%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
+          Rlevels(i)%rmatrix%RmatrixBlock(3,2),LSYSSC_TR_ALL)
       
       ! At this point, we have a little problem:
       ! We have assembled the M-matrix, and now we need to "copy" it into our
@@ -366,14 +366,14 @@ contains
       ! the M1 and M2 matrices:
       !
       !  ! Put the M1/M2-matrices into the block matrix
-      !  CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrixM, &
+      !  call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixM, &
       !      Rlevels(i)%rmatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      !  CALL lsyssc_duplicateMatrix (Rlevels(i)%rmatrixM, &
+      !  call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixM, &
       !      Rlevels(i)%rmatrix%RmatrixBlock(2,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
       !
       !  ! Scale the M1/M2 matrices
-      !  CALL lsyssc_scaleMatrix(Rlevels(i)%rmatrix%RmatrixBlock(1,4),dgrav1)
-      !  CALL lsyssc_scaleMatrix(Rlevels(i)%rmatrix%RmatrixBlock(2,4),dgrav2)
+      !  call lsyssc_scaleMatrix(Rlevels(i)%rmatrix%RmatrixBlock(1,4),dgrav1)
+      !  call lsyssc_scaleMatrix(Rlevels(i)%rmatrix%RmatrixBlock(2,4),dgrav2)
       !
       ! But fortunately, the Boussinesq-Vanka supports scaled matrices, so we
       ! will give the M1 and M2 matrices a reference to the data array of M and
@@ -655,10 +655,10 @@ contains
       dnlRes = lsysbl_vectorNorm(rdef, LINALG_NORMEUCLID)
       
       ! Print the residual
-      !CALL output_separator(OU_SEP_MINUS)
+      !call output_separator(OU_SEP_MINUS)
       call output_line('NL-Iteration: ' // trim(sys_si(NLiter,2)) // &
                        '   |RES| = ' // trim(sys_sdEP(dnlRes,20,12)))
-      !CALL output_separator(OU_SEP_MINUS)
+      !call output_separator(OU_SEP_MINUS)
       
       ! Is this precise enough?
       if(dnlRes .le. 1E-8_DP) exit
