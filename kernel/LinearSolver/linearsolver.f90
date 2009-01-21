@@ -477,8 +477,6 @@ module linearsolver
   public :: linsol_initSOR
   public :: linsol_initSSOR
   public :: linsol_initVANKA
-  public :: linsol_initVANKA_compat
-  public :: linsol_initVANKA_direct
   public :: linsol_initUMFPACK4
   public :: linsol_initMILUs1x1
   public :: linsol_initBiCGStab
@@ -505,7 +503,7 @@ module linearsolver
   ! Jacobi iteration $x_1 = x_0 + \omega D^{-1} (b-Ax_0)$
   integer, parameter, public :: LINSOL_ALG_JACOBI        = 2
   
-  ! SOR/GS iteration $x_1 = x_0 + (D+\omega L)^{-1}(b-Ax_0)$
+  ! SOR/GS iteration $x_1 = x_0 + \omega (D+\omega L)^{-1}(b-Ax_0)$
   integer, parameter, public :: LINSOL_ALG_SOR           = 4
   
   ! SSOR iteration
@@ -749,8 +747,11 @@ module linearsolver
   ! Pressure-DOF based VANKA, 2D Navier-Stokes problem
   integer, parameter, public :: LINSOL_VANKA_NAVST2D_PDOF          = 113
   
-  ! Pressure-DOF based VANKA, 2D Navier-Stokes problem, fast variant
-  integer, parameter, public :: LINSOL_VANKA_NAVST2D_PDOF_FAST     = 114
+  ! SP-SOR for 2D Navier-Stokes problem
+  integer, parameter, public :: LINSOL_VANKA_NAVST2D_SPSOR         = 120
+
+  ! SP-SSOR for 2D Navier-Stokes problem
+  integer, parameter, public :: LINSOL_VANKA_NAVST2D_SPSSOR        = 121
 
 !</constantblock>
 
@@ -1128,10 +1129,6 @@ module linearsolver
   
   type t_linsolSubnodeVANKA
   
-    ! Specifies whether the Vanka solver was intialised in compatibility
-    ! mode, which is the default case.
-    logical             :: bcompatMode = .true.
-  
     ! Type of VANKA subsolver. One of the LINSOL_VANKA_xxxx constants.
     ! Specifies either thge general VANKA solver or a specialised version
     ! for improved speed.
@@ -1142,19 +1139,6 @@ module linearsolver
   
     ! Temporary vector to use during the solution process
     type(t_vectorBlock) :: rtempVector
-    
-    ! ----- NON-COMPATIBILITY MODE ENTRIES -----
-    ! Relaxation parameter for Vanka
-    real(DP)            :: drelax
-    
-    ! Vanka problem class identifier. One of the VANKAPC_XXXX constants
-    ! defined in vanka.f90 or in one of its sub-modules.
-    integer             :: cvankaPC
-    
-    ! Vanka sub-type identifier. One of the VANKATP_XXXX constants
-    ! defined in vanka.f90 or in one of its sub-modules. Must be compatible
-    ! to the problem class defined in cvankaPC.
-    integer             :: cvankaTP
 
   end type
   
@@ -1689,11 +1673,6 @@ module linearsolver
 ! *****************************************************************************
 ! *****************************************************************************
 ! *****************************************************************************
-
-  interface linsol_initVANKA
-    module procedure linsol_initVANKA_compat
-    module procedure linsol_initVANKA_direct
-  end interface
 
 contains
 
@@ -4134,7 +4113,7 @@ contains
   
 !<description>
   ! Applies the SOR preconditioner onto the defect vector rd by solving
-  !  $$ x = omega * (D + relax * L)^{-1} * d $$
+  !  $$ x = omega * relax * (D + relax * L)^{-1} * d $$
   ! rd will be overwritten by the preconditioned defect vector x.
   !
   ! The matrix must have been attached to the system before calling
@@ -4273,22 +4252,22 @@ contains
       
       ! We want to perform the following preconditioning step:
       !
-      !    (D + relax * L) * x = d
+      !    1/relax * (D + relax * L) * x = d
       !
       ! and replace the vector d by x in-situ.
       !
       ! We're doing it this way:
       !
-      !    (D + relax * L) * x = d
+      !   1/relax * (D + relax * L) * x = d
       !
       ! <==>
       !                         i-1
-      ! a_ii * x_i  +  relax * \sum a_ij x_j  =  omega * d_i      (i=1,...,n)
+      ! a_ii / relax * x_i  +  \sum a_ij x_j  =  d_i      (i=1,...,n)
       !                         j=1
       ! <==>
-      !                                     i-1
-      ! x_i :=  1/a_ii * ( d_i  -  relax * \sum a_ij x_j )    (i=1,...,n)
-      !                                     j=1
+      !                                 i-1
+      ! x_i :=  relax/a_ii * ( d_i  -  \sum a_ij x_j )    (i=1,...,n)
+      !                                 j=1
       !
       ! Additionally, we have to scale the resulting vector by the damping
       ! factor omega. Also do not forget that the a_ij must be scaled by the
@@ -4312,10 +4291,10 @@ contains
         end do
         
         ! Calculate x_i
-        Dx(i) = (dalpha*Dx(i) - drelax*daux) / DA(k)
+        Dx(i) = drelax*(dalpha*Dx(i) - daux) / DA(k)
         
         ! Remark:
-        ! When setting Dx(i) in the line above, drelax*daux must NOT be
+        ! When setting Dx(i) in the line above, daux must NOT be
         ! scaled by domega as one might possibly suggest!
         
       end do
@@ -4799,7 +4778,7 @@ contains
 
 !<subroutine>
   
-  subroutine linsol_initVANKA_compat (p_rsolverNode,domega,csubtypeVANKA)
+  subroutine linsol_initVANKA (p_rsolverNode,domega,csubtypeVANKA)
   
 !<description>
   ! Creates a t_linsolNode solver structure for the VANKA solver. The node
@@ -4853,9 +4832,6 @@ contains
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeVANKA)
     
-    ! Set compatibility mode to .true.
-    p_rsolverNode%p_rsubnodeVANKA%bcompatMode = .true.
-    
     ! Initialise the VANKA subtype.
     p_rsolverNode%p_rsubnodeVANKA%csubtypeVANKA = LINSOL_VANKA_GENERAL
     if (present(csubtypeVANKA)) then
@@ -4863,77 +4839,6 @@ contains
     end if
     
     if (present(domega)) p_rsolverNode%domega = domega
-  
-  end subroutine
-
-! *****************************************************************************
-
-!<subroutine>
-  
-  subroutine linsol_initVANKA_direct (p_rsolverNode,cvankaPC,cvankaTP,drelax)
-  
-!<description>
-  ! Creates a t_linsolNode solver structure for the VANKA solver. The node
-  ! can be used to directly solve a problem or to be attached as solver
-  ! or preconditioner to another solver structure. The node can be deleted
-  ! by linsol_releaseSolver.
-!</description>
-  
-!<input>
-  
-  ! Vanka problem class identifier. One of the VANKAPC_XXXX constants defined
-  ! in vanka.f90 or in one of its sub-modules.
-  integer, intent(IN) :: cvankaPC
-
-  ! Vanka sub-type identifier. One of the VANKATP_XXXX constants defined
-  ! in vanka.f90 or in one of its sub-modules. Must be compatible to the
-  ! problem class defined in cvankaPC.
-  integer, intent(IN) :: cvankaTP
-
-  ! OPTIONAL: Relaxation parameter. If not given, 1 is used.
-  real(DP), optional :: drelax
-!</input>  
-  
-!<output>
-  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
-  ! value of the pointer is destroyed.
-  type(t_linsolNode), pointer :: p_rsolverNode
-!</output>
-  
-!</subroutine>
-  
-    ! Create a default solver structure
-    call linsol_initSolverGeneral(p_rsolverNode)
-    
-    ! Initialise the type of the solver
-    p_rsolverNode%calgorithm = LINSOL_ALG_VANKA
-    
-    ! Initialise the ability bitfield with the ability of this solver:
-    p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
-                                LINSOL_ABIL_DIRECT 
-    
-    ! Allocate the subnode for VANKA.
-    ! This initialises most of the variables with default values appropriate
-    ! to this solver.
-    allocate(p_rsolverNode%p_rsubnodeVANKA)
-    
-    ! Set compatibility mode to .false.
-    p_rsolverNode%p_rsubnodeVANKA%bcompatMode = .false.
-    
-    ! Initialise the VANKA subtype - set it to -1, as it is only used by the
-    ! 'compatibility mode'.
-    p_rsolverNode%p_rsubnodeVANKA%csubtypeVANKA = -1
-    
-    ! Set the problem class and sub-type
-    p_rsolverNode%p_rsubnodeVANKA%cvankaPC = cvankaPC
-    p_rsolverNode%p_rsubnodeVANKA%cvankaTP = cvankaTP
-    
-    ! Store relaxation parameter
-    if (present(drelax)) then
-      p_rsolverNode%p_rsubnodeVANKA%drelax = drelax
-    else
-      p_rsolverNode%p_rsubnodeVANKA%drelax = 1.0_DP
-    end if
   
   end subroutine
 
@@ -4959,16 +4864,6 @@ contains
 !</inputoutput>
 
 !</subroutine>
-
-    ! Make sure we're in compatibility mode.
-    if(.not. rsolverNode%p_rsubnodeVANKA%bcompatMode) then
-      
-      ! Print an error
-      call output_line ('Vanka can only be altered in compatiblity mode!', &
-                        OU_CLASS_ERROR, OU_MODE_STD, 'linsol_alterVANKA')
-      call sys_halt()
-      
-    end if
 
     ! Check the command.
     if (ralterConfig%ccommand .eq. LINSOL_ALTER_CHANGEVANKA) then
@@ -5028,18 +4923,6 @@ contains
     ! Normally, we can handle the matrix.
     ccompatible = LINSOL_COMP_OK
     
-    ! Check whether we are in compatibility mode
-    if(.not. rsolverNode%p_rsubnodeVANKA%bcompatMode) then
-
-      ! We're not in compatibility mode - so let's silently assume the
-      ! matrix is okay for now...
-      if(present(CcompatibleDetail)) &
-        CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
-      
-      return
-    
-    end if
-
     ! VANKA is a bit tricky. Loop through all scalar submatrices and
     ! check them. The VANKA subtype decides on whether it can use that or not!
     
@@ -5086,7 +4969,9 @@ contains
     
     !  ---------------- NEW IMPLEMENTATION ----------------
 
-    case (LINSOL_VANKA_NAVST2D_DIAG, LINSOL_VANKA_NAVST2D_FULL)
+    case (LINSOL_VANKA_NAVST2D_DIAG, LINSOL_VANKA_NAVST2D_FULL, &
+          LINSOL_VANKA_NAVST2D_PDOF, &
+          LINSOL_VANKA_NAVST2D_SPSOR, LINSOL_VANKA_NAVST2D_SPSSOR)
       ! Blocks (3,1) and (3,2) must not be virtually transposed
       if ((iand(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
             LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
@@ -5227,20 +5112,6 @@ contains
       call sys_halt()
     end if
     
-    ! Compatibility mode or not?
-    if(.not. rsolverNode%p_rsubnodeVANKA%bcompatMode) then
-      
-      ! 'Direct mode'
-      call vanka_initConformal(rsolverNode%rsystemMatrix, &
-         rsolverNode%p_rsubnodeVANKA%rvanka, &
-         rsolverNode%p_rsubnodeVANKA%cvankaPC, &
-         rsolverNode%p_rsubnodeVANKA%cvankaTP)
-      
-      ! That's it
-      return
-      
-    end if
-    
     ! Which VANKA solver do we actually have?
     select case (rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
     case (LINSOL_VANKA_GENERAL,LINSOL_VANKA_GENERALDIRECT)
@@ -5311,11 +5182,17 @@ contains
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_PDOF)
 
-    case (LINSOL_VANKA_NAVST2D_PDOF_FAST)
-      ! Pressure-DOF based VANKA for Navier-Stokes, fast variant
+    case (LINSOL_VANKA_NAVST2D_SPSOR)
+      ! SP-SOR for Navier-Stokes
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
-                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_PDOF_FAST)
+                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_SPSOR)
+
+    case (LINSOL_VANKA_NAVST2D_SPSSOR)
+      ! SP-SSOR for Navier-Stokes
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_SPSSOR)
 
     case (LINSOL_VANKA_BOUSS2D_DIAG)
       ! Diagonal-type VANKA for Boussinesq
@@ -5504,24 +5381,48 @@ contains
 
     ! Damping parameter
     domega = rsolverNode%domega
-      
-    ! Get our temporary vector.
-    p_rvector => rsolverNode%p_rsubnodeVANKA%rtempVector
-
-    ! The vector share the same boundary conditions as rd!
-    ! So assign now all discretisation-related information (boundary
-    ! conditions,...) to the temporary vector.
-    call lsysbl_assignDiscretIndirect (rd,p_rvector)
-  
-    ! Clear our solution vector
-    call lsysbl_clearVector (p_rvector)
     
-    ! Execute VANKA
-    call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
-        p_rvector, rd, domega)
+    ! Check for special cases: SP-SOR and SP-SSOR Vanka variants.
+    select case(rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
+    case(LINSOL_VANKA_NAVST2D_SPSOR)
+    
+      ! Call SP-SOR preconditioner for 2D Navier-Stokes.
+      call vanka_NS2D_precSPSOR(&
+          rsolverNode%p_rsubnodeVANKA%rvanka%rvankaNavSt2D, rd, domega)
+      
 
-    ! Copy the solution vector to rd - it's our preconditioned defect now.
-    call lsysbl_copyVector (p_rvector,rd)
+    case(LINSOL_VANKA_NAVST2D_SPSSOR)
+    
+      ! Call SP-SSOR preconditioner for 2D Navier-Stokes.
+      call vanka_NS2D_precSPSSOR(&
+          rsolverNode%p_rsubnodeVANKA%rvanka%rvankaNavSt2D, rd, domega)
+
+
+    case default
+      
+      ! Okay, any non-SP-(S)SOR Vanka. In this case we can call the
+      ! vanka_conformal wrapper routine to take care of the actual
+      ! Vanka sub-type.
+    
+      ! Get our temporary vector.
+      p_rvector => rsolverNode%p_rsubnodeVANKA%rtempVector
+
+      ! The vector shares the same boundary conditions as rd!
+      ! So assign now all discretisation-related information (boundary
+      ! conditions,...) to the temporary vector.
+      call lsysbl_assignDiscretIndirect (rd,p_rvector)
+    
+      ! Clear our solution vector
+      call lsysbl_clearVector (p_rvector)
+      
+      ! Execute VANKA
+      call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
+          p_rvector, rd, domega)
+
+      ! Copy the solution vector to rd - it's our preconditioned defect now.
+      call lsysbl_copyVector (p_rvector,rd)
+    
+    end select
   
   end subroutine
   
@@ -11085,7 +10986,7 @@ contains
   integer :: i
   logical :: bfilter
   integer :: iiterations
-  real(DP) :: dres, drelax
+  real(DP) :: dres
   !DEBUG: REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
     
     ! Cancel if nmaxIterations = number of smoothing steps is =0.
@@ -11122,50 +11023,29 @@ contains
       !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
       !DEBUG: CALL lsysbl_getbase_double (rb,p_Ddata2)
       
-      ! Are we in compatibility mode?
-      if(rsolverNode%p_rsubnodeVANKA%bcompatMode) then
-      
-        ! So, let's see if we have a special implementation here...
-        select case (rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
-        case (LINSOL_VANKA_GENERALDIRECT,&
-              LINSOL_VANKA_2DNAVSTDIRECT,&
-              LINSOL_VANKA_2DNAVSTDIRECTSB,&
-              LINSOL_VANKA_2DFNAVSTDIRECT,&
-              LINSOL_VANKA_2DFNAVSTOCDIRECT,&
-              LINSOL_VANKA_2DFNAVSTOCDIAGDIR,&
-              LINSOL_VANKA_3DNAVSTDIRECT,&
-              LINSOL_VANKA_3DFNAVSTDIRECT,&
-              ! --------------- NEW IMPLEMENTATION ---------------
-              LINSOL_VANKA_NAVST2D_DIAG,&
-              LINSOL_VANKA_NAVST2D_FULL,&
-              LINSOL_VANKA_NAVST2D_PDOF,&
-              LINSOL_VANKA_NAVST2D_PDOF_FAST,&
-              LINSOL_VANKA_BOUSS2D_DIAG,&
-              LINSOL_VANKA_BOUSS2D_FULL&
-              )
-          ! Yes, this solver can be applied to a given solution/rhs vector directly.
-          ! Call it nmaxIterations times to perform the smoothing.
-          do i=1,rsolverNode%nmaxIterations
-          
-            ! Probably print the residuum
-            if (rsolverNode%ioutputLevel .ge. 2) then
-              call lsysbl_copyVector(rb,rtemp)
-              call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-              
-              dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
-              if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-                        
-              call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-                  ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
-            end if
-          
-            ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
-            ! without explicitly calculating (b-Ax_n) like below.
-            call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
-                                  rx, rb, rsolverNode%domega)
-                                  
-          end do
-
+      ! So, let's see if we have a special implementation here...
+      select case (rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
+      case (LINSOL_VANKA_GENERALDIRECT,&
+            LINSOL_VANKA_2DNAVSTDIRECT,&
+            LINSOL_VANKA_2DNAVSTDIRECTSB,&
+            LINSOL_VANKA_2DFNAVSTDIRECT,&
+            LINSOL_VANKA_2DFNAVSTOCDIRECT,&
+            LINSOL_VANKA_2DFNAVSTOCDIAGDIR,&
+            LINSOL_VANKA_3DNAVSTDIRECT,&
+            LINSOL_VANKA_3DFNAVSTDIRECT,&
+            ! --------------- NEW IMPLEMENTATION ---------------
+            LINSOL_VANKA_NAVST2D_DIAG,&
+            LINSOL_VANKA_NAVST2D_FULL,&
+            LINSOL_VANKA_NAVST2D_PDOF,&
+            LINSOL_VANKA_NAVST2D_SPSOR,&
+            LINSOL_VANKA_BOUSS2D_DIAG,&
+            LINSOL_VANKA_BOUSS2D_FULL&
+            )
+            
+        ! Yes, this solver can be applied to a given solution/rhs vector directly.
+        ! Call it nmaxIterations times to perform the smoothing.
+        do i = 1, rsolverNode%nmaxIterations
+        
           ! Probably print the residuum
           if (rsolverNode%ioutputLevel .ge. 2) then
             call lsysbl_copyVector(rb,rtemp)
@@ -11177,102 +11057,31 @@ contains
             call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
                 ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
           end if
+        
+          ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
+          ! without explicitly calculating (b-Ax_n) like below.
+          call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
+                                rx, rb, rsolverNode%domega)
+                                
+        end do
 
-          ! That's it.
-          return
-        
-        end select
+        ! Probably print the residuum
+        if (rsolverNode%ioutputLevel .ge. 2) then
+          call lsysbl_copyVector(rb,rtemp)
+          call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+          
+          dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
+          if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
+                    
+          call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
+              ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
+        end if
+
+        ! That's it.
+        return
       
-      else
-        ! We're not in compatibility mode.
-        
-        ! TEMPORARILY DISABLED: The defect correction loop below will take
-        ! care of this case for now.
-        
-!        ! Okay, let's get the relaxation parameter first.
-!        drelax = rsolverNode%p_rsubnodeVANKA%rvanka%drelax
-!        
-!        ! Is it 1? This would make the whole thing easier.
-!        if(drelax .eq. 1.0_DP) then
-!        
-!          ! Yes, so let's perform a simple loop.
-!          do i = 1, rsolverNode%nmaxIterations
-!          
-!            ! Probably print the residuum
-!            if (rsolverNode%ioutputLevel .ge. 2) then
-!              call lsysbl_copyVector(rb,rtemp)
-!              call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-!              
-!              dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
-!              if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-!                        
-!              call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-!                  ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
-!            end if
-!          
-!            ! Call the Vanka preconditioner
-!            call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
-!                                  rx, rb, rsolverNode%domega)
-!                                  
-!          end do
-!
-!          ! Probably print the residuum
-!          if (rsolverNode%ioutputLevel .ge. 2) then
-!            call lsysbl_copyVector(rb,rtemp)
-!            call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-!            
-!            dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
-!            if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-!                      
-!            call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-!                ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
-!          end if
-!
-!        else
-!          
-!          ! Relaxation parameter is not 1. In this case, we're going to use
-!          ! a defect-correction approach.
-!          do i = 1, rsolverNode%nmaxIterations
-!          
-!            ! Calculate defect
-!            call lsysbl_copyVector(rb,rtemp)
-!            call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-!            
-!            ! Probably print the residuum
-!            if (rsolverNode%ioutputLevel .ge. 2) then
-!              
-!              dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
-!              if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-!                        
-!              call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-!                  ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
-!            end if
-!          
-!            ! Call the Vanka preconditioner
-!            call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
-!                                  rx, rb, rsolverNode%domega)
-!                                  
-!          end do
-!
-!          ! Probably print the residuum
-!          if (rsolverNode%ioutputLevel .ge. 2) then
-!            call lsysbl_copyVector(rb,rtemp)
-!            call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-!            
-!            dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
-!            if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-!                      
-!            call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-!                ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
-!          end if
-!
-!        end if
-!      
-!        ! That's it.
-!        return
-!
-      end if
-      
+      end select
+
     end select
       
     ! This is a 1-step solver, we have to emulate the smoothing

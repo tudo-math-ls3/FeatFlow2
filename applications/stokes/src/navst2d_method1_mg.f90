@@ -665,7 +665,7 @@ contains
     p_rsolverNode%ioutputLevel = 2
     
     ! Set up a BiCGStab solver with VANKA preconditioning as coarse grid solver:
-    !call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_NAVST2D_PDOF_FAST)
+    !call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_NAVST2D_SPSOR)
     !call linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
     call linsol_initUMFPACK4 (p_rcoarseGridSolver)
     
@@ -681,7 +681,7 @@ contains
     do i = NLMIN+1, NLMAX
     
       ! Set up the pressure-DOF based Vanka smoother.
-      call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_PDOF_FAST)
+      call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_SPSOR)
       
       ! We will use 4 smoothing steps with damping parameter 1.0
       call linsol_convertToSmoother(p_rsmoother, 8, 1.0_DP)

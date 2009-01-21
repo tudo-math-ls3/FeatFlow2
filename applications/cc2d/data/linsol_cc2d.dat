@@ -48,6 +48,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # = 103: pressure-DOF based Vanka, a black-box Vanka implementation for
 #        2D Navier-Stokes systems
 # = 104: SP-SOR (experimental), a SOR-like smoother for saddle-point systems
+# = 105: SP-SSOR (experimental), a SSOR-like smoother for saddle-point systems
 
 ismootherType = 3
 

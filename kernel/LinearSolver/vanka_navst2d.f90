@@ -96,6 +96,9 @@ implicit none
   public :: vanka_initNavierStokes2D
   public :: vanka_doneNavierStokes2D
   public :: vanka_NavierStokes2D
+  
+  public :: vanka_NS2D_precSPSOR
+  public :: vanka_NS2D_precSPSSOR
 
 !<constants>
 
@@ -110,8 +113,15 @@ implicit none
   ! Pressure-DOF based VANKA
   integer, parameter, public :: VANKATP_NAVST2D_PDOF      = 2
   
-  ! Pressure-DOF based VANKA, fast variant
-  integer, parameter, public :: VANKATP_NAVST2D_PDOF_FAST = 3
+  ! SP-SOR
+  integer, parameter, public :: VANKATP_NAVST2D_SPSOR     = 3
+  
+  ! SP-SSOR, symmetric variant of SP-SOR
+  ! Warning: This variant can only be called via
+  ! vanka_NavierStokes2D_precSPSSOR - it can not be called via the default
+  ! wrapper routine vanka_NavierStokes2D, as it needs to work on a defect
+  ! vector rather than a rhs and solution vector!
+  integer, parameter, public :: VANKATP_NAVST2D_SPSSOR    = 4
 
 !</constantblock>
 
@@ -416,9 +426,10 @@ contains
     rvanka%Dmultipliers(1:3,1:3) = &
         rmatrix%RmatrixBlock(1:3,1:3)%dscaleFactor
 
-    ! Do we use pressure-DOF based Vanka?
+    ! Do we use pressure-DOF based Vanka or any of the SP-SOR algorithms?
     if((csubtype .eq. VANKATP_NAVST2D_PDOF) .or. &
-       (csubtype .eq. VANKATP_NAVST2D_PDOF_FAST)) then
+       (csubtype .eq. VANKATP_NAVST2D_SPSOR) .or. &
+       (csubtype .eq. VANKATP_NAVST2D_SPSSOR)) then
     
       ! Yes, we do. In this case we need to allocate an array for the local
       ! Schur-Complement matrices.
@@ -665,7 +676,8 @@ contains
     type(t_elementDistribution), pointer :: p_relementDistrP
     
     ! Do we use the pressure-DOF based Vanka?
-    if(csubtype .eq. VANKATP_NAVST2D_PDOF) then
+    select case(csubtype)
+    case (VANKATP_NAVST2D_PDOF)
       
       ! Yes, we do. So call the corresponding routine here.
       ! The pressure-DOF based Vanka is a 'black-box' algorithm which does
@@ -676,15 +688,25 @@ contains
       ! used by the other Vanka variants.
       return
     
-    else if(csubtype .eq. VANKATP_NAVST2D_PDOF_FAST) then
+    case(VANKATP_NAVST2D_SPSOR)
       
-      ! Yes, we do, but we use the 'fast variant'.
-      call vanka_NS2D_pdof_fast(rrhs, domega, rvector, rvanka)
+      ! Yes, we do, but we use the SP-SOR variant.
+      call vanka_NS2D_spsor(rrhs, domega, rvector, rvanka)
       
       ! And return here.
       return
+    
+    case(VANKATP_NAVST2D_SPSSOR)
+    
+      ! This is bad: The SP-SSOR algorithm can only be applied onto a defect
+      ! vector, so a call via this wrapper routine is not allowed!
+      call output_line ('SP-SSOR cannot be called via vanka_NavierStokes2D!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vanka_NavierStokes2D')
       
-    end if
+      ! Stop here
+      call sys_halt()
+      
+    end select
     
     ! Loop through the element distributions of the velocity.
     do ielementdist = 1,rvanka%p_rspatialDiscrV%inumFESpaces
@@ -1272,11 +1294,11 @@ contains
 
 !<subroutine>
   
-  subroutine vanka_NS2D_pdof_fast (rrhs,domega,rvector,rvanka)
+  subroutine vanka_NS2D_spsor (rrhs,domega,rvector,rvanka)
   
 !<description>
-  ! This routine applies the pressure-DOF based Vanka algorithm onto a 2D
-  ! Navier-Stokes system Ax = b, fast variant.
+  ! This routine applies the SP-SOR algorithm onto a 2D Navier-Stokes system
+  ! Ax = b.
   ! In contrast to the other Vanka variants, this algorithm is a 'black-box'
   ! method which does not need any information about the discretisations.
 !</description>
@@ -1408,8 +1430,9 @@ contains
     else
       
       ! currently not supported
-      print *, 'ERROR: vanka_NS2D_pdof_fast!'
-      stop
+      call output_line ('A12/A21 matrices currently not supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vanka_NS2D_spsor')
+      call sys_halt()
     
     end if
     
@@ -1474,6 +1497,385 @@ contains
       
       end do ! idofp
 
+    end if
+    
+    ! That's it
+
+  end subroutine
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine vanka_NS2D_precSPSOR (rvanka,rdef,domega)
+  
+!<description>
+  ! This routine applies the SP-SOR preconditioner onto a 2D Navier-Stokes
+  ! system Ax = b.
+  ! 
+!</description>
+
+!<input>
+  ! Relaxation parameter. Standard=1.0_DP.
+  real(DP), intent(IN)                    :: domega
+!</input>
+
+!<inputoutput>
+  ! On entry, the defect vector that is to be preconditioned.
+  ! On exit, the preconditioned defect.
+  type(t_vectorBlock), intent(INOUT)         :: rdef
+
+  ! t_vanka structure that saves algorithm-specific parameters.
+  type(t_vankaPointerNavSt2D), intent(INOUT) :: rvanka
+!</inputoutput>
+
+!</subroutine>
+
+  ! Multiplication factors
+  real(DP), dimension(3,3) :: Dmult
+  
+  ! Quick access for the matrix arrays
+  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldD,&
+      p_KcolA,p_KcolA12,p_KcolB,p_KcolD,p_KdiagA
+  real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22,p_DB1,p_DB2,&
+      p_DD1,p_DD2,p_DS
+
+  ! Quick access for the vector arrays
+  real(DP), dimension(:), pointer :: p_DdefU,p_DdefV,p_DdefP
+  
+  ! local variables
+  logical :: bHaveA21
+  integer :: idofp,idofu,i,j,idiag
+  real(DP) :: daux1,daux2,dfu,dfv,dfp,dsa1,dsa2
+
+    ! Get the pointers to the vector data
+    call lsyssc_getbase_double(rdef%RvectorBlock(1), p_DdefU)
+    call lsyssc_getbase_double(rdef%RvectorBlock(2), p_DdefV)
+    call lsyssc_getbase_double(rdef%RvectorBlock(3), p_DdefP)
+    
+    ! Let's assume we do not have the optional matrices
+    bHaveA21 = .false.
+    
+    ! Get the pointers from the vanka structure
+    p_KldA => rvanka%p_KldA
+    p_KcolA => rvanka%p_KcolA
+    p_KdiagA => rvanka%p_KdiagonalA
+    p_DA11 => rvanka%p_DA11
+    p_DA22 => rvanka%p_DA22
+    p_KldB => rvanka%p_KldB
+    p_KcolB => rvanka%p_KcolB
+    p_DB1 => rvanka%p_DB1
+    p_DB2 => rvanka%p_DB2
+    p_KldD => rvanka%p_KldD
+    p_KcolD => rvanka%p_KcolD
+    p_DD1 => rvanka%p_DD1
+    p_DD2 => rvanka%p_DD2
+    
+    if(associated(rvanka%p_DA12)) then
+      bHaveA21 = .true.
+      p_KldA12 => rvanka%p_KldA12
+      p_KcolA12 => rvanka%p_KcolA12
+      p_DA12 => rvanka%p_DA12
+      p_DA21 => rvanka%p_DA21
+    end if
+    
+    ! Get the Schur-complement array
+    p_DS => rvanka%p_Dschur
+    
+    ! Get the multiplication factors
+    Dmult = rvanka%Dmultipliers
+    
+    ! Enable 'soft-deactivation' of A21
+    bHaveA21 = bHaveA21 .and. (Dmult(2,1) .ne. 0.0_DP)
+   
+    ! Step 1: Update velocity
+    if(.not. bHaveA21) then
+    
+      ! In this case the task is simple: Perform a 'normal' SOR step on the
+      ! velocity coupling system, i.e. solve:
+      !
+      !             ( L1  0  ) * (u) = (f_u)
+      !             ( 0   L2 )   (v)   (f_v)
+      !
+      ! where L1/L2 is the lower triangular part of A11/A22, and overwrite
+      ! the defect vector (f_u, f_v) by (u, v) in-situ.
+    
+      ! Pre-calculate scaling factors
+      dsa1 = 1.0_DP / Dmult(1,1)
+      dsa2 = 1.0_DP / Dmult(2,2)
+    
+      ! Let's loop over the velocity DOFs
+      do idofu = 1, rvanka%ndofVelo
+      
+        ! Get pre-scaled old defect vector entries
+        dfu = dsa1*p_DdefU(idofu)
+        dfv = dsa2*p_DdefV(idofu)
+        
+        ! Get index of main diagonal entry
+        idiag = p_KdiagA(idofu)
+
+        ! Calculate A(i,.) * u(.) for the lower-triangular part of A11/A22
+        do i = p_KldA(idofu), idiag-1
+          j = p_KcolA(i)
+          dfu = dfu - p_DA11(i)*p_DdefU(j)
+          dfv = dfv - p_DA22(i)*p_DdefV(j)
+        end do ! i
+        
+        ! Update velocity
+        p_DdefU(idofu) = domega*dfu / p_DA11(idiag)
+        p_DdefV(idofu) = domega*dfv / p_DA22(idiag)
+      
+      end do ! idofu
+    
+    else
+      
+      ! Currently not supported
+      call output_line ('A12/A21 matrices currently not supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vanka_NS2D_precSPSOR')
+      call sys_halt()
+      
+    end if
+    
+    ! Step 2: Update pressure
+    !$omp parallel do private(i,j,daux1,daux2,dfp) if(rvanka%ndofPres .ge. 1000)
+    do idofp = 1, rvanka%ndofPres
+    
+      ! Skip this pressure DOF if the Schur complement is zero.
+      if(p_DS(idofp) .eq. 0.0_DP) cycle
+    
+      ! Loop through the D-matrices to calculate the local defect
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      do i = p_KldD(idofp), p_KldD(idofp+1)-1
+        j = p_KcolD(i)
+        daux1 = daux1 + p_DD1(i)*p_DdefU(j)
+        daux2 = daux2 + p_DD2(i)*p_DdefV(j)
+      end do ! id1
+      dfp = p_DdefP(idofp) - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
+      
+      ! Update pressure DOF
+      p_DdefP(idofp) = domega * dfp * p_DS(idofp)
+    
+    end do ! idofp
+    !$omp end parallel do
+
+    ! That's it
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine vanka_NS2D_precSPSSOR (rvanka,rdef,domega)
+  
+!<description>
+  ! This routine applies the SP-SSOR preconditioner onto a 2D Navier-Stokes
+  ! system Ax = b.
+  ! 
+!</description>
+
+!<input>
+  ! Relaxation parameter. Standard=1.0_DP.
+  real(DP), intent(IN)                    :: domega
+!</input>
+
+!<inputoutput>
+  ! On entry, the defect vector that is to be preconditioned.
+  ! On exit, the preconditioned defect.
+  type(t_vectorBlock), intent(INOUT)         :: rdef
+
+  ! t_vanka structure that saves algorithm-specific parameters.
+  type(t_vankaPointerNavSt2D), intent(INOUT) :: rvanka
+!</inputoutput>
+
+!</subroutine>
+
+  ! Multiplication factors
+  real(DP), dimension(3,3) :: Dmult
+  
+  ! Quick access for the matrix arrays
+  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldD,&
+      p_KcolA,p_KcolA12,p_KcolB,p_KcolD,p_KdiagA
+  real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22,p_DB1,p_DB2,&
+      p_DD1,p_DD2,p_DS
+
+  ! Quick access for the vector arrays
+  real(DP), dimension(:), pointer :: p_DdefU,p_DdefV,p_DdefP
+  
+  ! local variables
+  logical :: bHaveA12,bHaveA21
+  integer :: idofp,idofu,i,j,idiag
+  real(DP) :: dt,daux1,daux2,dfu,dfv,dfp,dsa1,dsa2
+
+    ! Get the pointers to the vector data
+    call lsyssc_getbase_double(rdef%RvectorBlock(1), p_DdefU)
+    call lsyssc_getbase_double(rdef%RvectorBlock(2), p_DdefV)
+    call lsyssc_getbase_double(rdef%RvectorBlock(3), p_DdefP)
+    
+    ! Let's assume we do not have the optional matrices
+    bHaveA12 = .false.
+    bHaveA21 = .false.
+    
+    ! Get the pointers from the vanka structure
+    p_KldA => rvanka%p_KldA
+    p_KcolA => rvanka%p_KcolA
+    p_KdiagA => rvanka%p_KdiagonalA
+    p_DA11 => rvanka%p_DA11
+    p_DA22 => rvanka%p_DA22
+    p_KldB => rvanka%p_KldB
+    p_KcolB => rvanka%p_KcolB
+    p_DB1 => rvanka%p_DB1
+    p_DB2 => rvanka%p_DB2
+    p_KldD => rvanka%p_KldD
+    p_KcolD => rvanka%p_KcolD
+    p_DD1 => rvanka%p_DD1
+    p_DD2 => rvanka%p_DD2
+    
+    if(associated(rvanka%p_DA12)) then
+      bHaveA12 = .true.
+      bHaveA21 = .true.
+      p_KldA12 => rvanka%p_KldA12
+      p_KcolA12 => rvanka%p_KcolA12
+      p_DA12 => rvanka%p_DA12
+      p_DA21 => rvanka%p_DA21
+    end if
+    
+    ! Get the Schur-complement array
+    p_DS => rvanka%p_Dschur
+    
+    ! Get the multiplication factors
+    Dmult = rvanka%Dmultipliers
+    
+    ! Enable 'soft-deactivation' of A12/A21
+    bHaveA12 = bHaveA12 .and. (Dmult(1,2) .ne. 0.0_DP)
+    bHaveA21 = bHaveA21 .and. (Dmult(2,1) .ne. 0.0_DP)
+   
+    ! Step 1: Update velocity
+    if(.not. bHaveA21) then
+    
+      ! In this case the task is simple: Perform a 'normal' SOR step on the
+      ! velocity coupling system, i.e. solve:
+      !
+      !             ( L1  0  ) * (u) = (f_u)
+      !             ( 0   L2 )   (v)   (f_v)
+      !
+      ! where L1/L2 is the lower triangular part of A11/A22, and overwrite
+      ! the defect vector (f_u, f_v) by (u, v) in-situ.
+    
+      ! Pre-calculate scaling factors
+      dsa1 = 1.0_DP / Dmult(1,1)
+      dsa2 = 1.0_DP / Dmult(2,2)
+    
+      ! Let's loop over the velocity DOFs
+      do idofu = 1, rvanka%ndofVelo
+      
+        ! Get pre-scaled old defect vector entries
+        dfu = dsa1*p_DdefU(idofu)
+        dfv = dsa2*p_DdefV(idofu)
+        
+        ! Get index of main diagonal entry
+        idiag = p_KdiagA(idofu)
+
+        ! Calculate A(i,.) * u(.) for the lower-triangular part of A11/A22
+        do i = p_KldA(idofu), idiag-1
+          j = p_KcolA(i)
+          dfu = dfu - p_DA11(i)*p_DdefU(j)
+          dfv = dfv - p_DA22(i)*p_DdefV(j)
+        end do ! i
+        
+        ! Update velocity
+        p_DdefU(idofu) = domega*dfu / p_DA11(idiag)
+        p_DdefV(idofu) = domega*dfv / p_DA22(idiag)
+      
+      end do ! idofu
+    
+    else
+      
+      ! Currently not supported
+      call output_line ('A12/A21 matrices currently not supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vanka_NS2D_precSPSSOR')
+      call sys_halt()
+      
+    end if
+    
+    ! Step 2: Update pressure
+    !$omp parallel do private(i,j,daux1,daux2,dfp) if(rvanka%ndofPres .ge. 1000)
+    do idofp = 1, rvanka%ndofPres
+    
+      ! Skip this pressure DOF if the Schur complement is zero.
+      if(p_DS(idofp) .eq. 0.0_DP) cycle
+    
+      ! Loop through the D-matrices to calculate the local defect
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      do i = p_KldD(idofp), p_KldD(idofp+1)-1
+        j = p_KcolD(i)
+        daux1 = daux1 + p_DD1(i)*p_DdefU(j)
+        daux2 = daux2 + p_DD2(i)*p_DdefV(j)
+      end do ! id1
+      dfp = p_DdefP(idofp) - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
+      
+      ! Update pressure DOF
+      p_DdefP(idofp) = domega * dfp * p_DS(idofp)
+    
+    end do ! idofp
+    !$omp end parallel do
+    
+    ! Step 3: Update velocity
+    if(.not. bHaveA12) then
+    
+      ! In this case the task is simple: Perform a 'normal' SOR step on the
+      ! velocity coupling system, i.e. solve:
+      !
+      !             ( U1  0  ) * (u) = (f_u) - (B1) * (p)
+      !             ( 0   U2 )   (v)   (f_v)   (B2)
+      !
+      ! where U1/U2 is the upper triangular part of A11/A22, and overwrite
+      ! the defect vector (f_u, f_v) by (u, v) in-situ.
+    
+      ! Pre-calculate scaling factors
+      dsa1 = Dmult(1,3) / Dmult(1,1)
+      dsa2 = Dmult(2,3) / Dmult(2,2)
+    
+      ! Let's loop over the velocity DOFs
+      do idofu = rvanka%ndofVelo, 1, -1
+      
+        ! Calculate B * p
+        dfu = 0.0_DP
+        dfv = 0.0_DP
+        do i = p_KldB(idofu), p_KldB(idofu+1)-1
+          dt = p_DdefP(p_KcolB(i))
+          dfu = dfu + p_DB1(i)*dt
+          dfv = dfv + p_DB2(i)*dt
+        end do ! i
+        dfu = dsa1*dfu
+        dfv = dsa2*dfv
+        
+        ! Get index of main diagonal entry
+        idiag = p_KdiagA(idofu)
+
+        ! Calculate A(i,.) * u(.) for the upper-triangular part of A11/A22
+        do i = p_KldA(idofu+1)-1, idiag+1, -1
+          j = p_KcolA(i)
+          dfu = dfu + p_DA11(i)*p_DdefU(j)
+          dfv = dfv + p_DA22(i)*p_DdefV(j)
+        end do ! i
+        
+        ! Update velocity
+        p_DdefU(idofu) = p_DdefU(idofu) - domega*dfu / p_DA11(idiag)
+        p_DdefV(idofu) = p_DdefV(idofu) - domega*dfv / p_DA22(idiag)
+      
+      end do ! idofu
+    
+    else
+      
+      ! Currently not supported
+      call output_line ('A12/A21 matrices currently not supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vanka_NS2D_precSPSSOR')
+      call sys_halt()
+      
     end if
     
     ! That's it

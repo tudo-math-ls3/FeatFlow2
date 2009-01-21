@@ -581,7 +581,7 @@ contains
         ! Initialise the smoothers.
         select case (ismootherType)
         
-        case (0:5,101:104)
+        case (0:5,101:105)
 
           nullify(p_rsmoother)
         
@@ -607,7 +607,9 @@ contains
           case (103)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_PDOF)
           case (104)
-            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_PDOF_FAST)
+            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_SPSOR)
+          case (105)
+            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_SPSSOR)
           end select
           
           ! Initialise the parameters -- if there are any.
@@ -1054,7 +1056,8 @@ contains
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 101) .or. &
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 102) .or. &
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 103) .or. &
-                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 104)) then
+                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 104) .or. &
+                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 105)) then
                 btranspose = .true.
               end if              
               

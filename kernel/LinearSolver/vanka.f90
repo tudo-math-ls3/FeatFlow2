@@ -184,7 +184,10 @@ module vanka
   public :: VANKATP_NAVST2D_DIAG
   public :: VANKATP_NAVST2D_FULL
   public :: VANKATP_NAVST2D_PDOF
-  public :: VANKATP_NAVST2D_PDOF_FAST
+  public :: VANKATP_NAVST2D_SPSOR
+  public :: VANKATP_NAVST2D_SPSSOR
+  public :: vanka_NS2D_precSPSOR
+  public :: vanka_NS2D_precSPSSOR
   
   ! Public entities imported from vanka_bouss2d.f90
   public :: VANKATP_BOUSS2D_DIAG
