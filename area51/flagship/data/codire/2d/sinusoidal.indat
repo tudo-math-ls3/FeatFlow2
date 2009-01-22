@@ -1,0 +1,46 @@
+# -*- mode: sh; -*-
+
+#
+# Input data for Convection of a step function benchmark
+#
+
+# Specify the initial solution by logical expressions and solution values
+[initial_solution]
+NCOMP
+1
+SIN(2*_PI*x)*SIN(2*_PI*y)
+
+[exact_solution]
+NCOMP
+1
+SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t))
+
+# Specify the initial velocity by logical expressions and solution values
+[initial_velocity]
+NCOMP
+2
+1.0
+1.0
+
+
+# Specify the boundary conditions for the primal problem
+# 1. The first item of the parameter section always contains 
+#    the right value of the boundary interval.
+# 2. The second item defines whether the right endpoint belongs 
+#    to the interval (ieptyp=1) or no (ieptyp=0)
+# 3. The third item defines the boundary type: 
+#    Neumann boundary condition   ibctyp = 0
+#    Dirichlet boundary condition ibctyp = 1
+[boundary_conditions_primal]
+NBCT
+1
+NEXPR
+1
+IBCT
+1
+NCOMP
+3
+PARAMETERS
+1.0  F  1   -SIN(2*_PI*t)*SIN(2*_PI*(y-t))
+2.0  T  1   -SIN(2*_PI*t)*SIN(2*_PI*(x-t))
+4.0  F  0

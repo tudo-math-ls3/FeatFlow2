@@ -1,0 +1,78 @@
+# -*- mode: sh; -*-
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                              Anisotropic diffusion                           #
+#                                                                              #
+#  From:   D. Kuzmin, M. Shashkov, D.A. Svyatskiy. A constrained finite        #
+#          element method satisfying the discrete maximum principle for        #
+#          anisotropic diffusion problems on arbitrary meshes.                 #
+#          Ergebnisberichte des Instituts fuer Angewandte Mathematik, Nr. 373  #
+#                                                                              #
+################################################################################
+
+# constants
+defconst: a11 = 1.0
+defconst: a12 = 0.0
+defconst: a21 = 0.0
+defconst: a22 = 1000.0
+defconst: ang = 30
+defexpr: D11 = (COS(_ang)*_a11-SIN(_ang)*_a21)*COS(_ang)-(COS(_ang)*_a12-SIN(_ang)*_a22)*SIN(_ang)
+defexpr: D12 = (COS(_ang)*_a11-SIN(_ang)*_a21)*SIN(_ang)+(COS(_ang)*_a12-SIN(_ang)*_a22)*COS(_ang)
+defexpr: D21 = (SIN(_ang)*_a11+COS(_ang)*_a21)*COS(_ang)-(SIN(_ang)*_a12+COS(_ang)*_a22)*SIN(_ang)
+defexpr: D22 = (SIN(_ang)*_a11+COS(_ang)*_a21)*SIN(_ang)+(SIN(_ang)*_a12+COS(_ang)*_a22)*COS(_ang)
+
+# Specify the initial solution by logical expressions and solution values
+[initial_solution]
+NCOMP
+1
+0.0
+
+[exact_solution]
+NCOMP
+1
+0.0
+
+# Specify the initial velocity by logical expressions and solution values
+[initial_velocity]
+NCOMP
+2
+0.0
+0.0
+
+# Specify the right-hand side profile
+[rhs]
+NCOMP
+1
+0.0
+#-( -32*@D11*y*(1-y)+ ...
+#       @D12*(16*(1-x)*(1-y)-16*(1-x)*y-16*x*(1-y)+16*x*y)+ ...
+#       @D21*(16*(1-x)*(1-y)-16*(1-x)*y-16*x*(1-y)+16*x*y)+ ...
+#   -32*@D22*x*(1-x) )
+
+
+# Specify the boundary conditions for the primal problem
+# 1. The first item of the parameter section always contains 
+#    the right value of the boundary interval.
+# 2. The second item defines whether the right endpoint belongs 
+#    to the interval (ieptyp=1) or no (ieptyp=0)
+# 3. The third item defines the boundary type: 
+#    Neumann boundary condition   ibctyp = 0
+#    Dirichlet boundary condition ibctyp = 1
+[boundary_conditions_primal]
+NBCT
+2
+NEXPR
+1
+IBCT
+1
+NCOMP
+1
+IBCT
+2
+NCOMP
+1
+PARAMETERS
+4.0  T  1  0.0
+4.0  T  1  2.0

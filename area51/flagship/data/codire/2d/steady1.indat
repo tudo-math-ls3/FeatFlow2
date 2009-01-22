@@ -1,0 +1,47 @@
+# -*- mode: sh; -*-
+#
+# Input data for steady-state convection diffusion equation
+#
+
+# Specify the initial solution by logical expressions and solution values
+[initial_solution]
+NCOMP
+1
+if(x>1/3 & x<2/3,1,0)
+
+[exact_solution]
+NCOMP
+1
+if(x>1/3 & x<2/3,1,0)
+
+# Specify the initial velocity by logical expressions and solution values
+[initial_velocity]
+NCOMP
+2
+-y
+x
+
+# Specify the boundary conditions for the primal problem
+# 1. The first item of the parameter section always contains 
+#    the right value of the boundary interval.
+# 2. The second item defines whether the right endpoint belongs 
+#    to the interval (ieptyp=1) or no (ieptyp=0)
+# 3. The third item defines the boundary type: 
+#    Neumann boundary condition   ibctyp = 0
+#    Dirichlet boundary condition ibctyp = 1
+[boundary_conditions_primal]
+NBCT
+1
+NEXPR
+1
+IBCT
+1
+NCOMP
+5
+PARAMETERS
+1.0           T  0
+1.3333333333  T  1   0.0
+1.6666666666  T  1   1.0
+3.0           T  1   0.0
+4.0           F  0
+
