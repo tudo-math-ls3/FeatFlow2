@@ -1,0 +1,246 @@
+gmv_attributes2
+
+filename /home/mm/work/codes/AFC/applications/afc2d/gmv/gaussian.1.gmv
+
+matrgba 4 0.000000e+00 1.000000e+00 0.000000e+00 1.000000e+00 
+
+
+angles -1.175000e+02 3.150000e+01 0.000000e+00
+
+magnify 9.532347e-01
+
+range 2.040000e+00 2.040000e+00 0.000000e+00
+
+span 2.884996e+00
+
+aspect 1.352324e+00
+
+pan -6.680713e-02 -5.690535e-01
+
+translate -0.000000e+00 -0.000000e+00 -0.000000e+00
+
+plotbox_mins -1.020000e+00 -1.020000e+00 0.000000e+00
+
+plotbox_maxs 1.020000e+00 1.020000e+00 0.000000e+00
+
+cutplane 0 1 32768 Node u
+     0.000000e+00 0.000000e+00 1.000000e+00 -0.000000e+00
+     1.000000e+00 0.000000e+00 0.000000e+00
+     0.000000e+00 1.000000e+00 0.000000e+00
+     0.000000e+00 0.000000e+00 0.000000e+00
+     0.000000e+00 0.000000e+00 1.000000e+00
+     10
+      1 5.800000e-01 0.000000e+00 0 0 0 0 0 0 1
+
+explodefact 0.000000e+00 0.000000e+00 0.000000e+00
+
+velscale 1.000000e+00
+
+velarrowsize 1.000000e+00
+
+axisflag 0
+
+nodesflag 0
+
+linesflag 0
+
+polysflag 0
+
+cellsflag 0
+
+celledgesflag 0
+
+cellhiddenedgesflag 0
+
+cellexpflag -1
+
+timeflag 1
+
+cycleflag 0
+
+distscaleflag 0
+
+textureflag 1
+
+tracerflag 0
+
+nodefieldactive MATERIAL  
+
+cellfieldactive MATERIAL  
+
+backgroundcolor 255 255 255
+
+light  -1.600000e-01 -3.000000e-01
+
+xscale 1.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+
+yscale 1.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+
+zscale 1.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+
+scaleaxis 1.000000e+00 1.000000e+00 1.000000e+00
+
+nodefield_limits 13
+     u 7.861990e-224 5.068500e+01
+     ^U       ^ -1.000000e+00 1.000000e+00
+     ^V       ^ -1.000000e+00 1.000000e+00
+     ^W       ^ 0.000000e+00 1.000000e-05
+     ^Vect Mag^ 0.000000e+00 1.414214e+00
+     FldCalc1 0.000000e+00 1.052457e+00
+     FldCalc2 0.000000e+00 1.052457e+00
+     FldCalc3 0.000000e+00 1.052457e+00
+     FldCalc4 0.000000e+00 1.052457e+00
+     FldCalc5 0.000000e+00 1.052457e+00
+     X-Coords -1.000000e+00 1.000000e+00
+     Y-Coords -1.000000e+00 1.000000e+00
+     Z-Coords 0.000000e+00 1.000000e-05
+nodefield_nice_limits 13
+     u 7.861990e-224 5.068500e+01
+     ^U       ^ -1.000000e+00 1.000000e+00
+     ^V       ^ -1.000000e+00 1.000000e+00
+     ^W       ^ 0.000000e+00 1.000000e-05
+     ^Vect Mag^ 0.000000e+00 1.414214e+00
+     FldCalc1 0.000000e+00 1.052457e+00
+     FldCalc2 0.000000e+00 1.052457e+00
+     FldCalc3 0.000000e+00 1.052457e+00
+     FldCalc4 0.000000e+00 1.052457e+00
+     FldCalc5 0.000000e+00 1.052457e+00
+     X-Coords -1.000000e+00 1.000000e+00
+     Y-Coords -1.000000e+00 1.000000e+00
+     Z-Coords 0.000000e+00 1.000000e-05
+nodefield_lim_flags 13  
+     u 1 0 0
+     ^U       ^ 1 0 0
+     ^V       ^ 1 0 0
+     ^W       ^ 1 0 0
+     ^Vect Mag^ 1 0 0
+     FldCalc1 1 0 0
+     FldCalc2 1 0 0
+     FldCalc3 1 0 0
+     FldCalc4 1 0 0
+     FldCalc5 1 0 0
+     X-Coords 1 0 0
+     Y-Coords 1 0 0
+     Z-Coords 1 0 0
+ 
+cellfield_limits 0
+ 
+cellfield_nice_limits 0
+cellfield_lim_flags 0  
+ 
+plotbox_mins_prev -1.020000e+00 -1.020000e+00 0.000000e+00
+
+plotbox_maxs_prev 1.020000e+00 1.020000e+00 0.000000e+00
+
+cliponbox 0
+
+nrefl_loops 1
+
+reflect 0 0 0
+
+clipvalue 0.000000e+00 1.000000e+00
+
+polysubset_mins -1.020000e+00 -1.020000e+00 0.000000e+00
+
+polysubset_maxs 1.020000e+00 1.020000e+00 0.000000e+00
+
+subset_mins -1.020000e+00 -1.020000e+00 0.000000e+00
+
+subset_maxs 1.020000e+00 1.020000e+00 0.000000e+00
+
+mat_order 0 
+
+nodeselflag Material ALL
+
+nodeandorflag 1 0 
+
+cellselflag Material ALL
+
+cellandorflag 1 0 
+
+colorbarflag 1
+
+colorbarpref 0
+
+boundingboxflag 0
+
+boundingbox_mins -1.000000e+00 -1.000000e+00 0.000000e+00
+
+boundingbox_maxs 1.000000e+00 1.000000e+00 0.000000e+00
+
+boundingbox_mins_prev -1.000000e+00 -1.000000e+00 0.000000e+00
+
+boundingbox_maxs_prev 1.000000e+00 1.000000e+00 0.000000e+00
+
+viewflag 0
+
+flypos 0.000000e+00 0.000000e+00 0.000000e+00 
+
+cellcontflag 0
+
+cliponcellsel 0
+
+vectfld_ ^U       ^ ^V       ^ ^W       ^
+
+maxspeed 1.414214e+00
+
+vectorflag 0
+
+vectorarrow 1
+
+vectorlog 0
+
+titleflag 0
+
+nodeselmat_on 0
+
+cellselmat_on 0
+
+bboxcoordflag 1
+
+nodenumflag 0
+
+cellnumflag 0
+
+pnt_size 2 0
+
+line_size 1 0
+
+node0matflag 0
+
+cell0matflag 0
+
+tracehistflag 0
+
+tracehiststop 0
+
+tracehiststride 1
+
+tracehistpoints 1
+
+cellshadeflag 0
+
+fieldcolortype 0
+
+nset_contours 10
+
+facerefineflag 0
+
+cellnormflag 0
+
+cellmedianedgeflag 0
+
+cellnodenumflag 0
+
+cellfacenumflag 0
+
+polystiplflag 0
+
+drawunselnodes 0
+
+drawunselcells 0
+
+distscale_x 120
+distscale_y 60
+end_attributes
+
