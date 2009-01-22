@@ -1432,20 +1432,20 @@ contains
     Dxi(1,2)  =  0.0_DP
     Dxi(1,3)  = -1.0_DP
     
-    Dxi(2,1)  = -1.0_DP
-    Dxi(2,2)  =  0.0_DP
+    Dxi(2,1)  =  0.0_DP
+    Dxi(2,2)  =  -1.0_DP
     Dxi(2,3)  =  0.0_DP
 
-    Dxi(3,1)  =  0.0_DP
-    Dxi(3,2)  = -1.0_DP
+    Dxi(3,1)  =  1.0_DP
+    Dxi(3,2)  =  0.0_DP
     Dxi(3,3)  =  0.0_DP
 
-    Dxi(4,1)  =  1.0_DP
-    Dxi(4,2)  =  0.0_DP
+    Dxi(4,1)  =  0.0_DP
+    Dxi(4,2)  =  1.0_DP
     Dxi(4,3)  =  0.0_DP
 
-    Dxi(5,1)  =  0.0_DP
-    Dxi(5,2)  =  1.0_DP
+    Dxi(5,1)  =  -1.0_DP
+    Dxi(5,2)  =  0.0_DP
     Dxi(5,3)  =  0.0_DP
 
     Dxi(6,1)  =  0.0_DP
