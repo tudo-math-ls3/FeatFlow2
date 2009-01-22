@@ -1,0 +1,47 @@
+# -*- mode: sh; -*-
+#
+# Input data for the radially symmetric Riemann problem
+#
+# Initial conditions:
+#  rho1 = 2.0; p1 = 15.0
+#  rho2 = 1.0; p2 = 1.0
+# and states 1 and 2 are separated by a circle at 
+# (x0,y0)=(0.5,0.5) with radius 0.13
+#
+
+defconst: r0 = 0.13
+defconst: x0 = 0.5
+defconst: y0 = 0.5
+defexpr:  sqr1 = SQRT((x-_x0)^2+(y-_y0)^2)
+
+# Specify the initial solution by logical expressions and solution values
+[initial_solution]
+NCOMP
+4
+if(@sqr1 < _r0, 2.0, 1.0)
+0.0
+0.0
+if(@sqr1 < _r0, 37.5, 2.5)
+
+# Specify the boundary conditions
+# 1. The first item of the parameter section always contains 
+#    the right value of the boundary interval.
+# 2. The second item defines whether the right endpoint belongs 
+#    to the interval (ieptyp=1) or no (ieptyp=0)
+# 3. The third item defines the boundary type: 
+#    Neumann boundary condition   ibctyp = 0
+#    Dirichlet boundary condition ibctyp = 1
+[boundary_conditions]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+1.0 T 3
+2.0 F 3
+3.0 T 3
+4.0 F 3

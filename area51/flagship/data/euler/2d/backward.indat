@@ -1,0 +1,70 @@
+# -*- mode: sh; -*-
+
+################################################################################
+#                     Input data for the FEM-AFC solver                        #
+#                                                                              #
+#                    Supersonic flow over backward facing step                 #
+#                                                                              #
+# From:  K. Takayama and O. Inoue, "Shock wave diffraction over a 90 degree    #
+#        sharp corner - Posters presented at 18th ISSW", Shock Waves Vol. 1    #
+#        pages 301-312, 1991.                                                  #
+#                                                                              #
+# Data from: http://amroc.sourceforge.net/examples/euler/2d/html/bfstep_n.htm  #
+#                                                                              #
+# Ratio of specific heats:   gamma = 1.4 (air at sea-level)                    #
+#                                                                              #
+# Inflow boundary conditions     Initial data/external data                    #
+#    rho0 = 1.862068449             rho1 = 1.0                                 #
+#    p0   = 2.458332279             p1   = 1.0                                 #
+#    u0   = 0.821677818             u1   = 0.0                                 #
+#    v0   = 0.0                     v1   = 0.0                                 #
+#                                                                              #
+#    rho0*u0  = 1.53002034014096    rho1*u1 = 0.0                              #
+#    rho0*v0  = 0.0                 rho1*v1 = 0.0                              #
+#    rho0*E0  = 6.77442258479132    rho1*E1 = 2.5                              #
+#                                                                              #
+################################################################################
+
+# Specify the initial solution by logical expressions and solution values
+[initial_solution]
+NCOMP
+4
+1.0
+0.0
+0.0
+2.5
+
+# Specify the boundary conditions
+# 1. The first item of the parameter section always contains 
+#    the right value of the boundary interval.
+# 2. The second item defines whether the right endpoint belongs 
+#    to the interval (ieptyp=1) or no (ieptyp=0)
+# 3. The third item defines the boundary type: 
+#    ibctyp =  0: Neumann boundary condition
+#    ibctyp =  1: Dirichlet boundary condition
+#    ibctyp =  2: Solid-wall boundary condition
+#    ibctyp =  3: Viscous-wall boundary condition
+#    ibctyp =  4: Farfield boundary condition (characteristics are computed)
+#    ibctyp =  5: Subsonic inlet boundary condition
+#    ibctyp =  6: Subsonic outlet boundary condition
+#    ibctyp =  7: Massflow inlet boundary condition
+#    ibctyp =  8: Massflow outlet boundary condition
+#    ibctyp =  9: Mach outflow boundary condition
+#    ibctyp = 10: Supersonic inlet boundary condition
+#    ibctyp = 11: Supersonic outlet boundary condition
+#    ibctyp = 12: Periodic boundary condition (symmetric)
+#    ibctyp = 13: Periodic boundary condition (anti-symmetric)
+[boundary_conditions]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+1.0  T  2
+2.0  T  2
+5.0  F  4    1.0  0.0  0.0  1.0
+6.0  F  10   1.862068449  0.821677818  0.0  2.458332279
