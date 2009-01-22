@@ -1,0 +1,258 @@
+gmv_attributes2
+
+filename /data/sarimner/mmoelle1/AFC/applications/flagship2d/gmv/shocktubeTVD.gmv00024
+
+matrgba 4 0.000000e+00 1.000000e+00 0.000000e+00 1.000000e+00 
+
+
+angles -5.800000e+01 2.450000e+01 0.000000e+00
+
+magnify 1.072506e+00
+
+range 1.020000e+00 2.040000e-01 0.000000e+00
+
+span 1.040200e+00
+
+aspect 1.285714e+00
+
+pan 7.737871e-02 -2.466915e-01
+
+translate -5.000000e-01 -1.000000e-01 -0.000000e+00
+
+plotbox_mins -1.000000e-02 -2.000000e-03 0.000000e+00
+
+plotbox_maxs 1.010000e+00 2.020000e-01 0.000000e+00
+
+cutplane 0 1 4096 Node density
+     0.000000e+00 0.000000e+00 1.000000e+00 -0.000000e+00
+     1.000000e+00 0.000000e+00 0.000000e+00
+     0.000000e+00 1.000000e+00 0.000000e+00
+     0.000000e+00 0.000000e+00 0.000000e+00
+     0.000000e+00 0.000000e+00 1.000000e+00
+     10
+      1 4.800000e-01 0.000000e+00 0 0 0 0 0 0 1
+
+explodefact 0.000000e+00 0.000000e+00 0.000000e+00
+
+velscale 1.000000e+00
+
+velarrowsize 1.000000e+00
+
+axisflag 0
+
+nodesflag 0
+
+linesflag 0
+
+polysflag 0
+
+cellsflag 0
+
+celledgesflag 0
+
+cellhiddenedgesflag 0
+
+cellexpflag -1
+
+timeflag 1
+
+cycleflag 0
+
+distscaleflag 0
+
+textureflag 1
+
+tracerflag 0
+
+nodefieldactive MATERIAL  
+
+cellfieldactive MATERIAL  
+
+backgroundcolor 255 255 255
+
+light  0.000000e+00 0.000000e+00
+
+xscale 1.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+
+yscale 1.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+
+zscale 1.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+
+scaleaxis 1.000000e+00 1.000000e+00 1.000000e+00
+
+nodefield_limits 16
+     density 1.250000e-01 1.000000e+00
+     tot_energy 2.000000e+00 3.285618e+00
+     pressure 1.000000e-01 1.000000e+00
+     Mach_numb 1.490116e-08 9.334756e-01
+     ^U       ^ -1.426968e-09 9.309484e-01
+     ^V       ^ -8.497029e-03 8.497029e-03
+     ^W       ^ 0.000000e+00 1.000000e-05
+     ^Vect Mag^ 4.222237e-12 9.309484e-01
+     FldCalc1 0.000000e+00 9.242214e-01
+     FldCalc2 0.000000e+00 9.242214e-01
+     FldCalc3 0.000000e+00 9.242214e-01
+     FldCalc4 0.000000e+00 9.242214e-01
+     FldCalc5 0.000000e+00 9.242214e-01
+     X-Coords 0.000000e+00 1.000000e+00
+     Y-Coords 0.000000e+00 2.000000e-01
+     Z-Coords 0.000000e+00 1.000000e-05
+nodefield_nice_limits 16
+     density 1.250000e-01 1.000000e+00
+     tot_energy 2.000000e+00 3.285618e+00
+     pressure 1.000000e-01 1.000000e+00
+     Mach_numb 1.490116e-08 9.334756e-01
+     ^U       ^ -1.426968e-09 9.309484e-01
+     ^V       ^ -8.497029e-03 8.497029e-03
+     ^W       ^ 0.000000e+00 1.000000e-05
+     ^Vect Mag^ 4.222237e-12 9.309484e-01
+     FldCalc1 0.000000e+00 9.242214e-01
+     FldCalc2 0.000000e+00 9.242214e-01
+     FldCalc3 0.000000e+00 9.242214e-01
+     FldCalc4 0.000000e+00 9.242214e-01
+     FldCalc5 0.000000e+00 9.242214e-01
+     X-Coords 0.000000e+00 1.000000e+00
+     Y-Coords 0.000000e+00 2.000000e-01
+     Z-Coords 0.000000e+00 1.000000e-05
+nodefield_lim_flags 16  
+     density 1 0 0
+     tot_energy 1 0 0
+     pressure 1 0 0
+     Mach_numb 1 0 0
+     ^U       ^ 1 0 0
+     ^V       ^ 1 0 0
+     ^W       ^ 1 0 0
+     ^Vect Mag^ 1 0 0
+     FldCalc1 1 0 0
+     FldCalc2 1 0 0
+     FldCalc3 1 0 0
+     FldCalc4 1 0 0
+     FldCalc5 1 0 0
+     X-Coords 1 0 0
+     Y-Coords 1 0 0
+     Z-Coords 1 0 0
+ 
+cellfield_limits 0
+ 
+cellfield_nice_limits 0
+cellfield_lim_flags 0  
+ 
+plotbox_mins_prev -1.000000e-02 -2.000000e-03 0.000000e+00
+
+plotbox_maxs_prev 1.010000e+00 2.020000e-01 0.000000e+00
+
+cliponbox 0
+
+nrefl_loops 1
+
+reflect 0 0 0
+
+clipvalue 0.000000e+00 1.000000e+00
+
+polysubset_mins -1.000000e-02 -2.000000e-03 0.000000e+00
+
+polysubset_maxs 1.010000e+00 2.020000e-01 0.000000e+00
+
+subset_mins -1.000000e-02 -2.000000e-03 0.000000e+00
+
+subset_maxs 1.010000e+00 2.020000e-01 0.000000e+00
+
+mat_order 0 
+
+nodeselflag Material ALL
+
+nodeandorflag 1 0 
+
+cellselflag Material ALL
+
+cellandorflag 1 0 
+
+colorbarflag 1
+
+colorbarpref 0
+
+boundingboxflag 0
+
+boundingbox_mins 0.000000e+00 0.000000e+00 0.000000e+00
+
+boundingbox_maxs 1.000000e+00 2.000000e-01 0.000000e+00
+
+boundingbox_mins_prev 0.000000e+00 0.000000e+00 0.000000e+00
+
+boundingbox_maxs_prev 1.000000e+00 2.000000e-01 0.000000e+00
+
+viewflag 0
+
+flypos 0.000000e+00 0.000000e+00 0.000000e+00 
+
+cellcontflag 0
+
+cliponcellsel 0
+
+vectfld_ ^U       ^ ^V       ^ ^W       ^
+
+maxspeed 9.309484e-01
+
+vectorflag 0
+
+vectorarrow 1
+
+vectorlog 0
+
+titleflag 0
+
+nodeselmat_on 0
+
+cellselmat_on 0
+
+bboxcoordflag 1
+
+nodenumflag 0
+
+cellnumflag 0
+
+pnt_size 2 0
+
+line_size 1 0
+
+node0matflag 0
+
+cell0matflag 0
+
+tracehistflag 0
+
+tracehiststop 0
+
+tracehiststride 1
+
+tracehistpoints 1
+
+cellshadeflag 0
+
+fieldcolortype 0
+
+nset_contours 10
+
+facerefineflag 0
+
+cellnormflag 0
+
+cellmedianedgeflag 0
+
+cellnodenumflag 0
+
+cellfacenumflag 0
+
+polystiplflag 0
+
+drawunselnodes 0
+
+drawunselcells 0
+
+distscale_x 120
+distscale_y 60
+orient_axisflag 0
+orient_axis_x 0
+orient_axis_y 0
+end_attributes
+
