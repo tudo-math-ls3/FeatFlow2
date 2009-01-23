@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> flagship_basic </name>
+!# <name> euler_basic </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,22 +9,22 @@
 !#
 !# The following routines are available:
 !#
-!#  1.) fs_getNVAR
+!#  1.) euler_getNVAR
 !#      Returns the number of variables depending on the spatial dimension
 !#
-!#  2.) fs_getVariableNodewise
+!#  2.) euler_getVariableNodewise
 !#      -> Returns individual variable from solution vector in interleave format
 !#
-!#  3.) fs_getVariableBlockwise
+!#  3.) euler_getVariableBlockwise
 !#      -> Returns individual variable from solution vector in block format
 !#
-!#  4.) fs_updateSolverMatrix
+!#  4.) euler_updateSolverMatrix
 !#      -> Updates the matrices in the solver structure
 !#
 !# </purpose>
 !##############################################################################
 
-module flagship_basic
+module euler_basic
 
   use afcstabilisation
   use fsystem
@@ -33,7 +33,7 @@ module flagship_basic
   use statistics
   use triangulation
 
-  use flagship_thermodynamics
+  use thermodynamics
   use problem
   use solver
 
@@ -41,10 +41,10 @@ module flagship_basic
   implicit none
 
   private
-  public :: fs_getNVAR
-  public :: fs_getVariableNodewise
-  public :: fs_getVariableBlockwise
-  public :: fs_updateSolverMatrix
+  public :: euler_getNVAR
+  public :: euler_getVariableNodewise
+  public :: euler_getVariableBlockwise
+  public :: euler_updateSolverMatrix
 
   !*****************************************************************************
   !*****************************************************************************
@@ -330,7 +330,7 @@ contains
 
 !<function>
 
-  pure function fs_getNVAR(rproblemLevel) result(NVAR)
+  pure function euler_getNVAR(rproblemLevel) result(NVAR)
 
 !<description>
     ! This function returns the number of variables present in the given level
@@ -349,13 +349,13 @@ contains
 
     NVAR = rproblemLevel%rtriangulation%ndim + 2
     
-  end function fs_getNVAR
+  end function euler_getNVAR
 
   !*****************************************************************************
 
 !<subroutine>
   
-  subroutine fs_getVariableNodewise(NEQ, NVAR, Dsolution, ivariable, Dvalue)
+  subroutine euler_getVariableNodewise(NEQ, NVAR, Dsolution, ivariable, Dvalue)
 
 !<description>
     ! This subroutine extracts an individual variable from the
@@ -484,16 +484,16 @@ contains
       
     else
       call output_line('Unsupported variable!',&
-                        OU_CLASS_ERROR,OU_MODE_STD,'fs_getVariableNodewise')
+                        OU_CLASS_ERROR,OU_MODE_STD,'euler_getVariableNodewise')
       call sys_halt()
     end if
-  end subroutine fs_getVariableNodewise
+  end subroutine euler_getVariableNodewise
   
   !*****************************************************************************
   
 !<subroutine>
   
-  subroutine fs_getVariableBlockwise(NEQ, NVAR, Dsolution, ivariable, Dvalue)
+  subroutine euler_getVariableBlockwise(NEQ, NVAR, Dsolution, ivariable, Dvalue)
 
 !<description>
     ! This subroutine extracts an individual variable from the
@@ -621,16 +621,16 @@ contains
       
     else
       call output_line('Unsupported variable!',&
-                        OU_CLASS_ERROR,OU_MODE_STD,'fs_getVariableBlockwise')
+                        OU_CLASS_ERROR,OU_MODE_STD,'euler_getVariableBlockwise')
       call sys_halt()
     end if
-  end subroutine fs_getVariableBlockwise
+  end subroutine euler_getVariableBlockwise
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_updateSolverMatrix(rproblemLevel, rsolver, imatrix,&
+  subroutine euler_updateSolverMatrix(rproblemLevel, rsolver, imatrix,&
                                    iupdflag, nlminOpt, nlmaxOpt)
 
 !<description>
@@ -941,6 +941,6 @@ contains
         call sys_halt()
       end select
     end subroutine updateMatrix
-  end subroutine fs_updateSolverMatrix
+  end subroutine euler_updateSolverMatrix
 
-end module flagship_basic
+end module euler_basic

@@ -77,11 +77,10 @@ module euler_callback3d
   use ucd
 
   use boundaryfilter
+  use euler_basic
   use problem
   use solver
-
-  use euler_basic
-  use euler_thermodynamics
+  use thermodynamics
 
   implicit none
 

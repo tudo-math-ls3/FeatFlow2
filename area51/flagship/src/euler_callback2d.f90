@@ -78,7 +78,7 @@ module euler_callback2d
 
   use boundaryfilter
   use euler_basic
-  use euler_thermodynamics
+  use thermodynamics
   use problem
   use solver
 
