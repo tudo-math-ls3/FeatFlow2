@@ -76,37 +76,26 @@ nadapt = 0
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/square_01x01_trias.prm
+prmfile = grids/2d/square_01x01_trias.prm
 
 # grid triangulation
-trifile = ../../grids/2d/square_01x01_trias.tri
+trifile = grids/2d/square_01x01_trias.tri
 
 # indat file
-indatfile = data/2d/leveque.indat
+indatfile = data/codire/2d/leveque.indat
 
-# GMV output file
-gmvfile = gmv/leveque
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.0
+# time interval for UCD output
+dstepUCD = 1.0
 
-# AVS output file
-avsfile = avs/leveque
+# name of UCD output file for solution
+sfilenameUCDsolution = out/leveque
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/leveque
-
-# VTK output interval
-tstepvtk = -1.0
-
-# name of UCD outfile file for error
-errorfile = 
-
-# type of UCD output format for error
-ierrorUCD = 1
+# name of UCD output file for error
+sfilenameUCDerror = out/leveque_error
 
 
 ################################################################################

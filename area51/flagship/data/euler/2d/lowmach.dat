@@ -56,37 +56,26 @@ nadapt = 0
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/channel_4x1.prm
+prmfile = grids/2d/channel_4x1.prm
 
 # grid triangulation
-trifile = ../../grids/2d/channel_4x1.tri
+trifile = grids/2d/channel_4x1.tri
 
 # indat file
-indatfile = data/2d/lowmach.indat
+indatfile = data/euler/2d/lowmach.indat
 
-# GMV output file
-gmvfile = gmv/lowmach
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.01
+# time interval for UCD output
+dstepUCD = 0.1
 
-# AVS output file
-avsfile = avs/lowmach
+# name of UCD output file for solution
+sfilenameUCDsolution = out/lowmach
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/lowmach
-
-# VTK output interval
-tstepvtk = -1.0
-
-# name of UCD outfile file for error
-errorfile = 
-
-# type of UCD output format for error
-ierrorUCD = 1
+# name of UCD output file for error
+sfilenameUCDerror = out/lowmach_error
 
 
 ################################################################################

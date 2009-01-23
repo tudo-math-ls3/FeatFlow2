@@ -131,38 +131,26 @@ nadapt = 0
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/square_01x01_quadtrias_star.prm
+prmfile = grids/2d/square_01x01_quadtrias_star.prm
 
 # grid triangulation
-trifile = ../../grids/2d/square_01x01_quadtrias_star.tri
+trifile = grids/2d/square_01x01_quadtrias_star.tri
 
 # indat file
-indatfile = data/2d/swirl.indat
+indatfile = data/codire/2d/swirl.indat
 
-# GMV output file
-gmvfile = gmv/disstalk_swirl1/swirl
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.005
+# time interval for UCD output
+dstepUCD = 1.0
 
-# AVS output file
-avsfile = avs/swirl
+# name of UCD output file for solution
+sfilenameUCDsolution = out/swirl
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/swirl
-
-# GMV output interval
-tstepvtk = -1.0
-
-# name of UCD outfile file for error
-errorfile = 
-#gmv/swirl_error
-
-# type of UCD output format for error
-ierrorUCD = 1
+# name of UCD output file for error
+sfilenameUCDerror = out/swirl_error
 
 
 ################################################################################

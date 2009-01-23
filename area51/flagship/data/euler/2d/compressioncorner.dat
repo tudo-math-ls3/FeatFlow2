@@ -57,37 +57,26 @@ nadapt = 10
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/compression_15deg_unstruct_trias.prm
+prmfile = grids/2d/compression_15deg_unstruct_trias.prm
 
 # grid triangulation
-trifile = ../../grids/2d/compression_15deg_unstruct_trias.tri
+trifile = grids/2d/compression_15deg_unstruct_trias.tri
 
 # indat file
-indatfile = data/2d/compressioncorner.indat
+indatfile = data/euler/2d/compressioncorner.indat
 
-# GMV output file
-gmvfile = gmv/compressioncornerTVD
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.0
+# time interval for UCD output
+dstepUCD = 1.0
 
-# AVS output file
-avsfile = avs/compressioncorner
+# name of UCD output file for solution
+sfilenameUCDsolution = out/compressioncorner
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/compressioncorner
-
-# VTK output interval
-tstepvtk = -1.0
-
-# name of UCD outfile file for error
-errorfile = gmv/compressioncornerTVD_error
-
-# type of UCD output format for error
-ierrorUCD = 1
+# name of UCD output file for error
+sfilenameUCDerror = out/compressioncorner_error
 
 
 ################################################################################

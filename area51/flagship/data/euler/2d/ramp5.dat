@@ -60,40 +60,28 @@ nadapt = 0
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/ramp_5deg_inlet_quads.prm
-#prmfile = ../../grids/2d/ramp_5deg_trias.prm
+prmfile = grids/2d/ramp_5deg_inlet_quads.prm
+#prmfile = grids/2d/ramp_5deg_trias.prm
 
 # grid triangulation
-trifile = ../../grids/2d/ramp_5deg_inlet_quads.tri
-#trifile = ../../grids/2d/ramp_5deg_trias.tri
+trifile = grids/2d/ramp_5deg_inlet_quads.tri
+#trifile = grids/2d/ramp_5deg_trias.tri
 
 # indat file
-indatfile = data/2d/ramp5_inlet.indat
+indatfile = data/euler/2d/ramp5_inlet.indat
 
-# GMV output file
-gmvfile = gmv/ramp5_periodic
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.0
+# time interval for UCD output
+dstepUCD = 0.0
 
-# AVS output file
-avsfile = avs/ramp5
+# name of UCD output file for solution
+sfilenameUCDsolution = out/ramp
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/ramp5
-
-# VTK output interval
-tstepvtk = -1.0
-
-# name of UCD outfile file for error
-errorfile = 
-#gmv/ramp5_run2_error
-
-# type of UCD output format for error
-ierrorUCD = 1
+# name of UCD output file for error
+sfilenameUCDerror = out/ramp_error
 
 
 ################################################################################

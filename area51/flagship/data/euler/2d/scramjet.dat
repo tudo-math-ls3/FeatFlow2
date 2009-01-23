@@ -62,37 +62,26 @@ errorfile =
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/scramjet_coarse_quads.prm
+prmfile = grids/2d/scramjet_coarse_quads.prm
 
 # grid triangulation
-trifile = ../../grids/2d/scramjet_coarse_quads.tri
+trifile = grids/2d/scramjet_coarse_quads.tri
 
 # indat file
-indatfile = data/2d/scramjet.indat
+indatfile = data/euler/2d/scramjet.indat
 
-# GMV output file
-gmvfile = gmv/scramjetDensityQ1P1
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 1.0
+# time interval for UCD output
+dstepUCD = 1.0
 
-# AVS output file
-avsfile = avs/scramjet
+# name of UCD output file for solution
+sfilenameUCDsolution = out/scramjet
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/scramjet
-
-# VTK output interval
-tstepvtk = -1.0
-
-# name of UCD outfile file for error
-errorfile = gmv/scramjetDensityQ1P1_error
-
-# type of UCD output format for error
-ierrorUCD = 1
+# name of UCD output file for error
+sfilenameUCDerror = out/scramjet_error
 
 
 ################################################################################

@@ -78,37 +78,26 @@ nadapt = 3
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/rect_2x1.prm
+prmfile = grids/2d/rect_2x1.prm
 
 # grid triangulation
-trifile = ../../grids/2d/rect_2x1.tri
+trifile = grids/2d/rect_2x1.tri
 
 # indat file
-indatfile = data/2d/donut.indat
+indatfile = data/codire/2d/donut.indat
 
-# GMV output file
-gmvfile = gmv/donut
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 2
 
-# GMV output interval
-tstepgmv = 1.0
+# time interval for UCD output
+dstepUCD = 1.0
 
-# AVS output file
-avsfile = avs/donut
+# name of UCD output file for solution
+sfilenameUCDsolution = out/donut
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/donut
-
-# GMV output interval
-tstepvtk = -1.0
-
-# name of UCD outfile file for error
-errorfile = gmv/donut_error
-
-# type of UCD output format for error
-ierrorUCD = 1
+# name of UCD output file for error
+sfilenameUCDerror = out/donut_error
 
 
 ################################################################################

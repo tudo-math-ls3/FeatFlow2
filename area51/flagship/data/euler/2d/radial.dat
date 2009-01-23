@@ -51,39 +51,30 @@ ierrorstrategy = 1
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/square_01x01_quads.prm
-#prmfile = ../../grids/2d/square_01x01_star_trias.prm
+prmfile = grids/2d/square_01x01_quads.prm
+#prmfile = grids/2d/square_01x01_star_trias.prm
 
 # grid triangulation
-trifile = ../../grids/2d/square_01x01_quads.tri
-#trifile = ../../grids/2d/square_01x01_star_trias.tri
+trifile = grids/2d/square_01x01_quads.tri
+#trifile = grids/2d/square_01x01_star_trias.tri
 
 # indat file
-indatfile = data/2d/radial.indat
+indatfile = data/euler/2d/radial.indat
 
-# GMV output file
-gmvfile = gmv/radial
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.0
+# time interval for UCD output
+dstepUCD = 0.0
 
-# AVS output file
-avsfile = avs/radial
+# name of UCD output file for solution
+sfilenameUCDsolution = out/radial
 
-# AVS output interval
-tstepavs = -1.0
+# name of UCD output file for error
+sfilenameUCDerror = out/radial_error
 
-# VTK output file
-vtkfile = vtk/radial
 
-# VTK output interval
-tstepvtk = -1.0
-
-# HDF5 output file
-hdffile = hdf/radial
-
-# HDF5 output interval
-tstephdf = -1.0
 
 
 ################################################################################

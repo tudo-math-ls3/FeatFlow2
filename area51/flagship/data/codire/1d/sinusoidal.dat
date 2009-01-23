@@ -64,34 +64,23 @@ nadapt = 0
 ################################################################################
 
 # grid triangulation
-trifile = ../../grids/1d/unit.tri
+trifile = grids/1d/unit.tri
 
 # indat file
-indatfile = data/1d/sinusoidal.indat
+indatfile = data/codire/1d/sinusoidal.indat
 
-# GMV output file
-gmvfile = gmv/sinusoidal
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.0
+# time interval for UCD output
+dstepUCD = 1.0
 
-# AVS output file
-avsfile = avs/sinusoidal
+# name of UCD output file for solution
+sfilenameUCDsolution = out/sinusoidal
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/sinusoidal
-
-# VTK output interval
-tstepvtk = -1.0
-
-# name of UCD outfile file for error
-errorfile = 
-
-# type of UCD output format for error
-ierrorUCD = 1
+# name of UCD output file for error
+sfilenameUCDerror = out/sinusoidal_error
 
 
 ################################################################################

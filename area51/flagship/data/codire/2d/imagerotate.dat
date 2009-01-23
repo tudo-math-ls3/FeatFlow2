@@ -73,40 +73,29 @@ nadapt = 0
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/square_01x01_quads.prm
+prmfile = grids/2d/square_01x01_quads.prm
 
 # grid triangulation
-trifile = ../../grids/2d/square_01x01_quads.tri
+trifile = grids/2d/square_01x01_quads.tri
 
 # indat file
-indatfile = data/2d/imagerotate.indat
+indatfile = data/codire/2d/imagerotate.indat
 
 # portable graymap file
-pgmfile = data/2d/tux.pgm
+pgmfile = data/codire/2d/tux.pgm
 
-# GMV output file
-gmvfile = gmv/imagerotate
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.005
+# time interval for UCD output
+dstepUCD = 1.0
 
-# AVS output file
-avsfile = avs/imagerotate
+# name of UCD output file for solution
+sfilenameUCDsolution = out/imagerotate
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/imagerotate
-
-# VTK output interval
-tstepvtk = -1.0
-
-# name of UCD outfile file for error
-errorfile = 
-
-# type of UCD output format for error
-ierrorUCD = 1
+# name of UCD output file for error
+sfilenameUCDerror = out/imagerotate_error
 
 
 ################################################################################

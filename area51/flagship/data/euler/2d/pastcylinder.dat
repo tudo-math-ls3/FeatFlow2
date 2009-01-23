@@ -58,37 +58,26 @@ gmv/pastcylinder_error
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/rect_with_circle.prm
+prmfile = grids/2d/rect_with_circle.prm
 
 # grid triangulation
-trifile = ../../grids/2d/rect_with_circle.tri
+trifile = grids/2d/rect_with_circle.tri
 
 # indat file
-indatfile = data/2d/pastcylinder.indat
+indatfile = data/euler/2d/pastcylinder.indat
 
-# GMV output file
-gmvfile = gmv/pastcylinder
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.0
+# time interval for UCD output
+dstepUCD = 0.0
 
-# AVS output file
-avsfile = avs/pastcylinder
+# name of UCD output file for solution
+sfilenameUCDsolution = out/pastcylinder
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/pastcylinder
-
-# VTK output interval
-tstepvtk = -1.0
-
-# HDF5 output file
-hdffile = hdf/pastcylinder
-
-# HDF5 output interval
-tstephdf = -1.0
+# name of UCD output file for error
+sfilenameUCDerror = out/pastcylinder_error
 
 
 ################################################################################

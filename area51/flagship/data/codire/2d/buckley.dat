@@ -73,37 +73,26 @@ nadapt = 0
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/square_01x01_quads.prm
+prmfile = grids/2d/square_01x01_quads.prm
 
 # grid triangulation
-trifile = ../../grids/2d/square_01x01_quads.tri
+trifile = grids/2d/square_01x01_quads.tri
 
 # indat file
-indatfile = data/2d/buckley1_NW.indat
+indatfile = data/codire/2d/buckley1_NW.indat
 
-# GMV output file
-gmvfile = gmv/buckley
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.0
+# time interval for UCD output
+dstepUCD = 1.0
 
-# AVS output file
-avsfile = avs/buckley
+# name of UCD output file for solution
+sfilenameUCDsolution = out/buckley
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/buckley
-
-# VTK output interval
-tstepvtk = -1.0
-
-# name of UCD outfile file for error
-errorfile = gmv/buckley_error
-
-# type of UCD output format for error
-ierrorUCD = 1
+# name of UCD output file for error
+sfilenameUCDerror = out/buckley_error
 
 
 ################################################################################

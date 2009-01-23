@@ -58,37 +58,26 @@ npreadapt = 4
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/rect_4x1.prm
+prmfile = grids/2d/rect_4x1.prm
 
 # grid triangulation
-trifile = ../../grids/2d/rect_4x1.tri
+trifile = grids/2d/rect_4x1.tri
 
 # indat file
-indatfile = data/2d/doublemach.indat
+indatfile = data/euler/2d/doublemach.indat
 
-# GMV output file
-gmvfile = gmv/doublemach5
+# type of UCD output format
+# =0, no output; =1, GMV; =2, AVS; =3, VTK
+iformatUCD = 1
 
-# GMV output interval
-tstepgmv = 0.001
+# time interval for UCD output
+dstepUCD = 0.005
 
-# AVS output file
-avsfile = avs/doublemach
+# name of UCD output file for solution
+sfilenameUCDsolution = out/doublemach
 
-# AVS output interval
-tstepavs = -1.0
-
-# VTK output file
-vtkfile = vtk/doublemach
-
-# VTK output interval
-tstepvtk = -1.0
-
-# type of UCD output format for error
-ierrorUCD = 1
-
-# name of UCD outfile file for error
-errorfile = gmv/doublemach5_error
+# name of UCD output file for error
+sfilenameUCDerror = out/doublemach_error
 
 
 ################################################################################

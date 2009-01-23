@@ -1,3 +1,4 @@
+# -*- mode: sh; -*-
 
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
@@ -28,13 +29,13 @@ nu = 0.0
 ################################################################################
 
 # grid parametrization
-prmfile = ../../grids/2d/screw_tria.prm
+prmfile = grids/2d/screw_tria.prm
 
 # grid triangulation
-trifile = ../../grids/2d/screw_tria.tri
+trifile = grids/2d/screw_tria.tri
 
 # indat file
-indatfile = data/2d/screwcomp.indat
+indatfile = data/euler/2d/screwcomp.indat
 
 # GMV output file
 gmvfile = gmv/screwcomp
