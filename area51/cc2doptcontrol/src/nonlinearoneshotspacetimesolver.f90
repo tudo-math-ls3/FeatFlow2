@@ -3195,7 +3195,16 @@ contains
         !   ------------ = min { ( -------- )     , depsrel * ( -------- ) }
         !     |b-Ax_0|           ( |b-Ax_0| )                 ( |b-Ax_0| )
         !
-        ! see e.g. [Michael Hinze, Habilitation, p. 51]
+        ! see e.g. [Michael Hinze, Habilitation, p. 51].
+        ! We furthermore introduce the additional stopping criterion
+        !
+        !   |b-Ax_{i+1}|  
+        !   ------------ = depsrel(solver)*dinexactNewtonEpsRel
+        !     |b-Ax_0|    
+        !
+        ! which stops the iteration in order to prevent the linear 
+        ! solver from solving too much further than necessary for the 
+        ! nonlinear solver.
         !
         ! Switch off the relative stopping criterion in the linear solver:
         
@@ -3205,8 +3214,9 @@ contains
         
         dtempdef = ddefNorm / dinitDefNorm
         
-        p_rsolverNode%depsAbs = min(dtempDef**dinexactNewtonExponent,&
-                                    dinexactNewtonEpsRel*dtempdef) * dinitDefNorm
+        p_rsolverNode%depsAbs = min(&
+            max(dinexactNewtonEpsRel*depsRel,dtempDef**dinexactNewtonExponent),&
+                dinexactNewtonEpsRel*dtempdef) * dinitDefNorm
         
         ! For the coarse grid solver, we choose the same stopping criterion.
         ! But just for safetyness, the coarse grid solver should gain at least
