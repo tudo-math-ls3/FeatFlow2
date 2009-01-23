@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> afc_basic </name>
+!# <name> codire_basic </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,13 +9,13 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) afc_updateSolverMatrix
+!# 1.) codire_updateSolverMatrix
 !#      -> update the matrices in the solver structure
 !#
 !# </purpose>
 !##############################################################################
 
-module afc_basic
+module codire_basic
 
   use storage
   use fparser
@@ -31,7 +31,7 @@ module afc_basic
   implicit none
 
   private
-  public :: afc_updateSolverMatrix
+  public :: codire_updateSolverMatrix
   
   !*****************************************************************************
   !*****************************************************************************
@@ -299,7 +299,7 @@ contains
 
 !<subroutine>
 
-  subroutine afc_updateSolverMatrix(rproblemLevel, rsolver, imatrix, iupdflag, nlminOpt, nlmaxOpt)
+  subroutine codire_updateSolverMatrix(rproblemLevel, rsolver, imatrix, iupdflag, nlminOpt, nlmaxOpt)
 
 !<description>
     ! This subroutine updates the solver structure by setting the matrices.
@@ -531,6 +531,6 @@ contains
         call sys_halt()
       end select
     end subroutine updateMatrix
-  end subroutine afc_updateSolverMatrix
+  end subroutine codire_updateSolverMatrix
   
-end module afc_basic
+end module codire_basic

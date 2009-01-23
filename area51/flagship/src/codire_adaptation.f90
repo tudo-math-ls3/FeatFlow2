@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> afc_adaptation </name>
+!# <name> codire_adaptation </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,16 +9,16 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) afc_performGridAdaptation
+!# 1.) codire_performGridAdaptation
 !#     -> perform adaptive grid refinement/coarsening
 !#
-!# 2.) afc_reinitConstOperators1D
+!# 2.) codire_reinitConstOperators1D
 !#     -> reinitialize the constant operators after grid adaptation in 1D
 !#
-!# 3.) afc_reinitConstOperators2D
+!# 3.) codire_reinitConstOperators2D
 !#     -> reinitialize the constant operators after grid adaptation in 2D
 !#
-!# 4.) afc_reinitConstOperators3D
+!# 4.) codire_reinitConstOperators3D
 !#     -> reinitialize the constant operators after grid adaptation in 3D
 !#
 !# The following auxiliary routines are available:
@@ -38,7 +38,7 @@
 !# </purpose>
 !##############################################################################
 
-module afc_adaptation
+module codire_adaptation
 
   use afcstabilisation
   use bilinearformevaluation
@@ -59,18 +59,18 @@ module afc_adaptation
   use storage
   use triangulation
 
-  use afc_basic
-  use afc_callback
+  use codire_basic
+  use codire_callback
   use problem
 
   implicit none
 
   private
 
-  public :: afc_performGridAdaptation
-  public :: afc_reinitConstOperators1D
-  public :: afc_reinitConstOperators2D
-  public :: afc_reinitConstOperators3D
+  public :: codire_performGridAdaptation
+  public :: codire_reinitConstOperators1D
+  public :: codire_reinitConstOperators2D
+  public :: codire_reinitConstOperators3D
   public :: fcb_hadaptCallback1D
   public :: fcb_hadaptCallback2D
   public :: fcb_hadaptCallback3D
@@ -81,7 +81,7 @@ contains
   
 !<subroutine>
 
-  subroutine afc_performGridAdaptation(rcollection, rhadapt, rproblemLevel, rsolution,&
+  subroutine codire_performGridAdaptation(rcollection, rhadapt, rproblemLevel, rsolution,&
                                        rgridIndicator, fcb_hadaptCallback)
 
 !<description>
@@ -149,13 +149,13 @@ contains
     ! Stop time measurement for grid adaptivity
     call stat_stopTimer(rtimer_adaptivity)
 
-  end subroutine afc_performGridAdaptation
+  end subroutine codire_performGridAdaptation
 
   !*****************************************************************************
   
 !<subroutine>
 
-  subroutine afc_reinitConstOperators1D(rcollection, rhadapt, rproblemLevel, rsolution,&
+  subroutine codire_reinitConstOperators1D(rcollection, rhadapt, rproblemLevel, rsolution,&
                                         ieltype, fcb_hadaptCallback)
 
 !<description>
@@ -211,7 +211,7 @@ contains
       
     case DEFAULT
       call output_line('Unsupproted element type!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators1D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators1D')
       call sys_halt()
     end select
     
@@ -274,7 +274,7 @@ contains
 
       case DEFAULT
         call output_line('Type of stabilization is not available',&
-                         OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators1D')
+                         OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators1D')
         call sys_halt()
       end select
     end if
@@ -313,7 +313,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of velocity!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators1D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators1D')
     end select
 
 
@@ -337,7 +337,7 @@ contains
    
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators2d')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators2d')
       call sys_halt()
     end select
     
@@ -391,13 +391,13 @@ contains
     ! Stop time measurement for coefficient matrices
     call stat_stopTimer(rtimer_assembly_coeff)
 
-  end subroutine afc_reinitConstOperators1D
+  end subroutine codire_reinitConstOperators1D
 
   !*****************************************************************************
   
 !<subroutine>
 
-  subroutine afc_reinitConstOperators2D(rcollection, rhadapt, rproblemLevel, rsolution,&
+  subroutine codire_reinitConstOperators2D(rcollection, rhadapt, rproblemLevel, rsolution,&
                                         ieltype, fcb_hadaptCallback)
 
 !<description>
@@ -469,7 +469,7 @@ contains
       
     case DEFAULT
       call output_line('Unsupproted element type!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators2D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators2D')
       call sys_halt()
     end select
     
@@ -532,7 +532,7 @@ contains
 
       case DEFAULT
         call output_line('Type of stabilization is not available',&
-                         OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators2D')
+                         OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators2D')
         call sys_halt()
       end select
     end if
@@ -578,7 +578,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of velocity!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators2D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators2D')
     end select
 
 
@@ -648,7 +648,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators2D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators2D')
       call sys_halt()
     end select
     
@@ -702,13 +702,13 @@ contains
     ! Stop time measurement for coefficient matrices
     call stat_stopTimer(rtimer_assembly_coeff)
 
-  end subroutine afc_reinitConstOperators2D
+  end subroutine codire_reinitConstOperators2D
 
   !*****************************************************************************
   
 !<subroutine>
 
-  subroutine afc_reinitConstOperators3D(rcollection, rhadapt, rproblemLevel, rsolution,&
+  subroutine codire_reinitConstOperators3D(rcollection, rhadapt, rproblemLevel, rsolution,&
                                         ieltype, fcb_hadaptCallback)
 
 !<description>
@@ -780,7 +780,7 @@ contains
       
     case DEFAULT
       call output_line('Unsupproted element type!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators3D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators3D')
       call sys_halt()
     end select
     
@@ -826,7 +826,7 @@ contains
         
       case DEFAULT
         call output_line('Type of stabilization is not available',&
-                         OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators3D')
+                         OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators3D')
         call sys_halt()
       end select
     end if
@@ -874,7 +874,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of velocity!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators3D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators3D')
     end select
 
 
@@ -959,7 +959,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_reinitConstOperators3D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_reinitConstOperators3D')
       call sys_halt()
     end select
     
@@ -1013,7 +1013,7 @@ contains
     ! Stop time measurement for coefficient matrices
     call stat_stopTimer(rtimer_assembly_coeff)
 
-  end subroutine afc_reinitConstOperators3D
+  end subroutine codire_reinitConstOperators3D
 
   !*****************************************************************************
 
@@ -2041,4 +2041,4 @@ contains
       call sys_halt()
     end select
   end subroutine fcb_hadaptCallback3D
-end module afc_adaptation
+end module codire_adaptation

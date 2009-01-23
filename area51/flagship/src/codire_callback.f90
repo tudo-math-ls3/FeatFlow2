@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> afc_callback </name>
+!# <name> codire_callback </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -18,7 +18,7 @@
 !# </purpose>
 !##############################################################################
 
-module afc_callback
+module codire_callback
 
   use dofmapping
   use fparser
@@ -26,7 +26,7 @@ module afc_callback
   use linearsystemblock
   use linearsystemscalar
 
-  use afc_basic
+  use codire_basic
   use boundaryfilter
   use problem
   use solver
@@ -289,4 +289,4 @@ contains
     end select
   end subroutine fcb_setBoundary
   
-end module afc_callback
+end module codire_callback

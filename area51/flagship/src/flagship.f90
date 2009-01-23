@@ -68,13 +68,13 @@ program afc
   use storage
   use ucd
 
-  use afc_adaptation
-  use afc_basic
-  use afc_callback
-  use afc_estimation
-  use afc_init
-  use afc_postprocessing
-  use afc_problem
+  use codire_adaptation
+  use codire_basic
+  use codire_callback
+  use codire_estimation
+  use codire_init
+  use codire_postprocessing
+  use codire_problem
   use boundaryfilter
   use errorestimation
   use problem
@@ -153,7 +153,7 @@ program afc
 
 
   ! Initialization
-  call afc_initialize()
+  call codire_initialize()
 
   ! Solution procedure
   if (rtimestep%dfinalTime > 0) then
@@ -161,15 +161,27 @@ program afc
     select case(iflowtype)
       
     case (FLOW_TRANSIENT)
-      call afc_solveTransient()
+      call codire_solveTransient()
+
+      ! Postprocessing
+      call codire_postprocess(rprimalSolution)
+
 
     case (FLOW_PSEUDOTRANSIENT)
-      call afc_solvePseudoTransient()
+      call codire_solvePseudoTransient()
       
+      ! Postprocessing
+      call codire_postprocess(rprimalSolution)
+
+
     case (FLOW_STEADYSTATE)
-!!$ call afc_solveSteadystate()
-      call afc_solvePrimalDual()
-      
+!!$ call codire_solveSteadystate()
+      call codire_solvePrimalDual()
+
+      ! Postprocessing
+      call codire_postprocess(rprimalSolution, rdualSolution)
+
+
     case DEFAULT
       call output_line('Unsupported flow type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'afc')
@@ -177,18 +189,15 @@ program afc
     end select
   end if
 
-
-  ! Postprocessing
-  call afc_postprocess
   
   ! Stop timer for total time
   call stat_stopTimer(rtimer_total)
 
   ! Statistics
-  call afc_statistics()
+  call codire_statistics()
 
   ! Finalization
-  call afc_finalize()
+  call codire_finalize()
   
   ! That's it.
 
@@ -199,7 +208,7 @@ contains
 
 !<subroutine>
 
-  subroutine afc_initialize()
+  subroutine codire_initialize()
 
 !<description>
     ! This subroutine performs all initialization tasks for this application.
@@ -269,12 +278,12 @@ contains
     call fsignal(SIGQUIT, signal_SIGQUIT)
     
     ! Initialize data input files
-    call afc_UserInterface(0)
+    call codire_UserInterface(0)
     
     ! Get parameters from file
     call parlst_init(rparlist)
     call parlst_readfromfile(rparlist, trim(adjustl(parmfile)))
-    call afc_getParameters(rparlist)
+    call codire_getParameters(rparlist)
     
     ! Initialize external storage
     call exstor_init (300, 100)
@@ -320,7 +329,7 @@ contains
                              "iconvToTria", iconvToTria, 0)
     call parlst_getvalue_int(rparlist, '', "ndimension", ndimension)
     
-    call afc_initProblem(rproblem, trifile, prmfile, indatfile,&
+    call codire_initProblem(rproblem, trifile, prmfile, indatfile,&
                          nlmin, nlmax, iconvToTria, ndimension)
     
     call bdrf_readBoundaryCondition(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
@@ -338,7 +347,7 @@ contains
     
     ! Initialize function parser
     call fparser_init()
-    call afc_initParser(indatfile)
+    call codire_initParser(indatfile)
     
     ! Get matrix format and element type
     call parlst_getvalue_int(rparlist, trim(adjustl(sbenchmarkName)),&
@@ -357,17 +366,17 @@ contains
       call parlst_getvalue_double(rparlist, trim(adjustl(sbenchmarkName)),&
                                   "ddiffusionA11", Ddiffusion(1,1), 0._DP)
 
-      call afc_initDiffusion1D(Ddiffusion)
+      call codire_initDiffusion1D(Ddiffusion)
 
       ! Deallocate temporal array
       deallocate(Ddiffusion)
 
       ! Initialize constant coefficient operators in 1D
-      call afc_initConstOperators1D(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+      call codire_initConstOperators1D(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                     rproblem, ieltype, imatrixFormat, nlmin, nlmax)
 
       ! Initialize global solution from file
-      call afc_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+      call codire_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                       rproblem%p_rproblemLevelMax, rprimalSolution,&
                                       indatfile, rtimestep%dinitialTime)
       
@@ -387,24 +396,24 @@ contains
       call parlst_getvalue_double(rparlist, trim(adjustl(sbenchmarkName)),&
                                   "ddiffusionRotation", ddiffusionRotation, 0._DP)
 
-      call afc_initDiffusion2D(Ddiffusion, ddiffusionRotation)
+      call codire_initDiffusion2D(Ddiffusion, ddiffusionRotation)
 
       ! Deallocate temporal array
       deallocate(Ddiffusion)
       
       ! Initialize constant coefficient operators in 2D
-      call afc_initConstOperators2D(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+      call codire_initConstOperators2D(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                     rproblem, ieltype, imatrixFormat, nlmin, nlmax)
 
       ! Initialize global solution from file or graymap image
       call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
                                   "pgmfile", pgmfile, ' ')
       if (trim(adjustl(pgmfile)) .eq. '') then
-        call afc_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+        call codire_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                         rproblem%p_rproblemLevelMax, rprimalSolution,&
                                         indatfile, rtimestep%dinitialTime)
       else
-        call afc_initSolutionFromImage(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+        call codire_initSolutionFromImage(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                        rproblem%p_rproblemLevelMax, rprimalSolution, pgmfile)
       end if
 
@@ -434,51 +443,51 @@ contains
       call parlst_getvalue_double(rparlist, trim(adjustl(sbenchmarkName)),&
                                   "ddiffusionRotation", ddiffusionRotation, 0._DP)
 
-      call afc_initDiffusion3D(Ddiffusion, ddiffusionRotation)
+      call codire_initDiffusion3D(Ddiffusion, ddiffusionRotation)
 
       ! Deallocate temporal array
       deallocate(Ddiffusion)
 
       ! Initialize constant coefficient operators in 3D
-      call afc_initConstOperators3D(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+      call codire_initConstOperators3D(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                     rproblem, ieltype, imatrixFormat, nlmin, nlmax)
 
       ! Initialize global solution from file
-      call afc_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+      call codire_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                       rproblem%p_rproblemLevelMax, rprimalSolution,&
                                       indatfile, rtimestep%dinitialTime)
       
     case default
       call output_line('Unsupported spatial dimension!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_initialize')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initialize')
       call sys_halt()
     end select
     
     ! Initialize global right-hand side
-    call afc_initRHS(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+    call codire_initRHS(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                      rproblem%p_rproblemLevelMax, rf, indatfile)
     
     ! Initialize velocity vector
-    call afc_initVelocity(rproblem, indatfile, nlmin, nlmax)
+    call codire_initVelocity(rproblem, indatfile, nlmin, nlmax)
     
     ! Initialize global system operator. Actually, this is a dummy call to assemble
     ! all matrix structures for all possible multigrid levels throughout the complete
     ! solver structure. In case of constant velocity, no more matrix assemblies and/or
     ! updates of the solver structure need to be performed.
-    call afc_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+    call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
                          rprimalSolution, 1, nlmin, nlmax)
     call solver_updateStructure(rsolver)
     
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rtimer_prepostprocess)
 
-  end subroutine afc_initialize
+  end subroutine codire_initialize
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_solveTransient()
+  subroutine codire_solveTransient()
 
 !<description>
     ! This subroutine solves the transient flow problem
@@ -496,28 +505,28 @@ contains
     character(LEN=SYS_STRLEN) :: indatfile
 
     ! Name of UCD output file for error estimator
-    character(LEN=SYS_STRLEN) :: errorfile
+    character(LEN=SYS_STRLEN) :: sfilenameUCDerror
 
     ! File names for solution output
-    character(LEN=SYS_STRLEN) :: gmvfile, avsfile, vtkfile
+    character(LEN=SYS_STRLEN) :: sfilenameUCDsolution
 
     ! Time for solution output and grid adaptation
-    real(DP) :: ttimegmv, ttimeavs, ttimevtk, ttimeadapt
+    real(DP) :: dtimeUCD, dtimeAdapt
 
     ! Time step for solution output and grid adaptation
-    real(DP) :: tstepgmv, tstepavs, tstepvtk, tstepadapt
+    real(DP) :: dstepUCD, dstepAdapt
 
     ! Number of pre-adaptation steps
     integer :: npreadapt
 
     ! Type of UCD output format
-    integer :: ierrorUCD
+    integer :: iformatUCD
 
     ! Type of finite element
     integer :: ieltype
 
     ! local variables
-    integer :: ilev,ipreadapt
+    integer :: ilev, ipreadapt
 
 
     ! Retrieve parameters
@@ -526,31 +535,19 @@ contains
     call parlst_getvalue_int(rparlist, trim(adjustl(sbenchmarkName)),&
                              "npreadapt", npreadapt, 0)
     call parlst_getvalue_int(rparlist, trim(adjustl(sinputoutputName)),&
-                             "ierrorUCD", ierrorUCD, 1)
+                             "iformatUCD", iformatUCD, 0)
     call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
                                 "indatfile", indatfile)
     call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
                                 "pgmfile", pgmfile, ' ')
     call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "errorfile", errorfile, ' ')
+                                "sfilenameUCDsolution", sfilenameUCDsolution, ' ')
     call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "gmvfile", gmvfile, ' ')
-    call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "avsfile", avsfile, ' ')
-    call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "vtkfile", vtkfile, ' ')
+                                "sfilenameUCDerror", sfilenameUCDerror, ' ')
     call parlst_getvalue_double(rparlist, trim(adjustl(sinputoutputName)),&
-                                "tstepgmv", tstepgmv, 0.0_DP)
+                                "dstepUCD", dstepUCD, 0.0_DP)
     call parlst_getvalue_double(rparlist, trim(adjustl(sinputoutputName)),&
-                                "ttimegmv", ttimegmv, 0.0_DP)
-    call parlst_getvalue_double(rparlist, trim(adjustl(sinputoutputName)),&
-                                "tstepavs", tstepavs, 0.0_DP)
-    call parlst_getvalue_double(rparlist, trim(adjustl(sinputoutputName)),&
-                                "ttimeavs", ttimeavs, 0.0_DP)
-    call parlst_getvalue_double(rparlist, trim(adjustl(sinputoutputName)),&
-                                "tstepvtk", tstepvtk, 0.0_DP)
-    call parlst_getvalue_double(rparlist, trim(adjustl(sinputoutputName)),&
-                                "ttimevtk", ttimevtk, 0.0_DP)
+                                "dtimeUCD", dtimeUCD, 0.0_DP)
 
 
     ! Check if adaptivity and error estimator are available
@@ -559,79 +556,80 @@ contains
 
       ! Retrieve parameters for grid adaptation
       call parlst_getvalue_double(rparlist, trim(adjustl(sadaptivityName)),&
-                                  "ttimeadapt", ttimeadapt, 0.0_DP)
+                                  "dtimeAdapt", dtimeAdapt, 0.0_DP)
       call parlst_getvalue_double(rparlist, trim(adjustl(sadaptivityName)),&
-                                  "tstepadapt", tstepadapt, 0.0_DP)
+                                  "dstepAdapt", dstepAdapt, 0.0_DP)
       
       ! Perform required number of pre-adaptation steps
       do ipreadapt = 1, npreadapt
       
         ! Perform error estimation
-        call afc_prepareErrorEstimator(rproblem%p_rproblemLevelMax, rprimalSolution, rerrorEstimator)
-        call afc_performErrorEstimation(rerrorEstimator, rgridIndicator,&
+        call codire_prepareErrorEstimator(rproblem%p_rproblemLevelMax,&
+                                          rprimalSolution, rerrorEstimator)
+        call codire_performErrorEstimation(rerrorEstimator, rgridIndicator,&
                                         rhadapt%drefinementTolerance)
         call errest_clearErrorEstimator(rerrorEstimator)
       
         ! Output grid indicator (if required)
-        if (trim(errorfile) .ne. '') then
-          call afc_outputVectorScalar(rproblem%p_rproblemLevelMax, rgridIndicator,&
-                                      rtimestep%dTime, errorfile, ierrorUCD, .false.)
+        if (trim(sfilenameUCDerror) .ne. '') then
+          call codire_outputVectorScalar(rproblem%p_rproblemLevelMax, rgridIndicator,&
+                                         rtimestep%dTime, sfilenameUCDerror, iformatUCD, .false.)
         end if
       
         ! What dimension are we?
         select case(rproblem%p_rproblemLevelMax%rtriangulation%ndim)
         case (NDIM1D)
           ! Perform grid adaptation in 1D
-          call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                          rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
           
           call lsyssc_releaseVector(rgridIndicator)
-          call afc_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                           rprimalSolution, ieltype, fcb_hadaptCallback1D)
 
           ! Re-initialize the solution
           call lsysbl_releaseVector(rprimalSolution)
-          call afc_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+          call codire_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                           rproblem%p_rproblemLevelMax, rprimalSolution,&
                                           indatfile, rtimestep%dinitialTime)
 
         case (NDIM2D)
           ! Perform grid adaptation in 2D
-          call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                          rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
           call lsyssc_releaseVector(rgridIndicator)
-          call afc_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                           rprimalSolution, ieltype, fcb_hadaptCallback2D)
 
           ! Re-initialize the solution
           call lsysbl_releaseVector(rprimalSolution)
           if (trim(adjustl(pgmfile)) .eq. '') then
-            call afc_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+            call codire_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                             rproblem%p_rproblemLevelMax, rprimalSolution,&
                                             indatfile, rtimestep%dinitialTime)
           else
-            call afc_initSolutionFromImage(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+            call codire_initSolutionFromImage(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                            rproblem%p_rproblemLevelMax, rprimalSolution, pgmfile)
           end if
 
         case (NDIM3D)
           ! Perform grid adaptation in 3D
-          call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                          rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
           call lsyssc_releaseVector(rgridIndicator)
-          call afc_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                           rprimalSolution, ieltype, fcb_hadaptCallback3D)
           
           ! Re-initialize the solution
           call lsysbl_releaseVector(rprimalSolution)
-          call afc_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+          call codire_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                           rproblem%p_rproblemLevelMax, rprimalSolution,&
                                           indatfile, rtimestep%dinitialTime)
         end select
             
         ! Re-initialize global right-hand side
         call lsysbl_releaseVector(rf)
-        call afc_initRHS(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+        call codire_initRHS(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                          rproblem%p_rproblemLevelMax, rf, indatfile)
 
         ! We must enforce velocity update so that all internal
@@ -640,26 +638,24 @@ contains
 
         ! Update global system operator and solver structure
         ilev = rproblem%p_rproblemLevelMax%ilev
-        call afc_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+        call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
                              rprimalSolution, 1, ilev, ilev)
         call solver_updateStructure(rsolver)
       end do
     else
-      tstepadapt = 0._DP
-      ttimeadapt = 0._DP
+      dstepAdapt = 0._DP
+      dtimeAdapt = 0._DP
     end if
 
     ! Initialize time
-    if (tstepadapt > 0) ttimeadapt = max(ttimeadapt, tstepadapt, rtimestep%dTime)
-    if (tstepgmv   > 0) ttimegmv   = max(ttimegmv,   tstepgmv,   rtimestep%dTime)
-    if (tstepavs   > 0) ttimeavs   = max(ttimeavs,   tstepavs,   rtimestep%dTime)
-    if (tstepvtk   > 0) ttimevtk   = max(ttimevtk,   tstepvtk,   rtimestep%dTime)
+    if (dstepAdapt .gt. 0._DP) dtimeAdapt = max(dtimeAdapt, dstepAdapt, rtimestep%dTime)
+    if (dstepUCD   .gt. 0._DP) dtimeUCD   = max(dtimeUCD,   dstepUCD,   rtimestep%dTime)
 
     ! Infinite time stepping loop
     timeloop: do
 
       ! Check for user interaction
-      call afc_UserInterface(1)
+      call codire_UserInterface(1)
 
       !-------------------------------------------------------------------------
       ! Advance solution in time
@@ -703,7 +699,7 @@ contains
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_solveTransient')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransient')
         call sys_halt()
       end select
 
@@ -719,71 +715,57 @@ contains
       ! Postprocess intermediate solution
       !-------------------------------------------------------------------------
       
-      ! GMV output
-      if (tstepgmv > 0._DP .and. rtimestep%dTime .ge. ttimegmv) then
-        call afc_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
-                                rtimestep%dTime, gmvfile, 1)
-        ttimegmv = ttimegmv+tstepgmv
+      if (dstepUCD .gt. 0._DP .and. rtimestep%dTime .ge. dtimeUCD) then
+        call codire_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
+                                   rtimestep%dTime, sfilenameUCDsolution, iformatUCD)
+        dtimeUCD = dtimeUCD+dstepUCD
       end if
-      
-      ! AVS output
-      if (tstepavs > 0._DP .and. rtimestep%dTime .ge. ttimeavs) then
-        call afc_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
-                                rtimestep%dTime, avsfile, 2)
-        ttimeavs = ttimeavs+tstepavs
-      end if
-      
-      ! VTK output
-      if (tstepvtk > 0._DP .and. rtimestep%dTime .ge. ttimevtk) then
-        call afc_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
-                                rtimestep%dTime, vtkfile, 3)
-        ttimevtk = ttimevtk+tstepvtk
-      end if
-      
+
       
       !-------------------------------------------------------------------------
       ! Adaptive grid refinement
       !-------------------------------------------------------------------------
 
-      if (tstepadapt > 0 .and. rtimestep%dTime .ge. ttimeadapt) then
+      if (dstepAdapt .gt. 0._DP .and. rtimestep%dTime .ge. dtimeAdapt) then
         
         ! Perform error estimation
-        call afc_prepareErrorEstimator(rproblem%p_rproblemLevelMax, rprimalSolution, rerrorEstimator)
-        call afc_performErrorEstimation(rerrorEstimator, rgridIndicator,&
-                                        rhadapt%drefinementTolerance)
+        call codire_prepareErrorEstimator(rproblem%p_rproblemLevelMax,&
+                                          rprimalSolution, rerrorEstimator)
+        call codire_performErrorEstimation(rerrorEstimator, rgridIndicator,&
+                                           rhadapt%drefinementTolerance)
         call errest_clearErrorEstimator(rerrorEstimator)          
         
         ! Output grid indicator (if required)
-        if (trim(errorfile) .ne. '') then
-          call afc_outputVectorScalar(rproblem%p_rproblemLevelMax, rgridIndicator,&
-                                      rtimestep%dTime, errorfile, ierrorUCD, .false.)
+        if (trim(sfilenameUCDerror) .ne. '') then
+          call codire_outputVectorScalar(rproblem%p_rproblemLevelMax, rgridIndicator,&
+                                         rtimestep%dTime, sfilenameUCDerror, iformatUCD, .false.)
         end if
         
         ! What dimension are we?
         select case(rproblem%p_rproblemLevelMax%rtriangulation%ndim)
         case (NDIM1D)
           ! Perform grid adaptation in 1D
-          call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                         rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
+          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+                                            rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
           call lsyssc_releaseVector(rgridIndicator)
-          call afc_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                          rprimalSolution, ieltype, fcb_hadaptCallback1D)
+          call codire_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+                                             rprimalSolution, ieltype, fcb_hadaptCallback1D)
 
         case (NDIM2D)
           ! Perform grid adaptation in 2D
-          call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                         rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
+          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+                                            rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
           call lsyssc_releaseVector(rgridIndicator)
-          call afc_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                          rprimalSolution, ieltype, fcb_hadaptCallback2D)
+          call codire_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+                                             rprimalSolution, ieltype, fcb_hadaptCallback2D)
 
         case (NDIM3D)
           ! Perform grid adaptation in 3D
-          call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                         rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
+          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+                                            rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
           call lsyssc_releaseVector(rgridIndicator)
-          call afc_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                          rprimalSolution, ieltype, fcb_hadaptCallback3D)
+          call codire_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+                                             rprimalSolution, ieltype, fcb_hadaptCallback3D)
         end select
         
         ! We must enforce velocity update so that all internal
@@ -792,22 +774,22 @@ contains
 
         ! Update global system operator and solver structure
         ilev = rproblem%p_rproblemLevelMax%ilev
-        call afc_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                             rprimalSolution, 1, ilev, ilev)
+        call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+                                rprimalSolution, 1, ilev, ilev)
         call solver_updateStructure(rsolver)
           
-        ttimeadapt = ttimeadapt+tstepadapt
+        dtimeAdapt = dtimeAdapt+dstepAdapt
       end if
 
     end do timeloop
 
-  end subroutine afc_solveTransient
+  end subroutine codire_solveTransient
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_solvePseudoTransient()
+  subroutine codire_solvePseudoTransient()
 
 !<description>
     ! This subroutine solves the pseudo-transient flow problem
@@ -855,7 +837,7 @@ contains
       timeloop: do
         
         ! Check for user interaction
-        call afc_UserInterface(1)
+        call codire_UserInterface(1)
         
         !-----------------------------------------------------------------------
         ! Advance solution in time
@@ -899,7 +881,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported time-stepping algorithm!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'afc_solvePseudoTransient')
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solvePseudoTransient')
           call sys_halt()
         end select
         
@@ -928,7 +910,7 @@ contains
       ! Postprocess intermediate solution
       !-------------------------------------------------------------------------
 
-      call afc_postprocess()
+      call codire_postprocess(rprimalSolution)
 
 
       !-------------------------------------------------------------------------
@@ -939,14 +921,14 @@ contains
                                   nadapt .eq. 0 ) exit adaptloop
 
       ! Perform error estimation
-      call afc_prepareErrorEstimator(rproblem%p_rproblemLevelMax, rprimalSolution, rerrorEstimator)
-      call afc_performErrorEstimation(rerrorEstimator, rgridIndicator,&
+      call codire_prepareErrorEstimator(rproblem%p_rproblemLevelMax, rprimalSolution, rerrorEstimator)
+      call codire_performErrorEstimation(rerrorEstimator, rgridIndicator,&
                                       rhadapt%drefinementTolerance)
       call errest_clearErrorEstimator(rerrorEstimator)          
       
       ! Output grid indicator (if required)
       if (trim(errorfile) .ne. '') then
-        call afc_outputVectorScalar(rproblem%p_rproblemLevelMax, rgridIndicator,&
+        call codire_outputVectorScalar(rproblem%p_rproblemLevelMax, rgridIndicator,&
                                     rtimestep%dTime, errorfile, ierrorUCD, .false.)
       end if
         
@@ -954,26 +936,26 @@ contains
       select case(rproblem%p_rproblemLevelMax%rtriangulation%ndim)
       case (NDIM1D)
         ! Perform grid adaptation in 1D
-        call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+        call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                        rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
         call lsyssc_releaseVector(rgridIndicator)
-        call afc_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+        call codire_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                         rprimalSolution, ieltype, fcb_hadaptCallback1D)
 
       case (NDIM2D)
         ! Perform grid adaptation in 2D
-        call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+        call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                        rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
         call lsyssc_releaseVector(rgridIndicator)
-        call afc_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+        call codire_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                         rprimalSolution, ieltype, fcb_hadaptCallback2D)
 
       case (NDIM3D)
         ! Perform grid adaptation in 3D
-        call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+        call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                        rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
         call lsyssc_releaseVector(rgridIndicator)
-        call afc_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+        call codire_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                         rprimalSolution, ieltype, fcb_hadaptCallback3D)
       end select
 
@@ -983,19 +965,19 @@ contains
       
       ! Update global system operator and solver structure
       ilev = rproblem%p_rproblemLevelMax%ilev
-      call afc_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+      call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
                            rprimalSolution, 1, ilev, ilev)
       call solver_updateStructure(rsolver)
 
     end do adaptloop
 
-  end subroutine afc_solvePseudoTransient
+  end subroutine codire_solvePseudoTransient
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_solveSteadystate()
+  subroutine codire_solveSteadystate()
 
 !<description>
     ! This subroutine solves the steady-state flow problem
@@ -1070,7 +1052,7 @@ contains
     
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_solveSteadystate')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_solveSteadystate')
       call sys_halt()
     end if
     
@@ -1088,7 +1070,7 @@ contains
       ! Check if solution matches the required multigrid level
       if (rproblem%p_rproblemLevelMax%ilev .ne. p_rsolverFMG%nlmax) then
         call output_line('Solution does not match the required level!',&
-                         OU_CLASS_ERROR, OU_MODE_STD, 'afc_solveSteadystate')
+                         OU_CLASS_ERROR, OU_MODE_STD, 'codire_solveSteadystate')
         call sys_halt()
       end if
 
@@ -1143,7 +1125,7 @@ contains
           end if
         else
           call output_line('Could not reach coarse grid level!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'afc_solveSteadystate')
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solveSteadystate')
           call sys_halt()
         end if
       end do phase1
@@ -1151,17 +1133,17 @@ contains
       ! Re-initialize the solutionon coarsest grid
       call lsysbl_releaseVector(rprimalSolution)
       if (trim(adjustl(pgmfile)) .eq. '') then
-        call afc_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+        call codire_initSolutionFromParser(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                         rproblemLevel, rprimalSolution, indatfile,&
                                         rtimestep%dinitialTime)
       else
-        call afc_initSolutionFromImage(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
+        call codire_initSolutionFromImage(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL),&
                                        rproblemLevel, rprimalSolution, pgmfile)
       end if
       
       ! Re-initialize global right-hand side on coarsest grid
       call lsysbl_releaseVector(rf)
-      call afc_initRHS(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL), rproblemLevel, rf, indatfile)
+      call codire_initRHS(RboundaryCondition(CDEQ_BOUNDARY_PRIMAL), rproblemLevel, rf, indatfile)
 
 
       !-------------------------------------------------------------------------
@@ -1184,7 +1166,7 @@ contains
           bvelocityUpdate = .true.
 
           ! Calculate the primal preconditioner for the current level
-          call afc_calcPrecond(rproblemLevel, rtimestep, p_rsolver,&
+          call codire_calcPrecond(rproblemLevel, rtimestep, p_rsolver,&
                                rprimalSolution, 1, rproblemLevel%ilev, rproblemLevel%ilev)
           call solver_updateStructure(p_rsolver)
 
@@ -1227,7 +1209,7 @@ contains
 
         else
           call output_line('Could not reach fine grid level!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'afc_solveSteadystate')
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solveSteadystate')
           call sys_halt()
         end if
       end do phase2
@@ -1242,7 +1224,7 @@ contains
       ! Postprocess intermediate solution
       !-------------------------------------------------------------------------
       
-      call afc_postprocess()
+      call codire_postprocess(rprimalSolution)
     
       
       !-------------------------------------------------------------------------
@@ -1253,14 +1235,14 @@ contains
                                   nadapt .eq. 0 ) exit adaptloop
 
       ! Perform error estimation
-      call afc_prepareErrorEstimator(rproblemLevel, rprimalSolution, rerrorEstimator)
-      call afc_performErrorEstimation(rerrorEstimator, rgridIndicator,&
+      call codire_prepareErrorEstimator(rproblemLevel, rprimalSolution, rerrorEstimator)
+      call codire_performErrorEstimation(rerrorEstimator, rgridIndicator,&
                                       rhadapt%drefinementTolerance)
       call errest_clearErrorEstimator(rerrorEstimator)          
       
       ! Output grid indicator (if required)
       if (trim(errorfile) .ne. '') then
-        call afc_outputVectorScalar(rproblemLevel, rgridIndicator,&
+        call codire_outputVectorScalar(rproblemLevel, rgridIndicator,&
                                     rtimestep%dTime, errorfile, ierrorUCD, .false.)
       end if
         
@@ -1268,26 +1250,26 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         ! Perform grid adaptation in 1D
-        call afc_performGridAdaptation(rcollection, rhadapt, rproblemLevel,&
+        call codire_performGridAdaptation(rcollection, rhadapt, rproblemLevel,&
                                        rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
         call lsyssc_releaseVector(rgridIndicator)
-        call afc_reinitConstOperators1D(rcollection, rhadapt, rproblemLevel,&
+        call codire_reinitConstOperators1D(rcollection, rhadapt, rproblemLevel,&
                                         rprimalSolution, ieltype, fcb_hadaptCallback1D)
         
       case (NDIM2D)
         ! Perform grid adaptation in 2D
-        call afc_performGridAdaptation(rcollection, rhadapt, rproblemLevel,&
+        call codire_performGridAdaptation(rcollection, rhadapt, rproblemLevel,&
                                        rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
         call lsyssc_releaseVector(rgridIndicator)
-        call afc_reinitConstOperators2D(rcollection, rhadapt, rproblemLevel,&
+        call codire_reinitConstOperators2D(rcollection, rhadapt, rproblemLevel,&
                                         rprimalSolution, ieltype, fcb_hadaptCallback2D)
         
       case (NDIM3D)
         ! Perform grid adaptation in 3D
-        call afc_performGridAdaptation(rcollection, rhadapt, rproblemLevel,&
+        call codire_performGridAdaptation(rcollection, rhadapt, rproblemLevel,&
                                        rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
         call lsyssc_releaseVector(rgridIndicator)
-        call afc_reinitConstOperators3D(rcollection, rhadapt, rproblemLevel,&
+        call codire_reinitConstOperators3D(rcollection, rhadapt, rproblemLevel,&
                                         rprimalSolution, ieltype, fcb_hadaptCallback3D)
       end select
 
@@ -1296,7 +1278,7 @@ contains
       bvelocityUpdate = .true.
 
       ! Update global system operator and solver structure
-      call afc_calcPrecond(rproblemLevel, rtimestep, p_rsolver,&
+      call codire_calcPrecond(rproblemLevel, rtimestep, p_rsolver,&
                            rprimalSolution, 1, rproblemLevel%ilev, rproblemLevel%ilev)
       call solver_updateStructure(p_rsolver)           
       
@@ -1320,13 +1302,13 @@ contains
 
     end do adaptloop
 
-  end subroutine afc_solveSteadystate
+  end subroutine codire_solveSteadystate
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_solvePrimalDual()
+  subroutine codire_solvePrimalDual()
 
 !<description>
     ! This subroutine solves the primal and dual problem
@@ -1413,7 +1395,7 @@ contains
     
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_solvePrimalDual')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_solvePrimalDual')
       call sys_halt()
     end if
     
@@ -1434,7 +1416,7 @@ contains
         ! Check if solution matches the required multigrid level
         if (rproblem%p_rproblemLevelMax%ilev .ne. p_rsolverFMG%nlmax) then
           call output_line('Solution does not match the required level!',&
-                           OU_CLASS_ERROR, OU_MODE_STD, 'afc_solvePrimalDual')
+                           OU_CLASS_ERROR, OU_MODE_STD, 'codire_solvePrimalDual')
           call sys_halt()
         end if
         
@@ -1469,7 +1451,7 @@ contains
         bvelocityUpdate = .true.
         
         ! Update global system operator and solver structure
-        call afc_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+        call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
                              rdualSolution, 2, rproblem%p_rproblemLevelMax%ilev,&
                              rproblem%p_rproblemLevelMax%ilev)
         call solver_updateStructure(rsolver)
@@ -1513,7 +1495,7 @@ contains
         !-------------------------------------------------------------------------
         
         ! Compute Galerkin residual
-        call afc_calcGalerkinResidual(rproblem%p_rproblemLevelMax, rprimalSolution, rvectorBlock, 1)
+        call codire_calcGalerkinResidual(rproblem%p_rproblemLevelMax, rprimalSolution, rvectorBlock, 1)
         
         call lsysbl_getbase_double(rvectorBlock, p_Ddata1)
         call lsysbl_getbase_double(rdualSolution, p_Ddata2)
@@ -1527,7 +1509,7 @@ contains
         ! Postprocess intermediate solution
         !-------------------------------------------------------------------------
         
-        call afc_postprocess()
+        call codire_postprocess(rprimalSolution)
         
         
         !-------------------------------------------------------------------------
@@ -1571,7 +1553,7 @@ contains
 
         ! Output grid indicator (if required)
         if (trim(errorfile) .ne. '') then
-          call afc_outputVectorScalar(rproblem%p_rproblemLevelMax, rgridIndicator,&
+          call codire_outputVectorScalar(rproblem%p_rproblemLevelMax, rgridIndicator,&
                                       rtimestep%dTime, errorfile, ierrorUCD, .false.)
         end if
         
@@ -1579,26 +1561,26 @@ contains
         select case(rproblem%p_rproblemLevelMax%rtriangulation%ndim)
         case (NDIM1D)
           ! Perform grid adaptation in 1D
-          call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                          rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
           call lsyssc_releaseVector(rgridIndicator)
-          call afc_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                           rprimalSolution, ieltype, fcb_hadaptCallback1D)
           
         case (NDIM2D)
           ! Perform grid adaptation in 2D
-          call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                          rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
           call lsyssc_releaseVector(rgridIndicator)
-          call afc_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                           rprimalSolution, ieltype, fcb_hadaptCallback2D)
           
         case (NDIM3D)
           ! Perform grid adaptation in 3D
-          call afc_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                          rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
           call lsyssc_releaseVector(rgridIndicator)
-          call afc_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+          call codire_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
                                           rprimalSolution, ieltype, fcb_hadaptCallback3D)
         end select
         
@@ -1612,7 +1594,7 @@ contains
         bvelocityUpdate = .true.
 
         ! Update global system operator and solver structure
-        call afc_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, p_rsolver,&
+        call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, p_rsolver,&
                              rprimalSolution, 1, rproblem%p_rproblemLevelMax%ilev,&
                              rproblem%p_rproblemLevelMax%ilev)
         call solver_updateStructure(p_rsolver)
@@ -1626,94 +1608,65 @@ contains
     else
       
       call output_line('Cannot compute steady-state solution on multigrids!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'afc_solvePrimalDual')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_solvePrimalDual')
       call sys_halt()
      
     end if
 
-  end subroutine afc_solvePrimalDual
+  end subroutine codire_solvePrimalDual
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_postprocess()
+  subroutine codire_postprocess(rprimalSolution, rdualSolution)
 
 !<description>
-    ! This subroutine performs all post-processing tasks
+    ! This subroutine writes the computed solution(s) in UCD format.
+    ! If the optional vector rdualSolution is given, then the primal
+    ! and the dual solution are written to the output file.
 !</description>
+
+!<input>
+    ! primal solution vector
+    type(t_vectorBlock), intent(IN) :: rprimalSolution
+
+    ! OPTIONAL: dual solution vector
+    type(t_vectorBlock), intent(IN), optional :: rdualSolution
 !</subroutine>
 
-    ! Time step for solution output
-    real(DP) :: tstepgmv, tstepavs, tstepvtk
-
-    ! File names for solution output
-    character(LEN=SYS_STRLEN) :: gmvfile, avsfile, vtkfile
-
     ! local variables
-    logical :: bcompatible
-    
+    character(LEN=SYS_STRLEN) :: sfilenameUCDsolution
+    integer :: iformatUCD
+
     
     ! Retrieve parameters
     call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "gmvfile", gmvfile, ' ')
-    call parlst_getvalue_double(rparlist, trim(adjustl(sinputoutputName)),&
-                                "tstepgmv", tstepgmv, 0.0_DP)
-    call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "avsfile", avsfile, ' ')
-    call parlst_getvalue_double(rparlist, trim(adjustl(sinputoutputName)),&
-                                "tstepavs", tstepavs, 0.0_DP)
-    call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "vtkfile", vtkfile, ' ')
-    call parlst_getvalue_double(rparlist, trim(adjustl(sinputoutputName)),&
-                                "tstepvtk", tstepvtk, 0.0_DP)
+                                "sfilenameUCDsolution", sfilenameUCDsolution, ' ')
+    call parlst_getvalue_int(rparlist, trim(adjustl(sinputoutputName)),&
+                             "iformatUCD", iformatUCD, 0)
     
-    ! Perform solution output in GMV format?
-    if (tstepgmv .ge. 0._DP) then
-      call lsysbl_isVectorCompatible(rprimalSolution,&
-                                     rdualSolution, bcompatible)
-      if (bcompatible) then
-        call afc_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
-                                rtimestep%dTime, gmvfile, 1, rdualSolution)
-      else
-        call afc_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
-                                rtimestep%dTime, gmvfile, 1)
-      end if
-    end if
-    
-    ! Perform solution output in AVS format?
-    if (tstepavs .ge. 0._DP) then
-      call lsysbl_isVectorCompatible(rprimalSolution,&
-                                     rdualSolution, bcompatible)
-      if (bcompatible) then
-        call afc_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
-                                rtimestep%dTime, avsfile, 2, rdualSolution)
-      else
-        call afc_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
-                                rtimestep%dTime, avsfile, 2)
-      end if
-    end if
-    
-    ! Perform solution output in VTK format?
-    if (tstepvtk .ge. 0._DP) then
-      call lsysbl_isVectorCompatible(rprimalSolution,&
-                                     rdualSolution, bcompatible)
-      if (bcompatible) then
-        call afc_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
-                                rtimestep%dTime, vtkfile, 3, rdualSolution)
-      else
-        call afc_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
-                                rtimestep%dTime, vtkfile, 3)
-      end if
+    ! Perform solution output
+    if (present(rdualSolution)) then
+
+      ! Output primal and dual solution
+      call codire_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
+                                 rtimestep%dTime, sfilenameUCDsolution,&
+                                 iformatUCD, rdualSolution)
+
+    else
+      
+      call codire_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
+                                 rtimestep%dTime, sfilenameUCDsolution, iformatUCD)
     end if
 
-  end subroutine afc_postprocess
+  end subroutine codire_postprocess
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_statistics()
+  subroutine codire_statistics()
 
 !<description>
     ! This subroutine provides all statistics of the simulation
@@ -1744,7 +1697,7 @@ contains
     ! Statistics about the solution error (if available)
     call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
                                 "indatfile", indatfile)
-    call afc_calcSolutionError(rproblem%p_rproblemLevelMax, rprimalSolution, indatfile,&
+    call codire_calcSolutionError(rproblem%p_rproblemLevelMax, rprimalSolution, indatfile,&
                                rtimestep%dTime, rcollection)
 
     ! Statistics about the time measurement
@@ -1787,13 +1740,13 @@ contains
     call output_line('  Time for total simulation     : '//&
                      trim(sys_sdL(dtotalTime, 2)))
     call output_lbrk()
-  end subroutine afc_statistics
+  end subroutine codire_statistics
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_finalize()
+  subroutine codire_finalize()
 
 !<description>
     ! This subroutine performs all finalization tasks
@@ -1855,13 +1808,13 @@ contains
     call storage_done()
     call output_lbrk()
 
-  end subroutine afc_finalize
+  end subroutine codire_finalize
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_getParameters(rparlist)
+  subroutine codire_getParameters(rparlist)
 
 !<description>
     ! This subroutine sets all global parameters from the parameter list
@@ -1940,13 +1893,13 @@ contains
     call parlst_getvalue_int(rparlist, trim(adjustl(sbenchmarkName)),&
                              "irhstype", irhstype, 0)
 
-  end subroutine afc_getParameters
+  end subroutine codire_getParameters
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_UserInterface(imode)
+  subroutine codire_UserInterface(imode)
 
 !<description>
     ! This subroutine enables the user to interact with the
@@ -2016,10 +1969,10 @@ contains
       
     case (1)
       ! Perform intermediate output
-      if (signal_SIGINT(-1) > 0 ) call afc_postprocess()
+      if (signal_SIGINT(-1) > 0 ) call codire_postprocess(rprimalSolution)
       
     end select
-  end subroutine afc_UserInterface
+  end subroutine codire_UserInterface
 end program afc
 
 !*****************************************************************************

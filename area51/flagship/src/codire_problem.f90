@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> afc_problem </name>
+!# <name> codire_problem </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,7 +9,7 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) afc_calcPrecond
+!# 1.) codire_calcPrecond
 !#     -> calculate the preconditioner
 !#
 !# 2.) fcb_calcRHS
@@ -24,15 +24,15 @@
 !# 5.) fcb_applyJacobian
 !#     -> apply the Jacobian matrix
 !#
-!# 6.) afc_calcGalerkinResidual
+!# 6.) codire_calcGalerkinResidual
 !#     -> calculate the Galerkin residual
 !#
 !# The following auxiliary routine are available:
 !#
-!# 1.) afc_setVelocity
+!# 1.) codire_setVelocity
 !#     -> set the velocity vector internally
 !#
-!# 2.) afc_updateVelocity
+!# 2.) codire_updateVelocity
 !#     -> update the velocity vector
 !#
 !# 3.) fcb_calcConvectionConst1d
@@ -62,7 +62,7 @@
 !# </purpose>
 !##############################################################################
 
-module afc_problem
+module codire_problem
 
   use afcstabilisation
   use fparser
@@ -74,8 +74,8 @@ module afc_problem
   use statistics
   use storage
 
-  use afc_basic
-  use afc_callback
+  use codire_basic
+  use codire_callback
   use boundaryfilter
   use problem
   use solver
@@ -84,12 +84,12 @@ module afc_problem
 
   private
 
-  public :: afc_calcPrecond
+  public :: codire_calcPrecond
   public :: fcb_calcRHS
   public :: fcb_calcResidual
   public :: fcb_calcJacobian
   public :: fcb_applyJacobian
-  public :: afc_calcGalerkinResidual
+  public :: codire_calcGalerkinResidual
 
 !<globals>
 
@@ -111,7 +111,7 @@ contains
 
 !<subroutine>
 
-  subroutine afc_calcPrecond(rproblemLevel, rtimestep, rsolver,&
+  subroutine codire_calcPrecond(rproblemLevel, rtimestep, rsolver,&
                              ru, imode, nlminOpt, nlmaxOpt)
 
 !<description>
@@ -159,7 +159,7 @@ contains
     ! Check if vector has more than one block
     if (ru%nblocks .ne. 1) then
       call output_line('Solution vector must not contain more than one block!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_calcPrecond')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPrecond')
       call sys_halt()
     end if
 
@@ -180,7 +180,7 @@ contains
 
     ! Update velocity vector and return if velocity has not changed. This can be
     ! done, because the system operator can only change due to velocity variations.
-    if (.not.afc_updateVelocity(rproblemLevel%p_rproblem, rtimestep%dTime, nlmin, nlmax)) return
+    if (.not.codire_updateVelocity(rproblemLevel%p_rproblem, rtimestep%dTime, nlmin, nlmax)) return
     
     ! Update the matrices on all required multigrid levels NLMIN <= ILEV <= NLMAX
     rproblemLevelTmp => rproblemLevel
@@ -256,7 +256,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid type of diffusion!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_calcPrecond')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPrecond')
         call sys_halt()
       end select
 
@@ -266,7 +266,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Set velocity vector for current level
-      call afc_setVelocity(rproblemLevelTmp)
+      call codire_setVelocity(rproblemLevelTmp)
       
       ! Check if stabilisation structure is initialised
       if (rproblemLevelTmp%Rafcstab(CDEQ_AFCSTAB_CONVECTION)%iSpec .eq. AFCSTAB_UNDEFINED)&
@@ -335,7 +335,7 @@ contains
 
           case DEFAULT
             call output_line('Invalid spatial dimension!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'afc_calcPrecond')
+                             OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPrecond')
             call sys_halt()
           end select
 
@@ -377,7 +377,7 @@ contains
 
         case DEFAULT
           call output_line('Invalid velocity profile!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'afc_calcPrecond')
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPrecond')
           call sys_halt()
         end select
         
@@ -430,7 +430,7 @@ contains
 
           case DEFAULT
             call output_line('Invalid spatial dimension!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'afc_calcPrecond')
+                             OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPrecond')
             call sys_halt()
           end select
 
@@ -467,7 +467,7 @@ contains
           
         case DEFAULT
           call output_line('Invalid velocity profile!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'afc_calcPrecond1d')
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPrecond1d')
           call sys_halt()
         end select
       end if
@@ -516,7 +516,7 @@ contains
         
       case DEFAULT
         call output_line('Invalid flow type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_calcPrecond')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPrecond')
         call sys_halt()
       end select
       
@@ -547,7 +547,7 @@ contains
     
     ! Ok, we updated the (nonlinear) system operator successfully. Now we still 
     ! have to link it to the solver hierarchy. This is done recursively.
-    call afc_updateSolverMatrix(rproblemLevel, rsolver, CDEQ_MATRIX_A,&
+    call codire_updateSolverMatrix(rproblemLevel, rsolver, CDEQ_MATRIX_A,&
                                 UPDMAT_ALL, nlmin, nlmax)
 
     ! Finally, we have to update the content of the solver hierarchy
@@ -556,7 +556,7 @@ contains
     ! Stop time measurement for global operator
     call stat_stopTimer(rtimer_assembly_matrix)
     
-  end subroutine afc_calcPrecond
+  end subroutine codire_calcPrecond
 
   !*****************************************************************************
   
@@ -613,7 +613,7 @@ contains
     ! needs to be updated in each nonlinear iteration. The update 
     ! routine is written such that it first determines if the problem
     ! is nonlinear and returns without matrix update otherwise.
-    call afc_calcPrecond(rproblemLevel, rtimestep, rsolver, ru, imode)
+    call codire_calcPrecond(rproblemLevel, rtimestep, rsolver, ru, imode)
 
     select case(iflowtype)
     case (FLOW_TRANSIENT,&
@@ -760,7 +760,7 @@ contains
     ! needs to be updated in each nonlinear iteration. The update 
     ! routine is written such that it first determines if the problem
     ! is nonlinear and returns without matrix update otherwise.
-    call afc_calcPrecond(rproblemLevel, rtimestep, rsolver, ru, imode)
+    call codire_calcPrecond(rproblemLevel, rtimestep, rsolver, ru, imode)
 
     ! Start time measurement for residual/rhs evaluation
     call stat_startTimer(rtimer_assembly_resrhs, STAT_TIMERSHORT)
@@ -1047,11 +1047,11 @@ contains
         select case(iflowtype)
         case (FLOW_TRANSIENT,&
               FLOW_PSEUDOTRANSIENT)
-          call afc_updateSolverMatrix(rproblemLevel, rsolver, CDEQ_MATRIX_A,&
+          call codire_updateSolverMatrix(rproblemLevel, rsolver, CDEQ_MATRIX_A,&
                                       UPDMAT_JAC_TRANSIENT, rproblemLevel%ilev, rproblemLevel%ilev)
           
         case (FLOW_STEADYSTATE)
-          call afc_updateSolverMatrix(rproblemLevel, rsolver, CDEQ_MATRIX_A,&
+          call codire_updateSolverMatrix(rproblemLevel, rsolver, CDEQ_MATRIX_A,&
                                       UPDMAT_JAC_STEADY, rproblemLevel%ilev, rproblemLevel%ilev)
         
         case DEFAULT
@@ -1135,7 +1135,7 @@ contains
     !---------------------------------------------------------------------------
 
     ! Set the velocity for current level
-    call afc_setVelocity(rproblemLevel)
+    call codire_setVelocity(rproblemLevel)
 
     ! Do we have to perform stabilization of AFC-type?
     bStabilize = (AFCSTAB_GALERKIN .ne.&
@@ -1187,7 +1187,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_calcJacobian')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_calcJacobian')
         call sys_halt()
       end select
 
@@ -1483,11 +1483,11 @@ contains
     select case(iflowtype)
     case (FLOW_TRANSIENT,&
           FLOW_PSEUDOTRANSIENT)
-      call afc_updateSolverMatrix(rproblemLevel, rsolver, CDEQ_MATRIX_J, &
+      call codire_updateSolverMatrix(rproblemLevel, rsolver, CDEQ_MATRIX_J, &
                                   UPDMAT_JAC_TRANSIENT, rproblemLevel%ilev, rproblemLevel%ilev)
 
     case (FLOW_STEADYSTATE)
-      call afc_updateSolverMatrix(rproblemLevel, rsolver, CDEQ_MATRIX_J, &
+      call codire_updateSolverMatrix(rproblemLevel, rsolver, CDEQ_MATRIX_J, &
                                   UPDMAT_JAC_STEADY, rproblemLevel%ilev, rproblemLevel%ilev)
 
     case DEFAULT
@@ -1550,7 +1550,7 @@ contains
 
 !<subroutine>
 
-  subroutine afc_calcGalerkinResidual(rproblemLevel, rsolution,&
+  subroutine codire_calcGalerkinResidual(rproblemLevel, rsolution,&
                                       rresidual, imode, rf)
 
 !<description>
@@ -1621,7 +1621,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_calcGalerkinResidual')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_calcGalerkinResidual')
       call sys_halt()
     end select
 
@@ -1630,7 +1630,7 @@ contains
     !------------------------------------------------------------
     
     ! Set velocity vector for current level
-    call afc_setVelocity(rproblemLevel)
+    call codire_setVelocity(rproblemLevel)
 
     ! Check if velocity is assumed to be discretely divergence free
     bisDivFree = (ivelocitytype .gt. 0)
@@ -1682,7 +1682,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_calcGalerkinResidual')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_calcGalerkinResidual')
         call sys_halt()
       end select
       
@@ -1719,7 +1719,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid velocity profile!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_calcGalerkinResidual')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_calcGalerkinResidual')
       call sys_halt()
     end select
     
@@ -1736,7 +1736,7 @@ contains
     ! Release memory
     call lsyssc_releaseMatrix(rmatrix)
 
-  end subroutine afc_calcGalerkinResidual
+  end subroutine codire_calcGalerkinResidual
   
   !*****************************************************************************
   !*****************************************************************************
@@ -1744,7 +1744,7 @@ contains
 
 !<subroutine>
 
-  subroutine afc_setVelocity(rproblemLevel)
+  subroutine codire_setVelocity(rproblemLevel)
 
 !<description>
     ! This subroutine sets the internal velocity vector 
@@ -1773,17 +1773,17 @@ contains
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_setVelocity')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_setVelocity')
       call sys_halt()
     end select
     
-  end subroutine afc_setVelocity
+  end subroutine codire_setVelocity
 
   !*****************************************************************************
 
 !<function>
 
-  function afc_updateVelocity(rproblem, ttime, nlminOpt, nlmaxOpt) result(bmodified)
+  function codire_updateVelocity(rproblem, ttime, nlminOpt, nlmaxOpt) result(bmodified)
 
 !<description>
     ! This subroutine updates the internal velocity vector for all levels.
@@ -1887,7 +1887,7 @@ contains
         if (rproblemLevel%ilev .eq. nlmax) then
           
           ! Evaluate function parser
-          call afc_setVelocity(rproblemLevel)
+          call codire_setVelocity(rproblemLevel)
           call storage_getbase_double2d(rproblemLevel%rtriangulation%h_DvertexCoords,  p_Dcoords)
           p_Dcoords => p_Dcoords(:,1:rproblemLevel%rtriangulation%NVT)
 
@@ -1907,7 +1907,7 @@ contains
 
           case DEFAULT
             call output_line('Invalid spatial dimension!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'afc_updateVelocity')
+                             OU_CLASS_ERROR,OU_MODE_STD,'codire_updateVelocity')
             call sys_halt()
           end select
           
@@ -1951,7 +1951,7 @@ contains
           if (rproblemLevel%ilev .eq. nlmax) then
             
             ! Call function parser
-            call afc_setVelocity(rproblemLevel)
+            call codire_setVelocity(rproblemLevel)
             call storage_getbase_double2d(rproblemLevel%rtriangulation%h_DvertexCoords, p_Dcoords)
             p_Dcoords => p_Dcoords(:,1:rproblemLevel%rtriangulation%NVT)
 
@@ -1971,7 +1971,7 @@ contains
               
             case DEFAULT
               call output_line('Invalid spatial dimension!',&
-                               OU_CLASS_ERROR,OU_MODE_STD,'afc_updateVelocity')
+                               OU_CLASS_ERROR,OU_MODE_STD,'codire_updateVelocity')
               call sys_halt()
             end select
             
@@ -2007,7 +2007,7 @@ contains
           if (rproblemLevel%ilev .eq. nlmax) then
             
             ! Call function parser
-            call afc_setVelocity(rproblemLevel)
+            call codire_setVelocity(rproblemLevel)
             call storage_getbase_double2d(rproblemLevel%rtriangulation%h_DvertexCoords, p_Dcoords)
             p_Dcoords => p_Dcoords(:,1:rproblemLevel%rtriangulation%NVT)
 
@@ -2031,11 +2031,11 @@ contains
         
       case DEFAULT
         call output_line('Invalid type of velocity!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_updateVelocity')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_updateVelocity')
         call sys_halt()
       end select
     end if
-  end function afc_updateVelocity
+  end function codire_updateVelocity
 
   !*****************************************************************************
 
@@ -2490,4 +2490,4 @@ contains
     
   end subroutine fcb_calcConvectionBuckLev1d
   
-end module afc_problem
+end module codire_problem

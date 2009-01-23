@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> afc_estimation </name>
+!# <name> codire_estimation </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,16 +9,16 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) afc_prepareErrorEstimator
+!# 1.) codire_prepareErrorEstimator
 !#     -> prepare the error estimator for a given solution
 !#
-!# 2.) afc_performErrorEstimation
+!# 2.) codire_performErrorEstimation
 !#     -> extract scalar variable used for error estimation
 !#
 !# </purpose>
 !##############################################################################
 
-module afc_estimation
+module codire_estimation
 
   use fsystem
   use genoutput
@@ -34,7 +34,7 @@ module afc_estimation
   use storage
   use triangulation
 
-  use afc_basic
+  use codire_basic
   use errorestimation
   use problem
 
@@ -43,8 +43,8 @@ module afc_estimation
 
   private
 
-  public :: afc_prepareErrorEstimator
-  public :: afc_performErrorEstimation
+  public :: codire_prepareErrorEstimator
+  public :: codire_performErrorEstimation
 
 contains
 
@@ -52,7 +52,7 @@ contains
 
 !<subroutine>
 
-  subroutine afc_prepareErrorEstimator(rproblemLevel, rsolution, rerrorEstimator)
+  subroutine codire_prepareErrorEstimator(rproblemLevel, rsolution, rerrorEstimator)
 
 !<description>
     ! This subroutine prepares the error estimator for a given solution
@@ -104,20 +104,20 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of error estimator!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afc_prepareErrorEstimator')
+          OU_CLASS_ERROR,OU_MODE_STD,'codire_prepareErrorEstimator')
       call sys_halt()
     end select
 
     ! Stop time measurement for error estimation
     call stat_stopTimer(rtimer_errorestimation)
 
-  end subroutine afc_prepareErrorEstimator
+  end subroutine codire_prepareErrorEstimator
 
    !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_performErrorEstimation(rerrorEstimator, rgridIndicator,&
+  subroutine codire_performErrorEstimation(rerrorEstimator, rgridIndicator,&
                                         dprotectionLayerTolerance)
 
 !<description>
@@ -179,7 +179,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of error estimator!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afc_performErrorEstimation')
+          OU_CLASS_ERROR,OU_MODE_STD,'codire_performErrorEstimation')
       call sys_halt()
     end select
 
@@ -192,5 +192,5 @@ contains
     ! Stop time measurement for error estimation
     call stat_stopTimer(rtimer_errorestimation)
 
-  end subroutine afc_performErrorEstimation
-end module afc_estimation
+  end subroutine codire_performErrorEstimation
+end module codire_estimation

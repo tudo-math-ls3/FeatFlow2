@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> afc_postprocessing </name>
+!# <name> codire_postprocessing </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,28 +9,28 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) afc_outputSolution
+!# 1.) codire_outputSolution
 !#     -> write the solution to file in UCD format
 !#
-!# 2.) afc_outputVectorScalar
+!# 2.) codire_outputVectorScalar
 !#     -> write a scalar vector to file in UCD format
 !#
-!# 3.) afc_outputVectorBlock
+!# 3.) codire_outputVectorBlock
 !#     -> write a block vector to file in UCD format
 !#
-!# 4.) afc_calcSolutionError
+!# 4.) codire_calcSolutionError
 !#     -> compute the L1- and L2-norm of the solution error
 !#        and its standard deviation
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) afc_getExactSolution
+!# 1.) codire_getExactSolution
 !#     -> compute the values of the exact solution and its derivatives.
 !#
 !# </purpose>
 !##############################################################################
 
-module afc_postprocessing
+module codire_postprocessing
 
   use fparser
   use fsystem
@@ -43,17 +43,17 @@ module afc_postprocessing
   use storage
   use ucd
 
-  use afc_basic
-  use afc_init
+  use codire_basic
+  use codire_init
 
   implicit none
 
   private
 
-  public :: afc_outputSolution
-  public :: afc_outputVectorScalar
-  public :: afc_outputVectorBlock
-  public :: afc_calcSolutionError
+  public :: codire_outputSolution
+  public :: codire_outputVectorScalar
+  public :: codire_outputVectorBlock
+  public :: codire_calcSolutionError
 
 contains
 
@@ -61,7 +61,7 @@ contains
 
 !<subroutine>
 
-  subroutine afc_outputSolution(rproblemLevel, rsolution, ttime, sfilename,&
+  subroutine codire_outputSolution(rproblemLevel, rsolution, ttime, sfilename,&
                                 ioutputUCD, rdualSolution, breset)
 
 !<description>
@@ -116,11 +116,13 @@ contains
       if (ioutputUCD .eq. UCD_FORMAT_GMV) then
         call ucd_startGMV (rexport, UCD_FLAG_STANDARD,&
                            rproblemLevel%rtriangulation,&
-                           trim(adjustl(sfilename))//'.gmv'//trim(sys_si0(ienumGMV,5)))
+                           trim(adjustl(sfilename))//'.'//&
+                           trim(sys_si0(ienumGMV,5))//'.gmv')
       else
         call ucd_startBGMV (rexport, UCD_FLAG_STANDARD,&
                             rproblemLevel%rtriangulation,&
-                            trim(adjustl(sfilename))//'.gmv'//trim(sys_si0(ienumGMV,5)))
+                            trim(adjustl(sfilename))//'.'//&
+                            trim(sys_si0(ienumGMV,5))//'.gmv')
       end if
 
     case (UCD_FORMAT_AVS)
@@ -132,7 +134,8 @@ contains
       ienumAVS = ienumAVS+1
       call ucd_startAVS (rexport, UCD_FLAG_STANDARD,&
                          rproblemLevel%rtriangulation,&
-                         trim(adjustl(sfilename))//trim(sys_si0(ienumAVS,5))//'.avs')
+                         trim(adjustl(sfilename))//'.'//&
+                         trim(sys_si0(ienumAVS,5))//'.avs')
 
     case (UCD_FORMAT_VTK)
       ! Do we have to reset the enumerator?
@@ -143,11 +146,12 @@ contains
       ienumVTK = ienumVTK+1
       call ucd_startVTK (rexport, UCD_FLAG_STANDARD,&
                          rproblemLevel%rtriangulation,&
-                         trim(adjustl(sfilename))//trim(sys_si0(ienumVTK,5))//'.vtu')
+                         trim(adjustl(sfilename))//'.'//&
+                         trim(sys_si0(ienumVTK,5))//'.vtu')
 
     case DEFAULT
       call output_line('Invalid UCD output type!', &
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_outputSolution')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_outputSolution')
       call sys_halt()
     end select
 
@@ -190,7 +194,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid number of spatial dimensions',&
-                        OU_CLASS_ERROR,OU_MODE_STD,'afc_outputSolution')
+                        OU_CLASS_ERROR,OU_MODE_STD,'codire_outputSolution')
       call sys_halt()
     end select
 
@@ -211,13 +215,13 @@ contains
     ! Stop time measurement
     call stat_stopTimer(rtimer_prepostprocess)
 
-  end subroutine afc_outputSolution  
+  end subroutine codire_outputSolution  
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_outputVectorScalar(rproblemLevel, rvector, ttime, sfilename,&
+  subroutine codire_outputVectorScalar(rproblemLevel, rvector, ttime, sfilename,&
                                     ioutputUCD, breset)
 
 !<description>
@@ -298,7 +302,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid UCD output type!', &
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_outputScalarVector')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_outputScalarVector')
       call sys_halt()
     end select
 
@@ -322,7 +326,7 @@ contains
     else
       
       call output_line('Unsupported vector!', &
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_outputScalarVector')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_outputScalarVector')
       call sys_halt()
       
     end if
@@ -334,13 +338,13 @@ contains
     ! Stop time measurement
     call stat_stopTimer(rtimer_prepostprocess)
 
-  end subroutine afc_outputVectorScalar
+  end subroutine codire_outputVectorScalar
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_outputVectorBlock(rproblemLevel, rvector, ttime, sfilename,&
+  subroutine codire_outputVectorBlock(rproblemLevel, rvector, ttime, sfilename,&
                                    ioutputUCD, breset)
 
 !<description>
@@ -422,7 +426,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid UCD output type!', &
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_outputBlockVector')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_outputBlockVector')
       call sys_halt()
     end select
 
@@ -451,7 +455,7 @@ contains
       else
         
         call output_line('Unsupported vector!', &
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_outputBlockVector')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_outputBlockVector')
         call sys_halt()
         
       end if
@@ -465,13 +469,13 @@ contains
     ! Stop time measurement
     call stat_stopTimer(rtimer_prepostprocess)
 
-  end subroutine afc_outputVectorBlock
+  end subroutine codire_outputVectorBlock
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_calcSolutionError(rproblemLevel, rsolution, indatfile,&
+  subroutine codire_calcSolutionError(rproblemLevel, rsolution, indatfile,&
                                    ttime, rcollection)
 
 !<description>
@@ -518,7 +522,7 @@ contains
     
     
     ! Initialize exact solution
-    call afc_initExactSolution(rproblemLevel, rsolutionExact, indatfile, ttime, istatus)
+    call codire_initExactSolution(rproblemLevel, rsolutionExact, indatfile, ttime, istatus)
 
     ! If no exact solution is available, return
     if (istatus .ne. 0) return
@@ -546,7 +550,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid number of spatial dimensions',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_calcSolutionError')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_calcSolutionError')
       call sys_halt()
     end select
 
@@ -568,7 +572,7 @@ contains
     call output_line('L1-error:                 '//trim(sys_sdE(derrorL1,16)))
 
     call pperr_scalar(rsolution%RvectorBlock(1), PPERR_L1ERROR, derrorL1,&
-        afc_getExactSolution, rcollection)
+        codire_getExactSolution, rcollection)
     call output_line('L1-error:                 '//trim(sys_sdE(derrorL1,16)))
 
 
@@ -579,7 +583,7 @@ contains
     call output_line('L2-error:                 '//trim(sys_sdE(derrorL2,16)))
 
     call pperr_scalar(rsolution%RvectorBlock(1), PPERR_L2ERROR, derrorL2,&
-                      afc_getExactSolution, rcollection)
+                      codire_getExactSolution, rcollection)
     call output_line('L2-error:                 '//trim(sys_sdE(derrorL2,16)))
 
 
@@ -602,13 +606,13 @@ contains
     ! Release memory
     call fparser_release(rparser)
     call lsysbl_releaseVector(rsolutionExact)
-  end subroutine afc_calcSolutionError
+  end subroutine codire_calcSolutionError
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine afc_getExactSolution(cderivative, rdiscretisation, nelements,&
+  subroutine codire_getExactSolution(cderivative, rdiscretisation, nelements,&
                                   npointsPerElement, Dpoints, IdofsTest,&
                                   rdomainIntSubset, Dvalues, rcollection)
     
@@ -762,5 +766,5 @@ contains
       Dvalues = 0.0_DP
     end select
 
-  end subroutine afc_getExactSolution
-end module afc_postprocessing
+  end subroutine codire_getExactSolution
+end module codire_postprocessing

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> afc_init </name>
+!# <name> codire_init </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,52 +9,52 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) afc_initProblem
+!# 1.) codire_initProblem
 !#     -> initialize the global problem structure
 !#
-!# 2.) afc_initParser
+!# 2.) codire_initParser
 !#     -> initialize the global function parser
 !#
-!# 3.) afc_initConstOperators1d
+!# 3.) codire_initConstOperators1d
 !#     -> initialize constant coefficient operators for the finite
 !#        element discretization in 1D
 !#
-!# 4.) afc_initConstOperators2d
+!# 4.) codire_initConstOperators2d
 !#     -> initialize constant coefficient operators for the finite
 !#        element discretization in 2D
 !#
-!# 5.) afc_initConstOperators3d
+!# 5.) codire_initConstOperators3d
 !#     -> initialize constant coefficient operators for the finite
 !#        element discretization in 3D
 !#
-!# 6.) afc_initSolutionFromParser
+!# 6.) codire_initSolutionFromParser
 !#     -> initialize the solution profile at time t=0
 !#
-!# 7.) afc_initSolutionFromImage
+!# 7.) codire_initSolutionFromImage
 !#     -> initialize the solution profile at time t=0
 !#
-!# 8.) afc_initExactSolution
+!# 8.) codire_initExactSolution
 !#     -> initialize the exact solution profile
 !#
-!# 9.) afc_initRHS
+!# 9.) codire_initRHS
 !#      -> initialize the constant right-hand side
 !#
-!# 10.) afc_initVelocity
+!# 10.) codire_initVelocity
 !#      -> initialize the velocity profile
 !#
-!# 11.) afc_initDiffusion1d
+!# 11.) codire_initDiffusion1d
 !#      -> initialize the diffusion "matrix" in 1D
 !#
-!# 12.) afc_initDiffusion2d
+!# 12.) codire_initDiffusion2d
 !#      -> initialize the diffusion matrix in 2D
 !#
-!# 13.) afc_initDiffusion3d
+!# 13.) codire_initDiffusion3d
 !#      -> initialize the diffusion matrix in 3D
 !# 
 !# </purpose>
 !##############################################################################
 
-module afc_init
+module codire_init
 
   use afcstabilisation
   use fparser
@@ -70,8 +70,8 @@ module afc_init
   use storage
   use triangulation
   
-  use afc_basic  
-  use afc_callback
+  use codire_basic  
+  use codire_callback
   use boundaryfilter
   use problem
   use solver
@@ -79,19 +79,19 @@ module afc_init
   implicit none
 
   private
-  public :: afc_initProblem
-  public :: afc_initParser
-  public :: afc_initConstOperators1d
-  public :: afc_initConstOperators2d
-  public :: afc_initConstOperators3d
-  public :: afc_initSolutionFromParser
-  public :: afc_initSolutionFromImage
-  public :: afc_initExactSolution
-  public :: afc_initRHS
-  public :: afc_initVelocity 
-  public :: afc_initDiffusion1d
-  public :: afc_initDiffusion2d
-  public :: afc_initDiffusion3d
+  public :: codire_initProblem
+  public :: codire_initParser
+  public :: codire_initConstOperators1d
+  public :: codire_initConstOperators2d
+  public :: codire_initConstOperators3d
+  public :: codire_initSolutionFromParser
+  public :: codire_initSolutionFromImage
+  public :: codire_initExactSolution
+  public :: codire_initRHS
+  public :: codire_initVelocity 
+  public :: codire_initDiffusion1d
+  public :: codire_initDiffusion2d
+  public :: codire_initDiffusion3d
 
 contains
  
@@ -99,7 +99,7 @@ contains
 
 !<subroutine>
 
-  subroutine afc_initProblem(rproblem, trifile, prmfile, indatfile,&
+  subroutine codire_initProblem(rproblem, trifile, prmfile, indatfile,&
                              nlmin, nlmax, iconvToTria, ndimension)
 
 !<description>
@@ -176,7 +176,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
-                       OU_CLASS_WARNING,OU_MODE_STD,'afc_initProblem')
+                       OU_CLASS_WARNING,OU_MODE_STD,'codire_initProblem')
       call sys_halt()
     end select
     
@@ -215,13 +215,13 @@ contains
                                            p_rproblemLevel%p_rproblemLevelCoarse%rtriangulation)
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
-  end subroutine afc_initProblem
+  end subroutine codire_initProblem
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_initParser(sfilename)
+  subroutine codire_initParser(sfilename)
 
 !<description>
     ! This subroutine initializes the global function parser.
@@ -246,7 +246,7 @@ contains
     ! Oops...
     if (iunit .eq. -1) then
       call output_line('Unable to open input file!',&
-                       OU_CLASS_WARNING,OU_MODE_STD,'afc_initParser')
+                       OU_CLASS_WARNING,OU_MODE_STD,'codire_initParser')
       call sys_halt()
     end if
 
@@ -290,13 +290,13 @@ contains
 
     ! Close file
     close (iunit)
-  end subroutine afc_initParser
+  end subroutine codire_initParser
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_initConstOperators1d(rboundaryCondition, rproblem, ieltype,&
+  subroutine codire_initConstOperators1d(rboundaryCondition, rproblem, ieltype,&
                                       imatrixFormat, nlminOpt, nlmaxOpt)
 
 !<description>
@@ -372,7 +372,7 @@ contains
       ! Check if triangulation is 1D
       if (rproblemLevel%rtriangulation%ndim .ne. NDIM1D) then
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_WARNING, OU_MODE_STD, 'afc_initConstOperators1d')
+                         OU_CLASS_WARNING, OU_MODE_STD, 'codire_initConstOperators1d')
         call sys_halt()
       end if
 
@@ -390,7 +390,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupproted element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initConstOperators1d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initConstOperators1d')
         call sys_halt()
       end select
       
@@ -464,7 +464,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid type of velocity!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initConstOperators1d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initConstOperators1d')
       end select
 
 
@@ -487,7 +487,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid type of diffusion!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initConstOperators1d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initConstOperators1d')
         call sys_halt()
       end select
 
@@ -510,13 +510,13 @@ contains
       ! Switch to next coarser level
       rproblemLevel => rproblemLevel%p_rproblemLevelCoarse
     end do
-  end subroutine afc_initConstOperators1d
+  end subroutine codire_initConstOperators1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_initConstOperators2d(rboundaryCondition, rproblem, ieltype,&
+  subroutine codire_initConstOperators2d(rboundaryCondition, rproblem, ieltype,&
                                       imatrixFormat, nlminOpt, nlmaxOpt)
 
 !<description>
@@ -591,7 +591,7 @@ contains
       ! Check if triangulation is 2D
       if (rproblemLevel%rtriangulation%ndim .ne. NDIM2D) then
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_WARNING, OU_MODE_STD, 'afc_initConstOperators2d')
+                         OU_CLASS_WARNING, OU_MODE_STD, 'codire_initConstOperators2d')
         call sys_halt()
       end if
 
@@ -624,7 +624,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupproted element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initConstOperators2d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initConstOperators2d')
         call sys_halt()
       end select
       
@@ -706,7 +706,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid type of velocity!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initConstOperators2d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initConstOperators2d')
       end select
 
 
@@ -765,7 +765,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid type of diffusion!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initConstOperators2d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initConstOperators2d')
         call sys_halt()
       end select
 
@@ -788,13 +788,13 @@ contains
       ! Switch to next coarser level
       rproblemLevel => rproblemLevel%p_rproblemLevelCoarse
     end do
-  end subroutine afc_initConstOperators2d
+  end subroutine codire_initConstOperators2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_initConstOperators3d(rboundaryCondition, rproblem, ieltype,&
+  subroutine codire_initConstOperators3d(rboundaryCondition, rproblem, ieltype,&
                                       imatrixFormat, nlminOpt, nlmaxOpt)
 
 !<description>
@@ -869,7 +869,7 @@ contains
       ! Check if triangulation is 3D
       if (rproblemLevel%rtriangulation%ndim .ne. NDIM3D) then
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_WARNING, OU_MODE_STD, 'afc_initConstOperators3d')
+                         OU_CLASS_WARNING, OU_MODE_STD, 'codire_initConstOperators3d')
         call sys_halt()
       end if
 
@@ -902,7 +902,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupproted element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initConstOperators3d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initConstOperators3d')
         call sys_halt()
       end select
       
@@ -991,7 +991,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid type of velocity!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initConstOperators3d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initConstOperators3d')
       end select
 
 
@@ -1071,7 +1071,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid type of diffusion!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initConstOperators3d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initConstOperators3d')
         call sys_halt()
       end select
 
@@ -1094,13 +1094,13 @@ contains
       ! Switch to next coarser level
       rproblemLevel => rproblemLevel%p_rproblemLevelCoarse
     end do
-  end subroutine afc_initConstOperators3d
+  end subroutine codire_initConstOperators3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_initSolutionFromParser(rboundaryCondition, rproblemLevel,&
+  subroutine codire_initSolutionFromParser(rboundaryCondition, rproblemLevel,&
                                         rsolution, indatfile, time)
 
 !<description>
@@ -1168,14 +1168,14 @@ contains
     
     case DEFAULT
       call output_line('Invalid number of spatial dimensions',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_initSolutionFromParser')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initSolutionFromParser')
       call sys_halt()
     end select
 
     ! Check status
     if (istatus .ne. 0) then
       call output_line('Unable to create initial solution profile!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_initSolutionFromParser')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initSolutionFromParser')
       call sys_halt()
     end if
     
@@ -1185,13 +1185,13 @@ contains
     ! Impose boundary conditions explicitely
     call bdrf_filterVectorExplicit(rboundaryCondition,&
                                    rproblemLevel%rtriangulation, rsolution, 0.0_DP)
-  end subroutine afc_initSolutionFromParser
+  end subroutine codire_initSolutionFromParser
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_initSolutionFromImage(rboundaryCondition, rproblemLevel,&
+  subroutine codire_initSolutionFromImage(rboundaryCondition, rproblemLevel,&
                                        rsolution, pgmfile)
 
 !<description>
@@ -1228,7 +1228,7 @@ contains
     ! Check if problem is in 2D
     if (rproblemLevel%rdiscretisation%ndimension .ne. NDIM2D) then
       call output_line('Initialization from image is only available in 2D!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_initSolutionFromImage')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initSolutionFromImage')
       call sys_halt()
     end if
 
@@ -1249,13 +1249,13 @@ contains
     ! Impose boundary conditions explicitely
     call bdrf_filterVectorExplicit(rboundaryCondition,&
                                    rproblemLevel%rtriangulation, rsolution, 0.0_DP)
-  end subroutine afc_initSolutionFromImage
+  end subroutine codire_initSolutionFromImage
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_initExactSolution(rproblemLevel, rsolution,&
+  subroutine codire_initExactSolution(rproblemLevel, rsolution,&
                                    indatfile, time, istatus)
 
 !<description>
@@ -1329,14 +1329,14 @@ contains
       
     case DEFAULT
       call output_line('Invalid number of spatial dimensions',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_initExactSolution')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initExactSolution')
       call sys_halt()
     end select
     
     ! No exact solution available; free memory and return
     if (iistatus .ne. 0) then
       call output_line('Unable to create exact solution profile!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_initExactSolution')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initExactSolution')
       call lsysbl_releaseVector(rsolution)
       if (present(istatus)) istatus = -1
       return
@@ -1344,13 +1344,13 @@ contains
     
     ! Release parser
     call fparser_release(rparser)
-  end subroutine afc_initExactSolution
+  end subroutine codire_initExactSolution
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_initRHS(rboundaryCondition, rproblemLevel, rrhs, indatfile)
+  subroutine codire_initRHS(rboundaryCondition, rproblemLevel, rrhs, indatfile)
 
 !<description>
     ! This subroutine initializes the right-hand side vector
@@ -1424,14 +1424,14 @@ contains
         
       case DEFAULT
         call output_line('Invalid number of spatial dimensions',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initRHS')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initRHS')
         call sys_halt()
       end select
 
       
       if (istatus .ne. 0) then
         call output_line('Unable to create function parser for right-hand side!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'afc_initRHS')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initRHS')
         call sys_halt()
       end if
       
@@ -1461,16 +1461,16 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of right-hand side!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_initRHS')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initRHS')
       call sys_halt()
     end select
-  end subroutine afc_initRHS
+  end subroutine codire_initRHS
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afc_initVelocity(rproblem, indatfile, nlminOpt, nlmaxOpt)
+  subroutine codire_initVelocity(rproblem, indatfile, nlminOpt, nlmaxOpt)
 
 !<description>
     ! This subroutine initializes the velocity vector from the parameters
@@ -1600,13 +1600,13 @@ contains
 
         case DEFAULT
           call output_line('Invalid number of spatial dimensions',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'afc_initVelocity')
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_initVelocity')
           call sys_halt()
         end select
         
         if (istatus .ne. 0) then
           call output_line('Unable to create initial velocity!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'afc_initVelocity')
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_initVelocity')
           call sys_halt()
         end if
         
@@ -1629,13 +1629,13 @@ contains
 
     ! Mark velocity for update
     bvelocityUpdate = .true.
-  end subroutine afc_initVelocity
+  end subroutine codire_initVelocity
 
   !*****************************************************************************
 
 !<subroutine>
   
-  subroutine afc_initDiffusion1d(Ddiffusion)
+  subroutine codire_initDiffusion1d(Ddiffusion)
 
 !<description>
     ! This subroutine initializes the diffusion matrix
@@ -1662,16 +1662,16 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_initDiffusion1d')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initDiffusion1d')
       call sys_halt()
     end select
-  end subroutine afc_initDiffusion1d
+  end subroutine codire_initDiffusion1d
 
   !*****************************************************************************
 
 !<subroutine>
   
-  subroutine afc_initDiffusion2d(Ddiffusion, drotation)
+  subroutine codire_initDiffusion2d(Ddiffusion, drotation)
 
 !<description>
     ! This subroutine initializes the (anisotropic) diffusion matrix
@@ -1726,16 +1726,16 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'afc_initDiffusion2d')
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initDiffusion2d')
       call sys_halt()
     end select
-  end subroutine afc_initDiffusion2d
+  end subroutine codire_initDiffusion2d
 
   !*****************************************************************************
 
 !<subroutine>
   
-  subroutine afc_initDiffusion3d(Ddiffusion, drotation)
+  subroutine codire_initDiffusion3d(Ddiffusion, drotation)
 
 !<description>
     ! This subroutine initializes the (anisotropic) diffusion matrix
@@ -1756,6 +1756,6 @@ contains
     print *, "Not implemented yet"
     stop
     
-  end subroutine afc_initDiffusion3d
+  end subroutine codire_initDiffusion3d
 
-end module afc_init
+end module codire_init
