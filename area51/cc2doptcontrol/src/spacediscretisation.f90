@@ -493,7 +493,6 @@ contains
       ! Copy the discretisation structure of the first (Stokes) block
       ! and replace the cubature-formula identifier by that which is to be
       ! used for the mass matrix.
-      allocate(p_rdiscretisationMass)
       call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(1),&
           rproblem%RlevelInfo(i)%rdiscretisationMass,.true.)
       p_rdiscretisationMass => rproblem%RlevelInfo(i)%rdiscretisationMass
