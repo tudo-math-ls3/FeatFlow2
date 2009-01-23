@@ -77,6 +77,8 @@ module problem
   private
   public :: t_problem
   public :: t_problemLevel
+  public :: t_problemDescriptor
+  public :: problem_initProblem
   public :: problem_createProblem
   public :: problem_releaseProblem
   public :: problem_done
@@ -97,6 +99,48 @@ module problem
   !*****************************************************************************
   
 !<types>
+
+!<typeblock>
+
+  ! This data structure contains the abstract problem description
+
+  type t_problemDescriptor
+
+    ! Spatial dimension
+    integer :: ndimension
+
+    ! Maximum multigrid level
+    integer :: nlmax
+
+    ! Minimum multigrid level
+    integer :: nlmin
+
+    ! Number of AFC stabilisations
+    integer :: nafcstab
+
+    ! Number of scalar matrices
+    integer :: nmatrixScalar
+
+    ! Number of block matrices
+    integer :: nmatrixBlock
+
+    ! Number of scalar vectors
+    integer :: nvectorScalar
+
+    ! Number of block vectors
+    integer :: nvectorBlock
+
+    ! Name of the triangulation file
+    character(LEN=SYS_STRLEN) :: trifile
+
+    ! Name of the boundary parametrisation file
+    character(LEN=SYS_STRLEN) :: prmfile
+
+  end type t_problemDescriptor
+
+!</typeblock>
+
+  !*****************************************************************************
   
 !<typeblock>
 
@@ -193,6 +237,134 @@ module problem
 !</types>
 
 contains
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_initProblem(rproblemDescriptor, rproblem)
+
+!<description>
+    ! This subroutine initialise an abstract problem structure
+!</description>
+
+!<input>
+    ! abstract problem descriptor
+    type(t_problemDescriptor), intent(IN) :: rproblemDescriptor
+!</input>
+
+!<output>
+    ! problem data structure
+    type(t_problem), intent(OUT) :: rproblem
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_problemLevel), pointer :: rproblemLevel, p_rproblemLevel
+    integer :: ilev
+    logical :: berror
+
+    ! Initialize global problem structure
+    call problem_createProblem(rproblem)
+            
+    ! Initialize coarse level
+    nullify(rproblemLevel); allocate(rproblemLevel)
+    call problem_createLevel(rproblemLevel, rproblemDescriptor%nlmin)
+    
+    select case(rproblemDescriptor%ndimension)
+    case (NDIM1D)
+      ! Read coarse mesh from TRI-file without generating an extended raw mesh
+      call tria_readTriFile1D(rproblemLevel%rtriangulation,&
+                              rproblemDescriptor%trifile, .true.)
+      
+    case (NDIM2D)
+      ! Create new boundary and read from PRM-file
+      call boundary_read_prm(rproblem%rboundary, rproblemDescriptor%prmfile)
+      
+      ! Read coarse mesh from TRI-file, convert it to triangular mesh if required
+      call tria_readTriFile2D(rproblemLevel%rtriangulation,&
+                              rproblemDescriptor%trifile, rproblem%rboundary, .true.)
+!!$      if (rproblemDescriptor%iconvToTria .ne. 0)&
+!!$          call tria_rawGridToTri(rproblemLevel%rtriangulation)
+
+    case (NDIM3D)
+      call tria_readTriFile3D(rproblemLevel%rtriangulation,&
+                              rproblemDescriptor%trifile, rproblem%rboundary, .true.)
+
+    case DEFAULT
+      call output_line('Invalid spatial dimension!',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'problem_initProblem')
+      call sys_halt()
+    end select
+
+    ! Refine coarse mesh to minimum multigrid level
+    call tria_quickRefine2LevelOrdering(rproblemDescriptor%nlmin-1,&
+                                        rproblemLevel%rtriangulation,&
+                                        rproblem%rboundary)
+    
+    ! Create standard mesh from raw mesh
+    call tria_initStandardMeshFromRaw(rproblemLevel%rtriangulation,&
+                                      rproblem%rboundary)
+
+    ! Allocate matrices, vectors and stabilisations
+    if (rproblemDescriptor%nmatrixScalar .gt. 0)&
+        allocate(rproblemLevel%Rmatrix(rproblemDescriptor%nmatrixScalar))
+    if (rproblemDescriptor%nmatrixBlock .gt. 0)&
+        allocate(rproblemLevel%RmatrixBlock(rproblemDescriptor%nmatrixBlock))
+    if (rproblemDescriptor%nvectorScalar .gt. 0)&
+        allocate(rproblemLevel%Rvector(rproblemDescriptor%nvectorScalar))
+    if (rproblemDescriptor%nvectorBlock .gt. 0)&
+        allocate(rproblemLevel%RvectorBlock(rproblemDescriptor%nvectorBlock))
+    if (rproblemDescriptor%nafcstab .gt. 0)&
+        allocate(rproblemLevel%Rafcstab(rproblemDescriptor%nafcstab))
+
+    ! Append level to global problem
+    call problem_appendLevel(rproblem, rproblemLevel)
+    p_rproblemLevel => rproblemLevel
+
+    ! Generate fine levels
+    do ilev = rproblemDescriptor%nlmin+1, rproblemDescriptor%nlmax
+      
+      ! Initialize current level
+      nullify(rproblemLevel); allocate(rproblemLevel)
+      call problem_createLevel(rproblemLevel, ilev)
+      
+      ! Generate regularly refined mesh
+      call tria_refine2LevelOrdering(p_rproblemLevel%rtriangulation,&
+                                     rproblemLevel%rtriangulation,&
+                                     rproblem%rboundary)
+
+      ! Create standard mesh from raw mesh
+      call tria_initStandardMeshFromRaw(rproblemLevel%rtriangulation,&
+                                        rproblem%rboundary)
+
+      ! Allocate matrices, vectors and stabilisations
+      if (rproblemDescriptor%nmatrixScalar .gt. 0)&
+          allocate(rproblemLevel%Rmatrix(rproblemDescriptor%nmatrixScalar))
+      if (rproblemDescriptor%nmatrixBlock .gt. 0)&
+          allocate(rproblemLevel%RmatrixBlock(rproblemDescriptor%nmatrixBlock))
+      if (rproblemDescriptor%nvectorScalar .gt. 0)&
+          allocate(rproblemLevel%Rvector(rproblemDescriptor%nvectorScalar))
+      if (rproblemDescriptor%nvectorBlock .gt. 0)&
+          allocate(rproblemLevel%RvectorBlock(rproblemDescriptor%nvectorBlock))
+      if (rproblemDescriptor%nafcstab .gt. 0)&
+          allocate(rproblemLevel%Rafcstab(rproblemDescriptor%nafcstab))
+      
+      ! Append current level to global problem
+      call problem_appendLevel(rproblem, rproblemLevel)
+      p_rproblemLevel => rproblemLevel
+    end do
+    
+    ! Compress triangulation structure
+    p_rproblemLevel => rproblem%p_rproblemLevelMax
+    do while (associated(p_rproblemLevel) .and.&
+              associated(p_rproblemLevel%p_rproblemLevelCoarse))
+      call tria_compress2LevelOrdHierarchy(p_rproblemLevel%rtriangulation,&
+                                           p_rproblemLevel%p_rproblemLevelCoarse%rtriangulation)
+      p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
+    end do
+
+  end subroutine problem_initProblem
 
   !*****************************************************************************
 
@@ -618,7 +790,7 @@ contains
       do i = lbound(rproblemLevel%rmatrix,1), ubound(rproblemLevel%rmatrix,1)
         call lsyssc_releaseMatrix(rproblemLevel%rmatrix(i))
       end do
-      deallocate(rproblemLevel%rmatrix)
+      deallocate(rproblemLevel%Rmatrix)
     end if
     
     ! Release all block matries
@@ -627,7 +799,7 @@ contains
              ubound(rproblemLevel%rmatrixBlock,1)
         call lsysbl_releaseMatrix(rproblemLevel%rmatrixBlock(i))
       end do
-      deallocate(rproblemLevel%rmatrixBlock)
+      deallocate(rproblemLevel%RmatrixBlock)
     end if
     
     ! Release all scalar vectors
@@ -636,7 +808,7 @@ contains
              ubound(rproblemLevel%rvector,1)
         call lsyssc_releaseVector(rproblemLevel%rvector(i))
       end do
-      deallocate(rproblemLevel%rvector)
+      deallocate(rproblemLevel%Rvector)
     end if
     
     ! Release all block vectors
@@ -645,7 +817,7 @@ contains
              ubound(rproblemLevel%rvectorBlock,1)
         call lsysbl_releaseVector(rproblemLevel%rvectorBlock(i))
       end do
-      deallocate(rproblemLevel%rvectorBlock)
+      deallocate(rproblemLevel%RvectorBlock)
     end if
     
     ! Release stabilization structure
