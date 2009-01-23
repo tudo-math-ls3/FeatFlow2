@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> flagship_primalproblem </name>
+!# <name> euler_primalproblem </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,7 +9,7 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) fs_calcPrimalPrecond
+!# 1.) euler_calcPrimalPrecond
 !#     -> update the global preconditioner for the solution of the
 !#        primal problem for the compressible Navier-Stokes equations
 !#
@@ -28,7 +28,7 @@
 !# </purpose>
 !##############################################################################
 
-module flagship_primalproblem
+module euler_primalproblem
 
   use afcstabilisation
   use fsystem
@@ -40,17 +40,17 @@ module flagship_primalproblem
   use storage
 
   use boundaryfilter
-  use flagship_basic
-  use flagship_callback1d
-  use flagship_callback2d
-  use flagship_callback3d
+  use euler_basic
+  use euler_callback1d
+  use euler_callback2d
+  use euler_callback3d
   use problem
   use solver
 
   implicit none
 
   private
-  public :: fs_calcPrimalPrecond
+  public :: euler_calcPrimalPrecond
   public :: fcb_calcPrimalRHS
   public :: fcb_calcPrimalResidual
   public :: fcb_calcPrimalJacobian
@@ -62,7 +62,7 @@ contains
 
 !<subroutine>
 
-  subroutine fs_calcPrimalPrecond(rproblemLevel, rtimestep, rsolver,&
+  subroutine euler_calcPrimalPrecond(rproblemLevel, rtimestep, rsolver,&
                                   ru, imode, nlminOpt, nlmaxOpt)
 
 !<description>
@@ -112,22 +112,22 @@ contains
 
     case (SYSTEM_INTERLEAVEFORMAT)
       if ((ru%nblocks .ne. 1) .or.&
-          (ru%RvectorBlock(1)%NVAR .ne. fs_getNVAR(rproblemLevel))) then
+          (ru%RvectorBlock(1)%NVAR .ne. euler_getNVAR(rproblemLevel))) then
         call output_line('Invalid format of solution vector!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
         call sys_halt()
       end if
 
     case (SYSTEM_BLOCKFORMAT)
       if (ru%nblocks .ne. rproblemLevel%rtriangulation%ndim) then
         call output_line('Invalid format of solution vector!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
         call sys_halt()
       else
         do iblock = 1, ru%nblocks
           if (ru%RvectorBlock(iblock)%NVAR .ne. 1) then
             call output_line('Invalid format of solution vector!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
             call sys_halt()
           end if
         end do
@@ -135,7 +135,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported system format!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
       call sys_halt()
     end select
     
@@ -219,7 +219,7 @@ contains
                                         1._DP, .true., p_rmatrixA)
           case DEFAULT
             call output_line('Invalid spatial dimension!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
             call sys_halt()
           end select
 
@@ -241,7 +241,7 @@ contains
                                         1._DP, .true., p_rmatrixA)
           case DEFAULT
             call output_line('Invalid spatial dimension!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
             call sys_halt()
           end select
 
@@ -263,14 +263,14 @@ contains
                                         1._DP, .true., p_rmatrixA)
           case DEFAULT
             call output_line('Invalid spatial dimension!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
             call sys_halt()
           end select
 
           
         case DEFAULT
           call output_line('Invalid type of dissipation!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
           call sys_halt()
         end select
         
@@ -297,7 +297,7 @@ contains
                                         1._DP, .true., p_rmatrixA)
           case DEFAULT
             call output_line('Invalid spatial dimension!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
             call sys_halt()
           end select
 
@@ -319,7 +319,7 @@ contains
                                         1._DP, .true., p_rmatrixA)
           case DEFAULT
             call output_line('Invalid spatial dimension!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
             call sys_halt()
           end select
 
@@ -341,21 +341,21 @@ contains
                                         1._DP, .true., p_rmatrixA)
           case DEFAULT
             call output_line('Invalid spatial dimension!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
             call sys_halt()
           end select
           
           
         case DEFAULT
           call output_line('Invalid type of dissipation!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
           call sys_halt()
         end select
           
 
       case DEFAULT
         call output_line('Invalid flow coupling!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
         call sys_halt()
       end select
           
@@ -394,7 +394,7 @@ contains
           
         case DEFAULT
           call output_line('Invalid flow type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
           call sys_halt()
         end select
 
@@ -407,7 +407,7 @@ contains
           !
           !     A = diag(M_L)-theta*dt*L
           !
-          do iblock = 1, fs_getNVAR(rproblemLevelTmp)
+          do iblock = 1, euler_getNVAR(rproblemLevelTmp)
             call lsyssc_MatrixLinearComb(&
                 rproblemLevelTmp%Rmatrix(CNSE_MATRIX_ML), 1._DP,&
                 rproblemLevelTmp%RmatrixBlock(CNSE_MATRIX_A)%RmatrixBlock(iblock,iblock),&
@@ -418,8 +418,8 @@ contains
 
           ! Scale the off-diagonal blocks by "-theta*dt" if required
           if (icoupled .eq. FLOW_ALLCOUPLED) then
-            do iblock = 1, fs_getNVAR(rproblemLevelTmp)
-              do jblock = 1, fs_getNVAR(rproblemLevelTmp)
+            do iblock = 1, euler_getNVAR(rproblemLevelTmp)
+              do jblock = 1, euler_getNVAR(rproblemLevelTmp)
                 if (iblock .eq. jblock) cycle
                 call lsyssc_scaleMatrix(&
                     rproblemLevelTmp%RmatrixBlock(CNSE_MATRIX_A)%RmatrixBlock(iblock,jblock),&
@@ -436,15 +436,15 @@ contains
           select case(icoupled)
 
           case (FLOW_SEGREGATED)
-            do iblock = 1, fs_getNVAR(rproblemLevelTmp)
+            do iblock = 1, euler_getNVAR(rproblemLevelTmp)
               call lsyssc_scaleMatrix(&
                   rproblemLevelTmp%RmatrixBlock(CNSE_MATRIX_A)%RmatrixBlock(iblock,iblock),&
                   -1.0_DP)
             end do
 
           case (FLOW_ALLCOUPLED)
-            do iblock = 1, fs_getNVAR(rproblemLevelTmp)
-              do jblock = 1, fs_getNVAR(rproblemLevelTmp)
+            do iblock = 1, euler_getNVAR(rproblemLevelTmp)
+              do jblock = 1, euler_getNVAR(rproblemLevelTmp)
                 call lsyssc_scaleMatrix(&
                     rproblemLevelTmp%RmatrixBlock(CNSE_MATRIX_A)%RmatrixBlock(iblock,jblock),&
                     -1.0_DP)
@@ -453,13 +453,13 @@ contains
 
           case DEFAULT
             call output_line('Unsupported block matrix format!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
           call sys_halt()
           end select
             
         case DEFAULT
           call output_line('Invalid flow type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalPrecond')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
           call sys_halt()
         end select
 
@@ -493,7 +493,7 @@ contains
 
     ! Ok, we updated the nonlinear system operator successfully. Now we still 
     ! have to link it to the solver hierarchy. This is done recursively.
-    call fs_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_A,&
+    call euler_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_A,&
                                UPDMAT_ALL, nlmin, nlmax)
 
     ! Finally, we have to update the content of the solver hierarchy
@@ -502,7 +502,7 @@ contains
     ! Stop time measurement for global operator
     call stat_stopTimer(rtimer_assembly_matrix)
 
-  end subroutine fs_calcPrimalPrecond
+  end subroutine euler_calcPrimalPrecond
 
   !*****************************************************************************
 
@@ -601,7 +601,7 @@ contains
                                  dscale, .false., rrhs)
       case DEFAULT
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalRHS')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalRHS')
         call sys_halt()
       end select
       
@@ -637,7 +637,7 @@ contains
                                    dscale, .false., rrhs)
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalRHS')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalRHS')
           call sys_halt()
         end select
           
@@ -663,7 +663,7 @@ contains
                                    dscale, .false., rrhs)
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalRHS')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalRHS')
           call sys_halt()
         end select
           
@@ -699,7 +699,7 @@ contains
                                  dscale, .false., rrhs)
       case DEFAULT
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalRHS')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalRHS')
         call sys_halt()
       end select
         
@@ -749,7 +749,7 @@ contains
                                     .false., rrhs, rrhs, rproblemLevel%Rmatrix(CNSE_MATRIX_MC))
       case DEFAULT
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalRHS')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalRHS')
         call sys_halt()
       end select
 
@@ -784,7 +784,7 @@ contains
                                     dscale, .false., rrhs)
       case DEFAULT
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_calcPrimalRHS')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalRHS')
         call sys_halt()
       end select
 
@@ -856,7 +856,7 @@ contains
     ! We don't have to check vectors for compatibility.
     ! This will be done in the update procedure for the NSE-operator
     ! Update the global system operator if no Newton method is used
-    call fs_calcPrimalPrecond(rproblemLevel, rtimestep, rsolver, ru, imode)
+    call euler_calcPrimalPrecond(rproblemLevel, rtimestep, rsolver, ru, imode)
 
     ! Start time measurement for residual/rhs evaluation
     call stat_startTimer(rtimer_assembly_resrhs, STAT_TIMERSHORT)
@@ -1374,17 +1374,17 @@ contains
     if (present(bfailure)) then
       if (bfailure) then
         ! Update the global system operator
-        call fs_calcPrimalPrecond(rproblemLevel, rtimestep, rsolver, ru, imode)
+        call euler_calcPrimalPrecond(rproblemLevel, rtimestep, rsolver, ru, imode)
 
         ! What type of flow are we?
         select case(iflowtype)
         case (FLOW_TRANSIENT,&
               FLOW_PSEUDOTRANSIENT)
-          call fs_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_A,&
+          call euler_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_A,&
                                      UPDMAT_JAC_TRANSIENT, rproblemLevel%ilev, rproblemLevel%ilev)
           
         case (FLOW_STEADYSTATE)
-          call fs_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_A,&
+          call euler_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_A,&
                                      UPDMAT_JAC_STEADY, rproblemLevel%ilev, rproblemLevel%ilev)
 
         case DEFAULT
@@ -1427,16 +1427,16 @@ contains
     case (SYSTEM_INTERLEAVEFORMAT)
       if ((ru%nblocks  .ne. 1) .or.&
           (ru0%nblocks .ne. 1) .or.&
-          (ru%RvectorBlock(1)%NVAR  .ne. fs_getNVAR(rproblemLevel)) .or. &
-          (ru0%RvectorBlock(1)%NVAR .ne. fs_getNVAR(rproblemLevel))) then
+          (ru%RvectorBlock(1)%NVAR  .ne. euler_getNVAR(rproblemLevel)) .or. &
+          (ru0%RvectorBlock(1)%NVAR .ne. euler_getNVAR(rproblemLevel))) then
         call output_line('Invalid format of solution vector!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'fcb_calcJacobian')
         call sys_halt()
       end if
 
     case (SYSTEM_BLOCKFORMAT)
-      if ((ru%nblocks  .ne. fs_getNVAR(rproblemLevel)) .or.&
-          (ru0%nblocks .ne. fs_getNVAR(rproblemLevel))) then
+      if ((ru%nblocks  .ne. euler_getNVAR(rproblemLevel)) .or.&
+          (ru0%nblocks .ne. euler_getNVAR(rproblemLevel))) then
         call output_line('Invalid format of solution vector!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'fcb_calcJacobian')
         call sys_halt()
@@ -1684,7 +1684,7 @@ contains
         !
         !     A = diag(M_L)-theta*dt*J
         !
-        do iblock = 1, fs_getNVAR(rproblemLevel)
+        do iblock = 1, euler_getNVAR(rproblemLevel)
           call lsyssc_MatrixLinearComb(&
               rproblemLevel%Rmatrix(CNSE_MATRIX_ML), 1._DP,&
               rproblemLevel%RmatrixBlock(CNSE_MATRIX_A)%RmatrixBlock(iblock,iblock),&
@@ -1695,8 +1695,8 @@ contains
         
         ! Scale the off-diagonal blocks by "-theta*dt" if required
         if (icoupled .eq. FLOW_ALLCOUPLED) then
-          do iblock = 1, fs_getNVAR(rproblemLevel)
-            do jblock = 1, fs_getNVAR(rproblemLevel)
+          do iblock = 1, euler_getNVAR(rproblemLevel)
+            do jblock = 1, euler_getNVAR(rproblemLevel)
               if (iblock .eq. jblock) cycle
               call lsyssc_scaleMatrix(&
                   rproblemLevel%RmatrixBlock(CNSE_MATRIX_A)%RmatrixBlock(iblock,jblock),&
@@ -1713,14 +1713,14 @@ contains
         select case(icoupled)
           
         case (FLOW_SEGREGATED)
-          do iblock = 1, fs_getNVAR(rproblemLevel)
+          do iblock = 1, euler_getNVAR(rproblemLevel)
             call lsyssc_scaleMatrix(&
                 rproblemLevel%RmatrixBlock(CNSE_MATRIX_A)%RmatrixBlock(iblock,iblock), -1.0_DP)
           end do
           
         case (FLOW_ALLCOUPLED)
-          do iblock = 1, fs_getNVAR(rproblemLevel)
-            do jblock = 1, fs_getNVAR(rproblemLevel)
+          do iblock = 1, euler_getNVAR(rproblemLevel)
+            do jblock = 1, euler_getNVAR(rproblemLevel)
               call lsyssc_scaleMatrix(&
                   rproblemLevel%RmatrixBlock(CNSE_MATRIX_A)%RmatrixBlock(iblock,jblock), -1.0_DP)
             end do
@@ -1762,11 +1762,11 @@ contains
     select case(iflowtype)
     case (FLOW_TRANSIENT,&
           FLOW_PSEUDOTRANSIENT)
-      call fs_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_J,&
+      call euler_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_J,&
                                  UPDMAT_JAC_TRANSIENT, rproblemLevel%ilev, rproblemLevel%ilev)
 
     case (FLOW_STEADYSTATE)
-      call fs_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_J, &
+      call euler_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_J, &
                                  UPDMAT_JAC_STEADY, rproblemLevel%ilev, rproblemLevel%ilev)
 
     case DEFAULT
@@ -1823,4 +1823,4 @@ contains
 
   end subroutine fcb_applyPrimalJacobian
 
-end module flagship_primalproblem
+end module euler_primalproblem

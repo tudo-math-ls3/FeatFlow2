@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> flagship_callback1d </name>
+!# <name> euler_callback1d </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -57,7 +57,7 @@
 !# </purpose>
 !##############################################################################
 
-module flagship_callback1d
+module euler_callback1d
 
   use afcstabilisation
   use bilinearformevaluation
@@ -80,8 +80,8 @@ module flagship_callback1d
   use problem
   use solver
 
-  use flagship_basic
-  use flagship_thermodynamics
+  use euler_basic
+  use euler_thermodynamics
 
   implicit none
 
@@ -2223,4 +2223,4 @@ contains
     end select
   end subroutine fcb_setBoundary1d
  
-end module flagship_callback1d
+end module euler_callback1d

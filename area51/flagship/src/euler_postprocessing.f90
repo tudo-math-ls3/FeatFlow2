@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> flagship_postprocessing </name>
+!# <name> euler_postprocessing </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,23 +9,23 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) fs_outputSolution
+!# 1.) euler_outputSolution
 !#     -> write the solution to file in UCD format
 !#
-!# 2.) fs_outputVectorScalar
+!# 2.) euler_outputVectorScalar
 !#     -> write a scalar vector to file in UCD format
 !#
-!# 3.) fs_outputVectorBlock
+!# 3.) euler_outputVectorBlock
 !#     -> write a block vector to file in UCD format
 !#
-!# 4.) fs_calcSolutionError
+!# 4.) euler_calcSolutionError
 !#     -> compute the L1- and L2-norm of the solution error
 !#        and its standard deviation
 !#
 !# </purpose>
 !##############################################################################
 
-module flagship_postprocessing
+module euler_postprocessing
 
   use fparser
   use fsystem
@@ -37,18 +37,18 @@ module flagship_postprocessing
   use storage
   use ucd
 
-  use flagship_basic
-  use flagship_init
+  use euler_basic
+  use euler_init
   use problem
 
   implicit none
 
   private
 
-  public :: fs_outputSolution
-  public :: fs_outputVectorScalar
-  public :: fs_outputVectorBlock
-  public :: fs_calcSolutionError
+  public :: euler_outputSolution
+  public :: euler_outputVectorScalar
+  public :: euler_outputVectorBlock
+  public :: euler_calcSolutionError
 
 contains
 
@@ -56,7 +56,7 @@ contains
 
 !<subroutine>
 
-  subroutine fs_outputSolution(rproblemLevel, rsolution, ttime, sfilename,&
+  subroutine euler_outputSolution(rproblemLevel, rsolution, ttime, sfilename,&
                                ioutputUCD, breset)
 
 !<description>
@@ -139,7 +139,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid UCD output type!', &
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_outputSolution')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
       call sys_halt()
     end select
 
@@ -171,7 +171,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid number of spatial dimensions',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_outputSolution')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
       call sys_halt()
     end select
     call lsyssc_getbase_double(rvector1, p_Ddata)
@@ -183,68 +183,68 @@ contains
       select case(rproblemLevel%rdiscretisation%ndimension)
       case (NDIM1D)
         ! Compute velocity in 1D
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR1D, p_Dsolution,&
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR1D, p_Dsolution,&
                                     VAR_MOMENTUM_X, p_DvelocityX)
         
         ! Add velocity vectors in 1D
         call ucd_addVarVertBasedVec(rexport, 'velocity', p_DvelocityX)
 
         ! Compute additional variables in 1D
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_DENSITY, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_DENSITY, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata)
       
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+1, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+1, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'tot_energy', UCD_VAR_STANDARD, p_Ddata)
       
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+2, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+2, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata)
 
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+3, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+3, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'Mach_numb', UCD_VAR_STANDARD, p_Ddata)
 
 
       case (NDIM2D)
         ! Compute velocity in 2D
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_X, p_DvelocityX)
-        call fs_getVariableNodewise(rvector2%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y, p_DvelocityY)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_X, p_DvelocityX)
+        call euler_getVariableNodewise(rvector2%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y, p_DvelocityY)
         
         ! Add velocity vectors in 2D
         call ucd_addVarVertBasedVec(rexport, 'velocity', p_DvelocityX, p_DvelocityY)
 
         ! Compute additional variables in 2D
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_DENSITY, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_DENSITY, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata)
       
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+1, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+1, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'tot_energy', UCD_VAR_STANDARD, p_Ddata)
       
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+2, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+2, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata)
 
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+3, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+3, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'Mach_numb', UCD_VAR_STANDARD, p_Ddata)
         
 
       case (NDIM3D)
         ! Compute velocity in 3D
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_X, p_DvelocityX)
-        call fs_getVariableNodewise(rvector2%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Y, p_DvelocityY)
-        call fs_getVariableNodewise(rvector3%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z, p_DvelocityZ)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_X, p_DvelocityX)
+        call euler_getVariableNodewise(rvector2%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Y, p_DvelocityY)
+        call euler_getVariableNodewise(rvector3%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z, p_DvelocityZ)
         
         ! Add velocity vectors in 3D
         call ucd_addVarVertBasedVec(rexport, 'velocity', p_DvelocityX, p_DvelocityY, p_DvelocityZ)
 
         ! Compute additional variables in 3D
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_DENSITY, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_DENSITY, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata)
       
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+1, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+1, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'tot_energy', UCD_VAR_STANDARD, p_Ddata)
       
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+2, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+2, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata)
 
-        call fs_getVariableNodewise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+3, p_Ddata)
+        call euler_getVariableNodewise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+3, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'Mach_numb', UCD_VAR_STANDARD, p_Ddata)
       end select
 
@@ -254,80 +254,80 @@ contains
       select case(rproblemLevel%rdiscretisation%ndimension)
       case (NDIM1D)
         ! Compute velocity in 1D
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR1D, p_Dsolution,&
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR1D, p_Dsolution,&
                                      VAR_MOMENTUM_X, p_DvelocityX)
         
         ! Add velocity vectors in 1D
         call ucd_addVarVertBasedVec(rexport, 'velocity', p_DvelocityX)
 
         ! Compute additional variables in 1D
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_DENSITY, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_DENSITY, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata)
         
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+1, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+1, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'tot_energy', UCD_VAR_STANDARD, p_Ddata)
         
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+2, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+2, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata)
         
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+3, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR1D, p_Dsolution, VAR_MOMENTUM_X+3, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'Mach_numb', UCD_VAR_STANDARD, p_Ddata)
 
 
       case (NDIM2D)
         ! Compute velocity in 2D
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR2D, p_Dsolution,&
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR2D, p_Dsolution,&
                                      VAR_MOMENTUM_X, p_DvelocityX)
-        call fs_getVariableBlockwise(rvector2%NEQ, NVAR2D, p_Dsolution,&
+        call euler_getVariableBlockwise(rvector2%NEQ, NVAR2D, p_Dsolution,&
                                      VAR_MOMENTUM_Y, p_DvelocityY)
         
         ! Add velocity vectors in 2D
         call ucd_addVarVertBasedVec(rexport, 'velocity', p_DvelocityX, p_DvelocityY)
 
         ! Compute additional variables in 2D
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_DENSITY, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_DENSITY, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata)
         
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+1, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+1, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'tot_energy', UCD_VAR_STANDARD, p_Ddata)
         
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+2, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+2, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata)
         
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+3, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR2D, p_Dsolution, VAR_MOMENTUM_Y+3, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'Mach_numb', UCD_VAR_STANDARD, p_Ddata)
         
 
       case (NDIM3D)
         ! Compute velocity in 3D
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR3D, p_Dsolution,&
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR3D, p_Dsolution,&
                                      VAR_MOMENTUM_X, p_DvelocityX)
-        call fs_getVariableBlockwise(rvector2%NEQ, NVAR3D, p_Dsolution,&
+        call euler_getVariableBlockwise(rvector2%NEQ, NVAR3D, p_Dsolution,&
                                      VAR_MOMENTUM_Y, p_DvelocityY)
-        call fs_getVariableBlockwise(rvector3%NEQ, NVAR3D, p_Dsolution,&
+        call euler_getVariableBlockwise(rvector3%NEQ, NVAR3D, p_Dsolution,&
                                      VAR_MOMENTUM_Z, p_DvelocityZ)
         
         ! Add velocity vectors in 3D
         call ucd_addVarVertBasedVec(rexport, 'velocity', p_DvelocityX, p_DvelocityY, p_DvelocityZ)
 
         ! Compute additional variables in 3D
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_DENSITY, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_DENSITY, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata)
         
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+1, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+1, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'tot_energy', UCD_VAR_STANDARD, p_Ddata)
         
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+2, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+2, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata)
         
-        call fs_getVariableBlockwise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+3, p_Ddata)
+        call euler_getVariableBlockwise(rvector1%NEQ, NVAR3D, p_Dsolution, VAR_MOMENTUM_Z+3, p_Ddata)
         call ucd_addVariableVertexBased (rexport, 'Mach_numb', UCD_VAR_STANDARD, p_Ddata)
       end select
 
 
     case DEFAULT
       call output_line('Unsupported system format!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_outputSolution')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
       call sys_halt()
     end select
     
@@ -343,13 +343,13 @@ contains
     ! Stop time measurement
     call stat_stopTimer(rtimer_prepostprocess)
 
-  end subroutine fs_outputSolution
+  end subroutine euler_outputSolution
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_outputVectorScalar(rproblemLevel, rvector, ttime, sfilename,&
+  subroutine euler_outputVectorScalar(rproblemLevel, rvector, ttime, sfilename,&
                                    ioutputUCD, breset)
 
 !<description>
@@ -430,7 +430,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid UCD output type!', &
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_outputScalarVector')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_outputScalarVector')
       call sys_halt()
     end select
 
@@ -454,7 +454,7 @@ contains
     else
       
       call output_line('Unsupported vector!', &
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_outputScalarVector')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_outputScalarVector')
       call sys_halt()
       
     end if
@@ -466,13 +466,13 @@ contains
     ! Stop time measurement
     call stat_stopTimer(rtimer_prepostprocess)
 
-  end subroutine fs_outputVectorScalar
+  end subroutine euler_outputVectorScalar
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_outputVectorBlock(rproblemLevel, rvector, ttime, sfilename,&
+  subroutine euler_outputVectorBlock(rproblemLevel, rvector, ttime, sfilename,&
                                   ioutputUCD, breset)
 
 !<description>
@@ -554,7 +554,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid UCD output type!', &
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_outputBlockVector')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_outputBlockVector')
       call sys_halt()
     end select
 
@@ -583,7 +583,7 @@ contains
       else
         
         call output_line('Unsupported vector!', &
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_outputBlockVector')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_outputBlockVector')
         call sys_halt()
         
       end if
@@ -597,13 +597,13 @@ contains
     ! Stop time measurement
     call stat_stopTimer(rtimer_prepostprocess)
 
-  end subroutine fs_outputVectorBlock
+  end subroutine euler_outputVectorBlock
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_calcSolutionError(rproblemLevel, rsolution, indatfile,&
+  subroutine euler_calcSolutionError(rproblemLevel, rsolution, indatfile,&
                                   ttime, rcollection)
 
 !<description>
@@ -643,7 +643,7 @@ contains
     
     
     ! Initialize exact solution
-    call fs_initExactSolution(rproblemLevel, rsolutionExact,&
+    call euler_initExactSolution(rproblemLevel, rsolutionExact,&
                               indatfile, ttime, istatus)
 
     ! If no exact solution is available, return
@@ -666,7 +666,7 @@ contains
           rsolutionExact%p_rblockDiscr%RspatialDiscr(1),&
           rsolutionExactScalar, .false., rsolutionExact%cdataType)
 
-      do ivar = 1, fs_getNVAR(rproblemLevel)
+      do ivar = 1, euler_getNVAR(rproblemLevel)
         call output_line('Variable '//trim(sys_si(ivar,2)))
         
         call lsyssc_packVector(rsolution%RvectorBlock(1),&
@@ -701,7 +701,7 @@ contains
 
     case (SYSTEM_BLOCKFORMAT)
 
-      do ivar = 1, fs_getNVAR(rproblemLevel)
+      do ivar = 1, euler_getNVAR(rproblemLevel)
         call output_line('Variable '//trim(sys_si(ivar,2)))
 
         ! Compute L1-errors
@@ -729,13 +729,13 @@ contains
 
     case DEFAULT
       call output_line('Unsupported system format!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_calcSolutionError')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_calcSolutionError')
       call sys_halt()
     end select
     
     ! Release memory
     call fparser_release(rparser)
     call lsysbl_releaseVector(rsolutionExact)
-  end subroutine fs_calcSolutionError
+  end subroutine euler_calcSolutionError
 
-end module flagship_postprocessing
+end module euler_postprocessing

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> flagship_estimation </name>
+!# <name> euler_estimation </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,16 +9,16 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) fs_prepareErrorEstimator
+!# 1.) euler_prepareErrorEstimator
 !#     -> prepare the error estimator for a given solution
 !#
-!# 2.) fs_performErrorEstimation
+!# 2.) euler_performErrorEstimation
 !#     -> extract scalar variable used for error estimation
 !#
 !# </purpose>
 !##############################################################################
 
-module flagship_estimation
+module euler_estimation
 
   use fsystem
   use genoutput
@@ -35,15 +35,15 @@ module flagship_estimation
   use triangulation
 
   use errorestimation
-  use flagship_basic
+  use euler_basic
   use problem
 
   implicit none
 
   private
 
-  public :: fs_prepareErrorEstimator
-  public :: fs_performErrorEstimation
+  public :: euler_prepareErrorEstimator
+  public :: euler_performErrorEstimation
 
 contains
 
@@ -51,7 +51,7 @@ contains
 
 !<subroutine>
 
-  subroutine fs_prepareErrorEstimator(rproblemLevel, rsolution, rerrorEstimator)
+  subroutine euler_prepareErrorEstimator(rproblemLevel, rsolution, rerrorEstimator)
 
 !<description>
     ! This subroutine prepares the error estimator for a given solution
@@ -82,7 +82,7 @@ contains
     case (ERREST_CSPR_FACE: ERREST_LIMAVR)
       
       ! We need a scalar error variable
-      call fs_calcScalarErrorVariable(rsolution, fs_getNVAR(rproblemLevel),&
+      call euler_calcScalarErrorVariable(rsolution, euler_getNVAR(rproblemLevel),&
           rerrorEstimator%p_rgradientRecovery%ierrorvariable,&
           rerrorEstimator%p_rgradientRecovery%rerrorVariable)
       
@@ -94,7 +94,7 @@ contains
     case (ERREST_FIRSTDIFF:ERREST_SECONDDIFF)
 
       ! We need a scalar error variable
-      call fs_calcScalarErrorVariable(rsolution, fs_getNVAR(rproblemLevel),&
+      call euler_calcScalarErrorVariable(rsolution, euler_getNVAR(rproblemLevel),&
           rerrorEstimator%p_rdifferenceIndicator%ierrorvariable,&
           rerrorEstimator%p_rdifferenceIndicator%rerrorVariable)
 
@@ -103,20 +103,20 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of error estimator!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_prepareErrorEstimator')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_prepareErrorEstimator')
       call sys_halt()
     end select
 
     ! Stop time measurement for error estimation
     call stat_stopTimer(rtimer_errorestimation)
 
-  end subroutine fs_prepareErrorEstimator
+  end subroutine euler_prepareErrorEstimator
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_performErrorEstimation(rerrorEstimator, rgridIndicator,&
+  subroutine euler_performErrorEstimation(rerrorEstimator, rgridIndicator,&
                                        dprotectionLayerTolerance)
 
 !<description>
@@ -178,7 +178,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of error estimator!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_performErrorEstimation')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_performErrorEstimation')
       call sys_halt()
     end select
     
@@ -191,7 +191,7 @@ contains
     ! Stop time measurement for error estimation
     call stat_stopTimer(rtimer_errorestimation)
 
-  end subroutine fs_performErrorEstimation
+  end subroutine euler_performErrorEstimation
 
   !*****************************************************************************
   !*****************************************************************************
@@ -205,7 +205,7 @@ contains
 
 !<subroutine>
 
-  subroutine fs_calcScalarErrorVariable(rsolution, NVAR, &
+  subroutine euler_calcScalarErrorVariable(rsolution, NVAR, &
                                         ierrorvariable, rerrorVariable)
 
 !<description>
@@ -250,7 +250,7 @@ contains
       call lsysbl_getbase_double(rsolution,      p_Dsolution)
       
       ! Get indicator variable
-      call fs_getVariableNodewise(rerrorVariable%NEQ, NVAR, p_Dsolution,&
+      call euler_getVariableNodewise(rerrorVariable%NEQ, NVAR, p_Dsolution,&
                                   ierrorvariable, p_DerrorVariable)
       
     case (SYSTEM_BLOCKFORMAT)
@@ -264,15 +264,15 @@ contains
       call lsysbl_getbase_double(rsolution,      p_Dsolution)
       
       ! Get indicator variables
-      call fs_getVariableBlockwise(rerrorVariable%NEQ, NVAR, p_Dsolution,&
+      call euler_getVariableBlockwise(rerrorVariable%NEQ, NVAR, p_Dsolution,&
                                    ierrorvariable, p_DerrorVariable)
 
     case DEFAULT
       call output_line('Unsupproted system format!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_calcScalarErrorVariable')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_calcScalarErrorVariable')
       call sys_halt()
     end select
 
-  end subroutine fs_calcScalarErrorVariable
+  end subroutine euler_calcScalarErrorVariable
   
-end module flagship_estimation
+end module euler_estimation

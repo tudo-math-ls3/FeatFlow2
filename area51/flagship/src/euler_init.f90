@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> flagship_init </name>
+!# <name> euler_init </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,37 +9,37 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) fs_initProblem
+!# 1.) euler_initProblem
 !#     -> initialize the global problem structure
 !#
-!# 2.) fs_initParser
+!# 2.) euler_initParser
 !#     -> initialize the global function parser
 !#
-!# 3.) fs_initConstOperators1d
+!# 3.) euler_initConstOperators1d
 !#     -> initialize constant coefficient operators for the finite
 !#        element discretization in 1D
 !#
-!# 4.) fs_initConstOperators2d
+!# 4.) euler_initConstOperators2d
 !#     -> initialize constant coefficient operators for the finite
 !#        element discretization in 2D
 !#
-!# 5.) fs_initConstOperators3d
+!# 5.) euler_initConstOperators3d
 !#     -> initialize constant coefficient operators for the finite
 !#        element discretization in 3D
 !#
-!# 6.) fs_initSolutionFromParser
+!# 6.) euler_initSolutionFromParser
 !#     -> initialize the solution profile at time t=0
 !#
-!# 7.) fs_initSolutionFromImage
+!# 7.) euler_initSolutionFromImage
 !#     -> initialize the solution profile at time t=0
 !#
-!# 8.) fs_initExactSolution
+!# 8.) euler_initExactSolution
 !#     -> initialize the exact solution profile
 !#
 !# </purpose>
 !##############################################################################
 
-module flagship_init
+module euler_init
 
   use afcstabilisation
   use fparser
@@ -55,24 +55,24 @@ module flagship_init
   use triangulation
 
   use boundaryfilter
-  use flagship_basic
-  use flagship_callback1d
-  use flagship_callback2d
-  use flagship_callback3d
+  use euler_basic
+  use euler_callback1d
+  use euler_callback2d
+  use euler_callback3d
   use problem
 
 
   implicit none
 
   private
-  public :: fs_initProblem
-  public :: fs_initParser
-  public :: fs_initConstOperators1d
-  public :: fs_initConstOperators2d
-  public :: fs_initConstOperators3d
-  public :: fs_initSolutionFromParser
-  public :: fs_initSolutionFromImage
-  public :: fs_initExactSolution
+  public :: euler_initProblem
+  public :: euler_initParser
+  public :: euler_initConstOperators1d
+  public :: euler_initConstOperators2d
+  public :: euler_initConstOperators3d
+  public :: euler_initSolutionFromParser
+  public :: euler_initSolutionFromImage
+  public :: euler_initExactSolution
 
 
 contains
@@ -81,7 +81,7 @@ contains
 
 !<subroutine>
 
-  subroutine fs_initProblem(rproblem, trifile, prmfile, indatfile,&
+  subroutine euler_initProblem(rproblem, trifile, prmfile, indatfile,&
                             nlmin, nlmax, iconvToTria, ndimension)
 
 !<description>
@@ -159,7 +159,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
-                       OU_CLASS_WARNING,OU_MODE_STD,'fs_initProblem')
+                       OU_CLASS_WARNING,OU_MODE_STD,'euler_initProblem')
       call sys_halt()
     end select
 
@@ -197,13 +197,13 @@ contains
                                            p_rproblemLevel%p_rproblemLevelCoarse%rtriangulation)
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
-  end subroutine fs_initProblem
+  end subroutine euler_initProblem
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_initParser(sfilename)
+  subroutine euler_initParser(sfilename)
 
 !<description>
     ! This subroutine initializes the global function parser.
@@ -228,7 +228,7 @@ contains
     ! Oops...
     if (iunit .eq. -1) then
       call output_line('Unable to open input file!',&
-                       OU_CLASS_WARNING,OU_MODE_STD,'fs_initParser')
+                       OU_CLASS_WARNING,OU_MODE_STD,'euler_initParser')
       call sys_halt()
     end if
 
@@ -272,13 +272,13 @@ contains
 
     ! Close file
     close (iunit)
-  end subroutine fs_initParser
+  end subroutine euler_initParser
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_initConstOperators1d(rproblem, ieltype, imatrixFormat,&
+  subroutine euler_initConstOperators1d(rproblem, ieltype, imatrixFormat,&
                                      nlminOpt, nlmaxOpt)
 
 !<description>
@@ -347,7 +347,7 @@ contains
       ! Check if triangulation is 1D
       if (rproblemLevel%rtriangulation%ndim .ne. NDIM1D) then
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_WARNING, OU_MODE_STD, 'fs_initConstOperators1d')
+                         OU_CLASS_WARNING, OU_MODE_STD, 'euler_initConstOperators1d')
         call sys_halt()
       end if
 
@@ -364,7 +364,7 @@ contains
         
       case DEFAULT
         call output_line('Unsupported system format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators1d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators1d')
         call sys_halt()
       end select
       
@@ -379,7 +379,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupported element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators1d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators1d')
         call sys_halt()
       end select
       
@@ -483,7 +483,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators1d')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators1d')
           call sys_halt()
         end select
 
@@ -498,7 +498,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported interleave matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators1d')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators1d')
           call sys_halt()
         end select
 
@@ -549,7 +549,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported block matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators1d')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators1d')
           call sys_halt()
         end select
 
@@ -559,20 +559,20 @@ contains
 
       case DEFAULT
         call output_line('Unsupported system format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators1d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators1d')
         call sys_halt()
       end select
       
       ! Switch to next coarser level
       rproblemLevel => rproblemLevel%p_rproblemLevelCoarse
     end do
-  end subroutine fs_initConstOperators1d
+  end subroutine euler_initConstOperators1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_initConstOperators2d(rproblem, ieltype, imatrixFormat,&
+  subroutine euler_initConstOperators2d(rproblem, ieltype, imatrixFormat,&
                                      nlminOpt, nlmaxOpt)
 
 !<description>
@@ -641,7 +641,7 @@ contains
       ! Check if triangulation is 1D
       if (rproblemLevel%rtriangulation%ndim .ne. NDIM1D) then
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_WARNING, OU_MODE_STD, 'fs_initConstOperators1d')
+                         OU_CLASS_WARNING, OU_MODE_STD, 'euler_initConstOperators1d')
         call sys_halt()
       end if
 
@@ -658,7 +658,7 @@ contains
         
       case DEFAULT
         call output_line('Unsupported system format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators2d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators2d')
         call sys_halt()
       end select
       
@@ -687,7 +687,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupported element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators2d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators2d')
         call sys_halt()
       end select
       
@@ -796,7 +796,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators2d')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators2d')
           call sys_halt()
         end select
 
@@ -811,7 +811,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported interleave matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators2d')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators2d')
           call sys_halt()
         end select
 
@@ -862,7 +862,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported block matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators2d')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators2d')
           call sys_halt()
         end select
 
@@ -872,20 +872,20 @@ contains
 
       case DEFAULT
         call output_line('Unsupported system format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators2d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators2d')
         call sys_halt()
       end select
       
       ! Switch to next coarser level
       rproblemLevel => rproblemLevel%p_rproblemLevelCoarse
     end do
-  end subroutine fs_initConstOperators2d
+  end subroutine euler_initConstOperators2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_initConstOperators3d(rproblem, ieltype, imatrixFormat,&
+  subroutine euler_initConstOperators3d(rproblem, ieltype, imatrixFormat,&
                                      nlminOpt, nlmaxOpt)
 
 !<description>
@@ -954,7 +954,7 @@ contains
       ! Check if triangulation is 3D
       if (rproblemLevel%rtriangulation%ndim .ne. NDIM3D) then
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_WARNING, OU_MODE_STD, 'fs_initConstOperators3d')
+                         OU_CLASS_WARNING, OU_MODE_STD, 'euler_initConstOperators3d')
         call sys_halt()
       end if
       
@@ -971,7 +971,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupported system format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators3d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators3d')
         call sys_halt()
       end select
       
@@ -1001,7 +1001,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupported element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators3d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators3d')
         call sys_halt()
       end select
 
@@ -1115,7 +1115,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators3d')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators3d')
           call sys_halt()
         end select
 
@@ -1130,7 +1130,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported interleave matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators3d')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators3d')
           call sys_halt()
         end select
 
@@ -1182,7 +1182,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported block matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators3d')
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators3d')
           call sys_halt()
         end select
 
@@ -1191,20 +1191,20 @@ contains
 
       case DEFAULT
         call output_line('Unsupported system format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'fs_initConstOperators3d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initConstOperators3d')
         call sys_halt()
       end select
       
       ! Switch to next coarser level
       rproblemLevel => rproblemLevel%p_rproblemLevelCoarse
     end do
-  end subroutine fs_initConstOperators3d
+  end subroutine euler_initConstOperators3d
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_initSolutionFromParser(rboundaryCondition, rproblemLevel,&
+  subroutine euler_initSolutionFromParser(rboundaryCondition, rproblemLevel,&
                                        rsolution, indatfile, time)
 
 !<description>
@@ -1260,10 +1260,10 @@ contains
 
       ! Indicate number of variables in scalar vector:
       ! spatial dimension + 2 
-      rsolution%RvectorBlock(1)%NVAR = fs_getNVAR(rproblemLevel)
+      rsolution%RvectorBlock(1)%NVAR = euler_getNVAR(rproblemLevel)
 
       ! Resize block vector accordingly
-      isize = rsolution%NEQ*fs_getNVAR(rproblemLevel)
+      isize = rsolution%NEQ*euler_getNVAR(rproblemLevel)
       call lsysbl_resizeVectorBlock(rsolution, isize, .false., .false.)
     end if
 
@@ -1284,14 +1284,14 @@ contains
                                  SOL_SYMBOLICVARS3D, rparser, istatus, time, rsolution)
     case DEFAULT
       call output_line('Invalid number of spatial dimensions',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_initSolutionFromParser')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initSolutionFromParser')
       call sys_halt()
     end select
   
     ! Check status
     if (istatus .ne. 0) then
       call output_line('Unable to create initial solution profile',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_initSolutionFromParser')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initSolutionFromParser')
       call sys_halt()
     end if
       
@@ -1318,16 +1318,16 @@ contains
     ! Check status
     if (istatus .ne. 0) then
       call output_line('Unable to impose boundary coditions',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_initSolutionFromParser')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initSolutionFromParser')
       call sys_halt()
     end if
-  end subroutine fs_initSolutionFromParser
+  end subroutine euler_initSolutionFromParser
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_initSolutionFromImage(rboundaryCondition, rproblemLevel,&
+  subroutine euler_initSolutionFromImage(rboundaryCondition, rproblemLevel,&
                                       rsolution, pgmfile)
 
 !<description>
@@ -1366,7 +1366,7 @@ contains
     ! Check if problem is in 2D
     if (rproblemLevel%rdiscretisation%ndimension .ne. NDIM2D) then
       call output_line('Initialization from image is only available in 2D!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_initSolutionFromImage')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initSolutionFromImage')
       call sys_halt()
     end if
 
@@ -1405,16 +1405,16 @@ contains
     ! Check status
     if (istatus .ne. 0) then
       call output_line('Unable to impose boundary coditions',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_initSolutionFromImage')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initSolutionFromImage')
       call sys_halt()
     end if
-  end subroutine fs_initSolutionFromImage
+  end subroutine euler_initSolutionFromImage
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fs_initExactSolution(rproblemLevel, rsolution, indatfile, time, istatus)
+  subroutine euler_initExactSolution(rproblemLevel, rsolution, indatfile, time, istatus)
 
 !<description>
     ! This subroutine initializes the exact solution vector from
@@ -1471,10 +1471,10 @@ contains
       
       ! Indicate number of variables in scalar vector:
       ! spatial dimension + 2
-      rsolution%RvectorBlock(1)%NVAR = fs_getNVAR(rproblemLevel)
+      rsolution%RvectorBlock(1)%NVAR = euler_getNVAR(rproblemLevel)
 
       ! Resize block vector accordingly
-      isize = rsolution%NEQ*fs_getNVAR(rproblemLevel)
+      isize = rsolution%NEQ*euler_getNVAR(rproblemLevel)
       call lsysbl_resizeVectorBlock(rsolution, isize, .false., .false.)
     end if
 
@@ -1493,7 +1493,7 @@ contains
                                  SOL_SYMBOLICVARS3D, rparser, iistatus, time, rsolution)
     case DEFAULT
       call output_line('Invalid number of spatial dimensions',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_initExactSolution')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initExactSolution')
       call sys_halt()
     end select
     
@@ -1501,7 +1501,7 @@ contains
     ! No exact solution available; free memory and return
     if (iistatus .ne. 0) then
       call output_line('Unable to create exact solution profile',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fs_initExactSolution')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initExactSolution')
       call lsysbl_releaseVector(rsolution)
       if (present(istatus)) istatus = -1
       return
@@ -1509,5 +1509,5 @@ contains
 
     ! Release parser
     call fparser_release(rparser)
-  end subroutine fs_initExactSolution
-end module flagship_init
+  end subroutine euler_initExactSolution
+end module euler_init

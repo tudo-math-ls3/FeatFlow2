@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> flagship_adaptation </name>
+!# <name> euler_adaptation </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -38,7 +38,7 @@
 !# </purpose>
 !##############################################################################
 
-module flagship_adaptation
+module euler_adaptation
 
   use afcstabilisation
   use collection
@@ -58,7 +58,7 @@ module flagship_adaptation
   use storage
   use triangulation
 
-  use flagship_basic
+  use euler_basic
   use problem
 
   implicit none
@@ -1884,4 +1884,4 @@ contains
       call sys_halt()
     end select
   end subroutine fcb_hadaptCallback3D
-end module flagship_adaptation
+end module euler_adaptation

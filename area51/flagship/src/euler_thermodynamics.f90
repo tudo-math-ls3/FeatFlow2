@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> flagship_thermodynamics </name>
+!# <name> thermodynamics </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -23,7 +23,7 @@
 !#
 !# </purpose>
 !##############################################################################
-module flagship_thermodynamics
+module thermodynamics
   
   use fsystem
 
@@ -448,4 +448,4 @@ contains
 
     p = (gamma-1)*rho*(E-0.5_DP*(u*u+v*v+w*w))
   end function thdyn_pressure3D
-end module flagship_thermodynamics
+end module thermodynamics
