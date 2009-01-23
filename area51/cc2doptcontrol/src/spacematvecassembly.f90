@@ -3525,8 +3525,17 @@ contains
       ! vector with the derivative of the projection operator:
       ! b-(-P[a,b]'(-1/alpha lambda)).
       ! For that purpose, we have to assemble special mass matrices:
-      call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
-          rd,dcx*rmatrixComponents%Dalpha(1,2),rvectorDual,0)
+      select case (rmatrixComponents%idualSol)
+      case (1)
+        call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+            rd,dcx*rmatrixComponents%Dalpha(1,2),rvector1)
+      case (2)
+        call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+            rd,dcx*rmatrixComponents%Dalpha(1,2),rvector2)
+      case (3)
+        call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+            rd,dcx*rmatrixComponents%Dalpha(1,2),rvector3)
+      end select
       
     end if
     
@@ -4165,7 +4174,7 @@ contains
     end subroutine  
 
     subroutine assemblePrimalUConstrMassDefect (rmatrixComponents,&
-        rvector,rdefect,dcx,rvelocityVector,cprojectionType)
+        rvector,rdefect,dcx,rvelocityVector) !,cprojectionType)
         
     ! Assembles the defect arising from the projective coupling mass
     ! matrices in the primal equation which comes from constraints on u. 
@@ -4200,7 +4209,7 @@ contains
     ! =0: Simple DOF-based projection, rows in the mass matrices are
     !     replaced by zero (faster)
     ! =1: Reassembly of the mass matrices, projection based on cubature points.
-    integer, intent(in) :: cprojectionType
+    !integer, intent(in) :: cprojectionType
 
       ! local variables
       type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
@@ -4214,8 +4223,20 @@ contains
 
         call lsysbl_createEmptyMatrix (rtempMatrix,2)
 
-        if ((cprojectionType .eq. 0) .or. &
-            (rmatrixComponents%ccontrolConstraints .eq. 0)) then
+        ! The ccontrolConstraints decides on whether we use the 'quick-setup'
+        ! method for the mass matrices or rebuild them again.
+        ! ccontrolConstraints=0 uses standard mass matrices.
+        if (rmatrixComponents%ccontrolConstraints .eq. 0) then
+        
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+              rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+        
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+              rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+           
+          call lsysbl_updateMatStrucInfo (rtempMatrix)
+             
+        else if (rmatrixComponents%ccontrolConstraints .eq. 1) then
         
           call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
               rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
@@ -4231,17 +4252,15 @@ contains
 !            call lsyssc_scaleMatrix (rtempMatrix%RmatrixBlock(2,2),rmatrixComponents%dmu1)
 !          end if
 
-          if (rmatrixComponents%ccontrolConstraints .ne. 0) then
-            ! In the case when we have constraints, filter the matrix. 
-            ! All the rows corresponding to DOF's that violate
-            ! the bounds must be set to zero.
-            call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(1),&
-                rmatrixComponents%dalphaC,rmatrixComponents%dumin1,rmatrixComponents%dumax1)
-            call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(2),&
-                rmatrixComponents%dalphaC,rmatrixComponents%dumin2,rmatrixComponents%dumax2)
-          end if
+          ! In the case when we have constraints, filter the matrix. 
+          ! All the rows corresponding to DOF's that violate
+          ! the bounds must be set to zero.
+          call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(4),&
+              rmatrixComponents%dalphaC,rmatrixComponents%dumin1,rmatrixComponents%dumax1)
+          call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(5),&
+              rmatrixComponents%dalphaC,rmatrixComponents%dumin2,rmatrixComponents%dumax2)
             
-        else
+        else if (rmatrixComponents%ccontrolConstraints .eq. 2) then
 
           ! Create a matrix with the structure we need. Share the structure
           ! of the mass matrix. Entries are not necessary for the assembly      
@@ -4301,6 +4320,12 @@ contains
           
           ! Now we can forget about the collection again.
           call collct_done (rcollection)
+          
+        else
+        
+          ! Cancel
+          call lsysbl_releaseMatrix (rtempMatrix)
+          return
           
         end if
 

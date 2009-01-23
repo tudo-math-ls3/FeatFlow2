@@ -2207,7 +2207,275 @@ contains
     call lsysbl_releaseVector (rinitialCondSol)
           
   end subroutine
+
+  ! ***************************************************************************
   
+!<subroutine>
+  
+  subroutine cc_calcOptimalCorrection (rproblem,rspaceTimeDiscr,rx,rb,rd,rtemp,rtemp2,domega)
+  
+!<description>
+  ! Performs a line search algorithm to calculate the optimal correction
+  ! factor for the Newton iteration iteration.
+!</description>
+  
+!<input>
+  
+  ! A problem structure that provides information about matrices on all
+  ! levels as well as temporary vectors.
+  type(t_problem), intent(INOUT) :: rproblem
+  
+  ! Space-time discretisation
+  type(t_ccoptSpaceTimeDiscretisation), intent(IN), target :: rspaceTimeDiscr
+
+  ! Current solution vector
+  type(t_spacetimeVector), intent(INOUT), target :: rx
+
+  ! Current RHS vector
+  type(t_spacetimeVector), intent(INOUT), target :: rb
+
+  ! Correction vector
+  type(t_spacetimeVector), intent(INOUT), target :: rd
+
+  ! Temporary vector
+  type(t_spacetimeVector), intent(INOUT), target :: rtemp
+
+  ! Temporary vector
+  type(t_spacetimeVector), intent(INOUT), target :: rtemp2
+
+!</input>
+
+!<output>
+
+  ! Optimal correction factor
+  real(DP), intent(out) :: domega
+  
+!</output>
+
+!</subroutine>
+
+    real(DP) :: df0, df0p, df, dt, df2
+
+    ! We implement an Armijo step length control for the Newton iteration here.
+    ! Our functional is given by the function calcfunctional below.
+    !
+    ! The functional we want to minimise here is
+    !
+    !  f(t) = F(x+t*dx)dx
+    !
+    ! with F(u)=-Laplace(u)+...-rhs being the residual of the Navier--Stokes equation.
+    !
+    ! At first, get f(0) and f'(0). We note that here, we have 
+    !  f(0) = F(x)dx and f0' = DF(x)dx*dx = -F(x)dx
+    ! because Newton computes dx as solution of DF(x)dx = -F(x) !
+    df0 = calcfunctional (rproblem,rspaceTimeDiscr,0.0_DP,rx,rb,rd,rtemp,rtemp2)
+    df0p = -df0
+    !df0p = calcderiv (rproblem,rspaceTimeDiscr,rx,rb,rd,rtemp,rtemp2)
+    
+    ! Now search for f(x+td) with t=1,1/2,1/4,1/8,...
+    ! until f <= f0 + t f0'.
+    dt = 1.0_DP
+    df = calcfunctional (rproblem,rspaceTimeDiscr,dt,rx,rb,rd,rtemp,rtemp2)
+    df2 = calcfunctional (rproblem,rspaceTimeDiscr,0.001_DP,rx,rb,rd,rtemp,rtemp2)
+    
+    if (df0p .lt. 0.0_DP) then
+      do while (df .gt. df0 + 0.1_DP*dt*df0p)
+        dt = 0.5_DP*dt
+        df = calcfunctional (rproblem,rspaceTimeDiscr,dt,rx,rb,rd,rtemp,rtemp2)
+      end do
+    
+    else
+      print *,'************** Derivative positive *******************'
+    end if
+    
+    domega = dt
+
+  contains
+  
+    subroutine calcresidual (rproblem,rspaceTimeDiscr,dalpha,rx,rb,rd,rF,rtemp)
+  
+    ! With u=rx+alpha rd, this calculates the residuaö
+    !    res(alpha) := -Laplace(u) + ... - RHS
+    ! of the Navier--Stokes equation.
+    
+    ! A problem structure that provides information about matrices on all
+    ! levels as well as temporary vectors.
+    type(t_problem), intent(INOUT) :: rproblem
+    
+    ! Space-time discretisation
+    type(t_ccoptSpaceTimeDiscretisation), intent(IN), target :: rspaceTimeDiscr
+
+    ! Relaxation parameter
+    real(DP), intent(in) :: dalpha
+
+    ! Current solution vector
+    type(t_spacetimeVector), intent(INOUT), target :: rx
+
+    ! Current RHS vector
+    type(t_spacetimeVector), intent(INOUT), target :: rb
+
+    ! Correction vector
+    type(t_spacetimeVector), intent(INOUT), target :: rd
+
+    ! Temporary vector
+    type(t_spacetimeVector), intent(INOUT), target :: rtemp
+    
+    ! Vector obtaining the residual vector
+    type(t_spacetimeVector), intent(INOUT), target :: rF
+
+      ! Local variables
+      type(t_ccoptSpaceTimeMatrix) :: rspaceTimeMatrix
+      real(DP) :: ddef
+  
+      ! Create a space time matrix for the maximum level which serves as basis for
+      ! setting up the defect. This is the actual system matrix, thus it doesn't
+      ! contain any Newton parts!
+      rspaceTimeMatrix%p_rspaceTimeDiscretisation => rspaceTimeDiscr
+      rspaceTimeMatrix%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
+    
+      ! Create the point where to evaluate
+      !if (dalpha .ne. 0.0_DP) then
+        rspaceTimeMatrix%p_rsolution => rtemp
+        call sptivec_copyVector(rx,rtemp)
+        call sptivec_vectorLinearComb (rd,rtemp,dalpha,1.0_DP)
+      !else
+      !  rspaceTimeMatrix%p_rsolution => rx
+      !end if
+
+      ! Evaluate to rF.
+      call sptivec_copyVector(rb,rF)
+      call cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, &
+        rspaceTimeMatrix%p_rsolution, rF, &
+        -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,ddef)
+      print *,'Def=',ddef
+    
+    end subroutine
+
+    ! -------------------------------------------------------------------------
+
+    subroutine applyderiv (rproblem,rspaceTimeDiscr,rx,ry,rF)
+  
+    ! Calculates rd = A'(rx)ry
+  
+    ! A problem structure that provides information about matrices on all
+    ! levels as well as temporary vectors.
+    type(t_problem), intent(INOUT) :: rproblem
+    
+    ! Space-time discretisation
+    type(t_ccoptSpaceTimeDiscretisation), intent(IN), target :: rspaceTimeDiscr
+
+    ! Current solution vector where to evaluate the matrix
+    type(t_spacetimeVector), intent(INOUT), target :: rx
+
+    ! Solution vector
+    type(t_spacetimeVector), intent(INOUT), target :: ry
+
+    ! Vector obtaining A'(x)y
+    type(t_spacetimeVector), intent(INOUT), target :: rF
+
+      ! Local variables
+      type(t_ccoptSpaceTimeMatrix) :: rspaceTimeMatrix
+      real(DP) :: ddef
+  
+      ! Create a space time matrix for the maximum level which serves as basis for
+      ! setting up the defect. This is the actual system matrix, thus it doesn't
+      ! contain any Newton parts!
+      rspaceTimeMatrix%p_rspaceTimeDiscretisation => rspaceTimeDiscr
+      rspaceTimeMatrix%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
+      rspaceTimeMatrix%cmatrixType = 1
+    
+      ! Create the point where to evaluate
+      rspaceTimeMatrix%p_rsolution => rx
+
+      ! Evaluate to rF.
+      call sptivec_clearVector(rF)
+      call cc_spaceTimeMatVec (rproblem, rspaceTimeMatrix, &
+        ry, rF, 1.0_DP, 0.0_DP, 0,ddef)
+      print *,'Def=',ddef
+    
+    end subroutine
+
+    ! -------------------------------------------------------------------------
+
+    real(DP) function calcfunctional (rproblem,rspaceTimeDiscr,dalpha,rx,rb,rd,rtemp,rtemp2)
+  
+    ! Calculates the functional
+    !    f(alpha) := F(rx+alpha rd)rd
+    ! with F(x) being the residual of the nonlinear (Navier-)Stokes equation.
+    
+    ! A problem structure that provides information about matrices on all
+    ! levels as well as temporary vectors.
+    type(t_problem), intent(INOUT) :: rproblem
+    
+    ! Space-time discretisation
+    type(t_ccoptSpaceTimeDiscretisation), intent(IN), target :: rspaceTimeDiscr
+
+    ! Relaxation parameter
+    real(DP), intent(in) :: dalpha
+
+    ! Current solution vector
+    type(t_spacetimeVector), intent(INOUT), target :: rx
+
+    ! Current RHS vector
+    type(t_spacetimeVector), intent(INOUT), target :: rb
+
+    ! Correction vector
+    type(t_spacetimeVector), intent(INOUT), target :: rd
+
+    ! Temporary vector
+    type(t_spacetimeVector), intent(INOUT), target :: rtemp
+    
+    ! Vector obtaining the residual vector
+    type(t_spacetimeVector), intent(INOUT), target :: rtemp2
+
+      ! Calculate F(x+omega*d)d. Note that calcresidual calculates the
+      ! residual RHS-NavSt(...), where the functional needs the defect
+      ! NavSt(...)-RHS -- so we would have to spend an additional '-'-sign.
+      ! On the other hand, there is a '-' sign included in rd which cancels
+      ! against the '-' sign we would have to add -- so nothing is to do here.
+      call calcresidual (rproblem,rspaceTimeDiscr,dalpha,rx,rb,rd,rtemp,rtemp2)
+      calcfunctional = -sptivec_scalarProduct (rtemp, rd)
+    
+    end function
+
+
+    ! -------------------------------------------------------------------------
+
+    real(DP) function calcderiv (rproblem,rspaceTimeDiscr,rx,rb,rd,rtemp,rtemp2)
+  
+    ! Calculates the functional
+    !    f(alpha) := F(rx+alpha rd)rd
+    ! with F(x) being the residual of the nonlinear (Navier-)Stokes equation.
+    
+    ! A problem structure that provides information about matrices on all
+    ! levels as well as temporary vectors.
+    type(t_problem), intent(INOUT) :: rproblem
+    
+    ! Space-time discretisation
+    type(t_ccoptSpaceTimeDiscretisation), intent(IN), target :: rspaceTimeDiscr
+
+    ! Current solution vector
+    type(t_spacetimeVector), intent(INOUT), target :: rx
+
+    ! Current RHS vector
+    type(t_spacetimeVector), intent(INOUT), target :: rb
+
+    ! Correction vector
+    type(t_spacetimeVector), intent(INOUT), target :: rd
+
+    ! Temporary vector
+    type(t_spacetimeVector), intent(INOUT), target :: rtemp
+    
+    ! Vector obtaining the residual vector
+    type(t_spacetimeVector), intent(INOUT), target :: rtemp2
+
+      call applyderiv (rproblem,rspaceTimeDiscr,rx,rd,rtemp)
+      calcderiv = -sptivec_scalarProduct (rtemp, rd)
+    
+    end function
+
+  end subroutine
+
   ! ***************************************************************************
   
 !<subroutine>
@@ -2301,6 +2569,9 @@ contains
     type(t_timer) :: rtimerMGStep,rtimerNonlinear,rtimerPreconditioner
     integer :: ilinearIterations
     
+    real(DP) :: domega2
+    type(t_spacetimeVector) :: rtempVec,rtempVec2
+    
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dx
 
@@ -2344,6 +2615,9 @@ contains
         p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVectorX,.true.)
     call lsysbl_createVecBlockByDiscr (&
         p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVectorB,.true.)
+        
+    call sptivec_initVectorDiscr (rtempVec,rx%p_rtimeDiscretisation,rx%p_rblockDiscretisation)
+    call sptivec_initVectorDiscr (rtempVec2,rx%p_rtimeDiscretisation,rx%p_rblockDiscretisation)
         
     ! Attach the boundary conditions to the temp vectors.
     rtempVector%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
@@ -3029,7 +3303,12 @@ contains
       !CALL tbc_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
       
       ! Add the defect: x = x + omega*d          
-      call sptivec_vectorLinearComb (rd,rx,domega,1.0_DP)
+      !call sptivec_vectorLinearComb (rd,rx,domega,1.0_DP)
+      
+      !call cc_calcOptimalCorrection (rproblem,p_rspaceTimeDiscr,&
+      !    rx,rb,rd,rtempVec,rtempVec2,domega2)
+      domega2 = domega
+      call sptivec_vectorLinearComb (rd,rx,domega2,1.0_DP)
       
       ! Do we have Neumann boundary?
       bneumann = p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary
@@ -3177,6 +3456,9 @@ contains
       deallocate(RspaceTimePrecondMatrix(ilev)%p_rsolution)
     end do
           
+    call sptivec_releaseVector (rtempVec)
+    call sptivec_releaseVector (rtempVec2)
+
     call lsysbl_releaseVector (rtempVectorB)
     call lsysbl_releaseVector (rtempVectorX)
     call lsysbl_releaseVector (rtempVector)
