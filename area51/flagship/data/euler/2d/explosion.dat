@@ -495,10 +495,10 @@ domega = 1.0
 [Adaptivity]
 ################################################################################
 # time for grid adaptivity
-ttimeadapt = 0.0
+dtimeadapt = 0.0
 
 # time step for grid adaptivity
-tstepadapt = 0.0
+dstepadapt = 0.0
 
 # maximum number of refinement levels
 nsubdividemax = 4
