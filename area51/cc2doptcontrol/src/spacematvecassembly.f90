@@ -608,6 +608,87 @@ contains
 
   end subroutine    
 
+  ! -----------------------------------------------------
+
+  subroutine approxProjectionDerivative (rmatrix, rvector, dalphaC, dmin, dmax, dh)
+      
+  ! Calculates the approximative Newton matrix of the projection operator
+  ! P(-1/alpha lambda) by deriving the operator in a discrete sense.
+  
+  ! Matrix to be set up
+  type(t_matrixScalar), intent(inout) :: rmatrix
+
+  ! Vector containing a dial solution lambda. Whereever -1/alpha*lambda
+  ! violates the control constraints given by rmatrixComponents, the corresponding
+  ! lines are set to 0.
+  type(t_vectorScalar), intent(in) :: rvector
+  
+  ! ALPHA regularisation parameter from the space-time matrix
+  real(dp), intent(in) :: dalphaC
+  
+  ! minimum bound for the control
+  real(dp), intent(in) :: dmin
+
+  ! maximum bound for the control
+  real(dp), intent(in) :: dmax
+  
+  ! Step length for the approximative derivative
+  real(dp), intent(in) :: dh
+  
+    ! The projection operator is given by:
+    !
+    !          a, if u <= a
+    !  P(u) =  u, if a <= u <= b
+    !          b, if u >= b
+    !
+    ! The Frechet derivative of this operator can be calculated by
+    !
+    !   (P(u+h)-P(u-h))/2 = DP(u)h
+    ! 
+    ! with h being an arbitrary function <> 0.
+    ! Rewriting this in a discrete sense yields
+    !
+    !   ( P(u + h e_i) - P(u - h e_i) ) / (2h)  =  DP(u) h e_i
+    !
+    ! with u being the vector of the corresponding FE function.
+    ! Let us denote the matrix B:=DP(u), then we obtain by this formula:
+    !
+    !   B_ij  =  [ ( P(u + h e_j) - P(u - h e_j) ) / (2h) ]_i
+    !
+    ! If we now treat the P()-operator coponent-wise instead of vector
+    ! wise, this means:
+    !
+    !   B_ij  =  ( P(u_j+h) - P(u_j-h) ) / (2h)   , i=j
+    !            0                                , otherwise
+      
+  
+    ! local variables
+    real(dp), dimension(:), pointer :: p_Ddata, p_Dmatrix
+    integer, dimension(:), pointer :: p_Kdiagonal
+    integer :: i
+    real(DP) :: du1,du2
+    
+    ! Get the vector data
+    call lsyssc_getbase_double (rvector,p_Ddata)
+    call lsyssc_getbase_double (rmatrix,p_Dmatrix)
+    call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+    
+    call lsyssc_clearMatrix (rmatrix)
+    
+    ! Loop through the diagonal entries
+    do i=1,rmatrix%NEQ
+
+      ! Calculate the diagonal entry, that's it
+      
+      du1 = -min(dmax,max(dmin,-(p_Ddata(i)/dalphaC) + dh ))
+      du2 = -min(dmax,max(dmin,-(p_Ddata(i)/dalphaC) - dh ))
+      
+      p_Dmatrix(p_Kdiagonal(i)) = (du1-du2)/(2.0_DP*dh)
+    
+    end do
+
+  end subroutine    
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -1728,6 +1809,29 @@ contains
             ! Now we can forget about the collection again.
             call collct_done (rcollection)
             
+          else if (rmatrixComponents%ccontrolConstraints .eq. 3) then
+          
+            call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+                rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          
+            call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+                rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+            ! Create the matrix
+            call approxProjectionDerivative (rmatrix%RmatrixBlock(1,1), &
+                rvector%RvectorBlock(4), rmatrixComponents%dalphaC,&
+                rmatrixComponents%dumin1,rmatrixComponents%dumax1,0.001_DP)
+
+            call approxProjectionDerivative (rmatrix%RmatrixBlock(2,2), &
+                rvector%RvectorBlock(5), rmatrixComponents%dalphaC,&
+                rmatrixComponents%dumin2,rmatrixComponents%dumax2,0.001_DP)
+          
+            ! Scale the entries by the weight if necessary
+            if (dweight .ne. 1.0_DP) then
+              call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(1,1),dweight)
+              call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(2,2),dweight)
+            end if
+
           else
           
             call output_line ('Unsupported ccontrolConstraints flag.', &
@@ -3540,6 +3644,8 @@ contains
     end if
     
     ! Release the temp vectors/matrices, that's it.
+    call lsysbl_releaseVector (rvectorDual)
+    call lsysbl_releaseVector (rvectorPrimal)
     call lsysbl_releaseVector (rtempVectorX)
     call lsysbl_releaseVector (rtempVectorB)
     call lsysbl_releaseMatrix (rtempMatrix)
@@ -4321,7 +4427,29 @@ contains
           ! Now we can forget about the collection again.
           call collct_done (rcollection)
           
-        else
+        else if (rmatrixComponents%ccontrolConstraints .eq. 3) then
+        
+          ! Create a matrix with the structure we need. Share the structure
+          ! of the mass matrix. Entries are not necessary for the assembly      
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+              rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+              rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+          call lsysbl_updateMatStrucInfo (rtempMatrix)
+
+          call approxProjectionDerivative (rtempMatrix%RmatrixBlock(1,1), &
+              rvelocityVector%RvectorBlock(4),rmatrixComponents%dalphaC,&
+              rmatrixComponents%dumin1,rmatrixComponents%dumax1,0.001_DP)
+
+          call approxProjectionDerivative (rtempMatrix%RmatrixBlock(2,2), &
+              rvelocityVector%RvectorBlock(5),rmatrixComponents%dalphaC,&
+              rmatrixComponents%dumin2,rmatrixComponents%dumax2,0.001_DP)
+        
+          call lsysbl_updateMatStrucInfo (rtempMatrix)
+            
+        else 
         
           ! Cancel
           call lsysbl_releaseMatrix (rtempMatrix)
