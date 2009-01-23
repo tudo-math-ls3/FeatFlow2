@@ -3543,6 +3543,9 @@ contains
         rmatrixComponents%Dnewton(1,1),rmatrixComponents%DnewtonT(1,1),&
         rstabilisation,dcx)    
     
+    call lsysbl_releaseVector (rtempVectorX)
+    call lsysbl_releaseVector (rtempVectorB)
+    
     ! 2.) Dual equation, y*grad(.) + grad(.)^T*y
     !
     !    (                            ) 
@@ -3564,6 +3567,9 @@ contains
         rmatrixComponents%Dnewton(2,2),rmatrixComponents%DnewtonT(2,2),&
         rstabilisation,dcx)    
     
+    call lsysbl_releaseVector (rtempVectorX)
+    call lsysbl_releaseVector (rtempVectorB)
+    
     ! 3.) Dual equation, Newton term lambda*grad(.) + grad(.)^T*lambda
     !
     !    (                            ) 
@@ -3584,6 +3590,9 @@ contains
         rmatrixComponents%Dgamma(2,1),rmatrixComponents%DgammaT(2,1),&
         rmatrixComponents%Dnewton(2,1),rmatrixComponents%DnewtonT(2,1),&
         rstabilisation,dcx)    
+    
+    call lsysbl_releaseVector (rtempVectorX)
+    call lsysbl_releaseVector (rtempVectorB)
     
     ! 4.) (Projected) mass matrix
     !
@@ -3623,6 +3632,8 @@ contains
           rtempVectorX%RvectorBlock(2), &
           rd%RvectorBlock(2), dcx, 1.0_DP)
 
+      call lsysbl_releaseVector (rtempVectorX)
+
     else
 
       ! Yes, that's a Newton matrix. That means, we have to multiply the
@@ -3646,8 +3657,6 @@ contains
     ! Release the temp vectors/matrices, that's it.
     call lsysbl_releaseVector (rvectorDual)
     call lsysbl_releaseVector (rvectorPrimal)
-    call lsysbl_releaseVector (rtempVectorX)
-    call lsysbl_releaseVector (rtempVectorB)
     call lsysbl_releaseMatrix (rtempMatrix)
 
     
