@@ -117,10 +117,10 @@ implicit none
   integer, parameter, public :: VANKATP_NAVST2D_SPSOR     = 3
   
   ! SP-SSOR, symmetric variant of SP-SOR
-  ! Warning: This variant can only be called via
-  ! vanka_NavierStokes2D_precSPSSOR - it can not be called via the default
-  ! wrapper routine vanka_NavierStokes2D, as it needs to work on a defect
-  ! vector rather than a rhs and solution vector!
+  ! Warning!
+  ! This variant can only be called via vanka_NS2D_precSPSSOR - it can not
+  ! be called via the default wrapper routine vanka_NavierStokes2D, as it
+  ! needs to work on a defect vector rather than rhs and solution vectors!
   integer, parameter, public :: VANKATP_NAVST2D_SPSSOR    = 4
 
 !</constantblock>
@@ -869,6 +869,11 @@ contains
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
     
+    ! Take care of the 'soft-deactivation' of the sub-matrices
+    bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
+                               (Dmult(2,1) .ne. 0.0_DP))
+    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
+    
     ! First of all determine the maximum number of velocity DOFs that one
     ! pressure DOF may be adjacent to.
     nmaxdofV = 0
@@ -981,19 +986,7 @@ contains
       
       ! Now if the Schur-complement matrix is regular, we'll store the inverse
       ! in the corresponding entry in p_DS.
-      
-      ! Remark:
-      ! For some unknown reason the Intel Fortran Compiler 10.1 somehow screws
-      ! up with the following IF-statement when compiling in Release-Mode under
-      ! Windows:
-      !
-      !   if(dabs(dc) .gt. SYS_EPSREAL) p_DS(idofP) = 1.0_DP / dc
-      !
-      ! The problem has been 'solved' by using the following equivalent
-      ! alternative:
-      if((dc .gt. SYS_EPSREAL) .or. (dc .lt. -SYS_EPSREAL)) then
-        p_DS(idofP) = 1.0_DP / dc
-      end if
+      if(dabs(dc) .gt. SYS_EPSREAL) p_DS(idofP) = 1.0_DP / dc
       
     end do ! idofp
     
@@ -1104,6 +1097,12 @@ contains
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
 
+    ! Take care of the 'soft-deactivation' of the sub-matrices
+    bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
+                               (Dmult(2,1) .ne. 0.0_DP))
+    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
+
+    ! What case do we have here?
     if((.not. bHaveA12) .and. (.not. bHaveC)) then
       ! No optional matrices
       ! So let's loop over all pressure DOFs
@@ -1299,8 +1298,6 @@ contains
 !<description>
   ! This routine applies the SP-SOR algorithm onto a 2D Navier-Stokes system
   ! Ax = b.
-  ! In contrast to the other Vanka variants, this algorithm is a 'black-box'
-  ! method which does not need any information about the discretisations.
 !</description>
 
 !<input>
@@ -1387,6 +1384,11 @@ contains
     
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
+
+    ! Take care of the 'soft-deactivation' of the sub-matrices
+    bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
+                               (Dmult(2,1) .ne. 0.0_DP))
+    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
    
     ! Step 1: Update velocity
     if(.not. bHaveA12) then
@@ -1429,11 +1431,72 @@ contains
     
     else
       
-      ! currently not supported
-      call output_line ('A12/A21 matrices currently not supported!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'vanka_NS2D_spsor')
-      call sys_halt()
-    
+      ! Let's loop over the velocity DOFs - we'll process A11/A12 now
+      do idofu = 1, rvanka%ndofVelo
+      
+        ! Get the corresponding RHS entries in velocity space
+        dfu = p_DrhsU(idofu)
+        
+        ! Calculate A11(i,.) * u(.)
+        daux1 = 0.0_DP
+        do i = p_KldA(idofu), p_KldA(idofu+1)-1
+          daux1 = daux1 + p_DA11(i)*p_DvecU(p_KcolA(i))
+        end do ! i
+        dfu = dfu - Dmult(1,1)*daux1
+        
+        ! Calculate A12(i,.) * v(.)
+        daux1 = 0.0_DP
+        do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+          daux1 = daux1 + p_DA12(i)*p_DvecV(p_KcolA12(i))
+        end do ! i
+        dfu = dfu - Dmult(1,2)*daux2
+
+        ! Calculate B(i,.) * p(.)
+        daux1 = 0.0_DP
+        do i = p_KldB(idofu), p_KldB(idofu+1)-1
+          daux1 = daux1 + p_DB1(i)*p_DvecP(p_KcolB(i))
+        end do ! i
+        dfu = dfu - Dmult(1,3)*daux1
+        
+        ! Divide by A(i,i) and update velocity
+        p_DvecU(idofu) = p_DvecU(idofu) + domega*dfu &
+                       / (Dmult(1,1)*p_DA11(p_KdiagA(idofu)))
+      
+      end do ! idofu
+
+      ! And now let's go for A21/A22
+      do idofu = 1, rvanka%ndofVelo
+      
+        ! Get the corresponding RHS entries in velocity space
+        dfv = p_DrhsV(idofu)
+        
+        ! Calculate A21(i,.) * u(.)
+        daux1 = 0.0_DP
+        do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+          daux1 = daux1 + p_DA21(i)*p_DvecU(p_KcolA12(i))
+        end do ! i
+        dfv = dfv - Dmult(2,1)*daux1
+        
+        ! Calculate A22(i,.) * v(.)
+        daux1 = 0.0_DP
+        do i = p_KldA(idofu), p_KldA(idofu+1)-1
+          daux1 = daux1 + p_DA22(i)*p_DvecV(p_KcolA(i))
+        end do ! i
+        dfv = dfv - Dmult(2,2)*daux1
+
+        ! Calculate B(i,.) * p(.)
+        daux1 = 0.0_DP
+        do i = p_KldB(idofu), p_KldB(idofu+1)-1
+          daux1 = daux1 + p_DB2(i)*p_DvecP(p_KcolB(i))
+        end do ! i
+        dfv = dfv - Dmult(2,3)*daux1
+        
+        ! Divide by A(i,i) and update velocity
+        p_DvecV(idofu) = p_DvecV(idofu) + domega*dfv &
+                       / (Dmult(2,2)*p_DA22(p_KdiagA(idofu)))
+      
+      end do ! idofu
+
     end if
     
     ! Step 2: Update pressure
@@ -1586,20 +1649,11 @@ contains
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
     
-    ! Enable 'soft-deactivation' of A21
+    ! Take care of the 'soft-deactivation' of the sub-matrices
     bHaveA21 = bHaveA21 .and. (Dmult(2,1) .ne. 0.0_DP)
    
     ! Step 1: Update velocity
     if(.not. bHaveA21) then
-    
-      ! In this case the task is simple: Perform a 'normal' SOR step on the
-      ! velocity coupling system, i.e. solve:
-      !
-      !             ( L1  0  ) * (u) = (f_u)
-      !             ( 0   L2 )   (v)   (f_v)
-      !
-      ! where L1/L2 is the lower triangular part of A11/A22, and overwrite
-      ! the defect vector (f_u, f_v) by (u, v) in-situ.
     
       ! Pre-calculate scaling factors
       dsa1 = 1.0_DP / Dmult(1,1)
@@ -1630,15 +1684,57 @@ contains
     
     else
       
-      ! Currently not supported
-      call output_line ('A12/A21 matrices currently not supported!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'vanka_NS2D_precSPSOR')
-      call sys_halt()
+      ! Let's loop over the velocity DOFs - we'll process A11 now
+      dsa1 = 1.0_DP / Dmult(1,1)
+      do idofu = 1, rvanka%ndofVelo
+      
+        ! Get pre-scaled old defect vector entries
+        dfu = dsa1*p_DdefU(idofu)
+        
+        ! Get index of main diagonal entry
+        idiag = p_KdiagA(idofu)
+
+        ! Calculate A(i,.) * u(.) for the lower-triangular part of A11
+        do i = p_KldA(idofu), idiag-1
+          dfu = dfu - p_DA11(i)*p_DdefU(p_KcolA(i))
+        end do ! i
+        
+        ! Update velocity
+        p_DdefU(idofu) = domega*dfu / p_DA11(idiag)
+      
+      end do ! idofu
+
+      ! And take care of A21/A22 now
+      dsa1 = 1.0_DP / Dmult(2,2)
+      dsa2 = Dmult(1,2) / Dmult(2,2)
+      do idofu = 1, rvanka%ndofVelo
+      
+        ! Get pre-scaled old defect vector entries
+        dfv = dsa1*p_DdefV(idofu)
+        
+        ! Get index of main diagonal entry
+        idiag = p_KdiagA(idofu)
+
+        ! Subtract A21*u from defect
+        daux1 = 0.0_DP
+        do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+          daux1 = daux1 + p_DA21(i)*p_DdefU(p_KcolA12(i))
+        end do ! i
+        dfv = dfv - dsa2*daux1
+
+        ! Calculate A(i,.) * u(.) for the lower-triangular part of A22
+        do i = p_KldA(idofu), idiag-1
+          dfv = dfv - p_DA22(i)*p_DdefV(p_KcolA(i))
+        end do ! i
+        
+        ! Update velocity
+        p_DdefV(idofu) = domega*dfv / p_DA22(idiag)
+      
+      end do ! idofu
       
     end if
     
     ! Step 2: Update pressure
-    !$omp parallel do private(i,j,daux1,daux2,dfp) if(rvanka%ndofPres .ge. 1000)
     do idofp = 1, rvanka%ndofPres
     
       ! Skip this pressure DOF if the Schur complement is zero.
@@ -1658,7 +1754,6 @@ contains
       p_DdefP(idofp) = domega * dfp * p_DS(idofp)
     
     end do ! idofp
-    !$omp end parallel do
 
     ! That's it
 
@@ -1748,21 +1843,12 @@ contains
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
     
-    ! Enable 'soft-deactivation' of A12/A21
+    ! Take care of the 'soft-deactivation' of the sub-matrices
     bHaveA12 = bHaveA12 .and. (Dmult(1,2) .ne. 0.0_DP)
     bHaveA21 = bHaveA21 .and. (Dmult(2,1) .ne. 0.0_DP)
    
     ! Step 1: Update velocity
     if(.not. bHaveA21) then
-    
-      ! In this case the task is simple: Perform a 'normal' SOR step on the
-      ! velocity coupling system, i.e. solve:
-      !
-      !             ( L1  0  ) * (u) = (f_u)
-      !             ( 0   L2 )   (v)   (f_v)
-      !
-      ! where L1/L2 is the lower triangular part of A11/A22, and overwrite
-      ! the defect vector (f_u, f_v) by (u, v) in-situ.
     
       ! Pre-calculate scaling factors
       dsa1 = 1.0_DP / Dmult(1,1)
@@ -1793,15 +1879,57 @@ contains
     
     else
       
-      ! Currently not supported
-      call output_line ('A12/A21 matrices currently not supported!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'vanka_NS2D_precSPSSOR')
-      call sys_halt()
+      ! Let's loop over the velocity DOFs - we'll process A11 now
+      dsa1 = 1.0_DP / Dmult(1,1)
+      do idofu = 1, rvanka%ndofVelo
       
+        ! Get pre-scaled old defect vector entries
+        dfu = dsa1*p_DdefU(idofu)
+        
+        ! Get index of main diagonal entry
+        idiag = p_KdiagA(idofu)
+
+        ! Calculate A(i,.) * u(.) for the lower-triangular part of A11
+        do i = p_KldA(idofu), idiag-1
+          dfu = dfu - p_DA11(i)*p_DdefU(p_KcolA(i))
+        end do ! i
+        
+        ! Update velocity
+        p_DdefU(idofu) = domega*dfu / p_DA11(idiag)
+      
+      end do ! idofu
+
+      ! And take care of A21/A22 now
+      dsa1 = 1.0_DP / Dmult(2,2)
+      dsa2 = Dmult(1,2) / Dmult(2,2)
+      do idofu = 1, rvanka%ndofVelo
+      
+        ! Get pre-scaled old defect vector entries
+        dfv = dsa1*p_DdefV(idofu)
+        
+        ! Get index of main diagonal entry
+        idiag = p_KdiagA(idofu)
+
+        ! Subtract A21*u from defect
+        daux1 = 0.0_DP
+        do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+          daux1 = daux1 + p_DA21(i)*p_DdefU(p_KcolA12(i))
+        end do ! i
+        dfv = dfv - dsa2*daux1
+
+        ! Calculate A(i,.) * u(.) for the lower-triangular part of A22
+        do i = p_KldA(idofu), idiag-1
+          dfv = dfv - p_DA22(i)*p_DdefV(p_KcolA(i))
+        end do ! i
+        
+        ! Update velocity
+        p_DdefV(idofu) = domega*dfv / p_DA22(idiag)
+      
+      end do ! idofu
+            
     end if
     
     ! Step 2: Update pressure
-    !$omp parallel do private(i,j,daux1,daux2,dfp) if(rvanka%ndofPres .ge. 1000)
     do idofp = 1, rvanka%ndofPres
     
       ! Skip this pressure DOF if the Schur complement is zero.
@@ -1821,19 +1949,9 @@ contains
       p_DdefP(idofp) = domega * dfp * p_DS(idofp)
     
     end do ! idofp
-    !$omp end parallel do
     
     ! Step 3: Update velocity
     if(.not. bHaveA12) then
-    
-      ! In this case the task is simple: Perform a 'normal' SOR step on the
-      ! velocity coupling system, i.e. solve:
-      !
-      !             ( U1  0  ) * (u) = (f_u) - (B1) * (p)
-      !             ( 0   U2 )   (v)   (f_v)   (B2)
-      !
-      ! where U1/U2 is the upper triangular part of A11/A22, and overwrite
-      ! the defect vector (f_u, f_v) by (u, v) in-situ.
     
       ! Pre-calculate scaling factors
       dsa1 = Dmult(1,3) / Dmult(1,1)
@@ -1847,8 +1965,8 @@ contains
         dfv = 0.0_DP
         do i = p_KldB(idofu), p_KldB(idofu+1)-1
           dt = p_DdefP(p_KcolB(i))
-          dfu = dfu + p_DB1(i)*dt
-          dfv = dfv + p_DB2(i)*dt
+          dfu = dfu - p_DB1(i)*dt
+          dfv = dfv - p_DB2(i)*dt
         end do ! i
         dfu = dsa1*dfu
         dfv = dsa2*dfv
@@ -1859,23 +1977,74 @@ contains
         ! Calculate A(i,.) * u(.) for the upper-triangular part of A11/A22
         do i = p_KldA(idofu+1)-1, idiag+1, -1
           j = p_KcolA(i)
-          dfu = dfu + p_DA11(i)*p_DdefU(j)
-          dfv = dfv + p_DA22(i)*p_DdefV(j)
+          dfu = dfu - p_DA11(i)*p_DdefU(j)
+          dfv = dfv - p_DA22(i)*p_DdefV(j)
         end do ! i
         
         ! Update velocity
-        p_DdefU(idofu) = p_DdefU(idofu) - domega*dfu / p_DA11(idiag)
-        p_DdefV(idofu) = p_DdefV(idofu) - domega*dfv / p_DA22(idiag)
+        p_DdefU(idofu) = p_DdefU(idofu) + domega*dfu / p_DA11(idiag)
+        p_DdefV(idofu) = p_DdefV(idofu) + domega*dfv / p_DA22(idiag)
       
       end do ! idofu
     
     else
       
-      ! Currently not supported
-      call output_line ('A12/A21 matrices currently not supported!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'vanka_NS2D_precSPSSOR')
-      call sys_halt()
+      ! Let's loop over the velocity DOFs - we'll process A22 now
+      dsa1 = Dmult(2,3) / Dmult(2,2)
+      do idofu = rvanka%ndofVelo, 1, -1
       
+        ! Calculate B * p
+        dfv = 0.0_DP
+        do i = p_KldB(idofu), p_KldB(idofu+1)-1
+          dfv = dfv - p_DB2(i)*p_DdefP(p_KcolB(i))
+        end do ! i
+        dfv = dsa1*dfv
+        
+        ! Get index of main diagonal entry
+        idiag = p_KdiagA(idofu)
+
+        ! Calculate A(i,.) * u(.) for the upper-triangular part of A11/A22
+        do i = p_KldA(idofu+1)-1, idiag+1, -1
+          dfv = dfv - p_DA22(i)*p_DdefV(p_KcolA(i))
+        end do ! i
+        
+        ! Update velocity
+        p_DdefV(idofu) = p_DdefV(idofu) + domega*dfv / p_DA22(idiag)
+      
+      end do ! idofu
+      
+      ! Take care of A11/A12 now
+      dsa1 = Dmult(1,3) / Dmult(1,1)
+      dsa2 = Dmult(1,2) / Dmult(1,1)
+      do idofu = rvanka%ndofVelo, 1, -1
+      
+        ! Calculate B * p
+        dfu = 0.0_DP
+        do i = p_KldB(idofu), p_KldB(idofu+1)-1
+          dfu = dfu - p_DB1(i)*p_DdefP(p_KcolB(i))
+        end do ! i
+        dfu = dsa1*dfu
+        
+        ! Calculate A12*v
+        daux1 = 0.0_DP
+        do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+          daux1 = daux1 + p_DA12(i)*p_DdefV(p_KcolA12(i))
+        end do
+        dfu = dfu - dsa2*daux1
+        
+        ! Get index of main diagonal entry
+        idiag = p_KdiagA(idofu)
+
+        ! Calculate A(i,.) * u(.) for the upper-triangular part of A11/A22
+        do i = p_KldA(idofu+1)-1, idiag+1, -1
+          dfu = dfu - p_DA11(i)*p_DdefU(p_KcolA(i))
+        end do ! i
+        
+        ! Update velocity
+        p_DdefU(idofu) = p_DdefU(idofu) + domega*dfu / p_DA11(idiag)
+      
+      end do ! idofu
+
     end if
     
     ! That's it
@@ -2003,6 +2172,11 @@ contains
     
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
+
+    ! Take care of the 'soft-deactivation' of the sub-matrices
+    bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
+                               (Dmult(2,1) .ne. 0.0_DP))
+    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
     
     ! Clear the optional matrices
     Dc = 0.0_DP
@@ -2458,6 +2632,9 @@ contains
 
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
+
+    ! Take care of the 'soft-deactivation' of the sub-matrices
+    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
     
     ! Clear the optional matrices
     Dc = 0.0_DP
@@ -2904,6 +3081,9 @@ contains
     
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
+
+    ! Take care of the 'soft-deactivation' of the sub-matrices
+    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
     
     if(bHaveC) then
       ! C exists
@@ -3324,6 +3504,11 @@ contains
     
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
+
+    ! Take care of the 'soft-deactivation' of the sub-matrices
+    bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
+                               (Dmult(2,1) .ne. 0.0_DP))
+    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
     
     ! Clear the optional matrices
     p_runi%Dc = 0.0_DP
@@ -3630,6 +3815,11 @@ contains
     
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
+
+    ! Take care of the 'soft-deactivation' of the sub-matrices
+    bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
+                               (Dmult(2,1) .ne. 0.0_DP))
+    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
     
     ! Okay, loop through the element sets
     NELdone = 0
