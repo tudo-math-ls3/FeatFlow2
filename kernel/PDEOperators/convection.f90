@@ -12,10 +12,10 @@
 !# 1.) conv_upwind2d
 !#     -> Apply upwind to a vector, a matrix or both.
 !#
-!# 2.) conv_streamlinediffusion2d
+!# 2.) conv_streamlineDiffusion2d
 !#     -> Apply streamline diffusion to a vector, a matrix or both.
 !#
-!# 3.) conv_streamlinediffusion3d
+!# 3.) conv_streamlineDiffusion3d
 !#     -> Apply streamline diffusion to a vector, a matrix or both.
 !#
 !# 4.) conv_JumpStabilisation2d
@@ -23,12 +23,12 @@
 !# 
 !# 5.) conv_streamlineDiffusionBlk2d
 !#     -> Apply streamline diffusion to a block vector, a block matrix or both.
-!#        Extended method compared to conv_streamlinediffusion2d.
+!#        Extended method compared to conv_streamlineDiffusion2d.
 !#        Allows to assemble the Newton matrix directly.
 !# 
 !# 6.) conv_streamlineDiffusionBlk3d
 !#     -> Apply streamline diffusion to a block vector, a block matrix or both.
-!#        Extended method compared to conv_streamlinediffusion3d.
+!#        Extended method compared to conv_streamlineDiffusion3d.
 !#        Allows to assemble the Newton matrix directly.
 !#
 !# </purpose>
@@ -4397,7 +4397,7 @@ contains
                 ! higher speed of the assembly routine, since this leads
                 ! to better data locality.
                 
-                Kentry(JDOFE,IDOFE,IEL)=JCOL
+                Kentry12(JDOFE,IDOFE,IEL)=JCOL
                 
               end do ! IDOFE
               
