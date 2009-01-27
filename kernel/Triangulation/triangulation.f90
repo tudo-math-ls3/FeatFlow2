@@ -77,16 +77,20 @@
 !# 17.) tria_exportTriFile
 !#      -> Exports a triangulation structure to a .TRI file.
 !#
-!# 18.) tria_searchBoundaryNode
+!# 18.) tria_exportPostScript
+!#      -> Exports a 2D triangulation to a PostScript file which e.g. can be
+!#         imported into a LaTeX document using \includegraphics{}.
+!#
+!# 19.) tria_searchBoundaryNode
 !#      -> Search for the position of a boundary vertex / edge on the boundary.
 !#
-!# 19.) tria_generateSubdomain
+!# 20.) tria_generateSubdomain
 !#      -> Extract cells from a mesh and generate a subdomain from them
 !#
-!# 20.) tria_attachCells
+!# 21.) tria_attachCells
 !#      -> Attaches a set of cells to an existing triangulation
 !#
-!# 21.) tria_cellGroupGreedy
+!# 22.) tria_cellGroupGreedy
 !#      -> Combines the cells of a mesh into simply connected sets of 
 !#         similar size by a greedy algorithm
 !#
@@ -5654,6 +5658,250 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_exportTriFile
 
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine tria_exportPostScript(rtria, sfilename, Dbox, Dtrafo, &
+                                   dlineWidth, bkeepAR)
+
+!<description>
+  ! Exports a 2D triangulation into a PostScript file.
+  ! The created PostScript file can be included into a LaTeX document by
+  ! using the \includegraphics{} command.
+  ! The mesh will be aligned at the bottom left corner of the drawing box.
+!</description>
+
+!<input>
+
+  ! The triangulation that is to be exported. Must be a 2D mesh.
+  type(t_triangulation), intent(IN) :: rtria
+  
+  ! The filename of the PostScript file that is to be written.
+  character(len=*), intent(IN) :: sfilename
+  
+  ! OPTIONAL:
+  ! The dimensions of the drawing box into which the mesh is to be exported.
+  ! Dbox(1) = width of drawing box in millimeters (default: 100 mm)
+  ! Dbox(2) = height of drawing box in millimeters (default: 100 mm)
+  real(DP), dimension(2), optional, intent(IN) :: Dbox
+  
+  ! OPTIONAL:
+  ! A transformation matrix that the vertice coordinates are to be multiplied
+  ! with. This matrix can be used to e.g. rotate a mesh by 90 degrees by
+  ! setting Dtrafo to the corresponding rotation matrix.
+  ! If not given, the transformation matrix is the identity matrix.
+  real(DP), dimension(2,2), optional, intent(IN) :: Dtrafo
+  
+  ! OPTIONAL:
+  ! The line width for the PostScript file in millimeters.
+  ! If not given, 0.1 mm is used.
+  real(DP), optional, intent(IN) :: dlineWidth
+  
+  ! OPTIONAL:
+  ! If set to .true. (default), the aspect ratio of the mesh is kept.
+  ! If set to .false., the mesh is stretched such that the bounding box of
+  ! the mesh is equal to the drawing box.
+  logical, optional, intent(IN) :: bkeepAR
+  
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  real(DP) :: ddet,dwidth
+  real(DP), dimension(2) :: Dv, Db
+  real(DP), dimension(2,2) :: Dt
+  real(DP), dimension(:,:), pointer :: p_Dcoords
+  integer, dimension(:,:), pointer :: p_Iedges
+  integer :: iunit, i, NVT, NMT
+  logical :: bkeepAspectRatio
+  
+  ! Bounding box of mesh
+  real(DP) :: dbboxMinX, dbboxMinY, dbboxMaxX, dbboxMaxY,&
+              dbboxWidth, dbboxHeight
+  
+  ! Scaling factors
+  real(DP) :: dscaleX, dscaleY
+
+  ! PostScript units are 'points'
+  ! 1 inch = 25.4 millimeters
+  ! 1 inch = 72 points
+  ! => 1 millimeter = 72 / 25.4 points
+  real(DP), parameter :: MM2PTS = 72.0_DP / 25.4_DP
+  
+    ! Intitialise default values
+    Db(1) = 100.0_DP            ! drawing box dimensions in millimeters
+    Db(2) = 100.0_DP
+    Dt(1,1) = 1.0_DP            ! transformation matrix
+    Dt(1,2) = 0.0_DP
+    Dt(2,1) = 0.0_DP
+    Dt(2,2) = 1.0_DP
+    dwidth = 0.1_DP             ! line width in millimeters
+    bkeepAspectRatio = .true.   ! self explaining
+  
+    ! First of all, let's make sure the drawing box is not empty.
+    if(present(Dbox)) then
+    
+      if((Dbox(1) .le. SYS_EPSREAL) .or. (Dbox(2) .le. SYS_EPSREAL)) then
+        call output_line('Drawing box is invalid!', OU_CLASS_ERROR,&
+                         OU_MODE_STD, 'tria_exportPostScript')
+        call sys_halt()
+      end if
+      
+      Db = Dbox
+      
+    end if
+      
+    ! And let's make sure the transformation matrix is regular - otherwise
+    ! we would divide by zero later!
+    if(present(Dtrafo)) then
+    
+      ! Calculate determinant of trafo matrix
+      ddet = Dtrafo(1,1)*Dtrafo(2,2) - Dtrafo(1,2)*Dtrafo(2,1)
+      
+      if(abs(ddet) .le. SYS_EPSREAL) then
+        call output_line('Transformation matrix is singular!', OU_CLASS_ERROR,&
+                         OU_MODE_STD, 'tria_exportPostScript')
+        call sys_halt()
+      end if
+      
+      Dt = Dtrafo
+      
+    end if
+    
+    ! And make sure the line width is positive.
+    if(present(dlineWidth)) then
+    
+      if(dlineWidth .le. SYS_EPSREAL) then
+        call output_line('Line width must be positive!', OU_CLASS_ERROR,&
+                         OU_MODE_STD, 'tria_exportPostScript')
+        call sys_halt()
+      end if
+      
+      dwidth = dlineWidth
+      
+    end if
+    
+    ! There's no way the caller can mess up with this parameter...
+    if(present(bkeepAR)) bkeepAspectRatio = bkeepAR
+    
+    ! Now make sure the triangulation is a 2D mesh.
+    if(rtria%ndim .ne. NDIM2D) then
+      call output_line('Only 2D triangulations supported!', OU_CLASS_ERROR,&
+                       OU_MODE_STD, 'tria_exportPostScript')
+      call sys_halt()
+    end if
+    
+    ! Okay, get the necessary information from the mesh.
+    NVT = rtria%NVT
+    NMT = rtria%NMT
+    call storage_getbase_double2D(rtria%h_DvertexCoords, p_Dcoords)
+    call storage_getbase_int2D(rtria%h_IverticesAtEdge, p_Iedges)
+    
+    ! We now need to calculate the bounding box of the mesh.
+    ! So get the first vertice and initialise the bounding box to it.
+    Dv = matmul(Dt, p_Dcoords(1:2,1))
+    dbboxMinX = Dv(1)
+    dbboxMaxX = Dv(1)
+    dbboxMinY = Dv(2)
+    dbboxMaxY = Dv(2)
+    
+    ! And loop through the rest of the vertices.
+    do i = 2, NVT
+      
+      ! Calculate transformed vertice
+      Dv = matmul(Dt, p_Dcoords(1:2,i))
+      
+      ! And update the bounding box.
+      dbboxMinX = min(dbboxMinX, Dv(1))
+      dbboxMaxX = max(dbboxMaxX, Dv(1))
+      dbboxMinY = min(dbboxMinY, Dv(2))
+      dbboxMaxY = max(dbboxMaxY, Dv(2))
+      
+    end do
+    
+    ! Calculate the dimensions of the bounding box
+    dbboxWidth  = dbboxMaxX - dbboxMinX
+    dbboxHeight = dbboxMaxY - dbboxMinY
+    
+    ! Make sure the bounding box is fully-dimensional
+    if((dbboxWidth .le. SYS_EPSREAL) .or. (dbboxHeight .le. SYS_EPSREAL)) then
+      call output_line('Triangulation is not a 2D domain!', OU_CLASS_ERROR,&
+                       OU_MODE_STD, 'tria_exportPostScript')
+      call sys_halt()
+    end if
+    
+    ! Calculate the scaling parameters:
+    dscaleX = (Db(1) / dbboxWidth) * MM2PTS
+    dscaleY = (Db(2) / dbboxHeight) * MM2PTS
+    
+    ! Do we have to keep the aspect ratio?
+    if(bkeepAspectRatio) then
+      
+      ! Yes, so choose the minimum scaling factor.
+      dscaleX = min(dscaleX, dscaleY)
+      dscaleY = dscaleX
+      
+    end if
+    
+    ! Okay, open a file for writing
+    call io_openFileForWriting(sfilename,iunit,SYS_REPLACE,bformatted=.true.)
+    
+    ! Fail?
+    if(iunit .le. 0) then
+      call output_line('Failed to open file for writing!', OU_CLASS_ERROR,&
+                       OU_MODE_STD, 'tria_exportPostScript')
+      call sys_halt()
+    end if
+    
+    ! Okay, write PostScript header
+    write(iunit,'(A)') '%!!PS-Adobe-3.0 EPSF-3.0'
+    
+    ! Write the line width
+    write(iunit,'(F12.6,A)') (dwidth*MM2PTS), ' setlinewidth'
+    
+    ! Begin a new path
+    write(iunit,'(A)') 'newpath'
+    
+    ! Now go through all edges
+    do i = 1, NMT
+    
+      ! Get the first vertice
+      Dv = matmul(Dt, p_Dcoords(1:2, p_Iedges(1,i)))
+      
+      ! Transform the coordinates
+      Dv(1) = (Dv(1) - dbboxMinX) * dscaleX
+      Dv(2) = (Dv(2) - dbboxMinY) * dscaleY
+      
+      ! Write first vertice
+      write(iunit,'(F12.6,F12.6,A)') Dv(1), Dv(2), ' moveto'
+      
+      ! Get the second vertice
+      Dv = matmul(Dt, p_Dcoords(1:2, p_Iedges(2,i)))
+      
+      ! Transform the coordinates
+      Dv(1) = (Dv(1) - dbboxMinX) * dscaleX
+      Dv(2) = (Dv(2) - dbboxMinY) * dscaleY
+      
+      ! Write second vertice
+      write(iunit,'(F12.6,F12.6,A)') Dv(1), Dv(2), ' lineto'
+    
+    end do
+    
+    ! Draw the path
+    write(iunit,'(A)') 'stroke'
+    
+    ! And show the page
+    write(iunit,'(A)') 'showpage'
+    
+    ! Close the file
+    close(iunit)
+    
+    ! That's it
+
+  end subroutine
+  
   !************************************************************************
 
 !<subroutine>

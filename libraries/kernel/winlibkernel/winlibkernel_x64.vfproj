@@ -131,7 +131,6 @@
 		<File RelativePath="..\..\..\kernel\Postprocessing\pprocerror.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\pprocgradients.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\pprocnavierstokes.f90"/>
-		<File RelativePath="..\..\..\kernel\Postprocessing\tria2ps.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\ucd.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\vectorio.f90"/></Filter>
 		<Filter Name="Preprocessing">
