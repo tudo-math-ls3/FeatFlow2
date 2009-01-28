@@ -4364,20 +4364,24 @@ contains
           ! the 5th vertex of the old hexahedron
           p_IvertAtElementDest(1,iel4) = p_IvertAtElementSource(5,iel)
           ! the index of the 9th edge is the index of the 2nd vertex
-          p_IvertAtElementDest(2,iel4) = p_IedgesAtElementSource(9,iel)+NVTsrc
+          !p_IvertAtElementDest(2,iel4) = p_IedgesAtElementSource(9,iel)+NVTsrc
+          p_IvertAtElementDest(2,iel4) = p_IedgesAtElementSource(12,iel)+NVTsrc
           ! the midpoint of face F is the index of the 3rd vertex
           p_IvertAtElementDest(3,iel4) = midpointFaceF
           ! the index of the 12th edge is the index of the 4th vertex
-          p_IvertAtElementDest(4,iel4) = p_IedgesAtElementSource(12,iel)+NVTsrc
+          !p_IvertAtElementDest(4,iel4) = p_IedgesAtElementSource(12,iel)+NVTsrc
+          p_IvertAtElementDest(4,iel4) = p_IedgesAtElementSource(9,iel)+NVTsrc
           
           ! the index of the 5th edge is the index of the 5th vertex
           p_IvertAtElementDest(5,iel4) = p_IedgesAtElementSource(5,iel)+NVTsrc
           ! the index of the midpoint of face B is the index of the 6th vertex
-          p_IvertAtElementDest(6,iel4) = midpointFaceB
+          !p_IvertAtElementDest(6,iel4) = midpointFaceB
+          p_IvertAtElementDest(6,iel4) = midpointFaceE
           ! the index of the midpoint of the old hexahedron is the index of the 7th vertex
           p_IvertAtElementDest(7,iel4) = midPointOfIel
           ! the index of the midpoint of face E is the index of the 8th vertex
-          p_IvertAtElementDest(8,iel4) = midpointFaceE
+          !p_IvertAtElementDest(8,iel4) = midpointFaceE
+          p_IvertAtElementDest(8,iel4) = midpointFaceB
           
 
           ! Step 6: Initialise IverticesOnElement for element IEL5
@@ -4385,20 +4389,24 @@ contains
           ! the 6th vertex of the old hexahedron
           p_IvertAtElementDest(1,iel5) = p_IvertAtElementSource(6,iel)
           ! the index of the 10th edge is the index of the 2nd vertex
-          p_IvertAtElementDest(2,iel5) = p_IedgesAtElementSource(10,iel)+NVTsrc
+          !p_IvertAtElementDest(2,iel5) = p_IedgesAtElementSource(10,iel)+NVTsrc
+          p_IvertAtElementDest(2,iel5) = p_IedgesAtElementSource(9,iel)+NVTsrc
           ! the midpoint of face F is the index of the 3rd vertex
           p_IvertAtElementDest(3,iel5) = midpointFaceF
           ! the index of the 9th edge is the index of the 4th vertex
-          p_IvertAtElementDest(4,iel5) = p_IedgesAtElementSource(9,iel)+NVTsrc
+          !p_IvertAtElementDest(4,iel5) = p_IedgesAtElementSource(9,iel)+NVTsrc
+          p_IvertAtElementDest(4,iel5) = p_IedgesAtElementSource(10,iel)+NVTsrc
           
           ! the index of the 6th edge is the index of the 5th vertex
           p_IvertAtElementDest(5,iel5) = p_IedgesAtElementSource(6,iel)+NVTsrc
           ! the index of the midpoint of face C is the index of the 6th vertex
-          p_IvertAtElementDest(6,iel5) = midpointFaceC
+          !p_IvertAtElementDest(6,iel5) = midpointFaceC
+          p_IvertAtElementDest(6,iel5) = midpointFaceB
           ! the index of the midpoint of the old hexahedron is the index of the 7th vertex
           p_IvertAtElementDest(7,iel5) = midPointOfIel
           ! the index of the midpoint of face B is the index of the 8th vertex
-          p_IvertAtElementDest(8,iel5) = midpointFaceB
+          !p_IvertAtElementDest(8,iel5) = midpointFaceB
+          p_IvertAtElementDest(8,iel5) = midpointFaceC
           
           
           ! Step 7: Initialise IverticesOnElement for element IEL6
@@ -4406,20 +4414,24 @@ contains
           ! the 7th vertex of the old hexahedron
           p_IvertAtElementDest(1,iel6) = p_IvertAtElementSource(7,iel)
           ! the index of the 11th edge is the index of the 2nd vertex
-          p_IvertAtElementDest(2,iel6) = p_IedgesAtElementSource(11,iel)+NVTsrc
+          !p_IvertAtElementDest(2,iel6) = p_IedgesAtElementSource(11,iel)+NVTsrc
+          p_IvertAtElementDest(2,iel6) = p_IedgesAtElementSource(10,iel)+NVTsrc
           ! the midpoint of face F is the index of the 3rd vertex
           p_IvertAtElementDest(3,iel6) = midpointFaceF
           ! the index of the 10th edge is the index of the 4th vertex
-          p_IvertAtElementDest(4,iel6) = p_IedgesAtElementSource(10,iel)+NVTsrc
+          !p_IvertAtElementDest(4,iel6) = p_IedgesAtElementSource(10,iel)+NVTsrc
+          p_IvertAtElementDest(4,iel6) = p_IedgesAtElementSource(11,iel)+NVTsrc
           
           ! the index of the 7th edge is the index of the 5th vertex
           p_IvertAtElementDest(5,iel6) = p_IedgesAtElementSource(7,iel)+NVTsrc
           ! the index of the midpoint of face D is the index of the 6th vertex
-          p_IvertAtElementDest(6,iel6) = midpointFaceD
+          !p_IvertAtElementDest(6,iel6) = midpointFaceD
+          p_IvertAtElementDest(6,iel6) = midpointFaceC
           ! the index of the midpoint of the old hexahedron is the index of the 7th vertex
           p_IvertAtElementDest(7,iel6) = midPointOfIel
           ! the index of the midpoint of face C is the index of the 8th vertex
-          p_IvertAtElementDest(8,iel6) = midpointFaceC
+          !p_IvertAtElementDest(8,iel6) = midpointFaceC
+          p_IvertAtElementDest(8,iel6) = midpointFaceD
           
 
           ! Step 8: Initialise IverticesOnElement for element IEL7
@@ -4427,20 +4439,24 @@ contains
           ! the 8th vertex of the old hexahedron
           p_IvertAtElementDest(1,iel7) = p_IvertAtElementSource(8,iel)
           ! the index of the 12th edge is the index of the 2nd vertex
-          p_IvertAtElementDest(2,iel7) = p_IedgesAtElementSource(12,iel)+NVTsrc
+          !p_IvertAtElementDest(2,iel7) = p_IedgesAtElementSource(12,iel)+NVTsrc
+          p_IvertAtElementDest(2,iel7) = p_IedgesAtElementSource(11,iel)+NVTsrc
           ! the midpoint of face F is the index of the 3rd vertex
           p_IvertAtElementDest(3,iel7) = midpointFaceF
           ! the index of the 11th edge is the index of the 4th vertex
-          p_IvertAtElementDest(4,iel7) = p_IedgesAtElementSource(11,iel)+NVTsrc
+          !p_IvertAtElementDest(4,iel7) = p_IedgesAtElementSource(11,iel)+NVTsrc
+          p_IvertAtElementDest(4,iel7) = p_IedgesAtElementSource(12,iel)+NVTsrc
           
           ! the index of the 8th edge is the index of the 5th vertex
           p_IvertAtElementDest(5,iel7) = p_IedgesAtElementSource(8,iel)+NVTsrc
           ! the index of the midpoint of face E is the index of the 6th vertex
-          p_IvertAtElementDest(6,iel7) = midpointFaceE
+          !p_IvertAtElementDest(6,iel7) = midpointFaceE
+          p_IvertAtElementDest(6,iel7) = midpointFaceD
           ! the index of the midpoint of the old hexahedron is the index of the 7th vertex
           p_IvertAtElementDest(7,iel7) = midPointOfIel
           ! the index of the midpoint of face D is the index of the 8th vertex
-          p_IvertAtElementDest(8,iel7) = midpointFaceD
+          !p_IvertAtElementDest(8,iel7) = midpointFaceD
+          p_IvertAtElementDest(8,iel7) = midpointFaceE
           
 
         case (TRIA_NVEPRIS3D)

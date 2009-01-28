@@ -1425,8 +1425,8 @@ contains
                              p_IfacesAtElementFine)
         call storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
                              p_IfacesAtElementCoarse)
-        !CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-        !                     p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
         call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                              p_IneighboursAtElementCoarse)
         
@@ -1443,8 +1443,8 @@ contains
             ! DOF's = face midpoint based
             call mlprj_prolUniformEx3x_3D_double (p_DuCoarse,p_DuFine, &
                 p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
-                p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL,&
-                ractProjection%ielementTypeProlongation)
+                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                p_rtriaCoarse%NEL,ractProjection%ielementTypeProlongation)
 !            END IF
 !                
 !          CASE (2:) ! Extended prolongation; modified weights, local switch
@@ -1911,8 +1911,8 @@ contains
                              p_IfacesAtElementFine)
         call storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
                              p_IfacesAtElementCoarse)
-        !CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-        !                     p_IneighboursAtElementFine)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
         call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                              p_IneighboursAtElementCoarse)
 
@@ -1929,8 +1929,8 @@ contains
             ! DOF's = face midpoint based
             call mlprj_restUniformEx3x_3D_double (p_DuCoarse,p_DuFine, &
                 p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
-                p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL,&
-                ractProjection%ielementTypeRestriction)          
+                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                p_rtriaCoarse%NEL,ractProjection%ielementTypeRestriction)          
 !            END IF
 !                
 !          CASE (2:) ! Extended prolongation; modified weights, local switch
@@ -2226,10 +2226,12 @@ contains
                              p_IfacesAtElementCoarse)
         call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                              p_IneighboursAtElementCoarse)
+        call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                             p_IneighboursAtElementFine)
         call mlprj_interpUniformEx3x_3D_dbl (p_DuCoarse,p_DuFine, &
                 p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
-                p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL,&
-                ractProjection%ielementTypeInterpolation)          
+                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine, &
+                p_rtriaCoarse%NEL,ractProjection%ielementTypeInterpolation)          
 
       case default
         call output_line ('Unknown element!', &
@@ -7528,7 +7530,8 @@ contains
 
   subroutine mlprj_prolUniformEx3x_3D_double (DuCoarse,DuFine, &
                IfacesAtElementCoarse,IfacesAtElementFine,&
-               IneighboursAtElementCoarse,NELcoarse,ielType)
+               IneighboursAtElementCoarse,IneighboursAtElementFine,&
+               NELcoarse,ielType)
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
@@ -7549,7 +7552,7 @@ contains
   integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  !INTEGER, DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
   integer, intent(IN) :: NELcoarse
@@ -7620,13 +7623,13 @@ contains
       ! Get the element numbers of the fine-grid elements in the coarse grid;
       ! the numbers are defined by the two-level ordering.
       ielf(1) = iel
-      ielf(2) = NELcoarse + 7*(iel-1) + 1
-      ielf(3) = ielf(2) + 1
-      ielf(4) = ielf(3) + 1
-      ielf(5) = ielf(4) + 1
-      ielf(6) = ielf(5) + 1
-      ielf(7) = ielf(6) + 1
-      ielf(8) = ielf(7) + 1
+      ielf(2) = IneighboursAtElementFine(3,ielf(1))
+      ielf(3) = IneighboursAtElementFine(3,ielf(2))
+      ielf(4) = IneighboursAtElementFine(3,ielf(3))
+      ielf(5) = IneighboursAtElementFine(6,ielf(1))
+      ielf(6) = IneighboursAtElementFine(4,ielf(5))
+      ielf(7) = IneighboursAtElementFine(4,ielf(6))
+      ielf(8) = IneighboursAtElementFine(4,ielf(7))
 
       ! First, we are going to prolongate the DOFs on the boundary of
       ! the coarse grid hexahedron.
@@ -7656,8 +7659,10 @@ contains
       if (IneighboursAtElementCoarse(2,iel) .eq. 0) dw = 2.0_DP
       idx(1) = IfacesAtElementFine(2, ielf(1))
       idx(2) = IfacesAtElementFine(5, ielf(2))
-      idx(3) = IfacesAtElementFine(5, ielf(6))
-      idx(4) = IfacesAtElementFine(2, ielf(5))
+      !idx(3) = IfacesAtElementFine(5, ielf(6))
+      !idx(4) = IfacesAtElementFine(2, ielf(5))
+      idx(3) = IfacesAtElementFine(2, ielf(6))
+      idx(4) = IfacesAtElementFine(5, ielf(5))
       DuFine(idx(1))=DuFine(idx(1))+&
         dw*(A2*Dx(1)+A1*Dx(2)+A3*Dx(3)+A4*Dx(4)+A2*Dx(5)+A3*Dx(6))
       DuFine(idx(2))=DuFine(idx(2))+&
@@ -7672,8 +7677,10 @@ contains
       if (IneighboursAtElementCoarse(3,iel) .eq. 0) dw = 2.0_DP
       idx(1) = IfacesAtElementFine(2, ielf(2))
       idx(2) = IfacesAtElementFine(5, ielf(3))
-      idx(3) = IfacesAtElementFine(5, ielf(7))
-      idx(4) = IfacesAtElementFine(2, ielf(6))
+      !idx(3) = IfacesAtElementFine(5, ielf(7))
+      !idx(4) = IfacesAtElementFine(2, ielf(6))
+      idx(3) = IfacesAtElementFine(2, ielf(7))
+      idx(4) = IfacesAtElementFine(5, ielf(6))
       DuFine(idx(1))=DuFine(idx(1))+&
         dw*(A2*Dx(1)+A2*Dx(2)+A1*Dx(3)+A3*Dx(4)+A4*Dx(5)+A3*Dx(6))
       DuFine(idx(2))=DuFine(idx(2))+&
@@ -7688,8 +7695,10 @@ contains
       if (IneighboursAtElementCoarse(4,iel) .eq. 0) dw = 2.0_DP
       idx(1) = IfacesAtElementFine(2, ielf(3))
       idx(2) = IfacesAtElementFine(5, ielf(4))
-      idx(3) = IfacesAtElementFine(5, ielf(8))
-      idx(4) = IfacesAtElementFine(2, ielf(7))
+      !idx(3) = IfacesAtElementFine(5, ielf(8))
+      !idx(4) = IfacesAtElementFine(2, ielf(7))
+      idx(3) = IfacesAtElementFine(2, ielf(8))
+      idx(4) = IfacesAtElementFine(5, ielf(7))
       DuFine(idx(1))=DuFine(idx(1))+&
         dw*(A2*Dx(1)+A4*Dx(2)+A2*Dx(3)+A1*Dx(4)+A3*Dx(5)+A3*Dx(6))
       DuFine(idx(2))=DuFine(idx(2))+&
@@ -7704,8 +7713,10 @@ contains
       if (IneighboursAtElementCoarse(5,iel) .eq. 0) dw = 2.0_DP
       idx(1) = IfacesAtElementFine(2, ielf(4))
       idx(2) = IfacesAtElementFine(5, ielf(1))
-      idx(3) = IfacesAtElementFine(5, ielf(5))
-      idx(4) = IfacesAtElementFine(2, ielf(8))
+      !idx(3) = IfacesAtElementFine(5, ielf(5))
+      !idx(4) = IfacesAtElementFine(2, ielf(8))
+      idx(3) = IfacesAtElementFine(2, ielf(5))
+      idx(4) = IfacesAtElementFine(5, ielf(8))
       DuFine(idx(1))=DuFine(idx(1))+&
         dw*(A2*Dx(1)+A3*Dx(2)+A4*Dx(3)+A2*Dx(4)+A1*Dx(5)+A3*Dx(6))
       DuFine(idx(2))=DuFine(idx(2))+&
@@ -7752,10 +7763,14 @@ contains
       DuFine(idx(3))=A6*Dx(1)+A7*Dx(2)+A5*Dx(3)+A5*Dx(4)+A7*Dx(5)+A6*Dx(6)
       DuFine(idx(4))=A6*Dx(1)+A7*Dx(2)+A7*Dx(3)+A5*Dx(4)+A5*Dx(5)+A6*Dx(6)
 
-      idx(1) = IfacesAtElementFine(3, ielf(5))
-      idx(2) = IfacesAtElementFine(3, ielf(6))
-      idx(3) = IfacesAtElementFine(3, ielf(7))
-      idx(4) = IfacesAtElementFine(3, ielf(8))
+      !idx(1) = IfacesAtElementFine(3, ielf(5))
+      !idx(2) = IfacesAtElementFine(3, ielf(6))
+      !idx(3) = IfacesAtElementFine(3, ielf(7))
+      !idx(4) = IfacesAtElementFine(3, ielf(8))
+      idx(1) = IfacesAtElementFine(4, ielf(5))
+      idx(2) = IfacesAtElementFine(4, ielf(6))
+      idx(3) = IfacesAtElementFine(4, ielf(7))
+      idx(4) = IfacesAtElementFine(4, ielf(8))
       DuFine(idx(1))=A7*Dx(1)+A5*Dx(2)+A6*Dx(3)+A7*Dx(4)+A6*Dx(5)+A5*Dx(6)
       DuFine(idx(2))=A7*Dx(1)+A6*Dx(2)+A5*Dx(3)+A6*Dx(4)+A7*Dx(5)+A5*Dx(6)
       DuFine(idx(3))=A7*Dx(1)+A7*Dx(2)+A6*Dx(3)+A5*Dx(4)+A6*Dx(5)+A5*Dx(6)
@@ -7769,7 +7784,8 @@ contains
 
   subroutine mlprj_restUniformEx3x_3D_double (DuCoarse,DuFine, &
                IfacesAtElementCoarse,IfacesAtElementFine,&
-               IneighboursAtElementCoarse,NELcoarse,ielType)
+               IneighboursAtElementCoarse,IneighboursAtElementFine,&
+               NELcoarse,ielType)
   
 !<description>
   ! Restrict a defect vector from a fine grid to a coarse grid.
@@ -7788,6 +7804,9 @@ contains
 
   ! IneighboursAtElement array on the coarse grid
   integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+
+  ! IneighboursAtElement array on the fine grid
+  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
   integer, intent(IN) :: NELcoarse
@@ -7849,13 +7868,13 @@ contains
       ! Get the element numbers of the fine-grid elements in the coarse grid;
       ! the numbers are defined by the two-level ordering.
       ielf(1) = iel
-      ielf(2) = NELcoarse + 7*(iel-1) + 1
-      ielf(3) = ielf(2) + 1
-      ielf(4) = ielf(3) + 1
-      ielf(5) = ielf(4) + 1
-      ielf(6) = ielf(5) + 1
-      ielf(7) = ielf(6) + 1
-      ielf(8) = ielf(7) + 1
+      ielf(2) = IneighboursAtElementFine(3,ielf(1))
+      ielf(3) = IneighboursAtElementFine(3,ielf(2))
+      ielf(4) = IneighboursAtElementFine(3,ielf(3))
+      ielf(5) = IneighboursAtElementFine(6,ielf(1))
+      ielf(6) = IneighboursAtElementFine(4,ielf(5))
+      ielf(7) = IneighboursAtElementFine(4,ielf(6))
+      ielf(8) = IneighboursAtElementFine(4,ielf(7))
 
       ! Get the fine grid DOFs
       Dx( 1)=DuFine(IfacesAtElementFine(1,ielf(1)))
@@ -7864,20 +7883,28 @@ contains
       Dx( 4)=DuFine(IfacesAtElementFine(1,ielf(4)))
       Dx( 5)=DuFine(IfacesAtElementFine(2,ielf(1)))
       Dx( 6)=DuFine(IfacesAtElementFine(5,ielf(2)))
-      Dx( 7)=DuFine(IfacesAtElementFine(5,ielf(6)))
-      Dx( 8)=DuFine(IfacesAtElementFine(2,ielf(5)))
+      !Dx( 7)=DuFine(IfacesAtElementFine(5,ielf(6)))
+      Dx( 7)=DuFine(IfacesAtElementFine(2,ielf(6)))
+      !Dx( 8)=DuFine(IfacesAtElementFine(2,ielf(5)))
+      Dx( 8)=DuFine(IfacesAtElementFine(5,ielf(5)))
       Dx( 9)=DuFine(IfacesAtElementFine(2,ielf(2)))
       Dx(10)=DuFine(IfacesAtElementFine(5,ielf(3)))
-      Dx(11)=DuFine(IfacesAtElementFine(5,ielf(7)))
-      Dx(12)=DuFine(IfacesAtElementFine(2,ielf(6)))
+      !Dx(11)=DuFine(IfacesAtElementFine(5,ielf(7)))
+      Dx(11)=DuFine(IfacesAtElementFine(2,ielf(7)))
+      !Dx(12)=DuFine(IfacesAtElementFine(2,ielf(6)))
+      Dx(12)=DuFine(IfacesAtElementFine(5,ielf(6)))
       Dx(13)=DuFine(IfacesAtElementFine(2,ielf(3)))
       Dx(14)=DuFine(IfacesAtElementFine(5,ielf(4)))
-      Dx(15)=DuFine(IfacesAtElementFine(5,ielf(8)))
-      Dx(16)=DuFine(IfacesAtElementFine(2,ielf(7)))
+      !Dx(15)=DuFine(IfacesAtElementFine(5,ielf(8)))
+      Dx(15)=DuFine(IfacesAtElementFine(2,ielf(8)))
+      !Dx(16)=DuFine(IfacesAtElementFine(2,ielf(7)))
+      Dx(16)=DuFine(IfacesAtElementFine(5,ielf(7)))
       Dx(17)=DuFine(IfacesAtElementFine(2,ielf(4)))
       Dx(18)=DuFine(IfacesAtElementFine(5,ielf(1)))
-      Dx(19)=DuFine(IfacesAtElementFine(5,ielf(5)))
-      Dx(20)=DuFine(IfacesAtElementFine(2,ielf(8)))
+      !Dx(19)=DuFine(IfacesAtElementFine(5,ielf(5)))
+      Dx(19)=DuFine(IfacesAtElementFine(2,ielf(5)))
+      !Dx(20)=DuFine(IfacesAtElementFine(2,ielf(8)))
+      Dx(20)=DuFine(IfacesAtElementFine(5,ielf(8)))
       Dx(21)=DuFine(IfacesAtElementFine(1,ielf(5)))
       Dx(22)=DuFine(IfacesAtElementFine(1,ielf(6)))
       Dx(23)=DuFine(IfacesAtElementFine(1,ielf(7)))
@@ -7890,10 +7917,14 @@ contains
       Dx(30)=DuFine(IfacesAtElementFine(6,ielf(2)))
       Dx(31)=DuFine(IfacesAtElementFine(6,ielf(3)))
       Dx(32)=DuFine(IfacesAtElementFine(6,ielf(4)))
-      Dx(33)=DuFine(IfacesAtElementFine(3,ielf(5)))
-      Dx(34)=DuFine(IfacesAtElementFine(3,ielf(6)))
-      Dx(35)=DuFine(IfacesAtElementFine(3,ielf(7)))
-      Dx(36)=DuFine(IfacesAtElementFine(3,ielf(8)))
+      !Dx(33)=DuFine(IfacesAtElementFine(3,ielf(5)))
+      !Dx(34)=DuFine(IfacesAtElementFine(3,ielf(6)))
+      !Dx(35)=DuFine(IfacesAtElementFine(3,ielf(7)))
+      !Dx(36)=DuFine(IfacesAtElementFine(3,ielf(8)))
+      Dx(33)=DuFine(IfacesAtElementFine(4,ielf(5)))
+      Dx(34)=DuFine(IfacesAtElementFine(4,ielf(6)))
+      Dx(35)=DuFine(IfacesAtElementFine(4,ielf(7)))
+      Dx(36)=DuFine(IfacesAtElementFine(4,ielf(8)))
       
       ! Face 1
       dw = 1.0_DP
@@ -7977,7 +8008,8 @@ contains
 
   subroutine mlprj_interpUniformEx3x_3D_dbl (DuCoarse,DuFine, &
                IfacesAtElementCoarse,IfacesAtElementFine,&
-               IneighboursAtElementCoarse,NELcoarse,ielType)
+               IneighboursAtElementCoarse,IneighboursAtElementFine,&
+               NELcoarse,ielType)
   
 !<description>
   ! Restrict a solution vector from a fine grid to a coarse grid.
@@ -7996,6 +8028,9 @@ contains
 
   ! IneighboursAtElement array on the coarse grid
   integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+
+  ! IneighboursAtElement array on the fine grid
+  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
   integer, intent(IN) :: NELcoarse
@@ -8053,13 +8088,13 @@ contains
       ! Get the element numbers of the fine-grid elements in the coarse grid;
       ! the numbers are defined by the two-level ordering.
       ielf(1) = iel
-      ielf(2) = NELcoarse + 7*(iel-1) + 1
-      ielf(3) = ielf(2) + 1
-      ielf(4) = ielf(3) + 1
-      ielf(5) = ielf(4) + 1
-      ielf(6) = ielf(5) + 1
-      ielf(7) = ielf(6) + 1
-      ielf(8) = ielf(7) + 1
+      ielf(2) = IneighboursAtElementFine(3,ielf(1))
+      ielf(3) = IneighboursAtElementFine(3,ielf(2))
+      ielf(4) = IneighboursAtElementFine(3,ielf(3))
+      ielf(5) = IneighboursAtElementFine(6,ielf(1))
+      ielf(6) = IneighboursAtElementFine(4,ielf(5))
+      ielf(7) = IneighboursAtElementFine(4,ielf(6))
+      ielf(8) = IneighboursAtElementFine(4,ielf(7))
 
       ! Get the fine grid DOFs
       Dx(1)=DuFine(IfacesAtElementFine(1,ielf(1)))
@@ -8083,21 +8118,33 @@ contains
       Dx(19)=DuFine(IfacesAtElementFine(5,ielf(4)))
       Dx(20)=DuFine(IfacesAtElementFine(6,ielf(4)))
       Dx(21)=DuFine(IfacesAtElementFine(1,ielf(5)))
-      Dx(22)=DuFine(IfacesAtElementFine(2,ielf(5)))
-      Dx(23)=DuFine(IfacesAtElementFine(3,ielf(5)))
-      Dx(24)=DuFine(IfacesAtElementFine(4,ielf(5)))
-      Dx(25)=DuFine(IfacesAtElementFine(5,ielf(5)))
+      !Dx(22)=DuFine(IfacesAtElementFine(2,ielf(5)))
+      !Dx(23)=DuFine(IfacesAtElementFine(3,ielf(5)))
+      !Dx(24)=DuFine(IfacesAtElementFine(4,ielf(5)))
+      !Dx(25)=DuFine(IfacesAtElementFine(5,ielf(5)))
+      Dx(22)=DuFine(IfacesAtElementFine(5,ielf(5)))
+      Dx(23)=DuFine(IfacesAtElementFine(4,ielf(5)))
+      Dx(24)=DuFine(IfacesAtElementFine(3,ielf(5)))
+      Dx(25)=DuFine(IfacesAtElementFine(2,ielf(5)))
       Dx(26)=DuFine(IfacesAtElementFine(1,ielf(6)))
-      Dx(27)=DuFine(IfacesAtElementFine(2,ielf(6)))
-      Dx(28)=DuFine(IfacesAtElementFine(3,ielf(6)))
-      Dx(29)=DuFine(IfacesAtElementFine(5,ielf(6)))
+      !Dx(27)=DuFine(IfacesAtElementFine(2,ielf(6)))
+      !Dx(28)=DuFine(IfacesAtElementFine(3,ielf(6)))
+      !Dx(29)=DuFine(IfacesAtElementFine(5,ielf(6)))
+      Dx(27)=DuFine(IfacesAtElementFine(5,ielf(6)))
+      Dx(28)=DuFine(IfacesAtElementFine(4,ielf(6)))
+      Dx(29)=DuFine(IfacesAtElementFine(2,ielf(6)))
       Dx(30)=DuFine(IfacesAtElementFine(1,ielf(7)))
-      Dx(31)=DuFine(IfacesAtElementFine(2,ielf(7)))
-      Dx(32)=DuFine(IfacesAtElementFine(3,ielf(7)))
-      Dx(33)=DuFine(IfacesAtElementFine(5,ielf(7)))
+      !Dx(31)=DuFine(IfacesAtElementFine(2,ielf(7)))
+      !Dx(32)=DuFine(IfacesAtElementFine(3,ielf(7)))
+      !Dx(33)=DuFine(IfacesAtElementFine(5,ielf(7)))
+      Dx(31)=DuFine(IfacesAtElementFine(5,ielf(7)))
+      Dx(32)=DuFine(IfacesAtElementFine(4,ielf(7)))
+      Dx(33)=DuFine(IfacesAtElementFine(2,ielf(7)))
       Dx(34)=DuFine(IfacesAtElementFine(1,ielf(8)))
-      Dx(35)=DuFine(IfacesAtElementFine(2,ielf(8)))
-      Dx(36)=DuFine(IfacesAtElementFine(5,ielf(8)))
+      !Dx(35)=DuFine(IfacesAtElementFine(2,ielf(8)))
+      !Dx(36)=DuFine(IfacesAtElementFine(5,ielf(8)))
+      Dx(35)=DuFine(IfacesAtElementFine(5,ielf(8)))
+      Dx(36)=DuFine(IfacesAtElementFine(2,ielf(8)))
 
       ! Face 1
       dw = 1.0_DP

@@ -4261,15 +4261,15 @@ contains
     do i = 1, ncubp
       dx = 0.5_DP * (Dfine(1,i) - 1.0_DP)
       dy = 0.5_DP * (Dfine(2,i) - 1.0_DP)
-      dz = 0.5_DP * (Dfine(2,i) - 1.0_DP)
+      dz = 0.5_DP * (Dfine(3,i) - 1.0_DP)
       Dcoarse(1:3,        i) = (/ dx,  dy,  dz/)
       Dcoarse(1:3,  ncubp+i) = (/-dy,  dx,  dz/)
       Dcoarse(1:3,2*ncubp+i) = (/-dx, -dy,  dz/)
       Dcoarse(1:3,3*ncubp+i) = (/ dy, -dx,  dz/)
-      Dcoarse(1:3,4*ncubp+i) = (/ dx,  dy, -dz/)
-      Dcoarse(1:3,5*ncubp+i) = (/-dy,  dx, -dz/)
-      Dcoarse(1:3,6*ncubp+i) = (/-dx, -dy, -dz/)
-      Dcoarse(1:3,7*ncubp+i) = (/ dy, -dx, -dz/)
+      Dcoarse(1:3,4*ncubp+i) = (/ dy,  dx, -dz/)
+      Dcoarse(1:3,5*ncubp+i) = (/-dx,  dy, -dz/)
+      Dcoarse(1:3,6*ncubp+i) = (/-dy, -dx, -dz/)
+      Dcoarse(1:3,7*ncubp+i) = (/ dx, -dy, -dz/)
     end do
 
   end subroutine
