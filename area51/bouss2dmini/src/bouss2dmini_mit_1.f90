@@ -240,8 +240,8 @@ contains
     ! a block discretisation structure that specifies 4 blocks in the
     ! solution vector.
     do i = NLMIN, NLMAX
-      call spdiscr_initBlockDiscr2D (Rlevels(i)%rdiscretisation, 4, &
-                                     Rlevels(i)%rtriangulation, rboundary)
+      call spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation, 4, &
+                                   Rlevels(i)%rtriangulation, rboundary)
     end do
 
     ! rdiscretisation%RspatialDiscr is a list of scalar 

@@ -266,8 +266,8 @@ contains
     do i = NLMIN, NLMAX
     
       ! Our primary discretisation has 3 components (Q1~/Q1~/Q0)
-      call spdiscr_initBlockDiscr2D (Rlevels(i)%rdiscrPrimary, 3, &
-                                     Rlevels(i)%rtriangulation, rboundary)
+      call spdiscr_initBlockDiscr (Rlevels(i)%rdiscrPrimary, 3, &
+                                   Rlevels(i)%rtriangulation, rboundary)
       
       ! For simplicity, we set up one discretisation structure for the 
       ! velocity...
@@ -288,8 +288,8 @@ contains
           EL_Q0, CUB_G2X2, Rlevels(i)%rdiscrPrimary%RspatialDiscr(3))
 
       ! Our secondary discretisation has 1 component (Q1)
-      call spdiscr_initBlockDiscr2D (Rlevels(i)%rdiscrSecondary, 1, &
-                                     Rlevels(i)%rtriangulation, rboundary)
+      call spdiscr_initBlockDiscr (Rlevels(i)%rdiscrSecondary, 1, &
+                                   Rlevels(i)%rtriangulation, rboundary)
 
       call spdiscr_initDiscr_simple (Rlevels(i)%rdiscrSecondary%RspatialDiscr(1),&
           EL_Q1, CUB_G2X2, Rlevels(i)%rtriangulation, rboundary)
