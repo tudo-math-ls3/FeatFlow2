@@ -232,6 +232,9 @@
 !# 10.) fparser_PrintByteCode
 !#      -> Print the bytecode stack (very technical!)
 !#
+!# 11.) fparser_parseFileForKeyword
+!#      -> Parse input file for keyworkd
+!#
 !# The following internal routines can be found in this module:
 !#
 !# 1.) CheckSyntax
@@ -323,7 +326,10 @@
 !##############################################################################
 
 module fparser
+  
   use fsystem
+  use genoutput
+  use io
   use storage
   use stack
   
@@ -333,6 +339,7 @@ module fparser
   public :: t_fparser
   public :: fparser_init
   public :: fparser_done
+  public :: fparser_parseFileForKeyword
   public :: fparser_defineConstant
   public :: fparser_defineExpression
   public :: fparser_create
@@ -363,7 +370,7 @@ module fparser
   ! a smaller size can be specified. This is only the maximum size of the stack.
   integer, parameter :: FPAR_MAXSTACKSIZE   = 1024*1024 ! this is 8 MByte
 
-  ! Lenght of string
+  ! Length of string
   integer, parameter :: FPAR_STRLEN         = 2048
 
   ! Maximum number of predefined/user-defined constants
@@ -377,6 +384,16 @@ module fparser
 
   ! Length of expression name
   integer, parameter :: FPAR_EXPRLEN        = 12
+!</constantblock>
+
+
+!<constantblock description="types for parser expressions">
+  
+  ! Constant
+  integer, parameter, public :: FPAR_CONSTANT   = 1
+
+  ! Expression
+  integer, parameter, public :: FPAR_EXPRESSION = 2
 !</constantblock>
 
 
@@ -659,6 +676,88 @@ contains
 
 !<subroutine>
 
+  subroutine fparser_parseFileForKeyword(sfilename, skeyword, itype)
+
+!<description>
+    ! Parse the file for the given keyword and make it a constant or a
+    ! predefined expression depending on the variable itype
+!</description>
+
+!<input>
+    ! name of parameter file to be parsed
+    character(LEN=*), intent(IN) :: sfilename
+
+    ! name of keyword to parser for
+    character(LEN=*), intent(IN) :: skeyword
+
+    ! type of keyword: FPAR_CONSTANT, FPAR_EXPRESSION
+    integer, intent(IN) :: itype
+!</input>
+!</subroutine>
+
+    ! local variables
+    character(SYS_STRLEN)  :: keyword,name
+    character(FPAR_STRLEN) :: sdata,expression
+    real(DP) :: dvalue
+    integer :: iunit,ipos,jpos,ios,idatalen
+
+    ! Try to open the file
+    call io_openFileForReading(sfilename, iunit, .true.)
+
+    ! Oops...
+    if (iunit .eq. -1) then
+      call output_line('Unable to open input file!',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'fparser_parseFileForKeyword')
+      call sys_halt()
+    end if
+
+    ! Read through the complete input file and look for global definitions
+    ! of constants and fixed expressions
+    ios = 0
+    do while(ios .eq. 0)
+
+      ! Read next line in file
+      call io_readlinefromfile(iunit, sdata, idatalen, ios)
+      
+      ! Check for keyword defconst or defexp
+      ipos = scan(sdata(1:idatalen), ":")
+      if (ipos .eq. 0) cycle
+      
+      call sys_tolower(sdata(1:max(1,ipos-1)), keyword)
+      if (trim(adjustl(keyword)) .eq. skeyword) then
+        
+        ! Split the line into name and value
+        jpos    = scan(sdata(1:idatalen), "=" , .true.)
+        name    = trim(adjustl(sdata(ipos+1:jpos-1)))
+        keyword = trim(adjustl(sdata(jpos+1:)))
+        
+        ! We found a keyword that will be applied to the parser
+        select case(itype)
+        case(FPAR_CONSTANT)
+          read(keyword,*) dvalue
+          call fparser_defineConstant(name, dvalue)
+
+        case(FPAR_EXPRESSION)
+          call fparser_defineExpression(name, expression)
+
+        case DEFAULT
+          call output_line('Invalid type of expression!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'fparser_parseFileForKeyword')
+          call sys_halt()
+        end select
+
+      end if
+    end do
+
+    ! Close file
+    close (iunit)
+
+  end subroutine fparser_parseFileForKeyword
+  
+  ! *****************************************************************************
+
+!<subroutine>
+
   subroutine fparser_defineConstant(constant,constantValue)
 
 !<description>
@@ -683,7 +782,8 @@ contains
     if (nConsts < FPAR_MAXCONSTS) then
       nConsts = nConsts+1
     else
-      print *, "*** Parser error: no space left for definition of constant"
+      call output_line('No space left for definition of constant!',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'fparser_defineConstant')
       call sys_halt()
     end if
 
@@ -695,7 +795,8 @@ contains
       if (Consts(iConst) == const) then
         ! If it is already defined, then it must not have a different value
         if(ConstVals(iConst) /= constantValue) then
-          print *, "*** Parser error: constant is already defined with different value"
+          call output_line('Constant is already defined with different value!',&
+                            OU_CLASS_WARNING,OU_MODE_STD,'fparser_defineConstant')
           call sys_halt()
         else
           nConsts = nConsts-1
@@ -738,7 +839,8 @@ contains
     if (nExpressions < FPAR_MAXEXPRESSIONS) then
       nExpressions = nExpressions+1
     else
-      print *, "*** Parser error: no space left for definition of expression"
+      call output_line('No space left for definition of expression!',&
+                        OU_CLASS_WARNING,OU_MODE_STD,'fparser_defineExpression')
       call sys_halt()
     end if
 
@@ -761,7 +863,8 @@ contains
       if (Expressions(iExpression) == expr) then
         ! If it is already defined, then it must not have a different value
         if(ExpressionStrings(iExpression) /= str) then
-          print *, "*** Parser error: expression is already defined with different string"
+          call output_line('Expression is already defined with different string!',&
+                            OU_CLASS_WARNING,OU_MODE_STD,'fparser_defineExpression')
           call sys_halt()
         else
           nExpressions = nExpressions-1
@@ -932,7 +1035,8 @@ contains
     integer :: EvalErrType
 
     if (h_Stack .eq. ST_NOHANDLE) then
-      print *, "*** Parser error: Parser not initialised!"
+      call output_line('Parser not initialised!',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'fparser_evalFunctionScalar')
       call sys_halt()
     end if
     
@@ -943,7 +1047,8 @@ contains
             rparser%Comp(iComp)%StackSize+1,h_Stack,ST_NEWBLOCK_NOINIT,.false.)
         call storage_getbase_double(h_Stack,p_Stack)
       else
-        print *, "*** Parser error: stack size exceeds memory!"
+        call output_line('Stack size exceeds memory!',&
+                         OU_CLASS_WARNING,OU_MODE_STD,'fparser_evalFunctionScalar')
         call sys_halt()
       end if
     end if
@@ -953,7 +1058,8 @@ contains
 
     ! Check if evaluation was successful
     if (EvalErrType .ne. 0) then
-      print *, "*** Parser error: An error occured during function evaluation!"
+      call output_line('An error occured during function evaluation!',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'fparser_evalFunctionScalar')
       call sys_halt()
     end if
   end subroutine fparser_evalFunctionScalar
@@ -1039,7 +1145,8 @@ contains
               iMemory,h_Stack,ST_NEWBLOCK_NOINIT,.false.)
           call storage_getbase_double(h_Stack,p_Stack)
         else
-          print *, "*** Parser error: stack size exceeds memory!"
+          call output_line('Stack size exceeds memory!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'fparser_evalFunctionBlock')
           call sys_halt()
         end if
       end if
@@ -1081,7 +1188,8 @@ contains
               rparser%Comp(iComp)%StackSize+1,h_Stack,ST_NEWBLOCK_NOINIT,.false.)
           call storage_getbase_double(h_Stack,p_Stack)
         else
-          print *, "*** Parser error: stack size exceeds memory!"
+          call output_line('Stack size exceeds memory!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'fparser_evalFunctionBlock')
           call sys_halt()
         end if
       end if
@@ -1146,7 +1254,8 @@ contains
 
     ! Check if evaluation was successful
     if (EvalErrType .ne. 0) then
-      print *, "*** Parser error: An error occured during function evaluation!"
+      call output_line('An error occured during function evaluation!',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'fparser_evalFunctionBlock')
       call sys_halt()
     end if
   end subroutine fparser_evalFunctionBlock
@@ -1734,7 +1843,8 @@ contains
         ! IF-THEN-ELSE cannot be vectorized which should be noted during
         ! bytecode compilation. If we reach this point, then something
         ! went wrong before.
-        print *, "*** Parser error: IF-THEN-ELSE cannot be vectorized!"
+        call output_line('IF-THEN-ELSE cannot be vectorized!',&
+                         OU_CLASS_WARNING,OU_MODE_STD,'evalFunctionBlock')
         call sys_halt()
         
 
@@ -2233,7 +2343,8 @@ contains
 
     do
       if (FuncIndex > FuncLength) then
-        print *, "CheckSyntax: invalid function string!"
+        call output_line('Invalid function string!',&
+                         OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
         call sys_halt()
       end if
       c = Func(FuncIndex:FuncIndex)
@@ -2244,7 +2355,8 @@ contains
       if (c == '-' .or. c == '!') then                      
         FuncIndex = FuncIndex+1
         if (FuncIndex > FuncLength) then
-          print *, "CheckSyntax: Premature end of string!"
+          call output_line('Premature end of string!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         c = Func(FuncIndex:FuncIndex)
@@ -2256,23 +2368,27 @@ contains
         ! Math function found
         FuncIndex = FuncIndex+len_trim(Funcs(n))
         if (FuncIndex > FuncLength) then
-          print *, "CheckSyntax: Premature end of string!"
+          call output_line('Premature end of string!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         c = Func(FuncIndex:FuncIndex)
         if (c /= '(') then
-          print *, "CheckSyntax: Expecting ( after function!",Func(FuncIndex:)
+          call output_line('Expecting ( after function '//Func(FuncIndex:)//'!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         FuncIndex2=FuncIndex+1
         if (FuncIndex2 > FuncLength) then
-          print *, "CheckSyntax: Premature end of string!"
+          call output_line('Premature end of string!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         if (Func(FuncIndex2:FuncIndex2) == ')') then
           FuncIndex=FuncIndex2+1
           if (FuncIndex > FuncLength) then
-            print *, "CheckSyntax: Premature end of string!"
+            call output_line('Premature end of string!',&
+                             OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
             call sys_halt()
           end if
           c = Func(FuncIndex:FuncIndex)
@@ -2290,11 +2406,13 @@ contains
         ParCnt = ParCnt+1
         FuncIndex = FuncIndex+1
         if (FuncIndex > FuncLength) then
-          print *, "CheckSyntax: Premature end of string!"
+          call output_line('Premature end of string!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         if (Func(FuncIndex:FuncIndex) == ')') then
-          print *, "CheckSyntax: Empty parantheses!"
+          call output_line('Empty parantheses!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         cycle
@@ -2304,7 +2422,8 @@ contains
       if (scan(c,'0123456789.') > 0) then
         r = RealNum (Func(FuncIndex:),ib,in,err)
         if (err) then
-          print *, "CheckSyntax: Invalid number format!"
+          call output_line('Invalid number format!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         FuncIndex = FuncIndex+in-1
@@ -2314,7 +2433,8 @@ contains
         ! Check for constant
         n = ConstantIndex (Func(FuncIndex:))
         if (n == 0) then
-          print *, "CheckSyntax: Invalid constant!"
+          call output_line('Invalid constant!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         FuncIndex = FuncIndex+len_trim(Consts(n))+1
@@ -2324,7 +2444,8 @@ contains
         ! Check for expression
         n = ExpressionIndex (Func(FuncIndex:))
         if (n == 0) then
-          print *, "CheckSyntax: Invalid expression!"
+          call output_line('Invalid expression!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         call CheckSyntax(ExpressionStrings(n), Var)
@@ -2335,7 +2456,8 @@ contains
         ! Check for variable
         n = VariableIndex (Func(FuncIndex:),Var,ib,in)
         if (n == 0) then
-          print *, "CheckSyntax: Invalid element!"
+          call output_line('Invalid element!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         FuncIndex = FuncIndex+in-1
@@ -2351,11 +2473,13 @@ contains
         end if
         ParCnt = ParCnt-1
         if (ParCnt < 0) then
-          print *, "CheckSyntax: Mismatched parenthesis!"
+          call output_line('Mismatched parenthesis!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         if (Func(FuncIndex-1:FuncIndex-1) == '(') then
-          print *, "CheckSyntax: Empty parentheses!"
+          call output_line('Empty parentheses!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         FuncIndex = FuncIndex+1
@@ -2379,7 +2503,8 @@ contains
         opSize = isOperator(Func(FuncIndex:))
       end if
       if (opSize == 0) then
-        print *, "CheckSyntax: Operator expected!"
+        call output_line('Operator expected!',&
+                         OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
         call sys_halt()
       end if
       
@@ -2388,7 +2513,8 @@ contains
       FuncIndex = FuncIndex+opSize
     end do
     if (ParCnt > 0) then
-      print *, "CheckSyntax: Missing )!"
+      call output_line('Missing )!',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'CheckSyntax')
       call sys_halt()
     end if
     call stack_release(functionParenthDepth)
@@ -2501,7 +2627,8 @@ contains
       nparameters = 1
     case DEFAULT
       nparameters=0
-      print *, "*** MathFunctionParamters: Not a function"
+      call output_line('Not a function',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'MathFunctionParameters')
     end select
   end function MathFunctionParameters
 
@@ -2837,7 +2964,8 @@ contains
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         if (Comp%Immed(Comp%ImmedSize) < -1._DP .or. &
             Comp%Immed(Comp%ImmedSize) >  1._DP) then
-          print *, "*** Parser error: invalid argument for ACOS!"
+          call output_line('Invalid argument for ACOS!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=acos(Comp%Immed(Comp%ImmedSize))
@@ -2848,7 +2976,8 @@ contains
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         if (Comp%Immed(Comp%ImmedSize) < -1._DP .or. &
             Comp%Immed(Comp%ImmedSize) >  1._DP) then
-          print *, "*** Parser error: invalid argument for ACOS!"
+          call output_line('Invalid argument for ASIN!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=asin(Comp%Immed(Comp%ImmedSize))
@@ -2874,7 +3003,8 @@ contains
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         daux=Comp%Immed(Comp%ImmedSize)+sqrt(Comp%Immed(Comp%ImmedSize)**2-1)
         if (daux <= 0) then
-          print *, "*** Parser error: invalid argument for ACOSH!"
+          call output_line('Invalid argument for ACOSH!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=log(daux)
@@ -2897,7 +3027,8 @@ contains
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         daux=Comp%Immed(Comp%ImmedSize)+sqrt(Comp%Immed(Comp%ImmedSize)**2-1)
         if (daux <= 0) then
-          print *, "*** Parser error: invalid argument for ASINH!"
+          call output_line('Invalid argument for ASINH!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=log(daux)
@@ -2907,12 +3038,14 @@ contains
     case (cAtanh)
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         if (Comp%Immed(Comp%ImmedSize) == -1._DP) then
-          print *, "*** Parser error: invalid argument for ATANH!"
+          call output_line('Invalid argument for ATANH!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         daux=(1+Comp%Immed(Comp%ImmedSize))/(1-Comp%Immed(Comp%ImmedSize))
         if (daux <= 0._DP) then
-          print *, "*** Parser error: invalid argument for ATANH!"
+          call output_line('Invalid argument for ATANH!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=log(daux)/2._DP
@@ -2941,7 +3074,8 @@ contains
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         daux=tan(Comp%Immed(Comp%ImmedSize))
         if (daux == 0._DP) then
-          print *, "*** Parser error: invalid argument for COT!"
+          call output_line('Invalid argument for COT!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=1/daux
@@ -2952,7 +3086,8 @@ contains
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         daux=sin(Comp%Immed(Comp%ImmedSize))
         if (daux == 0._DP) then
-          print *, "*** Parser error: invalid argument for CSC!"
+          call output_line('Invalid argument for CSC!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=1/daux
@@ -2977,7 +3112,8 @@ contains
     case (cLog)
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         if (Comp%Immed(Comp%ImmedSize) <= 0._DP) then
-          print *, "*** Parser error: invalid argument for LOG!"
+          call output_line('Invalid argument for LOG!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=log(Comp%Immed(Comp%ImmedSize))
@@ -2987,7 +3123,8 @@ contains
     case (cLog10)
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         if (Comp%Immed(Comp%ImmedSize) <= 0._DP) then
-          print *, "*** Parser error: invalid argument for LOG!"
+          call output_line('Invalid argument for LOG!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=log10(Comp%Immed(Comp%ImmedSize))
@@ -3016,7 +3153,8 @@ contains
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         daux=cos(Comp%Immed(Comp%ImmedSize))
         if (daux == 0._DP) then
-          print *, "*** Parser error: invalid argument for SEC!"
+          call output_line('Invalid argument for SEC!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=1/daux
@@ -3038,7 +3176,8 @@ contains
     case (cSqrt)
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) then
         if (Comp%Immed(Comp%ImmedSize) < 0._DP) then
-          print *, "*** Parser error: invalid argument for SQRT!"
+          call output_line('Invalid argument for SQRT!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize)=sqrt(Comp%Immed(Comp%ImmedSize))
@@ -3103,7 +3242,8 @@ contains
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
           Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         if (Comp%Immed(Comp%ImmedSize) == 0._DP) then
-          print *, "*** Parser error: invalid argument for DIV!"
+          call output_line('Invalid argument for DIV!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)/Comp%Immed(Comp%ImmedSize)
@@ -3116,7 +3256,8 @@ contains
       if (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .and.&
           Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) then
         if (Comp%Immed(Comp%ImmedSize) == 0._DP) then
-          print *, "*** Parser error: invalid argument for MOD!"
+          call output_line('Invalid argument for MOD!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         Comp%Immed(Comp%ImmedSize-1)=mod(Comp%Immed(Comp%ImmedSize-1),Comp%Immed(Comp%ImmedSize))
@@ -3467,7 +3608,8 @@ contains
       if (c == '@') then
         n = ExpressionIndex (Func(ind:))
         if (n == 0) then
-          print *, "FunctionSize: Invalid expression!"
+          call output_line('Invalid expression!',&
+                           OU_CLASS_WARNING,OU_MODE_STD,'FunctionSize')
           call sys_halt()
         end if
         fsize = fsize+FunctionSize(ExpressionStrings(n))
@@ -3962,7 +4104,8 @@ contains
     if (scan(c,'0123456789,') > 0) then
       rnum = RealNum (Func(ind1:),ib,in,err)
       if (err) then
-        print *, "CompileElement: Invalid number format!"
+        call output_line('Invalid number format!',&
+                         OU_CLASS_WARNING,OU_MODE_STD,'CompileElement')
         call sys_halt()
       end if
       call AddImmediate(Comp, rnum)
@@ -4024,7 +4167,8 @@ contains
       return
     end if
 
-    print *, "CompileElement: An unexpected error occured."
+    call output_line('An unexpected error occured!',&
+                     OU_CLASS_WARNING,OU_MODE_STD,'CompileElement')
     call sys_halt()
   end function CompileElement
 
@@ -4073,7 +4217,8 @@ contains
       ind2 = CompileExpression(Comp, Func, ind, Var, .false.)
 
       if (Comp%StackPtr /= curStackPtr+requiredParams) then
-        print *, "CompileFunctionParameters: Illegal number of parameters to function!"
+        call output_line('Illegal number of parameters to function!',&
+                         OU_CLASS_WARNING,OU_MODE_STD,'CompileFunctionParameters')
         call sys_halt()
       end if
 
@@ -4127,7 +4272,8 @@ contains
     if (ind2 > FuncLength) return
 
     if (Func(ind2:ind2) /= ',') then
-      print *, "CompileIf: Illegal number of parameters to function!"
+      call output_line('Illegal number of parameters to function!',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'CompileIf')
       call sys_halt()
     end if
     call AddCompiledByte(Comp, cIf)
@@ -4140,7 +4286,8 @@ contains
     if (ind2 > FuncLength) return
 
     if (Func(ind2:ind2) /= ',') then
-      print *, "CompileIf: Illegal number of parameters to function!"
+      call output_line('Illegal number of parameters to function!',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'CompileIf')
       call sys_halt()
     end if
     call AddCompiledByte(Comp, cJump)
@@ -4154,7 +4301,8 @@ contains
     if (ind2 > FuncLength) return
 
     if (Func(ind2:ind2) /= ')') then
-      print *, "CompileIf: Illegal number of parameters to function!"
+      call output_line('Illegal number of parameters to function!',&
+                       OU_CLASS_WARNING,OU_MODE_STD,'CompileIf')
       call sys_halt()
     end if
     
