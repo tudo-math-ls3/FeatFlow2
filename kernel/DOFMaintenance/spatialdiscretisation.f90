@@ -10,8 +10,8 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) spdiscr_initBlockDiscr2D
-!#     -> Initialises a 2D block discretisation structure for the
+!# 1.) spdiscr_initBlockDiscr
+!#     -> Initialises a block discretisation structure for the
 !#        discretisation of multiple equations
 !#
 !# 2.) spdiscr_initDiscr_simple
@@ -687,65 +687,6 @@ contains
   ! That's it.  
   
   end subroutine  
-  
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  subroutine spdiscr_initBlockDiscr2D (rblockDiscr,ncomponents,&
-                                       rtriangulation, rboundary)
-  
-!<description>
-  
-  ! This routine initialises a block discretisation structure accept ncomponents
-  ! solution components. Pointers to the triangulation, domain and boundary
-  ! conditions are saved in the structure.
-  !
-  ! The routine performs only basic initialisation. The caller must
-  ! separately initialise the the specific scalar discretisation structures 
-  ! of each solution component (as collected in the RspatialDiscr
-  ! array of the rblockDiscr structure).
-  
-!</description>
-
-!<input>
-  
-  ! The triangulation structure underlying to the discretisation.
-  type(t_triangulation), intent(IN), target      :: rtriangulation
-  
-  ! Number of solution components maintained by the block structure
-  integer, intent(IN)                            :: ncomponents
-
-  ! OPTIONAL: The underlying domain.
-  type(t_boundary), intent(IN), target, optional :: rboundary
-  
-!</input>
-  
-!<output>
-  
-  ! The block discretisation structure to be initialised.
-  type(t_blockDiscretisation), intent(OUT) :: rblockDiscr
-  
-!</output>
-  
-!</subroutine>
-
-  ! Initialise the variables of the structure for the simple discretisation
-  rblockDiscr%ndimension             = NDIM2D
-  rblockDiscr%ccomplexity            = SPDISC_UNIFORM
-  rblockDiscr%p_rtriangulation       => rtriangulation
-  if (present(rboundary)) then
-    rblockDiscr%p_rboundary          => rboundary
-  else
-    nullify(rblockDiscr%p_rboundary)
-  end if
-
-  rblockDiscr%ncomponents            = ncomponents
-  allocate(rblockDiscr%RspatialDiscr(ncomponents))
-
-  ! That's it.  
-  
-  end subroutine  
 
   ! ***************************************************************************
   
@@ -780,7 +721,7 @@ contains
 !</subroutine>
 
     ! Initialise a new block discretisation with one component.
-    call spdiscr_initBlockDiscr2D (rblockDiscr,1,&
+    call spdiscr_initBlockDiscr (rblockDiscr,1,&
         rspatialDiscr%p_rtriangulation, rspatialDiscr%p_rboundary)
     
     ! Put a copy of the spatial discretisation to first component
