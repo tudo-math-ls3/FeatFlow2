@@ -340,8 +340,9 @@
 !# 
 !# 5.) What are twist indices?
 !#
-!#     DEPRECATED!
-!#     This documentation will be re-written later!
+!#     !!! DEPRECATED !!!
+!#     This documentation will be re-written later as it does not match
+!#     the 'new' implementation of the twist indices!
 !#
 !#   Twist indices define a global orientation of edges and faces in a mesh.
 !#   There are two different fields for this in the triangulation: ItwistIndexEdges
@@ -8256,14 +8257,9 @@ p_InodalPropertyDest = -4711
 
     integer :: isize
 
-    if (rtriangulation%ndim .eq. NDIM1D) then
-      ! 1D doesn't have twist indices.
-      return
-    end if
+    ! 1D doesn't have twist indices.
+    if (rtriangulation%ndim .eq. NDIM1D) return
     
-    !!! TEMPORARY: Twist indices for 3D are disabled !!!
-    if (rtriangulation%ndim .eq. NDIM3D) return
-
     ! Allocate memory if necessary
     if (rtriangulation%h_ItwistIndex .eq. ST_NOHANDLE) then
       call storage_new ('tria_genTwistIndex', 'ItwistIndex', &
@@ -8273,7 +8269,7 @@ p_InodalPropertyDest = -4711
       call storage_getsize (rtriangulation%h_ItwistIndex, isize)
       if (isize .ne. rtriangulation%NEL) then
         ! If the size is wrong, reallocate memory.
-        call storage_realloc ('tria_genEdgesAtVertex', &
+        call storage_realloc ('tria_genTwistIndex', &
             rtriangulation%NEL, rtriangulation%h_ItwistIndex, &
             ST_NEWBLOCK_NOINIT, .false.)
       end if
@@ -8285,8 +8281,8 @@ p_InodalPropertyDest = -4711
     case (NDIM2D)
       call genTwistIndex2D(rtriangulation)
     
-    !case (NDIM3D)
-      !call genTwistIndex3D(rtriangulation)
+    case (NDIM3D)
+      call genTwistIndex3D(rtriangulation)
       
     end select
 
@@ -8350,7 +8346,221 @@ p_InodalPropertyDest = -4711
       
       ! That's it
     
-    end subroutine
+    end subroutine ! genTwistIndex2D
+    
+    ! ---------------------------------------------------------------
+    
+    subroutine genTwistIndex3D(rtriangulation)
+    type(t_triangulation), intent(INOUT) :: rtriangulation
+    
+    ! local variables
+    integer, dimension(:,:), pointer :: p_IverticesAtElement, &
+        p_IedgesAtElement, p_IfacesAtElement, p_IverticesAtEdge, &
+        p_IverticesAtFace, p_IedgesAtFace
+    integer(I32), dimension(:), pointer :: p_ItwistIndex
+    integer :: iel, imt, iat, ivt, iedge, iface, nve, maxnve, maxnva
+    integer(I32) :: itwist
+    
+    ! Tetrahedron
+    integer, dimension(TRIA_NNETET3D), parameter :: Itev = (/1,2,3,1,2,3/)
+    integer, dimension(TRIA_NAETET3D), parameter :: Itfv = (/1,1,2,3/)
+    integer, dimension(TRIA_NAETET3D), parameter :: Itfn = (/2,4,4,4/)
+    integer, dimension(TRIA_NAETET3D), parameter :: Itav = (/3,3,3,3/)
+
+    ! Pyramid
+    integer, dimension(TRIA_NNEPYR3D), parameter :: Iyev = (/1,2,3,4,1,2,3,4/)
+    integer, dimension(TRIA_NAEPYR3D), parameter :: Iyfv = (/1,1,2,3,4/)
+    integer, dimension(TRIA_NAEPYR3D), parameter :: Iyfn = (/2,4,5,6,6/)
+    integer, dimension(TRIA_NAEPYR3D), parameter :: Iyav = (/4,3,3,3,3/)
+    
+    ! Prism
+    integer, dimension(TRIA_NNEPRIS3D), parameter :: Irev = (/1,2,3,1,2,3,4,5,6/)
+    integer, dimension(TRIA_NAEPRIS3D), parameter :: Irfv = (/1,1,2,3,4/)
+    integer, dimension(TRIA_NAEPRIS3D), parameter :: Irfn = (/2,5,5,5,5/)
+    integer, dimension(TRIA_NAEPRIS3D), parameter :: Irav = (/3,4,4,4,3/)
+    
+    ! Hexahedron
+    integer, dimension(TRIA_NNEHEXA3D), parameter :: Ihev = (/1,2,3,4,1,2,3,4,5,6,7,8/)
+    integer, dimension(TRIA_NAEHEXA3D), parameter :: Ihfv = (/1,1,2,3,4,5/)
+    integer, dimension(TRIA_NAEHEXA3D), parameter :: Ihfn = (/2,5,6,7,8,8/)
+    integer, dimension(TRIA_NAEHEXA3D), parameter :: Ihav = (/4,4,4,4,4,4/)
+    
+
+      ! Get all arrays from the storage
+      call storage_getbase_int2D(rtriangulation%h_IverticesAtElement,&
+                                 p_IverticesAtElement)
+      call storage_getbase_int2D(rtriangulation%h_IedgesAtElement,&
+                                 p_IedgesAtElement)
+      call storage_getbase_int2D(rtriangulation%h_IfacesAtElement,&
+                                 p_IfacesAtElement)
+      call storage_getbase_int2D(rtriangulation%h_IverticesAtEdge,&
+                                 p_IverticesAtEdge)
+      call storage_getbase_int2D(rtriangulation%h_IverticesAtFace,&
+                                 p_IverticesAtFace)
+      call storage_getbase_int2D(rtriangulation%h_IedgesAtFace,&
+                                 p_IedgesAtFace)
+      call storage_getbase_int32(rtriangulation%h_ItwistIndex,&
+                                 p_ItwistIndex)
+      
+      ! Get the maximum number of vertices adjacent to ...
+      maxnve = ubound(p_IverticesAtElement,1)
+      maxnva = ubound(p_IverticesAtFace,1)
+
+      ! Okay, let's loop over all elements
+      do iel = 1, rtriangulation%NEL
+        
+        ! Format the twist index entry
+        itwist = 0
+        
+        ! Determine the number of vertices adjacent to this element
+        do nve = 1, maxnve
+          if(p_IverticesAtElement(nve,iel) .le. 0) exit
+        end do
+        nve = nve - 1
+        
+        ! Okay, what type of element do we have here?
+        select case(nve)
+        case(TRIA_NVETET3D)
+          ! It's a tetrahedron
+          
+          ! Calculate edge-twist-indices
+          do imt = 1, TRIA_NNETET3D
+            if(p_IverticesAtEdge(1,p_IedgesAtElement(imt,iel)) .ne. &
+               p_IverticesAtElement(Itev(imt),iel)) then
+               itwist = ior(itwist,ishft(1,imt-1))
+             end if
+          end do ! imt
+          
+          ! Calculate face-twist indices
+          do iat = 1, TRIA_NAETET3D
+          
+            ! Get face index
+            iface = p_IfacesAtElement(iat,iel)
+            
+            ! Calculate shift
+            do ivt = 1, Itav(iat)
+              if(p_IverticesAtFace(ivt,iface) .eq. &
+                p_IverticesAtElement(Itfv(iat),iel)) exit
+            end do ! ivt
+            
+            ! Calculate orientation
+            if(p_IverticesAtFace(mod(ivt,Itav(iat))+1,iface) .ne. &
+              p_IverticesAtElement(Itfn(iat),iel)) then
+              itwist = ior(itwist, ishft(ivt+4,12+3*iat))
+            else
+              itwist = ior(itwist, ishft(ivt,12+3*iat))
+            end if
+          end do ! iat
+        
+        case(TRIA_NVEPYR3D)
+          ! It's a pyramid
+          
+          ! Calculate edge-twist-indices
+          do imt = 1, TRIA_NNEPYR3D
+            if(p_IverticesAtEdge(1,p_IedgesAtElement(imt,iel)) .ne. &
+               p_IverticesAtElement(Iyev(imt),iel)) then
+               itwist = ior(itwist,ishft(1,imt-1))
+             end if
+          end do ! imt
+
+          ! Calculate face-twist indices
+          do iat = 1, TRIA_NAEPYR3D
+          
+            ! Get face index
+            iface = p_IfacesAtElement(iat,iel)
+            
+            ! Calculate shift
+            do ivt = 1, Iyav(iat)
+              if(p_IverticesAtFace(ivt,iface) .eq. &
+                p_IverticesAtElement(Iyfv(iat),iel)) exit
+            end do ! ivt
+            
+            ! Calculate orientation
+            if(p_IverticesAtFace(mod(ivt,Iyav(iat))+1,iface) .ne. &
+              p_IverticesAtElement(Iyfn(iat),iel)) then
+              itwist = ior(itwist, ishft(ivt+4,12+3*iat))
+            else
+              itwist = ior(itwist, ishft(ivt,12+3*iat))
+            end if
+          end do ! iat
+
+        case(TRIA_NVEPRIS3D)
+          ! It's a prism
+        
+          ! Calculate edge-twist-indices
+          do imt = 1, TRIA_NNEPRIS3D
+            if(p_IverticesAtEdge(1,p_IedgesAtElement(imt,iel)) .ne. &
+               p_IverticesAtElement(Irev(imt),iel)) then
+               itwist = ior(itwist,ishft(1,imt-1))
+             end if
+          end do ! imt
+          
+          ! Calculate face-twist indices
+          do iat = 1, TRIA_NAEPRIS3D
+          
+            ! Get face index
+            iface = p_IfacesAtElement(iat,iel)
+            
+            ! Calculate shift
+            do ivt = 1, Irav(iat)
+              if(p_IverticesAtFace(ivt,iface) .eq. &
+                p_IverticesAtElement(Irfv(iat),iel)) exit
+            end do ! ivt
+            
+            ! Calculate orientation
+            if(p_IverticesAtFace(mod(ivt,Irav(iat))+1,iface) .ne. &
+              p_IverticesAtElement(Irfn(iat),iel)) then
+              itwist = ior(itwist, ishft(ivt+4,12+3*iat))
+            else
+              itwist = ior(itwist, ishft(ivt,12+3*iat))
+            end if
+          end do ! iat
+
+        case(TRIA_NVEHEXA3D)
+          ! It's a hexahedron
+        
+          ! Calculate edge-twist-indices
+          do imt = 1, TRIA_NNEHEXA3D
+            if(p_IverticesAtEdge(1,p_IedgesAtElement(imt,iel)) .ne. &
+               p_IverticesAtElement(Ihev(imt),iel)) then
+               itwist = ior(itwist,ishft(1,imt-1))
+             end if
+          end do ! imt
+          
+          ! Calculate face-twist indices
+          do iat = 1, TRIA_NAEHEXA3D
+          
+            ! Get face index
+            iface = p_IfacesAtElement(iat,iel)
+            
+            ! Calculate shift
+            do ivt = 1, Ihav(iat)
+              if(p_IverticesAtFace(ivt,iface) .eq. &
+                p_IverticesAtElement(Ihfv(iat),iel)) exit
+            end do ! ivt
+            
+            ! Calculate orientation
+            if(p_IverticesAtFace(mod(ivt,Ihav(iat))+1,iface) .ne. &
+              p_IverticesAtElement(Ihfn(iat),iel)) then
+              itwist = ior(itwist, ishft(ivt+4,12+3*iat))
+            else
+              itwist = ior(itwist, ishft(ivt,12+3*iat))
+            end if
+          end do ! iat
+
+        case default
+          ! Unknown cell type...
+        
+        end select
+        
+        ! Store the twist index entry
+        p_ItwistIndex(iel) = itwist
+      
+      end do ! iel
+      
+      ! That's it
+    
+    end subroutine genTwistIndex3D
 
 !    ! 'Old implementation'
 !    subroutine genTwistIndexEdges2D(rtriangulation)
