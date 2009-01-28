@@ -3178,22 +3178,23 @@ contains
   
 !</subroutine>
 
+    ! Jacobian matrix of the mapping:
     Djac(1) = DjacPrep(2) + DjacPrep(5)*dpary + DjacPrep(6)*dparz &
             + DjacPrep(8)*dpary*dparz
-    Djac(2) = DjacPrep(3) + DjacPrep(5)*dparx + DjacPrep(7)*dparz &
-            + DjacPrep(8)*dparx*dparz
-    Djac(3) = DjacPrep(4) + DjacPrep(6)*dparx + DjacPrep(7)*dpary &
-            + DjacPrep(8)*dparx*dpary
-    Djac(4) = DjacPrep(10) + DjacPrep(13)*dpary + DjacPrep(14)*dparz &
+    Djac(2) = DjacPrep(10) + DjacPrep(13)*dpary + DjacPrep(14)*dparz &
             + DjacPrep(16)*dpary*dparz
+    Djac(3) = DjacPrep(18) + DjacPrep(21)*dpary + DjacPrep(22)*dparz &
+            + DjacPrep(24)*dpary*dparz
+    Djac(4) = DjacPrep(3) + DjacPrep(5)*dparx + DjacPrep(7)*dparz &
+            + DjacPrep(8)*dparx*dparz
     Djac(5) = DjacPrep(11) + DjacPrep(13)*dparx + DjacPrep(15)*dparz &
             + DjacPrep(16)*dparx*dparz
-    Djac(6) = DjacPrep(12) + DjacPrep(14)*dparx + DjacPrep(15)*dpary &
-            + DjacPrep(16)*dparx*dpary
-    Djac(7) = DjacPrep(18) + DjacPrep(21)*dpary + DjacPrep(22)*dparz &
-            + DjacPrep(24)*dpary*dparz
-    Djac(8) = DjacPrep(19) + DjacPrep(21)*dparx + DjacPrep(23)*dparz &
+    Djac(6) = DjacPrep(19) + DjacPrep(21)*dparx + DjacPrep(23)*dparz &
             + DjacPrep(24)*dparx*dparz
+    Djac(7) = DjacPrep(4) + DjacPrep(6)*dparx + DjacPrep(7)*dpary &
+            + DjacPrep(8)*dparx*dpary
+    Djac(8) = DjacPrep(12) + DjacPrep(14)*dparx + DjacPrep(15)*dpary &
+            + DjacPrep(16)*dparx*dpary
     Djac(9) = DjacPrep(20) + DjacPrep(22)*dparx + DjacPrep(23)*dpary &
             + DjacPrep(24)*dparx*dpary
 
@@ -3272,20 +3273,20 @@ contains
     ! Jacobian matrix of the mapping:
     Djac(1) = DjacPrep(2) + DjacPrep(5)*dpary + DjacPrep(6)*dparz &
             + DjacPrep(8)*dpary*dparz
-    Djac(2) = DjacPrep(3) + DjacPrep(5)*dparx + DjacPrep(7)*dparz &
-            + DjacPrep(8)*dparx*dparz
-    Djac(3) = DjacPrep(4) + DjacPrep(6)*dparx + DjacPrep(7)*dpary &
-            + DjacPrep(8)*dparx*dpary
-    Djac(4) = DjacPrep(10) + DjacPrep(13)*dpary + DjacPrep(14)*dparz &
+    Djac(2) = DjacPrep(10) + DjacPrep(13)*dpary + DjacPrep(14)*dparz &
             + DjacPrep(16)*dpary*dparz
+    Djac(3) = DjacPrep(18) + DjacPrep(21)*dpary + DjacPrep(22)*dparz &
+            + DjacPrep(24)*dpary*dparz
+    Djac(4) = DjacPrep(3) + DjacPrep(5)*dparx + DjacPrep(7)*dparz &
+            + DjacPrep(8)*dparx*dparz
     Djac(5) = DjacPrep(11) + DjacPrep(13)*dparx + DjacPrep(15)*dparz &
             + DjacPrep(16)*dparx*dparz
-    Djac(6) = DjacPrep(12) + DjacPrep(14)*dparx + DjacPrep(15)*dpary &
-            + DjacPrep(16)*dparx*dpary
-    Djac(7) = DjacPrep(18) + DjacPrep(21)*dpary + DjacPrep(22)*dparz &
-            + DjacPrep(24)*dpary*dparz
-    Djac(8) = DjacPrep(19) + DjacPrep(21)*dparx + DjacPrep(23)*dparz &
+    Djac(6) = DjacPrep(19) + DjacPrep(21)*dparx + DjacPrep(23)*dparz &
             + DjacPrep(24)*dparx*dparz
+    Djac(7) = DjacPrep(4) + DjacPrep(6)*dparx + DjacPrep(7)*dpary &
+            + DjacPrep(8)*dparx*dpary
+    Djac(8) = DjacPrep(12) + DjacPrep(14)*dparx + DjacPrep(15)*dpary &
+            + DjacPrep(16)*dparx*dpary
     Djac(9) = DjacPrep(20) + DjacPrep(22)*dparx + DjacPrep(23)*dpary &
             + DjacPrep(24)*dparx*dpary
 
@@ -3425,13 +3426,13 @@ contains
 
     ! Jacobian matrix of the mapping:
     Djac(1) = DjacPrep(2) + DjacPrep(4)*dpary
-    Djac(2) = DjacPrep(3) + DjacPrep(4)*dparx
-    Djac(3) = DjacPrep(5)
-    Djac(4) = DjacPrep(6) + DjacPrep(9)*dpary
-    Djac(5) = DjacPrep(7) + DjacPrep(9)*dparx
-    Djac(6) = DjacPrep(5)
-    Djac(7) = DjacPrep(12) + DjacPrep(14)*dpary
-    Djac(8) = DjacPrep(13) + DjacPrep(14)*dparx
+    Djac(2) = DjacPrep(7) + DjacPrep(9)*dpary
+    Djac(3) = DjacPrep(12) + DjacPrep(14)*dpary
+    Djac(4) = DjacPrep(3) + DjacPrep(4)*dparx
+    Djac(5) = DjacPrep(8) + DjacPrep(9)*dparx
+    Djac(6) = DjacPrep(13) + DjacPrep(14)*dparx
+    Djac(7) = DjacPrep(5)
+    Djac(8) = DjacPrep(10)
     Djac(9) = DjacPrep(15)
 
     ! Determinant of the mapping
@@ -3502,13 +3503,13 @@ contains
 
     ! Jacobian matrix of the mapping:
     Djac(1) = DjacPrep(2) + DjacPrep(4)*dpary
-    Djac(2) = DjacPrep(3) + DjacPrep(4)*dparx
-    Djac(3) = DjacPrep(5)
-    Djac(4) = DjacPrep(6) + DjacPrep(9)*dpary
-    Djac(5) = DjacPrep(7) + DjacPrep(9)*dparx
-    Djac(6) = DjacPrep(5)
-    Djac(7) = DjacPrep(12) + DjacPrep(14)*dpary
-    Djac(8) = DjacPrep(13) + DjacPrep(14)*dparx
+    Djac(2) = DjacPrep(7) + DjacPrep(9)*dpary
+    Djac(3) = DjacPrep(12) + DjacPrep(14)*dpary
+    Djac(4) = DjacPrep(3) + DjacPrep(4)*dparx
+    Djac(5) = DjacPrep(8) + DjacPrep(9)*dparx
+    Djac(6) = DjacPrep(13) + DjacPrep(14)*dparx
+    Djac(7) = DjacPrep(5)
+    Djac(8) = DjacPrep(10)
     Djac(9) = DjacPrep(15)
 
     ! Determinant of the mapping
@@ -3653,14 +3654,14 @@ contains
 
     ! Jacobian matrix of the mapping:
     Djac(1) = DjacPrep(2) + DjacPrep(5)*dparz
-    Djac(2) = DjacPrep(3) + DjacPrep(6)*dparz
-    Djac(3) = DjacPrep(4)
-    Djac(4) = DjacPrep(8) + DjacPrep(11)*dparz
+    Djac(2) = DjacPrep(8) + DjacPrep(11)*dparz
+    Djac(3) = DjacPrep(14) + DjacPrep(17)*dparz
+    Djac(4) = DjacPrep(3) + DjacPrep(6)*dparz
     Djac(5) = DjacPrep(9) + DjacPrep(12)*dparz
-    Djac(6) = DjacPrep(10)
-    Djac(7) = DjacPrep(14) + DjacPrep(17)*dparz
-    Djac(8) = DjacPrep(15) + DjacPrep(18)*dparz
-    Djac(9) = DjacPrep(16)
+    Djac(6) = DjacPrep(15) + DjacPrep(18)*dparz
+    Djac(7) = DjacPrep(4) + DjacPrep(5)*dparx + DjacPrep(6)*dpary
+    Djac(8) = DjacPrep(10) + DjacPrep(11)*dparx + DjacPrep(12)*dpary
+    Djac(9) = DjacPrep(16) + DjacPrep(17)*dparx + DjacPrep(18)*dpary
 
     ! Determinant of the mapping
     ddetj = Djac(1)*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
@@ -3730,14 +3731,14 @@ contains
 
     ! Jacobian matrix of the mapping:
     Djac(1) = DjacPrep(2) + DjacPrep(5)*dparz
-    Djac(2) = DjacPrep(3) + DjacPrep(6)*dparz
-    Djac(3) = DjacPrep(4)
-    Djac(4) = DjacPrep(8) + DjacPrep(11)*dparz
+    Djac(2) = DjacPrep(8) + DjacPrep(11)*dparz
+    Djac(3) = DjacPrep(14) + DjacPrep(17)*dparz
+    Djac(4) = DjacPrep(3) + DjacPrep(6)*dparz
     Djac(5) = DjacPrep(9) + DjacPrep(12)*dparz
-    Djac(6) = DjacPrep(10)
-    Djac(7) = DjacPrep(14) + DjacPrep(17)*dparz
-    Djac(8) = DjacPrep(15) + DjacPrep(18)*dparz
-    Djac(9) = DjacPrep(16)
+    Djac(6) = DjacPrep(15) + DjacPrep(18)*dparz
+    Djac(7) = DjacPrep(4) + DjacPrep(5)*dparx + DjacPrep(6)*dpary
+    Djac(8) = DjacPrep(10) + DjacPrep(11)*dparx + DjacPrep(12)*dpary
+    Djac(9) = DjacPrep(16) + DjacPrep(17)*dparx + DjacPrep(18)*dpary
 
     ! Determinant of the mapping
     ddetj = Djac(1)*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
