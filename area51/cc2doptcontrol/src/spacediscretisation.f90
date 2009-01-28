@@ -144,8 +144,8 @@ contains
       icubF = cub_igetID(sstr)
     end if
 
-    call spdiscr_initBlockDiscr2D (rdiscretisation,nequations,&
-                                   rtriangulation, rboundary)
+    call spdiscr_initBlockDiscr (rdiscretisation,nequations,&
+                                 rtriangulation, rboundary)
 
     select case (ielementType)
     case (0)
