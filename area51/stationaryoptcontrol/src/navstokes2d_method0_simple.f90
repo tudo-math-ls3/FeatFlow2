@@ -145,8 +145,8 @@ contains
       
       ! Set up a block discretisation structure for two components:
       ! Primal and dual solution vector.
-      call spdiscr_initBlockDiscr2D (rtargetFlow%rdiscretisation,3,&
-                                     rtargetFlow%rtriangulation, rboundary)
+      call spdiscr_initBlockDiscr (rtargetFlow%rdiscretisation,3,&
+                                   rtargetFlow%rtriangulation, rboundary)
 
       call spdiscr_initDiscr_simple (rtargetFlow%rdiscretisation%RspatialDiscr(1), &
           EL_EM30,CUB_G3X3,rtargetFlow%rtriangulation, rboundary)
@@ -634,8 +634,8 @@ contains
     
     ! Set up a block discretisation structure for two components:
     ! Primal and dual solution vector.
-    call spdiscr_initBlockDiscr2D (rdiscretisation,6,&
-                                   rtriangulation, rboundary)
+    call spdiscr_initBlockDiscr (rdiscretisation,6,&
+                                 rtriangulation, rboundary)
     
     ! Set up the blocks. Both are discretised with the same finite element.
     if (idiscretisation .eq. 1) then
@@ -1216,8 +1216,8 @@ contains
       rvectorOutputY,rdiscrOutput)
       
     ! Create a discretisation for Q1.
-    call spdiscr_initBlockDiscr2D (rdiscrOutBlock,2,&
-                                   rtriangulation, rboundary)
+    call spdiscr_initBlockDiscr (rdiscrOutBlock,2,&
+                                 rtriangulation, rboundary)
     call spdiscr_duplicateDiscrSc (rdiscrOutput,&
         rdiscrOutBlock%RspatialDiscr(1), .true.)
     call spdiscr_duplicateDiscrSc (rdiscrOutput,&

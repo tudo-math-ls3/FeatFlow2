@@ -264,8 +264,8 @@ contains
     
     ! Set up a block discretisation structure for two components:
     ! Primal and dual solution vector.
-    call spdiscr_initBlockDiscr2D (rdiscretisation,6,&
-                                   rtriangulation, rboundary)
+    call spdiscr_initBlockDiscr (rdiscretisation,6,&
+                                 rtriangulation, rboundary)
     
     ! Set up the blocks. Both are discretised with the same finite element.
     if (idiscretisation .eq. 1) then
