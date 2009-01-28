@@ -1262,8 +1262,8 @@ CONTAINS
     CALL linsol_solveAdaptively (p_rsolverNode,rgriddefWork%rSolBlock,&
                                  rgriddefWork%rrhsBlock,rgriddefWork%rtempBlock)    
     
-    CALL spdiscr_initBlockDiscr2D (rDubDiscretisation,2,&
-                                       rgriddefInfo%p_rtriangulation)
+    CALL spdiscr_initBlockDiscr (rDubDiscretisation,2,&
+                                 rgriddefInfo%p_rtriangulation)
     CALL spdiscr_deriveSimpleDiscrSc (&
                  rdiscretisation%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, rDubDiscretisation%RspatialDiscr(1))
@@ -4114,8 +4114,8 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
           rgriddefInfo%rDeftriangulation%h_DelementVolume, ST_NEWBLOCK_NOINIT)
     END IF
     
-    CALL spdiscr_initBlockDiscr2D (rdiscretisation,1,&
-                                   rgriddefInfo%rDeftriangulation)
+    CALL spdiscr_initBlockDiscr (rdiscretisation,1,&
+                                 rgriddefInfo%rDeftriangulation)
                                    
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                    EL_E011,CUB_G2X2,rgriddefInfo%rDeftriangulation)
