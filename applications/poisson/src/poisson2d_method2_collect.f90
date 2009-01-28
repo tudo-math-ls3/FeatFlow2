@@ -137,8 +137,8 @@ contains
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
     allocate(p_rdiscretisation)
-    call spdiscr_initBlockDiscr2D (p_rdiscretisation,1,&
-                                   p_rtriangulation, rboundary)
+    call spdiscr_initBlockDiscr (p_rdiscretisation,1,&
+                                 p_rtriangulation, rboundary)
     
     ! p_rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.

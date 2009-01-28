@@ -284,8 +284,8 @@ contains
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
-    call spdiscr_initBlockDiscr2D (rdiscretisation,1,&
-                                   rtriangulation, rboundary)
+    call spdiscr_initBlockDiscr (rdiscretisation,1,&
+                                 rtriangulation, rboundary)
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
@@ -527,8 +527,8 @@ contains
       call ucd_startGMV (rexport,UCD_FLAG_BULBQUADRATIC,rtriangulation,'gmv/u1.gmv')
       
       ! Project the solution to P1/Q1 -> rvectorPostProc
-      call spdiscr_initBlockDiscr2D (rdiscretisationPostProc,1,&
-          rtriangulation, rboundary)
+      call spdiscr_initBlockDiscr (rdiscretisationPostProc,1,&
+                                   rtriangulation, rboundary)
       call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(1),&
           rvectorPostProc,rdiscretisationPostProc%RspatialDiscr(1))
           

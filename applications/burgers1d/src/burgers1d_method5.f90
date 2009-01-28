@@ -207,8 +207,8 @@ contains
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
     allocate(p_rdiscretisation)
-    call spdiscr_initBlockDiscr2D (p_rdiscretisation,1,&
-                                   p_rtriangulation, p_rboundary)
+    call spdiscr_initBlockDiscr (p_rdiscretisation,1,&
+                                 p_rtriangulation, p_rboundary)
                                    
     ! Save the discretisation structure to our local LevelInfo structure
     ! for later use.

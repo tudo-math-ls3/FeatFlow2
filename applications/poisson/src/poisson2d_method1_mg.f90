@@ -189,8 +189,8 @@ contains
     ! solution vector. In this simple problem, we only have one block.
     ! Do this for all levels
     do i = NLMIN, NLMAX
-      call spdiscr_initBlockDiscr2D (Rlevels(i)%rdiscretisation, 1, &
-                                     Rlevels(i)%rtriangulation, rboundary)
+      call spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation, 1, &
+                                   Rlevels(i)%rtriangulation, rboundary)
     end do
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation

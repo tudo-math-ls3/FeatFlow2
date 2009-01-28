@@ -182,8 +182,8 @@ contains
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
-    call spdiscr_initBlockDiscr2D (rdiscretisation,1,&
-                                   rtriangulation, rboundary)
+    call spdiscr_initBlockDiscr (rdiscretisation,1,&
+                                 rtriangulation, rboundary)
 
     ! Repeat the procedure until the maximum number of refinement
     ! steps has been reached. This will be checked below.

@@ -283,8 +283,8 @@ contains
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
-    call spdiscr_initBlockDiscr2D (rdiscretisation,1,&
-                                   rtriangulation, rboundary)
+    call spdiscr_initBlockDiscr (rdiscretisation,1,&
+                                 rtriangulation, rboundary)
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.

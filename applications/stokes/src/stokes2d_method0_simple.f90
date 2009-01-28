@@ -144,8 +144,8 @@ contains
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies 3 blocks in the
     ! solution vector.
-    call spdiscr_initBlockDiscr2D (rdiscretisation,3,&
-                                   rtriangulation, rboundary)
+    call spdiscr_initBlockDiscr (rdiscretisation,3,&
+                                 rtriangulation, rboundary)
 
     ! rdiscretisation%RspatialDiscr is a list of scalar 
     ! discretisation structures for every component of the solution vector.

@@ -111,8 +111,8 @@ contains
       ! a block discretisation structure that specifies 3 blocks in the
       ! solution vector. In this simple problem, we only have one block.
       allocate(p_rdiscretisation)
-      call spdiscr_initBlockDiscr2D (p_rdiscretisation,nequations,&
-                                     p_rtriangulation, p_rboundary)
+      call spdiscr_initBlockDiscr (p_rdiscretisation,nequations,&
+                                   p_rtriangulation, p_rboundary)
 
       ! Save the discretisation structure to our local LevelInfo structure
       ! for later use.

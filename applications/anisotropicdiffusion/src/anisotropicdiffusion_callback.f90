@@ -627,9 +627,9 @@ contains
     real(DP)                    :: dsolutionError,dgradientError,daux
 
     ! Initialise block discretisations
-    call spdiscr_initBlockDiscr2D (rdiscrBlock,2,&
+    call spdiscr_initBlockDiscr (rdiscrBlock,2,&
         rtriangulation, rsolution%p_rspatialdiscr%p_rboundary)
-    call spdiscr_initBlockDiscr2D (rdiscrBlockRef,2,&
+    call spdiscr_initBlockDiscr (rdiscrBlockRef,2,&
         rtriangulation, rsolution%p_rspatialdiscr%p_rboundary)
 
     ! What kind of element type is used for the FE solution
