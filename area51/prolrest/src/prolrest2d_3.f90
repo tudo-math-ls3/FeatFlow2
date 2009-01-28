@@ -123,8 +123,8 @@ contains
     call tria_initStandardMeshFromRaw (rtriaF,rboundary)
 
     ! Create 2 discretisations for both meshes
-    call spdiscr_initBlockDiscr2D (rdiscrC,1,rtriaC, rboundary)
-    call spdiscr_initBlockDiscr2D (rdiscrF,1,rtriaF, rboundary)
+    call spdiscr_initBlockDiscr (rdiscrC,1,rtriaC, rboundary)
+    call spdiscr_initBlockDiscr (rdiscrF,1,rtriaF, rboundary)
 
     call spdiscr_initDiscr_simple (rdiscrC%RspatialDiscr(1), &
                                    EL_Q1,CUB_G5X5,rtriaC, rboundary)
