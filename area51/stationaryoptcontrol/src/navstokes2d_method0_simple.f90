@@ -87,8 +87,662 @@ module navstokes2d_method0_simple
   
   end type
 
+ ! Information on one level
+  type t_level
+  
+    ! Triangulation
+    type(t_triangulation) :: rtriangulation
+    
+    ! Discretisation
+    type(t_blockDiscretisation) :: rdiscretisation
+  
+    ! Laplace matrix of that level
+    type(t_matrixScalar) :: rmatrixLaplace
+    
+    ! Mass matrix
+    type(t_matrixScalar) :: rmatrixMass
+    
+    ! B1-matrix
+    type(t_matrixScalar) :: rmatrixB1
+    
+    ! B2-matrix
+    type(t_matrixScalar) :: rmatrixB2
+    
+    ! Boundary conditions
+    type(t_discreteBC) :: rdiscreteBC
+    
+    ! Projection structure for MG solvers
+    type(t_interlevelProjectionBlock) :: rprojection
+    
+    type(t_vectorBlock) :: rtempVector
+
+  end type
+  
+  ! Configuration of a matrix
+  type t_matrixConfig
+
+    ! Diffusion parameter
+    real(DP) :: dnu
+    
+    ! Emulate one timestep of the nonstationary Navier-Stokes.
+    logical :: bemulateTimestep
+    
+    ! Length of the timestep
+    real(dp) :: dt
+    
+    ! Pure Dirichlet problem
+    logical :: bpureDirichlet
+
+    ! Couple the dual equation to the primal one
+    logical :: bdualcoupledtoprimal
+    
+    ! Calculate Navier-Stokes
+    logical :: bnavierStokes
+    
+    ! Regularisation parameter for the control
+    real(dp) :: dalpha
+
+    ! Calculate the Newton matrix
+    logical :: bnewton
+    
+    ! Activate the effect of the control
+    logical :: bcontrolactive
+    
+    ! Activate constraints in the control
+    logical :: bboundsActive
+    
+    ! Use exact derivatives for implementing constraints
+    logical :: bexactderiv
+    
+    ! Min/Max bound for X-velocity
+    real(dp) :: dmin1,dmax1
+    
+    ! Min/Max bound for Y-velocity
+    real(dp) :: dmin2,dmax2
+
+  end type
 
 contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine calcStandardMatrices (rlevel)
+  
+!<description>
+  ! Calculate the basic matrices on that level.
+!</description>
+
+!<inputoutput>
+  ! Information for that level
+  type(t_level), intent(inout) :: rlevel
+!</inputoutput>
+
+!</subroutine>
+
+    ! Now as the discretisation is set up, we can start to generate
+    ! the structure of the system matrix which is to solve.
+    ! We create a scalar matrix, based on the discretisation structure
+    ! for our one and only solution component.
+    call bilf_createMatrixStructure (rlevel%rdiscretisation%RspatialDiscr(1),&
+                                     LSYSSC_MATRIX9,rlevel%rmatrixLaplace)
+                                     
+    ! Assemble the Laplace matrix.
+    call stdop_assembleLaplaceMatrix (rlevel%rmatrixLaplace)
+    
+    ! And a mass matrix; we need it for the coupling.
+    ! Share the structure with the Laplace matrix.
+    call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rlevel%rmatrixMass,&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call stdop_assembleSimpleMatrix (rlevel%rmatrixMass,DER_FUNC,DER_FUNC)
+
+    ! Create B-matrices
+    call bilf_createMatrixStructure (rlevel%rdiscretisation%RspatialDiscr(3),&
+        LSYSSC_MATRIX9,rlevel%rmatrixB1,rlevel%rdiscretisation%RspatialDiscr(1))
+    call lsyssc_duplicateMatrix (rlevel%rmatrixB1,rlevel%rmatrixB2,&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+        
+    call stdop_assembleSimpleMatrix (rlevel%rmatrixB1,DER_FUNC,DER_DERIV_X,-1.0_DP,.true.)
+    call stdop_assembleSimpleMatrix (rlevel%rmatrixB2,DER_FUNC,DER_DERIV_Y,-1.0_DP,.true.)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getDefect (rdefectBlock,rvectorBlock,rrhsBlock,rparams,rlevel)
+    
+!<description>
+  ! Calculate the system matrix.
+!</description>
+  
+!<inputoutput>
+  ! The defect vector to create
+  type(t_vectorBlock), intent(inout) :: rdefectBlock
+!</inputoutput>
+
+!<input>
+  ! Solution vector
+  type(t_vectorBlock), intent(inout) :: rvectorBlock
+
+  ! RHS vector
+  type(t_vectorBlock), intent(inout) :: rrhsBlock
+
+  ! Parameter that configure the matrix
+  type(t_matrixConfig), intent(in) :: rparams
+
+  ! Information for that level
+  type(t_level), intent(in) :: rlevel
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    type(t_vectorScalar) :: rvectorTmp
+    type(t_matrixBlock) :: rtempMatrix
+    type(t_vectorBlock) :: rtempVectorSol,rtempVectorB,rtempVectorX
+    type(t_convStreamlineDiffusion) :: rstreamlineDiffPrimalDef,rstreamlineDiffDualDef
+    
+    ! Prepare the streamline diffusion structure for assembling the
+    ! nonlinearities.
+    !
+    ! Primal Defect
+    rstreamlineDiffPrimalDef%dupsam = 0.0_DP
+    rstreamlineDiffPrimalDef%dnu = rparams%dnu
+    rstreamlineDiffPrimalDef%ddelta = 1.0_DP
+    rstreamlineDiffPrimalDef%dnewton = 0.0_DP
+
+    ! Dual Defect
+    rstreamlineDiffDualDef%dupsam = 0.0_DP
+    rstreamlineDiffDualDef%dnu = rparams%dnu
+    rstreamlineDiffDualDef%ddelta = -1.0_DP
+    rstreamlineDiffDualDef%dnewtonTransposed = 1.0_DP
+
+    ! *************************************************************
+    ! Create the nonlinear defect
+    !  (d1) =  (  f ) - (  A    -P(u)(-1/alpha .) ) ( y ) 
+    !  (d2)    ( -z )   ( -M    A                 ) ( p ) 
+    ! We do this manually...
+    
+    call lsysbl_copyVector (rrhsBlock,rdefectBlock)
+    
+    call lsyssc_scalarMatVec (rlevel%rmatrixLaplace,&
+        rvectorBlock%RvectorBlock(1),rdefectBlock%RvectorBlock(1),-rparams%dnu,1.0_DP)
+    call lsyssc_scalarMatVec (rlevel%rmatrixLaplace,&
+        rvectorBlock%RvectorBlock(2),rdefectBlock%RvectorBlock(2),-rparams%dnu,1.0_DP)
+  
+    if (rparams%bemulateTimestep) then
+      ! One timestep from zero solution to t=1. Emulated by adding a mass matrix
+      ! to the Laplace.
+      call lsyssc_scalarMatVec (rlevel%rmatrixMass,&
+          rvectorBlock%RvectorBlock(1),rdefectBlock%RvectorBlock(1),-1.0_DP/rparams%dt,1.0_DP)
+      call lsyssc_scalarMatVec (rlevel%rmatrixMass,&
+          rvectorBlock%RvectorBlock(2),rdefectBlock%RvectorBlock(2),-1.0_DP/rparams%dt,1.0_DP)
+    end if
+
+    call lsyssc_scalarMatVec (rlevel%rmatrixB1,&
+        rvectorBlock%RvectorBlock(3),rdefectBlock%RvectorBlock(1),-1.0_DP,1.0_DP)
+    call lsyssc_scalarMatVec (rlevel%rmatrixB2,&
+        rvectorBlock%RvectorBlock(3),rdefectBlock%RvectorBlock(2),-1.0_DP,1.0_DP)
+
+    call lsyssc_scalarMatVec (rlevel%rmatrixB1,&
+        rvectorBlock%RvectorBlock(1),rdefectBlock%RvectorBlock(3),-1.0_DP,1.0_DP,&
+        .true.)
+    call lsyssc_scalarMatVec (rlevel%rmatrixB2,&
+        rvectorBlock%RvectorBlock(2),rdefectBlock%RvectorBlock(3),-1.0_DP,1.0_DP,&
+        .true.)
+    
+    call lsyssc_scalarMatVec (rlevel%rmatrixLaplace,&
+        rvectorBlock%RvectorBlock(4),rdefectBlock%RvectorBlock(4),-rparams%dnu,1.0_DP)
+    call lsyssc_scalarMatVec (rlevel%rmatrixLaplace,&
+        rvectorBlock%RvectorBlock(5),rdefectBlock%RvectorBlock(5),-rparams%dnu,1.0_DP)
+
+    if (rparams%bemulateTimestep) then
+      ! One timestep from zero solution to t=1. Emulated by adding a mass matrix
+      ! to the Laplace.
+      call lsyssc_scalarMatVec (rlevel%rmatrixMass,&
+          rvectorBlock%RvectorBlock(4),rdefectBlock%RvectorBlock(4),-1.0_DP/rparams%dt,1.0_DP)
+      call lsyssc_scalarMatVec (rlevel%rmatrixMass,&
+          rvectorBlock%RvectorBlock(5),rdefectBlock%RvectorBlock(5),-1.0_DP/rparams%dt,1.0_DP)
+    end if
+
+    call lsyssc_scalarMatVec (rlevel%rmatrixB1,&
+        rvectorBlock%RvectorBlock(6),rdefectBlock%RvectorBlock(4),-1.0_DP,1.0_DP)
+    call lsyssc_scalarMatVec (rlevel%rmatrixB2,&
+        rvectorBlock%RvectorBlock(6),rdefectBlock%RvectorBlock(5),-1.0_DP,1.0_DP)
+
+    call lsyssc_scalarMatVec (rlevel%rmatrixB1,&
+        rvectorBlock%RvectorBlock(4),rdefectBlock%RvectorBlock(6),-1.0_DP,1.0_DP,&
+        .true.)
+    call lsyssc_scalarMatVec (rlevel%rmatrixB2,&
+        rvectorBlock%RvectorBlock(5),rdefectBlock%RvectorBlock(6),-1.0_DP,1.0_DP,&
+        .true.)
+    
+    if (rparams%bdualcoupledtoprimal) then
+      call lsyssc_scalarMatVec (rlevel%rmatrixMass,&
+          rvectorBlock%RvectorBlock(1),rdefectBlock%RvectorBlock(4),1.0_DP,1.0_DP)
+      call lsyssc_scalarMatVec (rlevel%rmatrixMass,&
+          rvectorBlock%RvectorBlock(2),rdefectBlock%RvectorBlock(5),1.0_DP,1.0_DP)
+    end if
+    
+    if (rparams%bcontrolactive) then
+      ! No constraints: -P(u_n) = 1/alpha p_n -> multiply p_n by weighted Mass matrix.
+      ! Constraints active: Create the projection and multiply by the weighted mass matrix.
+      call lsyssc_copyVector (rvectorBlock%RvectorBlock(4),rvectorTmp)
+      call lsyssc_scaleVector (rvectorTmp,-1.0_DP/rparams%dalpha)
+      if (rparams%bboundsActive) then
+        call projectControlTimestep (rvectorTmp,rparams%dmin1,rparams%dmax1)
+      end if
+      call lsyssc_scalarMatVec (rlevel%rmatrixMass,&
+          rvectorTmp,rdefectBlock%RvectorBlock(1),1.0_DP,1.0_DP)
+
+      call lsyssc_copyVector (rvectorBlock%RvectorBlock(5),rvectorTmp)
+      call lsyssc_scaleVector (rvectorTmp,-1.0_DP/rparams%dalpha)
+      if (rparams%bboundsActive) then
+        call projectControlTimestep (rvectorTmp,rparams%dmin2,rparams%dmax2)
+      end if
+      call lsyssc_scalarMatVec (rlevel%rmatrixMass,&
+          rvectorTmp,rdefectBlock%RvectorBlock(2),1.0_DP,1.0_DP)
+      call lsyssc_releaseVector (rvectorTmp)
+          
+    end if
+
+    ! Now the actual nonlinearity
+    if (rparams%bnavierStokes) then
+
+      ! Create a dummy matrix that specifies the matrix structure.
+      ! Needed for the assembly.
+      call lsysbl_createEmptyMatrix (rtempmatrix,2,2)
+      call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rtempmatrix%RmatrixBlock(1,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
+      call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rtempmatrix%RmatrixBlock(1,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
+      call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rtempmatrix%RmatrixBlock(2,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
+      call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rtempmatrix%RmatrixBlock(2,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
+      call lsysbl_updateMatStrucInfo(rtempmatrix)
+    
+      ! Primal equation.
+      ! Assemble b = b - y grad(y)
+      call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 1,2,.true.)
+      call lsysbl_deriveSubvector(rdefectBlock,rtempVectorB, 1,2,.true.)
+      call conv_streamlineDiffusionBlk2d ( &
+                          rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
+                          rstreamlineDiffPrimalDef, CONV_MODDEFECT, &
+                          rtempmatrix, rtempVectorSol, rtempVectorB)        
+
+      ! Dual equation.
+      ! Assemble b = b + y grad lambda - (grad lambda)^t y
+      call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 1,2,.true.)
+      call lsysbl_deriveSubvector(rdefectBlock,rtempVectorB, 4,5,.true.)
+      call lsysbl_deriveSubvector(rvectorBlock,rtempVectorX, 4,5,.true.)
+      call conv_streamlineDiffusionBlk2d ( &
+                          rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
+                          rstreamlineDiffDualDef, CONV_MODDEFECT, &
+                          rtempmatrix, rtempVectorX, rtempVectorB)        
+    
+      call lsysbl_releaseVector (rtempVectorSol)
+      call lsysbl_releaseVector (rtempVectorB)
+      call lsysbl_releaseVector (rtempVectorX)
+      call lsysbl_releaseMatrix (rtempmatrix)
+    
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getRHS (rlevel, rtargetFlow, rrhsBlock)
+
+!<description>
+  ! Calculates the RHS vector.
+  ! Note: BC are not implemented.
+!</desctiption>
+  
+!<input>
+  ! Target flow structure.
+  type(t_targetFlow), intent(inout), target :: rtargetFlow
+
+  ! Information about the discretisation
+  type(t_level), intent(in) :: rlevel
+!</input>
+
+!<output>
+  ! RHS vector, to be created
+  type(t_vectorBlock), intent(inout) :: rrhsBlock
+!</output>
+
+!</subroutine>
+  
+    ! A bilinear and linear form describing the analytic problem to solve
+    type(t_linearForm) :: rlinform
+    type(t_collection) :: rcollection
+    
+    ! Create the RHS vector f of the primal equation
+    rlinform%itermCount = 1
+    rlinform%Idescriptors(1) = DER_FUNC
+    call linf_buildVectorScalar (rlevel%rdiscretisation%RspatialDiscr(1),&
+                                  rlinform,.true.,rrhsBlock%RvectorBlock(1),&
+                                  coeff_RHS_primal_2D)
+    call linf_buildVectorScalar (rlevel%rdiscretisation%RspatialDiscr(1),&
+                                  rlinform,.true.,rrhsBlock%RvectorBlock(2),&
+                                  coeff_RHS_primal_2D)
+    call lsyssc_clearVector (rrhsBlock%RvectorBlock(3))
+                                  
+    ! Create the RHS vector -z of the dual equation.
+    ! For that purpose, transfer the target flow parameters via the collection
+    ! to the callback routine.
+    rcollection%IquickAccess(1) = rtargetFlow%itype
+    rcollection%p_rvectorQuickAccess1 => rtargetFlow%rvector
+    call linf_buildVectorScalar (rlevel%rdiscretisation%RspatialDiscr(1),&
+                                  rlinform,.true.,rrhsBlock%RvectorBlock(4),&
+                                  coeff_RHSx_dual_2D,rcollection)
+    call linf_buildVectorScalar (rlevel%rdiscretisation%RspatialDiscr(1),&
+                                  rlinform,.true.,rrhsBlock%RvectorBlock(5),&
+                                  coeff_RHSy_dual_2D,rcollection)
+    call lsyssc_clearVector (rrhsBlock%RvectorBlock(6))
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getSystemMatrix (rmatrixBlock,rvectorBlock,rparams,rlevel,bsimple)
+
+!<description>
+  ! Calculate the system matrix
+!</description>
+  
+!<inputoutput>
+  ! The system matrix to create
+  type(t_matrixBlock), intent(inout) :: rmatrixBlock
+!</inputoutput>
+
+!<input>
+  ! Parameter that configure the matrix
+  type(t_matrixConfig), intent(in) :: rparams
+
+  ! Information for that level
+  type(t_level), intent(in) :: rlevel
+
+  ! Current solution vector
+  type(t_vectorBlock), intent(in), target :: rvectorBlock
+
+  ! Simple matrix, the B^T matrices are virtually transposed.
+  logical, intent(in) :: bsimple
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    type(t_convStreamlineDiffusion) :: rstreamlineDiffPrimal,rstreamlineDiffDual
+    type(t_convStreamlineDiffusion) :: rstreamlineDiffDualR
+    type(t_matrixBlock) :: rtempMatrix
+    type(t_vectorBlock) :: rtempVectorSol
+    type(t_bilinearForm) :: rbilinearForm
+
+    ! Primal preconditioner
+    rstreamlineDiffPrimal%dupsam = 0.0_DP
+    rstreamlineDiffPrimal%dnu = rparams%dnu
+    rstreamlineDiffPrimal%ddelta = 1.0_DP
+    rstreamlineDiffPrimal%dnewton = 0.0_DP
+    if (rparams%bnewton) rstreamlineDiffPrimal%dnewton = 1.0_DP
+
+    ! Dual preconditioner, velocity block
+    rstreamlineDiffDual%dupsam = 0.0_DP
+    rstreamlineDiffDual%dnu = rparams%dnu
+    rstreamlineDiffDual%ddelta = -1.0_DP
+    if (rparams%bnewton) rstreamlineDiffDual%dnewtonTransposed = 1.0_DP
+
+    ! Dual preconditioner, reactive mass matrix block
+    rstreamlineDiffDualR%dupsam = 0.0_DP
+    rstreamlineDiffDualR%dnu = rparams%dnu
+    rstreamlineDiffDualR%ddelta = 0.0_DP
+    if (rparams%bnewton) then
+      rstreamlineDiffDualR%ddeltaTransposed = 1.0_DP
+      rstreamlineDiffDualR%dnewton = -1.0_DP
+    end if
+    
+    ! *************************************************************
+    ! Prepare the preconditioner matrix (Newton).
+    call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(1,1),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(2,2),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(1,1),rparams%dnu)
+    call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(2,2),rparams%dnu)
+    
+    ! Newton implies A12/A21
+    if (rparams%bnewton) then
+      call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(1,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(2,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(1,2))
+      call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(2,1))
+    end if
+
+    if (rparams%bemulateTimestep) then
+      ! One timestep from zero solution to t=1. Emulated by adding a mass matrix
+      ! to the Laplace.
+      call lsyssc_matrixLinearComb (rlevel%rmatrixMass,1.0_DP/rparams%dt,&
+          rmatrixBlock%RmatrixBlock(1,1),1.0_DP,rmatrixBlock%RmatrixBlock(1,1),&
+          .false.,.false.,.true.,.true.)
+      call lsyssc_matrixLinearComb (rlevel%rmatrixMass,1.0_DP/rparams%dt,&
+          rmatrixBlock%RmatrixBlock(2,2),1.0_DP,rmatrixBlock%RmatrixBlock(2,2),&
+          .false.,.false.,.true.,.true.)
+    end if      
+
+    call lsyssc_duplicateMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(1,3),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_duplicateMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(2,3),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+
+    call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(3,1))
+    call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(3,2))
+    if (.not. bsimple) then
+      call lsyssc_transposeMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(3,1))
+      call lsyssc_transposeMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(3,2))
+    else
+      call lsyssc_transposeMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(3,1),LSYSSC_TR_VIRTUAL)
+      call lsyssc_transposeMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
+    end if
+
+    if (rparams%bpureDirichlet) then
+      ! Fixed pressure; create zero diag matrix and fix first DOF.
+      call lsyssc_releaseMatrix (rmatrixBlock%RmatrixBlock(3,3))
+      call lsyssc_createDiagMatrixStruc (rmatrixBlock%RmatrixBlock(3,3),&
+          rmatrixBlock%RmatrixBlock(1,3)%NCOLS,LSYSSC_MATRIX9)
+      call lsyssc_allocEmptyMatrix(rmatrixBlock%RmatrixBlock(3,3),LSYSSC_SETM_ZERO)
+      call mmod_replaceLinesByUnitBlk (rmatrixBlock,3,(/1/))
+    end if
+
+    ! ---
+    ! Dual equation
+    call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(4,4),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(5,5),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(4,4),rparams%dnu)
+    call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(5,5),rparams%dnu)
+
+    if (rparams%bemulateTimestep) then
+      ! One timestep from zero solution to t=1. Emulated by adding a mass matrix
+      ! to the Laplace.
+      call lsyssc_matrixLinearComb (rlevel%rmatrixMass,1.0_DP/rparams%dt,&
+          rmatrixBlock%RmatrixBlock(4,4),1.0_DP,rmatrixBlock%RmatrixBlock(4,4),&
+          .false.,.false.,.true.,.true.)
+      call lsyssc_matrixLinearComb (rlevel%rmatrixMass,1.0_DP/rparams%dt,&
+          rmatrixBlock%RmatrixBlock(5,5),1.0_DP,rmatrixBlock%RmatrixBlock(5,5),&
+          .false.,.false.,.true.,.true.)
+    end if
+
+    call lsyssc_duplicateMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(4,6),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_duplicateMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(5,6),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+
+    call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(6,4))
+    call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(6,5))
+    if (.not. bsimple) then
+      call lsyssc_transposeMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(6,4))
+      call lsyssc_transposeMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(6,5))
+    else
+      call lsyssc_transposeMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(6,4),LSYSSC_TR_VIRTUAL)
+      call lsyssc_transposeMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(6,5),LSYSSC_TR_VIRTUAL)
+      call lsyssc_duplicateMatrix (rmatrixBlock%RmatrixBlock(1,3),rmatrixBlock%RmatrixBlock(4,6),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      call lsyssc_duplicateMatrix (rmatrixBlock%RmatrixBlock(2,3),rmatrixBlock%RmatrixBlock(5,6),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    end if
+
+    if (rparams%bpureDirichlet) then
+      ! Fixed pressure; create zero diag matrix and fix first DOF.
+      call lsyssc_releaseMatrix (rmatrixBlock%RmatrixBlock(6,6))
+      call lsyssc_createDiagMatrixStruc (rmatrixBlock%RmatrixBlock(6,6),&
+          rmatrixBlock%RmatrixBlock(4,6)%NCOLS,LSYSSC_MATRIX9)
+      call lsyssc_allocEmptyMatrix(rmatrixBlock%RmatrixBlock(6,6),LSYSSC_SETM_ZERO)
+      call mmod_replaceLinesByUnitBlk (rmatrixBlock,6,(/1/))
+    end if
+
+    if (rparams%bdualcoupledtoprimal) then
+      call lsyssc_duplicateMatrix (rlevel%rmatrixMass,rmatrixBlock%RmatrixBlock(4,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      call lsyssc_duplicateMatrix (rlevel%rmatrixMass,rmatrixBlock%RmatrixBlock(5,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(4,1),-1.0_DP)
+      call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(5,2),-1.0_DP)
+    end if
+
+    ! Navier-Stokes implies A45/A54
+    if (rparams%bnavierStokes) then
+      call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(4,5),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(5,4),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(4,5))
+      call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(5,4))
+    end if
+
+    ! Navier-Stokes+Newton implies A42/A51
+    if (rparams%bnavierStokes .and. rparams%bnewton) then
+      call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(4,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(5,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(4,2))
+      call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(5,1))
+    end if
+
+    if (rparams%bcontrolactive) then
+      if (.not. rparams%bexactderiv) then
+        ! Copy also the mass matrix for the 4th block. In the case of no
+        ! control constraints, that's it!
+        call lsyssc_duplicateMatrix (rlevel%rmatrixMass,rmatrixBlock%RmatrixBlock(1,4),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+        call lsyssc_duplicateMatrix (rlevel%rmatrixMass,rmatrixBlock%RmatrixBlock(2,5),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+        rmatrixBlock%RmatrixBlock(1,4)%dscaleFactor = -(-1.0_DP/rparams%dalpha)
+        rmatrixBlock%RmatrixBlock(2,5)%dscaleFactor = -(-1.0_DP/rparams%dalpha)
+
+        if (rparams%bboundsActive .and. rparams%bnewton) then
+          ! Filter the mass matrix. Set those rows to zero where the DOF's are out
+          ! of bounds. The result is the derivative of the projection operator...
+          call massmatfilter (rmatrixBlock%RmatrixBlock(1,4), &
+              rvectorBlock%RvectorBlock(4), rparams%dalpha, rparams%dmin1, rparams%dmax1)
+          call massmatfilter (rmatrixBlock%RmatrixBlock(2,5), &
+              rvectorBlock%RvectorBlock(5), rparams%dalpha, rparams%dmin2, rparams%dmax2)
+        end if
+      
+      else
+
+        call lsyssc_duplicateMatrix (rlevel%rmatrixMass,rmatrixBlock%RmatrixBlock(1,4),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+        call lsyssc_duplicateMatrix (rlevel%rmatrixMass,rmatrixBlock%RmatrixBlock(2,5),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+  
+        rbilinearForm%itermCount = 1
+        rbilinearForm%Idescriptors(1,1) = DER_FUNC
+        rbilinearForm%Idescriptors(2,1) = DER_FUNC
+        rbilinearForm%ballCoeffConstant = .false.
+        rbilinearForm%BconstantCoeff(1) = .false.
+        rcollection%p_rvectorQuickAccess1 => rvectorBlock
+        rcollection%DquickAccess(3) = rparams%dalpha
+        rcollection%IquickAccess(1) = 1
+        if (rparams%bboundsActive .and. rparams%bnewton) then
+          rcollection%DquickAccess(1) = rparams%dmin1
+          rcollection%DquickAccess(2) = rparams%dmax1
+        else
+          rcollection%DquickAccess(1) = -SYS_MAXREAL
+          rcollection%DquickAccess(2) = SYS_MAXREAL
+        end if
+        call bilf_buildMatrixScalar (rbilinearForm,.true.,rmatrixBlock%RmatrixBlock(1,4),&
+                                    coeff_ProjMass,rcollection)
+
+        rcollection%IquickAccess(1) = 2
+        if (rparams%bboundsActive .and. rparams%bnewton) then
+          rcollection%DquickAccess(1) = rparams%dmin2
+          rcollection%DquickAccess(2) = rparams%dmax2
+        else
+          rcollection%DquickAccess(1) = -SYS_MAXREAL
+          rcollection%DquickAccess(2) = SYS_MAXREAL
+        end if
+        call bilf_buildMatrixScalar (rbilinearForm,.true.,rmatrixBlock%RmatrixBlock(2,5),&
+                                    coeff_ProjMass,rcollection)
+                                    
+      end if
+    end if
+  
+    ! Now the actual nonlinearity
+    if (rparams%bnavierStokes) then
+
+      ! Primal equation.
+      ! Assemble y grad(.) ( or   y grad(.) + (.) grad (y)   in case of Newton)
+      call lsysbl_deriveSubmatrix (rmatrixBlock,rtempmatrix,&
+                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,2)
+      call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 1,2,.true.)
+      call conv_streamlineDiffusionBlk2d ( &
+                          rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
+                          rstreamlineDiffPrimal, CONV_MODMATRIX,rtempmatrix)
+
+      ! Dual equation.
+      ! Assemble - y grad (.) + (grad .)^t y
+      call lsysbl_deriveSubmatrix (rmatrixBlock,rtempmatrix,&
+                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,5)
+      call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 1,2,.true.)
+      call conv_streamlineDiffusionBlk2d ( &
+                          rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
+                          rstreamlineDiffDual, CONV_MODMATRIX,rtempmatrix)  
+
+      ! Newton?
+      if (rparams%bnewton .and. rparams%bdualcoupledtoprimal) then
+
+        ! Assemble - lambda grad(.) + grad(.)^t lambda
+        call lsysbl_deriveSubmatrix (rmatrixBlock,rtempmatrix,&
+                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,5,1,2)
+        call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 4,5,.true.)
+        call conv_streamlineDiffusionBlk2d ( &
+                          rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
+                          rstreamlineDiffDualR, CONV_MODMATRIX,rtempmatrix)  
+                          
+      end if
+      
+      call lsysbl_releaseVector (rtempVectorSol)
+      call lsysbl_releaseMatrix (rtempmatrix)
+    
+    end if    
+    
+    rmatrixBlock%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
+    rmatrixBlock%RmatrixBlock(6,6)%dscaleFactor = 0.0_DP
+  
+  end subroutine
 
   ! ***************************************************************************
 
@@ -146,7 +800,7 @@ contains
       ! Set up a block discretisation structure for two components:
       ! Primal and dual solution vector.
       call spdiscr_initBlockDiscr (rtargetFlow%rdiscretisation,3,&
-                                   rtargetFlow%rtriangulation, rboundary)
+                                     rtargetFlow%rtriangulation, rboundary)
 
       call spdiscr_initDiscr_simple (rtargetFlow%rdiscretisation%RspatialDiscr(1), &
           EL_EM30,CUB_G3X3,rtargetFlow%rtriangulation, rboundary)
@@ -452,897 +1106,76 @@ contains
       call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValuesZero_2D)
-    end if
-
-  end subroutine
-
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine navstokes2d_0_simple
-  
-!<description>
-  ! This is an all-in-one poisson solver for directly solving a Poisson
-  ! problem without making use of special features like collections
-  ! and so on. The routine performs the following tasks:
-  !
-  ! 1.) Read in parametrisation
-  ! 2.) Read in triangulation
-  ! 3.) Set up RHS
-  ! 4.) Set up matrix
-  ! 5.) Create solver structure
-  ! 6.) Solve the problem
-  ! 7.) Write solution to GMV file
-  ! 8.) Release all variables, finish
-!</description>
-
-!</subroutine>
-
-    ! Definitions of variables.
-    !
-    ! We need a couple of variables for this problem. Let's see...
-    !
-    ! An object for saving the domain:
-    type(t_boundary) :: rboundary
-    
-    ! An object for saving the triangulation on the domain
-    type(t_triangulation) :: rtriangulation
-
-    ! An object specifying the discretisation.
-    ! This contains also information about trial/test functions,...
-    type(t_blockDiscretisation) :: rdiscretisation,rdiscrOutBlock
-    type(t_spatialDiscretisation) :: rdiscrOutput
-    
-    ! A bilinear and linear form describing the analytic problem to solve
-    type(t_linearForm) :: rlinform
-    type(t_bilinearForm) :: rbilinearForm
-    
-    ! A scalar matrix and vector. The vector accepts the RHS of the problem
-    ! in scalar form.
-    type(t_matrixScalar) :: rmatrixLaplace, rmatrixMass
-    type(t_matrixScalar) :: rmatrixB1, rmatrixB2
-
-    ! A block matrix and a couple of block vectors. These will be filled
-    ! with data for the linear solver.
-    type(t_matrixBlock) :: rmatrixBlock
-    type(t_vectorBlock), target :: rvectorBlock
-    type(t_vectorBlock) :: rrhsBlock,rtempRhsBlock,rvecout
-    type(t_vectorScalar) :: rvectorTmp,rvectorOutputX,rvectorOutputY
-
-    ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode
-
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    type(t_matrixBlock), dimension(1) :: Rmatrices
-
-    ! NLMAX receives the level where we want to solve.
-    integer :: NLMAX
-    
-    ! Error indicator during initialisation of the solver
-    integer :: ierror    
-    integer :: ibctype
-    integer :: itargetFlow
-    
-    ! Data for the Newton iteration
-    integer :: ite, nmaxiterations, idiscretisation
-    real(dp) :: dinitRes, dcurrentRes
-    
-    ! Relaxation parameters
-    real(DP) :: dalpha
-    logical :: bboundsActive, bcontrolactive, bdualcoupledtoprimal
-    logical :: bemulateTimestep, bnewton,bexactderiv,bnavierStokes
-    real(dp) :: dmin1,dmax1,dmin2,dmax2, dnu,dt
-    
-    type(t_collection) :: rcollection
-    type(t_convStreamlineDiffusion) :: rstreamlineDiffPrimalDef,rstreamlineDiffDualDef
-    type(t_convStreamlineDiffusion) :: rstreamlineDiffPrimal,rstreamlineDiffDual
-    type(t_convStreamlineDiffusion) :: rstreamlineDiffDualR
-    type(t_matrixBlock) :: rtempMatrix
-    type(t_vectorBlock) :: rtempVectorX,rtempVectorB,rtempVectorSol
-    
-    ! Boundary conditions
-    type(t_discreteBC), target :: rdiscreteBC
-    
-    type(t_targetFlow), target :: rtargetFlow
-    logical :: bpureDirichlet
-    
-    ! Output block for UCD output to GMV file
-    type(t_ucdExport) :: rexport
-    real(DP), dimension(:), pointer :: p_Ddata,p_DdataX,p_DdataY
-
-    ! Ok, let's start. 
-    !
-    ! We want to solve our Poisson problem on level... 
-    NLMAX = 6
-    
-    ! Newton iteration counter
-    nmaxiterations = 20
-    
-    ! Relaxation parameter
-    dalpha = 0.01_DP
-    
-    ! Control active or not.
-    bcontrolactive = .true.
-    bdualcoupledtoprimal = .true.
-    
-    ! Bounds on the control
-    bboundsActive = .false.
-    dmin1 = -0.3_DP
-    dmax1 = 0.3_DP
-    dmin2 = -0.3_DP
-    dmax2 = 0.3_DP
-    
-    ! Viscosity constant
-    dnu = 1.0_DP/400.0_DP !/200.0_DP
-    
-    ! Discretisation. 1=EM30, 2=Q2
-    idiscretisation = 1
-    
-    ! TRUE emulates a timestep with implicit Euler, timestep length dt, 
-    ! starting from a zero solution
-    bemulateTimestep = .false.
-    
-    ! Timestep length
-    dt = 1.0_DP
-    
-    ! TRUE: Use Newton iteration
-    bnewton = .true.
-    
-    ! TRUE: Use Navier-Stokes. FALSE: Use Stokes
-    bnavierStokes = .true.
-    
-    ! TRUE: Use exact derivative of the semismooth operator
-    ! (mass matrix set up with an appropriate coefficient) instead
-    ! of zero rows in the mass matrix.
-    bexactderiv = .false.
-    
-    ! Activate inflow BC's
-    ! =0: no inflow
-    ! =1: Poiseuille
-    ! =2: Driven Cavity
-    ibctype = 2
-    
-    ! Type of the target flow.
-    ! =0: Poiseuille
-    ! =1: Read from file
-    itargetFlow = 1
-    
-    ! At first, read in the parametrisation of the boundary and save
-    ! it to rboundary.
-    call boundary_read_prm(rboundary, './pre/QUAD.prm')
-
-    ! Create the target flow.
-    call initTargetFlow (rtargetFlow,itargetFlow,rboundary,&
-        './pre/QUAD.tri',7,'./solution.00080')
-        
-    ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
-     
-    ! Refine it.
-    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
-    
-    ! And create information about adjacencies and everything one needs from
-    ! a triangulation.
-    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
-    
-    ! Print mesh statistics
-    call tria_infoStatistics(rtriangulation,.true.)
-    call output_lbrk()
-    
-    ! Set up a block discretisation structure for two components:
-    ! Primal and dual solution vector.
-    call spdiscr_initBlockDiscr (rdiscretisation,6,&
-                                 rtriangulation, rboundary)
-    
-    ! Set up the blocks. Both are discretised with the same finite element.
-    if (idiscretisation .eq. 1) then
-      call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-          EL_EM30,CUB_G3X3,rtriangulation, rboundary)
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(2), .true.)
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(4), .true.)
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(5), .true.)
-          
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          EL_Q0,CUB_G2X2,rdiscretisation%RspatialDiscr(3))
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(3), &
-          rdiscretisation%RspatialDiscr(6), .true.)
-    else if (idiscretisation .eq. 2) then
-      call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-          EL_Q2,CUB_G4X4,rtriangulation, rboundary)
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(2), .true.)
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(4), .true.)
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(5), .true.)
-          
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          EL_QP1,CUB_G2X2,rdiscretisation%RspatialDiscr(3))
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(3), &
-          rdiscretisation%RspatialDiscr(6), .true.)
-    end if
-                 
-    ! Now as the discretisation is set up, we can start to generate
-    ! the structure of the system matrix which is to solve.
-    ! We create a scalar matrix, based on the discretisation structure
-    ! for our one and only solution component.
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-                                     LSYSSC_MATRIX9,rmatrixLaplace)
-                                     
-    ! Assemble the Laplace matrix.
-    call stdop_assembleLaplaceMatrix (rmatrixLaplace)
-    
-    ! And a mass matrix; we need it for the coupling.
-    ! Share the structure with the Laplace matrix.
-    call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixMass,&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    call stdop_assembleSimpleMatrix (rmatrixMass,DER_FUNC,DER_FUNC)
-
-    ! Create B-matrices
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(3),&
-        LSYSSC_MATRIX9,rmatrixB1,rdiscretisation%RspatialDiscr(1))
-    call lsyssc_duplicateMatrix (rmatrixB1,rmatrixB2,&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-        
-    call stdop_assembleSimpleMatrix (rmatrixB1,DER_FUNC,DER_DERIV_X,-1.0_DP,.true.)
-    call stdop_assembleSimpleMatrix (rmatrixB2,DER_FUNC,DER_DERIV_Y,-1.0_DP,.true.)
-
-    ! Assemble the boundary conditions
-    call getBC (rdiscretisation,ibctype,rdiscreteBC,.true.,bpureDirichlet)
-
-    ! -----
-    ! Linear system: Basic structure.
-    !
-    ! Create a 2x2 matrix and 2-block vectors from the discretisation.
-    call lsysbl_createMatBlockByDiscr (rdiscretisation,rmatrixBlock)
-    call lsysbl_createVecBlockByDiscr (rdiscretisation,rrhsBlock)
-    call lsysbl_createVecBlockByDiscr (rdiscretisation,rvectorBlock)
-    call lsysbl_createVecBlockByDiscr (rdiscretisation,rtempRhsBlock)
-    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rvectorTmp)
-    
-    ! Create the RHS vector f of the primal equation
-    rlinform%itermCount = 1
-    rlinform%Idescriptors(1) = DER_FUNC
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                                  rlinform,.true.,rrhsBlock%RvectorBlock(1),&
-                                  coeff_RHS_primal_2D)
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                                  rlinform,.true.,rrhsBlock%RvectorBlock(2),&
-                                  coeff_RHS_primal_2D)
-    call lsyssc_clearVector (rrhsBlock%RvectorBlock(3))
-                                  
-    ! Create the RHS vector -z of the dual equation.
-    ! For that purpose, transfer the target flow parameters via the collection
-    ! to the callback routine.
-    rcollection%IquickAccess(1) = rtargetFlow%itype
-    rcollection%p_rvectorQuickAccess1 => rtargetFlow%rvector
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                                  rlinform,.true.,rrhsBlock%RvectorBlock(4),&
-                                  coeff_RHSx_dual_2D,rcollection)
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                                  rlinform,.true.,rrhsBlock%RvectorBlock(5),&
-                                  coeff_RHSy_dual_2D,rcollection)
-    call lsyssc_clearVector (rrhsBlock%RvectorBlock(6))
-  
-    ! Implement BC's
-    call vecfil_discreteBCrhs (rrhsBlock,rdiscreteBC)
-    
-    ! Prepare the streamline diffusion structure for assembling the
-    ! nonlinearities.
-    !
-    ! Primal Defect
-    rstreamlineDiffPrimalDef%dupsam = 0.0_DP
-    rstreamlineDiffPrimalDef%dnu = dnu
-    rstreamlineDiffPrimalDef%ddelta = 1.0_DP
-    rstreamlineDiffPrimalDef%dnewton = 0.0_DP
-
-    ! Primal preconditioner
-    rstreamlineDiffPrimal%dupsam = 0.0_DP
-    rstreamlineDiffPrimal%dnu = dnu
-    rstreamlineDiffPrimal%ddelta = 1.0_DP
-    rstreamlineDiffPrimal%dnewton = 0.0_DP
-    if (bnewton) rstreamlineDiffPrimal%dnewton = 1.0_DP
-
-    ! Dual Defect
-    rstreamlineDiffDualDef%dupsam = 0.0_DP
-    rstreamlineDiffDualDef%dnu = dnu
-    rstreamlineDiffDualDef%ddelta = -1.0_DP
-    rstreamlineDiffDualDef%dnewtonTransposed = 1.0_DP
-
-    ! Dual preconditioner, velocity block
-    rstreamlineDiffDual%dupsam = 0.0_DP
-    rstreamlineDiffDual%dnu = dnu
-    rstreamlineDiffDual%ddelta = -1.0_DP
-    if (bnewton) rstreamlineDiffDual%dnewtonTransposed = 1.0_DP
-
-    ! Dual preconditioner, reactive mass matrix block
-    rstreamlineDiffDualR%dupsam = 0.0_DP
-    rstreamlineDiffDualR%dnu = dnu
-    rstreamlineDiffDualR%ddelta = 0.0_DP
-    if (bnewton) then
-      rstreamlineDiffDualR%ddeltaTransposed = 1.0_DP
-      rstreamlineDiffDualR%dnewton = -1.0_DP
-    end if
-    
-    ! -----
-    ! Nonlinear iteration
-    !
-    ! Initialise the solution vector.
-    call lsysbl_clearVector (rvectorBlock)
-    
-    call vecfil_discreteBCsol (rvectorBlock,rdiscreteBC)
-
-    ! Prepare an UMFPACK solver for the lienar systems
-    call linsol_initUMFPACK4(p_rsolverNode)
-    !p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 1
-  
-    ! Set the output level of the solver to 2 for some output
-    p_rsolverNode%ioutputLevel = 2
-    
-    do ite = 1,nmaxIterations+1
-    
-!      if (ite .eq. 2) then
-!        bcontrolactive = .false.
-!        rmatrixBlock%RmatrixBlock(1,4)%dscaleFactor = 0.0_DP
-!        rmatrixBlock%RmatrixBlock(2,5)%dscaleFactor = 0.0_DP
-!      end if
-    
-      ! *************************************************************
-      ! Create the nonlinear defect
-      !  (d1) =  (  f ) - (  A    -P(u)(-1/alpha .) ) ( y ) 
-      !  (d2)    ( -z )   ( -M    A                 ) ( p ) 
-      ! We do this manually...
+    else if (ibcType .eq. 3) then
+      ! -----
+      ! Boundary conditions
+      !
+      ! Dirichlet-0-BC the bottom, Dirichlet-1-BC at the top
       
-      call lsysbl_copyVector (rrhsBlock,rtempRhsBlock)
+      ! Edge 1 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
+
+      ! Now to the edge 2 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValues1_2D)
+
+      ! Edge 3 of boundary component 1.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
       
-      call lsyssc_scalarMatVec (rmatrixLaplace,&
-          rvectorBlock%RvectorBlock(1),rtempRhsBlock%RvectorBlock(1),-dnu,1.0_DP)
-      call lsyssc_scalarMatVec (rmatrixLaplace,&
-          rvectorBlock%RvectorBlock(2),rtempRhsBlock%RvectorBlock(2),-dnu,1.0_DP)
-    
-      if (bemulateTimestep) then
-        ! One timestep from zero solution to t=1. Emulated by adding a mass matrix
-        ! to the Laplace.
-        call lsyssc_scalarMatVec (rmatrixMass,&
-            rvectorBlock%RvectorBlock(1),rtempRhsBlock%RvectorBlock(1),-1.0_DP/dt,1.0_DP)
-        call lsyssc_scalarMatVec (rmatrixMass,&
-            rvectorBlock%RvectorBlock(2),rtempRhsBlock%RvectorBlock(2),-1.0_DP/dt,1.0_DP)
-      end if
+      ! Edge 4 of boundary component 1. That's it.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
 
-      call lsyssc_scalarMatVec (rmatrixB1,&
-          rvectorBlock%RvectorBlock(3),rtempRhsBlock%RvectorBlock(1),-1.0_DP,1.0_DP)
-      call lsyssc_scalarMatVec (rmatrixB2,&
-          rvectorBlock%RvectorBlock(3),rtempRhsBlock%RvectorBlock(2),-1.0_DP,1.0_DP)
-
-      call lsyssc_scalarMatVec (rmatrixB1,&
-          rvectorBlock%RvectorBlock(1),rtempRhsBlock%RvectorBlock(3),-1.0_DP,1.0_DP,&
-          .true.)
-      call lsyssc_scalarMatVec (rmatrixB2,&
-          rvectorBlock%RvectorBlock(2),rtempRhsBlock%RvectorBlock(3),-1.0_DP,1.0_DP,&
-          .true.)
-      
-      call lsyssc_scalarMatVec (rmatrixLaplace,&
-          rvectorBlock%RvectorBlock(4),rtempRhsBlock%RvectorBlock(4),-dnu,1.0_DP)
-      call lsyssc_scalarMatVec (rmatrixLaplace,&
-          rvectorBlock%RvectorBlock(5),rtempRhsBlock%RvectorBlock(5),-dnu,1.0_DP)
-
-      if (bemulateTimestep) then
-        ! One timestep from zero solution to t=1. Emulated by adding a mass matrix
-        ! to the Laplace.
-        call lsyssc_scalarMatVec (rmatrixMass,&
-            rvectorBlock%RvectorBlock(4),rtempRhsBlock%RvectorBlock(4),-1.0_DP/dt,1.0_DP)
-        call lsyssc_scalarMatVec (rmatrixMass,&
-            rvectorBlock%RvectorBlock(5),rtempRhsBlock%RvectorBlock(5),-1.0_DP/dt,1.0_DP)
-      end if
-
-      call lsyssc_scalarMatVec (rmatrixB1,&
-          rvectorBlock%RvectorBlock(6),rtempRhsBlock%RvectorBlock(4),-1.0_DP,1.0_DP)
-      call lsyssc_scalarMatVec (rmatrixB2,&
-          rvectorBlock%RvectorBlock(6),rtempRhsBlock%RvectorBlock(5),-1.0_DP,1.0_DP)
-
-      call lsyssc_scalarMatVec (rmatrixB1,&
-          rvectorBlock%RvectorBlock(4),rtempRhsBlock%RvectorBlock(6),-1.0_DP,1.0_DP,&
-          .true.)
-      call lsyssc_scalarMatVec (rmatrixB2,&
-          rvectorBlock%RvectorBlock(5),rtempRhsBlock%RvectorBlock(6),-1.0_DP,1.0_DP,&
-          .true.)
-      
-      if (bdualcoupledtoprimal) then
-        call lsyssc_scalarMatVec (rmatrixMass,&
-            rvectorBlock%RvectorBlock(1),rtempRhsBlock%RvectorBlock(4),1.0_DP,1.0_DP)
-        call lsyssc_scalarMatVec (rmatrixMass,&
-            rvectorBlock%RvectorBlock(2),rtempRhsBlock%RvectorBlock(5),1.0_DP,1.0_DP)
-      end if
-      
-      if (bcontrolactive) then
-        ! No constraints: -P(u_n) = 1/alpha p_n -> multiply p_n by weighted Mass matrix.
-        ! Constraints active: Create the projection and multiply by the weighted mass matrix.
-        call lsyssc_copyVector (rvectorBlock%RvectorBlock(4),rvectorTmp)
-        call lsyssc_scaleVector (rvectorTmp,-1.0_DP/dalpha)
-        if (bboundsActive) then
-          call projectControlTimestep (rvectorTmp,dmin1,dmax1)
-        end if
-        call lsyssc_scalarMatVec (rmatrixMass,&
-            rvectorTmp,rtempRhsBlock%RvectorBlock(1),1.0_DP,1.0_DP)
-
-        call lsyssc_copyVector (rvectorBlock%RvectorBlock(5),rvectorTmp)
-        call lsyssc_scaleVector (rvectorTmp,-1.0_DP/dalpha)
-        if (bboundsActive) then
-          call projectControlTimestep (rvectorTmp,dmin2,dmax2)
-        end if
-        call lsyssc_scalarMatVec (rmatrixMass,&
-            rvectorTmp,rtempRhsBlock%RvectorBlock(2),1.0_DP,1.0_DP)
-            
-      end if
-
-      ! Now the actual nonlinearity
-      if (bnavierStokes) then
-
-        ! Create a dummy matrix that specifies the matrix structure.
-        ! Needed for the assembly.
-        call lsysbl_createEmptyMatrix (rtempmatrix,2,2)
-        call lsyssc_duplicateMatrix (rmatrixLaplace,rtempmatrix%RmatrixBlock(1,1),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-        call lsyssc_duplicateMatrix (rmatrixLaplace,rtempmatrix%RmatrixBlock(1,2),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-        call lsyssc_duplicateMatrix (rmatrixLaplace,rtempmatrix%RmatrixBlock(2,1),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-        call lsyssc_duplicateMatrix (rmatrixLaplace,rtempmatrix%RmatrixBlock(2,2),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-        call lsysbl_updateMatStrucInfo(rtempmatrix)
-      
-        ! Primal equation.
-        ! Assemble b = b - y grad(y)
-        call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 1,2,.true.)
-        call lsysbl_deriveSubvector(rtempRhsBlock,rtempVectorB, 1,2,.true.)
-        call conv_streamlineDiffusionBlk2d ( &
-                           rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
-                           rstreamlineDiffPrimalDef, CONV_MODDEFECT, &
-                           rtempmatrix, rtempVectorSol, rtempVectorB)        
-
-        ! Dual equation.
-        ! Assemble b = b + y grad lambda - (grad lambda)^t y
-        call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 1,2,.true.)
-        call lsysbl_deriveSubvector(rtempRhsBlock,rtempVectorB, 4,5,.true.)
-        call lsysbl_deriveSubvector(rvectorBlock,rtempVectorX, 4,5,.true.)
-        call conv_streamlineDiffusionBlk2d ( &
-                           rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
-                           rstreamlineDiffDualDef, CONV_MODDEFECT, &
-                           rtempmatrix, rtempVectorX, rtempVectorB)        
-      
-        call lsysbl_releaseVector (rtempVectorSol)
-        call lsysbl_releaseVector (rtempVectorB)
-        call lsysbl_releaseVector (rtempVectorX)
-        call lsysbl_releaseMatrix (rtempmatrix)
-      
-      end if
-
-      ! *************************************************************
-      ! Prepare the preconditioner matrix (Newton).
-      call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(1,1),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(2,2),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(1,1),dnu)
-      call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(2,2),dnu)
-      
-      ! Newton implies A12/A21
-      if (bnewton) then
-        call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(1,2),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(2,1),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(1,2))
-        call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(2,1))
-      end if
-
-      if (bemulateTimestep) then
-        ! One timestep from zero solution to t=1. Emulated by adding a mass matrix
-        ! to the Laplace.
-        call lsyssc_matrixLinearComb (rmatrixMass,1.0_DP/dt,&
-            rmatrixBlock%RmatrixBlock(1,1),1.0_DP,rmatrixBlock%RmatrixBlock(1,1),&
-            .false.,.false.,.true.,.true.)
-        call lsyssc_matrixLinearComb (rmatrixMass,1.0_DP/dt,&
-            rmatrixBlock%RmatrixBlock(2,2),1.0_DP,rmatrixBlock%RmatrixBlock(2,2),&
-            .false.,.false.,.true.,.true.)
-      end if      
-
-      call lsyssc_duplicateMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(1,3),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      call lsyssc_duplicateMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(2,3),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-
-      call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(3,1))
-      call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(3,2))
-      call lsyssc_transposeMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(3,1))
-      call lsyssc_transposeMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(3,2))
-
-      if (bpureDirichlet) then
-        ! Fixed pressure; create zero diag matrix and fix first DOF.
-        call lsyssc_releaseMatrix (rmatrixBlock%RmatrixBlock(3,3))
-        call lsyssc_createDiagMatrixStruc (rmatrixBlock%RmatrixBlock(3,3),&
-            rmatrixBlock%RmatrixBlock(1,3)%NCOLS,LSYSSC_MATRIX9)
-        call lsyssc_allocEmptyMatrix(rmatrixBlock%RmatrixBlock(3,3),LSYSSC_SETM_ZERO)
-        call mmod_replaceLinesByUnitBlk (rmatrixBlock,3,(/1/))
-      end if
+      if (.not. bprimaldual) return
 
       ! ---
-      ! Dual equation
-      call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(4,4),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(5,5),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(4,4),dnu)
-      call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(5,5),dnu)
+      ! The same for the dual variable.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
 
-      if (bemulateTimestep) then
-        ! One timestep from zero solution to t=1. Emulated by adding a mass matrix
-        ! to the Laplace.
-        call lsyssc_matrixLinearComb (rmatrixMass,1.0_DP/dt,&
-            rmatrixBlock%RmatrixBlock(4,4),1.0_DP,rmatrixBlock%RmatrixBlock(4,4),&
-            .false.,.false.,.true.,.true.)
-        call lsyssc_matrixLinearComb (rmatrixMass,1.0_DP/dt,&
-            rmatrixBlock%RmatrixBlock(5,5),1.0_DP,rmatrixBlock%RmatrixBlock(5,5),&
-            .false.,.false.,.true.,.true.)
-      end if
+      ! Now to the edge 2 of boundary component 1 the domain.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
 
-      call lsyssc_duplicateMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(4,6),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      call lsyssc_duplicateMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(5,6),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      ! Edge 3 of boundary component 1.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
 
-      call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(6,4))
-      call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(6,5))
-      call lsyssc_transposeMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(6,4))
-      call lsyssc_transposeMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(6,5))
+      ! Edge 4 of boundary component 1. That's it.
+      call boundary_createRegion(rdiscretisation%p_rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesZero_2D)
 
-      if (bpureDirichlet) then
-        ! Fixed pressure; create zero diag matrix and fix first DOF.
-        call lsyssc_releaseMatrix (rmatrixBlock%RmatrixBlock(6,6))
-        call lsyssc_createDiagMatrixStruc (rmatrixBlock%RmatrixBlock(6,6),&
-            rmatrixBlock%RmatrixBlock(4,6)%NCOLS,LSYSSC_MATRIX9)
-        call lsyssc_allocEmptyMatrix(rmatrixBlock%RmatrixBlock(6,6),LSYSSC_SETM_ZERO)
-        call mmod_replaceLinesByUnitBlk (rmatrixBlock,6,(/1/))
-      end if
-
-      if (bdualcoupledtoprimal) then
-        call lsyssc_duplicateMatrix (rmatrixMass,rmatrixBlock%RmatrixBlock(4,1),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-        call lsyssc_duplicateMatrix (rmatrixMass,rmatrixBlock%RmatrixBlock(5,2),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-        call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(4,1),-1.0_DP)
-        call lsyssc_scaleMatrix (rmatrixBlock%RmatrixBlock(5,2),-1.0_DP)
-      end if
-
-      ! Navier-Stokes implies A45/A54
-      if (bnavierStokes) then
-        call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(4,5),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(5,4),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(4,5))
-        call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(5,4))
-      end if
-
-      ! Navier-Stokes+Newton implies A42/A51
-      if (bnavierStokes .and. bnewton) then
-        call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(4,2),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(5,1),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(4,2))
-        call lsyssc_clearMatrix (rmatrixBlock%RmatrixBlock(5,1))
-      end if
-
-      if (bcontrolactive) then
-        if (.not. bexactderiv) then
-          ! Copy also the mass matrix for the 4th block. In the case of no
-          ! control constraints, that's it!
-          call lsyssc_duplicateMatrix (rmatrixMass,rmatrixBlock%RmatrixBlock(1,4),&
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-          call lsyssc_duplicateMatrix (rmatrixMass,rmatrixBlock%RmatrixBlock(2,5),&
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-          rmatrixBlock%RmatrixBlock(1,4)%dscaleFactor = -(-1.0_DP/dalpha)
-          rmatrixBlock%RmatrixBlock(2,5)%dscaleFactor = -(-1.0_DP/dalpha)
-
-          if (bboundsActive .and. bnewton) then
-            ! Filter the mass matrix. Set those rows to zero where the DOF's are out
-            ! of bounds. The result is the derivative of the projection operator...
-            call massmatfilter (rmatrixBlock%RmatrixBlock(1,4), &
-                rvectorBlock%RvectorBlock(4), dalpha, dmin1, dmax1)
-            call massmatfilter (rmatrixBlock%RmatrixBlock(2,5), &
-                rvectorBlock%RvectorBlock(5), dalpha, dmin2, dmax2)
-          end if
-        
-        else
-
-          call lsyssc_duplicateMatrix (rmatrixMass,rmatrixBlock%RmatrixBlock(1,4),&
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-          call lsyssc_duplicateMatrix (rmatrixMass,rmatrixBlock%RmatrixBlock(2,5),&
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    
-          rbilinearForm%itermCount = 1
-          rbilinearForm%Idescriptors(1,1) = DER_FUNC
-          rbilinearForm%Idescriptors(2,1) = DER_FUNC
-          rbilinearForm%ballCoeffConstant = .false.
-          rbilinearForm%BconstantCoeff(1) = .false.
-          rcollection%p_rvectorQuickAccess1 => rvectorBlock
-          rcollection%DquickAccess(3) = dalpha
-          rcollection%IquickAccess(1) = 1
-          if (bboundsActive .and. bnewton) then
-            rcollection%DquickAccess(1) = dmin1
-            rcollection%DquickAccess(2) = dmax1
-          else
-            rcollection%DquickAccess(1) = -SYS_MAXREAL
-            rcollection%DquickAccess(2) = SYS_MAXREAL
-          end if
-          call bilf_buildMatrixScalar (rbilinearForm,.true.,rmatrixBlock%RmatrixBlock(1,4),&
-                                      coeff_ProjMass,rcollection)
-
-          rcollection%IquickAccess(1) = 2
-          if (bboundsActive .and. bnewton) then
-            rcollection%DquickAccess(1) = dmin2
-            rcollection%DquickAccess(2) = dmax2
-          else
-            rcollection%DquickAccess(1) = -SYS_MAXREAL
-            rcollection%DquickAccess(2) = SYS_MAXREAL
-          end if
-          call bilf_buildMatrixScalar (rbilinearForm,.true.,rmatrixBlock%RmatrixBlock(2,5),&
-                                      coeff_ProjMass,rcollection)
-                                      
-        end if
-      end if
-    
-      ! Now the actual nonlinearity
-      if (bnavierStokes) then
-
-        ! Primal equation.
-        ! Assemble y grad(.) ( or   y grad(.) + (.) grad (y)   in case of Newton)
-        call lsysbl_deriveSubmatrix (rmatrixBlock,rtempmatrix,&
-                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,2)
-        call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 1,2,.true.)
-        call conv_streamlineDiffusionBlk2d ( &
-                           rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
-                           rstreamlineDiffPrimal, CONV_MODMATRIX,rtempmatrix)
-
-        ! Dual equation.
-        ! Assemble - y grad (.) + (grad .)^t y
-        call lsysbl_deriveSubmatrix (rmatrixBlock,rtempmatrix,&
-                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,5)
-        call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 1,2,.true.)
-        call conv_streamlineDiffusionBlk2d ( &
-                           rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
-                           rstreamlineDiffDual, CONV_MODMATRIX,rtempmatrix)  
-
-        ! Newton?
-        if (bnewton .and. bdualcoupledtoprimal) then
-
-          ! Assemble - lambda grad(.) + grad(.)^t lambda
-          call lsysbl_deriveSubmatrix (rmatrixBlock,rtempmatrix,&
-                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,5,1,2)
-          call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 4,5,.true.)
-          call conv_streamlineDiffusionBlk2d ( &
-                            rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
-                            rstreamlineDiffDualR, CONV_MODMATRIX,rtempmatrix)  
-                            
-        end if
-        
-        call lsysbl_releaseVector (rtempVectorSol)
-        call lsysbl_releaseMatrix (rtempmatrix)
-      
-      end if    
-    
-      ! Include boundary conditions
-      call vecfil_discreteBCdef (rtempRhsBlock,rdiscreteBC)
-      
-      ! Check for convergence
-      if (ite .eq. 1) then
-        dinitRes = lsysbl_vectorNorm(rtempRhsBlock,LINALG_NORML2)
-        call output_line ('Iteration: '//TRIM(sys_siL(ite-1,10))//&
-            ', Initial defect: '//sys_sdEL(dinitRes,10))
-      else
-        dcurrentRes = lsysbl_vectorNorm(rtempRhsBlock,LINALG_NORML2)
-        call output_line ('Iteration: '//TRIM(sys_siL(ite-1,10))//&
-            ', Current defect: '//sys_sdEL(dcurrentRes,10))
-        if (dcurrentRes .lt. 1E-14_DP) exit
-        if (dcurrentRes .lt. dinitRes * 1E-13_DP) exit
-        if (ite .gt. nmaxIterations) exit
-      end if
-      
-      call matfil_discreteBC (rmatrixBlock,rdiscreteBC)
-      
-      ! Attach the system matrix to the solver.
-      ! First create an array with the matrix data (on all levels, but we
-      ! only have one level here), then call the initialisation 
-      ! routine to attach all these matrices.
-      ! Remark: Don't make a call like
-      !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-      ! This doesn't work on all compilers, since the compiler would have
-      ! to create a temp array on the stack - which does not always work!
-      Rmatrices = (/rmatrixBlock/)
-      call linsol_setMatrices(p_RsolverNode,Rmatrices)
-      
-      ! Initialise structure/data of the solver. This allows the
-      ! solver to allocate memory / perform some precalculation
-      ! to the problem.
-      if (ite .eq. 1) then
-        ! In the first iteration, initialise the linear solver
-        call linsol_initStructure (p_rsolverNode, ierror)
-        if (ierror .ne. LINSOL_ERR_NOERROR) stop
-      end if
-      
-      call linsol_initData (p_rsolverNode, ierror)
-      if (ierror .ne. LINSOL_ERR_NOERROR) stop
-      
-      ! Preconditioning of the defect by the inverse of the Newton matrix
-      call linsol_precondDefect (p_rsolverNode,rtempRhsBlock)
-      
-      ! Release solver data and structure
-      call linsol_doneData (p_rsolverNode)
-      ! Sum up the correction to the current solution.
-      call lsysbl_vectorLinearComb (rtempRhsBlock,rvectorBlock,1.0_DP,1.0_DP)
-      
-      ! Plug in the BC's to the solution
-      call vecfil_discreteBCsol (rvectorBlock,rdiscreteBC)
-      
-    end do
-
-    ! Clean up the linear solver    
-    if (ite .ge. 1) then
-      call linsol_doneStructure (p_rsolverNode)
     end if
-    
-    ! Release the solver node and all subnodes attached to it (if at all):
-    call linsol_releaseSolver (p_rsolverNode)
-    
-    ! Release our discrete version of the boundary conditions
-    call bcasm_releaseDiscreteBC (rdiscreteBC)
 
-    ! That's it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       'gmv/unst2d_0_simple.gmv')
-                       
-    call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(1),&
-      rvectorOutputX,rdiscrOutput)
-    call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(2),&
-      rvectorOutputY,rdiscrOutput)
-      
-    ! Create a discretisation for Q1.
-    call spdiscr_initBlockDiscr (rdiscrOutBlock,2,&
-                                 rtriangulation, rboundary)
-    call spdiscr_duplicateDiscrSc (rdiscrOutput,&
-        rdiscrOutBlock%RspatialDiscr(1), .true.)
-    call spdiscr_duplicateDiscrSc (rdiscrOutput,&
-        rdiscrOutBlock%RspatialDiscr(2), .true.)
-    call lsysbl_createVecBlockByDiscr(rdiscrOutBlock,rvecout)
-    call lsyssc_duplicateVector(rvectorOutputX,rvecout%RvectorBlock(1),&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    call lsyssc_duplicateVector(rvectorOutputY,rvecout%RvectorBlock(2),&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-
-    ! Assemble the BC for Q1 and implement them
-    call getBC (rdiscrOutBlock,ibcType,rdiscreteBC,.false.)
-
-    call vecfil_discreteBCrhs (rrhsBlock,rdiscreteBC)
-    call vecfil_discreteBCsol (rvecout,rdiscreteBC)
-    
-    ! Release temporary data
-    call bcasm_releaseDiscreteBC (rdiscreteBC)
-    call lsysbl_releaseVector (rvecout)
-    call spdiscr_releaseBlockDiscr(rdiscrOutBlock)
-    
-    
-    call lsyssc_getbase_double (rvectorOutputX,p_DdataX)
-    call lsyssc_getbase_double (rvectorOutputY,p_DdataY)
-    
-    call ucd_addVarVertBasedVec (rexport, 'primalvel', p_DdataX, p_DdataY)
-
-    call lsyssc_getbase_double (rvectorBlock%RvectorBlock(3),p_Ddata)
-    call ucd_addVariableElementBased (rexport,'primalP',UCD_VAR_STANDARD, p_Ddata)
-    
-    call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(4),&
-        rvectorOutputX,rdiscrOutput)
-    call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(5),&
-        rvectorOutputY,rdiscrOutput)
-    call ucd_addVariableVertexBased (rexport,'dualvelX',UCD_VAR_STANDARD, p_DdataX)
-    call ucd_addVariableVertexBased (rexport,'dualvelY',UCD_VAR_STANDARD, p_DdataY)
-
-    call lsyssc_getbase_double (rvectorBlock%RvectorBlock(6),p_Ddata)
-    call ucd_addVariableElementBased (rexport,'dualP',UCD_VAR_STANDARD, p_Ddata)
-    
-    call lsyssc_copyVector (rvectorBlock%RvectorBlock(4),rvectorTmp)
-    call lsyssc_scaleVector (rvectorTmp,-1.0_DP/dalpha)
-    if (bboundsActive) then
-      call projectControlTimestep (rvectorTmp,dmin1,dmax1)
-    end if
-    call spdp_stdProjectionToP1Q1Scalar (rvectorTmp,rvectorOutputX,rdiscrOutput)
-    
-    call lsyssc_copyVector (rvectorBlock%RvectorBlock(5),rvectorTmp)
-    call lsyssc_scaleVector (rvectorTmp,-1.0_DP/dalpha)
-    if (bboundsActive) then
-      call projectControlTimestep (rvectorTmp,dmin2,dmax2)
-    end if
-    call spdp_stdProjectionToP1Q1Scalar (rvectorTmp,rvectorOutputY,rdiscrOutput)
-    
-    call ucd_addVariableVertexBased (rexport,'controlX',UCD_VAR_STANDARD, p_DdataX)
-    call ucd_addVariableVertexBased (rexport,'controlY',UCD_VAR_STANDARD, p_DdataY)
-    
-    ! residual
-    call spdp_stdProjectionToP1Q1Scalar (rtempRhsBlock%RvectorBlock(1),&
-        rvectorOutputX,rdiscrOutput)
-    call spdp_stdProjectionToP1Q1Scalar (rtempRhsBlock%RvectorBlock(2),&
-        rvectorOutputY,rdiscrOutput)
-    call ucd_addVariableVertexBased (rexport,'respx',UCD_VAR_STANDARD, p_DdataX)
-    call ucd_addVariableVertexBased (rexport,'respy',UCD_VAR_STANDARD, p_DdataY)
-
-    call spdp_stdProjectionToP1Q1Scalar (rtempRhsBlock%RvectorBlock(4),&
-        rvectorOutputX,rdiscrOutput)
-    call spdp_stdProjectionToP1Q1Scalar (rtempRhsBlock%RvectorBlock(5),&
-        rvectorOutputY,rdiscrOutput)
-    call ucd_addVariableVertexBased (rexport,'resdx',UCD_VAR_STANDARD, p_DdataX)
-    call ucd_addVariableVertexBased (rexport,'resdy',UCD_VAR_STANDARD, p_DdataY)
-    
-    ! rhs
-    call spdp_stdProjectionToP1Q1Scalar (rrhsBlock%RvectorBlock(1),&
-        rvectorOutputX,rdiscrOutput)
-    call spdp_stdProjectionToP1Q1Scalar (rrhsBlock%RvectorBlock(1),&
-        rvectorOutputY,rdiscrOutput)
-    call ucd_addVariableVertexBased (rexport,'rhspx',UCD_VAR_STANDARD, p_DdataX)
-    call ucd_addVariableVertexBased (rexport,'rhspy',UCD_VAR_STANDARD, p_DdataY)
-
-    call spdp_stdProjectionToP1Q1Scalar (rrhsBlock%RvectorBlock(4),&
-        rvectorOutputX,rdiscrOutput)
-    call spdp_stdProjectionToP1Q1Scalar (rrhsBlock%RvectorBlock(5),&
-        rvectorOutputY,rdiscrOutput)
-    call ucd_addVariableVertexBased (rexport,'rhsdx',UCD_VAR_STANDARD, p_DdataX)
-    call ucd_addVariableVertexBased (rexport,'rhsdy',UCD_VAR_STANDARD, p_DdataY)
-
-    ! Write the file to disc, that's it.
-    call ucd_write (rexport)
-    call ucd_release (rexport)
-    
-    ! We are finished - but not completely!
-    ! Now, clean up so that all the memory is available again.
-    
-    ! Release the block matrix/vectors
-    call lsyssc_releaseVector (rvectorOutputY)
-    call lsyssc_releaseVector (rvectorOutputX)
-    call lsyssc_releaseVector (rvectorTmp)
-    call lsysbl_releaseVector (rtempRhsBlock)
-    call lsysbl_releaseVector (rvectorBlock)
-    call lsysbl_releaseVector (rrhsBlock)
-    call lsysbl_releaseMatrix (rmatrixBlock)
-
-    call lsyssc_releaseMatrix (rmatrixB2)
-    call lsyssc_releaseMatrix (rmatrixB1)
-    call lsyssc_releaseMatrix (rmatrixMass)
-    call lsyssc_releaseMatrix (rmatrixLaplace)
-    
-    ! Release the discretisation structure and all spatial discretisation
-    ! structures in it.
-    call spdiscr_releaseDiscr(rdiscrOutput)
-    call spdiscr_releaseBlockDiscr(rdiscretisation)
-    
-    ! Release the triangulation. 
-    call tria_done (rtriangulation)
-    
-    ! Clean up the target flow
-    call doneTargetFlow (rtargetFlow)
-    
-    ! Finally release the domain, that's it.
-    call boundary_release (rboundary)
-    
   end subroutine
 
-  ! -----------------------------------------------------
+  ! ***************************************************************************
 
   subroutine massmatfilter (rmatrix, rvector, dalphaC, dmin, dmax)
       
@@ -1437,5 +1270,600 @@ contains
 
   end subroutine 
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine navstokes2d_0_simple
+  
+!<description>
+  ! This is an all-in-one poisson solver for directly solving a Poisson
+  ! problem without making use of special features like collections
+  ! and so on. The routine performs the following tasks:
+  !
+  ! 1.) Read in parametrisation
+  ! 2.) Read in triangulation
+  ! 3.) Set up RHS
+  ! 4.) Set up matrix
+  ! 5.) Create solver structure
+  ! 6.) Solve the problem
+  ! 7.) Write solution to GMV file
+  ! 8.) Release all variables, finish
+!</description>
+
+!</subroutine>
+
+    ! Definitions of variables.
+    !
+    ! We need a couple of variables for this problem. Let's see...
+    !
+    ! An object for saving the domain:
+    type(t_boundary) :: rboundary
+    
+    ! An object specifying the discretisation.
+    ! This contains also information about trial/test functions,...
+    type(t_blockDiscretisation) :: rdiscrOutBlock
+    type(t_spatialDiscretisation) :: rdiscrOutput
+    
+    ! A block matrix and a couple of block vectors. These will be filled
+    ! with data for the linear solver.
+    type(t_matrixBlock), dimension(:), allocatable :: RmatrixBlock
+    type(t_vectorBlock), target :: rvectorBlock
+    type(t_vectorBlock) :: rrhsBlock,rvecout
+    type(t_vectorScalar) :: rvectorOutputX,rvectorOutputY,rvectorTmp
+    type(t_vectorBlock) :: rdefectBlock
+
+    ! A solver node that accepts parameters for the linear solver    
+    type(t_linsolNode), pointer :: p_rsolverNode, p_rprecSolver
+    type(t_filterChain), dimension(3), target :: RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+    type(t_linsolMGLevelInfo2), pointer     :: p_rlevelInfo
+    type(t_interlevelProjectionBlock) :: rprojection
+
+    ! NLMAX receives the level where we want to solve.
+    integer :: NLMIN,NLMAX
+    
+    ! Error indicator during initialisation of the solver
+    integer :: ierror, ilevel, ilinearsolver
+    integer :: ibctype
+    integer :: itargetFlow
+    
+    ! Data for the Newton iteration
+    integer :: ite, nmaxiterations, idiscretisation, nmg
+    real(dp) :: dinitRes, dcurrentRes
+    
+    type(t_targetFlow), target :: rtargetFlow
+    
+    real(DP), dimension(10) :: Derror
+    
+    type(t_collection) :: rcollection
+    
+    ! Output block for UCD output to GMV file
+    type(t_ucdExport) :: rexport
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdataX,p_DdataY
+
+    ! All information for the discretsiation
+    type(t_level), dimension(:), allocatable :: Rlevel
+    
+    ! Information for setting up the system matrix
+    type(t_matrixConfig) :: rparams
+
+    ! Ok, let's start. 
+    !
+    ! We want to solve our Poisson problem on level... 
+    NLMAX = 6
+    
+    ! Minimum level in the MG solver
+    NLMIN = 4
+    
+    ! Newton iteration counter
+    nmaxiterations = 200
+    
+    ! Relaxation parameter
+    rparams%dalpha = 0.01_DP
+    
+    ! Control active or not.
+    rparams%bcontrolactive = .true.
+    rparams%bdualcoupledtoprimal = .true.
+    
+    ! Bounds on the control
+    rparams%bboundsActive = .false.
+    rparams%dmin1 = -0.05
+    rparams%dmax1 = 0.05
+    rparams%dmin2 = -0.05
+    rparams%dmax2 = 0.05
+    
+    ! Viscosity constant
+    rparams%dnu = 1.0_DP/400.0_DP !/200.0_DP
+    
+    ! Discretisation. 1=EM30, 2=Q2
+    idiscretisation = 1
+    
+    ! TRUE emulates a timestep with implicit Euler, timestep length dt, 
+    ! starting from a zero solution
+    rparams%bemulateTimestep = .false.
+    
+    ! Timestep length
+    rparams%dt = 1.0_DP
+    
+    ! TRUE: Use Newton iteration
+    rparams%bnewton = .true.
+    
+    ! TRUE: Use Navier-Stokes. FALSE: Use Stokes
+    rparams%bnavierStokes = .true.
+    
+    ! TRUE: Use exact derivative of the semismooth operator
+    ! (mass matrix set up with an appropriate coefficient) instead
+    ! of zero rows in the mass matrix.
+    rparams%bexactderiv = .false.
+    
+    ! Activate inflow BC's
+    ! =0: no inflow
+    ! =1: Poiseuille
+    ! =2: Driven Cavity
+    ibctype = 3
+    
+    ! Type of the target flow.
+    ! =0: Poiseuille
+    ! =1: Read from file
+    itargetFlow = 1
+    
+    ! Type of linear solver.
+    ! =0: UMFPACK
+    ! =1: MG
+    ilinearsolver = 1
+    
+    ! Allocate level information
+    allocate(Rlevel(NLMAX))
+    allocate(RmatrixBlock(NLMAX))
+    
+    ! At first, read in the parametrisation of the boundary and save
+    ! it to rboundary.
+    call boundary_read_prm(rboundary, './pre/QUAD.prm')
+
+    ! Create the target flow.
+    call initTargetFlow (rtargetFlow,itargetFlow,rboundary,&
+        './pre/QUAD.tri',7,'./solution.00080')
+        
+    ! Now read in the basic triangulation.
+    call tria_readTriFile2D (Rlevel(1)%rtriangulation, './pre/QUAD.tri', rboundary)
+    call tria_initStandardMeshFromRaw (Rlevel(1)%rtriangulation,rboundary)
+     
+    call tria_infoStatistics(Rlevel(1)%rtriangulation,.true.)
+    
+    do ilevel = 2,NLMAX
+      ! Refine it.
+      call tria_refine2LevelOrdering (Rlevel(ilevel-1)%rtriangulation,&
+          Rlevel(ilevel)%rtriangulation,rboundary)
+    
+      ! And create information about adjacencies and everything one needs from
+      ! a triangulation.
+      call tria_initStandardMeshFromRaw (Rlevel(ilevel)%rtriangulation,rboundary)
+
+      ! Print mesh statistics
+      call tria_infoStatistics(Rlevel(ilevel)%rtriangulation,.false.)
+      
+      ! Release the old mesh if it's not used
+      if (ilevel-1 .lt. NLMIN) then
+        call tria_done (Rlevel(ilevel-1)%rtriangulation)
+      end if
+    end do
+    
+    ! Remove redundant mesh data
+    do ilevel=NLMAX-1,NLMIN
+      call tria_compress2LevelOrdHierarchy (Rlevel(ilevel+1)%rtriangulation,&
+           Rlevel(ilevel)%rtriangulation)
+    end do
+    
+    call output_lbrk()
+    
+    do ilevel = NLMIN,NLMAX
+      ! Set up a block discretisation structure for two components:
+      ! Primal and dual solution vector.
+      call spdiscr_initBlockDiscr (Rlevel(ilevel)%rdiscretisation,6,&
+                                     Rlevel(ilevel)%rtriangulation, rboundary)
+      
+      ! Set up the blocks. Both are discretised with the same finite element.
+      if (idiscretisation .eq. 1) then
+      
+        call spdiscr_initDiscr_simple (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(1), &
+            EL_EM30,CUB_G3X3,Rlevel(ilevel)%rtriangulation, rboundary)
+        call spdiscr_duplicateDiscrSc (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(1), &
+            Rlevel(ilevel)%rdiscretisation%RspatialDiscr(2), .true.)
+        call spdiscr_duplicateDiscrSc (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(1), &
+            Rlevel(ilevel)%rdiscretisation%RspatialDiscr(4), .true.)
+        call spdiscr_duplicateDiscrSc (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(1), &
+            Rlevel(ilevel)%rdiscretisation%RspatialDiscr(5), .true.)
+            
+        call spdiscr_deriveSimpleDiscrSc (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(1), &
+            EL_Q0,CUB_G2X2,Rlevel(ilevel)%rdiscretisation%RspatialDiscr(3))
+        call spdiscr_duplicateDiscrSc (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(3), &
+            Rlevel(ilevel)%rdiscretisation%RspatialDiscr(6), .true.)
+            
+      else if (idiscretisation .eq. 2) then
+      
+        call spdiscr_initDiscr_simple (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(1), &
+            EL_Q2,CUB_G4X4,Rlevel(ilevel)%rtriangulation, rboundary)
+        call spdiscr_duplicateDiscrSc (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(1), &
+            Rlevel(ilevel)%rdiscretisation%RspatialDiscr(2), .true.)
+        call spdiscr_duplicateDiscrSc (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(1), &
+            Rlevel(ilevel)%rdiscretisation%RspatialDiscr(4), .true.)
+        call spdiscr_duplicateDiscrSc (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(1), &
+            Rlevel(ilevel)%rdiscretisation%RspatialDiscr(5), .true.)
+            
+        call spdiscr_deriveSimpleDiscrSc (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(1), &
+            EL_QP1,CUB_G2X2,Rlevel(ilevel)%rdiscretisation%RspatialDiscr(3))
+        call spdiscr_duplicateDiscrSc (Rlevel(ilevel)%rdiscretisation%RspatialDiscr(3), &
+            Rlevel(ilevel)%rdiscretisation%RspatialDiscr(6), .true.)
+            
+      end if
+              
+      ! Create not-changing matrices
+      call calcStandardMatrices (Rlevel(ilevel))
+      
+      ! Create a temp vector
+      call lsysbl_createVecBlockByDiscr (Rlevel(ilevel)%rdiscretisation,Rlevel(ilevel)%rtempVector)
+
+      ! Assemble the boundary conditions
+      call getBC (Rlevel(ilevel)%rdiscretisation,ibctype,&
+          Rlevel(ilevel)%rdiscreteBC,.true.,rparams%bpureDirichlet)
+
+    end do
+
+    ! -----
+    ! Linear system: Basic structure.
+    !
+    ! Create a 2x2 matrix and 2-block vectors from the discretisation.
+    do ilevel=NLMIN,NLMAX
+      call lsysbl_createMatBlockByDiscr (Rlevel(ilevel)%rdiscretisation,RmatrixBlock(ilevel))
+    end do
+    
+    call lsysbl_createVecBlockByDiscr (Rlevel(NLMAX)%rdiscretisation,rrhsBlock)
+    call lsysbl_createVecBlockByDiscr (Rlevel(NLMAX)%rdiscretisation,rvectorBlock)
+    call lsysbl_createVecBlockByDiscr (Rlevel(NLMAX)%rdiscretisation,rdefectBlock)
+    call lsyssc_createVecByDiscr (Rlevel(NLMAX)%rdiscretisation%RspatialDiscr(1),rvectorTmp)
+    
+    call getRHS (Rlevel(NLMAX), rtargetFlow, rrhsBlock)
+  
+    ! Implement BC's
+    call vecfil_discreteBCrhs (rrhsBlock,Rlevel(NLMAX)%rdiscreteBC)
+    
+    ! -----
+    ! Nonlinear iteration
+    !
+    ! Initialise the solution vector.
+    call lsysbl_clearVector (rvectorBlock)
+    
+    call vecfil_discreteBCsol (rvectorBlock,Rlevel(NLMAX)%rdiscreteBC)
+
+    ! Filter chain for boundary conditions in the linear solver
+    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    if (rparams%bpureDirichlet) then
+      RfilterChain(2)%ifilterType = FILTER_TOL20
+      RfilterChain(2)%itoL20component = 3
+      RfilterChain(3)%ifilterType = FILTER_TOL20
+      RfilterChain(3)%itoL20component = 6
+    end if
+    p_RfilterChain => RfilterChain
+    
+    ! Prepare an UMFPACK solver for the lienar systems
+    select case(ilinearsolver)
+    case (0)
+      call linsol_initUMFPACK4(p_rsolverNode)
+      
+    case (1)
+      call linsol_initMultigrid2(p_rsolverNode,NLMAX-NLMIN+1,p_RfilterChain)
+      
+      ! Add the coarse grid solver
+      call linsol_getMultigridLevel2 (p_rsolverNode,1,p_rlevelInfo)
+      call linsol_initVANKA (p_rprecSolver,0.7_DP,LINSOL_VANKA_2DFNAVSTOC)
+      call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rprecSolver,p_RfilterChain)
+      !call linsol_initUMFPACK4(p_rlevelInfo%p_rcoarseGridSolver)
+      
+      do ilevel = NLMIN+1,NLMAX
+        call linsol_getMultigridLevel2 (p_rsolverNode,ilevel-NLMIN+1,p_rlevelInfo)
+      
+        ! Add the smoother
+        call linsol_initVANKA (p_rprecSolver,0.7_DP,LINSOL_VANKA_2DFNAVSTOC)
+        call linsol_initBiCGStab (p_rlevelInfo%p_rpresmoother,p_rprecSolver,p_RfilterChain)
+        call linsol_convertToSmoother (p_rlevelInfo%p_rpresmoother,4,1.0_DP)
+        p_rlevelInfo%p_rpostsmoother => p_rlevelInfo%p_rpresmoother
+        
+        ! Add the interlevel projection structure
+        call mlprj_initProjectionDiscr (Rlevel(ilevel)%rprojection,&
+            Rlevel(ilevel)%rdiscretisation)
+            
+        p_rlevelInfo%rinterlevelProjection = Rlevel(ilevel)%rprojection
+
+      end do
+      
+    end select
+    !p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 1
+  
+    ! Set the output level of the solver to 2 for some output
+    p_rsolverNode%ioutputLevel = 2
+    
+    !p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%ccorrectionType = CGCOR_SCALARENERGYMIN
+    
+    ! Count the number of steps in the linear solver
+    nmg = 0
+    
+    do ite = 1,nmaxIterations+1
+    
+!      if (ite .eq. 2) then
+!        bcontrolactive = .false.
+!        rmatrixBlock%RmatrixBlock(1,4)%dscaleFactor = 0.0_DP
+!        rmatrixBlock%RmatrixBlock(2,5)%dscaleFactor = 0.0_DP
+!      end if
+    
+      ! Calculate the system matrix on all levels
+      call lsysbl_copyVector (rvectorBlock,Rlevel(NLMAX)%rtempVector)
+      do ilevel = NLMAX,NLMIN,-1
+        
+        ! Project down the solution vector; this is the evaluation point for
+        ! the matrix.
+        if (ilevel .lt. NLMAX) then
+          call mlprj_initProjectionDiscr(rprojection,Rlevel(ilevel+1)%rdiscretisation)
+          
+          ! Abuse the defect vector as temp vector
+          call mlprj_performInterpolation (rprojection,Rlevel(ilevel)%rtempVector, &
+                                           Rlevel(ilevel+1)%rtempVector,rdefectBlock%RvectorBlock(1))
+        end if
+      
+        call getSystemMatrix (RmatrixBlock(ilevel),Rlevel(ilevel)%rtempVector,rparams,Rlevel(ilevel),.true.)
+        call matfil_discreteBC (RmatrixBlock(ilevel),Rlevel(ilevel)%rdiscreteBC)
+        
+        if (ilevel .lt. NLMAX) then
+          call mlprj_doneProjection(rprojection)
+        end if
+      end do
+
+      ! Calculate the nonlinear defect
+      call getDefect (rdefectBlock,rvectorBlock,rrhsBlock,rparams,Rlevel(NLMAX))
+
+      ! Include boundary conditions
+      call vecfil_discreteBCdef (rdefectBlock,Rlevel(NLMAX)%rdiscreteBC)
+
+      ! Check for convergence
+      if (ite .eq. 1) then
+        dinitRes = lsysbl_vectorNorm(rdefectBlock,LINALG_NORML2)
+        call output_line ('Iteration: '//TRIM(sys_siL(ite-1,10))//&
+            ', Initial defect: '//sys_sdEL(dinitRes,10))
+      else
+        dcurrentRes = lsysbl_vectorNorm(rdefectBlock,LINALG_NORML2)
+        call output_line ('Iteration: '//TRIM(sys_siL(ite-1,10))//&
+            ', Current defect: '//sys_sdEL(dcurrentRes,10))
+        if (dcurrentRes .lt. 1E-13_DP) exit
+        if (dcurrentRes .lt. dinitRes * 1E-13_DP) exit
+        if (ite .gt. nmaxIterations) exit
+      end if
+      
+      ! Attach the system matrix to the solver.
+      ! First create an array with the matrix data (on all levels, but we
+      ! only have one level here), then call the initialisation 
+      ! routine to attach all these matrices.
+      ! Remark: Don't make a call like
+      !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
+      ! This doesn't work on all compilers, since the compiler would have
+      ! to create a temp array on the stack - which does not always work!
+      call linsol_setMatrices(p_RsolverNode,RmatrixBlock(NLMIN:NLMAX))
+      
+      ! Initialise structure/data of the solver. This allows the
+      ! solver to allocate memory / perform some precalculation
+      ! to the problem.
+      if (ite .eq. 1) then
+        ! In the first iteration, initialise the linear solver
+        call linsol_initStructure (p_rsolverNode, ierror)
+        if (ierror .ne. LINSOL_ERR_NOERROR) stop
+      end if
+      
+      call linsol_initData (p_rsolverNode, ierror)
+      if (ierror .ne. LINSOL_ERR_NOERROR) stop
+      
+      ! Preconditioning of the defect by the inverse of the Newton matrix
+      call linsol_precondDefect (p_rsolverNode,rdefectBlock)
+      
+      nmg = nmg + p_rsolverNode%iiterations
+      
+      ! Release solver data and structure
+      call linsol_doneData (p_rsolverNode)
+      ! Sum up the correction to the current solution.
+      call lsysbl_vectorLinearComb (rdefectBlock,rvectorBlock,1.0_DP,1.0_DP)
+      
+      ! Plug in the BC's to the solution
+      call vecfil_discreteBCsol (rvectorBlock,Rlevel(NLMAX)%rdiscreteBC)
+      
+    end do
+
+    ! Clean up the linear solver    
+    if (ite .ge. 1) then
+      call linsol_doneStructure (p_rsolverNode)
+    end if
+    
+    ! Release the solver node and all subnodes attached to it (if at all):
+    call linsol_releaseSolver (p_rsolverNode)
+    
+    ! Release our discrete version of the boundary conditions
+    do ilevel=NLMIN,NLMAX
+      call bcasm_releaseDiscreteBC (Rlevel(ilevel)%rdiscreteBC)
+    end do
+    
+    call output_lbrk()
+    
+    call output_line("#mg    = "//sys_siL(nmg,10))
+    call output_line("#nl    = "//sys_siL(ite,10))
+    
+    call output_lbrk()
+    
+    ! Calculate the error in y:
+    rcollection%IquickAccess(1) = rtargetFlow%itype
+    rcollection%p_rvectorQuickAccess1 => rtargetFlow%rvector
+    call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,Derror(1),&
+                       getReferenceFunctionX_2D,rcollection)
+    call pperr_scalar (rvectorBlock%RvectorBlock(2),PPERR_L2ERROR,Derror(2),&
+                       getReferenceFunctionY_2D,rcollection)
+    Derror(3) = sqrt(0.5_DP*(Derror(1)**2+Derror(2)**2))
+    call output_line("|y-z|  = "//sys_sdEL(Derror(3),15))
+
+    call pperr_scalar (rvectorBlock%RvectorBlock(4),PPERR_L2ERROR,Derror(4))
+    call pperr_scalar (rvectorBlock%RvectorBlock(5),PPERR_L2ERROR,Derror(5))
+    Derror(6) =  sqrt(0.5_DP*(Derror(4)**2+Derror(5)**2))
+    call output_line("|u|    = "//sys_sdEL(Derror(6)/rparams%dalpha,15))
+    
+    call output_line("J(y,u) = "//&
+        sys_sdEL(0.5_DP*Derror(3)**2 + 0.5_DP*rparams%dalpha*Derror(6)**2,15))
+
+    ! That's it, rvectorBlock now contains our solution. We can now
+    ! start the postprocessing. 
+    ! Start UCD export to GMV file:
+    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,Rlevel(NLMAX)%rtriangulation,&
+                       'gmv/unst2d_0_simple.gmv')
+                       
+    call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(1),&
+      rvectorOutputX,rdiscrOutput)
+    call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(2),&
+      rvectorOutputY,rdiscrOutput)
+      
+    ! Create a discretisation for Q1.
+    call spdiscr_initBlockDiscr2D (rdiscrOutBlock,2,&
+                                   Rlevel(NLMAX)%rtriangulation, rboundary)
+    call spdiscr_duplicateDiscrSc (rdiscrOutput,&
+        rdiscrOutBlock%RspatialDiscr(1), .true.)
+    call spdiscr_duplicateDiscrSc (rdiscrOutput,&
+        rdiscrOutBlock%RspatialDiscr(2), .true.)
+    call lsysbl_createVecBlockByDiscr(rdiscrOutBlock,rvecout)
+    call lsyssc_duplicateVector(rvectorOutputX,rvecout%RvectorBlock(1),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateVector(rvectorOutputY,rvecout%RvectorBlock(2),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+    ! Assemble the BC for Q1 and implement them
+    call getBC (rdiscrOutBlock,ibcType,Rlevel(NLMAX)%rdiscreteBC,.false.)
+
+    call vecfil_discreteBCrhs (rrhsBlock,Rlevel(NLMAX)%rdiscreteBC)
+    call vecfil_discreteBCsol (rvecout,Rlevel(NLMAX)%rdiscreteBC)
+    
+    ! Release temporary data
+    call lsysbl_releaseVector (rvecout)
+    call spdiscr_releaseBlockDiscr(rdiscrOutBlock)
+    call bcasm_releaseDiscreteBC (Rlevel(NLMAX)%rdiscreteBC)
+    
+    call lsyssc_getbase_double (rvectorOutputX,p_DdataX)
+    call lsyssc_getbase_double (rvectorOutputY,p_DdataY)
+    
+    call ucd_addVarVertBasedVec (rexport, 'primalvel', p_DdataX, p_DdataY)
+
+    call lsyssc_getbase_double (rvectorBlock%RvectorBlock(3),p_Ddata)
+    call ucd_addVariableElementBased (rexport,'primalP',UCD_VAR_STANDARD, p_Ddata)
+    
+    call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(4),&
+        rvectorOutputX,rdiscrOutput)
+    call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(5),&
+        rvectorOutputY,rdiscrOutput)
+    call ucd_addVariableVertexBased (rexport,'dualvelX',UCD_VAR_STANDARD, p_DdataX)
+    call ucd_addVariableVertexBased (rexport,'dualvelY',UCD_VAR_STANDARD, p_DdataY)
+
+    call lsyssc_getbase_double (rvectorBlock%RvectorBlock(6),p_Ddata)
+    call ucd_addVariableElementBased (rexport,'dualP',UCD_VAR_STANDARD, p_Ddata)
+    
+    call lsyssc_copyVector (rvectorBlock%RvectorBlock(4),rvectorTmp)
+    call lsyssc_scaleVector (rvectorTmp,-1.0_DP/rparams%dalpha)
+    if (rparams%bboundsActive) then
+      call projectControlTimestep (rvectorTmp,rparams%dmin1,rparams%dmax1)
+    end if
+    call spdp_stdProjectionToP1Q1Scalar (rvectorTmp,rvectorOutputX,rdiscrOutput)
+    
+    call lsyssc_copyVector (rvectorBlock%RvectorBlock(5),rvectorTmp)
+    call lsyssc_scaleVector (rvectorTmp,-1.0_DP/rparams%dalpha)
+    if (rparams%bboundsActive) then
+      call projectControlTimestep (rvectorTmp,rparams%dmin2,rparams%dmax2)
+    end if
+    call spdp_stdProjectionToP1Q1Scalar (rvectorTmp,rvectorOutputY,rdiscrOutput)
+    
+    call ucd_addVariableVertexBased (rexport,'controlX',UCD_VAR_STANDARD, p_DdataX)
+    call ucd_addVariableVertexBased (rexport,'controlY',UCD_VAR_STANDARD, p_DdataY)
+    
+    ! residual
+    call spdp_stdProjectionToP1Q1Scalar (rdefectBlock%RvectorBlock(1),&
+        rvectorOutputX,rdiscrOutput)
+    call spdp_stdProjectionToP1Q1Scalar (rdefectBlock%RvectorBlock(2),&
+        rvectorOutputY,rdiscrOutput)
+    call ucd_addVariableVertexBased (rexport,'respx',UCD_VAR_STANDARD, p_DdataX)
+    call ucd_addVariableVertexBased (rexport,'respy',UCD_VAR_STANDARD, p_DdataY)
+
+    call spdp_stdProjectionToP1Q1Scalar (rdefectBlock%RvectorBlock(4),&
+        rvectorOutputX,rdiscrOutput)
+    call spdp_stdProjectionToP1Q1Scalar (rdefectBlock%RvectorBlock(5),&
+        rvectorOutputY,rdiscrOutput)
+    call ucd_addVariableVertexBased (rexport,'resdx',UCD_VAR_STANDARD, p_DdataX)
+    call ucd_addVariableVertexBased (rexport,'resdy',UCD_VAR_STANDARD, p_DdataY)
+    
+    ! rhs
+    call spdp_stdProjectionToP1Q1Scalar (rrhsBlock%RvectorBlock(1),&
+        rvectorOutputX,rdiscrOutput)
+    call spdp_stdProjectionToP1Q1Scalar (rrhsBlock%RvectorBlock(1),&
+        rvectorOutputY,rdiscrOutput)
+    call ucd_addVariableVertexBased (rexport,'rhspx',UCD_VAR_STANDARD, p_DdataX)
+    call ucd_addVariableVertexBased (rexport,'rhspy',UCD_VAR_STANDARD, p_DdataY)
+
+    call spdp_stdProjectionToP1Q1Scalar (rrhsBlock%RvectorBlock(4),&
+        rvectorOutputX,rdiscrOutput)
+    call spdp_stdProjectionToP1Q1Scalar (rrhsBlock%RvectorBlock(5),&
+        rvectorOutputY,rdiscrOutput)
+    call ucd_addVariableVertexBased (rexport,'rhsdx',UCD_VAR_STANDARD, p_DdataX)
+    call ucd_addVariableVertexBased (rexport,'rhsdy',UCD_VAR_STANDARD, p_DdataY)
+
+    ! Write the file to disc, that's it.
+    call ucd_write (rexport)
+    call ucd_release (rexport)
+    
+    ! We are finished - but not completely!
+    ! Now, clean up so that all the memory is available again.
+    
+    ! Release the block matrix/vectors
+    call lsyssc_releaseVector (rvectorOutputY)
+    call lsyssc_releaseVector (rvectorOutputX)
+    call lsyssc_releaseVector (rvectorTmp)
+    call lsysbl_releaseVector (rdefectBlock)
+    call lsysbl_releaseVector (rvectorBlock)
+    call lsysbl_releaseVector (rrhsBlock)
+
+    if (ilinearsolver .ne. 1) then
+      do ilevel=NLMIN+1,NLMAX
+        call mlprj_doneProjection (Rlevel(ilevel)%rprojection)
+      end do
+    end if
+
+    do ilevel=NLMIN,NLMAX
+    
+      call lsysbl_releaseVector (Rlevel(ilevel)%rtempVector)
+      call lsysbl_releaseMatrix (RmatrixBlock(ilevel))
+      call lsyssc_releaseMatrix (Rlevel(ilevel)%rmatrixB2)
+      call lsyssc_releaseMatrix (Rlevel(ilevel)%rmatrixB1)
+      call lsyssc_releaseMatrix (Rlevel(ilevel)%rmatrixMass)
+      call lsyssc_releaseMatrix (Rlevel(ilevel)%rmatrixLaplace)
+      call spdiscr_releaseBlockDiscr(Rlevel(ilevel)%rdiscretisation)
+    
+      ! Release the triangulation. 
+      call tria_done (Rlevel(ilevel)%rtriangulation)
+    
+    end do
+    
+    ! Release the discretisation structure and all spatial discretisation
+    ! structures in it.
+    call spdiscr_releaseDiscr(rdiscrOutput)
+    
+    ! Clean up the target flow
+    call doneTargetFlow (rtargetFlow)
+    
+    ! Finally release the domain, that's it.
+    call boundary_release (rboundary)
+    
+  end subroutine
 
 end module
+
+! Tests: Den L2-Fehler zur echten Lösung bei verschiedenen Konfigurationen.
+! |u| berechnen, J() berechnen.
+! Konvergenzverlauf aufzeichnen für DefCorr/Newton bei versch. Konfigurationen.
+! -> Mit/Ohne Beschränkung der Kontrolle.

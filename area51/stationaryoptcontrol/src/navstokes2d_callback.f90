@@ -534,31 +534,42 @@ contains
   
 !</subroutine>
 
-  select case (cderivative)
-  case (DER_FUNC)
-    ! u(x,y) = 16*x*(1-x)*y*(1-y)
-    Dvalues (:,:) = 0.3_DP * 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
-    !Dvalues (:,:) = 0.0_DP
-    !Dvalues (:,:) = 2.0_DP/3.0_DP
-    !Dvalues (:,:) = 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) * (1.0_DP-Dpoints(1,:,:)) + &
-    !  2.0_DP/3.0_DP * Dpoints(1,:,:)
-  case (DER_DERIV_X)
-    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
-    ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
-    Dvalues (:,:) = 16.0_DP * ( &
-        Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
-  case (DER_DERIV_Y)
-    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
-    ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
-    Dvalues (:,:) = 16.0_DP * ( &
-        Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
-  case DEFAULT
-    ! Unknown. Set the result to 0.0.
-    Dvalues = 0.0_DP
-  end select
-  
+    integer :: iel
+
+    if (rcollection%IquickAccess(1) .eq. 0) then
+      ! Analytical function
+      select case (cderivative)
+      case (DER_FUNC)
+        ! u(x,y) = 16*x*(1-x)*y*(1-y)
+        Dvalues (:,:) = 0.3_DP * 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
+        !Dvalues (:,:) = 0.0_DP
+        !Dvalues (:,:) = 2.0_DP/3.0_DP
+        !Dvalues (:,:) = 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) * (1.0_DP-Dpoints(1,:,:)) + &
+        !  2.0_DP/3.0_DP * Dpoints(1,:,:)
+      case (DER_DERIV_X)
+        !    u(x,y)   = 16*x*(1-x)*y*(1-y)
+        ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
+        Dvalues (:,:) = 16.0_DP * ( &
+            Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
+            Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
+      case (DER_DERIV_Y)
+        !    u(x,y)   = 16*x*(1-x)*y*(1-y)
+        ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
+        Dvalues (:,:) = 16.0_DP * ( &
+            Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
+            Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
+      case DEFAULT
+        ! Unknown. Set the result to 0.0.
+        Dvalues = 0.0_DP
+      end select
+    else
+      ! Function given by vector
+      ! Target flow read from file
+      do iel = 1,nelements
+        call fevl_evaluate (DER_FUNC, Dvalues(:,iel), &
+            rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
+      end do
+    end if
 
   end subroutine
 
@@ -636,26 +647,37 @@ contains
   
 !</subroutine>
 
-  select case (cderivative)
-  case (DER_FUNC)
-    ! u(x,y) = 16*x*(1-x)*y*(1-y)
-    Dvalues (:,:) = 0.0_DP
-  case (DER_DERIV_X)
-    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
-    ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
-    Dvalues (:,:) = 16.0_DP * ( &
-        Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
-  case (DER_DERIV_Y)
-    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
-    ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
-    Dvalues (:,:) = 16.0_DP * ( &
-        Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
-  case DEFAULT
-    ! Unknown. Set the result to 0.0.
-    Dvalues = 0.0_DP
-  end select
+    integer :: iel
+
+    if (rcollection%IquickAccess(1) .eq. 0) then
+      select case (cderivative)
+      case (DER_FUNC)
+        ! u(x,y) = 16*x*(1-x)*y*(1-y)
+        Dvalues (:,:) = 0.0_DP
+      case (DER_DERIV_X)
+        !    u(x,y)   = 16*x*(1-x)*y*(1-y)
+        ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
+        Dvalues (:,:) = 16.0_DP * ( &
+            Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
+            Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
+      case (DER_DERIV_Y)
+        !    u(x,y)   = 16*x*(1-x)*y*(1-y)
+        ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
+        Dvalues (:,:) = 16.0_DP * ( &
+            Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
+            Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
+      case DEFAULT
+        ! Unknown. Set the result to 0.0.
+        Dvalues = 0.0_DP
+      end select
+    else
+      ! Function given by vector
+      ! Target flow read from file
+      do iel = 1,nelements
+        call fevl_evaluate (DER_FUNC, Dvalues(:,iel), &
+            rcollection%p_rvectorQuickAccess1%RvectorBlock(2), Dpoints(:,:,iel))
+      end do
+    end if
   
 
   end subroutine
