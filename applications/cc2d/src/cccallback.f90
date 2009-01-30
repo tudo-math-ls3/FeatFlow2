@@ -1197,7 +1197,7 @@ contains
     
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(IN), optional      :: rcollection
+  type(t_collection), intent(INOUT), optional      :: rcollection
 !</input>
 
 !<output>
@@ -1269,7 +1269,7 @@ contains
     
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), optional                                :: rcollection
+    type(t_collection), optional, intent(INOUT)                 :: rcollection
 
   !</input>
   

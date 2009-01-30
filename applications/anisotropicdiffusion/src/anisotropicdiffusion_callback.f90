@@ -29,7 +29,6 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcassembly.inc'
 !#
-!#
 !# 4.) getBoundaryValuesFBC
 !#    
 !#     -> Returns analytic values in the inner of the domain on
@@ -446,7 +445,7 @@ contains
     
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(IN), optional      :: rcollection
+  type(t_collection), intent(INOUT), optional                 :: rcollection
 
 !</input>
 
