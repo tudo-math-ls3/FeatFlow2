@@ -47,6 +47,74 @@ contains
 !<description>
   ! Calculates the drag-/lift-forces acting on a part of the real
   ! boundary for a vector rvector with the solution of the 2D
+  ! (Navier-)Stokes equation.
+  !
+  ! This routine is a wrapper for the following routines:
+  ! 1.) ppns2D_bdforces_uni_line
+  ! 2.) ppns2D_bdforces_uni_vol
+  !
+  ! Depending on whether ccub defined a 1D or 2D cubature rule, either the
+  ! ppns2D_bdforces_uni_line (1D) routine or the ppns2D_bdforces_uni_vol (2D)
+  ! routine is called.
+!</description>
+
+!<input>
+  ! The FE solution vector.
+  type(t_vectorBlock), intent(IN)    :: rvector
+  
+  ! Boundary region where to calculate the boundary forces.
+  ! Can be created e.g. by boundary_createRegion.
+  type(t_boundaryRegion), intent(IN) :: rregion
+  
+  ! 1D Cubature formula identifier to use for the line integration.
+  ! One of the CUB_xxxx_1D constants in the cubature.f90.
+  integer, intent(IN)                 :: ccub
+
+  ! OPTIONAL: 1st weighting factor for the integral.
+  ! If neglected, df1=1.0 is assumed.
+  real(DP), intent(IN), optional      :: df1
+
+  ! OPTIONAL: 2nd weighting factor for the integral.
+  ! If neglected, df2=2.0 is assumed.
+  real(DP), intent(IN), optional      :: df2
+  
+!</input>
+
+!<output>
+  ! Array receiving the forces acting on the boundary specified by rregion.
+  real(DP), dimension(:), intent(OUT) :: Dforces
+!</output>
+
+!</subroutine>
+
+    ! Determine the shape of the cubature rule
+    select case(cub_igetShape(ccub))
+    case (BGEOM_SHAPE_LINE)
+      ! It's a 1D cubature formula - call line integration version.
+      call ppns2D_bdforces_uni_line(rvector,rregion,Dforces,ccub,df1,df2)
+    
+    case (BGEOM_SHAPE_TRIA, BGEOM_SHAPE_QUAD)
+      ! It's a 2D cubature formula - call volume integration version.
+      call ppns2D_bdforces_uni_vol(rvector,rregion,Dforces,ccub,df1,df2)
+    
+    case default
+      ! Oops...
+      call output_line ('Cubature formula not supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'ppns2D_bdforces_uniform')
+      call sys_halt()
+    end select
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine ppns2D_bdforces_uni_line(rvector,rregion,Dforces,ccub,df1,df2)
+
+!<description>
+  ! Calculates the drag-/lift-forces acting on a part of the real
+  ! boundary for a vector rvector with the solution of the 2D
   ! (Navier-)Stokes equation. It's assumed that
   !   rvector%rvectorBlock(1) = X-velocity,
   !   rvector%rvectorBlock(2) = Y-velocity,
@@ -476,6 +544,467 @@ contains
     
     Dforces = 0.0_DP
     Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (dpf1*DintU(:) + DintP(:))
+    
+    ! Deallocate memory, finish.
+    deallocate(DCoords)
+  
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine ppns2D_bdforces_uni_vol (rvector,rregion,Dforces,ccub,df1,df2)
+
+!<description>
+  ! Calculates the drag-/lift-forces acting on a part of the real
+  ! boundary for a vector rvector with the solution of the 2D
+  ! (Navier-)Stokes equation. It's assumed that
+  !   rvector%rvectorBlock(1) = X-velocity,
+  !   rvector%rvectorBlock(2) = Y-velocity,
+  !   rvector%rvectorBlock(3) = pressure.
+  !
+  ! rregion specifies a boundary region where to calculate
+  ! the force integral. Dforces(1:NDIM2D) receives the forces in the
+  ! X- and Y-direction.
+  !
+  !
+  ! Double precision version for all Finite Elements without 
+  ! curved boundaries.
+!</description>
+
+!<input>
+  ! The FE solution vector.
+  type(t_vectorBlock), intent(IN)    :: rvector
+  
+  ! Boundary region where to calculate the boundary forces.
+  ! Can be created e.g. by boundary_createRegion.
+  type(t_boundaryRegion), intent(IN) :: rregion
+  
+  ! 2D Cubature formula identifier to use for the volume integration.
+  ! One of the CUB_xxxx constants in the cubature.f90.
+  integer, intent(IN)                 :: ccub
+
+  ! OPTIONAL: 1st weighting factor for the integral.
+  ! If neglected, df1=1.0 is assumed.
+  real(DP), intent(IN), optional      :: df1
+
+  ! OPTIONAL: 2nd weighting factor for the integral.
+  ! If neglected, df2=2.0 is assumed.
+  real(DP), intent(IN), optional      :: df2
+  
+!</input>
+
+!<output>
+  ! Array receiving the forces acting on the boundary specified by rregion.
+  ! Note: These are the drag-/lift-FORCES, not the coefficients!!!
+  real(DP), dimension(:), intent(OUT) :: Dforces
+!</output>
+
+!</subroutine>
+
+  ! Spatial discretisation structure of velocity and pressure
+  type(t_spatialDiscretisation), pointer :: p_rdiscrU, p_rdiscrP
+
+  ! Element type identifier for U and P
+  integer(I32) :: ielemU, ielemP
+  
+  ! Number of local DOF's in U and P
+  integer :: idoflocU, idoflocP
+  
+  ! Triangulation
+  type (t_triangulation), pointer :: p_rtriangulation
+  
+  ! An accepting the DOF's of an element.
+  integer, dimension(EL_MAXNBAS), target :: IdofsU, IdofsP
+  
+  ! Coordinates of the coordinates of an element
+  real(DP), dimension(:,:), allocatable :: DCoords
+  
+  ! Coordinates of the cubature points on reference and real element
+  real(DP), dimension(NDIM3D,CUB_MAXCUBP) :: DpointsRef,DpointsReal
+
+  ! Cubature point coordinates on the reference element.
+  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi2D
+  
+  ! Coordinate system for U and P element
+  integer :: ctrafoU, ctrafoP
+  
+  ! U/P element parametric or nonparametric
+  logical :: bnonparU, bnonparP
+  
+  ! Arrays for saving Jacobian determinants and matrices
+  real(DP), dimension(CUB_MAXCUBP_2D) :: Ddetj
+  real(DP), dimension(EL_NJACENTRIES2D,CUB_MAXCUBP_2D) :: Djac
+
+  ! Array to tell the element which derivatives to calculate.
+  logical, dimension(EL_MAXNDER) :: BderU, BderP
+  
+  ! Value of basis functions
+  real(DP), dimension(EL_MAXNBAS,EL_MAXNDER,CUB_MAXCUBP_2D) :: DbasU, DbasP
+  
+  ! Value of local alpha function
+  !real(DP), dimension(EL_MAXNBAS) :: Dalpha
+  
+  ! Pointer to vector data of solution vector
+  real(DP), dimension(:), pointer :: p_DdataUX,p_DdataUY,p_DdataP
+
+
+  ! For every cubature point on the reference element,
+  ! the corresponding cubature weight
+  real(DP), dimension(CUB_MAXCUBP) :: Domega
+  
+  ! number/index of cubature points on the reference element
+  integer :: ncubp,icubp
+
+  ! Edges, vertices and elements on the boundary
+  integer, dimension(:), pointer :: p_IelementsAtBoundary
+  integer, dimension(:), pointer    :: p_IedgesAtBoundary
+  integer, dimension(:,:), pointer  :: p_IedgesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtEdge
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  real(DP), dimension(:), pointer :: p_DvertexParameterValue
+  integer, dimension(:), pointer :: p_IboundaryCpIdx
+  real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
+
+  ! other local variables
+  integer :: iedgeidx,ivt1,ivt2,ilocaledge,nlocaledges,idfl,icp
+  integer :: neqU,neqP,i,j
+  integer :: iedge,iedgeglobal
+  integer :: iel
+  real(DP) :: dvtp1,dvtp2, dweight,dpf1,dpf2
+  real(DP) :: du1x,du1y,du1v,du2x,du2y,du2v,dpv,dax,day,dav,darx,dary
+  real(DP), dimension(2) :: DintU, DintP, DintV
+  real(DP), dimension(NDIM2D) :: dvt1,dvt2
+  integer(I32), dimension(:), pointer :: p_ItwistIndex
+
+    ! Get the vector data
+    neqU = rvector%RvectorBlock(1)%NEQ
+    neqP = rvector%RvectorBlock(3)%NEQ
+    
+    if (rvector%cdataType .ne. ST_DOUBLE) then
+      print *,'ppns2D_bdforces: Unsupported vector precision.'
+      call sys_halt()
+    end if
+
+    ! We support only uniform discretisation structures.
+    if (.not. associated(rvector%p_rblockDiscr)) then
+      print *,'ppns2D_bdforces: No discretisation structure!'
+      call sys_halt()
+    end if
+
+    if (rvector%p_rblockDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
+      print *,'ppns2D_bdforces_uniform: Discretisation too complex!'
+      call sys_halt()
+    end if
+    
+    ! Get pointers to the subvectors from the block vector
+    call lsyssc_getbase_double (rvector%RvectorBlock(1),p_DdataUX)
+    call lsyssc_getbase_double (rvector%RvectorBlock(2),p_DdataUY)
+    call lsyssc_getbase_double (rvector%RvectorBlock(3),p_DdataP)
+    
+    if ((rvector%RvectorBlock(1)%isortStrategy > 0) .or. &
+        (rvector%RvectorBlock(2)%isortStrategy > 0) .or. &
+        (rvector%RvectorBlock(3)%isortStrategy > 0)) then
+      print *,'ppns2D_bdforces_uniform: Resorted vectors not supported!'
+      call sys_halt()
+    end if
+    
+    ! Get pointers to the spatial discretisation structures of the
+    ! veloctiy and pressure
+    p_rdiscrU => rvector%RvectorBlock(1)%p_rspatialDiscr
+    p_rdiscrP => rvector%RvectorBlock(3)%p_rspatialDiscr
+    
+    ! What is the actual element that is used for the discretisation?
+    ielemU = p_rdiscrU%RelementDistr(1)%celement
+    ielemP = p_rdiscrP%RelementDistr(1)%celement
+    
+    ! So far so good, we have checked that the assumptions for the integration
+    ! are fulfilled. Now we can start the actual integration.
+    !
+    ! At first initialise a 2D cubature formula for the integration.
+    call cub_getCubPoints (ccub,ncubp,Dxi2D,Domega)
+
+    ! Map the coordinates in a proper 2D array
+    do i = 1, ubound(DpointsRef,1)
+      do j = 1, ubound(DpointsRef,2)
+        DpointsRef(i,j) = Dxi2D(j,i)
+      end do
+    end do
+    !DpointsRef (1:NDIM2D,1:ncubp) = transpose(Dxi2D(1:ncubp,1:NDIM2D))
+    
+    ! In Dxi1D we have the 1D coordinates of the cubature points.
+    ! These have to be mapped to the 2D element which is under condideration
+    ! during the integration -- later.
+    !
+    ! Before, we need some additional information about the triangulation
+    ! and about our element!
+    !
+    ! Number of local DOF's:
+    
+    idoflocU = elem_igetNDofLoc(ielemU)
+    idoflocP = elem_igetNDofLoc(ielemP)
+    
+    ! Number of local edges
+    nlocaledges = elem_igetNVE (ielemU)
+    
+    ! Allocate memory for the coordinates of the element
+    allocate(Dcoords(NDIM2D,max(elem_igetNVE(ielemU),elem_igetNVE(ielemP))))
+
+    
+    ! The triangulation - it's the same for U and P
+    p_rtriangulation => p_rdiscrU%p_rtriangulation
+
+    ! The arrays which contain the elements and edge numbers on the boundary
+    ! as well as boundary index array.
+    ! Fetch geometrical information
+    call storage_getbase_int (p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
+    call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement, &
+        p_IverticesAtElement)
+    call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary, &
+        p_IelementsAtBoundary)
+    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords, &
+                                   p_DvertexCoordinates)
+                                   
+    if (p_rtriangulation%h_DvertexParameterValue .eq. ST_NOHANDLE) then
+      print *,'No boundary parameters available!'
+      call sys_halt()
+    end if
+    
+    call storage_getbase_double (p_rtriangulation%h_DvertexParameterValue, &
+                                 p_DvertexParameterValue)
+                                 
+    ! Does the element need twist indices?
+    nullify(p_ItwistIndex)
+    if (p_rtriangulation%h_ItwistIndex .ne. ST_NOHANDLE) then
+      call storage_getbase_int32 (p_rtriangulation%h_ItwistIndex,p_ItwistIndex)
+    end if
+
+    ! Is one of the elements nonparametric
+    bnonparU = elem_isnonparametric(ielemU) 
+    bnonparP = elem_isnonparametric(ielemP)
+
+    ! Coordinate systems of U and P element
+    ctrafoU = elem_igetTrafoType(ielemU)
+    ctrafoP = elem_igetTrafoType(ielemP)
+    
+    ! Derivatives to calculate when evaluating the U and P-element, respectively.
+    BderU = .false.
+    BderU(DER_FUNC) = .true.
+    BderU(DER_DERIV_X) = .true.
+    BderU(DER_DERIV_Y) = .true.
+    
+    BderP = .false.
+    BderP(DER_FUNC) = .true.
+    
+    ! Prepare the weighting coefficients
+    dpf1 = 1.0_DP
+    dpf2 = 2.0_DP
+    if (present(df1)) dpf1 = df1
+    if (present(df2)) dpf2 = df2
+
+    ! We are on boundary component
+    icp = rregion%iboundCompIdx
+    
+    ! We assemble the integral contributions separately
+    DintU = 0.0_DP
+    DintP = 0.0_DP
+    DintV = 0.0_DP
+    
+    ! Loop through all edges along the boundary
+    do iedgeidx = p_IboundaryCpIdx(icp),p_IboundaryCpIdx(icp+1)-1
+      
+      ! Current element
+      iel = p_IelementsAtBoundary(iedgeidx)
+      
+      ! Egde number
+      iedgeglobal = p_IedgesAtBoundary(iedgeidx)
+      iedge       = iedgeglobal
+      
+      ! What are the vertices adjacent to that edge?
+      ivt1 = p_IverticesAtEdge(1,iedge)
+      ivt2 = p_IverticesAtEdge(2,iedge)
+      
+      ! Parameter values of these vertices?
+      ! iedgeidx is the index of the edge as well as the number of the
+      ! index of the vertex preceding the edge!
+      dvtp1 = p_DvertexParameterValue (iedgeidx)
+      if (iedgeidx .ne. p_IboundaryCpIdx(icp+1)-1) then
+        dvtp2 = p_DvertexParameterValue (iedgeidx+1)
+      else
+        ! Last vertex has maximum parameter value! (TMAX)
+        dvtp2 = boundary_dgetMaxParVal(p_rdiscrU%p_rboundary,icp)
+      end if
+      
+      ! Is the edge in the specified boundary region, so we are allowed 
+      ! to integrate about it? We check both endpoints...
+      
+      if (boundary_isInRegion (rregion,icp,dvtp1) .and. &
+          boundary_isInRegion (rregion,icp,dvtp2)) then
+          
+        ! Ok, the edge is a boundary edge in the specified region.
+        !
+        ! Get the coordinates of the vertices
+        dvt1 = p_DvertexCoordinates(:,ivt1)
+        dvt2 = p_DvertexCoordinates(:,ivt2)
+        
+        ! Now quickly determine which edge 1..4 of the current element
+        ! is the one we are treating at the moment.
+        do ilocaledge = 1,nlocaledges
+          if (p_IedgesAtElement(ilocaledge,iel) .eq. iedgeglobal) exit
+        end do
+        
+        if (ilocaledge .gt. nlocaledges) then
+          print *,'ppns2D_bdforces: Edge not found. KMID destroyed?'
+          call sys_halt()
+        end if
+        
+        select case(ilocaledge)
+        case(1)
+          darx =  0.0_DP
+          dary = -0.5_DP
+        case(2)
+          darx =  0.5_DP
+          dary =  0.0_DP
+        case(3)
+          darx =  0.0_DP
+          dary =  0.5_DP
+        case(4)
+          darx = -0.5_DP
+          dary =  0.0_DP
+        end select
+        
+        ! Okay, now let's build the local alpha vector
+!        Dalpha = 0.0_DP
+!        select case(elem_getPrimaryElement(ielemU))
+!        case(EL_P1,EL_P2)
+!          ! Set both vertices adjacent to the edge to 1
+!          Dalpha(ilocaledge) = 1.0_DP
+!          Dalpha(mod(ilocaledge,3)+1) = 1.0_DP
+!          ! In the case of P2 set the edge value to 1
+!          Dalpha(3+ilocaledge) = 1.0_DP
+!
+!        case(EL_Q1,EL_Q2)
+!          ! Set both vertices adjacent to the edge to 1
+!          Dalpha(ilocaledge) = 1.0_DP
+!          Dalpha(mod(ilocaledge,4)+1) = 1.0_DP
+!          ! In the case of Q2 set the edge value to 1
+!          Dalpha(4+ilocaledge) = 1.0_DP
+!          
+!        case(EL_P1T,EL_Q1T,EL_Q1TB,EL_Q2T,EL_Q2TB)
+!          Dalpha(ilocaledge) = 1.0_DP
+!        
+!        case default
+!          call output_line ('Velocity element not supported!', &
+!                            OU_CLASS_ERROR,OU_MODE_STD, &
+!                            'ppns2D_bdforces_uni_vol')
+!          call sys_halt()
+!        end select
+
+                
+        ! For the integration, we need the global DOF's on our element
+        ! for U and P:
+        call dof_locGlobMapping(p_rdiscrU, iel, IdofsU)
+        call dof_locGlobMapping(p_rdiscrP, iel, IdofsP)
+        
+        ! Get the coordinates of the point on the current element
+        Dcoords (1:NDIM2D,1:nlocaledges) = &
+            p_DvertexCoordinates(1:NDIM2D, p_IverticesAtElement (1:nlocaledges,iel))
+        
+        ! Calculate the transformation for all points on the current element.
+        ! If we have only parametric elements, we don't have to calculate
+        ! the real coordinates of the points.
+        if (bnonparU .or. bnonparP) then
+          call trafo_calctrafo_mult (ctrafoU,ncubp,Dcoords,&
+                                     DpointsRef,Djac,Ddetj,DpointsReal)
+        else
+          call trafo_calctrafo_mult (ctrafoU,ncubp,Dcoords,&
+                                     DpointsRef,Djac,Ddetj)
+        end if
+        
+        ! Evaluate the U- and P-element in all our cubature points
+        if (bnonparU) then
+          call elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
+                                  BderU, DbasU, ncubp, DpointsReal,p_ItwistIndex(iel))
+        else
+          call elem_generic_mult (ielemU, Dcoords, Djac, Ddetj, &
+                                  BderU, DbasU, ncubp, DpointsRef,p_ItwistIndex(iel))
+        end if
+
+        if (bnonparP) then
+          call elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
+                                  BderP, DbasP, ncubp, DpointsReal,p_ItwistIndex(iel))
+        else
+          call elem_generic_mult (ielemP, Dcoords, Djac, Ddetj, &
+                                  BderP, DbasP, ncubp, DpointsRef,p_ItwistIndex(iel))
+        end if
+        
+       
+        ! Loop over the cubature points on the current element
+        ! to assemble the integral
+        do icubp = 1,ncubp
+        
+          ! Calculate the OMEGA for the integration by multiplication
+          ! of the integration coefficient by the Jacobian of the
+          ! mapping.
+          dweight = Domega(icubp)*Ddetj(icubp)
+          
+          ! 
+          du1v = 0.0_DP
+          du1x = 0.0_DP
+          du1y = 0.0_DP
+          du2v = 0.0_DP
+          du2x = 0.0_DP
+          du2y = 0.0_DP
+          !dax = 0.0_DP
+          !day = 0.0_DP
+          do idfl = 1, idoflocU
+            du1v = du1v + DbasU(idfl,DER_FUNC,icubp) * p_DdataUX(IdofsU(idfl))
+            du1x = du1x + DbasU(idfl,DER_DERIV_X,icubp) * p_DdataUX(IdofsU(idfl))
+            du1y = du1y + DbasU(idfl,DER_DERIV_Y,icubp) * p_DdataUX(IdofsU(idfl))
+            du2v = du2v + DbasU(idfl,DER_FUNC,icubp) * p_DdataUY(IdofsU(idfl))
+            du2x = du2x + DbasU(idfl,DER_DERIV_X,icubp) * p_DdataUY(IdofsU(idfl))
+            du2y = du2y + DbasU(idfl,DER_DERIV_Y,icubp) * p_DdataUY(IdofsU(idfl))
+            !dax = dax + DbasU(idfl,DER_DERIV_X,icubp) * Dalpha(idfl)
+            !day = day + DbasU(idfl,DER_DERIV_Y,icubp) * Dalpha(idfl)
+          end do
+          
+          dav = 0.5_DP + darx*DpointsRef(1,icubp) + dary*DpointsRef(2,icubp)
+          dax =  (Djac(4,icubp)*darx - Djac(2,icubp)*dary) / Ddetj(icubp)
+          day = -(Djac(3,icubp)*darx - Djac(1,icubp)*dary) / Ddetj(icubp)
+
+          dpv = 0.0_DP
+          do idfl = 1, idoflocP
+            dpv = dpv + DbasP(idfl,DER_FUNC,icubp)*p_DdataP(IdofsP(idfl))
+          end do
+          
+          ! Sum this up to the two integral contributions for the pressure and
+          ! velocity.
+          DintU(1) = DintU(1) - dweight * (du1x * dax + du1y * day)
+          DintU(2) = DintU(2) - dweight * (du2x * dax + du2y * day)
+          DintP(1) = DintP(1) + dweight * dpv * dax
+          DintP(2) = DintP(2) + dweight * dpv * day
+          
+          DintV(1) = DintV(1) + dweight * dav * (du1v * du1x + du2v * du1y)
+          DintV(2) = DintV(2) + dweight * dav * (du1v * du2x + du2v * du2y)
+        
+        end do ! icubp
+          
+      end if
+      
+    end do ! iedgeidx
+    
+    ! DintU and DintP give now the contributions to the force integral:
+    !
+    ! DragCoeff = 2/dfp2 * (dpf1*DintU(1) + DintP(1))
+    ! LiftCoeff = 2/dfp2 * (dpf1*DintU(2) + DintP(2))
+    
+    Dforces = 0.0_DP
+    !Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (dpf1*DintU(:) + DintP(:))
+    Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (dpf1*DintU(:) + DintV(:) + DintP(:))
     
     ! Deallocate memory, finish.
     deallocate(DCoords)
