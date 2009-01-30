@@ -23,15 +23,15 @@
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) fcb_hadaptCallback1D
+!# 1.) codire_hadaptCallback1D
 !#      -> Callback function which is invoked by the grid adaptation
 !#         procedure in 1D
 !#
-!# 2.) fcb_hadaptCallback2D
+!# 2.) codire_hadaptCallback2D
 !#      -> Callback function which is invoked by the grid adaptation
 !#         procedure in 2D
 !#
-!# 3.) fcb_hadaptCallback3D
+!# 3.) codire_hadaptCallback3D
 !#      -> Callback function which is invoked by the grid adaptation
 !#         procedure in 3D
 !#
@@ -71,9 +71,9 @@ module codire_adaptation
   public :: codire_reinitConstOperators1D
   public :: codire_reinitConstOperators2D
   public :: codire_reinitConstOperators3D
-  public :: fcb_hadaptCallback1D
-  public :: fcb_hadaptCallback2D
-  public :: fcb_hadaptCallback3D
+  public :: codire_hadaptCallback1D
+  public :: codire_hadaptCallback2D
+  public :: codire_hadaptCallback3D
   
 contains
 
@@ -282,7 +282,7 @@ contains
 
     ! Generate the global coefficient matrices for the FE method
     select case(abs(ivelocitytype))
-    case (VELOCITY_NONE)
+    case (VELOCITY_ZERO)
       ! zero velocity, do nothing
       
     case (VELOCITY_CONSTANT,&
@@ -319,11 +319,11 @@ contains
 
     ! Generate the diffusion matrix
     select case(idiffusiontype)
-    case (DIFF_NONE)
+    case (DIFFUSION_ZERO)
       ! No diffusion, do nothing
 
-    case (DIFF_ISOTROPIC,&
-          DIFF_ANISOTROPIC)
+    case (DIFFUSION_ISOTROPIC,&
+          DIFFUSION_ANISOTROPIC)
       ! Isotropic diffusion, so generate the standard Laplace matrix and 
       ! scale it by the negative value of the diffusion coefficient.
       if (DdiffusionMatrix1D(1,1) > 0.0_DP) then
@@ -540,7 +540,7 @@ contains
 
     ! Generate the global coefficient matrices for the FE method
     select case(abs(ivelocitytype))
-    case (VELOCITY_NONE)
+    case (VELOCITY_ZERO)
       ! zero velocity, do nothing
       
     case (VELOCITY_CONSTANT, VELOCITY_TIMEDEP,&
@@ -584,10 +584,10 @@ contains
 
     ! Generate the diffusion matrix
     select case(idiffusiontype)
-    case (DIFF_NONE)
+    case (DIFFUSION_ZERO)
       ! No diffusion, do nothing
 
-    case (DIFF_ISOTROPIC)
+    case (DIFFUSION_ISOTROPIC)
       ! Isotropic diffusion, so generate the standard Laplace matrix and 
       ! scale it by the negative value of the diffusion coefficient.
       if (DdiffusionMatrix2D(1,1) > 0.0_DP) then
@@ -599,7 +599,7 @@ contains
                                          -DdiffusionMatrix2D(1,1))
       end if
       
-    case (DIFF_ANISOTROPIC)
+    case (DIFFUSION_ANISOTROPIC)
       
       ! For anisotropic diffusion, things are slightly more complicated.
       ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
@@ -834,7 +834,7 @@ contains
 
     ! Generate the global coefficient matrices for the FE method
     select case(abs(ivelocitytype))
-    case (VELOCITY_NONE)
+    case (VELOCITY_ZERO)
       ! zero velocity, do nothing
       
     case (VELOCITY_CONSTANT,&
@@ -880,10 +880,10 @@ contains
 
     ! Generate the diffusion matrix
     select case(idiffusiontype)
-    case (DIFF_NONE)
+    case (DIFFUSION_ZERO)
       ! No diffusion, do nothing
 
-    case (DIFF_ISOTROPIC)
+    case (DIFFUSION_ISOTROPIC)
       ! Isotropic diffusion, so generate the standard Laplace matrix and 
       ! scale it by the negative value of the diffusion coefficient.
       if (DdiffusionMatrix3D(1,1) > 0.0_DP) then
@@ -895,7 +895,7 @@ contains
                                          -DdiffusionMatrix3D(1,1))
       end if
       
-    case (DIFF_ANISOTROPIC)
+    case (DIFFUSION_ANISOTROPIC)
       
       ! For anisotropic diffusion, things are slightly more complicated.
       ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
@@ -1019,7 +1019,7 @@ contains
 
 !<subroutine>
 
-  subroutine fcb_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+  subroutine codire_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -1118,16 +1118,16 @@ contains
       
     case DEFAULT
       call output_line('Invalid operation!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'fcb_hadaptCallback1D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_hadaptCallback1D')
       call sys_halt()
     end select
-  end subroutine fcb_hadaptCallback1D
+  end subroutine codire_hadaptCallback1D
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
+  subroutine codire_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -1953,16 +1953,16 @@ contains
       
     case DEFAULT
       call output_line('Invalid operation!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'fcb_hadaptCallback2D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_hadaptCallback2D')
       call sys_halt()
     end select
-  end subroutine fcb_hadaptCallback2D
+  end subroutine codire_hadaptCallback2D
 
    !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
+  subroutine codire_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2037,8 +2037,8 @@ contains
 
     case DEFAULT
       call output_line('Invalid operation!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'fcb_hadaptCallback3D')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_hadaptCallback3D')
       call sys_halt()
     end select
-  end subroutine fcb_hadaptCallback3D
+  end subroutine codire_hadaptCallback3D
 end module codire_adaptation

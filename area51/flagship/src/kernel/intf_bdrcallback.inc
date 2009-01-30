@@ -18,17 +18,17 @@
 !</description>
 
 !<input>
-  real(DP), dimension(:), intent(IN)    :: DbdrNormal
-  real(DP), dimension(:), intent(IN)    :: DpointNormal
-  real(DP), dimension(:), intent(IN)    :: DbdrValue
-  real(DP), dimension(:), intent(IN)    :: Du0
-  integer, intent(IN)                   :: ibdrCondType
-  integer, intent(INOUT), optional      :: istatus
+  real(DP), dimension(:), intent(IN) :: DbdrNormal
+  real(DP), dimension(:), intent(IN) :: DpointNormal
+  real(DP), dimension(:), intent(IN) :: DbdrValue
+  real(DP), dimension(:), intent(IN) :: Du0
+  integer, intent(IN) :: ibdrCondType
 !</input>
 
-!<output>
+!<inputoutput>
   real(DP), dimension(:), intent(INOUT) :: Du
-!</output>
+  integer, intent(INOUT), optional :: istatus
+!</inputoutput>
 
 !</subroutine>
 

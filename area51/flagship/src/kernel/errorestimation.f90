@@ -477,12 +477,12 @@ contains
         p_rspatialDiscr => rgradientRecovery%rerrorVariable%p_rspatialDiscr
         
         ! Initialise block discretisations
-        call spdiscr_initBlockDiscr2D (rgradientRecovery%rdiscrBlock, 1 ,&
-                                       rgradientRecovery%p_rtriangulation,&
-                                       rgradientRecovery%p_rboundary)
-        call spdiscr_initBlockDiscr2D (rgradientRecovery%rdiscrBlockRef, 1 ,&
-                                       rgradientRecovery%p_rtriangulation,&
-                                       rgradientRecovery%p_rboundary)
+        call spdiscr_initBlockDiscr (rgradientRecovery%rdiscrBlock, 1 ,&
+                                     rgradientRecovery%p_rtriangulation,&
+                                     rgradientRecovery%p_rboundary)
+        call spdiscr_initBlockDiscr (rgradientRecovery%rdiscrBlockRef, 1 ,&
+                                     rgradientRecovery%p_rtriangulation,&
+                                     rgradientRecovery%p_rboundary)
         
         ! What kind of element type is used for the FE solution?
         select case(rgradientRecovery%ieltype)
@@ -558,12 +558,12 @@ contains
         p_rspatialDiscr => rgradientRecovery%rerrorVariable%p_rspatialDiscr
         
         ! Initialise block discretisations
-        call spdiscr_initBlockDiscr2D (rgradientRecovery%rdiscrBlock, 1 ,&
-                                       rgradientRecovery%p_rtriangulation,&
-                                       rgradientRecovery%p_rboundary)
-        call spdiscr_initBlockDiscr2D (rgradientRecovery%rdiscrBlockRef, 1 ,&
-                                       rgradientRecovery%p_rtriangulation,&
-                                       rgradientRecovery%p_rboundary)
+        call spdiscr_initBlockDiscr (rgradientRecovery%rdiscrBlock, 1 ,&
+                                     rgradientRecovery%p_rtriangulation,&
+                                     rgradientRecovery%p_rboundary)
+        call spdiscr_initBlockDiscr (rgradientRecovery%rdiscrBlockRef, 1 ,&
+                                     rgradientRecovery%p_rtriangulation,&
+                                     rgradientRecovery%p_rboundary)
         
         ! What kind of element type is used for the FE solution?
         select case(rgradientRecovery%ieltype)
@@ -641,12 +641,12 @@ contains
         p_rspatialDiscr => rgradientRecovery%rerrorVariable%p_rspatialDiscr
         
         ! Initialise block discretisations
-        call spdiscr_initBlockDiscr2D (rgradientRecovery%rdiscrBlock, 2 ,&
-                                       rgradientRecovery%p_rtriangulation,&
-                                       rgradientRecovery%p_rboundary)
-        call spdiscr_initBlockDiscr2D (rgradientRecovery%rdiscrBlockRef, 2 ,&
-                                       rgradientRecovery%p_rtriangulation,&
-                                       rgradientRecovery%p_rboundary)
+        call spdiscr_initBlockDiscr (rgradientRecovery%rdiscrBlock, 2 ,&
+                                     rgradientRecovery%p_rtriangulation,&
+                                     rgradientRecovery%p_rboundary)
+        call spdiscr_initBlockDiscr (rgradientRecovery%rdiscrBlockRef, 2 ,&
+                                     rgradientRecovery%p_rtriangulation,&
+                                     rgradientRecovery%p_rboundary)
         
         ! What kind of element type is used for the FE solution?
         select case(rgradientRecovery%ieltype)
@@ -785,12 +785,12 @@ contains
         p_rspatialDiscr => rgradientRecovery%rerrorVariable%p_rspatialDiscr
         
         ! Initialise block discretisations
-        call spdiscr_initBlockDiscr2D (rgradientRecovery%rdiscrBlock, 2 ,&
-                                       rgradientRecovery%p_rtriangulation,&
-                                       rgradientRecovery%p_rboundary)
-        call spdiscr_initBlockDiscr2D (rgradientRecovery%rdiscrBlockRef, 2 ,&
-                                       rgradientRecovery%p_rtriangulation,&
-                                       rgradientRecovery%p_rboundary)
+        call spdiscr_initBlockDiscr (rgradientRecovery%rdiscrBlock, 2 ,&
+                                     rgradientRecovery%p_rtriangulation,&
+                                     rgradientRecovery%p_rboundary)
+        call spdiscr_initBlockDiscr (rgradientRecovery%rdiscrBlockRef, 2 ,&
+                                     rgradientRecovery%p_rtriangulation,&
+                                     rgradientRecovery%p_rboundary)
         
         ! What kind of element type is used for the FE solution?
         select case(rgradientRecovery%ieltype)

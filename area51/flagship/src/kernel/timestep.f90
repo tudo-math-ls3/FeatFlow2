@@ -30,16 +30,16 @@
 
 module timestep
 
+  use collection
   use fsystem
-  use paramlist
   use genoutput
-  use linearsystemscalar
   use linearsystemblock
-
+  use linearsystemscalar
+  use paramlist
   use problem
   use solver
-  use solvernonlinear
   use solverlinear
+  use solvernonlinear
 
   implicit none
 
@@ -97,10 +97,10 @@ contains
 
   !<subroutine>
   
-  subroutine timestep_performThetaStepScalar(rproblemLevel, rtimestep, rsolver,&
-                                             rsolution, imode,&
+  subroutine timestep_performThetaStepScalar(rproblemLevel, rtimestep, rsolver, rsolution,&
                                              fcb_calcResidual, fcb_calcJacobian,&
-                                             fcb_applyJacobian, fcb_setBoundary, rf)
+                                             fcb_applyJacobian, fcb_setBoundary,&
+                                             rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one step by means of the two-level theta-scheme
@@ -109,21 +109,18 @@ contains
 !</description>
 
 !<input>
-    ! mode: (1) primal or (2) dual problem
-    integer, intent(IN) :: imode
-
     ! Callback routines
     include 'intf_nlsolcallback.inc'
 
     ! OPTIONAL: right-hand side vector
-    type(t_vectorScalar), intent(IN), optional :: rf
+    type(t_vectorScalar), intent(IN), optional :: rrhs
 !</input>
 
 !<inputoutput>
-    ! multigrid level to start with
+    ! problem level structure
     type(t_problemLevel), intent(INOUT) :: rproblemLevel
 
-    ! time-stepping algorithm
+    ! time-stepping structure
     type(t_timestep), intent(INOUT) :: rtimestep
 
     ! solver structure
@@ -131,31 +128,36 @@ contains
 
     ! solution vector
     type(t_vectorScalar), intent(INOUT) :: rsolution
+
+    ! collection
+    type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_vectorBlock) :: rsolutionBlock
-    type(t_vectorBlock) :: rfBlock
+    type(t_vectorBlock) :: rrhsBlock
 
-    if (present(rf)) then
+    if (present(rrhs)) then
 
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-      call lsysbl_createVecFromScalar(rf, rfBlock)
+      call lsysbl_createVecFromScalar(rrhs, rrhsBlock)
       call timestep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                          rsolutionBlock, imode,&
+                                          rsolutionBlock,&
                                           fcb_calcResidual, fcb_calcJacobian,&
-                                          fcb_applyJacobian, fcb_setBoundary, rfBlock)
+                                          fcb_applyJacobian, fcb_setBoundary,&
+                                          rcollection, rrhsBlock)
       call lsysbl_releaseVector(rsolutionBlock)
-      call lsysbl_releaseVector(rfBlock)
+      call lsysbl_releaseVector(rrhsBlock)
 
     else
       
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
       call timestep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                          rsolutionBlock, imode,&
+                                          rsolutionBlock,&
                                           fcb_calcResidual, fcb_calcJacobian,&
-                                          fcb_applyJacobian, fcb_setBoundary)
+                                          fcb_applyJacobian, fcb_setBoundary,&
+                                          rcollection)
       call lsysbl_releaseVector(rsolutionBlock)
 
     end if
@@ -165,10 +167,10 @@ contains
 
 !<subroutine>
 
-  subroutine timestep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                            rsolution, imode,&
+  subroutine timestep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver, rsolution,&
                                             fcb_calcResidual, fcb_calcJacobian,&
-                                            fcb_applyJacobian, fcb_setBoundary, rf)
+                                            fcb_applyJacobian, fcb_setBoundary,&
+                                            rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one step by means of the two-level theta-scheme
@@ -180,34 +182,34 @@ contains
 !</description>
 
 !<input>
-    ! mode: (1) primal or (2) dual problem
-    integer, intent(IN) :: imode
-
     ! Callback routines
     include 'intf_nlsolcallback.inc'
 
     ! OPTIONAL: right-hand side vector
-    type(t_vectorBlock), intent(IN), optional :: rf
+    type(t_vectorBlock), intent(IN), optional :: rrhs
 !</input>
 
 !<inputoutput>
-    ! multigrid level to start with
+    ! problem level structure
     type(t_problemLevel), intent(INOUT) :: rproblemLevel
 
-    ! time-stepping algorithm
+    ! time-stepping structure
     type(t_timestep), intent(INOUT) :: rtimestep
 
     ! solver structure
     type(t_solver), intent(INOUT), target :: rsolver
 
-    ! Solution vector
+    ! solution vector
     type(t_vectorBlock), intent(INOUT) :: rsolution
+
+    ! collection
+    type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_solver), pointer :: p_rsolver
-    type(t_vectorBlock), pointer :: p_rsolutionOld,p_rsolutionRef,p_rsolutionAux
+    type(t_vectorBlock), pointer :: p_rsolutionOld, p_rsolutionRef, p_rsolutionAux
     logical :: bcompatible,breject
     
     ! Set pointer to solver structure
@@ -266,9 +268,10 @@ contains
 
       ! Solve the nonlinear algebraic system for time step t^n -> t^{n+1}
       call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
-                                rsolution, p_rsolutionOld, imode,&
+                                rsolution, p_rsolutionOld,&
                                 fcb_calcResidual, fcb_calcJacobian,&
-                                fcb_applyJacobian, fcb_setBoundary, rf)
+                                fcb_applyJacobian, fcb_setBoundary,&
+                                rcollection, rrhs)
 
       ! Adjust status information of top-most solver
       call solver_copySolver(p_rsolver, rsolver, .false., .true.)
@@ -285,9 +288,10 @@ contains
 
         ! Solve the nonlinear algebraic system for time step t^n -> t^{n+1/2}
         call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
-                                  p_rsolutionRef, p_rsolutionOld, imode,&
+                                  p_rsolutionRef, p_rsolutionOld,&
                                   fcb_calcResidual, fcb_calcJacobian,&
-                                  fcb_applyJacobian, fcb_setBoundary, rf)
+                                  fcb_applyJacobian, fcb_setBoundary,&
+                                  rcollection, rrhs)
 
         ! Save intermediate solution
         call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
@@ -297,9 +301,10 @@ contains
 
         ! Solve the nonlinear algebraic system for time step t^{n+1/2} -> t^{n+1}
         call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
-                                  p_rsolutionRef, p_rsolutionAux, imode,&
+                                  p_rsolutionRef, p_rsolutionAux,&
                                   fcb_calcResidual, fcb_calcJacobian,&
-                                  fcb_applyJacobian, fcb_setBoundary, rf)
+                                  fcb_applyJacobian, fcb_setBoundary,&
+                                  rcollection, rrhs)
 
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
@@ -346,9 +351,8 @@ contains
 
 !<subroutine>
 
-  subroutine timestep_performRKStepScalar(rproblemLevel, rtimestep, rsolver,&
-                                          rsolution, imode,&
-                                          fcb_calcRHS, fcb_setBoundary, rf)
+  subroutine timestep_performRKStepScalar(rproblemLevel, rtimestep, rsolver, rsolution,&
+                                          fcb_calcRHS, fcb_setBoundary, rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
@@ -357,21 +361,18 @@ contains
 !</description>
 
 !<input>
-    ! mode: (1) primal or (2) dual problem
-    integer, intent(IN) :: imode
-
     ! Callback routines
     include 'intf_nlsolcallback.inc'
 
     ! OPTIONAL: right-hand side vector
-    type(t_vectorScalar), intent(IN), optional :: rf
+    type(t_vectorScalar), intent(IN), optional :: rrhs
 !</input>
 
 !<inputoutput>
-    ! multigrid level to start with
+    ! problem level structure
     type(t_problemLevel), intent(INOUT) :: rproblemLevel
 
-    ! time-stepping algorithm
+    ! time-stepping structure
     type(t_timestep), intent(INOUT) :: rtimestep
 
     ! solver structure
@@ -379,29 +380,30 @@ contains
 
     ! solution vector
     type(t_vectorScalar), intent(INOUT) :: rsolution
+
+    ! collection
+    type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_vectorBlock) :: rsolutionBlock
-    type(t_vectorBlock) :: rfBlock
+    type(t_vectorBlock) :: rrhsBlock
 
-    if (present(rf)) then
+    if (present(rrhs)) then
 
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-      call lsysbl_createVecFromScalar(rf, rfBlock)
-      call timestep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                       rsolutionBlock, imode,&
-                                       fcb_calcRHS, fcb_setBoundary, rfBlock)
+      call lsysbl_createVecFromScalar(rrhs, rrhsBlock)
+      call timestep_performRKStepBlock(rproblemLevel, rtimestep, rsolver, rsolutionBlock,&
+                                       fcb_calcRHS, fcb_setBoundary, rcollection, rrhsBlock)
       call lsysbl_releaseVector(rsolutionBlock)
-      call lsysbl_releaseVector(rfBlock)
+      call lsysbl_releaseVector(rrhsBlock)
 
     else
       
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-      call timestep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                       rsolutionBlock, imode,&
-                                       fcb_calcRHS, fcb_setBoundary)
+      call timestep_performRKStepBlock(rproblemLevel, rtimestep, rsolver, rsolutionBlock,&
+                                       fcb_calcRHS, fcb_setBoundary, rcollection)
       call lsysbl_releaseVector(rsolutionBlock)
 
     end if
@@ -411,9 +413,8 @@ contains
 
 !<subroutine>
 
-  subroutine timestep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                         rsolution, imode,&
-                                         fcb_calcRHS, fcb_setBoundary, rf)
+  subroutine timestep_performRKStepBlock(rproblemLevel, rtimestep, rsolver, rsolution, &
+                                         fcb_calcRHS, fcb_setBoundary, rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
@@ -423,28 +424,28 @@ contains
 !</description>
 
 !<input>
-    ! mode: (1) primal or (2) dual problem
-    integer, intent(IN) :: imode
-
     ! Callback routines
     include 'intf_nlsolcallback.inc'
 
     ! OPTIONAL: right-hand side vector
-    type(t_vectorBlock), intent(IN), optional :: rf
+    type(t_vectorBlock), intent(IN), optional :: rrhs
 !</input>
 
 !<inputoutput>
-    ! multigrid level to start with
+    ! problem level structure
     type(t_problemLevel), intent(INOUT) :: rproblemLevel
 
-    ! time-stepping algorithm
+    ! time-stepping structure
     type(t_timestep), intent(INOUT), target :: rtimestep
 
-    ! solver
+    ! solver structure
     type(t_solver), intent(INOUT), target :: rsolver
 
-    ! Solution vector
+    ! solution vector
     type(t_vectorBlock), intent(INOUT) :: rsolution
+
+    ! collection
+    type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -526,14 +527,14 @@ contains
          
          ! Compute the new right-hand side
          call fcb_calcRHS(rproblemLevel, rtimestep, p_rsolver, rsolution,&
-                          p_rsolutionOld, p_rrhs, istep, imode)
+                          p_rsolutionOld, p_rrhs, istep, rcollection)
          
          ! Apply given right-hand side vector
-         if (present(rf)) call lsysbl_vectorLinearComb(rf, p_rrhs, 1._DP, 1._DP)
+         if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rrhs, 1._DP, 1._DP)
          
          ! Impose boundary conditions
          call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                              rsolution, p_rrhs, p_rsolutionOld)
+                              rsolution, p_rrhs, p_rsolutionOld, rcollection)
 
          ! Call linear multigrid to solve A*u=rhs
          call lsysbl_clearVector(p_raux)
@@ -562,14 +563,14 @@ contains
           
           ! Compute the new right-hand side
           call fcb_calcRHS(rproblemLevel, rtimestep, p_rsolver, p_rsolutionRef,&
-                           p_rsolutionOld, p_rrhs, istep, imode)
+                           p_rsolutionOld, p_rrhs, istep, rcollection)
           
           ! Apply given right-hand side vector
-          if (present(rf)) call lsysbl_vectorLinearComb(rf, p_rrhs, 1._DP, 1._DP)
+          if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rrhs, 1._DP, 1._DP)
           
           ! Impose boundary conditions
           call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                               p_rsolutionRef, p_rrhs, p_rsolutionOld)
+                               p_rsolutionRef, p_rrhs, p_rsolutionOld, rcollection)
           
           ! Call linear multigrid to solve A*u=rhs
           call lsysbl_clearVector(p_raux)
@@ -595,14 +596,14 @@ contains
           
           ! Compute the new right-hand side
           call fcb_calcRHS(rproblemLevel, rtimestep, p_rsolver, p_rsolutionRef,&
-                           p_rsolutionAux, p_rrhs, istep, imode)
+                           p_rsolutionAux, p_rrhs, istep, rcollection)
           
           ! Apply given right-hand side vector
-          if (present(rf)) call lsysbl_vectorLinearComb(rf, p_rrhs, 1._DP, 1._DP)
+          if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rrhs, 1._DP, 1._DP)
           
           ! Impose boundary conditions
           call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                               p_rsolutionRef, p_rrhs, p_rsolutionAux)
+                               p_rsolutionRef, p_rrhs, p_rsolutionAux, rcollection)
           
           ! Call linear multigrid to solve A*u=rhs
           call lsysbl_clearVector(p_raux)

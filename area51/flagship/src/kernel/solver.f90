@@ -65,16 +65,16 @@
 !# 15.) solver_getNextSolver
 !#      -> Gets next solver object in hierarchy
 !#
-!# 16.) solver_getNLMIN
+!# 16.) solver_getMinimumMultigridlevel
 !#      -> Returns the minimum multigrid level required in the whole structure
 !#
-!# 17.) solver_getNLMAX
+!# 17.) solver_getMaximumMultigridlevel
 !#      -> Returns the maximum multigrid level required in the whole structure
 !#
-!# 18.) solver_setNLMIN
+!# 18.) solver_setMinimumMultigridlevel
 !#      -> Sets the minimum multigrid level required in the whole structure
 !#
-!# 19.) solver_setNLMAX
+!# 19.) solver_setMaximumMultigridlevel
 !#      -> Sets the maximum multigrid level required in the whole structure
 !#
 !# 20.) solver_setBoundaryCondition
@@ -169,10 +169,10 @@ module solver
   public :: solver_statistics
   public :: solver_getStatus
   public :: solver_getNextSolver
-  public :: solver_getNLMIN
-  public :: solver_getNLMAX
-  public :: solver_setNLMIN
-  public :: solver_setNLMAX
+  public :: solver_getMinimumMultigridlevel
+  public :: solver_getMaximumMultigridlevel
+  public :: solver_setMinimumMultigridlevel
+  public :: solver_setMaximumMultigridlevel
   public :: solver_setBoundaryCondition
   public :: solver_setSolverMatrix
   public :: solver_setPrecondMatrix
@@ -3785,12 +3785,12 @@ contains
     if (present(nlminOpt)) then
       nlmin = nlminOpt
     else
-      nlmin = solver_getNLMIN(rsolver)
+      nlmin = solver_getMinimumMultigridlevel(rsolver)
     end if
     if (present(nlmaxOpt)) then
       nlmax = nlmaxOpt
     else
-      nlmax = solver_getNLMAX(rsolver)
+      nlmax = solver_getMaximumMultigridlevel(rsolver)
     end if
 
     ! Do we have a solver subnode?
@@ -4265,7 +4265,7 @@ contains
   
 !<function>
 
-  function solver_getNLMIN(rsolver, nlminAlt) result(nlmin)
+  function solver_getMinimumMultigridlevel(rsolver, nlminAlt) result(nlmin)
 
 !<description>
     ! This function returns the minimal multigrid level required throughout the 
@@ -4331,13 +4331,13 @@ contains
         end if
       end if
     end function get_nlmin
-  end function solver_getNLMIN
+  end function solver_getMinimumMultigridlevel
 
   ! ***************************************************************************
   
 !<function>
 
-  function solver_getNLMAX(rsolver, nlmaxAlt) result(nlmax)
+  function solver_getMaximumMultigridlevel(rsolver, nlmaxAlt) result(nlmax)
 
 !<description>
     ! This function returns the maximal multigrid level required throughout the 
@@ -4403,13 +4403,13 @@ contains
         end if
       end if
     end function get_nlmax
-  end function solver_getNLMAX
+  end function solver_getMaximumMultigridlevel
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine solver_setNLMIN(rsolver, nlmin)
+  subroutine solver_setMinimumMultigridlevel(rsolver, nlmin)
 
 !<description>
     ! This subroutine sets the minimum multigrid level 
@@ -4482,13 +4482,13 @@ contains
         end if
       end if
     end subroutine set_nlmin
-  end subroutine solver_setNLMIN
+  end subroutine solver_setMinimumMultigridlevel
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine solver_setNLMAX(rsolver, nlmax)
+  subroutine solver_setMaximumMultigridlevel(rsolver, nlmax)
 
 !<description>
     ! This subroutine sets the maximum multigrid level
@@ -4561,7 +4561,7 @@ contains
         end if
       end if
     end subroutine set_nlmax
-  end subroutine solver_setNLMAX
+  end subroutine solver_setMaximumMultigridlevel
 
   ! ***************************************************************************
 

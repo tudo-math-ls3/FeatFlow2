@@ -95,9 +95,40 @@ module problem
   public :: problem_createProfile
   
   !*****************************************************************************
-  !*****************************************************************************
-  !*****************************************************************************
   
+!<constants>
+
+!<constantblock description="Flags for the problem descriptor specification bitfield">
+
+  ! Standard problem
+  integer(I32), parameter, public :: PROBDESC_MSPEC_STANDARD         = 0
+
+  ! Generate extended raw mesh
+  integer(I32), parameter, public :: PROBDESC_MSPEC_EXTENDEDRAW      = 2**0
+
+  ! Convert quadrilaterals to  triangles
+  integer(I32), parameter, public :: PROBDESC_MSPEC_CONVTRIANGLES    = 2**1
+
+  ! Convert hexahedrals to tetrahedrals
+  integer(I32), parameter, public :: PROBDESC_MSPEC_CONVTETRAHEDRALS = 2**2
+
+!</constantblock>
+
+
+!<constantblock description="Flags for the problem level specification bitfield">
+
+  ! Standard problem level
+  integer(I32), parameter, public :: PROBLEV_MSPEC_STANDARD         = 0
+
+  ! Problem level requires update
+  integer(I32), parameter, public :: PROBLEV_MSPEC_UPDATE           = 2**0
+
+!</constantblock>
+
+!</constants>
+  
+  !*****************************************************************************
+
 !<types>
 
 !<typeblock>
@@ -105,6 +136,13 @@ module problem
   ! This data structure contains the abstract problem description
 
   type t_problemDescriptor
+
+    ! Problem descriptor specification tag. This is a bitfield coming
+    ! from an OR combination of different PROBDESC_MSPEC_xxxx
+    ! constants and specifies various details of the problem
+    ! descriptor. If it is =PROBDESC_MSPEC_STANDARD, the problem
+    ! descriptor is a usual descriptor that needs no special handling.
+    integer(I32) :: iproblemSpec = PROBDESC_MSPEC_STANDARD
 
     ! Spatial dimension
     integer :: ndimension
@@ -197,8 +235,15 @@ module problem
   !    underlying matrix structure. 
   type t_problemLevel
 
+    ! Problem level specification tag. This is a bitfield coming from
+    ! an OR combination of different PROBLEV_MSPEC_xxxx constants and
+    ! specifies variour details of the problem level. If it is
+    ! =PROBLEV_MSPEC_STANDARD, the problem level is a usual problem
+    ! level taht needs no special handling.
+    integer(I32) :: iproblemSpec = PROBLEV_MSPEC_STANDARD
+
     ! Number of the multigrid level
-    integer :: ilev =  0
+    integer :: ilev
 
     ! Triangulation structure
     type(t_triangulation) :: rtriangulation
@@ -245,7 +290,7 @@ contains
   subroutine problem_initProblem(rproblemDescriptor, rproblem)
 
 !<description>
-    ! This subroutine initialise an abstract problem structure
+    ! This subroutine initializes an abstract problem structure
 !</description>
 
 !<input>
@@ -262,7 +307,7 @@ contains
     ! local variables
     type(t_problemLevel), pointer :: rproblemLevel, p_rproblemLevel
     integer :: ilev
-    logical :: berror
+    logical :: berror, bnoExtendedRaw
 
     ! Initialize global problem structure
     call problem_createProblem(rproblem)
@@ -271,25 +316,37 @@ contains
     nullify(rproblemLevel); allocate(rproblemLevel)
     call problem_createLevel(rproblemLevel, rproblemDescriptor%nlmin)
     
+    bnoExtendedRaw = (iand(rproblemDescriptor%iproblemSpec,&
+                           PROBDESC_MSPEC_EXTENDEDRAW) .eq. 0)
+
     select case(rproblemDescriptor%ndimension)
     case (NDIM1D)
-      ! Read coarse mesh from TRI-file without generating an extended raw mesh
+      ! Read coarse mesh from TRI-file
       call tria_readTriFile1D(rproblemLevel%rtriangulation,&
-                              rproblemDescriptor%trifile, .true.)
+                              rproblemDescriptor%trifile, bnoExtendedRaw)
       
     case (NDIM2D)
       ! Create new boundary and read from PRM-file
       call boundary_read_prm(rproblem%rboundary, rproblemDescriptor%prmfile)
       
-      ! Read coarse mesh from TRI-file, convert it to triangular mesh if required
-      call tria_readTriFile2D(rproblemLevel%rtriangulation,&
-                              rproblemDescriptor%trifile, rproblem%rboundary, .true.)
-!!$      if (rproblemDescriptor%iconvToTria .ne. 0)&
-!!$          call tria_rawGridToTri(rproblemLevel%rtriangulation)
+      ! Read coarse mesh from TRI-file
+      call tria_readTriFile2D(rproblemLevel%rtriangulation, rproblemDescriptor%trifile,&
+                              rproblem%rboundary, bnoextendedRaw)
+
+      ! Convert quadrilaterals to triangules if required
+      if (iand(rproblemDescriptor%iproblemSpec, PROBDESC_MSPEC_CONVTRIANGLES) .ne. 0)&
+          call tria_rawGridToTri(rproblemLevel%rtriangulation)
 
     case (NDIM3D)
-      call tria_readTriFile3D(rproblemLevel%rtriangulation,&
-                              rproblemDescriptor%trifile, rproblem%rboundary, .true.)
+      ! Read coarse mesh from TRI-file
+      call tria_readTriFile3D(rproblemLevel%rtriangulation, rproblemDescriptor%trifile,&
+                              rproblem%rboundary, bnoextendedRaw)
+
+      ! Convert hexahedrals to tetrahedrals if required
+      if (iand(rproblemDescriptor%iproblemSpec, PROBDESC_MSPEC_CONVTETRAHEDRALS) .ne. 0) then
+        print *, "This feature is not yet implemented"
+        stop
+      end if
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&

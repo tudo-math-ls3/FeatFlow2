@@ -31,10 +31,9 @@ module codire_basic
   implicit none
 
   private
+  public :: t_codire
   public :: codire_updateSolverMatrix
   
-  !*****************************************************************************
-  !*****************************************************************************
   !*****************************************************************************
 
 !<constants>
@@ -42,51 +41,65 @@ module codire_basic
 !<constantblock description="Global format flags for convection-diffusion-reaction problem">
   
   ! primary boundary description
-  integer, parameter, public :: CDEQ_BOUNDARY_PRIMAL  = 1
+  integer, parameter, public :: CDEQ_BOUNDARY_PRIMAL = 1
 
   ! dual boundary description
-  integer, parameter, public :: CDEQ_BOUNDARY_DUAL    = 2
+  integer, parameter, public :: CDEQ_BOUNDARY_DUAL   = 2
 
 
   ! stabilisation for convective part
-  integer, parameter, public :: CDEQ_AFCSTAB_CONVECTION       = 1
+  integer, parameter, public :: CDEQ_AFCSTAB_CONVECTION = 1
 
   ! stabilisation for diffusive part
-  integer, parameter, public :: CDEQ_AFCSTAB_DIFFUSION        = 2
+  integer, parameter, public :: CDEQ_AFCSTAB_DIFFUSION  = 2
 
 
   ! primary velocity vector
-  integer, parameter, public :: CDEQ_VELOCITY                 = 1
+  integer, parameter, public :: CDEQ_VELOCITY        = 1
 
   ! template matrix
-  integer, parameter, public :: CDEQ_MATRIX_TEMPLATE          = 1
+  integer, parameter, public :: CDEQ_MATRIX_TEMPLATE = 1
 
   ! system matrix
-  integer, parameter, public :: CDEQ_MATRIX_A                 = 2
+  integer, parameter, public :: CDEQ_MATRIX_A        = 2
 
   ! system matrix (extended sparsity pattern)
-  integer, parameter, public :: CDEQ_MATRIX_J                 = 3
+  integer, parameter, public :: CDEQ_MATRIX_J        = 3
 
   ! transport matrix
-  integer, parameter, public :: CDEQ_MATRIX_L                 = 4
+  integer, parameter, public :: CDEQ_MATRIX_L        = 4
 
   ! consistent mass matrix
-  integer, parameter, public :: CDEQ_MATRIX_MC                = 5
+  integer, parameter, public :: CDEQ_MATRIX_MC       = 5
 
   ! lumped mass matrix
-  integer, parameter, public :: CDEQ_MATRIX_ML                = 6
+  integer, parameter, public :: CDEQ_MATRIX_ML       = 6
 
   ! coefficient matrix Dx(phi_i) Dx(phi_j) + Dy(phi_i) Dy(phi_j)
-  integer, parameter, public :: CDEQ_MATRIX_S                 = 7
+  integer, parameter, public :: CDEQ_MATRIX_S        = 7
 
   ! coefficient matrix phi_i Dx(phi_j)
-  integer, parameter, public :: CDEQ_MATRIX_CX                = 8
+  integer, parameter, public :: CDEQ_MATRIX_CX       = 8
 
   ! coefficient matrix phi_i Dy(phi_j)
-  integer, parameter, public :: CDEQ_MATRIX_CY                = 9
+  integer, parameter, public :: CDEQ_MATRIX_CY       = 9
 
   ! coefficient matrix phi_i Dz(phi_j)
-  integer, parameter, public :: CDEQ_MATRIX_CZ                = 10
+  integer, parameter, public :: CDEQ_MATRIX_CZ       = 10
+
+!</constantblock>
+
+
+!<constantblock description="Global type of mass matrix">
+
+  ! no mass matrix, i.e., no time derivative
+  integer, parameter, public :: MASS_ZERO       = 0
+  
+  ! consistent mass matrix
+  integer, parameter, public :: MASS_CONSISTENT = 1
+
+  ! lumped mass matrix
+  integer, parameter, public :: MASS_LUMPED     = 2
 
 !</constantblock>
 
@@ -94,31 +107,31 @@ module codire_basic
 !<constantblock description="Global type of flow velocities">
 
   ! zero velocity profile v=0
-  integer, parameter, public :: VELOCITY_NONE                 = 0
+  integer, parameter, public :: VELOCITY_ZERO              = 0
 
   ! constant velocity profile v=v(x)
-  integer, parameter, public :: VELOCITY_CONSTANT             = 1
+  integer, parameter, public :: VELOCITY_CONSTANT          = 1
 
   ! linear time-dependent velocity profile v=v(x,t)
-  integer, parameter, public :: VELOCITY_TIMEDEP              = 2
+  integer, parameter, public :: VELOCITY_TIMEDEP           = 2
 
   ! nonlinear Burgers' equation in space-time
-  integer, parameter, public :: VELOCITY_BURGERS_SPACETIME    = 3
+  integer, parameter, public :: VELOCITY_BURGERS_SPACETIME = 3
 
   ! nonlinear Buckley-Leverett equation in space-time
-  integer, parameter, public :: VELOCITY_BUCKLEV_SPACETIME    = 4
+  integer, parameter, public :: VELOCITY_BUCKLEV_SPACETIME = 4
 
   ! nonlinear Burgers' equation in 1D
-  integer, parameter, public :: VELOCITY_BURGERS1D            = 5
+  integer, parameter, public :: VELOCITY_BURGERS1D         = 5
 
   ! nonlinear Burgers' equation in 2D
-  integer, parameter, public :: VELOCITY_BURGERS2D            = 6
+  integer, parameter, public :: VELOCITY_BURGERS2D         = 6
 
   ! nonlinear Burgers' equation in 3D
-  integer, parameter, public :: VELOCITY_BURGERS3D            = 7
+  integer, parameter, public :: VELOCITY_BURGERS3D         = 7
 
   ! nonlinear Buckley-Leverett equation in 1D
-  integer, parameter, public :: VELOCITY_BUCKLEV1D            = 8
+  integer, parameter, public :: VELOCITY_BUCKLEV1D         = 8
 
 !</constantblock>
 
@@ -126,13 +139,13 @@ module codire_basic
 !<constantblock description="Global type of flow">
 
   ! transient flow
-  integer, parameter, public :: FLOW_TRANSIENT                = 0
+  integer, parameter, public :: FLOW_TRANSIENT       = 0
 
   ! steady-state flow
-  integer, parameter, public :: FLOW_STEADYSTATE              = 1
+  integer, parameter, public :: FLOW_STEADYSTATE     = 1
 
   ! pseudo transient flow
-  integer, parameter, public :: FLOW_PSEUDOTRANSIENT          = 2
+  integer, parameter, public :: FLOW_PSEUDOTRANSIENT = 2
 
 !</constantblock>
 
@@ -140,24 +153,35 @@ module codire_basic
 !<constantblock description="Global type of diffusion">
 
   ! zero diffusion
-  integer, parameter, public :: DIFF_NONE                     = 0
+  integer, parameter, public :: DIFFUSION_ZERO        = 0
 
   ! isotropic diffusion
-  integer, parameter, public :: DIFF_ISOTROPIC                = 1
+  integer, parameter, public :: DIFFUSION_ISOTROPIC   = 1
 
   ! anisotropic diffusion
-  integer, parameter, public :: DIFF_ANISOTROPIC              = 2
+  integer, parameter, public :: DIFFUSION_ANISOTROPIC = 2
+
+  ! variable diffusion
+  integer, parameter, public :: DIFFUSION_VARIABLE    = 3
 
 !</constantblock>
 
 
-!<constantblock description="Global type of r.h.s.">
+!<constantblock description="Global type of reaction">
+
+  ! zero reaction
+  integer, parameter, public :: REACTION_ZERO = 0
+
+!</constantblock>
+
+
+!<constantblock description="Global type of right-hand side">
 
   ! zero right-hand side
-  integer, parameter, public :: RHS_ZERO                      = 0
+  integer, parameter, public :: RHS_ZERO     = 0
 
   ! analytical right-hand side
-  integer, parameter, public :: RHS_ANALYTIC                  = 1
+  integer, parameter, public :: RHS_ANALYTIC = 1
 
 !</constantblock>
 
@@ -219,17 +243,90 @@ module codire_basic
 !</constants>
 
   !*****************************************************************************
-  !*****************************************************************************
+
+!<types>
+  
+!<typeblock>
+
+  ! This structure contains all required data to describe an instance
+  ! of the convection-diffusion-reaction benchmark application
+  type t_codire
+
+    ! Dimension of the problem
+    integer :: ndimension
+
+    ! Type of the mass matrix
+    integer :: imasstype
+
+    ! Type of the velocity
+    integer :: ivelocitytype
+
+    ! Type of the diffusion
+    integer :: idiffusiontype
+
+    ! Type of the reaction
+    integer :: ireactiontype
+
+    ! Type of the right-hand side
+    integer :: irhstype
+
+    ! Type of the element(s)
+    integer :: ieltype
+
+    ! Matrix format
+    integer :: imatrixFormat
+
+    ! Function parser for the velocity field
+    type(t_fparser) :: rfparserVelocityField
+
+    ! Function parser for the diffusion tensor
+    type(t_fparser) :: rfparserDiffusionTensor
+
+    ! Function parser for the reaction term
+    type(t_fparser) :: rfparserReaction
+
+    ! Function parser for the right-hand side vector
+    type(t_fparser) :: rfparserRHS
+
+    ! Timer for the solution process
+    type(t_timer) :: rtimerSolution
+
+    ! Timer for the adaptation process
+    type(t_timer) :: rtimerAdaptation
+
+    ! Timer for the error estimation process
+    type(t_timer) :: rtimerErrorEstimation
+
+    ! Timer for the triangulation process
+    type(t_timer) :: rtimerTriangulation
+
+    ! Timer for the assembly of constant coefficient matrices
+    type(t_timer) :: rtimerAssemblyCoeff
+    
+    ! Timer for the assembly of system matrices
+    type(t_timer) :: rtimerAssemblyMatrix
+
+    ! Timer for the assembly of residual/right-hand side vectors
+    type(t_timer) :: rtimerAssemblyVector
+
+    ! Timer for pre- and post-processing
+    type(t_timer) :: rtimerPrePostprocess
+    
+  end type t_codire
+!</typeblock>
+
+!</type>
+
   !*****************************************************************************
 
 !<globals>
 
-  !*****************************************************************
+  !*****************************************************************************
   ! Parameter list
   type(t_parlist), save, public :: rparlist
 
 
-  !*****************************************************************
+  !*****************************************************************************
   ! Timers
   type(t_timer), save, public :: rtimer_total
   type(t_timer), save, public :: rtimer_solution
@@ -242,14 +339,14 @@ module codire_basic
   type(t_timer), save, public :: rtimer_prepostprocess
 
   
-  !*****************************************************************
+  !*****************************************************************************
   ! Benchmark configuration
 
   ! type of flow
   integer, save, public :: iflowtype = FLOW_TRANSIENT
 
 
-  !*****************************************************************
+  !*****************************************************************************
   ! R.H.S handling
 
   ! type of r.h.s
@@ -259,7 +356,7 @@ module codire_basic
   type(t_fparser), save, public :: rrhsParser
 
 
-  !*****************************************************************
+  !*****************************************************************************
   ! Diffusion handling
 
   ! Diffusion "matrix" in 1D
@@ -272,10 +369,10 @@ module codire_basic
   real(DP), dimension(3,3), save, public :: DdiffusionMatrix3D
 
   ! type of diffusion
-  integer, save, public :: idiffusiontype = DIFF_ISOTROPIC
+  integer, save, public :: idiffusiontype = DIFFUSION_ISOTROPIC
 
   
-  !*****************************************************************
+  !*****************************************************************************
   ! Velocity handling
   
   ! type of velocity vector
@@ -289,17 +386,14 @@ module codire_basic
    
 !</globals>
  
-  !*****************************************************************************
-  !*****************************************************************************
-  !*****************************************************************************
-
 contains
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_updateSolverMatrix(rproblemLevel, rsolver, imatrix, iupdflag, nlminOpt, nlmaxOpt)
+  subroutine codire_updateSolverMatrix(rproblemLevel, rsolver, imatrix,&
+                                       iupdflag, nlminOpt, nlmaxOpt)
 
 !<description>
     ! This subroutine updates the solver structure by setting the matrices.
@@ -337,14 +431,14 @@ contains
     if (present(nlminOpt)) then
       nlmin = nlminOpt
     else
-      nlmin = solver_getNLMIN(rsolver, rproblemLevel%ilev)
+      nlmin = solver_getMinimumMultigridlevel(rsolver, rproblemLevel%ilev)
     end if
 
     ! Set maximum level
     if (present(nlmaxOpt)) then
       nlmax = nlmaxOpt
     else
-      nlmax = solver_getNLMAX(rsolver, rproblemLevel%ilev)
+      nlmax = solver_getMaximumMultigridlevel(rsolver, rproblemLevel%ilev)
     end if
     
     ! Ok, let us update the solver (recursively?)
@@ -363,7 +457,8 @@ contains
     ! The parameters NLMIN/NLMAX denote the minimum/maximum level to
     ! be considered.
     
-    recursive subroutine updateMatrix(rproblemLevel, rsolver, imatrix, iupdflag, nlmin, nlmax)
+    recursive subroutine updateMatrix(rproblemLevel, rsolver, imatrix,&
+                                      iupdflag, nlmin, nlmax)
 
       type(t_problemLevel), intent(IN), target :: rproblemLevel
       type(t_solver), intent(INOUT) :: rsolver
@@ -384,7 +479,8 @@ contains
         
         ! Directly proceed to the coarsegrid solver which serves as
         ! nonlinear solver on each level
-        call updatematrix(rproblemLevel, rsolver%p_solverMultigrid%p_solverCoarsegrid,&
+        call updatematrix(rproblemLevel,&
+                          rsolver%p_solverMultigrid%p_solverCoarsegrid,&
                           imatrix, iupdflag, nlmin, nlmax)
         
 
@@ -394,7 +490,8 @@ contains
         if (iand(iupdflag, UPDMAT_NORECURSIVE) .eq. UPDMAT_NORECURSIVE) return
         
         ! Proceed to the coarsegrid solver
-        call updateMatrix(rproblemLevel, rsolver%p_solverMultigrid%p_solverCoarsegrid,&
+        call updateMatrix(rproblemLevel,&
+                          rsolver%p_solverMultigrid%p_solverCoarsegrid,&
                           imatrix, iupdflag, rsolver%p_solverMultigrid%nlmin,&
                           rsolver%p_solverMultigrid%nlmin)
 
@@ -403,7 +500,8 @@ contains
           do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
                  ubound(rsolver%p_solverMultigrid%p_smoother,1)
             
-            call updateMatrix(rproblemLevel, rsolver%p_solverMultigrid%p_smoother(i),&
+            call updateMatrix(rproblemLevel,&
+                              rsolver%p_solverMultigrid%p_smoother(i),&
                               imatrix, iupdflag, rsolver%p_solverMultigrid%nlmin,&
                               rsolver%p_solverMultigrid%nlmin)
           end do
@@ -427,7 +525,8 @@ contains
             rsolver%p_solverMultigrid%nlmax) then
 
           ! Proceed to single grid solver
-          call updateMatrix(rproblemLevel, rsolver%p_solverMultigrid%p_solverCoarsegrid,&
+          call updateMatrix(rproblemLevel,&
+                            rsolver%p_solverMultigrid%p_solverCoarsegrid,&
                             imatrix, iupdflag, rsolver%p_solverMultigrid%nlmin,&
                             rsolver%p_solverMultigrid%nlmin)
           
@@ -449,7 +548,9 @@ contains
             if (iand(iupdflag, UPDMAT_LINEARMG_SOLVER) .eq.&
                                UPDMAT_LINEARMG_SOLVER) then
               ! Set the system matrix for the linear solver
-              call solver_setSolverMatrix(rsolver, rproblemLevelTmp%Rmatrix(imatrix), rproblemLevelTmp%ilev)
+              call solver_setSolverMatrix(rsolver,&
+                                          rproblemLevelTmp%Rmatrix(imatrix),&
+                                          rproblemLevelTmp%ilev)
             end if
           
             if (iand(iupdflag, UPDMAT_LINEARMG_SMOOTHER) .eq.&
@@ -457,7 +558,8 @@ contains
               ! Set the system matrix for the linear smoother
               ! Note that the smoother is not required in the coarsest level
               if (rproblemLevelTmp%ilev .gt. nlmin) then
-                call solver_setSmootherMatrix(rsolver, rproblemLevelTmp%Rmatrix(imatrix),&
+                call solver_setSmootherMatrix(rsolver,&
+                                              rproblemLevelTmp%Rmatrix(imatrix),&
                                               rproblemLevelTmp%ilev)
               end if
             end if
@@ -470,7 +572,8 @@ contains
           if (iand(iupdflag, UPDMAT_LINEARMG_COARSEGRID) .eq.&
                              UPDMAT_LINEARMG_COARSEGRID) then
             ! Set the system matrix for the linear coarse grid solver
-            call updateMatrix(rproblemLevelCoarse, rsolver%p_solverMultigrid%p_solverCoarsegrid,&
+            call updateMatrix(rproblemLevelCoarse,&
+                              rsolver%p_solverMultigrid%p_solverCoarsegrid,&
                               imatrix, iupdflag, rsolver%p_solverMultigrid%nlmin,&
                               rsolver%p_solverMultigrid%nlmin)
           end if

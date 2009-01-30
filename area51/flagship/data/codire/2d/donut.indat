@@ -26,8 +26,8 @@ NCOMP
 if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0)
 
 
-# Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
+# Specify the velocity field by logical expressions
+[velocityfield]
 NCOMP
 2
 y

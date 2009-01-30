@@ -1,55 +1,24 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> afc </name>
+!# <name> flagship </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This application solves the generic time-dependent conservation law
-!#
-!#   $$\frac{\partial u}{\partial t}+\nabla\cdot{\bf f}(u)=0$$
-!#
-!# for a scalar quantity $u$ in the domain $\Omega$ in 1D, 2D and 3D.
-!# The (possibly nonlinear) flux function ${\bf f}(u)$ can be
-!#
-!#   $${\bf f}(u):={\bf v}u-D\nabla u$$
-!#
-!# whereby $\bf v$ denotes an externally given velocity profile. 
-!# The physical diffusion tensor
-!#
-!#   $$D=\left[\begin{array}{ccc}
-!#       d_{11} & d_{12} & d_{13}\\
-!#       d_{21} & d_{22} & d_{23}\\
-!#       d_{31} & d_{32} & d_{33}
-!#       \end{array}\right]$$
-!#
-!# may by anitotropic and it can also reduce to the scalar coefficient
-!#
-!#   $$D=dI,\quad d_{ij}=0\,\forall j\ne i$$
-!#
-!# Moreover, ${\bf f}(u)$ can also be defined such that
-!#
-!#   $$\nabl\cdot{\bf f}(u):=u_t+\frac{\partial f(u)}{\partial x}$$
-!#
-!# that is, the above equation stands for a 1d or 2d conservation
-!# law which is solved in the space-time domain $\Omega=$.
-!#
-!# The spatial discretization is perform by means of the algebraic
-!# flux correction (AFC) paradigm by Kuzmin, Moeller and Turek. In
-!# particular, high-resolution finite element schemes of TVD- and
-!# FCT-type are available. For the temporal discretization, the 
-!# two-level theta-scheme is employed, whereby $\theta\in(0,1]$.
-!#
-!# Dynamic mesh adaptation is based on the red-green strategy, whereby
-!# mixed triangulations are supported. Error estimation can either be
-!# accomplished using gradient-recovery techniques or following goal-
-!# oriented strategies.
-!# 
+!# This is the main program which calls the individual application modules.
 !# </purpose>
 !##############################################################################
 
-program afc
+program flagship
 
-  use collection
+   use boundaryfilter
+  use codire_adaptation
+  use codire_application
+  use codire_basic
+  use codire_callback
+  use codire_estimation
+  use codire_init
+  use codire_postprocessing
+  use errorestimation
   use externalstorage
   use fparser
   use fsystem
@@ -63,23 +32,14 @@ program afc
   use linearsystemblock
   use linearsystemscalar
   use paramlist
+  use problem
   use signal
+  use solver
   use statistics
   use storage
-  use ucd
-
-  use codire_adaptation
-  use codire_basic
-  use codire_callback
-  use codire_estimation
-  use codire_init
-  use codire_postprocessing
-  use codire_problem
-  use boundaryfilter
-  use errorestimation
-  use problem
-  use solver
   use timestep
+  use ucd
+ use collection
 
   implicit none
 
@@ -150,7 +110,81 @@ program afc
   integer, external :: signal_SIGQUIT
  
 !</globals>
+  
+  ! local variables
+  character(LEN=SYS_STRLEN) :: cbuffer, hostname, hosttype, username, application, sparameterfileName
 
+  include '.version'
+  
+  ! Initialize Feat subsystem
+  call system_init()
+  sys_haltmode = SYS_HALT_THROWFPE
+
+  ! Initialize storage subsystem
+  call storage_init(500, 100)
+  
+  ! Initialize signal handler for SIGINT and SIGQUIT
+  call fsignal(SIGINT, signal_SIGINT)
+  call fsignal(SIGQUIT, signal_SIGQUIT)
+
+  ! Get command line arguments
+  call get_command_argument(command_argument_count(), cbuffer)
+  sparameterfileName = adjustl(cbuffer)
+  
+  ! Initialize parameter list from file
+  call parlst_init(rparlist)
+  call parlst_readfromfile(rparlist, trim(sparameterfileName))
+  
+  ! Print welcome screen
+  call output_lbrk()
+  call output_separator(OU_SEP_STAR)
+  write(*,FMT='(2X,A,T10,A,T30,A,T50,A,T72,A)') '***','FLAGSHIP','Version '//VERSION,'Build '//BUILD,'***'
+  call output_separator(OU_SEP_STAR)
+  call output_line('  FlAGSHiP: Flux-corrected Aerodynamics by Galerkin')
+  call output_line('            Schemes with High Performance (2004-2009)')
+  call output_lbrk()
+  call output_line('  Authors:  Dmitri Kuzmin, Matthias Moeller')
+  call output_line('            Institute of Applied Mathematics')
+  call output_line('            Dortmund University of Technology')
+  call output_line('            Vogelpothsweg 87, 44227 Dortmund, Germany')
+  call output_separator(OU_SEP_STAR)
+  call getenv('HOST',cbuffer); hostname = adjustl(cbuffer)
+  call output_line('  Hostname:        '//trim(hostname))
+  call getenv('HOSTTYPE',cbuffer); hosttype = adjustl(cbuffer)
+  call output_line('  Hosttype:        '//trim(hosttype))
+  call getenv('USER',cbuffer); username = adjustl(cbuffer)
+  call output_line('  Username:        '//trim(username))
+  call parlst_getvalue_string(rparlist, '', "application", application)
+  call sys_tolower(application)
+  call output_line('  Application:     '//trim(application))
+  call output_line('  Parameterfile:   '//trim(sparameterfileName))
+  call output_separator(OU_SEP_STAR)
+  call output_lbrk()
+  
+  ! Call application module
+  select case(trim(application))
+  case('codire')
+    call codire(rparlist)
+
+  case('euler')
+
+  case DEFAULT
+    call output_line('Invalid application name!',&
+                     OU_CLASS_WARNING,OU_MODE_STD,'flagship')
+    call sys_halt()
+    
+  end select
+  
+
+  ! Release storage
+  call storage_info(.true.)
+  call storage_done()
+  call output_lbrk()
+
+  stop
+
+
+  call UserInterface(0)
 
   ! Initialization
   call codire_initialize()
@@ -245,41 +279,9 @@ contains
     ! Error variable
     logical :: berror
 
-
-    ! Initialize Feat subsystem
-    call system_init()
-    sys_haltmode = SYS_HALT_THROWFPE
-    
-    ! Initialize storage subsystem
-    call storage_init(300, 100)  
-    
-    ! Clear all timers
-    call stat_clearTimer(rtimer_total)
-    call stat_clearTimer(rtimer_solution)
-    call stat_clearTimer(rtimer_adaptivity)
-    call stat_clearTimer(rtimer_errorestimation)
-    call stat_clearTimer(rtimer_triangulation)
-    call stat_clearTimer(rtimer_assembly_coeff)
-    call stat_clearTimer(rtimer_assembly_matrix)
-    call stat_clearTimer(rtimer_assembly_resrhs)
-    call stat_clearTimer(rtimer_prepostprocess)
-    
-    ! Start total time measurement
-    call stat_startTimer(rtimer_total)
-
-    ! Start time measurement for pre-processing
-    call stat_startTimer(rtimer_prepostprocess, STAT_TIMERSHORT)
-    
     ! Initialize collection
     call collct_init(rcollection)
-    
-    ! Initialize signal handler for SIGINT and SIGQUIT
-    call fsignal(SIGINT, signal_SIGINT)
-    call fsignal(SIGQUIT, signal_SIGQUIT)
-    
-    ! Initialize data input files
-    call codire_UserInterface(0)
-    
+        
     ! Get parameters from file
     call parlst_init(rparlist)
     call parlst_readfromfile(rparlist, trim(adjustl(parmfile)))
@@ -315,8 +317,8 @@ contains
     end if
 
     ! Get global minimum/maximum multigrid level
-    nlmin = solver_getNLMIN(rsolver)
-    nlmax = solver_getNLMAX(rsolver)
+    nlmin = solver_getMinimumMultigridlevel(rsolver)
+    nlmax = solver_getMaximumMultigridlevel(rsolver)
 
     ! Initialize problem structure
     call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
@@ -474,8 +476,8 @@ contains
     ! all matrix structures for all possible multigrid levels throughout the complete
     ! solver structure. In case of constant velocity, no more matrix assemblies and/or
     ! updates of the solver structure need to be performed.
-    call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                         rprimalSolution, 1, nlmin, nlmax)
+    call codire_calcPreconditioner(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+                                   rprimalSolution, rcollection)
     call solver_updateStructure(rsolver)
     
     ! Stop time measurement for pre-processing
@@ -581,11 +583,11 @@ contains
         case (NDIM1D)
           ! Perform grid adaptation in 1D
           call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                         rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
+                                         rprimalSolution, rgridIndicator, codire_hadaptCallback1D)
           
           call lsyssc_releaseVector(rgridIndicator)
           call codire_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                          rprimalSolution, ieltype, fcb_hadaptCallback1D)
+                                          rprimalSolution, ieltype, codire_hadaptCallback1D)
 
           ! Re-initialize the solution
           call lsysbl_releaseVector(rprimalSolution)
@@ -596,10 +598,10 @@ contains
         case (NDIM2D)
           ! Perform grid adaptation in 2D
           call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                         rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
+                                         rprimalSolution, rgridIndicator, codire_hadaptCallback2D)
           call lsyssc_releaseVector(rgridIndicator)
           call codire_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                          rprimalSolution, ieltype, fcb_hadaptCallback2D)
+                                          rprimalSolution, ieltype, codire_hadaptCallback2D)
 
           ! Re-initialize the solution
           call lsysbl_releaseVector(rprimalSolution)
@@ -615,10 +617,10 @@ contains
         case (NDIM3D)
           ! Perform grid adaptation in 3D
           call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                         rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
+                                         rprimalSolution, rgridIndicator, codire_hadaptCallback3D)
           call lsyssc_releaseVector(rgridIndicator)
           call codire_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                          rprimalSolution, ieltype, fcb_hadaptCallback3D)
+                                          rprimalSolution, ieltype, codire_hadaptCallback3D)
           
           ! Re-initialize the solution
           call lsysbl_releaseVector(rprimalSolution)
@@ -638,8 +640,8 @@ contains
 
         ! Update global system operator and solver structure
         ilev = rproblem%p_rproblemLevelMax%ilev
-        call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                             rprimalSolution, 1, ilev, ilev)
+        call codire_calcPreconditioner(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+                                       rprimalSolution, rcollection)
         call solver_updateStructure(rsolver)
       end do
     else
@@ -655,7 +657,7 @@ contains
     timeloop: do
 
       ! Check for user interaction
-      call codire_UserInterface(1)
+      call UserInterface(1)
 
       !-------------------------------------------------------------------------
       ! Advance solution in time
@@ -672,12 +674,10 @@ contains
         ! Adopt explicit Runge-Kutta scheme
         if (irhstype .eq. 0) then
           call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                                      rprimalSolution, 1,&
-                                      fcb_calcRHS, fcb_setBoundary)
+                                      rprimalSolution, codire_calcRHS, codire_setBoundary, rcollection)
         else
           call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                                      rprimalSolution, 1,&
-                                      fcb_calcRHS, fcb_setBoundary, rf)
+                                      rprimalSolution, codire_calcRHS, codire_setBoundary, rcollection, rf)
         end if
         
         
@@ -686,14 +686,12 @@ contains
         ! Adopt two-level theta-scheme
         if (irhstype .eq. 0) then
           call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                                         rprimalSolution, 1,&
-                                         fcb_calcResidual, fcb_calcJacobian,&
-                                         fcb_applyJacobian, fcb_setBoundary)
+                                         rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                         codire_applyJacobian, codire_setBoundary, rcollection)
         else
           call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                                         rprimalSolution, 1,&
-                                         fcb_calcResidual, fcb_calcJacobian,&
-                                         fcb_applyJacobian, fcb_setBoundary, rf)
+                                         rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                         codire_applyJacobian, codire_setBoundary, rcollection, rf)
         end if
         
         
@@ -746,26 +744,26 @@ contains
         case (NDIM1D)
           ! Perform grid adaptation in 1D
           call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                            rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
+                                            rprimalSolution, rgridIndicator, codire_hadaptCallback1D)
           call lsyssc_releaseVector(rgridIndicator)
           call codire_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                             rprimalSolution, ieltype, fcb_hadaptCallback1D)
+                                             rprimalSolution, ieltype, codire_hadaptCallback1D)
 
         case (NDIM2D)
           ! Perform grid adaptation in 2D
           call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                            rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
+                                            rprimalSolution, rgridIndicator, codire_hadaptCallback2D)
           call lsyssc_releaseVector(rgridIndicator)
           call codire_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                             rprimalSolution, ieltype, fcb_hadaptCallback2D)
+                                             rprimalSolution, ieltype, codire_hadaptCallback2D)
 
         case (NDIM3D)
           ! Perform grid adaptation in 3D
           call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                            rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
+                                            rprimalSolution, rgridIndicator, codire_hadaptCallback3D)
           call lsyssc_releaseVector(rgridIndicator)
           call codire_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                             rprimalSolution, ieltype, fcb_hadaptCallback3D)
+                                             rprimalSolution, ieltype, codire_hadaptCallback3D)
         end select
         
         ! We must enforce velocity update so that all internal
@@ -774,8 +772,8 @@ contains
 
         ! Update global system operator and solver structure
         ilev = rproblem%p_rproblemLevelMax%ilev
-        call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                                rprimalSolution, 1, ilev, ilev)
+        call codire_calcPreconditioner(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+                                       rprimalSolution, rcollection)
         call solver_updateStructure(rsolver)
           
         dtimeAdapt = dtimeAdapt+dstepAdapt
@@ -837,7 +835,7 @@ contains
       timeloop: do
         
         ! Check for user interaction
-        call codire_UserInterface(1)
+        call UserInterface(1)
         
         !-----------------------------------------------------------------------
         ! Advance solution in time
@@ -854,12 +852,10 @@ contains
           ! Adopt explicit Runge-Kutta scheme
           if (irhstype .eq. 0) then
             call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                                        rprimalSolution, 1,&
-                                        fcb_calcRHS, fcb_setBoundary)
+                                        rprimalSolution, codire_calcRHS, codire_setBoundary, rcollection)
           else
             call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                                        rprimalSolution, 1,&
-                                        fcb_calcRHS, fcb_setBoundary, rf)
+                                        rprimalSolution, codire_calcRHS, codire_setBoundary, rcollection, rf)
           end if
           
           
@@ -868,14 +864,12 @@ contains
           ! Adopt two-level theta-scheme
           if (irhstype .eq. 0) then
             call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                                           rprimalSolution, 1,&
-                                           fcb_calcResidual, fcb_calcJacobian,&
-                                           fcb_applyJacobian, fcb_setBoundary)
+                                           rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                           codire_applyJacobian, codire_setBoundary, rcollection)
           else
             call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                                           rprimalSolution, 1,&
-                                           fcb_calcResidual, fcb_calcJacobian,&
-                                           fcb_applyJacobian, fcb_setBoundary, rf)
+                                           rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                           codire_applyJacobian, codire_setBoundary, rcollection, rf)
           end if
           
           
@@ -937,26 +931,26 @@ contains
       case (NDIM1D)
         ! Perform grid adaptation in 1D
         call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                       rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
+                                       rprimalSolution, rgridIndicator, codire_hadaptCallback1D)
         call lsyssc_releaseVector(rgridIndicator)
         call codire_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                        rprimalSolution, ieltype, fcb_hadaptCallback1D)
+                                        rprimalSolution, ieltype, codire_hadaptCallback1D)
 
       case (NDIM2D)
         ! Perform grid adaptation in 2D
         call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                       rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
+                                       rprimalSolution, rgridIndicator, codire_hadaptCallback2D)
         call lsyssc_releaseVector(rgridIndicator)
         call codire_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                        rprimalSolution, ieltype, fcb_hadaptCallback2D)
+                                        rprimalSolution, ieltype, codire_hadaptCallback2D)
 
       case (NDIM3D)
         ! Perform grid adaptation in 3D
         call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                       rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
+                                       rprimalSolution, rgridIndicator, codire_hadaptCallback3D)
         call lsyssc_releaseVector(rgridIndicator)
         call codire_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                        rprimalSolution, ieltype, fcb_hadaptCallback3D)
+                                        rprimalSolution, ieltype, codire_hadaptCallback3D)
       end select
 
       ! We must enforce velocity update so that all internal
@@ -965,8 +959,8 @@ contains
       
       ! Update global system operator and solver structure
       ilev = rproblem%p_rproblemLevelMax%ilev
-      call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                           rprimalSolution, 1, ilev, ilev)
+      call codire_calcPreconditioner(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+                                     rprimalSolution, rcollection)
       call solver_updateStructure(rsolver)
 
     end do adaptloop
@@ -1079,14 +1073,12 @@ contains
       
       if (irhstype .eq. 0) then
         call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep, p_rsolver,&
-                                       rprimalSolution, 1,&
-                                       fcb_calcResidual, fcb_calcJacobian,&
-                                       fcb_applyJacobian, fcb_setBoundary)
+                                       rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                       codire_applyJacobian, codire_setBoundary, rcollection)
       else
         call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep, p_rsolver,&
-                                       rprimalSolution, 1,&
-                                       fcb_calcResidual, fcb_calcJacobian,&
-                                       fcb_applyJacobian, fcb_setBoundary, rf)
+                                       rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                       codire_applyJacobian, codire_setBoundary, rcollection, rf)
       end if
       
       ! Stop time measurement for solution procedure
@@ -1166,22 +1158,20 @@ contains
           bvelocityUpdate = .true.
 
           ! Calculate the primal preconditioner for the current level
-          call codire_calcPrecond(rproblemLevel, rtimestep, p_rsolver,&
-                               rprimalSolution, 1, rproblemLevel%ilev, rproblemLevel%ilev)
+          call codire_calcPreconditioner(rproblemLevel, rtimestep, p_rsolver,&
+                                         rprimalSolution, rcollection)
           call solver_updateStructure(p_rsolver)
 
           ! Perform one step of the fully implicit theta-scheme
           if (irhstype .eq. 0) then
             call timestep_performThetaStep(rproblemLevel, rtimestep, p_rsolver,&
-                                           rprimalSolution, 1,&
-                                           fcb_calcResidual, fcb_calcJacobian,&
-                                           fcb_applyJacobian, fcb_setBoundary)
+                                           rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                           codire_applyJacobian, codire_setBoundary, rcollection)
 
           else
             call timestep_performThetaStep(rproblemLevel, rtimestep, p_rsolver,&
-                                           rprimalSolution, 1,&
-                                           fcb_calcResidual, fcb_calcJacobian,&
-                                           fcb_applyJacobian, fcb_setBoundary, rf)
+                                           rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                           codire_applyJacobian, codire_setBoundary, rcollection, rf)
           end if
 
           ! Are we already on finest grid level?
@@ -1251,26 +1241,26 @@ contains
       case (NDIM1D)
         ! Perform grid adaptation in 1D
         call codire_performGridAdaptation(rcollection, rhadapt, rproblemLevel,&
-                                       rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
+                                       rprimalSolution, rgridIndicator, codire_hadaptCallback1D)
         call lsyssc_releaseVector(rgridIndicator)
         call codire_reinitConstOperators1D(rcollection, rhadapt, rproblemLevel,&
-                                        rprimalSolution, ieltype, fcb_hadaptCallback1D)
+                                        rprimalSolution, ieltype, codire_hadaptCallback1D)
         
       case (NDIM2D)
         ! Perform grid adaptation in 2D
         call codire_performGridAdaptation(rcollection, rhadapt, rproblemLevel,&
-                                       rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
+                                       rprimalSolution, rgridIndicator, codire_hadaptCallback2D)
         call lsyssc_releaseVector(rgridIndicator)
         call codire_reinitConstOperators2D(rcollection, rhadapt, rproblemLevel,&
-                                        rprimalSolution, ieltype, fcb_hadaptCallback2D)
+                                        rprimalSolution, ieltype, codire_hadaptCallback2D)
         
       case (NDIM3D)
         ! Perform grid adaptation in 3D
         call codire_performGridAdaptation(rcollection, rhadapt, rproblemLevel,&
-                                       rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
+                                       rprimalSolution, rgridIndicator, codire_hadaptCallback3D)
         call lsyssc_releaseVector(rgridIndicator)
         call codire_reinitConstOperators3D(rcollection, rhadapt, rproblemLevel,&
-                                        rprimalSolution, ieltype, fcb_hadaptCallback3D)
+                                        rprimalSolution, ieltype, codire_hadaptCallback3D)
       end select
 
       ! We must enforce velocity update so that all internal
@@ -1278,8 +1268,8 @@ contains
       bvelocityUpdate = .true.
 
       ! Update global system operator and solver structure
-      call codire_calcPrecond(rproblemLevel, rtimestep, p_rsolver,&
-                           rprimalSolution, 1, rproblemLevel%ilev, rproblemLevel%ilev)
+      call codire_calcPreconditioner(rproblemLevel, rtimestep, p_rsolver,&
+                                     rprimalSolution, rcollection)
       call solver_updateStructure(p_rsolver)           
       
       ! Reset solver and timestep to original values
@@ -1289,15 +1279,13 @@ contains
       ! Perform one step of the fully implicit theta-scheme
       if (irhstype .eq. 0) then
         call timestep_performThetaStep(rproblemLevel, rtimestep, p_rsolver,&
-                                       rprimalSolution, 1,&
-                                       fcb_calcResidual, fcb_calcJacobian,&
-                                       fcb_applyJacobian, fcb_setBoundary)
+                                       rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                       codire_applyJacobian, codire_setBoundary, rcollection)
 
       else
         call timestep_performThetaStep(rproblemLevel, rtimestep, p_rsolver,&
-                                       rprimalSolution, 1,&
-                                       fcb_calcResidual, fcb_calcJacobian,&
-                                       fcb_applyJacobian, fcb_setBoundary, rf)
+                                       rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                       codire_applyJacobian, codire_setBoundary, rcollection, rf)
       end if
 
     end do adaptloop
@@ -1424,9 +1412,8 @@ contains
         call stat_startTimer(rtimer_solution, STAT_TIMERSHORT)
         
         call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep, p_rsolver,&
-                                       rprimalSolution, 1,&
-                                       fcb_calcResidual, fcb_calcJacobian,&
-                                       fcb_applyJacobian, fcb_setBoundary)
+                                       rprimalSolution, codire_calcResidual, codire_calcJacobian,&
+                                       codire_applyJacobian, codire_setBoundary, rcollection)
         
         ! Stop time measurement for solution procedure
         call stat_stopTimer(rtimer_solution)
@@ -1451,9 +1438,8 @@ contains
         bvelocityUpdate = .true.
         
         ! Update global system operator and solver structure
-        call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
-                             rdualSolution, 2, rproblem%p_rproblemLevelMax%ilev,&
-                             rproblem%p_rproblemLevelMax%ilev)
+        call codire_calcPreconditioner(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+                                       rdualSolution, rcollection)
         call solver_updateStructure(rsolver)
 
         ! Reset solver and timestep to original values
@@ -1466,7 +1452,7 @@ contains
         
         ! Build the discretized target functional
         call linf_buildVectorScalar(rproblem%p_rproblemLevelMax%rdiscretisation%RspatialDiscr(1),&
-                                    rform, .true., rvector, fcb_coeffTargetFunc)
+                                    rform, .true., rvector, codire_coeffTargetFunc)
 
         ! Convert the temporal scalar vector to a 1-block vector
         call lsysbl_convertVecFromScalar(rvector, rtargetFunc,&
@@ -1480,9 +1466,8 @@ contains
         call stat_startTimer(rtimer_solution, STAT_TIMERSHORT)
         
         call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep, p_rsolver,&
-                                       rdualSolution, 2, &
-                                       fcb_calcResidual, fcb_calcJacobian,&
-                                       fcb_applyJacobian, fcb_setBoundary, rtargetFunc)
+                                       rdualSolution, codire_calcResidual, codire_calcJacobian,&
+                                       codire_applyJacobian, codire_setBoundary, rcollection, rtargetFunc)
         
         ! Stop time measurement for solution procedure
         call stat_stopTimer(rtimer_solution)
@@ -1495,7 +1480,7 @@ contains
         !-------------------------------------------------------------------------
         
         ! Compute Galerkin residual
-        call codire_calcGalerkinResidual(rproblem%p_rproblemLevelMax, rprimalSolution, rvectorBlock, 1)
+        call codire_calcGalerkinResidual(rproblem%p_rproblemLevelMax, rprimalSolution, rvectorBlock, rcollection)
         
         call lsysbl_getbase_double(rvectorBlock, p_Ddata1)
         call lsysbl_getbase_double(rdualSolution, p_Ddata2)
@@ -1562,26 +1547,26 @@ contains
         case (NDIM1D)
           ! Perform grid adaptation in 1D
           call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                         rprimalSolution, rgridIndicator, fcb_hadaptCallback1D)
+                                         rprimalSolution, rgridIndicator, codire_hadaptCallback1D)
           call lsyssc_releaseVector(rgridIndicator)
           call codire_reinitConstOperators1D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                          rprimalSolution, ieltype, fcb_hadaptCallback1D)
+                                          rprimalSolution, ieltype, codire_hadaptCallback1D)
           
         case (NDIM2D)
           ! Perform grid adaptation in 2D
           call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                         rprimalSolution, rgridIndicator, fcb_hadaptCallback2D)
+                                         rprimalSolution, rgridIndicator, codire_hadaptCallback2D)
           call lsyssc_releaseVector(rgridIndicator)
           call codire_reinitConstOperators2D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                          rprimalSolution, ieltype, fcb_hadaptCallback2D)
+                                          rprimalSolution, ieltype, codire_hadaptCallback2D)
           
         case (NDIM3D)
           ! Perform grid adaptation in 3D
           call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                         rprimalSolution, rgridIndicator, fcb_hadaptCallback3D)
+                                         rprimalSolution, rgridIndicator, codire_hadaptCallback3D)
           call lsyssc_releaseVector(rgridIndicator)
           call codire_reinitConstOperators3D(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
-                                          rprimalSolution, ieltype, fcb_hadaptCallback3D)
+                                          rprimalSolution, ieltype, codire_hadaptCallback3D)
         end select
         
         ! Impose boundary conditions for the primal problem
@@ -1594,9 +1579,8 @@ contains
         bvelocityUpdate = .true.
 
         ! Update global system operator and solver structure
-        call codire_calcPrecond(rproblem%p_rproblemLevelMax, rtimestep, p_rsolver,&
-                             rprimalSolution, 1, rproblem%p_rproblemLevelMax%ilev,&
-                             rproblem%p_rproblemLevelMax%ilev)
+        call codire_calcPreconditioner(rproblem%p_rproblemLevelMax, rtimestep, p_rsolver,&
+                                       rprimalSolution, rcollection)
         call solver_updateStructure(p_rsolver)
 
         ! Reset solver and timestep to original values
@@ -1791,11 +1775,11 @@ contains
     call fparser_done()
     
     ! Release data of callback routine
-    call fcb_hadaptCallback1D(rcollection, HADAPT_OPR_DONECALLBACK,&
+    call codire_hadaptCallback1D(rcollection, HADAPT_OPR_DONECALLBACK,&
                               (/0/), (/0/))
-    call fcb_hadaptCallback2D(rcollection, HADAPT_OPR_DONECALLBACK,&
+    call codire_hadaptCallback2D(rcollection, HADAPT_OPR_DONECALLBACK,&
                               (/0/), (/0/))
-    call fcb_hadaptCallback3D(rcollection, HADAPT_OPR_DONECALLBACK,&
+    call codire_hadaptCallback3D(rcollection, HADAPT_OPR_DONECALLBACK,&
                               (/0/), (/0/))
     
     ! Release external storage
@@ -1899,7 +1883,7 @@ contains
 
 !<subroutine>
 
-  subroutine codire_UserInterface(imode)
+  subroutine UserInterface(imode)
 
 !<description>
     ! This subroutine enables the user to interact with the
@@ -1929,9 +1913,10 @@ contains
       call output_separator(OU_SEP_STAR)
       call output_line('  Algebraic Flux Correction for scalar conservation laws')
       call output_lbrk()
-      call output_line('  Authors:  D. Kuzmin, M. Moeller (2004-2008)')
-      call output_line('            Applied Mathematics, Dortmund University of Technology')
-      call output_line('            Vogelpothsweg 87, 44227 Dortmund, Germany')
+      call output_line('  Authors:  Dmitri Kuzmin, Matthias Moeller (2004-2009)')
+      call output_line('            Institute of Applied Mathematics')
+      call output_line('            Dortmund University of Technology')
+      call output_line('            Vogelpothsweg 87, D-44227 Dortmund, Germany')
       call output_separator(OU_SEP_STAR)
       call getenv('HOST',cbuffer)
       call output_line('  Hostname:        '//trim(adjustl(cbuffer)))
@@ -1972,8 +1957,8 @@ contains
       if (signal_SIGINT(-1) > 0 ) call codire_postprocess(rprimalSolution)
       
     end select
-  end subroutine codire_UserInterface
-end program afc
+  end subroutine UserInterface
+end program flagship
 
 !*****************************************************************************
 

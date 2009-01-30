@@ -145,13 +145,13 @@ contains
     if (present(nlminOpt)) then
       nlmin = nlminOpt
     else
-      nlmin = solver_getNLMIN(rsolver,rproblemLevel%ilev)
+      nlmin = solver_getMinimumMultigridlevel(rsolver,rproblemLevel%ilev)
     end if
 
     if (present(nlmaxOpt)) then
       nlmax = nlmaxOpt
     else
-      nlmax = solver_getNLMAX(rsolver,rproblemLevel%ilev)
+      nlmax = solver_getMaximumMultigridlevel(rsolver,rproblemLevel%ilev)
     end if
     
     

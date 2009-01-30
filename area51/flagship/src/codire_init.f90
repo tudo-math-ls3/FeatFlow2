@@ -443,7 +443,7 @@ contains
       
       ! Generate the global coefficient matrices for the FE method
       select case(abs(ivelocitytype))
-      case (VELOCITY_NONE)
+      case (VELOCITY_ZERO)
         ! zero velocity, do nothing
 
       case (VELOCITY_CONSTANT,&
@@ -470,12 +470,12 @@ contains
 
       ! Generate the diffusion matrix
       select case(idiffusiontype)
-      case (DIFF_NONE)
+      case (DIFFUSION_ZERO)
         ! zero diffusion, do nothing
 
 
-      case (DIFF_ISOTROPIC,&
-            DIFF_ANISOTROPIC)
+      case (DIFFUSION_ISOTROPIC,&
+            DIFFUSION_ANISOTROPIC)
         ! Isotropic diffusion, so generate the standard Laplace matrix and
         ! scale it by the negative value of the diffusion coefficient.
         call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(CDEQ_MATRIX_TEMPLATE),&
@@ -677,7 +677,7 @@ contains
       
       ! Generate the global coefficient matrices for the FE method
       select case(abs(ivelocitytype))
-      case (VELOCITY_NONE)
+      case (VELOCITY_ZERO)
         ! zero velocity, do nothing
 
       case (VELOCITY_CONSTANT,&
@@ -712,11 +712,11 @@ contains
 
       ! Generate the diffusion matrix
       select case(idiffusiontype)
-      case (DIFF_NONE)
+      case (DIFFUSION_ZERO)
         ! zero diffusion, do nothing
 
 
-      case (DIFF_ISOTROPIC)
+      case (DIFFUSION_ISOTROPIC)
         ! Isotropic diffusion, so generate the standard Laplace matrix and 
         ! scale it by the negative value of the diffusion coefficient.
         call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(CDEQ_MATRIX_TEMPLATE),&
@@ -726,7 +726,7 @@ contains
                                          -DdiffusionMatrix2D(1,1))
 
         
-      case (DIFF_ANISOTROPIC)
+      case (DIFFUSION_ANISOTROPIC)
         ! For anisotropic diffusion, things are slightly more complicated.
         ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
         ! scalar system matrix in 2D.
@@ -955,7 +955,7 @@ contains
       
       ! Generate the global coefficient matrices for the FE method
       select case(abs(ivelocitytype))
-      case (VELOCITY_NONE)
+      case (VELOCITY_ZERO)
         ! zero velocity, do nothing
 
       case (VELOCITY_CONSTANT,&
@@ -997,11 +997,11 @@ contains
 
       ! Generate the diffusion matrix
       select case(idiffusiontype)
-      case (DIFF_NONE)
+      case (DIFFUSION_ZERO)
         ! zero diffusion, do nothing
 
         
-      case (DIFF_ISOTROPIC)
+      case (DIFFUSION_ISOTROPIC)
         ! Isotropic diffusion, so generate the standard Laplace matrix and
         ! scale it by  the negative value of the diffusion coefficient.
         call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(CDEQ_MATRIX_TEMPLATE),&
@@ -1011,7 +1011,7 @@ contains
                                          -DdiffusionMatrix3D(1,1))
 
         
-      case (DIFF_ANISOTROPIC)
+      case (DIFFUSION_ANISOTROPIC)
         ! For anisotropic diffusion, things are slightly more complicated.
         ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
         ! scalar system matrix in 3D.
@@ -1444,7 +1444,7 @@ contains
 
       ! Build the right-hand side vector
       call linf_buildVectorScalar (rproblemLevel%rdiscretisation%RspatialDiscr(1),&
-                                   rform, .true., rvector, fcb_coeffRHS, rcollection)
+                                   rform, .true., rvector, codire_coeffFunctionParser, rcollection)
 
       ! Convert the temporal scalar vector to a 1-block vector
       call lsysbl_convertVecFromScalar(rvector, rrhs, rproblemLevel%rdiscretisation)
@@ -1650,13 +1650,13 @@ contains
 !</subroutine>
 
     select case(idiffusiontype)
-    case (DIFF_NONE)
+    case (DIFFUSION_ZERO)
     
       DdiffusionMatrix1D = 0._DP
 
       
-    case (DIFF_ISOTROPIC,&
-          DIFF_ANISOTROPIC)
+    case (DIFFUSION_ISOTROPIC,&
+          DIFFUSION_ANISOTROPIC)
       
       DdiffusionMatrix1D = Ddiffusion
       
@@ -1694,18 +1694,18 @@ contains
     real(DP) :: t
 
     select case(idiffusiontype)
-    case (DIFF_NONE)
+    case (DIFFUSION_ZERO)
     
       DdiffusionMatrix2D      = 0._DP
 
       
-    case (DIFF_ISOTROPIC)
+    case (DIFFUSION_ISOTROPIC)
       
       DdiffusionMatrix2D      = 0._DP
       DdiffusionMatrix2D(1,1) = maxval(Ddiffusion)
       
       
-    case (DIFF_ANISOTROPIC)
+    case (DIFFUSION_ANISOTROPIC)
 
       ! Convert angle to RAD
       t = 2.0_DP*SYS_PI*drotation/360.0_DP

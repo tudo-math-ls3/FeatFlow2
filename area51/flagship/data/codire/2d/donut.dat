@@ -11,7 +11,12 @@
 #                                                                              #
 ################################################################################
 
-ndimension  = 2
+application = codire
+
+################################################################################
+[Codire]
+################################################################################
+
 benchmark   = Benchmark
 inputoutput = InputOutput
 primalconv  = Convection
@@ -25,8 +30,16 @@ errorest    = ErrorEstimator
 [Benchmark]
 ################################################################################
 
+# spatial dimension
+ndimension  = 2
+
 # 0 = time-dependent flow, 1 = steady-state, 2 = pseudo time-dependent flow
 iflowtype = 1
+
+# 0 = no mass matrix
+# 1 = consistent mass matrix
+# 2 = lumped mass matrix
+imasstype = 0
 
 # 0 = zero velocity v=0
 # 1 = linear constant velocity v=v(x)
@@ -34,31 +47,31 @@ iflowtype = 1
 # 3 = Burgers equation in space-time (x,t)
 # 4 = Buckley Leverett in space-time (x,t)
 # 6 = Burgers' equation in 2D
-ivelocitytype = 1
+ivelocitytype = 2
 
 # 0 = zero diffusion
 # 1 = isotropic diffusion
 # 2 = anisotropic diffusion
+# 3 = variable diffusion
 idiffusiontype = 0
 
-# diffusion coefficients
-ddiffusionA11 = 0.0
-ddiffusionA12 = 0.0
-ddiffusionA21 = 0.0
-ddiffusionA22 = 0.0
+# 0 = zero reactive term
+# 1 = analytical initial solution
+ireactiontype = 0
 
-# rotation angle for the anisotropic diffusion
-ddiffusionRotation = 0.0
-
-# 0 = zero r.h.s
-# 1 = analytical r.h.s.
+# 0 = zero right-hand side
+# 1 = analytical right-hand side
 irhstype = 0
+
+# 0 = zero initial solution
+# 1 = analytical initial solution
+isolutiontype = 1
 
 # type of elements
 # =1, P1 finite elements, =11 Q1 finite elements
 # =2, P2 finite elements, =12 Q3 finite elements
-# =-1 mixed P1/Q1 finite elements
-ieltype = -1
+# =-1 mixed P1/Q1 finite elements, =-2 mixed P2/Q2 finite elements
+ieltype = 11
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -70,34 +83,58 @@ imatrixformat = 9
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 3
+nadapt = 5
 
 
 ################################################################################
 [InputOutput]
 ################################################################################
 
-# grid parametrization
+# file which contains the boundary parametrization
 prmfile = grids/2d/rect_2x1.prm
 
-# grid triangulation
+# file which contains the triangulation
 trifile = grids/2d/rect_2x1.tri
 
-# indat file
+# file which contains the application specific data
 indatfile = data/codire/2d/donut.indat
+
+# section name of boundary condition for primal problem
+sprimalbdrcondname = boundary_conditions_primal
+
+# section name of boundary condition for dual problem
+sdualbdrcondname = boundary_conditions_dual
+
+# section name of velocity field
+svelocityname = velocityfield
+
+# section name of diffusion tensor
+sdiffusionname = 
+
+# section name of reactive term
+sreactionname = 
+
+# section name of right-hand side vector
+srhsname =
+
+# section name of initial solution
+ssolutionname = initial_solution
+
+# section name of exact solution
+sexactsolutionname = exact_solution
 
 # type of UCD output format
 # =0, no output; =1, GMV; =2, AVS; =3, VTK
-iformatUCD = 2
+iformatUCD = 1
 
 # time interval for UCD output
 dstepUCD = 1.0
 
-# name of UCD output file for solution
-sfilenameUCDsolution = out/donut
+# file for UCD output of solution
+ucdsolution = out/donut
 
-# name of UCD output file for error
-sfilenameUCDerror = out/donut_error
+# file for UCD output of error
+ucderror = out/donut_error
 
 
 ################################################################################
@@ -169,14 +206,7 @@ depsSteady = 0.0
 # =10, semi-impl. FEM-FCT; =11 semi-expl. FEM-FCT;
 # =12, linearized FEM-FCT;
 # =20, FEM-TVD; =21, FEM-GP;
-istabilisation = 20
-
-# mass matrix: 
-# =0, use row-sum lumped mass matrix; =1, use consistent mass matrix
-imass = 0
-
-# extend Jacobian matrix
-iextendedJacobian = 1
+istabilisation = 1
 
 
 ################################################################################
@@ -187,13 +217,6 @@ iextendedJacobian = 1
 # =0, no stabilization (Galerkin); =2, maximum principle preservation;
 # =30, symmetric limiting
 istabilisation = 0
-
-# mass matrix: 
-# =0, use row-sum lumped mass matrix; =1, use consistent mass matrix
-imass = 0
-
-# extend Jacobian matrix
-iextendedJacobian = 0
 
 
 ################################################################################
@@ -319,7 +342,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 2000
+nmaxIterations = 10
 
 # preconditioner for the nonlinear solver
 # =1, block-diagonal; =2, defect-correction; =3, algebraic Newton
