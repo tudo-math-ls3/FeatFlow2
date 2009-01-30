@@ -3941,7 +3941,7 @@ contains
     type(t_collctValue), pointer :: p_rvalue
     
     ! Get the pointer to the parameter
-    call collct_getvalue_struc (rcollection, sparameter, COLLCT_HADAPT,&
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_AFCSTAB,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
     
     ! Return the quantity
@@ -4004,7 +4004,7 @@ contains
     type(t_collctValue), pointer :: p_rvalue
     
     ! Get the pointer to the parameter
-    call collct_getvalue_struc (rcollection, sparameter, COLLCT_HADAPT,&
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_TIMER,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
     
     ! Return the quantity
@@ -5559,7 +5559,7 @@ contains
     logical :: bexists
     
     ! Get the pointer to the parameter. Add the parameter if necessary
-    call collct_getvalue_struc (rcollection, sparameter, COLLCT_FILTERCHAIN,&
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_HADAPT,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
     
     ! Set the value
@@ -5620,7 +5620,7 @@ contains
     logical :: bexists
     
     ! Get the pointer to the parameter. Add the parameter if necessary
-    call collct_getvalue_struc (rcollection, sparameter, COLLCT_FILTERCHAIN,&
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_AFCSTAB,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
     
     ! Set the value
@@ -5681,7 +5681,7 @@ contains
     logical :: bexists
     
     ! Get the pointer to the parameter. Add the parameter if necessary
-    call collct_getvalue_struc (rcollection, sparameter, COLLCT_FILTERCHAIN,&
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_TIMER,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
     
     ! Set the value
