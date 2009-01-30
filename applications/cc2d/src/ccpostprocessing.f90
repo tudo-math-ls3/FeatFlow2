@@ -276,15 +276,17 @@ contains
     
     ! local variables
     real(DP),dimension(3) :: Derr
-    real(DP) :: derrorVel, derrorP
-    integer :: icalcL2,icalcH1
+    real(DP) :: derrorVel, derrorP, denergy
+    integer :: icalcL2,icalcH1,icalcEnergy
     
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                                      'IERRORANALYSISL2', icalcL2, 0)
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                                      'IERRORANALYSISH1', icalcH1, 0)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                     'ICALCKINETICENERGY', icalcEnergy, 1)
     
-    if ((icalcL2 .ne. 0) .or. (icalcH1 .ne. 0)) then
+    if ((icalcL2 .ne. 0) .or. (icalcH1 .ne. 0) .or. (icalcEnergy .ne. 0)) then
       call output_lbrk()
       call output_line ('Error Analysis')
       call output_line ('--------------')
@@ -301,12 +303,12 @@ contains
       call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
                          ffunction_TargetY,rproblem%rcollection)
                          
-      derrorVel = (0.5_DP*(Derr(1)**2+Derr(2)**2))
+      derrorVel = sqrt(0.5_DP*(Derr(1)**2+Derr(2)**2))
 
       call pperr_scalar (rsolution%RvectorBlock(3),PPERR_L2ERROR,Derr(3),&
                          ffunction_TargetP,rproblem%rcollection)
 
-      derrorP = Derr(3)
+      derrorP = sqrt(Derr(3))
       
       call output_line ('||u-reference||_L2 = '//trim(sys_sdEP(derrorVel,15,6)) )
       call output_line ('||p-reference||_L2 = '//trim(sys_sdEP(derrorP,15,6)) )
@@ -315,11 +317,11 @@ contains
       
     end if
 
-    if (icalcL2 .ne. 0) then
+    if (icalcH1 .ne. 0) then
     
       call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
     
-      ! Perform error analysis to calculate and add 1/2||u-z||_{L^2}.
+      ! Perform error analysis to calculate and add ||u-z||_{H^1}.
       call pperr_scalar (rsolution%RvectorBlock(1),PPERR_H1ERROR,Derr(1),&
                          ffunction_TargetX,rproblem%rcollection)
 
@@ -334,6 +336,22 @@ contains
       
     end if
     
+    if (icalcL2 .ne. 0) then
+    
+      call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    
+      ! Perform error analysis to calculate and add 1/2||u||^2_{L^2}.
+      call pperr_scalar (rsolution%RvectorBlock(1),PPERR_L2ERROR,Derr(1))
+      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2))
+                         
+      denergy = 0.5_DP*(Derr(1)**2+Derr(2)**2)
+
+      call output_line ('||u||^2_L2         = '//trim(sys_sdEP(denergy,15,6)) )
+      
+      call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+      
+    end if
+
   end subroutine
 
 !******************************************************************************

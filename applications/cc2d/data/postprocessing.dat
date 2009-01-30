@@ -115,3 +115,9 @@ ierrorAnalysisL2 = 1
 # =1: Calculate the error
 
 ierrorAnalysisH1 = 0
+
+# Calculate the kinetic energy.
+# =0: Don't calculate
+# =1: Calculate the energy
+
+icalcKineticEnergy = 1
