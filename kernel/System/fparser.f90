@@ -676,7 +676,7 @@ contains
 
 !<subroutine>
 
-  subroutine fparser_parseFileForKeyword(sfilename, skeyword, itype)
+  subroutine fparser_parseFileForKeyword(sfilename, ckeyword, itype)
 
 !<description>
     ! Parse the file for the given keyword and make it a constant or a
@@ -688,7 +688,7 @@ contains
     character(LEN=*), intent(IN) :: sfilename
 
     ! name of keyword to parser for
-    character(LEN=*), intent(IN) :: skeyword
+    character(LEN=*), intent(IN) :: ckeyword
 
     ! type of keyword: FPAR_CONSTANT, FPAR_EXPRESSION
     integer, intent(IN) :: itype
@@ -696,8 +696,8 @@ contains
 !</subroutine>
 
     ! local variables
-    character(SYS_STRLEN)  :: keyword,name
-    character(FPAR_STRLEN) :: sdata,expression
+    character(SYS_STRLEN)  :: skeyword,sname
+    character(FPAR_STRLEN) :: sdata,svalue
     real(DP) :: dvalue
     integer :: iunit,ipos,jpos,ios,idatalen
 
@@ -723,22 +723,22 @@ contains
       ipos = scan(sdata(1:idatalen), ":")
       if (ipos .eq. 0) cycle
       
-      call sys_tolower(sdata(1:max(1,ipos-1)), keyword)
-      if (trim(adjustl(keyword)) .eq. skeyword) then
+      call sys_tolower(sdata(1:max(1,ipos-1)), skeyword)
+      if (trim(adjustl(skeyword)) .eq. ckeyword) then
         
         ! Split the line into name and value
-        jpos    = scan(sdata(1:idatalen), "=" , .true.)
-        name    = trim(adjustl(sdata(ipos+1:jpos-1)))
-        keyword = trim(adjustl(sdata(jpos+1:)))
-        
+        jpos  = scan(sdata(1:idatalen), "=" , .true.)
+        sname  = trim(adjustl(sdata(ipos+1:jpos-1)))
+        svalue = trim(adjustl(sdata(jpos+1:)))
+                
         ! We found a keyword that will be applied to the parser
         select case(itype)
         case(FPAR_CONSTANT)
-          read(keyword,*) dvalue
-          call fparser_defineConstant(name, dvalue)
+          read(svalue,*) dvalue
+          call fparser_defineConstant(sname, dvalue)
 
         case(FPAR_EXPRESSION)
-          call fparser_defineExpression(name, expression)
+          call fparser_defineExpression(sname, svalue)
 
         case DEFAULT
           call output_line('Invalid type of expression!',&
@@ -1013,17 +1013,15 @@ contains
 !</description>
 
 !<input>
+    ! Function parser
+    type (t_fparser),  intent(IN) :: rparser
+
     ! Function identifier
     integer, intent(IN) :: iComp
 
     ! Variable values
     real(DP), dimension(:), intent(IN) :: Val
 !</input>
-
-!<inputoutput>
-    ! Function parser
-    type (t_fparser),  intent(IN) :: rparser
-!</inputoutput>
 
 !<output>
     ! Evaluated function
@@ -1095,6 +1093,9 @@ contains
 !</description>
 
 !<input>
+    ! Function parser
+    type (t_fparser),  intent(IN) :: rparser
+
     ! Function identifier
     integer, intent(IN) :: iComp
 
@@ -1105,16 +1106,11 @@ contains
 
     ! Variable values (must have the same dimension as Res)
     real(DP), dimension(:,:), intent(IN) :: ValBlock
-!</input>
-
-!<inputoutput>
-    ! Function parser
-    type (t_fparser),  intent(INOUT) :: rparser
 
     ! Variable values. This is a vector of scalar variables
     ! which is the same for all components of Res, e.g. the time variable.
     real(DP), dimension(:), intent(IN), optional :: ValScalar
-!</inputoutput>
+!</input>
 
 !<output>
     ! Evaluated function
