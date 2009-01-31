@@ -78,8 +78,9 @@
 !#      -> Exports a triangulation structure to a .TRI file.
 !#
 !# 18.) tria_exportPostScript
-!#      -> Exports a 2D triangulation to a PostScript file which e.g. can be
-!#         imported into a LaTeX document using \includegraphics{}.
+!#      -> Exports a 2D triangulation to an (encapsulated) PostScript file
+!#         (EPS) which e.g. can be imported into a LaTeX document using
+!#         the \includegraphics{} command.
 !#
 !# 19.) tria_searchBoundaryNode
 !#      -> Search for the position of a boundary vertex / edge on the boundary.
@@ -5684,8 +5685,8 @@ p_InodalPropertyDest = -4711
 
 !<description>
   ! Exports a 2D triangulation into a PostScript file.
-  ! The created PostScript file can be included into a LaTeX document by
-  ! using the \includegraphics{} command.
+  ! The created encapsulated PostScript file can be included into a LaTeX
+  ! document by using the \includegraphics{} command.
   ! The mesh will be aligned at the bottom left corner of the drawing box.
 !</description>
 
@@ -5727,7 +5728,7 @@ p_InodalPropertyDest = -4711
 
   ! local variables
   real(DP) :: ddet,dwidth
-  real(DP), dimension(2) :: Dv, Db
+  real(DP), dimension(2) :: Dv, Db, DbboxPS
   real(DP), dimension(2,2) :: Dt
   real(DP), dimension(:,:), pointer :: p_Dcoords
   integer, dimension(:,:), pointer :: p_Iedges
@@ -5852,6 +5853,7 @@ p_InodalPropertyDest = -4711
     ! Calculate the scaling parameters:
     dscaleX = (Db(1) / dbboxWidth) * MM2PTS
     dscaleY = (Db(2) / dbboxHeight) * MM2PTS
+    DbboxPS(1:2) = Db(1:2)
     
     ! Do we have to keep the aspect ratio?
     if(bkeepAspectRatio) then
@@ -5859,7 +5861,17 @@ p_InodalPropertyDest = -4711
       ! Yes, so choose the minimum scaling factor.
       dscaleX = min(dscaleX, dscaleY)
       dscaleY = dscaleX
+    
+      ! And calculate the bounding box for EPS
+      DbboxPS(1) = dscaleX * dbboxWidth
+      DbboxPS(2) = dscaleY * dbboxHeight
       
+    else
+    
+      ! The bounding box is equal to the drawing box in this case
+      DbboxPS(1) = Db(1)
+      DbboxPS(2) = Db(2)
+    
     end if
     
     ! Okay, open a file for writing
@@ -5874,6 +5886,10 @@ p_InodalPropertyDest = -4711
     
     ! Okay, write PostScript header
     write(iunit,'(A)') '%!!PS-Adobe-3.0 EPSF-3.0'
+    
+    ! Write bounding box
+    write(iunit,'(A,F12.6,F12.6,F12.6,F12.6)') '%%BoundingBox: ', &
+      0.0_DP, 0.0_DP, DbboxPS(1), DbboxPS(2)
     
     ! Write the line width
     write(iunit,'(F12.6,A)') (dwidth*MM2PTS), ' setlinewidth'
