@@ -500,6 +500,11 @@ module element
   integer(I32), parameter, public :: EL_E050    = EL_Q2T
   integer(I32), parameter, public :: EL_E050_2D = EL_E050
   
+  ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~,
+  ! non-parametric version
+  integer(I32), parameter, public :: EL_EM50    = EL_Q2T + EL_NONPARAMETRIC
+  integer(I32), parameter, public :: EL_EM50_2D = EL_EM50
+
   ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~ with bubble.
   integer(I32), parameter, public :: EL_EB50    = EL_Q2TB
   integer(I32), parameter, public :: EL_EB50_2D = EL_EB50
@@ -651,6 +656,8 @@ contains
       elem_igetID = EL_E050_2D
     case("EL_Q2TB","EL_Q2TB_2D","EL_EB50","EL_EB50_2D")
       elem_igetID = EL_EB50_2D
+    case("EL_EM50","EL_EM50_2D")
+      elem_igetID = EL_EM50_2D
     
     ! -= 3D Tetrahedron Elements =-
     case("EL_P0_3D","EL_E000_3D")
@@ -1009,8 +1016,8 @@ contains
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
       ! These work on the reference quadrilateral
       elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
-    case (EL_Q1T+EL_NONPARAMETRIC)
-      ! EM30, EM31; these work in real coordinates
+    case (EL_Q1T+EL_NONPARAMETRIC,EL_Q2T+EL_NONPARAMETRIC)
+      ! EM30, EM31, EM50; these work in real coordinates
       elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
     
     ! 3D Element types
@@ -2270,6 +2277,9 @@ contains
       ! New implementation
       call elem_eval_EB50_2D(ieltyp, revalElementSet, Bder, Dbas)
     
+    case (EL_EM50)
+      call elem_eval_EM50_2D(ieltyp, revalElementSet, Bder, Dbas)
+
     ! *****************************************************
     ! 3D tetrahedron elements
     case (EL_P0_3D)
