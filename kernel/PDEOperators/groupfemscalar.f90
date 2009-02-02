@@ -58,22 +58,20 @@
 !# The following routines are available:
 !#
 !# 1.) gfsc_initStabilisation
-!#     -> initialize the stabilisation structure
+!#     -> Initializes the stabilisation structure
 !#
 !# 2.) gfsc_isMatrixCompatible
-!#     -> checks wether a matrix and a stabilisation structure are compatible
+!#     -> Checks wether a matrix and a stabilisation structure are compatible
 !#
 !# 3.) gfsc_isVectorCompatible
-!#     -> checks wether a vector and a stabilisation structure are compatible
+!#     -> Checks wether a vector and a stabilisation structure are compatible
 !#
 !# 4.) gfsc_buildConvectionOperator = gfsc_buildConvOperatorScalar /
 !#                                    gfsc_buildConvOperatorBlock
-!#     -> assemble the convective part of the transport operator for 
-!#        a scalar convection-diffusion-reaction equation
+!#     -> Assembles the convective part of the transport operator
 !#
-!# 5.) gfsc_buildDiffusionOperator
-!#     -> assemble the diffusive part of the transport operator for
-!#        scalar convection-diffusion-reaction equation 
+!# 5.) gfsc_buildDiffusionOperator = gfsc_buildDiffusionOperator
+!#     -> Assembles the diffusive part of the transport operator
 !#
 !# 6.) gfsc_buildResidualFCT = gfsc_buildResScalarFCT /
 !#                             gfsc_buildResBlockFCT
@@ -116,6 +114,12 @@
 !#                               gfsc_buildJacobianBlockSymm
 !#      -> assemble the Jacobian matrix for the stabilisation part of symmetric
 !#         flux limiting for diffusion operators
+!#
+!# 
+!# The following auxiliary routines are available:
+!#
+!# 1.) gfsc_hasOrientation
+!#     -> Checks if the stabilisation techniques requires an oriented structure
 !#
 !# </purpose>
 !##############################################################################
@@ -230,23 +234,28 @@ contains
 !</subroutine>
 
     ! local variables
+    integer, dimension(2) :: Isize
     integer :: i
-    integer(I32), dimension(2) :: Isize
+
     
     ! Set atomic data
     rafcstab%NVAR  = rmatrixTemplate%NVAR
     rafcstab%NEQ   = rmatrixTemplate%NEQ
-    rafcstab%NEDGE = int(0.5*(rmatrixTemplate%NA-rmatrixTemplate%NEQ),I32)
+    rafcstab%NEDGE = int(0.5*(rmatrixTemplate%NA-rmatrixTemplate%NEQ))
 
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
       
-    case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND, AFCSTAB_DMP)
+    case (AFCSTAB_GALERKIN,&
+          AFCSTAB_UPWIND,&
+          AFCSTAB_DMP)
       ! do nothing
 
       
-    case (AFCSTAB_FEMFCT, AFCSTAB_FEMFCT_EXP,&
-          AFCSTAB_FEMGP, AFCSTAB_FEMTVD)
+    case (AFCSTAB_FEMFCT,&
+          AFCSTAB_FEMFCT_EXP,&
+          AFCSTAB_FEMGP,&
+          AFCSTAB_FEMTVD)
       
       ! Handle for IsuperdiagonalEdgesIdx
       if (rafcstab%h_IsuperdiagonalEdgesIdx .ne. ST_NOHANDLE)&
@@ -260,7 +269,7 @@ contains
           call storage_free(rafcstab%h_IverticesAtEdge)
       call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
-
+      
       ! Handle for DcoefficientsAtEdge
       Isize = (/3, rafcstab%NEDGE/)
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
@@ -268,14 +277,14 @@ contains
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! Nodal vectors
+      ! We need 6 nodal vectors for P's, Q's and R's
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
 
-      ! Edgewise vectors
+      ! We need 2 edgewise vectors for the explicit and implicit fluxes
       allocate(rafcstab%RedgeVectors(2))
       do i = 1, 2
         call lsyssc_createVector(rafcstab%RedgeVectors(i),&
@@ -305,23 +314,22 @@ contains
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! Nodal vectors
+      ! We need 6 nodal vectors for P's, Q's and R's
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
       
-      ! Edgewise vectors
+      ! We need 1 edgewise vector for the fluxes
       allocate(rafcstab%RedgeVectors(1))
-      do i = 1, 1
-        call lsyssc_createVector(rafcstab%RedgeVectors(i),&
-            rafcstab%NEDGE, .false., ST_DOUBLE)
-      end do
+      call lsyssc_createVector(rafcstab%RedgeVectors(1),&
+          rafcstab%NEDGE, .false., ST_DOUBLE)
+
 
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_initStabilisation')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_initStabilisation')
       call sys_halt()
     end select
 
@@ -350,10 +358,10 @@ contains
 !</input>
 
 !<output>
-    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
-    ! whether matrix and stabilisation are compatible or not.
-    ! If not given, an error will inform the user if the matrix/operator are
-    ! not compatible and the program will halt.
+    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE
+    ! depending on whether matrix and stabilisation are compatible or
+    ! not.  If not given, an error will inform the user if the
+    ! matrix/operator are not compatible and the program will halt.
     logical, intent(OUT), optional :: bcompatible
 !</output>
 !</subroutine>
@@ -367,7 +375,7 @@ contains
         return
       else
         call output_line('Matrix/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_isMatrixCompatible')
+                         OU_CLASS_ERROR,OU_MODE_STD,'gfsc_isMatrixCompatible')
         call sys_halt()
       end if
     end if
@@ -394,10 +402,10 @@ contains
 !</input>
 
 !<output>
-    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
-    ! whether matrix and stabilisation are compatible or not.
-    ! If not given, an error will inform the user if the matrix/operator are
-    ! not compatible and the program will halt.
+    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE
+    ! depending on whether matrix and stabilisation are compatible or
+    ! not. If not given, an error will inform the user if the
+    ! matrix/operator are not compatible and the program will halt.
     logical, intent(OUT), optional :: bcompatible
 !</output>
 !</subroutine>
@@ -410,7 +418,7 @@ contains
         return
       else
         call output_line('Vector/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_isVectorCompatible')
+                         OU_CLASS_ERROR,OU_MODE_STD,'gfsc_isVectorCompatible')
         call sys_halt()
       end if
     end if
@@ -420,9 +428,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvOperatorBlock(RmatrixC, ru, fcb_calcConvection,&
-                                         bZeroRowsum, bStabilize, bclear,&
-                                         rmatrixL, rafcstab)
+  subroutine gfsc_buildConvOperatorBlock(RcoeffMatrices, rsolution, fcb_calcConvection,&
+                                         bZeroRowsum, bStabilise, bclear, rconvMatrix, rafcstab)
     
 !<description>
     ! This subroutine assembles the discrete transport operator which results
@@ -437,28 +444,28 @@ contains
 
 !<input>
     ! The array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RmatrixC
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
     ! The solution vector
     ! Note that this vector is only required for nonlinear
     ! problems which require the evaluation of the velocity
-    type(t_vectorBlock), intent(IN)                :: ru
+    type(t_vectorBlock), intent(IN) :: rsolution
     
     ! Switch for row-sum property
     ! TRUE  : assume zero row-sum, that is, the diegonal coefficient
     !         is computed as the sum of negative off-diagonal coefficients
     ! FALSE : compute the diagonal coefficient by standard finite elements
-    logical, intent(IN)                            :: bZeroRowsum
+    logical, intent(IN) :: bZeroRowsum
 
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN)                            :: bStabilize
+    logical, intent(IN) :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                            :: bclear
+    logical, intent(IN) :: bclear
 
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -466,24 +473,25 @@ contains
 
 !<inputoutput>
     ! The transport operator
-    type(t_matrixScalar), intent(INOUT)            :: rmatrixL
+    type(t_matrixScalar), intent(INOUT) :: rconvMatrix
     
     ! OPTIONAL: the stabilisation structure
-    type(t_afcstab), intent(INOUT), optional       :: rafcstab
+    type(t_afcstab), intent(INOUT), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! Check if block vector contains exactly one block
-    if (ru%nblocks .ne. 1) then
+    if (rsolution%nblocks .ne. 1) then
 
       call output_line('Solution vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorBlock')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorBlock')
       call sys_halt()
 
     else
       
-      call gfsc_buildConvOperatorScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_calcConvection, bZeroRowsum, bStabilize, bclear, rmatrixL, rafcstab)
+      call gfsc_buildConvOperatorScalar(RcoeffMatrices, rsolution%RvectorBlock(1),&
+                                        fcb_calcConvection, bZeroRowsum, bStabilise,&
+                                        bclear, rconvMatrix, rafcstab)
 
     end if
   end subroutine gfsc_buildConvOperatorBlock
@@ -492,9 +500,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvOperatorScalar(RmatrixC, ru, fcb_calcConvection,&
-                                          bZeroRowsum, bStabilize, bclear,&
-                                          rmatrixL, rafcstab)
+  subroutine gfsc_buildConvOperatorScalar(RcoeffMatrices, rsolution, fcb_calcConvection,&
+                                          bZeroRowsum, bStabilise, bclear, rconvMatrix, rafcstab)
 
 !<description>
     ! This subroutine assembles the discrete transport operator which results
@@ -530,28 +537,28 @@ contains
 
 !<input>
     ! The array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: rmatrixC
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
     ! The solution vector
     ! Note that this vector is only required for nonlinear
     ! problems which require the evaluation of the velocity
-    type(t_vectorScalar), intent(IN)               :: ru
+    type(t_vectorScalar), intent(IN) :: rsolution
 
     ! Switch for row-sum property
     ! TRUE  : assume zero row-sum, that is, the diegonal coefficient
     !         is computed as the sum of negative off-diagonal coefficients
     ! FALSE : compute the diagonal coefficient by standard finite elements
-    logical, intent(IN)                            :: bZeroRowsum
+    logical, intent(IN) :: bZeroRowsum
 
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN)                            :: bStabilize
+    logical, intent(IN) :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                            :: bclear
+    logical, intent(IN) :: bclear
 
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -559,70 +566,70 @@ contains
 
 !<inputoutput>
     ! The transport operator
-    type(t_matrixScalar), intent(INOUT)            :: rmatrixL
+    type(t_matrixScalar), intent(INOUT) :: rconvMatrix
     
     ! OPTIONAL: the stabilisation structure
-    type(t_afcstab), intent(INOUT), optional       :: rafcstab
+    type(t_afcstab), intent(INOUT), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_IsuperdiagonalEdgesIdx
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kld,p_Ksep
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kdiagonal
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_Kcol
-    real(DP), dimension(:,:), pointer             :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer               :: p_Cx,p_Cy,p_Cz,p_L,p_u
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    real(DP), dimension(:), pointer :: p_Cx, p_Cy, p_Cz, p_ConvOp, p_u
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal,p_IsuperdiagonalEdgesIdx
     integer :: h_Ksep
     integer :: idim,ndim
     
     ! Check if all matrices/vectors are compatible
-    call lsyssc_isMatrixCompatible(ru, rmatrixL, .false.)
+    call lsyssc_isMatrixCompatible(rsolution, rconvMatrix, .false.)
 
-    ndim = size(RmatrixC,1)
+    ndim = size(RcoeffMatrices,1)
     do idim = 1, ndim
-      call lsyssc_isMatrixCompatible(rmatrixC(idim), rmatrixL)
+      call lsyssc_isMatrixCompatible(RcoeffMatrices(idim), rconvMatrix)
     end do
 
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rmatrixL)
+    if (bclear) call lsyssc_clearMatrix(rconvMatrix)
 
     ! Set pointer
-    call lsyssc_getbase_Kld   (rmatrixL, p_Kld)
-    call lsyssc_getbase_Kcol  (rmatrixL, p_Kcol)
-    call lsyssc_getbase_double(rmatrixL, p_L)
-    call lsyssc_getbase_double(ru, p_u)
+    call lsyssc_getbase_Kld(rconvMatrix, p_Kld)
+    call lsyssc_getbase_Kcol(rconvMatrix, p_Kcol)
+    call lsyssc_getbase_double(rconvMatrix, p_ConvOp)
+    call lsyssc_getbase_double(rsolution, p_u)
 
     ! How many dimensions do we have?
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(rmatrixC(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-      call lsyssc_getbase_double(rmatrixC(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-      call lsyssc_getbase_double(rmatrixC(2), p_Cy)
-      call lsyssc_getbase_double(rmatrixC(3), p_Cz)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
       call sys_halt()
     end select
     
 
     ! What kind of matrix are we?
-    select case(rmatrixL%cmatrixFormat)
+    select case(rconvMatrix%cmatrixFormat)
     case(LSYSSC_MATRIX7)
+      !-------------------------------------------------------------------------
+      ! Matrix format 7
+      !-------------------------------------------------------------------------
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rmatrixL%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+      call storage_copy(rconvMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rconvMatrix%NEQ+1)
 
       ! Do we have a stabilisation structure?
       if (present(rafcstab)) then
@@ -630,239 +637,212 @@ contains
         ! Check if stabilisation has been initialised
         if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
           call output_line('Stabilisation has not been initialised',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
+                           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
           call sys_halt()
         end if
         
         ! Check if matrix/vector and stabilisation
         ! structure are compatible to each other
-        call gfsc_isMatrixCompatible(rafcstab, rmatrixL)
-        call gfsc_isVectorCompatible(rafcstab, ru)
-        
-        ! What kind of stabilisation are we?
-        select case (rafcstab%ctypeAFCstabilisation)
-        case (AFCSTAB_UPWIND)
-          ! Perform discrete upwinding without generating edge structure
+        call gfsc_isMatrixCompatible(rafcstab, rconvMatrix)
+        call gfsc_isVectorCompatible(rafcstab, rsolution)
 
+        ! Set additional pointers
+        call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+        call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+
+        ! Do we need edge orientation?
+        if (gfsc_hasOrientation(rafcstab)) then
+          
+          ! Adopt orientation convention IJ, such that L_ij < L_ji
+          ! and generate edge structure for the flux limiter
+          
           if (bZeroRowsum) then
             
             select case(ndim)
             case (NDIM1D)
-              call doUpwindZRSMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L)
+              call doUpwindZRSMat7_ordAFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                             p_Cx, p_u, p_ConvOp,&
+                                             p_IsuperdiagonalEdgesIdx,&
+                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM2D)
-              call doUpwindZRSMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+              call doUpwindZRSMat7_ordAFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                             p_Cx, p_Cy, p_u, p_ConvOp,&
+                                             p_IsuperdiagonalEdgesIdx,&
+                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM3D)
-              call doUpwindZRSMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+              call doUpwindZRSMat7_ordAFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                             p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                             p_IsuperdiagonalEdgesIdx,&
+                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
             end select
 
-          else
-
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L)
-            case (NDIM2D)
-              call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
-            case (NDIM3D)
-              call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
-            end select
-
-          end if
-          
-
-        case (AFCSTAB_FEMFCT, AFCSTAB_FEMFCT_EXP)
-          ! Set additional pointers
-          call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-          call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-          call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-          
-          ! Adopt no orientation convention and generate edge structure
-
-          if (bZeroRowsum) then
+          else   ! bZeroRowsum
             
             select case(ndim)
             case (NDIM1D)
-              call doUpwindZRSMat7_AFC_1D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
+              call doUpwindMat7_ordAFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                          p_Cx, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM2D)
-              call doUpwindZRSMat7_AFC_2D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
+              call doUpwindMat7_ordAFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                          p_Cx, p_Cy, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM3D)
-              call doUpwindZRSMat7_AFC_3D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
+              call doUpwindMat7_ordAFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                          p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             end select
 
-          else
-
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat7_AFC_1D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindMat7_AFC_2D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindMat7_AFC_3D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          end if
-
-          
-          ! Set state of stabilisation
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
-
-          
-        case (AFCSTAB_FEMTVD, AFCSTAB_FEMGP)
-          ! Set additional pointers
-          call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-          call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-          call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-
-          ! Adopt orientation convention IJ, such that L_ij < L_ji and
-          ! generate edge structure for the flux limiter
-
-          if (bZeroRowsum) then
-            
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindZRSMat7_ordAFC_1D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindZRSMat7_ordAFC_2D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindZRSMat7_ordAFC_3D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          else
-
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat7_ordAFC_1D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindMat7_ordAFC_2D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindMat7_ordAFC_3D(p_Kld, p_Kcol, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          end if
-
+          end if   ! bZeroRowsum
 
           ! Set state of stabilisation
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION)
 
+        else   ! bhasOrientation
+
+          ! Adopt no orientation convention and generate edge structure
+
+          if (bZeroRowsum) then
+            
+            select case(ndim)
+            case (NDIM1D)
+              call doUpwindZRSMat7_AFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                          p_Cx, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM2D)
+              call doUpwindZRSMat7_AFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                          p_Cx, p_Cy, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM3D)
+              call doUpwindZRSMat7_AFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                          p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            end select
+
+          else   ! bZeroRowsum
+
+            select case(ndim)
+            case (NDIM1D)
+              call doUpwindMat7_AFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                       p_Cx, p_u, p_ConvOp,&
+                                       p_IsuperdiagonalEdgesIdx,&
+                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM2D)
+              call doUpwindMat7_AFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                       p_Cx, p_Cy, p_u, p_ConvOp,&
+                                       p_IsuperdiagonalEdgesIdx,&
+                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM3D)
+              call doUpwindMat7_AFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                       p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                       p_IsuperdiagonalEdgesIdx,&
+                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            end select
+
+          end if   ! bZeroRowsum
           
-        case DEFAULT
-          call output_line('Invalid type of AFC stabilisation!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
-          call sys_halt()
-        end select
-      
-      elseif (bStabilize) then
+          ! Set state of stabilisation
+          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
+          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
+
+        end if   ! bhasOrientation
         
-        ! Perform discrete upwinding without generating edge structure
+      elseif (bStabilise) then   ! present(rafcstab)
+        
+        ! Perform discrete upwinding but do not generate the edge data structure
+
         if (bZeroRowsum) then
           
           select case(ndim)
           case (NDIM1D)
-            call doUpwindZRSMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_u, p_L)
+            call doUpwindZRSMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                    p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doUpwindZRSMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+            call doUpwindZRSMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                    p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doUpwindZRSMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+            call doUpwindZRSMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                    p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
           
-        else
+        else   ! bZeroRowsum
 
           select case(ndim)
           case (NDIM1D)
-            call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_u, p_L)
+            call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                 p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+            call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                 p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+            call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                 p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
-        end if
+        end if   !bZeroRowsum
 
-      else
+      else   ! present(rafcstab) and bStabilise
         
         ! Apply standard Galerkin discretisation
+
         if (bZeroRowsum) then
           
           select case(ndim)
           case (NDIM1D)
-            call doGalerkinZRSMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_u, p_L)
+            call doGalerkinZRSMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                      p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doGalerkinZRSMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+            call doGalerkinZRSMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                      p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doGalerkinZRSMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+            call doGalerkinZRSMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                      p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
-        else
+        else   ! bZeroRowsum
 
           select case(ndim)
           case (NDIM1D)
-            call doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_u, p_L)
+            call doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                   p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+            call doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                   p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+            call doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                   p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
-        end if
-      end if
+        end if   ! bZeroRowsum
+
+      end if   ! present(rafcstab)
+
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
 
 
     case(LSYSSC_MATRIX9)
+      !-------------------------------------------------------------------------
+      ! Matrix format 9
+      !-------------------------------------------------------------------------
 
-      ! Set pointers
-      call lsyssc_getbase_Kdiagonal(rmatrixL, p_Kdiagonal)
+      ! Set pointer to diagonal
+      call lsyssc_getbase_Kdiagonal(rconvMatrix, p_Kdiagonal)
 
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rmatrixL%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rmatrixL%NEQ+1)
+      call storage_copy(rconvMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rconvMatrix%NEQ+1)
 
       ! Do we have a stabilisation structure?
       if (present(rafcstab)) then
@@ -870,235 +850,205 @@ contains
         ! Check if stabilisation has been initialised
         if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
           call output_line('Stabilisation has not been initialised',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
+                           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
           call sys_halt()
         end if
         
         ! Check if matrix/vector and stabilisation
         ! structure are compatible to each other
-        call gfsc_isMatrixCompatible(rafcstab, rmatrixL)
-        call gfsc_isVectorCompatible(rafcstab, ru)
+        call gfsc_isMatrixCompatible(rafcstab, rconvMatrix)
+        call gfsc_isVectorCompatible(rafcstab, rsolution)
 
-        ! What kind of stabilisation are we?
-        select case (rafcstab%ctypeAFCstabilisation)
-        case (AFCSTAB_UPWIND)
+        ! Set additional pointers
+        call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+        call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
 
-          ! Perform discrete upwinding without generating edge structure
-          if (bZeroRowsum) then
-            
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindZRSMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L)
-            case (NDIM2D)
-              call doUpwindZRSMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
-            case (NDIM3D)
-              call doUpwindZRSMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
-            end select
+        ! Do we need edge orientation?
+        if (gfsc_hasOrientation(rafcstab)) then
 
-          else
-
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L)
-            case (NDIM2D)
-              call doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
-            case (NDIM3D)
-              call doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
-            end select
-
-          end if
-          
-
-        case (AFCSTAB_FEMFCT, AFCSTAB_FEMFCT_EXP)
-          ! Set additional pointers
-          call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-          call afcstab_getbase_IverticesAtEdge(rafcstab,  p_IverticesAtEdge)
-          call afcstab_getbase_DcoeffsAtEdge(rafcstab,    p_DcoefficientsAtEdge)
-          
-          ! Adopt no orientation convention and generate edge structure
-          if (bZeroRowsum) then
-            
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindZRSMat9_AFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindZRSMat9_AFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindZRSMat9_AFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          else
-
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat9_AFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindMat9_AFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindMat9_AFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          end if
-          
-
-          ! Set state of stabilisation
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
-
-          
-        case (AFCSTAB_FEMTVD, AFCSTAB_FEMGP)
-          ! Set additional pointers
-          call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-          call afcstab_getbase_IverticesAtEdge(rafcstab,  p_IverticesAtEdge)
-          call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-          
-          ! Adopt orientation convention IJ, such that L_ij < L_ji and
-          ! generate edge structure for the flux limiter
+          ! Adopt orientation convention IJ, such that L_ij < L_ji 
+          ! and generate edge structure for the flux limiter
           if (bZeroRowsum) then
             
             select case(ndim)
             case (NDIM1D)
               call doUpwindZRSMat9_ordAFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
+                                             rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
+                                             p_IsuperdiagonalEdgesIdx,&
+                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM2D)
               call doUpwindZRSMat9_ordAFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
+                                             rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
+                                             p_IsuperdiagonalEdgesIdx,&
+                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM3D)
               call doUpwindZRSMat9_ordAFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
+                                             rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                             p_IsuperdiagonalEdgesIdx,&
+                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
             end select
-
-          else
+            
+          else   ! bZeroRowsum
 
             select case(ndim)
             case (NDIM1D)
               call doUpwindMat9_ordAFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
+                                          rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM2D)
               call doUpwindMat9_ordAFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
+                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM3D)
               call doUpwindMat9_ordAFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                  rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L, p_IsuperdiagonalEdgesIdx,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
+                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             end select
 
-          end if
-          
+          end if   ! bZeroRowsum
           
           ! Set state of stabilisation
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION)
 
+        else   ! bhasOrientation
+
+          ! Adopt no orientation convention and generate edge structure
           
-        case DEFAULT
-          call output_line('Invalid type of AFC stabilisation!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
-          call sys_halt()
-        end select
-      
-      elseif (bStabilize) then
+          if (bZeroRowsum) then
+            
+            select case(ndim)
+            case (NDIM1D)
+              call doUpwindZRSMat9_AFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                          rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM2D)
+              call doUpwindZRSMat9_AFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM3D)
+              call doUpwindZRSMat9_AFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            end select
+
+          else   ! bZeroRowsum
+
+            select case(ndim)
+            case (NDIM1D)
+              call doUpwindMat9_AFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                       rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
+                                       p_IsuperdiagonalEdgesIdx,&
+                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM2D)
+              call doUpwindMat9_AFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                       rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
+                                       p_IsuperdiagonalEdgesIdx,&
+                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM3D)
+              call doUpwindMat9_AFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                       rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                       p_IsuperdiagonalEdgesIdx,&
+                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            end select
+
+          end if   ! bZeroRowsum
+          
+          ! Set state of stabilisation
+          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
+          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
+
+        end if   ! bhasOrientation
+          
+      elseif (bStabilise) then   ! present(rafcstab)
         
-        ! Perform discrete upwinding without generating edge structure
+        ! Perform discrete upwinding but do not generate the edge data structure
+        
         if (bZeroRowsum) then
           
           select case(ndim)
           case (NDIM1D)
             call doUpwindZRSMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_u, p_L)
+                                    rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
             call doUpwindZRSMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+                                    rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
             call doUpwindZRSMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+                                    rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
-
-        else
-
+          
+        else   ! bZeroRowsum
+          
           select case(ndim)
           case (NDIM1D)
             call doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_u, p_L)
+                                 rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
             call doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+                                 rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
             call doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+                                 rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
-
-        end if
+          
+        end if   ! bZeroRowsum
         
-      else
+      else   ! present(rafcstab) and bStabilise
         
         ! Apply standard Galerkin discretisation
+        
         if (bZeroRowsum) then
           
           select case(ndim)
           case (NDIM1D)
             call doGalerkinZRSMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_u, p_L)
+                                      rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
             call doGalerkinZRSMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+                                      rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
             call doGalerkinZRSMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+                                      rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
-
-        else
-
+          
+        else   ! bZeroRowsum
+          
           select case(ndim)
           case (NDIM1D)
             call doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_u, p_L)
+                                   rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
             call doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_u, p_L)
+                                   rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
             call doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                rmatrixL%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_L)
+                                   rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
-
-        end if
-
-      end if
-
+          
+        end if   ! bZeroRowsum
+        
+      end if   ! present(rafcstab)
+      
+      
       ! Release diagonal separator
       call storage_free(h_Ksep)
-
-
+       
+      
     case DEFAULT
       call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
       call sys_halt()
     end select
-
+    
   contains
 
     ! Here, the working routine follow
@@ -1110,17 +1060,18 @@ contains
     
     subroutine doGalerkinZRSMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: K
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1157,18 +1108,19 @@ contains
     
     subroutine doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: K
-      
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji
-      integer(PREC_VECIDX)        :: i,j
-            
+      real(DP) :: k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,i,j
+      
+      
       ! Loop over all rows
       do i = 1, NEQ
         
@@ -1213,17 +1165,18 @@ contains
     
     subroutine doGalerkinZRSMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: K
-      
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1261,18 +1214,19 @@ contains
     
     subroutine doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: K
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji
-      integer(PREC_VECIDX)        :: i,j
-            
+      real(DP) :: k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,i,j
+      
+      
       ! Loop over all rows
       do i = 1, NEQ
         
@@ -1318,17 +1272,16 @@ contains
     
     subroutine doGalerkinZRSMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: K
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
       
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1367,18 +1320,19 @@ contains
     
     subroutine doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: K
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji
-      integer(PREC_VECIDX)        :: i,j
-            
+      real(DP):: k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,i,j
+      
+      
       ! Loop over all rows
       do i = 1, NEQ
         
@@ -1425,18 +1379,18 @@ contains
     
     subroutine doGalerkinZRSMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: K
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1473,18 +1427,18 @@ contains
     
     subroutine doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: K
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1530,19 +1484,19 @@ contains
     
     subroutine doGalerkinZRSMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: K
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
-            
+      real(DP) :: k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
+      
       ! Loop over all rows
       do i = 1, NEQ
         
@@ -1579,18 +1533,18 @@ contains
     
     subroutine doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: K
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1637,18 +1591,18 @@ contains
     
     subroutine doGalerkinZRSMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: K
-      
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1687,18 +1641,18 @@ contains
     
     subroutine doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: K
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: K
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1746,18 +1700,19 @@ contains
     
     subroutine doUpwindZRSMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: L
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
-            
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
+      
       ! Loop over all rows
       do i = 1, NEQ
         
@@ -1800,17 +1755,18 @@ contains
     
     subroutine doUpwindMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: L
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1864,17 +1820,18 @@ contains
     
     subroutine doUpwindZRSMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: L
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1919,17 +1876,18 @@ contains
     
     subroutine doUpwindMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: L
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -1984,17 +1942,18 @@ contains
     
     subroutine doUpwindZRSMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: L
-      
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -2040,17 +1999,18 @@ contains
     
     subroutine doUpwindMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: L
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -2106,18 +2066,18 @@ contains
     
     subroutine doUpwindZRSMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: L
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -2161,18 +2121,18 @@ contains
     
     subroutine doUpwindMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: L
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -2226,18 +2186,18 @@ contains
     
     subroutine doUpwindZRSMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: L
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
 
       ! Loop over all rows
       do i = 1, NEQ
@@ -2282,18 +2242,18 @@ contains
     
     subroutine doUpwindMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: L
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP):: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
 
       ! Loop over all rows
       do i = 1, NEQ
@@ -2348,19 +2308,19 @@ contains
     
     subroutine doUpwindZRSMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: L
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
-            
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
+      
       ! Loop over all rows
       do i = 1, NEQ
         
@@ -2405,18 +2365,18 @@ contains
     
     subroutine doUpwindMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: L
-      
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,i,j
+      
             
       ! Loop over all rows
       do i = 1, NEQ
@@ -2470,25 +2430,26 @@ contains
     ! orientation in 1D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindZRSMat7_AFC_1D(Kld, Kcol, Ksep, NEQ,&
-                                      Cx, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat7_AFC_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L, &
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
+
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
       
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -2547,25 +2508,26 @@ contains
     ! orientation in 1D.
     ! All matrices are stored in matrix format 7
     
-    subroutine doUpwindMat7_AFC_1D(Kld, Kcol, Ksep, NEQ,&
-                                   Cx, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat7_AFC_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,& 
+                                   IsuperdiagonalEdgesIdx,&
                                    IverticesAtEdge, DcoefficientsAtEdge)
-      
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -2633,25 +2595,26 @@ contains
     ! orientation in 2D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindZRSMat7_AFC_2D(Kld, Kcol, Ksep, NEQ,&
-                                      Cx, Cy, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat7_AFC_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -2711,25 +2674,26 @@ contains
     ! orientation in 2D.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindMat7_AFC_2D(Kld, Kcol, Ksep, NEQ,&
-                                   Cx, Cy, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat7_AFC_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
+                                   IsuperdiagonalEdgesIdx,&
                                    IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -2798,25 +2762,26 @@ contains
     ! orientation in 3D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindZRSMat7_AFC_3D(Kld, Kcol, Ksep, NEQ,&
-                                      Cx, Cy, Cz, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat7_AFC_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -2877,25 +2842,26 @@ contains
     ! orientation in 3D.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindMat7_AFC_3D(Kld, Kcol, Ksep, NEQ,&
-                                   Cx, Cy, Cz, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat7_AFC_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                   IsuperdiagonalEdgesIdx,&
                                    IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+            
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -2969,22 +2935,22 @@ contains
                                       Cx, u, L, IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3043,26 +3009,26 @@ contains
     ! orientation in 1D.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindMat9_AFC_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                   Cx, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat9_AFC_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L,&
+                                   IsuperdiagonalEdgesIdx,&
                                    IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3130,26 +3096,26 @@ contains
     ! orientation in 2D and assume zero row-sums.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindZRSMat9_AFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                      Cx, Cy, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat9_AFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3209,26 +3175,26 @@ contains
     ! orientation in 2D.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindMat9_AFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                   Cx, Cy, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat9_AFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
+                                   IsuperdiagonalEdgesIdx,&
                                    IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3297,26 +3263,26 @@ contains
     ! orientation in 3D and assume zero row-sums.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindZRSMat9_AFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                      Cx, Cy, Cz, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat9_AFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3377,26 +3343,26 @@ contains
     ! orientation in 3D.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindMat9_AFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                   Cx, Cy, Cz, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat9_AFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                   IsuperdiagonalEdgesIdx,&
                                    IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3466,25 +3432,26 @@ contains
     ! orientation in 1D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindZRSMat7_ordAFC_1D(Kld, Kcol, Ksep, NEQ,&
-                                         Cx, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat7_ordAFC_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,&
+                                         IsuperdiagonalEdgesIdx,&
                                          IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3548,25 +3515,26 @@ contains
     ! orientation in 1D.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindMat7_ordAFC_1D(Kld, Kcol, Ksep, NEQ,&
-                                      Cx, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat7_ordAFC_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3639,25 +3607,26 @@ contains
     ! orientation in 2D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindZRSMat7_ordAFC_2D(Kld, Kcol, Ksep, NEQ,&
-                                         Cx, Cy, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat7_ordAFC_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
+                                         IsuperdiagonalEdgesIdx,&
                                          IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3722,25 +3691,26 @@ contains
     ! orientation in 2D.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindMat7_ordAFC_2D(Kld, Kcol, Ksep, NEQ,&
-                                      Cx, Cy, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat7_ordAFC_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3814,25 +3784,26 @@ contains
     ! orientation in 3D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindZRSMat7_ordAFC_3D(Kld, Kcol, Ksep, NEQ,&
-                                         Cx, Cy, Cz, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat7_ordAFC_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                         IsuperdiagonalEdgesIdx,&
                                          IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3898,25 +3869,26 @@ contains
     ! orientation in 3D.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindMat7_ordAFC_3D(Kld, Kcol, Ksep, NEQ,&
-                                      Cx, Cy, Cz, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat7_ordAFC_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -3991,26 +3963,26 @@ contains
     ! orientation in 1D and assume zero row-sums.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindZRSMat9_ordAFC_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                         Cx, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat9_ordAFC_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L, &
+                                         IsuperdiagonalEdgesIdx,&
                                          IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -4074,26 +4046,26 @@ contains
     ! orientation in 1D.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindMat9_ordAFC_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                      Cx, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat9_ordAFC_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -4166,26 +4138,26 @@ contains
     ! orientation in 2D and assume zero row-sums.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindZRSMat9_ordAFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                         Cx, Cy, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat9_ordAFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
+                                         IsuperdiagonalEdgesIdx,&
                                          IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -4250,26 +4222,26 @@ contains
     ! orientation in 2D.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindMat9_ordAFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                      Cx, Cy, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat9_ordAFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -4343,26 +4315,26 @@ contains
     ! orientation in 3D and assume zero row-sums.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindZRSMat9_ordAFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                         Cx, Cy, Cz, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindZRSMat9_ordAFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                         IsuperdiagonalEdgesIdx,&
                                          IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -4428,26 +4400,26 @@ contains
     ! orientation in 3D.
     ! All matrices are stored in matrix format 9
 
-    subroutine doUpwindMat9_ordAFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                      Cx, Cy, Cz, u, L, IsuperdiagonalEdgesIdx,&
+    subroutine doUpwindMat9_ordAFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+      
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
-      real(DP)                    :: d_ij,k_ii,k_ij,k_ji
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,k_ii,k_ij,k_ji
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
       
       ! Initialize edge counter
       iedge = 0
@@ -4515,266 +4487,214 @@ contains
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
     end subroutine doUpwindMat9_ordAFC_3D
+
   end subroutine gfsc_buildConvOperatorScalar
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildDiffusionOperator(rmatrixS, dscale,&
-                                         bStabilise, bclear, rafcstab, rmatrixDest)
+  subroutine gfsc_buildDiffusionOperator(rcoeffMatrix, bStabilise, bclear,&
+                                          rdiffMatrix, rafcstab)
 
 !<description>
     ! This subroutine assembles the diffusive part of the discrete
-    ! transport operator which results from the discretisation of
-    ! the scalar convection-diffusion-reaction equation.
-    ! The matrix rmatrixS holds the unmodified diffusion operator
-    ! which is possible modified by this routine. If the optional
-    ! argument rmatrixDest is given, then the content of rmatrixS
-    ! is first copied/added to the destination matrix prior to
-    ! performing further modifications.
-    ! If the parameter bclear is TRUE the destination matrix is cleared,
-    ! that is, the content of rmatrixS is copied. Otherwise, the its
-    ! content is combined linearly with that of the destination matrix.
-    ! If the parameter bStabilse is TRUE, then symmetric stabilisation
-    ! is applied so that the resulting diffusion operator is guaranted
-    ! to ensure the discrete maximum principle. 
-    ! If the optional parameter rafcstab is given, then the auxiliary
-    ! data structures for of the stabilisation structure are updated.
-    !
-    ! At the moment, there is not yet any reference for this technique.
+    ! transport operator which results from the discretisation of the
+    ! scalar convection-diffusion-reaction equation.  The matrix
+    ! rmatrixS holds the unmodified diffusion operator which is
+    ! possible modified by this routine. If the optional argument
+    ! rmatrixDest is given, then the content of rmatrixS is first
+    ! copied/added to the destination matrix prior to performing
+    ! further modifications.  If the parameter bclear is TRUE the
+    ! destination matrix is cleared, that is, the content of rmatrixS
+    ! is copied. Otherwise, the its content is combined linearly with
+    ! that of the destination matrix.  If the parameter bStabilse is
+    ! TRUE, then symmetric stabilisation is applied so that the
+    ! resulting diffusion operator is guaranted to ensure the discrete
+    ! maximum principle.  If the optional parameter rafcstab is given,
+    ! then the auxiliary data structures for of the stabilisation
+    ! structure are updated.
 !</description>
 
 !<input>
-    ! scaling parameter by which the diffusion operator is scaled
-    real(DP), intent(IN)                          :: dscale
-
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN)                           :: bStabilise
+    logical, intent(IN) :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                           :: bclear
+    logical, intent(IN) :: bclear
 !</input>
 
 !<inputoutput>
     ! (anisotropic) diffusion operator
-    type(t_matrixScalar), intent(INOUT)           :: rmatrixS
+    type(t_matrixScalar), intent(INOUT) :: rcoeffMatrix
+
+    ! diffusion operator
+    type(t_matrixScalar), intent(INOUT) :: rdiffMatrix
 
     ! OPTIONAL: stabilisation structure
-    type(t_afcstab), intent(INOUT), optional      :: rafcstab
-
-    ! OPTIONAL: destination matrix
-    type(t_matrixScalar), intent(INOUT), optional :: rmatrixDest
+    type(t_afcstab), intent(INOUT), optional :: rafcstab    
 !</inputoutput>
 !</subroutine>
 
-
     ! local variables
-    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_IsuperdiagonalEdgesIdx
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kld,p_Ksep
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kdiagonal
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_Kcol
-    real(DP), dimension(:,:), pointer             :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer               :: p_S,p_L
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    real(DP), dimension(:), pointer :: p_S,p_L
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal,p_IsuperdiagonalEdgesIdx
     integer :: h_Ksep
 
     
-    ! Is destination matrix given?
-    if (present(rmatrixDest)) then
-
-      ! Check if matrices are compatible
-      call lsyssc_isMatrixCompatible(rmatrixS, rmatrixDest)
-
-      ! Set pointers
-      call lsyssc_getbase_double(rmatrixS,    p_S)
-      call lsyssc_getbase_double(rmatrixDest, p_L)      
-
-      ! Should matrix be cleared?
-      if (bclear) then
-        call lalg_copyVectorDble (p_S, p_L)
-        if (dscale .ne. 1.0_DP) call lalg_scaleVectorDble(p_L, dscale)
-      else
-        call lalg_vectorLinearCombDble(p_S, p_L, dscale, 1._DP)
-      end if
-
-    else
-
-      ! Set pointers
-      call lsyssc_getbase_double(rmatrixS, p_S)
-      call lsyssc_getbase_double(rmatrixS, p_L)
-
-      ! Scale matrix if required
-      if (dscale .ne. 1.0_DP) call lalg_scaleVectorDble(p_L, dscale)
-
-    end if
+    ! Check if matrices are compatible
+    call lsyssc_isMatrixCompatible(rcoeffMatrix, rdiffMatrix)
+    
+    ! Should matrix be cleared?
+    if (bclear) call lsyssc_clearMatrix(rdiffMatrix)
 
     ! Set pointers
-    call lsyssc_getbase_Kld   (rmatrixS, p_Kld)
-    call lsyssc_getbase_Kcol  (rmatrixS, p_Kcol)
+    call lsyssc_getbase_double(rcoeffMatrix, p_S)
+    call lsyssc_getbase_double(rdiffMatrix, p_L)      
+
     
-    ! Do we have to stabilise?
-    if (present(rafcstab)) then
+    ! What kind of matrix are we?
+    select case(rdiffMatrix%cmatrixFormat)
+    case(LSYSSC_MATRIX7)
+      !-------------------------------------------------------------------------
+      ! Matrix format 7
+      !-------------------------------------------------------------------------
+      
+      ! Set pointers
+      call lsyssc_getbase_Kld(rcoeffMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rcoeffMatrix, p_Kcol)
 
-      ! Check if stabilisation has been initialised
-      if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
-        call output_line('Stabilisation has not been initialised',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffOperatorScalar')
-        call sys_halt()
-      end if
+      ! Do we have a stabilisation structure?
+      if (present(rafcstab)) then
 
-      ! Check if matrix and stabilisation
-      ! structure are compatible to each other
-      call gfsc_isMatrixCompatible(rafcstab, rmatrixS)
+        ! Create diagonal separator
+        h_Ksep = ST_NOHANDLE
+        call storage_copy(rdiffMatrix%h_Kld, h_Ksep)
+        call storage_getbase_int(h_Ksep, p_Ksep, rdiffMatrix%NEQ+1)
 
-      ! What kind of stabilisation are we?
-      select case (rafcstab%ctypeAFCstabilisation)
-      case (AFCSTAB_DMP)
-
-        ! What kind of matrix are we?
-        select case(rmatrixS%cmatrixFormat)
-        case(LSYSSC_MATRIX7)
-          
-          ! Create diagonal separator
-          h_Ksep = ST_NOHANDLE
-          call storage_copy(rmatrixS%h_Kld, h_Ksep)
-          call storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
-          
-          call doLoworderMat7(p_Kld, p_Kcol, p_Ksep, rmatrixS%NEQ, p_S, p_L)
-          
-          ! Release diagonal separator
-          call storage_free(h_Ksep)
-          
-          
-        case(LSYSSC_MATRIX9)
-          
-          ! Set pointers
-          call lsyssc_getbase_Kdiagonal(rmatrixS, p_Kdiagonal)
-          
-          ! Create diagonal separator
-          h_Ksep = ST_NOHANDLE
-          call storage_copy(rmatrixS%h_Kld, h_Ksep)
-          call storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
-          
-          call doLoworderMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                               rmatrixS%NEQ, p_S, p_L)
-          
-          ! Release diagonal separator
-          call storage_free(h_Ksep)
-          
-        case DEFAULT
-          call output_line('Unsupported matrix format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffOperatorScalar')
+        ! Check if stabilisation has been initialised
+        if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+          call output_line('Stabilisation has not been initialised',&
+                            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffusionOperator')
           call sys_halt()
-        end select
+        end if
 
-
-      case (AFCSTAB_SYMMETRIC)
+        ! Check if matrix and stabilisation
+        ! structure are compatible to each other
+        call gfsc_isMatrixCompatible(rafcstab, rdiffMatrix)
 
         ! Set additional pointers
         call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-        call afcstab_getbase_IverticesAtEdge(rafcstab,  p_IverticesAtEdge)
-        call afcstab_getbase_DcoeffsAtEdge(rafcstab,    p_DcoefficientsAtEdge)
+        call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+    
+        call doLoworderMat7_AFC(p_Kld, p_Kcol, p_Ksep, rdiffMatrix%NEQ,&
+                                p_S, p_L, p_IsuperdiagonalEdgesIdx,&
+                                p_IverticesAtEdge, p_DcoefficientsAtEdge)
+
+        ! Release diagonal separator
+        call storage_free(h_Ksep)
+
+        ! Set state of stabilisation
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
+
+      elseif (bStabilise) then   ! present(rafcstab)
+
+        ! Create diagonal separator
+        h_Ksep = ST_NOHANDLE
+        call storage_copy(rdiffMatrix%h_Kld, h_Ksep)
+        call storage_getbase_int(h_Ksep, p_Ksep, rdiffMatrix%NEQ+1)
+
+        call doLoworderMat7(p_Kld, p_Kcol, p_Ksep, rdiffMatrix%NEQ, p_S, p_L)
+
+        ! Release diagonal separator
+        call storage_free(h_Ksep)
+
+      else   ! present(rafcstab) and bStabilise
         
-        ! What kind of matrix are we?
-        select case(rmatrixS%cmatrixFormat)
-        case(LSYSSC_MATRIX7)
-          
-          ! Create diagonal separator
-          h_Ksep = ST_NOHANDLE
-          call storage_copy(rmatrixS%h_Kld, h_Ksep)
-          call storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
-          
-          call doLoworderMat7_AFC(p_Kld, p_Kcol, p_Ksep, rmatrixS%NEQ,&
-                                   p_S, p_L, p_IsuperdiagonalEdgesIdx,&
-                                   p_IverticesAtEdge, p_DcoefficientsAtEdge)
+        call lsyssc_duplicateMatrix(rcoeffMatrix, rdiffMatrix,&
+                                    LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
 
-          ! Set state of stabilisation
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
+      end if   ! present(rafcstab)
+ 
+      
+    case(LSYSSC_MATRIX9)
+      !-------------------------------------------------------------------------
+      ! Matrix format 9
+      !-------------------------------------------------------------------------
 
-          ! Release diagonal separator
-          call storage_free(h_Ksep)
-          
-          
-        case(LSYSSC_MATRIX9)
+      ! Set pointers
+      call lsyssc_getbase_Kld(rcoeffMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rcoeffMatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rcoeffMatrix, p_Kdiagonal)
 
-          ! Set pointers
-          call lsyssc_getbase_Kdiagonal(rmatrixS, p_Kdiagonal)
-          
-          ! Create diagonal separator
-          h_Ksep = ST_NOHANDLE
-          call storage_copy(rmatrixS%h_Kld, h_Ksep)
-          call storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
-          
-          call doLoworderMat9_AFC(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                   rmatrixS%NEQ, p_S, p_L, p_IsuperdiagonalEdgesIdx,&
-                                   p_IverticesAtEdge, p_DcoefficientsAtEdge)
+      ! Do we have a stabilisation structure?
+      if (present(rafcstab)) then
 
-          ! Set state of stabilisation
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
+        ! Create diagonal separator
+        h_Ksep = ST_NOHANDLE
+        call storage_copy(rdiffMatrix%h_Kld, h_Ksep)
+        call storage_getbase_int(h_Ksep, p_Ksep, rdiffMatrix%NEQ+1)
 
-          ! Release diagonal separator
-          call storage_free(h_Ksep)
-          
-          
-        case DEFAULT
-          call output_line('Unsupported matrix format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffOperatorScalar')
+        ! Check if stabilisation has been initialised
+        if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+          call output_line('Stabilisation has not been initialised',&
+                            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffusionOperator')
           call sys_halt()
-        end select
-        
-        
-      case DEFAULT
-        call output_line('Invalid type of AFC stabilisation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffOperatorScalar')
-        call sys_halt()
-      end select
-      
-    elseif (bStabilise) then
-      
-      ! What kind of matrix are we?
-      select case(rmatrixS%cmatrixFormat)
-      case(LSYSSC_MATRIX7)
-        
-        ! Create diagonal separator
-        h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixS%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
-        
-        call doLoworderMat7(p_Kld, p_Kcol, p_Ksep, rmatrixS%NEQ, p_S, p_L)
-        
+        end if
+
+        ! Check if matrix and stabilisation
+        ! structure are compatible to each other
+        call gfsc_isMatrixCompatible(rafcstab, rdiffMatrix)
+
+        ! Set additional pointers
+        call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+        call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+
+        call doLoworderMat9_AFC(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rdiffMatrix%NEQ,&
+                                p_S, p_L, p_IsuperdiagonalEdgesIdx,&
+                                p_IverticesAtEdge, p_DcoefficientsAtEdge)
+
         ! Release diagonal separator
         call storage_free(h_Ksep)
+
+        ! Set state of stabilisation
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
         
-        
-      case(LSYSSC_MATRIX9)
-        
-        ! Set pointers
-        call lsyssc_getbase_Kdiagonal(rmatrixS, p_Kdiagonal)
-        
+      elseif (bStabilise) then   ! present(rafcstab)
+
         ! Create diagonal separator
         h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixS%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixS%NEQ+1)
-        
-        call doLoworderMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                             rmatrixS%NEQ, p_S, p_L)
-        
+        call storage_copy(rdiffMatrix%h_Kld, h_Ksep)
+        call storage_getbase_int(h_Ksep, p_Ksep, rdiffMatrix%NEQ+1)
+
+        call doLoworderMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rdiffMatrix%NEQ, p_S, p_L)
+
         ! Release diagonal separator
         call storage_free(h_Ksep)
+
+      else   ! present(rafcstab) and bStabilise
         
-      case DEFAULT
-        call output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffOperatorScalar')
-        call sys_halt()
-      end select
-    end if
+        call lsyssc_duplicateMatrix(rcoeffMatrix, rdiffMatrix,&
+                                    LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+
+      end if   ! present(rafcstab)
+
+
+    case DEFAULT
+      call output_line('Unsupported matrix format!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffusionOperator')
+      call sys_halt()
+    end select
     
   contains
     
@@ -4785,17 +4705,18 @@ contains
     ! All matrices are stored in matrix format 7
     
     subroutine doLoworderMat7(Kld, Kcol, Ksep, NEQ, S, L)
+
+      real(DP), dimension(:), intent(IN) :: S
+      integer, dimension(:), intent(IN) :: Kld, Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
+      real(DP) :: d_ij
+      integer :: ii,ij,ji,jj,i,j
       
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: S
-      real(DP), dimension(:), intent(INOUT)             :: L
-      
-      real(DP)             :: d_ij
-      integer(PREC_MATIDX) :: ii,ij,ji,jj
-      integer(PREC_VECIDX) :: i,j
 
       ! Loop over all rows
       do i = 1, NEQ
@@ -4828,18 +4749,18 @@ contains
     ! All matrices are stored in matrix format 9
     
     subroutine doLoworderMat9(Kld, Kcol, Kdiagonal, Ksep, NEQ, S, L)
+
+      real(DP), dimension(:), intent(IN) :: S
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
       
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: S
-      real(DP), dimension(:), intent(INOUT)             :: L
-      
-      real(DP)             :: d_ij
-      integer(PREC_MATIDX) :: ii,ij,ji,jj
-      integer(PREC_VECIDX) :: i,j
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
+      real(DP) :: d_ij
+      integer :: ii,ij,ji,jj,i,j
+
 
       ! Loop over all rows
       do i = 1, NEQ
@@ -4875,19 +4796,21 @@ contains
                                   IsuperdiagonalEdgesIdx,&
                                   IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: S
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: S
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
 
-      real(DP)             :: d_ij,s_ij
-      integer(PREC_MATIDX) :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX) :: i,j
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      
+      ! local variables
+      real(DP) :: d_ij,s_ij
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
 
       ! Initialize edge counter
       iedge = 0
@@ -4940,20 +4863,21 @@ contains
                                   IsuperdiagonalEdgesIdx,&
                                   IverticesAtEdge, DcoefficientsAtEdge)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: S
-      integer(PREC_VECIDX), dimension(:), intent(OUT)   :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: IverticesAtEdge
-      real(DP), dimension(:), intent(INOUT)             :: L
-      real(DP), dimension(:,:), intent(OUT)             :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: S
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
 
-      real(DP)             :: d_ij,s_ij
-      integer(PREC_MATIDX) :: ii,ij,ji,jj,iedge
-      integer(PREC_VECIDX) :: i,j
+      real(DP), dimension(:), intent(INOUT) :: L
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
+      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+
+      ! local variable
+      real(DP) :: d_ij,s_ij
+      integer :: ii,ij,ji,jj,iedge,i,j
+      
 
       ! Initialize edge counter
       iedge = 0
@@ -4996,6 +4920,7 @@ contains
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
     end subroutine doLoworderMat9_AFC
+
   end subroutine gfsc_buildDiffusionOperator
 
   !*****************************************************************************
@@ -6363,8 +6288,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvJacobianBlock(RmatrixC, ru, fcb_calcConvection,&
-                                         hstep, bStabilize, bclear, rmatrixJ)
+  subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, ru, fcb_calcConvection,&
+                                         hstep, bStabilise, bclear, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective part
@@ -6376,7 +6301,7 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RmatrixC
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
     ! solution vector
     type(t_vectorBlock), intent(IN)                :: ru
@@ -6387,7 +6312,7 @@ contains
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN)                            :: bStabilize
+    logical, intent(IN)                            :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -6413,8 +6338,8 @@ contains
 
     else
       
-      call gfsc_buildConvJacobianScalar(RmatrixC, ru%RvectorBlock(1),&
-          fcb_calcConvection, hstep, bStabilize, bclear, rmatrixJ)
+      call gfsc_buildConvJacobianScalar(RcoeffMatrices, ru%RvectorBlock(1),&
+          fcb_calcConvection, hstep, bStabilise, bclear, rmatrixJ)
       
     end if
   end subroutine gfsc_buildConvJacobianBlock
@@ -6423,8 +6348,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvJacobianScalar(RmatrixC, ru, fcb_calcConvection,&
-                                          hstep, bStabilize, bclear, rmatrixJ)
+  subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, ru, fcb_calcConvection,&
+                                          hstep, bStabilise, bclear, rmatrixJ)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective part
@@ -6433,7 +6358,7 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: rmatrixC
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
     ! solution vector
     type(t_vectorScalar), intent(IN)               :: ru
@@ -6444,7 +6369,7 @@ contains
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN)                            :: bStabilize
+    logical, intent(IN)                            :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -6471,9 +6396,9 @@ contains
     
     ! Check if all matrices are compatible
     call lsyssc_isMatrixCompatible(ru, rmatrixJ, .false.)
-    ndim = size(RmatrixC,1)
+    ndim = size(RcoeffMatrices,1)
     do idim = 1, ndim
-      call lsyssc_isMatrixCompatible(RmatrixC(idim), rmatrixJ)
+      call lsyssc_isMatrixCompatible(RcoeffMatrices(idim), rmatrixJ)
     end do
 
     ! Clear matrix?
@@ -6488,16 +6413,16 @@ contains
     ! How many dimensions do we have?
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RmatrixC(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
       
     case (NDIM2D)
-      call lsyssc_getbase_double(RmatrixC(1), p_Cx)
-      call lsyssc_getbase_double(RmatrixC(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RmatrixC(1), p_Cx)
-      call lsyssc_getbase_double(RmatrixC(2), p_Cy)
-      call lsyssc_getbase_double(RmatrixC(3), p_Cz)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -6516,7 +6441,7 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
 
       ! Do we have to build the upwind Jacobian?
-      if (bStabilize) then
+      if (bStabilise) then
         
         select case(ndim)
         case (NDIM1D)
@@ -6561,7 +6486,7 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
       
       ! Do we have to build the upwind Jacobian?
-      if (bStabilize) then
+      if (bStabilise) then
         
         ! Build Jacobian
         select case(ndim)
@@ -8531,7 +8456,7 @@ contains
     real(DP), dimension(:), pointer               :: p_u,p_u0
     real(DP), dimension(:), pointer               :: p_MC,p_Jac
     integer :: h_Ksep
-    logical :: bextend
+    logical :: bisExtended
 
     ! Clear matrix?
     if (bclear) call lsyssc_clearMatrix(rmatrixJ)
@@ -8590,13 +8515,13 @@ contains
         call lalg_vectorAddScalarInt(p_Ksep, 1)
 
         ! Assembled extended Jacobian matrix
-        bextend = (rafcstab%iextendedJacobian .ne. 0)
+        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
         call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                  p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                  p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                  p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                  theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                 rafcstab%NNVEDGE, bextend, .true., p_Ksep, p_Jac)
+                                 rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
         
         ! Free storage
         call storage_free(h_Ksep)
@@ -8614,13 +8539,13 @@ contains
         call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
 
         ! Assembled extended Jacobian matrix
-        bextend = (rafcstab%iextendedJacobian .ne. 0)
+        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
         call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                  p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                  p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                  p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                  theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                 rafcstab%NNVEDGE, bextend, .false., p_Ksep, p_Jac)
+                                 rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
         
         ! Free storage
         call storage_free(h_Ksep)
@@ -8688,7 +8613,7 @@ contains
         call lalg_vectorAddScalarInt(p_Ksep, 1)
 
         ! Assembled extended Jacobian matrix
-        bextend = (rafcstab%iextendedJacobian .ne. 0)
+        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
         if (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS) then
           ! Set pointers
           call lsyssc_getbase_double(rmatrixMC, p_MC)
@@ -8701,7 +8626,7 @@ contains
                                   p_MC, p_u, p_u0, p_flux, p_flux0,&
                                   p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
                                   theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                  rafcstab%NNVEDGE, bextend, .true., p_Ksep, p_Jac)
+                                  rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
           
         else
           call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
@@ -8709,7 +8634,7 @@ contains
                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                    p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                    theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                   rafcstab%NNVEDGE, bextend, .true., p_Ksep, p_Jac)
+                                   rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
         end if
 
         ! Free storage
@@ -8728,7 +8653,7 @@ contains
         call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
 
         ! Assembled extended Jacobian matrix
-        bextend = (rafcstab%iextendedJacobian .ne. 0)
+        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
         if (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS) then
           ! Set pointers
           call lsyssc_getbase_double(rmatrixMC, p_MC)
@@ -8741,14 +8666,14 @@ contains
                                   p_MC, p_u, p_u0, p_flux, p_flux0,&
                                   p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
                                   theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                  rafcstab%NNVEDGE, bextend, .false., p_Ksep, p_Jac)
+                                  rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
         else
           call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                    p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                    theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                   rafcstab%NNVEDGE, bextend, .false., p_Ksep, p_Jac)
+                                   rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
         end if
 
         ! Free storage
@@ -8835,7 +8760,7 @@ contains
                                         IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                         u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
-                                        NEQ, NEDGE, NNVEDGE, bextend, bisMat7, Ksep, Jac)
+                                        NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(IN)                :: u
@@ -8852,7 +8777,7 @@ contains
       integer(PREC_VECIDX), intent(IN)                  :: NEQ
       integer(PREC_MATIDX), intent(IN)                  :: NEDGE
       integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
       logical, intent(IN)                               :: bisMat7
 
       real(DP), dimension(:), intent(INOUT)             :: Jac
@@ -8935,7 +8860,7 @@ contains
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
                                            hstep, iedge, iloc, k, l,&
-                                           bextend, Ksep, Jac)
+                                           bisExtended, Ksep, Jac)
           end do
 
           ! Loop over all superdiagonal edges
@@ -8944,7 +8869,7 @@ contains
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
                                            hstep, iedge, iloc, k, l,&
-                                           bextend, Ksep, Jac)
+                                           bisExtended, Ksep, Jac)
           end do
         end do
 
@@ -9085,7 +9010,7 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     pure subroutine assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal,&
                                               flux, Kloc, rploc, rmloc, fluxloc,&
-                                              hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
+                                              hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
 
       real(DP), dimension(:), intent(IN)                :: flux
       real(DP), dimension(:,0:), intent(IN)             :: rploc,rmloc
@@ -9097,7 +9022,7 @@ contains
       integer(PREC_MATIDX), intent(IN)                  :: iedge
       integer(PREC_VECIDX), intent(IN)                  :: k,l
       integer, intent(IN)                               :: iloc
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
 
       real(DP), dimension(:), intent(INOUT)             :: Jac
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
@@ -9175,7 +9100,7 @@ contains
         Jac(ik) = Jac(ik)-df_ij
         Jac(jk) = Jac(jk)+df_ij
                 
-      elseif (bextend) then
+      elseif (bisExtended) then
        
         !-----------------------------------------------------------------------
         ! 2. Case: secondary edge
@@ -9217,7 +9142,7 @@ contains
                                   DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                   MC, u, u0, flux, flux0, pp, pm, qp, qm, rp, rm,&
                                   theta, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
-                                  bextend, bisMat7, Ksep, Jac)
+                                  bisExtended, bisMat7, Ksep, Jac)
     
       real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(IN)                :: MC
@@ -9235,7 +9160,7 @@ contains
       integer(PREC_VECIDX), intent(IN)                  :: NEQ
       integer(PREC_MATIDX), intent(IN)                  :: NEDGE
       integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
       logical, intent(IN)                               :: bisMat7
 
       real(DP), dimension(:), intent(INOUT)             :: Jac
@@ -9320,7 +9245,7 @@ contains
             
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                                           rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
-                                          hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
+                                          hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
 
           ! Loop over all superdiagonal edges
@@ -9328,7 +9253,7 @@ contains
             
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                                           rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
-                                          hstep, iedge, iloc, k, l, bextend, Ksep, Jac)
+                                          hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
         end do
 
@@ -9607,7 +9532,7 @@ contains
                                         flux, flux0, rp, rm, Kloc,&
                                         rploc, rmloc, fluxloc, fluxloc0,&
                                         hstep, iedge, iloc, k, l,&
-                                        bextend, Ksep, Jac)
+                                        bisExtended, Ksep, Jac)
 
       real(DP), dimension(:), intent(IN)                :: flux,flux0
       real(DP), dimension(:), intent(IN)                :: rp,rm
@@ -9620,7 +9545,7 @@ contains
       integer(PREC_MATIDX), intent(IN)                  :: iedge
       integer, intent(IN)                               :: iloc
       integer(PREC_VECIDX), intent(IN)                  :: k,l
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
 
       real(DP), dimension(:), intent(INOUT)             :: Jac
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
@@ -9708,7 +9633,7 @@ contains
           Jac(jk) = Jac(jk)+f_ij
         end do
         
-      elseif (bextend) then
+      elseif (bisExtended) then
         
         !-----------------------------------------------------------------------
         ! 2. Case: secondary edge
@@ -9788,7 +9713,7 @@ contains
   
 !<subroutine>
 
-  subroutine gfsc_buildJacobianBlockFCT(RmatrixC, rmatrixMC, ru, &
+  subroutine gfsc_buildJacobianBlockFCT(RcoeffMatrices, rmatrixMC, ru, &
                                         fcb_calcConvection, theta, tstep, hstep,&
                                         bclear, rafcstab, rmatrixJ)
 
@@ -9803,7 +9728,7 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RmatrixC
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
     ! consistent mass matrix
     type(t_matrixScalar), intent(IN)               :: rmatrixMC
@@ -9846,7 +9771,7 @@ contains
 
     else
 
-      call gfsc_buildJacobianScalarFCT(RmatrixC, rmatrixMC, ru%RvectorBlock(1),&
+      call gfsc_buildJacobianScalarFCT(RcoeffMatrices, rmatrixMC, ru%RvectorBlock(1),&
           fcb_calcConvection, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
     end if
@@ -9856,7 +9781,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianScalarFCT(RmatrixC, rmatrixMC, ru,&
+  subroutine gfsc_buildJacobianScalarFCT(RcoeffMatrices, rmatrixMC, ru,&
                                          fcb_calcConvection, theta, tstep, hstep,&
                                          bclear, rafcstab, rmatrixJ)
 
@@ -9870,7 +9795,7 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RmatrixC
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
     ! consistent mass matrix
     type(t_matrixScalar), intent(IN)               :: rmatrixMC
@@ -9938,7 +9863,7 @@ contains
     call lsyssc_getbase_double(ru,        p_u)
     
     ! Set spatial dimensions
-    ndim = size(RmatrixC,1)
+    ndim = size(RcoeffMatrices,1)
 
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
@@ -9953,24 +9878,24 @@ contains
         ! How many dimensions do we have?
         select case(ndim)
         case (NDIM1D)
-          call lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
           
           call doJacobian_implFCT_1D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
               p_Kld, p_Cx, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
               rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
           
         case (NDIM2D)
-          call lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          call lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
           
           call doJacobian_implFCT_2D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
               p_Kld, p_Cx, p_Cy, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
               rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
           
         case (NDIM3D)
-          call lsyssc_getbase_double(RmatrixC(1), p_Cx)        
-          call lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          call lsyssc_getbase_double(RmatrixC(3), p_Cz)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)        
+          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+          call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
           
           call doJacobian_implFCT_3D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
               p_Kld, p_Cx, p_Cy, p_Cz, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
@@ -9984,24 +9909,24 @@ contains
         ! How many dimensions do we have?
         select case(ndim)
         case (NDIM1D)
-          call lsyssc_getbase_double(RmatrixC(1), p_Cx)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
           
           call doJacobian_implFCT_1D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
               p_Kdiagonal, p_Cx, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
               rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
           
         case (NDIM2D)
-          call lsyssc_getbase_double(RmatrixC(1), p_Cx)
-          call lsyssc_getbase_double(RmatrixC(2), p_Cy)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
           
           call doJacobian_implFCT_2D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
               p_Kdiagonal, p_Cx, p_Cy, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
               rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
           
         case (NDIM3D)
-          call lsyssc_getbase_double(RmatrixC(1), p_Cx)        
-          call lsyssc_getbase_double(RmatrixC(2), p_Cy)
-          call lsyssc_getbase_double(RmatrixC(3), p_Cz)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)        
+          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+          call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
           
           call doJacobian_implFCT_3D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
               p_Kdiagonal, p_Cx, p_Cy, p_Cz, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
@@ -10781,7 +10706,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianBlockTVD(RmatrixC, rmatrixMC, ru, ru0,&
+  subroutine gfsc_buildJacobianBlockTVD(RcoeffMatrices, rmatrixMC, ru, ru0,&
                                         fcb_calcConvection, theta, tstep, hstep,&
                                         bclear, rafcstab, rmatrixJ)
 
@@ -10796,7 +10721,7 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RmatrixC
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
     ! consistent mass matrix
     type(t_matrixScalar), intent(IN)               :: rmatrixMC
@@ -10843,7 +10768,7 @@ contains
 
     else
 
-      call gfsc_buildJacobianScalarTVD(RmatrixC, rmatrixMC,&
+      call gfsc_buildJacobianScalarTVD(RcoeffMatrices, rmatrixMC,&
           ru%RvectorBlock(1), ru0%RvectorBlock(1), fcb_calcConvection,&
           theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
 
@@ -10854,7 +10779,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianScalarTVD(RmatrixC, rmatrixMC, ru, ru0,&
+  subroutine gfsc_buildJacobianScalarTVD(RcoeffMatrices, rmatrixMC, ru, ru0,&
                                          fcb_calcConvection, theta, tstep, hstep,&
                                          bclear, rafcstab, rmatrixJ)
 
@@ -10868,7 +10793,7 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RmatrixC
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
     ! consistent mass matrix
     type(t_matrixScalar), intent(IN)               :: rmatrixMC
@@ -10921,10 +10846,10 @@ contains
     real(DP), dimension(:), pointer               :: p_Cx,p_Cy,p_Cz,p_MC,p_Jac
     integer :: h_Ksep
     integer :: ndim
-    logical :: bextend
+    logical :: bisExtended
     
     ! Set spatial dimensions
-    ndim = size(RmatrixC,1)
+    ndim = size(RcoeffMatrices,1)
     
     ! Clear matrix?
     if (bclear) call lsyssc_clearMatrix(rmatrixJ)
@@ -10979,42 +10904,42 @@ contains
         call lalg_vectorAddScalarInt(p_Ksep, 1)
 
         ! Assembled extended Jacobian matrix
-        bextend = (rafcstab%iextendedJacobian .ne. 0)
+        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
 
         ! How many dimensions do we have?
         select case(ndim)
         case (NDIM1D)
-          call lsyssc_getbase_double(rmatrixC(1), p_Cx)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
 
           call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                       p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                       theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bextend, .true., p_Ksep, p_Jac)
+                                      rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
 
         case (NDIM2D)
-          call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-          call lsyssc_getbase_double(rmatrixC(2), p_Cy)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
 
           call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                       p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                       theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bextend, .true., p_Ksep, p_Jac)
+                                      rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
           
         case (NDIM3D)
-          call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-          call lsyssc_getbase_double(rmatrixC(2), p_Cy)
-          call lsyssc_getbase_double(rmatrixC(3), p_Cz)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+          call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
 
           call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                       p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                       theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bextend, .true., p_Ksep, p_Jac)
+                                      rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
         end select
                
         ! Free storage
@@ -11034,42 +10959,42 @@ contains
         call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
 
         ! Assembled extended Jacobian matrix
-        bextend = (rafcstab%iextendedJacobian .ne. 0)
+        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
 
         ! How many dimensions do we have?
         select case(ndim)
         case (NDIM1D)
-          call lsyssc_getbase_double(rmatrixC(1), p_Cx)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
           
           call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                       p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                       theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bextend, .false., p_Ksep, p_Jac)
+                                      rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
 
         case (NDIM2D)
-          call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-          call lsyssc_getbase_double(rmatrixC(2), p_Cy)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
 
           call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                       p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                       theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bextend, .false., p_Ksep, p_Jac)
+                                      rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
 
         case (NDIM3D)
-          call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-          call lsyssc_getbase_double(rmatrixC(2), p_Cy)
-          call lsyssc_getbase_double(rmatrixC(3), p_Cz)
+          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+          call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
 
           call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                       p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                       theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bextend, .false., p_Ksep, p_Jac)
+                                      rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
         end select
         
         ! Free storage
@@ -11132,7 +11057,7 @@ contains
         call lalg_vectorAddScalarInt(p_Ksep, 1)
 
         ! Assembled extended Jacobian matrix
-        bextend = (rafcstab%iextendedJacobian .ne. 0)
+        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
         if (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS) then
           
           ! Set pointers
@@ -11143,7 +11068,7 @@ contains
           ! How many dimensions do we have?
           select case(ndim)
           case (NDIM1D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
 
             call doJacobianMat79_GP_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
@@ -11151,11 +11076,11 @@ contains
                                        p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                                        rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bextend, .true., p_Ksep, p_Jac)
+                                       bisExtended, .true., p_Ksep, p_Jac)
 
           case (NDIM2D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-            call lsyssc_getbase_double(rmatrixC(2), p_Cy)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
 
             call doJacobianMat79_GP_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
@@ -11163,12 +11088,12 @@ contains
                                        p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                                        rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bextend, .true., p_Ksep, p_Jac)
+                                       bisExtended, .true., p_Ksep, p_Jac)
             
           case (NDIM3D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-            call lsyssc_getbase_double(rmatrixC(2), p_Cy)
-            call lsyssc_getbase_double(rmatrixC(3), p_Cz)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+            call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
 
             call doJacobianMat79_GP_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
@@ -11176,7 +11101,7 @@ contains
                                        p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                                        rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bextend, .true., p_Ksep, p_Jac)
+                                       bisExtended, .true., p_Ksep, p_Jac)
           end select
 
         else
@@ -11184,37 +11109,37 @@ contains
           ! How many dimensions do we have?
           select case(ndim)
           case (NDIM1D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
             
             call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                         p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                         p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                         p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                         theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bextend, .true., p_Ksep, p_Jac)
+                                        rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
             
           case (NDIM2D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-            call lsyssc_getbase_double(rmatrixC(2), p_Cy)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
 
             call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                         p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                         p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                         p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                         theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bextend, .true., p_Ksep, p_Jac)
+                                        rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
             
           case (NDIM3D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-            call lsyssc_getbase_double(rmatrixC(2), p_Cy)
-            call lsyssc_getbase_double(rmatrixC(3), p_Cz)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+            call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
 
             call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                         p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                         p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                         p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                         theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bextend, .true., p_Ksep, p_Jac)
+                                        rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
           end select
 
         end if
@@ -11235,7 +11160,7 @@ contains
         call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
 
         ! Assembled extended Jacobian matrix
-        bextend = (rafcstab%iextendedJacobian .ne. 0)
+        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
         if (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS) then
           
           ! Set pointers
@@ -11246,7 +11171,7 @@ contains
           ! How many dimensions do we have?
           select case(ndim)
           case (NDIM1D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
             
             call doJacobianMat79_GP_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
@@ -11254,11 +11179,11 @@ contains
                                        p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                                        rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bextend, .false., p_Ksep, p_Jac)
+                                       bisExtended, .false., p_Ksep, p_Jac)
 
           case (NDIM2D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-            call lsyssc_getbase_double(rmatrixC(2), p_Cy)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
 
             call doJacobianMat79_GP_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
@@ -11266,12 +11191,12 @@ contains
                                        p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                                        rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bextend, .false., p_Ksep, p_Jac)
+                                       bisExtended, .false., p_Ksep, p_Jac)
             
           case (NDIM3D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-            call lsyssc_getbase_double(rmatrixC(2), p_Cy)
-            call lsyssc_getbase_double(rmatrixC(3), p_Cz)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+            call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
 
             call doJacobianMat79_GP_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
@@ -11279,7 +11204,7 @@ contains
                                        p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
                                        rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bextend, .false., p_Ksep, p_Jac)
+                                       bisExtended, .false., p_Ksep, p_Jac)
           end select
 
         else
@@ -11287,37 +11212,37 @@ contains
           ! How many dimensions do we have?
           select case(ndim)
           case (NDIM1D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
             
             call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                         p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                         p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                         p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                         theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bextend, .false., p_Ksep, p_Jac)
+                                        rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
             
           case (NDIM2D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-            call lsyssc_getbase_double(rmatrixC(2), p_Cy)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
             
             call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                         p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                         p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                         p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                         theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bextend, .false., p_Ksep, p_Jac)
+                                        rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
             
           case (NDIM3D)
-            call lsyssc_getbase_double(rmatrixC(1), p_Cx)
-            call lsyssc_getbase_double(rmatrixC(2), p_Cy)
-            call lsyssc_getbase_double(rmatrixC(3), p_Cz)
+            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+            call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
 
             call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                         p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                         p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                         p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                         theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bextend, .false., p_Ksep, p_Jac)
+                                        rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
           end select
 
         end if
@@ -11406,7 +11331,7 @@ contains
                                       IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                       DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                       Cx, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
-                                      NEQ, NEDGE, NNVEDGE, bextend, bisMat7, Ksep, Jac)
+                                      NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(IN)                :: Cx
@@ -11424,7 +11349,7 @@ contains
       integer(PREC_VECIDX), intent(IN)                  :: NEQ
       integer(PREC_MATIDX), intent(IN)                  :: NEDGE
       integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
       logical, intent(IN)                               :: bisMat7
 
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
@@ -11532,7 +11457,7 @@ contains
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
                                            hstep, iedge, iloc, k, l,&
-                                           bextend, Ksep, Jac)
+                                           bisExtended, Ksep, Jac)
           end do
 
           ! Loop over all superdiagonal edges
@@ -11541,7 +11466,7 @@ contains
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
                                            hstep, iedge, iloc, k, l,&
-                                           bextend, Ksep, Jac)
+                                           bisExtended, Ksep, Jac)
           end do
         end do
 
@@ -11562,7 +11487,7 @@ contains
                                       IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                       DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                       Cx, Cy, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
-                                      NEQ, NEDGE, NNVEDGE, bextend, bisMat7, Ksep, Jac)
+                                      NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(IN)                :: Cx,Cy
@@ -11580,7 +11505,7 @@ contains
       integer(PREC_VECIDX), intent(IN)                  :: NEQ
       integer(PREC_MATIDX), intent(IN)                  :: NEDGE
       integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
       logical, intent(IN)                               :: bisMat7
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
       real(DP), dimension(:), intent(INOUT)             :: Jac
@@ -11687,7 +11612,7 @@ contains
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
                                            hstep, iedge, iloc, k, l,&
-                                           bextend, Ksep, Jac)
+                                           bisExtended, Ksep, Jac)
           end do
 
           ! Loop over all superdiagonal edges
@@ -11696,7 +11621,7 @@ contains
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
                                            hstep, iedge, iloc, k, l,&
-                                           bextend, Ksep, Jac)
+                                           bisExtended, Ksep, Jac)
           end do
         end do
 
@@ -11717,7 +11642,7 @@ contains
                                       IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                       DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                       Cx, Cy, Cz, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
-                                      NEQ, NEDGE, NNVEDGE, bextend, bisMat7, Ksep, Jac)
+                                      NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz
@@ -11735,7 +11660,7 @@ contains
       integer(PREC_VECIDX), intent(IN)                  :: NEQ
       integer(PREC_MATIDX), intent(IN)                  :: NEDGE
       integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
       logical, intent(IN)                               :: bisMat7
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
       real(DP), dimension(:), intent(INOUT)             :: Jac
@@ -11842,7 +11767,7 @@ contains
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
                                            hstep, iedge, iloc, k, l,&
-                                           bextend, Ksep, Jac)
+                                           bisExtended, Ksep, Jac)
           end do
 
           ! Loop over all superdiagonal edges
@@ -11851,7 +11776,7 @@ contains
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
                                            hstep, iedge, iloc, k, l,&
-                                           bextend, Ksep, Jac)
+                                           bisExtended, Ksep, Jac)
           end do
         end do
 
@@ -12044,7 +11969,7 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                          Kloc, rploc, rmloc, fluxloc, hstep,&
-                                         iedge, iloc, k, l, bextend, Ksep, Jac)
+                                         iedge, iloc, k, l, bisExtended, Ksep, Jac)
 
       real(DP), dimension(:), intent(IN)                :: flux
       real(DP), dimension(:,0:), intent(IN)             :: rploc,rmloc
@@ -12056,7 +11981,7 @@ contains
       integer(PREC_MATIDX), intent(IN)                  :: iedge
       integer, intent(IN)                               :: iloc
       integer(PREC_VECIDX), intent(IN)                  :: k,l
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
 
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
       real(DP), dimension(:), intent(INOUT)             :: Jac
@@ -12131,7 +12056,7 @@ contains
           Jac(jk) = Jac(jk)+f_ij
         end do
         
-      elseif (bextend) then
+      elseif (bisExtended) then
         
         !------------------------------------------------------------
         ! 2. Case: secondary edge
@@ -12176,7 +12101,7 @@ contains
                                      Cx, MC, u, u0, flux, flux0,&
                                      pp, pm, qp, qm, rp, rm,&
                                      theta, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
-                                     bextend, bisMat7, Ksep, Jac)
+                                     bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(IN)                :: Cx,MC
@@ -12194,7 +12119,7 @@ contains
       integer(PREC_VECIDX), intent(IN)                  :: NEQ
       integer(PREC_MATIDX), intent(IN)                  :: NEDGE
       integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
       logical, intent(IN)                               :: bisMat7
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
       real(DP), dimension(:), intent(INOUT)             :: Jac
@@ -12307,7 +12232,7 @@ contains
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
                                           fluxloc, fluxloc0, hstep, iedge,&
-                                          iloc, k, l, bextend, Ksep, Jac)
+                                          iloc, k, l, bisExtended, Ksep, Jac)
           end do
 
           ! Loop over all superdiagonal edges
@@ -12316,7 +12241,7 @@ contains
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
                                           fluxloc, fluxloc0, hstep, iedge,&
-                                          iloc, k, l, bextend, Ksep, Jac)
+                                          iloc, k, l, bisExtended, Ksep, Jac)
           end do
         end do
 
@@ -12339,7 +12264,7 @@ contains
                                      Cx, Cy, MC, u, u0, flux, flux0,&
                                      pp, pm, qp, qm, rp, rm,&
                                      theta, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
-                                     bextend, bisMat7, Ksep, Jac)
+                                     bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge    
       real(DP), dimension(:), intent(IN)                :: Cx,Cy,MC
@@ -12357,7 +12282,7 @@ contains
       integer(PREC_VECIDX), intent(IN)                  :: NEQ
       integer(PREC_MATIDX), intent(IN)                  :: NEDGE
       integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
       logical, intent(IN)                               :: bisMat7
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
       real(DP), dimension(:), intent(INOUT)             :: Jac
@@ -12470,7 +12395,7 @@ contains
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
                                           fluxloc, fluxloc0, hstep, iedge,&
-                                          iloc, k, l, bextend, Ksep, Jac)
+                                          iloc, k, l, bisExtended, Ksep, Jac)
           end do
 
           ! Loop over all superdiagonal edges
@@ -12479,7 +12404,7 @@ contains
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
                                           fluxloc, fluxloc0, hstep, iedge,&
-                                          iloc, k, l, bextend, Ksep, Jac)
+                                          iloc, k, l, bisExtended, Ksep, Jac)
           end do
         end do
 
@@ -12502,7 +12427,7 @@ contains
                                      Cx, Cy, Cz, MC, u, u0, flux, flux0,&
                                      pp, pm, qp, qm, rp, rm,&
                                      theta, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
-                                     bextend, bisMat7, Ksep, Jac)
+                                     bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge    
       real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,MC
@@ -12520,7 +12445,7 @@ contains
       integer(PREC_VECIDX), intent(IN)                  :: NEQ
       integer(PREC_MATIDX), intent(IN)                  :: NEDGE
       integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
       logical, intent(IN)                               :: bisMat7
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
       real(DP), dimension(:), intent(INOUT)             :: Jac
@@ -12633,7 +12558,7 @@ contains
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
                                           fluxloc, fluxloc0, hstep, iedge,&
-                                          iloc, k, l, bextend, Ksep, Jac)
+                                          iloc, k, l, bisExtended, Ksep, Jac)
           end do
 
           ! Loop over all superdiagonal edges
@@ -12642,7 +12567,7 @@ contains
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
                                           fluxloc, fluxloc0, hstep, iedge,&
-                                          iloc, k, l, bextend, Ksep, Jac)
+                                          iloc, k, l, bisExtended, Ksep, Jac)
           end do
         end do
 
@@ -12913,7 +12838,7 @@ contains
     pure subroutine assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                              flux0, rp, rm, Kloc, rploc, rmloc,&
                                              fluxloc, fluxloc0, hstep, iedge,&
-                                             iloc, k, l, bextend, Ksep, Jac)
+                                             iloc, k, l, bisExtended, Ksep, Jac)
 
       real(DP), dimension(:), intent(IN)                :: flux,flux0
       real(DP), dimension(:), intent(IN)                :: rp,rm
@@ -12926,7 +12851,7 @@ contains
       integer(PREC_MATIDX), intent(IN)                  :: iedge
       integer, intent(IN)                               :: iloc
       integer(PREC_VECIDX), intent(IN)                  :: k,l
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
 
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
       real(DP), dimension(:), intent(INOUT)             :: Jac
@@ -13017,7 +12942,7 @@ contains
           Jac(jk) = Jac(jk)+f_ij
         end do
         
-      elseif (bextend) then
+      elseif (bisExtended) then
         
         !------------------------------------------------------------
         ! 2. Case: secondary edge
@@ -13201,7 +13126,7 @@ contains
     real(DP), dimension(:), pointer               :: p_u
     real(DP), dimension(:), pointer               :: p_Jac
     integer :: h_Ksep
-    logical :: bextend
+    logical :: bisExtended
 
     ! Clear matrix?
     if (bclear) call lsyssc_clearMatrix(rmatrixJ)
@@ -13257,12 +13182,12 @@ contains
         call lalg_vectorAddScalarInt(p_Ksep, 1)
 
         ! Assembled extended Jacobian matrix
-        bextend = (rafcstab%iextendedJacobian .ne. 0)
+        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
 
         call doJacobian_Symm(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
             p_Kld, p_Kcol, p_u, p_flux, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, dscale,&
-            hstep, rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE, bextend, p_Ksep, p_Jac)
+            hstep, rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE, bisExtended, p_Ksep, p_Jac)
 
         ! Free storage
         call storage_free(h_Ksep)
@@ -13321,7 +13246,7 @@ contains
                                IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                DcoefficientsAtEdge, Kld, Kcol, u, flux,&
                                pp, pm, qp, qm, rp, rm, dscale, hstep,&
-                               NEQ, NEDGE, NNVEDGE, bextend, Ksep, Jac)
+                               NEQ, NEDGE, NNVEDGE, bisExtended, Ksep, Jac)
       
       integer(PREC_VECIDX), dimension(:), intent(IN)    :: IsuperdiagonalEdgesIdx
       integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
@@ -13337,7 +13262,7 @@ contains
       integer(PREC_VECIDX), intent(IN)                  :: NEQ
       integer(PREC_MATIDX), intent(IN)                  :: NEDGE
       integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
       real(DP), dimension(:), intent(INOUT)             :: Jac
 
@@ -13420,7 +13345,7 @@ contains
             
             call assembleJacobian_Symm(IverticesAtEdge, Kld, Kcol, flux, rp, rm,&
                 Kloc, rploc, rmloc, fluxloc, dscale, hstep,&
-                iedge, iloc, k, l, bextend, Ksep, Jac)
+                iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
           
           ! Loop over all superdiagonal edges
@@ -13428,7 +13353,7 @@ contains
             
             call assembleJacobian_Symm(IverticesAtEdge, Kld, Kcol, flux, rp, rm,&
                 Kloc, rploc, rmloc, fluxloc, dscale, hstep,&
-                iedge, iloc, k, l, bextend, Ksep, Jac)
+                iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
         end do
       end do   ! end-of k-loop
@@ -13596,7 +13521,7 @@ contains
     subroutine assembleJacobian_Symm(IverticesAtEdge, Kdiagonal, Kcol,&
                                      flux, rp, rm, Kloc, rploc, rmloc, fluxloc,&
                                      dscale, hstep, iedge, iloc, k, l,&
-                                     bextend, Ksep, Jac)
+                                     bisExtended, Ksep, Jac)
       
       integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
       integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
@@ -13610,7 +13535,7 @@ contains
       integer(PREC_MATIDX), intent(IN)                  :: iedge
       integer, intent(IN)                               :: iloc
       integer(PREC_VECIDX), intent(IN)                  :: k,l
-      logical, intent(IN)                               :: bextend
+      logical, intent(IN)                               :: bisExtended
 
       integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
       real(DP), dimension(:), intent(INOUT)             :: Jac
@@ -13685,7 +13610,7 @@ contains
           Jac(jk) = Jac(jk)+f_ij
         end do
         
-      elseif (bextend) then
+      elseif (bisExtended) then
         
         !------------------------------------------------------------
         ! 2. Case: secondary edge
@@ -13741,4 +13666,38 @@ contains
       end if
     end subroutine assembleJacobian_Symm
   end subroutine gfsc_buildJacobianScalarSymm
+
+  !*****************************************************************************
+
+!<function>
+
+  pure function gfsc_hasOrientation(rafcstab) result(bhasOrientation)
+
+!<description>
+    ! This function returns .TRUE. if the given stabilisation structure
+    ! requires an oriented edge data structure. Otherwise it returns .FALSE.
+!</description>
+
+!<input>
+    ! stabilisation structure
+    type(t_afcstab), intent(IN) :: rafcstab
+!</input>
+
+!<result>
+    ! =.TRUE. if edge orientation is required
+    ! =.FALSE. otherwise
+    logical :: bhasOrientation
+!</result>
+!</function>
+
+    select case(rafcstab%ctypeAFCstabilisation)
+    case(AFCSTAB_FEMTVD,&
+         AFCSTAB_FEMGP)
+      bhasOrientation = .TRUE.
+      
+    case DEFAULT
+      bhasOrientation = .FALSE.
+    end select
+  end function gfsc_hasOrientation
+
 end module groupfemscalar
