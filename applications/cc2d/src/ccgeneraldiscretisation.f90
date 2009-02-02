@@ -289,6 +289,8 @@ contains
   ! 4 = Q2 (E013) / Q2 (E013) / QP1
   ! 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
   ! 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+  ! 7 = Q2~(EB50) / Q2~(EB50) / QP1
+  ! 8 = Q2~(EM50) / Q2~(EM50) / QP1
   integer, intent(in) :: ielementType
   
   ! Boundary structure for the discretisation
@@ -353,6 +355,10 @@ contains
 
     case (7)
       ieltypeUV = EL_EB50
+      ieltypeP = EL_QP1
+
+    case (8)
+      ieltypeUV = EL_EM50
       ieltypeP = EL_QP1
 
     case default
@@ -421,6 +427,8 @@ contains
   ! 4 = Q2 (E013) / Q2 (E013) / QP1
   ! 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
   ! 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+  ! 7 = Q2~(EB50) / Q2~(EB50) / QP1
+  ! 8 = Q2~(EM50) / Q2~(EM50) / QP1
   integer, intent(in) :: ielementType
 
   ! Block discretisation structure that defines the template discretisation
@@ -475,6 +483,10 @@ contains
 
     case (7)
       ieltypeUV = EL_EB50
+      ieltypeP = EL_QP1
+
+    case (8)
+      ieltypeUV = EL_EM50
       ieltypeP = EL_QP1
 
     case default
@@ -1121,7 +1133,7 @@ contains
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
     integer :: ilev,ierror
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     type(t_linearForm) :: rlinform
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
@@ -1409,7 +1421,7 @@ contains
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfileString
     integer :: ilev
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     logical :: bformatted
 

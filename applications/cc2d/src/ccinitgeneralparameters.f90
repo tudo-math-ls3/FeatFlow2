@@ -221,7 +221,7 @@ contains
                               'NLMAX',ilvmax,4)
 
     ! Initialise the level in the problem structure
-    if(ilvlmin .le. 0) then
+    if(ilvmin .le. 0) then
       rproblem%NLMIN = max(1,ilvmax+ilvmin)
     else
       rproblem%NLMIN = ilvmin
