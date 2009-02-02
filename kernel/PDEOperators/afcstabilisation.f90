@@ -189,7 +189,7 @@ module afcstabilisation
     ! be considered in the stabilisation procedure
     !   imass = 0 : neglect consistent mass matrix
     !   imass = 1 : consider consistent mass matrix
-    integer :: imass                                   = 0
+    integer :: imass                                   = AFCSTAB_LUMPEDMASS
 
     ! Number of equations of the sparsity pattern
     integer(PREC_VECIDX) :: NEQ                        = 0
