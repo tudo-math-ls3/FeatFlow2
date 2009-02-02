@@ -9,7 +9,7 @@ interface
 
 !<subroutine>
 
-pure subroutine fcb_calcConvection(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, istatus)
+pure subroutine fcb_calcConvection(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the matrix coefficients $k_{ij}$ and $k_{ji}$
@@ -25,12 +25,8 @@ use dofmapping
   integer(PREC_DOFIDX),   intent(IN)  :: i,j
 !</input>
 
-!<inputoutput>
-  integer, intent(INOUT), optional    :: istatus
-!</inputoutput>
-
 !<output>
-  real(DP), intent(OUT)               :: k_ij,k_ji
+  real(DP), intent(OUT) :: k_ij,k_ji
 !</output>
 
 !</subroutine>
