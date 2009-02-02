@@ -644,7 +644,7 @@ contains
   real(DP), dimension(EL_MAXNBAS,EL_MAXNDER,CUB_MAXCUBP_2D) :: DbasU, DbasP
   
   ! Value of local alpha function
-  !real(DP), dimension(EL_MAXNBAS) :: Dalpha
+  real(DP), dimension(EL_MAXNBAS) :: Dalpha
   
   ! Pointer to vector data of solution vector
   real(DP), dimension(:), pointer :: p_DdataUX,p_DdataUY,p_DdataP
@@ -862,47 +862,47 @@ contains
           call sys_halt()
         end if
         
-        select case(ilocaledge)
-        case(1)
-          darx =  0.0_DP
-          dary = -0.5_DP
-        case(2)
-          darx =  0.5_DP
-          dary =  0.0_DP
-        case(3)
-          darx =  0.0_DP
-          dary =  0.5_DP
-        case(4)
-          darx = -0.5_DP
-          dary =  0.0_DP
-        end select
+!        select case(ilocaledge)
+!        case(1)
+!          darx =  0.0_DP
+!          dary = -0.5_DP
+!        case(2)
+!          darx =  0.5_DP
+!          dary =  0.0_DP
+!        case(3)
+!          darx =  0.0_DP
+!          dary =  0.5_DP
+!        case(4)
+!          darx = -0.5_DP
+!          dary =  0.0_DP
+!        end select
         
         ! Okay, now let's build the local alpha vector
-!        Dalpha = 0.0_DP
-!        select case(elem_getPrimaryElement(ielemU))
-!        case(EL_P1,EL_P2)
-!          ! Set both vertices adjacent to the edge to 1
-!          Dalpha(ilocaledge) = 1.0_DP
-!          Dalpha(mod(ilocaledge,3)+1) = 1.0_DP
-!          ! In the case of P2 set the edge value to 1
-!          Dalpha(3+ilocaledge) = 1.0_DP
-!
-!        case(EL_Q1,EL_Q2)
-!          ! Set both vertices adjacent to the edge to 1
-!          Dalpha(ilocaledge) = 1.0_DP
-!          Dalpha(mod(ilocaledge,4)+1) = 1.0_DP
-!          ! In the case of Q2 set the edge value to 1
-!          Dalpha(4+ilocaledge) = 1.0_DP
-!          
-!        case(EL_P1T,EL_Q1T,EL_Q1TB,EL_Q2T,EL_Q2TB)
-!          Dalpha(ilocaledge) = 1.0_DP
-!        
-!        case default
-!          call output_line ('Velocity element not supported!', &
-!                            OU_CLASS_ERROR,OU_MODE_STD, &
-!                            'ppns2D_bdforces_uni_vol')
-!          call sys_halt()
-!        end select
+        Dalpha = 0.0_DP
+        select case(elem_getPrimaryElement(ielemU))
+        case(EL_P1,EL_P2)
+          ! Set both vertices adjacent to the edge to 1
+          Dalpha(ilocaledge) = 1.0_DP
+          Dalpha(mod(ilocaledge,3)+1) = 1.0_DP
+          ! In the case of P2 set the edge value to 1
+          Dalpha(3+ilocaledge) = 1.0_DP
+
+        case(EL_Q1,EL_Q2)
+          ! Set both vertices adjacent to the edge to 1
+          Dalpha(ilocaledge) = 1.0_DP
+          Dalpha(mod(ilocaledge,4)+1) = 1.0_DP
+          ! In the case of Q2 set the edge value to 1
+          Dalpha(4+ilocaledge) = 1.0_DP
+          
+        case(EL_P1T,EL_Q1T,EL_Q1TB,EL_Q2T,EL_Q2TB)
+          Dalpha(ilocaledge) = 1.0_DP
+        
+        case default
+          call output_line ('Velocity element not supported!', &
+                            OU_CLASS_ERROR,OU_MODE_STD, &
+                            'ppns2D_bdforces_uni_vol')
+          call sys_halt()
+        end select
 
                 
         ! For the integration, we need the global DOF's on our element
@@ -959,8 +959,8 @@ contains
           du2v = 0.0_DP
           du2x = 0.0_DP
           du2y = 0.0_DP
-          !dax = 0.0_DP
-          !day = 0.0_DP
+          dax = 0.0_DP
+          day = 0.0_DP
           do idfl = 1, idoflocU
             du1v = du1v + DbasU(idfl,DER_FUNC,icubp) * p_DdataUX(IdofsU(idfl))
             du1x = du1x + DbasU(idfl,DER_DERIV_X,icubp) * p_DdataUX(IdofsU(idfl))
@@ -968,13 +968,13 @@ contains
             du2v = du2v + DbasU(idfl,DER_FUNC,icubp) * p_DdataUY(IdofsU(idfl))
             du2x = du2x + DbasU(idfl,DER_DERIV_X,icubp) * p_DdataUY(IdofsU(idfl))
             du2y = du2y + DbasU(idfl,DER_DERIV_Y,icubp) * p_DdataUY(IdofsU(idfl))
-            !dax = dax + DbasU(idfl,DER_DERIV_X,icubp) * Dalpha(idfl)
-            !day = day + DbasU(idfl,DER_DERIV_Y,icubp) * Dalpha(idfl)
+            dax = dax + DbasU(idfl,DER_DERIV_X,icubp) * Dalpha(idfl)
+            day = day + DbasU(idfl,DER_DERIV_Y,icubp) * Dalpha(idfl)
           end do
           
-          dav = 0.5_DP + darx*DpointsRef(1,icubp) + dary*DpointsRef(2,icubp)
-          dax =  (Djac(4,icubp)*darx - Djac(2,icubp)*dary) / Ddetj(icubp)
-          day = -(Djac(3,icubp)*darx - Djac(1,icubp)*dary) / Ddetj(icubp)
+          !dav = 0.5_DP + darx*DpointsRef(1,icubp) + dary*DpointsRef(2,icubp)
+          !dax =  (Djac(4,icubp)*darx - Djac(2,icubp)*dary) / Ddetj(icubp)
+          !day = -(Djac(3,icubp)*darx - Djac(1,icubp)*dary) / Ddetj(icubp)
 
           dpv = 0.0_DP
           do idfl = 1, idoflocP
@@ -988,8 +988,8 @@ contains
           DintP(1) = DintP(1) + dweight * dpv * dax
           DintP(2) = DintP(2) + dweight * dpv * day
           
-          DintV(1) = DintV(1) + dweight * dav * (du1v * du1x + du2v * du1y)
-          DintV(2) = DintV(2) + dweight * dav * (du1v * du2x + du2v * du2y)
+          !DintV(1) = DintV(1) + dweight * dav * (du1v * du1x + du2v * du1y)
+          !DintV(2) = DintV(2) + dweight * dav * (du1v * du2x + du2v * du2y)
         
         end do ! icubp
           
@@ -1003,8 +1003,8 @@ contains
     ! LiftCoeff = 2/dfp2 * (dpf1*DintU(2) + DintP(2))
     
     Dforces = 0.0_DP
-    !Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (dpf1*DintU(:) + DintP(:))
-    Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (dpf1*DintU(:) + DintV(:) + DintP(:))
+    Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (dpf1*DintU(:) + DintP(:))
+    !Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (dpf1*DintU(:) + DintV(:) + DintP(:))
     
     ! Deallocate memory, finish.
     deallocate(DCoords)
