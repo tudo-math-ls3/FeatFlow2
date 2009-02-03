@@ -78,32 +78,32 @@ module afcstabilisation
 !<constantblock description="Global format flags for AFC stabilisation">
 
   ! No stabilisation: use standard high-order Galerkin discretisation
-  integer, parameter, public :: AFCSTAB_GALERKIN        = 0
+  integer, parameter, public :: AFCSTAB_GALERKIN          = 0
   
   ! Stabilisation of discrete upwind type for convection operators
-  integer, parameter, public :: AFCSTAB_UPWIND          = 1
+  integer, parameter, public :: AFCSTAB_UPWIND            = 1
 
   ! Stabilisation of discrete maximum principle preserving 
   ! type for anisotropic diffusion operators
-  integer, parameter, public :: AFCSTAB_DMP             = 2
+  integer, parameter, public :: AFCSTAB_DMP               = 2
 
   ! Stabilisation of semi-implicit FEM-FCT type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMFCT          = 10
+  integer, parameter, public :: AFCSTAB_FEMFCT            = 10
 
   ! Stabilisation of semi-explicit (classical) FEM-FCT type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMFCT_EXP      = 11
+  integer, parameter, public :: AFCSTAB_FEMFCT_CLASSICAL  = 11
 
   ! Stabilisation of linearised FEM-FCT type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMFCT_LIN      = 12
+  integer, parameter, public :: AFCSTAB_FEMFCT_LINEARIZED = 12
   
   ! Stabilisation of FEM-TVD type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMTVD          = 20
+  integer, parameter, public :: AFCSTAB_FEMTVD            = 20
 
   ! Stabilisation of general purpose type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMGP           = 21
+  integer, parameter, public :: AFCSTAB_FEMGP             = 21
   
   ! Stabilisation of symmetric type for diffusion operators
-  integer, parameter, public :: AFCSTAB_SYMMETRIC       = 30
+  integer, parameter, public :: AFCSTAB_SYMMETRIC         = 30
   
 !</constantblock>
 
@@ -321,13 +321,13 @@ contains
       
       return   ! -> high-order Galerkin
       
-    elseif ((istabilisation .ne. AFCSTAB_UPWIND)    .and. &
-        (    istabilisation .ne. AFCSTAB_FEMFCT)    .and. &
-        (    istabilisation .ne. AFCSTAB_FEMFCT_EXP).and. &
-        (    istabilisation .ne. AFCSTAB_FEMFCT_LIN).and. &
-        (    istabilisation .ne. AFCSTAB_FEMTVD)    .and. &
-        (    istabilisation .ne. AFCSTAB_FEMGP)     .and. &
-        (    istabilisation .ne. AFCSTAB_DMP)       .and. &
+    elseif ((istabilisation .ne. AFCSTAB_UPWIND)            .and. &
+        (    istabilisation .ne. AFCSTAB_FEMFCT)            .and. &
+        (    istabilisation .ne. AFCSTAB_FEMFCT_CLASSICAL)  .and. &
+        (    istabilisation .ne. AFCSTAB_FEMFCT_LINEARIZED) .and. &
+        (    istabilisation .ne. AFCSTAB_FEMTVD)            .and. &
+        (    istabilisation .ne. AFCSTAB_FEMGP)             .and. &
+        (    istabilisation .ne. AFCSTAB_DMP)               .and. &
         (    istabilisation .ne. AFCSTAB_SYMMETRIC)) then 
       
       call output_line('Invalid AFC type!',&
