@@ -33,6 +33,7 @@
 module spdiscprojection
 
   use fsystem
+  use genoutput
   use storage
   use triangulation
   use spatialdiscretisation
@@ -86,10 +87,10 @@ contains
     type(t_spatialDiscretisation), pointer :: p_rsourceDiscr,p_rdestDiscr
     type(t_triangulation), pointer :: p_rtriangulation
     real(DP), dimension(:), pointer :: p_Dsource,p_Ddest
-    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IelementsAtVertexIdx 
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement,&
+    integer, dimension(:), pointer :: p_IelementsAtVertexIdx 
+    integer, dimension(:), pointer :: p_IelementsAtVertex
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement,&
         p_IfacesAtElement
 
     ! Up to now, this routine is rather rudimentary.
@@ -324,13 +325,13 @@ contains
   real(DP), dimension(:), intent(IN) :: Dsource
   
   ! Number of vertices in the triangulation
-  integer(PREC_VERTEXIDX), intent(IN) :: NVT
+  integer, intent(IN) :: NVT
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer(PREC_VERTEXIDX), dimension(:), intent(IN) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(IN) :: IelementsAtVertexIdx 
 
   ! IelementsAtVertex array of the triangulation
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: IelementsAtVertex
+  integer, dimension(:), intent(IN) :: IelementsAtVertex
 !</input>
   
 !<output>
@@ -341,9 +342,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_VERTEXIDX) :: iv
+    integer :: iv
     integer :: nadj
-    integer(PREC_ELEMENTIDX) :: ielidx
+    integer :: ielidx
 
     ! Loop through the vertices   
     do iv=1,NVT
@@ -380,19 +381,19 @@ contains
   real(DP), dimension(:), intent(IN) :: Dsource
   
   ! Number of vertices in the triangulation
-  integer(PREC_VERTEXIDX), intent(IN) :: NVT
+  integer, intent(IN) :: NVT
   
   ! Number of elements in the triangulation
-  integer(PREC_ELEMENTIDX), intent(IN) :: NEL
+  integer, intent(IN) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer(PREC_VERTEXIDX), dimension(:), intent(IN) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(IN) :: IelementsAtVertexIdx 
   
   ! IverticesAtElement array of the triangulation (old KVERT)
-  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! IedgesAtElement array of the triangulation (old KMID)
-  integer(PREC_EDGEIDX), dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(IN) :: IedgesAtElement
 !</input>
   
 !<output>
@@ -403,10 +404,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_VERTEXIDX) :: iv
-    integer(PREC_ELEMENTIDX) :: iel
-    integer(PREC_EDGEIDX) :: IM1,IM2,IM3,IM4
-    integer(PREC_VERTEXIDX) :: IV1,IV2,IV3,IV4
+    integer :: iv
+    integer :: iel
+    integer :: IM1,IM2,IM3,IM4
+    integer :: IV1,IV2,IV3,IV4
     real(DP) :: DUH1,DUH2,DUH3,DUH4
     integer :: nadj
     
@@ -471,19 +472,19 @@ contains
   real(DP), dimension(:), intent(IN) :: Dsource
   
   ! Number of vertices in the triangulation
-  integer(PREC_VERTEXIDX), intent(IN) :: NVT
+  integer, intent(IN) :: NVT
   
   ! Number of elements in the triangulation
-  integer(PREC_ELEMENTIDX), intent(IN) :: NEL
+  integer, intent(IN) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer(PREC_VERTEXIDX), dimension(:), intent(IN) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(IN) :: IelementsAtVertexIdx 
   
   ! IverticesAtElement array of the triangulation (old KVERT)
-  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! IedgesAtElement array of the triangulation (old KMID)
-  integer(PREC_EDGEIDX), dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(IN) :: IedgesAtElement
   
   ! ItwistIndexEdges array of the triangulation
   integer(I32), dimension(:), intent(IN) :: ItwistIndexEdges
@@ -497,10 +498,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_VERTEXIDX) :: iv
-    integer(PREC_ELEMENTIDX) :: iel
-    integer(PREC_EDGEIDX) :: IM1,IM2,IM3,IM4
-    integer(PREC_VERTEXIDX) :: IV1,IV2,IV3,IV4
+    integer :: iv
+    integer :: iel
+    integer :: IM1,IM2,IM3,IM4
+    integer :: IV1,IV2,IV3,IV4
     real(DP) :: DUH1,DUH2,DUH3,DUH4
     integer :: nadj
     
@@ -566,16 +567,16 @@ contains
   real(DP), dimension(:), intent(IN) :: Dsource
   
   ! Number of vertices in the triangulation
-  integer(PREC_VERTEXIDX), intent(IN) :: NVT
+  integer, intent(IN) :: NVT
   
   ! Number of elements in the triangulation
-  integer(PREC_ELEMENTIDX), intent(IN) :: NEL
+  integer, intent(IN) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer(PREC_VERTEXIDX), dimension(:), intent(IN) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(IN) :: IelementsAtVertexIdx 
   
   ! IverticesAtElement array of the triangulation (old KVERT)
-  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
 !</input>
   
@@ -587,9 +588,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_VERTEXIDX) :: iv
-    integer(PREC_ELEMENTIDX) :: iel
-    integer(PREC_VERTEXIDX) :: IV1,IV2,IV3,IV4
+    integer :: iv
+    integer :: iel
+    integer :: IV1,IV2,IV3,IV4
     integer :: nadj
     
     ! Clear the output array
@@ -640,22 +641,22 @@ contains
   real(DP), dimension(:), intent(IN) :: Dsource
   
   ! Number of vertices in the triangulation
-  integer(PREC_VERTEXIDX), intent(IN) :: NVT
+  integer, intent(IN) :: NVT
   
   ! Number of edges in the triangulation
-  integer(PREC_EDGEIDX), intent(IN) :: NMT
+  integer, intent(IN) :: NMT
   
   ! Number of elements in the triangulation
-  integer(PREC_ELEMENTIDX), intent(IN) :: NEL
+  integer, intent(IN) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer(PREC_VERTEXIDX), dimension(:), intent(IN) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(IN) :: IelementsAtVertexIdx 
   
   ! IverticesAtElement array of the triangulation (old KVERT)
-  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 
   ! IfacesAtElement array of the triangulation
-  integer(PREC_EDGEIDX), dimension(:,:), intent(IN) :: IfacesAtElement
+  integer, dimension(:,:), intent(IN) :: IfacesAtElement
 !</input>
   
 !<output>
@@ -666,10 +667,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_VERTEXIDX) :: iv
-    integer(PREC_ELEMENTIDX) :: iel
-    integer(PREC_EDGEIDX), dimension(6) :: F
-    integer(PREC_VERTEXIDX), dimension(8) :: V
+    integer :: iv
+    integer :: iel
+    integer, dimension(6) :: F
+    integer, dimension(8) :: V
     real(DP), dimension(6) :: D
     real(DP),parameter :: R13 = 0.333333333333333_DP
     real(DP),parameter :: R23 = 0.666666666666667_DP
@@ -842,7 +843,7 @@ contains
 
 !<subroutine>
 
-  subroutine spdp_projectToVertices (rvector, p_Dvalues)
+  subroutine spdp_projectToVertices (rvector, p_Dvalues, ideriv)
   
 !<description>
   ! This routines projects a vector from primal space to the vertices of the
@@ -854,6 +855,10 @@ contains
 !<input>
   ! The coefficient vector to be projected.
   type(t_vectorScalar), intent(IN) :: rvector
+  
+  ! OPTIONAL: A derivative quantifier specifying which derivative is to be
+  ! projected onto the vertices. If not given, DER_FUNC is used.
+  integer, optional, intent(IN) :: ideriv
 !</input>
 
 !<inputoutput>
@@ -869,20 +874,35 @@ contains
   type(t_spatialDiscretisation), pointer :: p_rdiscr
   type(t_triangulation), pointer :: p_rtria
   type(t_elementDistribution), pointer :: p_relemDist
-  integer, dimension(:), pointer :: p_IelemList, p_IelemAtVertIdx
+  integer, dimension(:), pointer :: p_IelemList, p_IelemAtVertIdx, p_IcurEL
   integer, dimension(:,:), pointer :: p_IvertAtElem
-  real(DP), dimension(4,TRIA_MAXNVE) :: DpointsRef
-  real(DP), dimension(TRIA_MAXNVE) :: Deval
-  integer :: NVT,NVE,NDIM,ied,ivt,iel,i,j
+  real(DP), dimension(4,TRIA_MAXNVE) :: Dcorners
+  integer :: NEL,NVT,NVE,NDIM,NBAS,NDER,ied,ivt,iel,i,j,k
+  type(t_evalElementSet)  :: reval
+  integer(I32) :: cevalTag, celement, ctrafo
+  integer :: NELtodo, NELdone, NELpatch
+  logical, dimension(EL_MAXNDER) :: Bder
+  real(DP), dimension(:,:,:,:), allocatable :: Dbas
+  integer, dimension(:,:), allocatable :: Idofs
+  real(DP), dimension(:), pointer :: p_Dx
+  real(DP) :: dt
+  integer :: ider
+  
+    ! Which derivative?
+    ider = DER_FUNC
+    if(present(ideriv)) ider = ideriv
   
     ! First of all, get the spatial discretisation
     p_rdiscr => rvector%p_rspatialDiscr
     
     if(.not. associated(p_rdiscr)) then
-      print *, 'ERROR: spdp_projectToVertices'
-      print *, 'Vector does not have a discretisation!'
+      call output_line ('Vector does not have a discretisation!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'spdp_projectToVertices')
       call sys_halt()
     end if
+    
+    ! Get the coefficient vector's data array
+    call lsyssc_getbase_double(rvector, p_Dx)
     
     ! Now get the triangulation
     p_rtria => p_rdiscr%p_rtriangulation
@@ -904,10 +924,9 @@ contains
     end if
     call lalg_clearVectorDble(p_Dvalues,NVT)
     
-    ! Although we call the FE-evaluation routines to evaluate the function,
-    ! we still need to loop through all FE spaces, as in a mixed conformal
-    ! discretisation, we need to set up the reference coordinates for each
-    ! cell type...
+    ! Set up Bder
+    Bder = .false.
+    Bder(ider) = .true.
     
     ! Okay, now loop through all element distributions
     do ied = 1, p_rdiscr%inumFESpaces
@@ -918,40 +937,98 @@ contains
       ! Get the element list for this distribution
       call storage_getbase_int(p_relemDist%h_IelementList, p_IelemList)
       
-      ! Get the number of vertice coordinates
-      NVE = elem_igetNVE(p_relemDist%celement)
+      ! Get the element, its evaluation tag and trafo type
+      celement = p_relemDist%celement
+      cevalTag = elem_getEvaluationTag(celement)
+      ctrafo = elem_igetTrafoType(celement)
+      
+      ! Get the number of vertices per element
+      NVE = elem_igetNVE(celement)
+
+      ! Get the number of basis functions and derivatives
+      NBAS = elem_igetNDofLoc(celement)
+      NDER = elem_getMaxDerivative(celement)
+      
+      ! Make sure ider is supported
+      if(ider .gt. NDER) then
+        call output_line ('Derivative not supported by element!', &
+            OU_CLASS_ERROR,OU_MODE_STD, 'spdp_projectToVertices')
+        call sys_halt()
+      end if
       
       ! Calculate the corner vertice reference coordinates
-      call spdp_aux_getCornerRefCoords(DpointsRef, NDIM, NVE)
+      call spdp_aux_getCornerRefCoords(Dcorners, NDIM, NVE)
       
-      ! Now go through all elements in this element set
-      do i = 1, size(p_IelemList)
+      ! Get the number of elements in this distribution
+      NEL = size(p_IelemList)
       
-        ! Get the index of the element
-        iel = p_IelemList(i)
+      ! Determine the element patch size
+      NELpatch = min(1000, NEL)
+      
+      ! Allocate evaluation array
+      allocate(Dbas(NBAS,NDER,NVE,NELpatch))
+      
+      ! Allocate DOF-mapping array
+      allocate(Idofs(NBAS,NELpatch))
+      
+      ! Loop over the element patches
+      NELdone = 0
+      do while(NELdone .lt. NEL)
+      
+        ! How many elements do we process this time?
+        NELtodo = min(NELpatch, NEL-NELdone)
         
-        ! Call the FE evaluation
-        call fevl_evaluate_mult1 (DER_FUNC, Deval, rvector, iel, DpointsRef)
+        ! Get a pointer to the current element list
+        p_IcurEL => p_IelemList(NELdone+1:NELdone+NELtodo)
         
-        ! Now incorporate the evaluation into the global array
-        do j = 1, ubound(p_IvertAtElem,1)
+        ! Prepare the element for evaluation
+        call elprep_prepareSetForEvaluation(reval, cevalTag, p_rtria, &
+            p_IcurEL, ctrafo, Dcorners(:,1:NVE))
         
-          ! Get the index of the global vertice
-          ivt = p_IvertAtElem(j,iel)
+        ! Evaluate the element
+        call elem_generic_sim2(celement, reval, Bder, Dbas)
+        
+        ! Perform DOF-mapping
+        call dof_locGlobMapping_mult(p_rdiscr, p_IcurEL, Idofs(:,1:NELtodo))
+        
+        ! Now loop over all elements
+        do i = 1, NELtodo
+        
+          ! Get the index of the current element
+          iel = p_IcurEL(i)
           
-          if(ivt .gt. 0) then
+          ! Loop over all vertices of the element
+          do j = 1, NVE
           
-            ! Add the local solution onto the global entry
-            p_Dvalues(ivt) = p_Dvalues(ivt) + Deval(j)
+            ! Get the index of the vertice
+            ivt = p_IvertAtElem(j,iel)
+            if(ivt .le. 0) cycle
             
-          end if
+            ! Okay, loop over all basis functions and calculate the value
+            dt = 0.0_DP
+            do k = 1, NBAS
+              dt = dt + Dbas(k,ider,j,i)*p_Dx(Idofs(k,i))
+            end do ! k
+            
+            ! Add the value onto the vertice
+            p_Dvalues(ivt) = p_Dvalues(ivt) + dt
+          
+          end do ! j
         
-        end do ! j
+        end do ! i
         
-        ! Go for the next element in this distribution
+        ! Release element evaluation set
+        call elprep_releaseElementSet(reval)
+      
+        ! Go for the next element patch
+        NELdone = NELdone + NELtodo
         
-      end do ! i
-    
+      end do
+      
+      ! Deallocate arrays
+      deallocate(Idofs)
+      deallocate(Dbas)
+
       ! Go for the next element distribution
     
     end do ! ied
@@ -978,7 +1055,7 @@ contains
 
 !<subroutine>
 
-  subroutine spdp_projectToCells (rvector, p_Dvalues)
+  subroutine spdp_projectToCells (rvector, p_Dvalues, ideriv)
   
 !<description>
   ! This routines projects a vector from primal space to the cells of the
@@ -990,6 +1067,10 @@ contains
 !<input>
   ! The coefficient vector to be projected.
   type(t_vectorScalar), intent(IN) :: rvector
+  
+  ! OPTIONAL: A derivative quantifier specifying which derivative is to be
+  ! projected onto the vertices. If not given, DER_FUNC is used.
+  integer, optional, intent(IN) :: ideriv
 !</input>
 
 !<inputoutput>
@@ -1005,27 +1086,41 @@ contains
   type(t_spatialDiscretisation), pointer :: p_rdiscr
   type(t_triangulation), pointer :: p_rtria
   type(t_elementDistribution), pointer :: p_relemDist
-  integer, dimension(:), pointer :: p_IelemList, p_IelemAtVertIdx
-  integer, dimension(:,:), pointer :: p_IvertAtElem
-  real(DP), dimension(4,1) :: DpointsRef
-  real(DP), dimension(1) :: Deval
-  integer :: NEL,NVE,NDIM,ied,iel,i
+  integer, dimension(:), pointer :: p_IelemList, p_IcurEL
+  real(DP), dimension(4,1) :: DmidPoint
+  integer :: NEL,NVE,NDIM,NBAS,NDER,ied,iel,i,j
+  type(t_evalElementSet)  :: reval
+  integer(I32) :: cevalTag, celement, ctrafo
+  integer :: NELtodo, NELdone, NELpatch,NELinList
+  logical, dimension(EL_MAXNDER) :: Bder
+  real(DP), dimension(:,:,:,:), allocatable :: Dbas
+  integer, dimension(:,:), allocatable :: Idofs
+  real(DP), dimension(:), pointer :: p_Dx
+  real(DP) :: dt
+  integer :: ider
+  
+    ! Which derivative?
+    ider = DER_FUNC
+    if(present(ideriv)) ider = ideriv
   
     ! First of all, get the spatial discretisation
     p_rdiscr => rvector%p_rspatialDiscr
     
     if(.not. associated(p_rdiscr)) then
-      print *, 'ERROR: spdp_projectToCells'
-      print *, 'Vector does not have a discretisation!'
+      call output_line ('Vector does not have a discretisation!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'spdp_projectToCells')
       call sys_halt()
     end if
+    
+    ! Get the coefficient vector's data array
+    call lsyssc_getbase_double(rvector, p_Dx)
     
     ! Now get the triangulation
     p_rtria => p_rdiscr%p_rtriangulation
     
-    ! Get the dimension and the number of elements
-    NEL = p_rtria%NEL
+    ! Get the dimension
     NDIM = p_rtria%ndim
+    NEL = p_rtria%NEL
     
     ! Prepare the values array
     if(.not. associated(p_Dvalues)) then
@@ -1036,10 +1131,9 @@ contains
     end if
     call lalg_clearVectorDble(p_Dvalues,NEL)
     
-    ! Although we call the FE-evaluation routines to evaluate the function,
-    ! we still need to loop through all FE spaces, as in a mixed conformal
-    ! discretisation, we need to set up the reference coordinates for each
-    ! cell type...
+    ! Set up Bder
+    Bder = .false.
+    Bder(ider) = .true.
     
     ! Okay, now loop through all element distributions
     do ied = 1, p_rdiscr%inumFESpaces
@@ -1050,28 +1144,89 @@ contains
       ! Get the element list for this distribution
       call storage_getbase_int(p_relemDist%h_IelementList, p_IelemList)
       
-      ! Get the number of vertice coordinates
-      NVE = elem_igetNVE(p_relemDist%celement)
+      ! Get the element, its evaluation tag and trafo type
+      celement = p_relemDist%celement
+      cevalTag = elem_getEvaluationTag(celement)
+      ctrafo = elem_igetTrafoType(celement)
       
-      ! Calculate the element midpoint reference coordinates
-      call spdp_aux_getMidpointRefCoords(DpointsRef, NDIM, NVE)
+      ! Get the number of vertices per element
+      NVE = elem_igetNVE(celement)
+
+      ! Get the number of basis functions and derivatives
+      NBAS = elem_igetNDofLoc(celement)
+      NDER = elem_getMaxDerivative(celement)
       
-      ! Now go through all elements in this element set
-      do i = 1, size(p_IelemList)
+      ! Make sure ider is supported
+      if(ider .gt. NDER) then
+        call output_line ('Derivative not supported by element!', &
+            OU_CLASS_ERROR,OU_MODE_STD, 'spdp_projectToCells')
+        call sys_halt()
+      end if
       
-        ! Get the index of the element
-        iel = p_IelemList(i)
+      ! Calculate the cell midpoint reference coordinates
+      call spdp_aux_getMidpointRefCoords(DmidPoint, NDIM, NVE)
+      
+      ! Get the number of elements in this distribution
+      NELinList = size(p_IelemList)
+      
+      ! Determine the element patch size
+      NELpatch = min(1000, NELinList)
+      
+      ! Allocate evaluation array
+      allocate(Dbas(NBAS,NDER,1,NELpatch))
+      
+      ! Allocate DOF-mapping array
+      allocate(Idofs(NBAS,NELpatch))
+      
+      ! Loop over the element patches
+      NELdone = 0
+      do while(NELdone .lt. NELinList)
+      
+        ! How many elements do we process this time?
+        NELtodo = min(NELpatch, NELinList-NELdone)
         
-        ! Call the FE evaluation
-        call fevl_evaluate_mult1 (DER_FUNC, Deval, rvector, iel, DpointsRef)
+        ! Get a pointer to the current element list
+        p_IcurEL => p_IelemList(NELdone+1:NELdone+NELtodo)
         
-        ! Now incorporate the evaluation into the global array
-        p_Dvalues(iel) = Deval(1)
+        ! Prepare the element for evaluation
+        call elprep_prepareSetForEvaluation(reval, cevalTag, p_rtria, &
+            p_IcurEL, ctrafo, DmidPoint)
         
-        ! Go for the next element in this distribution
+        ! Evaluate the element
+        call elem_generic_sim2(celement, reval, Bder, Dbas)
         
-      end do ! i
-    
+        ! Perform DOF-mapping
+        call dof_locGlobMapping_mult(p_rdiscr, p_IcurEL, Idofs(:,1:NELtodo))
+        
+        ! Now loop over all elements
+        do i = 1, NELtodo
+        
+          ! Get the index of the current element
+          iel = p_IcurEL(i)
+          
+          ! Okay, loop over all basis functions and calculate the value
+          dt = 0.0_DP
+          do j = 1, NBAS
+            dt = dt + Dbas(j,ider,1,i)*p_Dx(Idofs(j,i))
+          end do ! k
+            
+          ! Add the value onto the cell
+          p_Dvalues(iel) = p_Dvalues(iel) + dt
+        
+        end do ! i
+        
+        ! Release element evaluation set
+        call elprep_releaseElementSet(reval)
+      
+        ! Go for the next element patch
+        NELdone = NELdone + NELtodo
+        
+      end do
+      
+      ! Deallocate arrays
+      deallocate(Idofs)
+      deallocate(Dbas)
+
       ! Go for the next element distribution
     
     end do ! ied
@@ -1163,6 +1318,45 @@ contains
         Dcoords(3,4) = 0.0_DP
         Dcoords(4,4) = 1.0_DP
       
+      case(5)
+        ! Pyramid -> reference coordinates
+        Dcoords(1,1) = -1.0_DP
+        Dcoords(2,1) = -1.0_DP
+        Dcoords(3,1) =  0.0_DP
+        Dcoords(1,2) =  1.0_DP
+        Dcoords(2,2) = -1.0_DP
+        Dcoords(3,2) =  0.0_DP
+        Dcoords(1,3) =  1.0_DP
+        Dcoords(2,3) =  1.0_DP
+        Dcoords(3,3) =  0.0_DP
+        Dcoords(1,4) = -1.0_DP
+        Dcoords(2,4) =  1.0_DP
+        Dcoords(3,4) =  0.0_DP
+        Dcoords(1,5) =  0.0_DP
+        Dcoords(2,5) =  0.0_DP
+        Dcoords(3,5) =  1.0_DP
+      
+      case(6)
+        ! Prism -> reference coordinates
+        Dcoords(1,1) =  0.0_DP
+        Dcoords(2,1) =  0.0_DP
+        Dcoords(3,1) = -1.0_DP
+        Dcoords(1,2) =  1.0_DP
+        Dcoords(2,2) =  0.0_DP
+        Dcoords(3,2) = -1.0_DP
+        Dcoords(1,3) =  0.0_DP
+        Dcoords(2,3) =  1.0_DP
+        Dcoords(3,3) = -1.0_DP
+        Dcoords(1,4) =  0.0_DP
+        Dcoords(2,4) =  0.0_DP
+        Dcoords(3,4) =  1.0_DP
+        Dcoords(1,5) =  1.0_DP
+        Dcoords(2,5) =  0.0_DP
+        Dcoords(3,5) =  1.0_DP
+        Dcoords(1,6) =  0.0_DP
+        Dcoords(2,6) =  1.0_DP
+        Dcoords(3,6) =  1.0_DP
+      
       case(8)
         ! Hexahedron -> reference coordinates
         Dcoords(1,1) = -1.0_DP
@@ -1247,6 +1441,18 @@ contains
       case(4)
         ! Tetrahedron -> barycentric coordinates
         Dcoords = 0.25_DP
+      
+      case(5)
+        ! Pyramid -> reference coordinates
+        Dcoords(1,1) = 0.0_DP
+        Dcoords(2,1) = 0.0_DP
+        Dcoords(3,1) = 0.5_DP
+      
+      case(6)
+        ! Prism -> reference coordinates
+        Dcoords(1,1) = 1.0_DP / 3.0_DP
+        Dcoords(2,1) = 1.0_DP / 3.0_DP
+        Dcoords(3,1) = 0.0_DP
       
       case(8)
         ! Hexahedron -> reference coordinates
