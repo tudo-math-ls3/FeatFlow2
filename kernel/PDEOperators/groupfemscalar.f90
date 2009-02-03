@@ -75,44 +75,56 @@
 !#
 !# 6.) gfsc_buildResidualFCT = gfsc_buildResScalarFCT /
 !#                             gfsc_buildResBlockFCT
-!#     -> assemble the residual vector for AFC stabilisation of FCT type
+!#     -> Assembles the residual vector for AFC stabilisation of FCT type
 !#
 !# 7.) gfsc_buildResidualTVD = gfsc_buildResScalarTVD /
 !#                             gfsc_buildResBlockTVD
-!#     -> assemble the residual vector for AFC stabilisation of TVD type
+!#     -> Assembles the residual vector for AFC stabilisation of TVD type
 !#
-!# 8.) gfsc_buildResidualSymm = gfsc_buildResScalarSymm /
-!#                                    gfsc_buildResBlockSymm
-!#     -> assemble the residual vector for stabilisation by means of
+!# 8.) gfsc_buildResidualGP = gfsc_buildResScalarGP /
+!#                            gfsc_buildResBlockGP
+!#     -> Assembles the residual vector for AFC stabilisation of general-purpose type
+!#
+!# 9.) gfsc_buildResidualSymm = gfsc_buildResScalarSymm /
+!#                              gfsc_buildResBlockSymm
+!#     -> Assembles the residual vector for stabilisation by means of
 !#        symmetric flux limiting for diffusion operators
 !#
-!# 9.) gfsc_buildConvectionJacobian = gfsc_buildConvJacobianScalar /
-!#                                    gfsc_buildConvJacobianBlock
-!#     -> assemble the Jacobian matrix for the convective part of
+!# 10.) gfsc_buildConvectionJacobian = gfsc_buildConvJacobianScalar /
+!#                                     gfsc_buildConvJacobianBlock
+!#     -> Assembles the Jacobian matrix for the convective part of
 !#        the transport operator for a scalar convection equation
 !#
-!# 10.) gfsc_buildJacobianFCT = gfsc_buildJacLinearScalarFCT /
+!# 11.) gfsc_buildJacobianFCT = gfsc_buildJacLinearScalarFCT /
 !#                              gfsc_buildJacLinearBlockFCT /
 !#                              gfsc_buildJacobianScalarFCT /
 !#                              gfsc_buildJacobianBlockFCT
-!#      -> assemble the Jacobian matrix for the stabilisation part of FCT type;
+!#      -> Aassembles the Jacobian matrix for the stabilisation part of FCT type;
 !#         For the first two routines, the velocity is assumed to be linear which
 !#         simplifies the evaluation of the Jacobian matrix significantly.
 !#         For the second two routines, the velocity can be arbitrary.
 !#
-!# 11.) gfsc_buildJacobianTVD = gfsc_buildJacLinearScalarTVD /
+!# 12.) gfsc_buildJacobianTVD = gfsc_buildJacLinearScalarTVD /
 !#                              gfsc_buildJacLinearBlockTVD /
 !#                              gfsc_buildJacobianScalarTVD /
 !#                              gfsc_buildJacobianBlockTVD
-!#      -> assemble the Jacobian matrix for the stabilisation part of TVD type
-!#         and/or for the general purpose limiter; 
+!#      -> Assembles the Jacobian matrix for the stabilisation part of TVD type;
 !#         For the first two routines, the velocity is assumed to be linear which
 !#         simplifies the evaluation of the Jacobian matrix significantly.
 !#         For the second two routines, the velocity can be arbitrary.
 !#
-!# 12.) gfsc_buildJacobianSymm = gfsc_buildJacobianScalarSymm /
+!# 13.) gfsc_buildJacobianGPD = gfsc_buildJacLinearScalarGP /
+!#                              gfsc_buildJacLinearBlockGP /
+!#                              gfsc_buildJacobianScalarGP /
+!#                              gfsc_buildJacobianBlockGP
+!#      -> Assembles the Jacobian matrix for the stabilisation part of general purpose limiter; 
+!#         For the first two routines, the velocity is assumed to be linear which
+!#         simplifies the evaluation of the Jacobian matrix significantly.
+!#         For the second two routines, the velocity can be arbitrary.
+!#
+!# 14.) gfsc_buildJacobianSymm = gfsc_buildJacobianScalarSymm /
 !#                               gfsc_buildJacobianBlockSymm
-!#      -> assemble the Jacobian matrix for the stabilisation part of symmetric
+!#      -> Assembles the Jacobian matrix for the stabilisation part of symmetric
 !#         flux limiting for diffusion operators
 !#
 !# 
@@ -144,10 +156,12 @@ module groupfemscalar
   public :: gfsc_buildDiffusionOperator
   public :: gfsc_buildResidualFCT
   public :: gfsc_buildResidualTVD
+  public :: gfsc_buildResidualGP
   public :: gfsc_buildResidualSymm
   public :: gfsc_buildConvectionJacobian
   public :: gfsc_buildJacobianFCT
   public :: gfsc_buildJacobianTVD
+  public :: gfsc_buildJacobianGP
   public :: gfsc_buildJacobianSymm
 
   ! *****************************************************************************
@@ -167,6 +181,11 @@ module groupfemscalar
   interface gfsc_buildResidualTVD
     module procedure gfsc_buildResScalarTVD
     module procedure gfsc_buildResBlockTVD
+  end interface
+
+  interface gfsc_buildResidualGP
+    module procedure gfsc_buildResScalarGP
+    module procedure gfsc_buildResBlockGP
   end interface
 
   interface gfsc_buildResidualSymm
@@ -191,6 +210,13 @@ module groupfemscalar
     module procedure gfsc_buildJacLinearBlockTVD
     module procedure gfsc_buildJacobianScalarTVD
     module procedure gfsc_buildJacobianBlockTVD
+  end interface
+
+  interface gfsc_buildJacobianGP
+    module procedure gfsc_buildJacLinearScalarGP
+    module procedure gfsc_buildJacLinearBlockGP
+    module procedure gfsc_buildJacobianScalarGP
+    module procedure gfsc_buildJacobianBlockGP
   end interface
 
   interface gfsc_buildJacobianSymm
@@ -253,7 +279,7 @@ contains
 
       
     case (AFCSTAB_FEMFCT,&
-          AFCSTAB_FEMFCT_EXP,&
+          AFCSTAB_FEMFCT_CLASSICAL,&
           AFCSTAB_FEMGP,&
           AFCSTAB_FEMTVD)
       
@@ -428,14 +454,14 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvOperatorBlock(RcoeffMatrices, rsolution, fcb_calcConvection,&
+  subroutine gfsc_buildConvOperatorBlock(RcoeffMatrices, ru, fcb_calcConvection,&
                                          bZeroRowsum, bStabilise, bclear, rconvMatrix, rafcstab)
     
 !<description>
     ! This subroutine assembles the discrete transport operator which results
     ! from the group finite element formulation of the continuous problem
     !
-    !     $$ \nabla\cdot({\bf v}u)$$
+    !   $$ \nabla\cdot({\bf v}u) $$
     !
     ! Note that this routine serves as a wrapper for block vectors. If there
     ! is only one block, then the corresponding scalar routine is called.
@@ -449,7 +475,7 @@ contains
     ! The solution vector
     ! Note that this vector is only required for nonlinear
     ! problems which require the evaluation of the velocity
-    type(t_vectorBlock), intent(IN) :: rsolution
+    type(t_vectorBlock), intent(IN) :: ru
     
     ! Switch for row-sum property
     ! TRUE  : assume zero row-sum, that is, the diegonal coefficient
@@ -481,7 +507,7 @@ contains
 !</subroutine>
 
     ! Check if block vector contains exactly one block
-    if (rsolution%nblocks .ne. 1) then
+    if (ru%nblocks .ne. 1) then
 
       call output_line('Solution vector must not contain more than one block!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorBlock')
@@ -489,25 +515,26 @@ contains
 
     else
       
-      call gfsc_buildConvOperatorScalar(RcoeffMatrices, rsolution%RvectorBlock(1),&
+      call gfsc_buildConvOperatorScalar(RcoeffMatrices, ru%RvectorBlock(1),&
                                         fcb_calcConvection, bZeroRowsum, bStabilise,&
                                         bclear, rconvMatrix, rafcstab)
 
     end if
+
   end subroutine gfsc_buildConvOperatorBlock
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildConvOperatorScalar(RcoeffMatrices, rsolution, fcb_calcConvection,&
+  subroutine gfsc_buildConvOperatorScalar(RcoeffMatrices, ru, fcb_calcConvection,&
                                           bZeroRowsum, bStabilise, bclear, rconvMatrix, rafcstab)
 
 !<description>
     ! This subroutine assembles the discrete transport operator which results
     ! from the group finite element formulation of the continuous problem
     !
-    !     $$ \nabla\cdot({\bf v}u)$$
+    !     $$ \nabla\cdot({\bf v}u) $$
     !
     ! This routine can be used to apply the following discretisations:
     !
@@ -542,7 +569,7 @@ contains
     ! The solution vector
     ! Note that this vector is only required for nonlinear
     ! problems which require the evaluation of the velocity
-    type(t_vectorScalar), intent(IN) :: rsolution
+    type(t_vectorScalar), intent(IN) :: ru
 
     ! Switch for row-sum property
     ! TRUE  : assume zero row-sum, that is, the diegonal coefficient
@@ -578,27 +605,18 @@ contains
     real(DP), dimension(:), pointer :: p_Cx, p_Cy, p_Cz, p_ConvOp, p_u
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal,p_IsuperdiagonalEdgesIdx
-    integer :: h_Ksep
-    integer :: idim,ndim
+    integer :: h_Ksep,ndim
     
-    ! Check if all matrices/vectors are compatible
-    call lsyssc_isMatrixCompatible(rsolution, rconvMatrix, .false.)
-
-    ndim = size(RcoeffMatrices,1)
-    do idim = 1, ndim
-      call lsyssc_isMatrixCompatible(RcoeffMatrices(idim), rconvMatrix)
-    end do
-
+    
     ! Clear matrix?
     if (bclear) call lsyssc_clearMatrix(rconvMatrix)
 
     ! Set pointer
-    call lsyssc_getbase_Kld(rconvMatrix, p_Kld)
-    call lsyssc_getbase_Kcol(rconvMatrix, p_Kcol)
     call lsyssc_getbase_double(rconvMatrix, p_ConvOp)
-    call lsyssc_getbase_double(rsolution, p_u)
+    call lsyssc_getbase_double(ru, p_u)
 
     ! How many dimensions do we have?
+    ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
       call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
@@ -625,7 +643,11 @@ contains
       !-------------------------------------------------------------------------
       ! Matrix format 7
       !-------------------------------------------------------------------------
-      
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(rconvMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rconvMatrix, p_Kcol)
+
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
       call storage_copy(rconvMatrix%h_Kld, h_Ksep)
@@ -641,11 +663,6 @@ contains
           call sys_halt()
         end if
         
-        ! Check if matrix/vector and stabilisation
-        ! structure are compatible to each other
-        call gfsc_isMatrixCompatible(rafcstab, rconvMatrix)
-        call gfsc_isVectorCompatible(rafcstab, rsolution)
-
         ! Set additional pointers
         call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
         call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -836,7 +853,9 @@ contains
       ! Matrix format 9
       !-------------------------------------------------------------------------
 
-      ! Set pointer to diagonal
+      ! Set pointers
+      call lsyssc_getbase_Kld(rconvMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rconvMatrix, p_Kcol)
       call lsyssc_getbase_Kdiagonal(rconvMatrix, p_Kdiagonal)
 
       ! Create diagonal separator
@@ -854,11 +873,6 @@ contains
           call sys_halt()
         end if
         
-        ! Check if matrix/vector and stabilisation
-        ! structure are compatible to each other
-        call gfsc_isMatrixCompatible(rafcstab, rconvMatrix)
-        call gfsc_isVectorCompatible(rafcstab, rsolution)
-
         ! Set additional pointers
         call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
         call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -1735,7 +1749,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -1799,7 +1813,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -1856,7 +1870,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -1921,7 +1935,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -1979,7 +1993,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2045,7 +2059,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2101,7 +2115,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2165,7 +2179,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2222,7 +2236,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2287,7 +2301,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2345,7 +2359,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2411,7 +2425,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2479,7 +2493,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2566,7 +2580,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2645,7 +2659,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2733,7 +2747,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2813,7 +2827,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2902,7 +2916,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -2980,7 +2994,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3067,7 +3081,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3146,7 +3160,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3234,7 +3248,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3314,7 +3328,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3403,7 +3417,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3481,7 +3495,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3573,7 +3587,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3657,7 +3671,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3750,7 +3764,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3835,7 +3849,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -3929,7 +3943,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -4012,7 +4026,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -4104,7 +4118,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -4188,7 +4202,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -4281,7 +4295,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -4366,7 +4380,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -4460,7 +4474,7 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0._DP, -k_ji)
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
           k_ij = k_ij+d_ij
@@ -4548,9 +4562,6 @@ contains
     integer :: h_Ksep
 
     
-    ! Check if matrices are compatible
-    call lsyssc_isMatrixCompatible(rcoeffMatrix, rdiffMatrix)
-    
     ! Should matrix be cleared?
     if (bclear) call lsyssc_clearMatrix(rdiffMatrix)
 
@@ -4584,11 +4595,7 @@ contains
                             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffusionOperator')
           call sys_halt()
         end if
-
-        ! Check if matrix and stabilisation
-        ! structure are compatible to each other
-        call gfsc_isMatrixCompatible(rafcstab, rdiffMatrix)
-
+        
         ! Set additional pointers
         call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
         call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -4649,11 +4656,7 @@ contains
                             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffusionOperator')
           call sys_halt()
         end if
-
-        ! Check if matrix and stabilisation
-        ! structure are compatible to each other
-        call gfsc_isMatrixCompatible(rafcstab, rdiffMatrix)
-
+        
         ! Set additional pointers
         call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
         call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -4734,7 +4737,7 @@ contains
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Artificial diffusion coefficient
-          d_ij = max(0._DP, -S(ij)) 
+          d_ij = max(0.0_DP, -S(ij)) 
           
           ! Assemble the global operator
           L(ii) = L(ii)-d_ij; L(ij) = L(ij)+d_ij
@@ -4778,7 +4781,7 @@ contains
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Artificial diffusion coefficient
-          d_ij = max(0._DP, -S(ij)) 
+          d_ij = max(0.0_DP, -S(ij)) 
           
           ! Assemble the global operator
           L(ii) = L(ii)-d_ij; L(ij) = L(ij)+d_ij
@@ -4834,8 +4837,8 @@ contains
           j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
           
           ! Artificial diffusion coefficient
-          d_ij = max(0._DP, -S(ij))
-          s_ij = max(0._DP,  S(ij))
+          d_ij = max(0.0_DP, -S(ij))
+          s_ij = max(0.0_DP,  S(ij))
           
           ! Assemble the global operator
           L(ii) = L(ii)-d_ij; L(ij) = L(ij)+d_ij
@@ -4901,8 +4904,8 @@ contains
           j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
           
           ! Artificial diffusion coefficient
-          d_ij = max(0._DP, -S(ij))
-          s_ij = max(0._DP,  S(ij))
+          d_ij = max(0.0_DP, -S(ij))
+          s_ij = max(0.0_DP,  S(ij))
           
           ! Assemble the global operator
           L(ii) = L(ii)-d_ij; L(ij) = L(ij)+d_ij
@@ -4927,8 +4930,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildResBlockFCT(rmatrixMC, rmatrixML, ru,&
-                                   theta, tstep, binit, rres, rafcstab)
+  subroutine gfsc_buildResBlockFCT(rlumpedMassMatrix, ru, theta, tstep, binit,&
+                                   rres, rafcstab, rconsistentMassMatrix)
 
 !<description>
     ! This subroutine assembles the residual vector and applies
@@ -4939,25 +4942,25 @@ contains
 !</description>
 
 !<input>
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)   :: rmatrixMC
-
     ! lumped mass matrix
-    type(t_matrixScalar), intent(IN)   :: rmatrixML
+    type(t_matrixScalar), intent(IN) :: rlumpedMassMatrix
 
     ! solution vector
-    type(t_vectorBlock), intent(IN)    :: ru
+    type(t_vectorBlock), intent(IN) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN)               :: theta
+    real(DP), intent(IN) :: theta
 
     ! time step size
-    real(DP), intent(IN)               :: tstep
+    real(DP), intent(IN) :: tstep
     
     ! Switch for residual
     ! TRUE  : build the initial residual
     ! FALSE : build an intermediate residual
-    logical, intent(IN)                :: binit
+    logical, intent(IN) :: binit
+
+    ! OPTIONAL: consistent mass matrix
+    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
@@ -4965,7 +4968,7 @@ contains
     type(t_vectorBlock), intent(INOUT) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)     :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -4973,23 +4976,25 @@ contains
     if (ru%nblocks .ne. 1 .or. rres%nblocks .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResBlockFCT')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResBlockFCT')
       call sys_halt()
 
     else
 
-      call gfsc_buildResScalarFCT(rmatrixMC, rmatrixML, ru%RvectorBlock(1),&
-          theta, tstep, binit, rres%RvectorBlock(1), rafcstab)
+      call gfsc_buildResScalarFCT(rlumpedMassMatrix, ru%RvectorBlock(1),&
+                                  theta, tstep, binit, rres%RvectorBlock(1),&
+                                  rafcstab, rconsistentMassMatrix)
 
     end if
+
   end subroutine gfsc_buildResBlockFCT
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResScalarFCT(rmatrixMC, rmatrixML, ru,&
-                                    theta, tstep, binit, rres, rafcstab)
+  subroutine gfsc_buildResScalarFCT(rlumpedMassMatrix, ru, theta, tstep, binit,&
+                                    rres, rafcstab, rconsistentMassMatrix)
 
 !<description>
 
@@ -5046,25 +5051,25 @@ contains
 !</description>
 
 !<input>
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)    :: rmatrixMC
-
     ! lumped mass matrix
-    type(t_matrixScalar), intent(IN)    :: rmatrixML
+    type(t_matrixScalar), intent(IN) :: rlumpedMassMatrix
 
     ! solution vector
-    type(t_vectorScalar), intent(IN)    :: ru
+    type(t_vectorScalar), intent(IN) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN)                :: theta
+    real(DP), intent(IN) :: theta
 
     ! time step size
-    real(DP), intent(IN)                :: tstep
+    real(DP), intent(IN) :: tstep
     
     ! Switch for residual
     ! TRUE  : build the initial residual
     ! FALSE : build an intermediate residual
-    logical, intent(IN)                 :: binit
+    logical, intent(IN) :: binit
+
+    ! OPTIONAL: consistent mass matrix
+    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
@@ -5072,45 +5077,42 @@ contains
     type(t_vectorScalar), intent(INOUT) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)      :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    type(t_vectorScalar), pointer                 :: ruLow
-    integer(PREC_VECIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    real(DP), dimension(:,:), pointer             :: p_DcoefficientsAtEdge
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_flux,p_flux0
-    real(DP), dimension(:), pointer :: p_u,p_ulow,p_res
+    real(DP), dimension(:), pointer :: p_fluxImpl,p_fluxExpl
+    real(DP), dimension(:), pointer :: p_u,p_res,p_uPredictor
     real(DP), dimension(:), pointer :: p_MC,p_ML
-
-    ! Check if vectors are compatible
-    call lsyssc_isVectorCompatible(ru, rres)
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    
     
     ! Check if stabilisation is prepared
     if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0 .or.&
         iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
       call sys_halt()
     end if
  
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(1),  p_flux)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2),  p_flux0)
-    call lsyssc_getbase_double(rmatrixMC, p_MC)
-    call lsyssc_getbase_double(rmatrixML, p_ML)
-    call lsyssc_getbase_double(ru,   p_u)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_fluxImpl)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_fluxExpl)
+    call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
     call lsyssc_getbase_double(rres, p_res)
+    call lsyssc_getbase_double(ru, p_u)
+
 
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
@@ -5125,116 +5127,176 @@ contains
 
           ! Compute the low-order predictor
           !
-          ! $$\tilde u=u^n+(1-\theta)\Delta tM_L^{-1}Lu^n$$
+          !   $ \tilde u=u^n+(1-\theta)\Delta t M_L^{-1}Lu^n $
           ! 
-          ! whereby the residual of the 0-th iteration is assumed to
-          ! be $r^{(0)}=\Delta tLu^n$.
-          ruLow => rafcstab%RnodalVectors(5)
-          call lsyssc_invertedDiagMatVec(rmatrixML, rres, 1._DP, ruLow)
-          call lsyssc_vectorLinearComb(ru, ruLow, 1._DP, 1._DP-theta)
-          call lsyssc_getbase_double(ruLow, p_ulow)
+          ! whereby the residual of the 0-th iteration is assumed to be
+          !
+          !  $ r^{(0)}=\Delta t Lu^n $
+
+          call lsyssc_invertedDiagMatVec(rlumpedMassMatrix, rres, 1.0_DP-theta,&
+                                         rafcstab%RnodalVectors(5))
+          call lsyssc_vectorLinearComb(ru, rafcstab%RnodalVectors(5), 1.0_DP, 1.0_DP)
+          call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_uPredictor)
           
           ! Initialise the flux limiter
-          call doInit_implFCT(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_MC, p_ML, p_u, p_ulow, theta, tstep, rafcstab%NEDGE,&
-              (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS),&
-              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_flux0)
+          if (present(rconsistentMassMatrix)) then
+            call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+            call doInit_implFCTconsMass(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
+                p_u, p_uPredictor, theta, tstep, rafcstab%NEDGE,&
+                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_fluxExpl)
+          else
+            call doInit_implFCTnoMass(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
+                p_u, p_uPredictor, theta, tstep, rafcstab%NEDGE,&
+                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_fluxExpl)
+          end if
           
-        else
+        else   ! theta < 1
           
           ! The low-order predictor is simply given by
           !
-          ! $$\tilde u=u^n$$
-          !
-          ! Initialise the flux limiter with u in leu of ulow
-          call doInit_implFCT(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_MC, p_ML, p_u, p_u, theta, tstep, rafcstab%NEDGE,&
-              (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS),&
-              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_flux0)
+          !   $ \tilde u=u^n $
           
-        end if
+          ! Initialise the flux limiter with u in lieu of uLow
+          if (present(rconsistentMassMatrix)) then
+            call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+            call doInit_implFCTconsMass(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
+                p_u, p_u, theta, tstep, rafcstab%NEDGE,&
+                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_fluxExpl)
+          else
+            call doInit_implFCTnoMass(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
+                p_u, p_u, theta, tstep, rafcstab%NEDGE,&
+                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_fluxExpl)
+          end if
+          
+        end if   ! theta < 1
         
         ! Set specifier
         rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
         rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)        
-      end if
+
+      end if   ! binit
       
+
       ! Check if correction factors and fluxes are available
       if (iand(rafcstab%iSpec, AFCSTAB_LIMITER) .eq. 0 .or.&
           iand(rafcstab%iSpec, AFCSTAB_FLUXES)  .eq. 0) then
         call output_line('Stabilisation does not provide precomputed fluxes &
-            &and/or nodal correction factors',OU_CLASS_ERROR,OU_MODE_STD,&
-            'gfsc_buildResScalarFCT')
+                         &and/or nodal correction factors',&
+                         OU_CLASS_ERROR,OU_MODE_STD, 'gfsc_buildResScalarFCT')
         call sys_halt()
       end if
       
       ! Apply the limited antidiffusion
-      call doLimit_implFCT(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-          p_MC, p_u, p_flux, p_flux0, theta, tstep, rafcstab%NEDGE,&
-          (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_res)
+      if (present(rconsistentMassMatrix)) then
+        call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+        call doLimit_implFCTconsMass(&
+            p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_u,&
+            p_fluxImpl, p_fluxExpl, theta, tstep, rafcstab%NEDGE, p_res)
+      else
+        call doLimit_implFCTnoMass(&
+            p_IverticesAtEdge, p_DcoefficientsAtEdge, p_u,&
+            p_fluxImpl, p_fluxExpl, theta, tstep, rafcstab%NEDGE, p_res)
+      end if
 
 
-    case (AFCSTAB_FEMFCT_EXP)
-
+    case (AFCSTAB_FEMFCT_CLASSICAL)
+      
       ! Should we build up the initial residual?
       if (binit) then
+        
         ! Initialise the flux limiter
-        call doInit_explFCT(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-            p_MC, p_u, theta, tstep, rafcstab%NEDGE,&
-            (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_flux0)
+        if (present(rconsistentMassMatrix)) then
+          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+          call doInit_explFCTconsMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC,&
+              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
+        else
+          call doInit_explFCTnoMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge,&
+              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
+        end if
 
         ! Set specifier
         rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
         rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES) 
-      end if
+
+      end if   ! binit
 
       ! Check if correction factors and fluxes are available
       if (iand(rafcstab%iSpec, AFCSTAB_LIMITER) .eq. 0 .or.&
           iand(rafcstab%iSpec, AFCSTAB_FLUXES)  .eq. 0) then
         call output_line('Stabilisation does not provide precomputed fluxes &
-            &and/or nodal correction factors',OU_CLASS_ERROR,OU_MODE_STD,&
-            'gfsc_buildResScalarFCT')
+                         &and/or nodal correction factors',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
         call sys_halt()
       end if
 
       ! Do we have a fully implicit time discretisation?
       if (theta < 1.0_DP) then
-
+        
         ! Compute the low-order predictor
         !
-        ! $$\tilde u=u^n+(1-\theta)\Delta tM_L^{-1}Lu^n$$
+        !   $ \tilde u=u^n+(1-\theta)\Delta t M_L^{-1}Lu^n $
         ! 
-        ! whereby the residual of the 0-th iteration is assumed to
-        ! be $r^{(0)}=\Delta tLu^n$.
-        ruLow => rafcstab%RnodalVectors(5)
-        call lsyssc_invertedDiagMatVec(rmatrixML, rres, 1._DP, ruLow)
-        call lsyssc_vectorLinearComb(ru, ruLow, 1._DP, 1._DP-theta)
-        call lsyssc_getbase_double(ruLow, p_ulow)
+        ! whereby the residual of the 0-th iteration is assumed to be
+        !
+        !   $ r^{(0)}=\Delta tLu^n $
+        
+        call lsyssc_invertedDiagMatVec(rlumpedMassMatrix, rres, 1.0_DP-theta,&
+                                       rafcstab%RnodalVectors(5))
+        call lsyssc_vectorLinearComb(ru, rafcstab%RnodalVectors(5), 1.0_DP, 1.0_DP)
+        call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_uPredictor)
         
         ! Apply the flux limiter
-        call doLimit_explFCT(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-            p_MC, p_ML, p_u, p_ulow, p_flux0, theta, tstep, rafcstab%NEDGE,&
-            (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS),&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
+        if (present(rconsistentMassMatrix)) then
+          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+          call doLimit_explFCTconsMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
+              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+        else
+          call doLimit_explFCTnoMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
+              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+        end if
         
-      else
+      else   ! theta < 1
         
         ! The low-order predictor is simply given by
         !
-        ! $$\tilde u=u^n$$
-        !
+        !   $ \tilde u=u^n $
+        
         ! Apply the flux limiter with u in leu of ulow
-        call doLimit_explFCT(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-            p_MC, p_ML, p_u, p_u, p_flux0, theta, tstep, rafcstab%NEDGE,&
-            (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS),&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
+        if (present(rconsistentMassMatrix)) then
+          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+          call doLimit_explFCTconsMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
+              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+        else
+          call doLimit_explFCTnoMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
+              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+        end if
 
-      end if
+      end if   ! theta < 1
 
+
+    case (AFCSTAB_FEMFCT_LINEARIZED)
+      call output_line('The linearized FEM-FCT algorithm is not implemented yet!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
+      call sys_halt()
+      
 
     case DEFAULT
       call output_line('Invalid type of AFC stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
       call sys_halt()
     end select
 
@@ -5243,146 +5305,333 @@ contains
     ! Here, the working routine follow
 
     !**************************************************************
-    ! Initialisation of the semi-implicit FEM-FCT procedure
+    ! Initialisation of the semi-implicit FEM-FCT procedure,
+    ! whereby no mass antidiffusion is built into the residual
     
-    subroutine doInit_implFCT(IverticesAtEdge, DcoefficientsAtEdge,&
-                              MC, ML, u, ulow, theta, tstep, NEDGE, bmass,&
-                              pp, pm, qp, qm, rp, rm, flux, flux0)
+    subroutine doInit_implFCTnoMass(IverticesAtEdge, DcoefficientsAtEdge,&
+                                    ML, u, ulow, theta, tstep, NEDGE,&
+                                    pp, pm, qp, qm, rp, rm, fluxImpl, fluxExpl)
       
-      integer(PREC_VECIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)               :: MC,ML
-      real(DP), dimension(:), intent(IN)               :: u,ulow
-      real(DP), intent(IN)                             :: theta,tstep
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      logical, intent(IN)                              :: bmass
-      real(DP), dimension(:), intent(INOUT)            :: pp,pm
-      real(DP), dimension(:), intent(INOUT)            :: qp,qm
-      real(DP), dimension(:), intent(INOUT)            :: rp,rm
-      real(DP), dimension(:), intent(INOUT)            :: flux,flux0
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: ML
+      real(DP), dimension(:), intent(IN) :: u,ulow
+      real(DP), intent(IN) :: theta,tstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
+
+      real(DP), dimension(:), intent(INOUT):: pp,pm,qp,qm,rp,rm,fluxImpl,fluxExpl
+
+      ! local variables
+      real(DP) :: d_ij,f_ij,diff
+      integer :: iedge,ij,i,j
       
-      integer(PREC_MATIDX) :: iedge,ij
-      integer(PREC_VECIDX) :: i,j
-      real(DP) :: d_ij,f_ij,m_ij,diff
 
       ! Clear nodal vectors
       call lalg_clearVectorDble(pp)
       call lalg_clearVectorDble(pm)
       call lalg_clearVectorDble(qp)
       call lalg_clearVectorDble(qm)
-
-      ! Should we apply the consistent mass matrix?
-      if (bmass) then
-
-        ! Loop over edges
-        do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)
-          
-          ! Determine fluxes
-          diff = u(i)-u(j);   f_ij = tstep*d_ij*diff
-          flux(iedge) = f_ij; flux0(iedge) = -m_ij*diff
-          
-          ! Sum of positive/negative fluxes
-          pp(i) = pp(i)+max(0._DP,f_ij); pp(j) = pp(j)+max(0._DP,-f_ij)
-          pm(i) = pm(i)+min(0._DP,f_ij); pm(j) = pm(j)+min(0._DP,-f_ij)
-          
-          ! Upper/lower bounds
-          diff = ulow(j)-ulow(i)
-          qp(i) = max(qp(i),diff); qp(j) = max(qp(j),-diff)
-          qm(i) = min(qm(i),diff); qm(j) = min(qm(j),-diff)
-        end do
-
-        ! Adopt the explicit part (if required)
-        if (theta < 1.0_DP) then
-          call lalg_vectorLinearCombDble(flux, flux0, 1.0_DP-theta, 1.0_DP)
-        end if
+      
+      ! Loop over edges
+      do iedge = 1, NEDGE
         
+        ! Determine indices
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        ij = IverticesAtEdge(3,iedge)
+        
+        ! Determine coefficients
+        d_ij = DcoefficientsAtEdge(1,iedge)
+        
+        ! Determine fluxes
+        diff = u(i)-u(j); f_ij = tstep*d_ij*diff
+        fluxImpl(iedge) = f_ij
+          
+        ! Sum of positive/negative fluxes
+        pp(i) = pp(i)+max(0.0_DP,f_ij); pp(j) = pp(j)+max(0.0_DP,-f_ij)
+        pm(i) = pm(i)+min(0.0_DP,f_ij); pm(j) = pm(j)+min(0.0_DP,-f_ij)
+        
+        ! Upper/lower bounds
+        diff = ulow(j)-ulow(i)
+        qp(i) = max(qp(i),diff); qp(j) = max(qp(j),-diff)
+        qm(i) = min(qm(i),diff); qm(j) = min(qm(j),-diff)
+      end do
+      
+      ! Adopt the explicit part (if required)
+      if (theta < 1.0_DP) then
+        call lalg_copyVectorDble(fluxImpl, fluxExpl)
+        call lalg_scaleVectorDble(fluxExpl, 1.0_DP-theta)
       else
-
-        ! Loop over edges
-        do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge)
-          
-          ! Determine fluxes
-          diff = u(i)-u(j);   f_ij = tstep*d_ij*diff
-          flux(iedge) = f_ij
-          
-          ! Sum of positive/negative fluxes
-          pp(i) = pp(i)+max(0._DP,f_ij); pp(j) = pp(j)+max(0._DP,-f_ij)
-          pm(i) = pm(i)+min(0._DP,f_ij); pm(j) = pm(j)+min(0._DP,-f_ij)
-          
-          ! Upper/lower bounds
-          diff = ulow(j)-ulow(i)
-          qp(i) = max(qp(i),diff); qp(j) = max(qp(j),-diff)
-          qm(i) = min(qm(i),diff); qm(j) = min(qm(j),-diff)
-        end do
-
-        ! Adopt the explicit part (if required)
-        if (theta < 1.0_DP) then
-          call lalg_copyVectorDble(flux, flux0)
-          call lalg_scaleVectorDble(flux0, 1.0_DP-theta)
-        else
-          call lalg_clearVectorDble(flux0)
-        end if
-
+        call lalg_clearVectorDble(fluxExpl)
       end if
-
+      
       ! Apply the nodal limiter
-      rp = ML*qp; rp = afcstab_limit( pp, rp, 0._DP)
-      rm =-ML*qm; rm = afcstab_limit(-pm, rm, 0._DP)
+      rp =  ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP)
+      rm = -ML*qm; rm = afcstab_limit(-pm, rm, 0.0_DP)
       
       ! Limiting procedure
       do iedge = 1, NEDGE
-
+        
         ! Determine indices
         i = IverticesAtEdge(1,iedge)
         j = IverticesAtEdge(2,iedge)
         
-        if (flux(iedge) > 0.0_DP) then
-          flux(iedge) = min(rp(i), rm(j))*flux(iedge)
+        if (fluxImpl(iedge) > 0.0_DP) then
+          fluxImpl(iedge) = min(rp(i), rm(j))*fluxImpl(iedge)
         else
-          flux(iedge) = min(rm(i), rp(j))*flux(iedge)
+          fluxImpl(iedge) = min(rm(i), rp(j))*fluxImpl(iedge)
         end if
       end do
-    end subroutine doInit_implFCT
+
+    end subroutine doInit_implFCTnoMass
+
+    !**************************************************************
+    ! Initialisation of the semi-implicit FEM-FCT procedure,
+    ! whereby consistent mass antidiffusion is built into the residual
+    
+    subroutine doInit_implFCTconsMass(IverticesAtEdge, DcoefficientsAtEdge,&
+                                         MC, ML, u, ulow, theta, tstep, NEDGE,&
+                                         pp, pm, qp, qm, rp, rm, fluxImpl, fluxExpl)
+      
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: MC,ML
+      real(DP), dimension(:), intent(IN) :: u,ulow
+      real(DP), intent(IN) :: theta,tstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
+
+      real(DP), dimension(:), intent(INOUT):: pp,pm,qp,qm,rp,rm,fluxImpl,fluxExpl
+
+      ! local variables
+      real(DP) :: d_ij,f_ij,m_ij,diff
+      integer :: iedge,ij,i,j
+      
+
+      ! Clear nodal vectors
+      call lalg_clearVectorDble(pp)
+      call lalg_clearVectorDble(pm)
+      call lalg_clearVectorDble(qp)
+      call lalg_clearVectorDble(qm)
+      
+      ! Loop over edges
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        ij = IverticesAtEdge(3,iedge)
+        
+        ! Determine coefficients
+        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)
+        
+        ! Determine fluxes
+        diff = u(i)-u(j); f_ij = tstep*d_ij*diff
+        fluxImpl(iedge) = f_ij; fluxExpl(iedge) = -m_ij*diff
+        
+        ! Sum of positive/negative fluxes
+        pp(i) = pp(i)+max(0.0_DP,f_ij); pp(j) = pp(j)+max(0.0_DP,-f_ij)
+        pm(i) = pm(i)+min(0.0_DP,f_ij); pm(j) = pm(j)+min(0.0_DP,-f_ij)
+        
+        ! Upper/lower bounds
+        diff = ulow(j)-ulow(i)
+        qp(i) = max(qp(i),diff); qp(j) = max(qp(j),-diff)
+        qm(i) = min(qm(i),diff); qm(j) = min(qm(j),-diff)
+      end do
+      
+      ! Adopt the explicit part (if required)
+      if (theta < 1.0_DP) then
+        call lalg_vectorLinearCombDble(fluxImpl, fluxExpl, 1.0_DP-theta, 1.0_DP)
+      end if
+      
+      ! Apply the nodal limiter
+      rp =  ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP)
+      rm = -ML*qm; rm = afcstab_limit(-pm, rm, 0.0_DP)
+      
+      ! Limiting procedure
+      do iedge = 1, NEDGE
+
+        ! Determine indices
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        
+        if (fluxImpl(iedge) > 0.0_DP) then
+          fluxImpl(iedge) = min(rp(i), rm(j))*fluxImpl(iedge)
+        else
+          fluxImpl(iedge) = min(rm(i), rp(j))*fluxImpl(iedge)
+        end if
+      end do
+
+    end subroutine doInit_implFCTconsMass
     
 
     !**************************************************************
-    ! The semi-implicit FEM-FCT limiting procedure
+    ! The semi-implicit FEM-FCT limiting procedure,
+    ! whereby no mass antidiffusion is built into the residual
     
-    subroutine doLimit_implFCT(IverticesAtEdge, DcoefficientsAtEdge,&
-                               MC, u, flux, flux0, theta, tstep, NEDGE, bmass, res)
+    subroutine doLimit_implFCTnoMass(IverticesAtEdge, DcoefficientsAtEdge, u,&
+                                     fluxImpl, fluxExpl, theta, tstep, NEDGE, res)
 
-      integer(PREC_VECIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)               :: MC
-      real(DP), dimension(:), intent(IN)               :: u
-      real(DP), dimension(:), intent(IN)               :: flux,flux0
-      real(DP), intent(IN)                             :: theta,tstep
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      logical, intent(IN)                              :: bmass
-      real(DP), dimension(:), intent(INOUT)            :: res
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: u,fluxImpl,fluxExpl
+      real(DP), intent(IN) :: theta,tstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
       
-      integer(PREC_MATIDX) :: iedge,ij
-      integer(PREC_VECIDX) :: i,j
-      real(DP) :: d_ij,f_ij,m_ij
+      real(DP), dimension(:), intent(INOUT) :: res
+      
+      ! local variables
+      real(DP) :: d_ij,f_ij
+      integer :: iedge,ij,i,j
+      
+      
+      ! Loop over edges
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        ij = IverticesAtEdge(3,iedge)
+        
+        ! Determine coefficients
+        d_ij = DcoefficientsAtEdge(1,iedge)
+        
+        ! Determine fluxes
+        f_ij = (theta*tstep*d_ij)*(u(i)-u(j))+fluxExpl(iedge)
+        
+        if (f_ij > 0.0_DP) then
+          f_ij = min(f_ij,max(fluxImpl(iedge),0.0_DP))
+        else
+          f_ij = max(f_ij,min(fluxImpl(iedge),0.0_DP))
+        end if
+        
+        ! Update the defect vector
+        res(i) = res(i)+f_ij
+        res(j) = res(j)-f_ij
+      end do
+      
+    end subroutine doLimit_implFCTnoMass
 
-      ! Should we apply the consistent mass matrix
-      if (bmass) then
+
+    !**************************************************************
+    ! The semi-implicit FEM-FCT limiting procedure,
+    ! whereby consistent mass antidiffusion is built into the residual
+    
+    subroutine doLimit_implFCTconsMass(IverticesAtEdge, DcoefficientsAtEdge, MC, u,&
+                                          fluxImpl, fluxExpl, theta, tstep, NEDGE, res)
+
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: MC,u,fluxImpl,fluxExpl
+      real(DP), intent(IN) :: theta,tstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: res
+      
+      ! local variables
+      real(DP) :: d_ij,f_ij,m_ij
+      integer :: iedge,ij,i,j
+      
+      
+      ! Loop over edges
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        ij = IverticesAtEdge(3,iedge)
+        
+        ! Determine coefficients
+        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)
+        
+        ! Determine fluxes
+        f_ij = (m_ij+theta*tstep*d_ij)*(u(i)-u(j))+fluxExpl(iedge)
+        
+        if (f_ij > 0.0_DP) then
+          f_ij = min(f_ij,max(fluxImpl(iedge),0.0_DP))
+        else
+          f_ij = max(f_ij,min(fluxImpl(iedge),0.0_DP))
+        end if
+        
+        ! Update the defect vector
+        res(i) = res(i)+f_ij
+        res(j) = res(j)-f_ij
+      end do
+      
+    end subroutine doLimit_implFCTconsMass
+
+    
+    !**************************************************************
+    ! Initialisation of the semi-explicit FEM-FCT procedure,
+    ! whereby no mass antidiffusion is built into the residual
+    
+    subroutine doInit_explFCTnoMass(IverticesAtEdge, DcoefficientsAtEdge,&
+                                    u, theta, tstep, NEDGE, fluxExpl)
+      
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: u
+      real(DP), intent(IN) :: theta,tstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: fluxExpl
+      
+      ! local variables
+      real(DP) :: d_ij,diff
+      integer :: iedge,ij,i,j
+      
+      
+      ! Should we use semi-implicit scheme?
+      if (theta < 1.0_DP) then
+        
+        ! Loop over edges
+        do iedge = 1, NEDGE
+          
+          ! Determine indices
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
+          
+          ! Determine coefficients
+          d_ij = DcoefficientsAtEdge(1,iedge)
+          
+          ! Determine solution difference
+          diff = u(i)-u(j)
+          
+          ! Determine explicit antidiffusive flux
+          fluxExpl(iedge) = (1-theta)*tstep*d_ij*diff
+        end do
+        
+      else
+        
+        ! Initialise explicit fluxes by zero
+        call lalg_clearVectorDble(fluxExpl)
+        
+      end if
+      
+    end subroutine doInit_explFCTnoMass
+
+
+    !**************************************************************
+    ! Initialisation of the semi-explicit FEM-FCT procedure,
+    ! whereby no mass antidiffusion is built into the residual
+    
+    subroutine doInit_explFCTconsMass(IverticesAtEdge, DcoefficientsAtEdge,&
+                                         MC, u, theta, tstep, NEDGE, fluxExpl)
+      
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: MC,u
+      real(DP), intent(IN) :: theta,tstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: fluxExpl
+      
+      ! local variables
+      real(DP) :: d_ij,m_ij,diff
+      integer :: iedge,ij,i,j
+      
+      
+      ! Should we use semi-implicit scheme?
+      if (theta < 1.0_DP) then
         
         ! Loop over edges
         do iedge = 1, NEDGE
@@ -5395,18 +5644,11 @@ contains
           ! Determine coefficients
           d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)
           
-          ! Determine fluxes
-          f_ij = (m_ij+theta*tstep*d_ij)*(u(i)-u(j))+flux0(iedge)
+          ! Determine solution difference
+          diff = u(i)-u(j)
           
-          if (f_ij > 0.0_DP) then
-            f_ij = min(f_ij,max(flux(iedge),0._DP))
-          else
-            f_ij = max(f_ij,min(flux(iedge),0._DP))
-          end if
-          
-          ! Update the defect vector
-          res(i) = res(i)+f_ij
-          res(j) = res(j)-f_ij
+          ! Determine explicit antidiffusive flux
+          fluxExpl(iedge) = -m_ij*diff+(1-theta)*tstep*d_ij*diff
         end do
         
       else
@@ -5420,148 +5662,38 @@ contains
           ij = IverticesAtEdge(3,iedge)
           
           ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge)
+          m_ij = MC(ij)
           
-          ! Determine fluxes
-          f_ij = (theta*tstep*d_ij)*(u(i)-u(j))+flux0(iedge)
+          ! Determine solution difference
+          diff = u(i)-u(j)
           
-          if (f_ij > 0.0_DP) then
-            f_ij = min(f_ij,max(flux(iedge),0._DP))
-          else
-            f_ij = max(f_ij,min(flux(iedge),0._DP))
-          end if
-          
-          ! Update the defect vector
-          res(i) = res(i)+f_ij
-          res(j) = res(j)-f_ij
+          ! Determine explicit antidiffusive flux
+          fluxExpl(iedge) = -m_ij*diff
         end do
         
       end if
-    end subroutine doLimit_implFCT
-
+      
+    end subroutine doInit_explFCTconsMass
 
     !**************************************************************
-    ! Initialisation of the semi-explicit FEM-FCT procedure
+    ! The semi-explicit FEM-FCT limiting procedure,
+    ! whereby no mass antidiffusion is built into the residual
     
-    subroutine doInit_explFCT(IverticesAtEdge, DcoefficientsAtEdge,&
-                              MC, u, theta, tstep, NEDGE, bmass, flux0)
-      
-      integer(PREC_VECIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)               :: MC
-      real(DP), dimension(:), intent(IN)               :: u
-      real(DP), intent(IN)                             :: theta,tstep
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      logical, intent(IN)                              :: bmass
-      real(DP), dimension(:), intent(INOUT)            :: flux0
-      
-      integer(PREC_MATIDX) :: iedge,ij
-      integer(PREC_VECIDX) :: i,j
-      real(DP) :: d_ij,m_ij,diff
+    subroutine doLimit_explFCTnoMass(IverticesAtEdge, DcoefficientsAtEdge,&
+                                     ML, u, ulow, fluxExpl, theta, tstep, NEDGE,&
+                                     pp, pm, qp, qm, rp, rm, fluxImpl, res)
 
-      ! Should we apply the consistent mass matrix?
-      if (bmass) then
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: ML,u,ulow,fluxExpl
+      real(DP), intent(IN) :: theta,tstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
 
-        ! Should we use semi-implicit scheme?
-        if (theta < 1._DP) then
-          
-          ! Loop over edges
-          do iedge = 1, NEDGE
-            
-            ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
-            
-            ! Determine coefficients
-            d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)
-            
-            ! Determine solution difference
-            diff = u(i)-u(j)
-            
-            ! Determine explicit antidiffusive flux
-            flux0(iedge) = -m_ij*diff+(1-theta)*tstep*d_ij*diff
-          end do
+      real(DP), dimension(:), intent(INOUT) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
 
-        else
-          
-          ! Loop over edges
-          do iedge = 1, NEDGE
-            
-            ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
-            
-            ! Determine coefficients
-            m_ij = MC(ij)
-            
-            ! Determine solution difference
-            diff = u(i)-u(j)
-            
-            ! Determine explicit antidiffusive flux
-            flux0(iedge) = -m_ij*diff
-          end do
-          
-        end if
-
-      else
-
-        ! Should we use semi-implicit scheme?
-        if (theta < 1._DP) then
-          
-          ! Loop over edges
-          do iedge = 1, NEDGE
-            
-            ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            
-            ! Determine coefficients
-            d_ij = DcoefficientsAtEdge(1,iedge)
-            
-            ! Determine solution difference
-            diff = u(i)-u(j)
-            
-            ! Determine explicit antidiffusive flux
-            flux0(iedge) = (1-theta)*tstep*d_ij*diff
-          end do
-
-        else
-          
-          ! Initialise explicit fluxes by zero
-          call lalg_clearVectorDble(flux0)
-          
-        end if
-        
-      end if
-    end subroutine doInit_explFCT
-
-
-    !**************************************************************
-    ! The semi-explicit FEM-FCT limiting procedure
-    
-    subroutine doLimit_explFCT(IverticesAtEdge, DcoefficientsAtEdge,&
-                              MC, ML, u, ulow, flux0, theta, tstep, NEDGE, bmass,&
-                              pp, pm, qp, qm, rp, rm, flux, res)
-
-      integer(PREC_VECIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)               :: MC,ML
-      real(DP), dimension(:), intent(IN)               :: u,ulow
-      real(DP), dimension(:), intent(IN)               :: flux0
-      real(DP), intent(IN)                             :: theta,tstep
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      logical, intent(IN)                              :: bmass
-      real(DP), dimension(:), intent(INOUT)            :: pp,pm
-      real(DP), dimension(:), intent(INOUT)            :: qp,qm
-      real(DP), dimension(:), intent(INOUT)            :: rp,rm
-      real(DP), dimension(:), intent(INOUT)            :: flux
-      real(DP), dimension(:), intent(INOUT)            :: res
-      
-      integer(PREC_MATIDX) :: iedge,ij
-      integer(PREC_VECIDX) :: i,j
-      real(DP) :: diff,d_ij,f_ij,m_ij
+      ! local variables
+      real(DP) :: diff,d_ij,f_ij
+      integer :: iedge,ij,i,j
       
       ! Clear nodal vectors
       call lalg_clearVectorDble(pp)
@@ -5569,77 +5701,40 @@ contains
       call lalg_clearVectorDble(qp)
       call lalg_clearVectorDble(qm)
 
-
-      ! Should we apply the consistent mass matrix
-      if (bmass) then
-
-        ! Loop over edges
-        do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
-          
-          ! Determine coefficients and solution difference
-          d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij); diff=u(i)-u(j)
-          
-          ! Determine antidiffusive flux
-          f_ij = flux0(iedge)+m_ij*diff+theta*tstep*d_ij*diff
-
-          ! Determine low-order solution difference
-          diff = ulow(j)-ulow(i)
-
-          ! Perform prelimiting
-          if (f_ij*diff .ge. 0) f_ij = 0._DP         
-          flux(iedge) = f_ij
-          
-          ! Sum of positive/negative fluxes
-          pp(i) = pp(i)+max(0._DP,f_ij); pp(j) = pp(j)+max(0._DP,-f_ij)
-          pm(i) = pm(i)+min(0._DP,f_ij); pm(j) = pm(j)+min(0._DP,-f_ij)
-          
-          ! Upper/lower bounds
-          qp(i) = max(qp(i),diff); qp(j) = max(qp(j),-diff)
-          qm(i) = min(qm(i),diff); qm(j) = min(qm(j),-diff)
-        end do
-         
-      else
-
-        ! Loop over edges
-        do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge); diff=u(i)-u(j)
-          
-          ! Determine antidiffusive flux
-          f_ij = flux0(iedge)+theta*tstep*d_ij*diff
-
-          ! Determine low-order solution difference
-          diff = ulow(j)-ulow(i)
-
-          ! Perform prelimiting
-          if (f_ij*diff .ge. 0) f_ij = 0._DP         
-          flux(iedge) = f_ij
-          
-          ! Sum of positive/negative fluxes
-          pp(i) = pp(i)+max(0._DP,f_ij); pp(j) = pp(j)+max(0._DP,-f_ij)
-          pm(i) = pm(i)+min(0._DP,f_ij); pm(j) = pm(j)+min(0._DP,-f_ij)
-          
-          ! Upper/lower bounds
-          qp(i) = max(qp(i),diff); qp(j) = max(qp(j),-diff)
-          qm(i) = min(qm(i),diff); qm(j) = min(qm(j),-diff)
-        end do
+      ! Loop over edges
+      do iedge = 1, NEDGE
         
-      end if
-
+        ! Determine indices
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        
+        ! Determine coefficients
+        d_ij = DcoefficientsAtEdge(1,iedge); diff=u(i)-u(j)
+        
+        ! Determine antidiffusive flux
+        f_ij = fluxExpl(iedge)+theta*tstep*d_ij*diff
+        
+        ! Determine low-order solution difference
+        diff = ulow(j)-ulow(i)
+        
+        ! Perform prelimiting
+        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
+        fluxImpl(iedge) = f_ij
+        
+        ! Sum of positive/negative fluxes
+        pp(i) = pp(i)+max(0.0_DP,f_ij); pp(j) = pp(j)+max(0.0_DP,-f_ij)
+        pm(i) = pm(i)+min(0.0_DP,f_ij); pm(j) = pm(j)+min(0.0_DP,-f_ij)
+        
+        ! Upper/lower bounds
+        qp(i) = max(qp(i),diff); qp(j) = max(qp(j),-diff)
+        qm(i) = min(qm(i),diff); qm(j) = min(qm(j),-diff)
+      end do
+        
+      
       ! Apply the nodal limiter
-      rp = ML*qp; rp = afcstab_limit( pp, rp, 0._DP, 1._DP)
-      rm =-ML*qm; rm = afcstab_limit(-pm, rm, 0._DP, 1._DP)
-
+      rp =  ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP, 1.0_DP)
+      rm = -ML*qm; rm = afcstab_limit(-pm, rm, 0.0_DP, 1.0_DP)
+      
       ! Limiting procedure
       do iedge = 1, NEDGE
         
@@ -5647,49 +5742,121 @@ contains
         i = IverticesAtEdge(1,iedge)
         j = IverticesAtEdge(2,iedge)
         
-        if (flux(iedge) > 0.0_DP) then
-          f_ij = min(rp(i), rm(j))*flux(iedge)
+        if (fluxImpl(iedge) > 0.0_DP) then
+          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
         else
-          f_ij = min(rm(i), rp(j))*flux(iedge)
+          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
         end if
 
         ! Update the defect vector
         res(i) = res(i)+f_ij
         res(j) = res(j)-f_ij
       end do
-    end subroutine doLimit_explFCT
+
+    end subroutine doLimit_explFCTnoMass
+
+
+    !**************************************************************
+    ! The semi-explicit FEM-FCT limiting procedure,
+    ! whereby consistent mass antidiffusion is built into the residual
+    
+    subroutine doLimit_explFCTconsMass(IverticesAtEdge, DcoefficientsAtEdge,&
+                                          MC, ML, u, ulow, fluxExpl, theta, tstep, NEDGE,&
+                                          pp, pm, qp, qm, rp, rm, fluxImpl, res)
+
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: MC,ML,u,ulow,fluxExpl
+      real(DP), intent(IN) :: theta,tstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
+
+      real(DP), dimension(:), intent(INOUT) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
+
+      ! local variables
+      real(DP) :: diff,d_ij,f_ij,m_ij
+      integer :: iedge,ij,i,j
+      
+      ! Clear nodal vectors
+      call lalg_clearVectorDble(pp)
+      call lalg_clearVectorDble(pm)
+      call lalg_clearVectorDble(qp)
+      call lalg_clearVectorDble(qm)
+
+      ! Loop over edges
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        ij = IverticesAtEdge(3,iedge)
+        
+        ! Determine coefficients and solution difference
+        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij); diff=u(i)-u(j)
+        
+        ! Determine antidiffusive flux
+        f_ij = fluxExpl(iedge)+m_ij*diff+theta*tstep*d_ij*diff
+        
+        ! Determine low-order solution difference
+        diff = ulow(j)-ulow(i)
+        
+        ! Perform prelimiting
+        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
+        fluxImpl(iedge) = f_ij
+        
+        ! Sum of positive/negative fluxes
+        pp(i) = pp(i)+max(0.0_DP,f_ij); pp(j) = pp(j)+max(0.0_DP,-f_ij)
+        pm(i) = pm(i)+min(0.0_DP,f_ij); pm(j) = pm(j)+min(0.0_DP,-f_ij)
+        
+        ! Upper/lower bounds
+        qp(i) = max(qp(i),diff); qp(j) = max(qp(j),-diff)
+        qm(i) = min(qm(i),diff); qm(j) = min(qm(j),-diff)
+      end do
+      
+      ! Apply the nodal limiter
+      rp =  ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP, 1.0_DP)
+      rm = -ML*qm; rm = afcstab_limit(-pm, rm, 0.0_DP, 1.0_DP)
+      
+      ! Limiting procedure
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        
+        if (fluxImpl(iedge) > 0.0_DP) then
+          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
+        else
+          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
+        end if
+
+        ! Update the defect vector
+        res(i) = res(i)+f_ij
+        res(j) = res(j)-f_ij
+      end do
+    end subroutine doLimit_explFCTconsMass
+
   end subroutine gfsc_buildResScalarFCT
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResBlockTVD(rmatrixMC, ru, ru0,&
-                                   theta, tstep, rres, rafcstab)
+  subroutine gfsc_buildResBlockTVD(ru, tstep, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector
-    ! and applies stabilisation of FEM-TVD type.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! This subroutine assembles the residual vector and applies
+    ! stabilisation of FEM-TVD type.  Note that this routine serves as
+    ! a wrapper for block vectors. If there is only one block, then
+    ! the corresponding scalar routine is called.  Otherwise, an error
+    ! is thrown.
 !</description>
 
 !<input>
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)   :: rmatrixMC
-
     ! solution vector
-    type(t_vectorBlock), intent(IN)    :: ru
-
-    ! initial solution vector
-    type(t_vectorBlock), intent(IN)    :: ru0
-
-    ! implicitness parameter
-    real(DP), intent(IN)               :: theta
+    type(t_vectorBlock), intent(IN) :: ru
 
     ! time step size
-    real(DP), intent(IN)               :: tstep
+    real(DP), intent(IN) :: tstep
 !</input>
 
 !<inputoutput>
@@ -5697,38 +5864,36 @@ contains
     type(t_vectorBlock), intent(INOUT) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)     :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! Check if block vectors contain exactly one block
     if (ru%nblocks   .ne. 1 .or.&
-        ru0%nblocks  .ne. 1 .or.&
         rres%nblocks .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResBlockTVD')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResBlockTVD')
       call sys_halt()
 
     else
 
-      call gfsc_buildResScalarTVD(rmatrixMC, ru%RvectorBlock(1),&
-          ru0%RvectorBlock(1), theta, tstep, rres%RvectorBlock(1), rafcstab)
+      call gfsc_buildResScalarTVD(ru%RvectorBlock(1), tstep,&
+                                  rres%RvectorBlock(1), rafcstab)
       
     end if
+
   end subroutine gfsc_buildResBlockTVD
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResScalarTVD(rmatrixMC, ru, ru0,&
-                                    theta, tstep, rres, rafcstab)
+  subroutine gfsc_buildResScalarTVD(ru, tstep, rres, rafcstab)
 
 !<description>
     ! This subroutine assembles the residual vector and applies
-    ! stabilisation of FEM-TVD type and/or employes the general
-    ! purpose limiter.
+    ! stabilisation of FEM-TVD type.
     !
     ! A detailed description of the FEM-TVD limiter in general is given in:
     !
@@ -5744,42 +5909,14 @@ contains
     !     M. Papadrakakis and B. Schrefler (eds.) Computational
     !     Methods for Coupled Problems in Science and Engineering II,
     !     CIMNE, Barcelona, 2007, 653-656.
-    !
-    ! For time-dependent problems, the lack of a consistent mass
-    ! matrix deteriorates the phase accuracy significnatly. It is thus
-    ! that symmetric limiting strategies taylored to mass
-    ! antidiffusion have been considered. If both convective and mass
-    ! antidiffusion has to be limited then the so-called
-    ! general-purpose (GP) flux limiter comes into play:
-    !
-    !     D. Kuzmin, "On the design of general-purpose flux 
-    !     limiters for implicit FEM with a consistent mass matrix.
-    !     I. Scalar convection."
-    !     J. Comput. Phys.  219  (2006) 513-531.
-    !
-    ! Note however, that is is quite expensive and not recommended as
-    ! a standard limiter. In fact, it is only implemented to
-    ! demonstrate that the construction of general-purpose flux
-    ! limiters is possible. If you want to recover the consistent mass
-    ! matrix for time-dependent problems, you should apply flux
-    ! correction of FCT type.
 !</description>
 
 !<input>
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)    :: rmatrixMC
-
     ! solution vector
-    type(t_vectorScalar), intent(IN)    :: ru
-
-    ! initial solution vector
-    type(t_vectorScalar), intent(IN)    :: ru0
-
-    ! implicitness parameter
-    real(DP), intent(IN)                :: theta
+    type(t_vectorScalar), intent(IN) :: ru
 
     ! time step size
-    real(DP), intent(IN)                :: tstep
+    real(DP), intent(IN) :: tstep
 !</input>
 
 !<inputoutput>
@@ -5787,132 +5924,72 @@ contains
     type(t_vectorScalar), intent(INOUT) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)      :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    integer(PREC_VECIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    real(DP), dimension(:,:), pointer             :: p_DcoefficientsAtEdge
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_flux,p_flux0
-    real(DP), dimension(:), pointer :: p_u,p_u0,p_res
-    real(DP), dimension(:), pointer :: p_MC
-
-    ! Check if vectors are compatible
-    call lsyssc_isVectorCompatible(ru, rres)
+    real(DP), dimension(:), pointer :: p_u,p_res,p_flux
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     
-    ! What kind of stabilisation are we?
-    select case(rafcstab%ctypeAFCstabilisation)
-      
-    case (AFCSTAB_FEMTVD)
-      
-      ! Check if stabilisation is prepared
-      if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)  .eq.0 .or. &
-          iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION).eq.0 .or. &
-          iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)     .eq.0) then
-        call output_line('Stabilisation does not provide required structures',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarTVD')
-        call sys_halt()
-      end if
-
-      ! Set pointers
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1),  p_flux)
-      call lsyssc_getbase_double(ru,   p_u)
-      call lsyssc_getbase_double(rres, p_res)
-
-      call doLimit_TVD(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-          p_u, tstep, rafcstab%NEDGE, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
-
-      ! Set specifier
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
-      
-
-    case (AFCSTAB_FEMGP)
-      
-      ! Check if stabilisation is prepared
-      if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)  .eq.0 .or. &
-          iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION).eq.0 .or. &
-          iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)     .eq.0) then
-        call output_line('Stabilisation does not provide required structures',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarTVD')
-        call sys_halt()
-      end if
-
-      ! Set pointers
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1),  p_flux)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2),  p_flux0)
-      call lsyssc_getbase_double(rmatrixMC, p_MC)
-      call lsyssc_getbase_double(ru,   p_u)
-      call lsyssc_getbase_double(ru0,  p_u0)
-      call lsyssc_getbase_double(rres, p_res)
-
-      if (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS) then
-        call doLimit_GP(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-            p_MC, p_u, p_u0, theta, tstep, rafcstab%NEDGE,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_flux0, p_res)
-      else
-        call doLimit_TVD(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-            p_u, tstep, rafcstab%NEDGE,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
-      end if
-      
-      ! Set specifier
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
-
-    case DEFAULT
-      call output_line('Invalid type of AFC stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarTVD')
+    
+    ! Check if stabilisation is prepared
+    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)  .eq.0 .or. &
+        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION).eq.0 .or. &
+        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)     .eq.0) then
+      call output_line('Stabilisation does not provide required structures',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarTVD')
       call sys_halt()
-    end select
+    end if
+    
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_flux)
+    call lsyssc_getbase_double(ru, p_u)
+    call lsyssc_getbase_double(rres, p_res)
 
+    ! Perform flux limiting of TVD-type
+    call doLimit_TVD(p_IverticesAtEdge, p_DcoefficientsAtEdge, p_u, tstep,&
+                     rafcstab%NEDGE, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
+
+    ! Set specifier
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
+    
   contains
 
-    ! Here, the working routine follow
+    ! Here, the working routine follows
     
     !**************************************************************
     ! The FEM-TVD limiting procedure
     
-    subroutine doLimit_TVD(IverticesAtEdge, DcoefficientsAtEdge,&
-                           u, tstep, NEDGE, pp, pm, qp, qm, rp, rm, flux, res)
+    subroutine doLimit_TVD(IverticesAtEdge, DcoefficientsAtEdge, u, tstep,&
+                           NEDGE, pp, pm, qp, qm, rp, rm, flux, res)
 
-      integer(PREC_VECIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)               :: u
-      real(DP), intent(IN)                             :: tstep
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      real(DP), dimension(:), intent(INOUT)            :: pp,pm
-      real(DP), dimension(:), intent(INOUT)            :: qp,qm
-      real(DP), dimension(:), intent(INOUT)            :: rp,rm
-      real(DP), dimension(:), intent(INOUT)            :: flux
-      real(DP), dimension(:), intent(INOUT)            :: res
-      
-      integer(PREC_MATIDX) :: iedge,ij
-      integer(PREC_VECIDX) :: i,j
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: u
+      real(DP), intent(IN) :: tstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
+
+      real(DP), dimension(:), intent(INOUT) :: pp,pm,qp,qm,rp,rm,flux,res
+
+      ! local variables
       real(DP) :: d_ij,f_ij,l_ij,l_ji,diff
-
+      integer :: iedge,ij,i,j
+      
+      
       ! Clear nodal vectors
       call lalg_clearVectorDble(pp)
       call lalg_clearVectorDble(pm)
@@ -5938,16 +6015,16 @@ contains
         f_ij = min(d_ij,l_ji)*diff; flux(iedge) = f_ij
         
         ! Assemble P's accordingly
-        pp(i) = pp(i)+max(0._DP,f_ij); pm(i) = pm(i)+min(0._DP,f_ij)
+        pp(i) = pp(i)+max(0.0_DP,f_ij); pm(i) = pm(i)+min(0.0_DP,f_ij)
         
         ! Assemble Q's
-        qp(i) = qp(i)+max(0._DP,-f_ij); qp(j) = qp(j)+max(0._DP, f_ij)
-        qm(i) = qm(i)+min(0._DP,-f_ij); qm(j) = qm(j)+min(0._DP, f_ij)
+        qp(i) = qp(i)+max(0.0_DP,-f_ij); qp(j) = qp(j)+max(0.0_DP, f_ij)
+        qm(i) = qm(i)+min(0.0_DP,-f_ij); qm(j) = qm(j)+min(0.0_DP, f_ij)
       end do
       
       ! Apply the nodal limiter
-      rp = afcstab_limit( pp, qp, 0._DP, 1._DP)
-      rm = afcstab_limit(-pm,-qm, 0._DP, 1._DP)
+      rp = afcstab_limit( pp, qp, 0.0_DP, 1.0_DP)
+      rm = afcstab_limit(-pm,-qm, 0.0_DP, 1.0_DP)
 
       ! Apply limiter
       do iedge = 1, NEDGE
@@ -5967,38 +6044,194 @@ contains
         res(j) = res(j)-f_ij
       end do
     end subroutine doLimit_TVD
+    
+  end subroutine gfsc_buildResScalarTVD
 
+  !*****************************************************************************
 
+!<subroutine>
+
+  subroutine gfsc_buildResBlockGP(rconsistentMassMatrix, ru, ru0, theta, tstep, rres, rafcstab)
+
+!<description>
+    ! This subroutine assembles the residual vector and applies
+    ! stabilisation of FEM-GP type.  Note that this routine serves as
+    ! a wrapper for block vectors. If there is only one block, then
+    ! the corresponding scalar routine is called.  Otherwise, an error
+    ! is thrown.
+!</description>
+
+!<input>
+    ! consistent mass matrix
+    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: ru
+
+    ! initial solution vector
+    type(t_vectorBlock), intent(IN) :: ru0
+
+    ! implicitness parameter
+    real(DP), intent(IN) :: theta
+
+    ! time step size
+    real(DP), intent(IN) :: tstep
+!</input>
+
+!<inputoutput>
+    ! residual vector
+    type(t_vectorBlock), intent(INOUT) :: rres
+
+    ! stabilisation structure
+    type(t_afcstab), intent(INOUT) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! Check if block vectors contain exactly one block
+    if (ru%nblocks   .ne. 1 .or.&
+        ru0%nblocks  .ne. 1 .or.&
+        rres%nblocks .ne. 1) then
+
+      call output_line('Vector must not contain more than one block!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResBlockGP')
+      call sys_halt()
+
+    else
+
+      call gfsc_buildResScalarGP(rconsistentMassMatrix, ru%RvectorBlock(1),&
+                                 ru0%RvectorBlock(1), theta, tstep,&
+                                 rres%RvectorBlock(1), rafcstab)
+      
+    end if
+  end subroutine gfsc_buildResBlockGP
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildResScalarGP(rconsistentMassMatrix, ru, ru0, theta, tstep, rres, rafcstab)
+
+!<description>
+    ! This subroutine assembles the residual vector and applies
+    ! stabilisation using the general purpose limiter.
+    !
+    ! A detailed description of the FEM-GP limiter in general is given in:
+    !
+    !     D. Kuzmin, "On the design of general-purpose flux 
+    !     limiters for implicit FEM with a consistent mass matrix.
+    !     I. Scalar convection."
+    !     J. Comput. Phys.  219  (2006) 513-531.
+    !
+    ! Note however, that is is quite expensive and not recommended as
+    ! a standard limiter. In fact, it is only implemented to
+    ! demonstrate that the construction of general-purpose flux
+    ! limiters is possible. If you want to recover the consistent mass
+    ! matrix for time-dependent problems, you should apply flux
+    ! correction of FCT type.
+!</description>
+
+!<input>
+    ! consistent mass matrix
+    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+
+    ! solution vector
+    type(t_vectorScalar), intent(IN) :: ru
+
+    ! initial solution vector
+    type(t_vectorScalar), intent(IN) :: ru0
+
+    ! implicitness parameter
+    real(DP), intent(IN) :: theta
+
+    ! time step size
+    real(DP), intent(IN) :: tstep
+!</input>
+
+!<inputoutput>
+    ! residual vector
+    type(t_vectorScalar), intent(INOUT) :: rres
+
+    ! stabilisation structure
+    type(t_afcstab), intent(INOUT) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
+    real(DP), dimension(:), pointer :: p_MC,p_u,p_u0,p_res,p_fluxImpl,p_fluxExpl
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    
+    
+    ! Check if stabilisation is prepared
+    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)  .eq.0 .or. &
+        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION).eq.0 .or. &
+        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)     .eq.0) then
+      call output_line('Stabilisation does not provide required structures',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarGP')
+      call sys_halt()
+    end if
+    
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_fluxImpl)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_fluxExpl)
+    call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+    call lsyssc_getbase_double(ru, p_u)
+    call lsyssc_getbase_double(ru0, p_u0)
+    call lsyssc_getbase_double(rres, p_res)
+
+    ! Perform flux limiting by the general purpose limiter
+    call doLimit_GP(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
+                    p_MC, p_u, p_u0, theta, tstep, rafcstab%NEDGE,&
+                    p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
+                    p_fluxImpl, p_fluxExpl, p_res)
+    
+    ! Set specifier
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
+    
+  contains
+
+    ! Here, the working routine follows
+    
     !**************************************************************
     ! The FEM-GP limiting procedure
+    
+    subroutine doLimit_GP(IverticesAtEdge, DcoefficientsAtEdge, MC, u, u0,&
+                          theta, tstep, NEDGE, pp, pm, qp, qm, rp, rm,&
+                          fluxImpl, fluxExpl, res)
 
-    subroutine doLimit_GP(IverticesAtEdge, DcoefficientsAtEdge,&
-                          MC, u, u0, theta, tstep, NEDGE,&
-                          pp, pm, qp, qm, rp, rm, flux, flux0, res)
 
-      integer(PREC_VECIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)               :: MC
-      real(DP), dimension(:), intent(IN)               :: u,u0
-      real(DP), intent(IN)                             :: theta,tstep
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      real(DP), dimension(:), intent(INOUT)            :: pp,pm
-      real(DP), dimension(:), intent(INOUT)            :: qp,qm
-      real(DP), dimension(:), intent(INOUT)            :: rp,rm
-      real(DP), dimension(:), intent(INOUT)            :: flux,flux0
-      real(DP), dimension(:), intent(INOUT)            :: res
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: MC,u,u0
+      real(DP), intent(IN) :: theta,tstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
       
-      integer(PREC_MATIDX) :: iedge,ij
-      integer(PREC_VECIDX) :: i,j
+      real(DP), dimension(:), intent(INOUT) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(:), intent(INOUT) :: fluxImpl,fluxExpl,res
+      
+      ! local variables
       real(DP) :: d_ij,f_ij,l_ij,l_ji,m_ij,p_ij,pf_ij,df_ij,q_ij,q_ji
       real(DP) :: diff,diff0,diff1
-
+      integer :: iedge,ij,i,j
+      
       ! Clear nodal vectors
       call lalg_clearVectorDble(pp)
       call lalg_clearVectorDble(pm)
       call lalg_clearVectorDble(qp)
       call lalg_clearVectorDble(qm)
-
+      
       ! Assemble P' and Q's
       do iedge = 1, NEDGE
         
@@ -6015,37 +6248,37 @@ contains
         
         ! Compute: diff1 = dt*theta*(u_i-u_j) + dt*(1-theta)*(u0_i-u0_j)
         diff1 = u(i)-u(j); diff0 = u0(i)-u0(j)
-        diff  = tstep*(theta*diff1+(1._DP-theta)*diff0)
+        diff  = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
         
         ! Compute antidiffusive flux f_ij=min(0,p_ij)*(u_j-u_i)
         if (abs(diff) < SYS_EPSREAL) then
           p_ij = 0
           f_ij = 0
         else
-          p_ij = max(0._DP,m_ij*(diff1-diff0)/diff+d_ij)
+          p_ij = max(0.0_DP,m_ij*(diff1-diff0)/diff+d_ij)
           f_ij = p_ij*diff
         end if
         
         ! Prelimit the antidiffusive flux F'_IJ=MIN(-P_IJ,L_JI)(U_I-U_J)
-        pf_ij = min(p_ij,l_ji)*diff; flux0(iedge) = pf_ij
+        pf_ij = min(p_ij,l_ji)*diff; fluxExpl(iedge) = pf_ij
         
         ! Compute the remaining flux dF_IJ=F_IJ-F'_IJ
-        df_ij = f_ij-pf_ij; flux(iedge) = df_ij
+        df_ij = f_ij-pf_ij; fluxImpl(iedge) = df_ij
         
         ! Assemble P's accordingly
-        pp(i) = pp(i)+max(0._DP,  f_ij); pm(i) = pm(i)+min(0._DP,  f_ij)
-        pp(j) = pp(j)+max(0._DP,-df_ij); pm(j) = pm(j)+min(0._DP,-df_ij)
+        pp(i) = pp(i)+max(0.0_DP,  f_ij); pm(i) = pm(i)+min(0.0_DP,  f_ij)
+        pp(j) = pp(j)+max(0.0_DP,-df_ij); pm(j) = pm(j)+min(0.0_DP,-df_ij)
         
         q_ij = m_ij/tstep+l_ij; q_ji = m_ij/tstep+l_ji
 
         ! Assemble Q's
-        qp(i) = qp(i)+q_ij*max(0._DP,-diff); qm(i) = qm(i)+q_ij*min(0._DP,-diff)
-        qp(j) = qp(j)+q_ji*max(0._DP, diff); qm(j) = qm(j)+q_ji*min(0._DP, diff)
+        qp(i) = qp(i)+q_ij*max(0.0_DP,-diff); qm(i) = qm(i)+q_ij*min(0.0_DP,-diff)
+        qp(j) = qp(j)+q_ji*max(0.0_DP, diff); qm(j) = qm(j)+q_ji*min(0.0_DP, diff)
       end do
 
       ! Apply nodal limiter
-      rp = afcstab_limit( pp, qp, 0._DP, 1._DP)
-      rm = afcstab_limit(-pm,-qm, 0._DP, 1._DP)
+      rp = afcstab_limit( pp, qp, 0.0_DP, 1.0_DP)
+      rm = afcstab_limit(-pm,-qm, 0.0_DP, 1.0_DP)
 
       ! Apply limiter
       do iedge = 1, NEDGE
@@ -6055,7 +6288,7 @@ contains
         j = IverticesAtEdge(2,iedge)
         
         ! Get precomputed fluxes
-        pf_ij = flux0(iedge); df_ij = flux(iedge)
+        pf_ij = fluxExpl(iedge); df_ij = fluxImpl(iedge)
         
         ! Limit upwind contribution
         if (pf_ij > 0.0_DP) then
@@ -6078,7 +6311,8 @@ contains
         res(j) = res(j)-f_ij
       end do
     end subroutine doLimit_GP
-  end subroutine gfsc_buildResScalarTVD
+    
+  end subroutine gfsc_buildResScalarGP
 
   !*****************************************************************************
 
@@ -6087,19 +6321,19 @@ contains
   subroutine gfsc_buildResBlockSymm(ru, dscale, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies stabilisation
-    ! by means of symmetric flux limiting for diffusion operators.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! This subroutine assembles the residual vector and applies
+    ! stabilisation by means of symmetric flux limiting for diffusion
+    ! operators.  Note that this routine serves as a wrapper for block
+    ! vectors. If there is only one block, then the corresponding
+    ! scalar routine is called.  Otherwise, an error is thrown.
 !</description>
 
 !<input>
     ! solution vector
-    type(t_vectorBlock), intent(IN)    :: ru
+    type(t_vectorBlock), intent(IN) :: ru
 
     ! scaling parameter
-    real(DP), intent(IN)               :: dscale
+    real(DP), intent(IN) :: dscale
 !</input>
 
 !<inputoutput>
@@ -6107,7 +6341,7 @@ contains
     type(t_vectorBlock), intent(INOUT) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)     :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -6115,13 +6349,13 @@ contains
     if (ru%nblocks .ne. 1 .or. rres%nblocks .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResBlockSymm')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResBlockSymm')
       call sys_halt()
 
     else
 
       call gfsc_buildResScalarSymm(ru%RvectorBlock(1), dscale,&
-          rres%RvectorBlock(1), rafcstab)
+                                   rres%RvectorBlock(1), rafcstab)
 
     end if
   end subroutine gfsc_buildResBlockSymm
@@ -6143,10 +6377,10 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorScalar), intent(IN)    :: ru
+    type(t_vectorScalar), intent(IN) :: ru
 
     ! scaling parameter
-    real(DP), intent(IN)                :: dscale
+    real(DP), intent(IN) :: dscale
 !</input>
 
 !<inputoutput>
@@ -6154,56 +6388,52 @@ contains
     type(t_vectorScalar), intent(INOUT) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)      :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    integer(PREC_VECIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    real(DP), dimension(:,:), pointer             :: p_DcoefficientsAtEdge
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_flux
-    real(DP), dimension(:), pointer :: p_u,p_res
+    real(DP), dimension(:), pointer :: p_u,p_res,p_flux
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     
-
+    
     ! Check if stabilisation is prepared
     if (rafcstab%ctypeAFCstabilisation .ne. AFCSTAB_SYMMETRIC .or.&
         iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0    .or.&
         iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarSymm')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarSymm')
       call sys_halt()
     end if
-
-    ! Check if vectors are compatible
-    call lsyssc_isVectorCompatible(ru, rres)
-
+    
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(1),  p_flux)
-    call lsyssc_getbase_double(ru,   p_u)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_flux)
+    call lsyssc_getbase_double(ru, p_u)
     call lsyssc_getbase_double(rres, p_res)
-
-    call doLimit_Symmetric(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-        p_u, dscale, rafcstab%NEDGE,&
-        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
+    
+    ! Perform symmetric flux limiting
+    call doLimit_Symmetric(p_IverticesAtEdge, p_DcoefficientsAtEdge, p_u, dscale,&
+                           rafcstab%NEDGE, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
 
     ! Set specifier
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
-
+    
   contains
     
-    ! Here, the working routine follow
+    ! Here, the working routine follows
     
     !**************************************************************
     ! Perform symmetric flux limiting
@@ -6211,20 +6441,18 @@ contains
     subroutine doLimit_Symmetric(IverticesAtEdge, DcoefficientsAtEdge, u, dscale,&
                                  NEDGE, pp, pm, qp, qm, rp, rm, flux, res)
       
-      integer(PREC_VECIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)               :: u
-      real(DP), intent(IN)                             :: dscale
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      real(DP), dimension(:), intent(INOUT)            :: pp,pm
-      real(DP), dimension(:), intent(INOUT)            :: qp,qm
-      real(DP), dimension(:), intent(INOUT)            :: rp,rm
-      real(DP), dimension(:), intent(INOUT)            :: flux
-      real(DP), dimension(:), intent(INOUT)            :: res
-      
-      integer(PREC_MATIDX) :: iedge,ij
-      integer(PREC_VECIDX) :: i,j
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: u
+      real(DP), intent(IN) :: dscale
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: NEDGE
+
+      real(DP), dimension(:), intent(INOUT) :: pp,pm,qp,qm,rp,rm,flux,res
+
+      ! local variables
       real(DP) :: d_ij,f_ij,s_ij,diff
+      integer :: iedge,ij,i,j
+      
       
       ! Clear nodal vectors
       call lalg_clearVectorDble(pp)
@@ -6248,18 +6476,18 @@ contains
         flux(iedge) = f_ij
         
         ! Sums of raw positive/negative fluxes
-        pp(i) = pp(i)+max(0._DP, f_ij); pp(j) = pp(j)+max(0._DP,-f_ij)
-        pm(i) = pm(i)+min(0._DP, f_ij); pm(j) = pm(j)+min(0._DP,-f_ij)
+        pp(i) = pp(i)+max(0.0_DP, f_ij); pp(j) = pp(j)+max(0.0_DP,-f_ij)
+        pm(i) = pm(i)+min(0.0_DP, f_ij); pm(j) = pm(j)+min(0.0_DP,-f_ij)
         
         ! Upper/lower bounds
         f_ij = -s_ij*diff
-        qp(i) = qp(i)+max(0._DP, f_ij); qp(j) = qp(j)+max(0._DP,-f_ij)
-        qm(i) = qm(i)+min(0._DP, f_ij); qm(j) = qm(j)+min(0._DP,-f_ij)
+        qp(i) = qp(i)+max(0.0_DP, f_ij); qp(j) = qp(j)+max(0.0_DP,-f_ij)
+        qm(i) = qm(i)+min(0.0_DP, f_ij); qm(j) = qm(j)+min(0.0_DP,-f_ij)
       end do
       
       ! Apply the nodal limiter
-      rp = afcstab_limit( pp, qp, 0._DP, 1._DP)
-      rm = afcstab_limit(-pm,-qm, 0._DP, 1._DP)
+      rp = afcstab_limit( pp, qp, 0.0_DP, 1.0_DP)
+      rm = afcstab_limit(-pm,-qm, 0.0_DP, 1.0_DP)
       
       ! Apply limiter
       do iedge = 1, NEDGE
@@ -6282,6 +6510,7 @@ contains
         res(j) = res(j)-f_ij
       end do
     end subroutine doLimit_Symmetric
+
   end subroutine gfsc_buildResScalarSymm
 
   !*****************************************************************************
@@ -6289,14 +6518,14 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, ru, fcb_calcConvection,&
-                                         hstep, bStabilise, bclear, rmatrixJ)
+                                         hstep, bStabilise, bclear, rjacobianMatrix)
 
 !<description>
-    ! This subroutine assembles the Jacobian matrix for the convective part
-    ! of the discrete transport operator for a scalar convection equation.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! This subroutine assembles the Jacobian matrix for the convective
+    ! part of the discrete transport operator for a scalar convection
+    ! equation.  Note that this routine serves as a wrapper for block
+    ! vectors. If there is only one block, then the corresponding
+    ! scalar routine is called.  Otherwise, an error is thrown.
 !</description>
 
 !<input>
@@ -6304,20 +6533,20 @@ contains
     type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorBlock), intent(IN)                :: ru
+    type(t_vectorBlock), intent(IN) :: ru
     
     ! perturbation parameter
-    real(DP), intent(IN)                           :: hstep
+    real(DP), intent(IN) :: hstep
 
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN)                            :: bStabilise
+    logical, intent(IN) :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                            :: bclear
+    logical, intent(IN) :: bclear
 
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -6325,7 +6554,7 @@ contains
 
 !<inputoutput>
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT)            :: rmatrixJ
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
@@ -6333,15 +6562,17 @@ contains
     if (ru%nblocks .ne. 1) then
       
       call output_line('Solution vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvJacobianBlock')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvJacobianBlock')
       call sys_halt()
 
     else
       
       call gfsc_buildConvJacobianScalar(RcoeffMatrices, ru%RvectorBlock(1),&
-          fcb_calcConvection, hstep, bStabilise, bclear, rmatrixJ)
+                                        fcb_calcConvection, hstep, bStabilise,&
+                                        bclear, rjacobianMatrix)
       
     end if
+
   end subroutine gfsc_buildConvJacobianBlock
 
    !*****************************************************************************
@@ -6349,7 +6580,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, ru, fcb_calcConvection,&
-                                          hstep, bStabilise, bclear, rmatrixJ)
+                                          hstep, bStabilise, bclear, rjacobianMatrix)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective part
@@ -6361,20 +6592,20 @@ contains
     type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorScalar), intent(IN)               :: ru
+    type(t_vectorScalar), intent(IN) :: ru
     
     ! perturbation parameter
-    real(DP), intent(IN)                           :: hstep
+    real(DP), intent(IN) :: hstep
 
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN)                            :: bStabilise
+    logical, intent(IN) :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                            :: bclear
+    logical, intent(IN) :: bclear
 
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -6382,35 +6613,25 @@ contains
 
 !<inputoutput>
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT)            :: rmatrixJ
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kld,p_Ksep
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kdiagonal
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_Kcol
-    real(DP), dimension(:), pointer               :: p_Cx,p_Cy,p_Cz,p_J,p_u
-    integer :: h_Ksep
-    integer :: idim,ndim
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
+    real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_Jac,p_u
+    integer :: h_Ksep,ndim
     
-    ! Check if all matrices are compatible
-    call lsyssc_isMatrixCompatible(ru, rmatrixJ, .false.)
-    ndim = size(RcoeffMatrices,1)
-    do idim = 1, ndim
-      call lsyssc_isMatrixCompatible(RcoeffMatrices(idim), rmatrixJ)
-    end do
-
+    
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rmatrixJ)
-
+    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+    
     ! Set pointers
-    call lsyssc_getbase_Kld(rmatrixJ,    p_Kld)
-    call lsyssc_getbase_Kcol(rmatrixJ,   p_Kcol)
-    call lsyssc_getbase_double(rmatrixJ, p_J)
-    call lsyssc_getbase_double(ru,       p_u)
-
+    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(ru, p_u)
+    
     ! How many dimensions do we have?
+    ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
       call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
@@ -6426,104 +6647,114 @@ contains
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvJacobianScalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvJacobianScalar')
       call sys_halt()
     end select
-
-
+    
+    
     ! What kind of matrix are we?
-    select case(rmatrixJ%cmatrixFormat)
+    select case(rjacobianMatrix%cmatrixFormat)
     case(LSYSSC_MATRIX7)
+      !-------------------------------------------------------------------------
+      ! Matrix format 7
+      !-------------------------------------------------------------------------
 
+      ! Set pointers
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
-
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      
       ! Do we have to build the upwind Jacobian?
       if (bStabilise) then
         
         select case(ndim)
         case (NDIM1D)
-          call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep, rmatrixJ%NEQ,&
-                               p_Cx, p_u, p_J)
+          call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep, rjacobianMatrix%NEQ,&
+                               p_Cx, p_u, p_Jac)
         case (NDIM2D)
-          call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep, rmatrixJ%NEQ,&
-                               p_Cx, p_Cy, p_u, p_J)
+          call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep, rjacobianMatrix%NEQ,&
+                               p_Cx, p_Cy, p_u, p_Jac)
         case (NDIM3D)
-          call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep, rmatrixJ%NEQ,&
-                               p_Cx, p_Cy, p_Cz, p_u, p_J)
+          call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep, rjacobianMatrix%NEQ,&
+                               p_Cx, p_Cy, p_Cz, p_u, p_Jac)
         end select
 
-      else
+      else   ! bStabilise
 
         select case(ndim)
         case (NDIM1D)
-          call doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep, rmatrixJ%NEQ,&
-                                 p_Cx, p_u, p_J)
+          call doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep, rjacobianMatrix%NEQ,&
+                                 p_Cx, p_u, p_Jac)
         case (NDIM2D)
-          call doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep, rmatrixJ%NEQ,&
-                                 p_Cx, p_Cy, p_u, p_J)
+          call doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep, rjacobianMatrix%NEQ,&
+                                 p_Cx, p_Cy, p_u, p_Jac)
         case (NDIM3D)
-          call doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep, rmatrixJ%NEQ,&
-                                 p_Cx, p_Cy, p_Cz, p_u, p_J)
+          call doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep, rjacobianMatrix%NEQ,&
+                                 p_Cx, p_Cy, p_Cz, p_u, p_Jac)
         end select
 
-      end if
+      end if   ! bStabilise
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
-
+      
       
     case(LSYSSC_MATRIX9)
-      
+      !-------------------------------------------------------------------------
+      ! Matrix format 9
+      !-------------------------------------------------------------------------
+
       ! Set pointers
-      call lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
-    
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       
       ! Do we have to build the upwind Jacobian?
       if (bStabilise) then
         
-        ! Build Jacobian
         select case(ndim)
         case (NDIM1D)
           call doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                               rmatrixJ%NEQ, p_Cx, p_u, p_J)
+                               rjacobianMatrix%NEQ, p_Cx, p_u, p_Jac)
         case (NDIM2D)
           call doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                               rmatrixJ%NEQ, p_Cx, p_Cy, p_u, p_J)
+                               rjacobianMatrix%NEQ, p_Cx, p_Cy, p_u, p_Jac)
         case (NDIM3D)
           call doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                               rmatrixJ%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_J)
+                               rjacobianMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_Jac)
         end select
       
-      else
+      else   ! bStabilise
 
-        ! Build Jacobian
         select case(ndim)
         case (NDIM1D)
           call doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                 rmatrixJ%NEQ, p_Cx, p_u, p_J)
+                                 rjacobianMatrix%NEQ, p_Cx, p_u, p_Jac)
         case (NDIM2D)
           call doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                 rmatrixJ%NEQ, p_Cx, p_Cy, p_u, p_J)
+                                 rjacobianMatrix%NEQ, p_Cx, p_Cy, p_u, p_Jac)
         case (NDIM3D)
           call doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                 rmatrixJ%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_J)
+                                 rjacobianMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_Jac)
         end select
 
-      end if
+      end if   ! bStabilise
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
 
     case DEFAULT
       call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvJacobianScalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvJacobianScalar')
       call sys_halt()
     end select
 
@@ -6538,17 +6769,18 @@ contains
 
     subroutine doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+      
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
@@ -6658,17 +6890,18 @@ contains
 
     subroutine doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+      
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
@@ -6779,17 +7012,18 @@ contains
 
     subroutine doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables     
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+      
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
@@ -6901,19 +7135,19 @@ contains
 
     subroutine doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
 
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      real(DP), dimension(NDIM1D) :: C_ij,C_ji
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+      
+      
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
         
@@ -7022,18 +7256,18 @@ contains
 
     subroutine doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+      
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
@@ -7144,18 +7378,18 @@ contains
 
     subroutine doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+      
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
@@ -7266,18 +7500,19 @@ contains
     ! All matrices are stored in matrix format 7
 
     subroutine doUpwindMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, Jac)
-      
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      
+
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+      
       
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
@@ -7328,14 +7563,14 @@ contains
           
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7356,14 +7591,14 @@ contains
 
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7391,17 +7626,18 @@ contains
 
     subroutine doUpwindMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+      
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
@@ -7453,14 +7689,14 @@ contains
           
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7481,14 +7717,14 @@ contains
 
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7516,18 +7752,19 @@ contains
 
     subroutine doUpwindMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: NEQ
 
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables     
+      real(DP), dimension(NDIM3D) :: C_ij,C_ji
+      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+
+      
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
         
@@ -7579,14 +7816,14 @@ contains
           
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7607,14 +7844,14 @@ contains
 
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7642,19 +7879,19 @@ contains
 
     subroutine doUpwindMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP), dimension(:), intent(IN) :: Cx,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
 
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
+      real(DP), dimension(NDIM1D) :: C_ij,C_ji
+      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+
+      
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
         
@@ -7704,14 +7941,14 @@ contains
           
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7732,14 +7969,14 @@ contains
 
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7767,18 +8004,18 @@ contains
 
     subroutine doUpwindMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+      
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
@@ -7830,14 +8067,14 @@ contains
           
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7858,14 +8095,14 @@ contains
 
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7893,18 +8130,18 @@ contains
 
     subroutine doUpwindMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Ksep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,u
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP)                    :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer(PREC_MATIDX)        :: ii,ij,ji,jj
-      integer(PREC_VECIDX)        :: i,j
+      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
+      integer :: ii,ij,ji,jj,i,j
+      
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
@@ -7957,14 +8194,14 @@ contains
           
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7985,14 +8222,14 @@ contains
 
           ! Compute perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
           call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0._DP, -l_ji)
+          d_ij = max(-l_ij, 0.0_DP, -l_ji)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij =(a_ij+l_ij+d_ij)/2._DP
@@ -8011,65 +8248,67 @@ contains
         end do
       end do
     end subroutine doUpwindMat9_3D
+
   end subroutine gfsc_buildConvJacobianScalar
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildJacLinearBlockFCT(rmatrixMC, ru, theta, tstep, hstep,&
-                                         bclear, rafcstab, rmatrixJ)
+  subroutine gfsc_buildJacLinearBlockFCT(ru, theta, tstep, hstep, bclear, rafcstab,&
+                                         rjacobianMatrix,rconsistentMassMatrix)
 
 !<description>
-    ! This subroutine assembles the Jacobian matrix for the stabilisation part
-    ! of the discrete transport operator for a scalar convection equation.
-    ! Note that the velocity is assumed to be linear.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! This subroutine assembles the Jacobian matrix for the
+    ! stabilisation part of the discrete transport operator for a
+    ! scalar convection equation.  Note that the velocity is assumed
+    ! to be linear.  Note that this routine serves as a wrapper for
+    ! block vectors. If there is only one block, then the
+    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! thrown.
 !</description>
 
 !<input>
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)    :: rmatrixMC
-
     ! solution vector
-    type(t_vectorBlock), intent(IN)     :: ru
+    type(t_vectorBlock), intent(IN) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN)                :: theta
+    real(DP), intent(IN) :: theta
 
     ! time step size
-    real(DP), intent(IN)                :: tstep
+    real(DP), intent(IN) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN)                :: hstep
+    real(DP), intent(IN) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                 :: bclear
+    logical, intent(IN) :: bclear
+
+    ! OPTIONAL: consistent mass matrix
+    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)      :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rmatrixJ   
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
     if (ru%nblocks  .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearBlockFCT')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearBlockFCT')
       call sys_halt()
 
     else
 
-      call gfsc_buildJacLinearScalarFCT(rmatrixMC, ru%RvectorBlock(1),&
-          theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      call gfsc_buildJacLinearScalarFCT(ru%RvectorBlock(1), theta, tstep, hstep, bclear,&
+                                        rafcstab, rjacobianMatrix,rconsistentMassMatrix)
 
     end if
   end subroutine gfsc_buildJacLinearBlockFCT
@@ -8078,54 +8317,53 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacLinearScalarFCT(rmatrixMC, ru, theta, tstep, hstep,&
-                                          bclear, rafcstab, rmatrixJ)
+  subroutine gfsc_buildJacLinearScalarFCT(ru, theta, tstep, hstep, bclear,&
+                                          rafcstab, rjacobianMatrix, rconsistentMassMatrix)
 
 !<description>
-    ! This subroutine assembles the Jacobian matrix for the stabilisation part
-    ! of the discrete transport operator for a scalar convection equation.
-    ! Note that the velocity is assumed to be linear.
+    ! This subroutine assembles the Jacobian matrix for the
+    ! stabilisation part of the discrete transport operator for a
+    ! scalar convection equation.  Note that the velocity is assumed
+    ! to be linear.
 !</description>
 
 !<input>
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)    :: rmatrixMC
-
     ! solution vector
-    type(t_vectorScalar), intent(IN)    :: ru
+    type(t_vectorScalar), intent(IN) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN)                :: theta
+    real(DP), intent(IN) :: theta
 
     ! time step size
-    real(DP), intent(IN)                :: tstep
+    real(DP), intent(IN) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN)                :: hstep
+    real(DP), intent(IN) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                 :: bclear
+    logical, intent(IN) :: bclear
+
+    ! OPTIONAL: consistent mass matrix
+    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)      :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rmatrixJ   
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    integer(PREC_VECIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kld
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kdiagonal
-    real(DP), dimension(:,:), pointer             :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer               :: p_flux,p_flux0
-    real(DP), dimension(:), pointer               :: p_u
-    real(DP), dimension(:), pointer               :: p_MC,p_Jac
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    real(DP), dimension(:), pointer :: p_fluxImpl,p_fluxExpl
+    real(DP), dimension(:), pointer :: p_MC,p_Jac,p_u
     
     
     ! Check if stabilisation is prepared
@@ -8133,27 +8371,20 @@ contains
         iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .eq. 0 .or.&
         iand(rafcstab%iSpec, AFCSTAB_FLUXES)        .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarFCT')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarFCT')
       call sys_halt()
     end if
     
-    ! Check if matrices/vectors are compatible
-    call lsyssc_isMatrixCompatible(ru, rmatrixMC, .false.)
-    call lsyssc_isMatrixCompatible(ru, rmatrixJ,  .false.)
-    call gfsc_isMatrixCompatible(rafcstab, rmatrixMC)
-    call gfsc_isVectorCompatible(rafcstab, ru)
-    
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rmatrixJ)
+    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_flux)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux0)
-    call lsyssc_getbase_double(rmatrixMC, p_MC)
-    call lsyssc_getbase_double(rmatrixJ,  p_Jac)
-    call lsyssc_getbase_double(ru,        p_u)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_fluxImpl)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_fluxExpl)
+    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(ru, p_u)
     
 
     ! What kind of stabilisation are we?
@@ -8162,28 +8393,56 @@ contains
     case (AFCSTAB_FEMFCT)
       
       ! What kind of matrix are we?
-      select case(rmatrixJ%cmatrixFormat)
+      select case(rjacobianMatrix%cmatrixFormat)
       case(LSYSSC_MATRIX7)
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
-        call doJacobian_implFCT(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-            p_Kld, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
-            rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
+        !-------------------------------------------------------------------------
+        ! Matrix format 7
+        !-------------------------------------------------------------------------
+
+        ! Set pointers
+        call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+        
+        if (present(rconsistentMassMatrix)) then
+          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+          call doJacobian_implFCTconsMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_MC, p_u,&
+              p_fluxImpl, p_fluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+        else
+          call doJacobian_implFCTnoMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_u,&
+              p_fluxImpl, p_fluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+        end if
         
       case(LSYSSC_MATRIX9)
-        call lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
-        call doJacobian_implFCT(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-            p_Kdiagonal, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
-            rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
+        !-------------------------------------------------------------------------
+        ! Matrix format 9
+        !-------------------------------------------------------------------------
+
+        ! Set pointers
+        call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+        call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+        
+        if (present(rconsistentMassMatrix)) then
+          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+          call doJacobian_implFCTconsMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_MC, p_u,&
+              p_fluxImpl, p_fluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+        else
+          call doJacobian_implFCTnoMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_u,&
+              p_fluxImpl, p_fluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+        end if
+
         
       case DEFAULT
         call output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarFCT')
+                         OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarFCT')
         call sys_halt()
       end select
       
     case DEFAULT
       call output_line('Invalid type of AFC stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarFCT')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarFCT')
       call sys_halt()
     end select
     
@@ -8192,205 +8451,212 @@ contains
     ! Here, the working routine follow
 
     !**************************************************************
-    ! Assemble the Jacobian matrix for semi-implicit FEM-FCT
+    ! Assemble the Jacobian matrix for semi-implicit FEM-FCT,
+    ! whereby no mass antidiffusion is built into the matrix
 
-    subroutine doJacobian_implFCT(IverticesAtEdge, DcoefficientsAtEdge,&
-                                  Kdiagonal, MC, u, flux, flux0,&
-                                  theta, tstep, hstep, NEDGE, bmass, Jac)
-
-      integer(PREC_VECIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)   :: Kdiagonal
-      real(DP), dimension(:), intent(IN)               :: MC
-      real(DP), dimension(:), intent(IN)               :: flux,flux0
-      real(DP), dimension(:), intent(IN)               :: u
-      real(DP), intent(IN)                             :: theta,tstep,hstep
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      logical, intent(IN)                              :: bmass
-      real(DP), dimension(:), intent(INOUT)            :: Jac
-
+    subroutine doJacobian_implFCTnoMass(IverticesAtEdge, DcoefficientsAtEdge,&
+                                        Kdiagonal, u, fluxImpl, fluxExpl,&
+                                        theta, tstep, hstep, NEDGE, Jac)
+      
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: u,fluxImpl,fluxExpl
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, dimension(:), intent(IN) :: Kdiagonal
+      integer, intent(IN) :: NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      
       ! local variables
-      integer(PREC_MATIDX) :: iedge,ij,ji,ii,jj
-      integer(PREC_VECIDX) :: i,j
-      real(DP)             :: f_i,f_j,f_ij,d_ij,a_ij
-      real(DP)             :: diff,diff_i,diff_j
+      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,diff,diff_i,diff_j
+      integer :: iedge,ij,ji,ii,jj,i,j
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Determine vertex numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        
+        ! Determine matrix indices
+        ij = IverticesAtEdge(3,iedge)
+        ji = IverticesAtEdge(4,iedge)
+        
+        ! Determine diagonal indices
+        ii = Kdiagonal(i); jj = Kdiagonal(j)
+        
+        ! Determine coefficients
+        d_ij = DcoefficientsAtEdge(1,iedge)
+        a_ij = theta*tstep*d_ij
+        
+        ! Compute solution difference
+        diff = u(i)-u(j)
+        
+        ! Compute perturbed solution differences
+        diff_i = diff+hstep
+        diff_j = diff-hstep
+        
+        ! Compute limited antidiffusive flux f(u_ij+h*e_i) 
+        f_i = a_ij*diff_i+fluxExpl(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(fluxImpl(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(fluxImpl(iedge), 0.0_DP))
+        end if
+        
+        ! Compute limited antidiffusive flux f(u_ij-h*e_j)
+        f_j = a_ij*diff_j+fluxExpl(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(fluxImpl(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(fluxImpl(iedge), 0.0_DP))
+        end if
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply i-th column
+        Jac(ii) = Jac(ii)-f_ij
+        Jac(ji) = Jac(ji)+f_ij
+        
+        ! Apply j-th column
+        Jac(ij) = Jac(ij)+f_ij
+        Jac(jj) = Jac(jj)-f_ij
+      end do
 
-      ! Should we apply the consistent mass matrix?
-      if (bmass) then
+    end subroutine doJacobian_implFCTnoMass
+    
+    
+    !**************************************************************
+    ! Assemble the Jacobian matrix for semi-implicit FEM-FCT,
+    ! whereby consistent mass antidiffusion is built into the matrix
 
-        ! Loop over all edges
-        do iedge = 1, NEDGE
-          
-          ! Determine vertex numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+    subroutine doJacobian_implFCTconsMass(IverticesAtEdge, DcoefficientsAtEdge,&
+                                             Kdiagonal, MC, u, fluxImpl, fluxExpl,&
+                                             theta, tstep, hstep, NEDGE, Jac)
+      
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: MC,u,fluxImpl,fluxExpl
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, dimension(:), intent(IN) :: Kdiagonal
+      integer, intent(IN) :: NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      
+      ! local variables
+      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,diff,diff_i,diff_j
+      integer :: iedge,ij,ji,ii,jj,i,j
+      
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Determine vertex numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        
+        ! Determine matrix indices
+        ij = IverticesAtEdge(3,iedge)
+        ji = IverticesAtEdge(4,iedge)
+        
+        ! Determine diagonal indices
+        ii = Kdiagonal(i); jj = Kdiagonal(j)
+        
+        ! Determine coefficients
+        d_ij = DcoefficientsAtEdge(1,iedge)
+        a_ij = MC(ij)+theta*tstep*d_ij
+        
+        ! Compute solution difference
+        diff = u(i)-u(j)
+        
+        ! Compute perturbed solution differences
+        diff_i = diff+hstep
+        diff_j = diff-hstep
+        
+        ! Compute limited antidiffusive flux f(u_ij+h*e_i)
+        f_i = a_ij*diff_i+fluxExpl(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(fluxImpl(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(fluxImpl(iedge), 0.0_DP))
+        end if
+        
+        ! Compute limited antidiffusive flux f(u_ij-h*e_j)
+        f_j = a_ij*diff_j+fluxExpl(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(fluxImpl(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(fluxImpl(iedge), 0.0_DP))
+        end if
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply i-th column
+        Jac(ii) = Jac(ii)-f_ij
+        Jac(ji) = Jac(ji)+f_ij
+        
+        ! Apply j-th column
+        Jac(ij) = Jac(ij)+f_ij
+        Jac(jj) = Jac(jj)-f_ij
+      end do
 
-          ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
-          
-          ! Determine diagonal indices
-          ii = Kdiagonal(i); jj = Kdiagonal(j)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge)
-          a_ij = MC(ij)+theta*tstep*d_ij
-          
-          ! Compute solution difference
-          diff = u(i)-u(j)
-          
-          ! Compute perturbed solution differences
-          diff_i = diff+hstep
-          diff_j = diff-hstep
-          
-          ! Compute limited antidiffusive flux f(u_ij+h*e_i)
-          f_i = a_ij*diff_i+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-          
-          ! Compute limited antidiffusive flux f(u_ij-h*e_j)
-          f_j = a_ij*diff_j+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply i-th column
-          Jac(ii) = Jac(ii)-f_ij
-          Jac(ji) = Jac(ji)+f_ij
-          
-          ! Apply j-th column
-          Jac(ij) = Jac(ij)+f_ij
-          Jac(jj) = Jac(jj)-f_ij
-        end do
+    end subroutine doJacobian_implFCTconsMass
 
-      else
-
-        ! Loop over all edges
-        do iedge = 1, NEDGE
-          
-          ! Determine vertex numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
-
-          ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
-          
-          ! Determine diagonal indices
-          ii = Kdiagonal(i); jj = Kdiagonal(j)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge)
-          a_ij = theta*tstep*d_ij
-          
-          ! Compute solution difference
-          diff = u(i)-u(j)
-          
-          ! Compute perturbed solution differences
-          diff_i = diff+hstep
-          diff_j = diff-hstep
-          
-          ! Compute limited antidiffusive flux f(u_ij+h*e_i) 
-          f_i = a_ij*diff_i+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-          
-          ! Compute limited antidiffusive flux f(u_ij-h*e_j)
-          f_j = a_ij*diff_j+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply i-th column
-          Jac(ii) = Jac(ii)-f_ij
-          Jac(ji) = Jac(ji)+f_ij
-          
-          ! Apply j-th column
-          Jac(ij) = Jac(ij)+f_ij
-          Jac(jj) = Jac(jj)-f_ij
-        end do
-      end if     
-    end subroutine doJacobian_implFCT
   end subroutine gfsc_buildJacLinearScalarFCT
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildJacLinearBlockTVD(rmatrixMC, ru, ru0, theta, tstep, hstep,&
-                                         bclear, rafcstab, rmatrixJ)
+  subroutine gfsc_buildJacLinearBlockTVD(ru, tstep, hstep, bclear, rafcstab, rjacobianMatrix)
 
 !<description>
-    ! This subroutine assembles the Jacobian matrix for the stabilisation part
-    ! of the discrete transport operator for a scalar convection equation.
-    ! Note that the velocity is assumed to be linear.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! This subroutine assembles the Jacobian matrix for the
+    ! stabilisation part of the discrete transport operator for a
+    ! scalar convection equation.  Note that the velocity is assumed
+    ! to be linear.  Note that this routine serves as a wrapper for
+    ! block vectors. If there is only one block, then the
+    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! thrown.
 !</description>
 
 !<input>
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)    :: rmatrixMC
-
     ! solution vector
-    type(t_vectorBlock), intent(IN)     :: ru
-
-    ! initial solution vector
-    type(t_vectorBlock), intent(IN)     :: ru0
-
-    ! implicitness parameter
-    real(DP), intent(IN)                :: theta
+    type(t_vectorBlock), intent(IN) :: ru
 
     ! time step size
-    real(DP), intent(IN)                :: tstep
+    real(DP), intent(IN) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN)                :: hstep
+    real(DP), intent(IN) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                 :: bclear
+    logical, intent(IN) :: bclear
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)      :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rmatrixJ   
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
-    if (ru%nblocks  .ne. 1 .or.&
-        ru0%nblocks .ne. 1) then
+    if (ru%nblocks  .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearBlockTVD')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearBlockTVD')
       call sys_halt()
 
     else
 
-      call gfsc_buildJacLinearScalarTVD(rmatrixMC,&
-          ru%RvectorBlock(1), ru0%RvectorBlock(1),&
-          theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      call gfsc_buildJacLinearScalarTVD(ru%RvectorBlock(1), tstep, hstep,&
+                                        bclear, rafcstab, rjacobianMatrix)
 
     end if
   end subroutine gfsc_buildJacLinearBlockTVD
@@ -8399,8 +8665,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacLinearScalarTVD(rmatrixMC, ru, ru0, theta, tstep, hstep,&
-                                          bclear, rafcstab, rmatrixJ)
+  subroutine gfsc_buildJacLinearScalarTVD(ru, tstep, hstep, bclear, rafcstab, rjacobianMatrix)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation part
@@ -8409,290 +8674,143 @@ contains
 !</description>
 
 !<input>
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)    :: rmatrixMC
-
     ! solution vector
-    type(t_vectorScalar), intent(IN)    :: ru
-
-    ! initial solution vector
-    type(t_vectorScalar), intent(IN)    :: ru0
-
-    ! implicitness parameter
-    real(DP), intent(IN)                :: theta
+    type(t_vectorScalar), intent(IN) :: ru
 
     ! time step size
-    real(DP), intent(IN)                :: tstep
+    real(DP), intent(IN) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN)                :: hstep
+    real(DP), intent(IN) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                 :: bclear
+    logical, intent(IN) :: bclear
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)      :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rmatrixJ   
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    integer(PREC_VECIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_IsuperdiagonalEdgesIdx
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_IsubdiagonalEdges
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_IsubdiagonalEdgesIdx
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kld,p_Ksep
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kdiagonal
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_Kcol
-    real(DP), dimension(:,:), pointer             :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer               :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer               :: p_flux,p_flux0
-    real(DP), dimension(:), pointer               :: p_u,p_u0
-    real(DP), dimension(:), pointer               :: p_MC,p_Jac
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm
+    real(DP), dimension(:), pointer :: p_Jac,p_u,p_flux
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagonalEdges
+    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
+    
     integer :: h_Ksep
     logical :: bisExtended
 
+
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rmatrixJ)
+    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
 
-    ! What kind of stabilisation are we?
-    select case(rafcstab%ctypeAFCstabilisation)
-
-    case(AFCSTAB_FEMTVD)
+    ! Check if stabilisation is prepared
+    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
+      call output_line('Stabilisation does not provide required structures',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarTVD')
+      call sys_halt()
+    end if
       
-      ! Check if stabilisation is prepared
-      if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
-        call output_line('Stabilisation does not provide required structures',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarTVD')
-        call sys_halt()
-      end if
+    ! Check if subdiagonal edges need to be generated
+    if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
+        call afcstab_generateSubdiagEdges(rafcstab)
+    
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagonalEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_flux)
+    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(ru, p_u)
+    
+    ! What kind of matrix format are we?
+    select case(rjacobianMatrix%cmatrixFormat)
+    case(LSYSSC_MATRIX7)
+      !-------------------------------------------------------------------------
+      ! Matrix format 7
+      !-------------------------------------------------------------------------
       
-      ! Check if matrices/vectors are compatible
-      call lsyssc_isMatrixCompatible(ru, rmatrixJ, .false.)
-      call gfsc_isVectorCompatible(rafcstab, ru)
-
-      ! Check if subdiagonal edges need to be generated
-      if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
-          call afcstab_generateSubdiagEdges(rafcstab)
-
       ! Set pointers
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-      call afcstab_getbase_IsubdiagEdge(rafcstab,    p_IsubdiagonalEdges)
-      call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
-      call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1),  p_flux)
-      call lsyssc_getbase_double(rmatrixJ, p_Jac)
-      call lsyssc_getbase_double(ru,       p_u)
-
-      ! What kind of matrix format are we?
-      select case(rmatrixJ%cmatrixFormat)
-      case(LSYSSC_MATRIX7)
-        
-        ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
-        call lsyssc_getbase_Kcol(rmatrixJ, p_Kcol)
-
-        ! Create diagonal separator and increase it by one
-        h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
-        call lalg_vectorAddScalarInt(p_Ksep, 1)
-
-        ! Assembled extended Jacobian matrix
-        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-        call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                 p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                 p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                 theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                 rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
-        
-        ! Free storage
-        call storage_free(h_Ksep)
-
-      case(LSYSSC_MATRIX9)
-
-        ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
-        call lsyssc_getbase_Kcol(rmatrixJ, p_Kcol)
-        call lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
-        
-        ! Create diagonal separator
-        h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
-
-        ! Assembled extended Jacobian matrix
-        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-        call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                 p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                 p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                 theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                 rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
-        
-        ! Free storage
-        call storage_free(h_Ksep)
-        
-      case DEFAULT
-        call output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarTVD')
-        call sys_halt()
-      end select
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
       
-
-    case(AFCSTAB_FEMGP)
-
-       ! Check if stabilisation is prepared
-      if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
-        call output_line('Stabilisation does not provide required structures',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarTVD')
-        call sys_halt()
-      end if
-
-      ! Check if matrices/vectors are compatible
-      call lsyssc_isMatrixCompatible(ru, rmatrixMC, .false.)
-      call lsyssc_isMatrixCompatible(ru, rmatrixJ,  .false.)
-      call gfsc_isMatrixCompatible(rafcstab, rmatrixMC)
-      call gfsc_isVectorCompatible(rafcstab, ru)
-      call lsyssc_isVectorCompatible(ru, ru0)
+      ! Create diagonal separator and increase it by one
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call lalg_vectorAddScalarInt(p_Ksep, 1)
       
-      ! Check if subdiagonal edges need to be generated
-      if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
-          call afcstab_generateSubdiagEdges(rafcstab)
+      ! Assembled extended Jacobian matrix?
+      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
 
+      call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                               p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
+                               p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                               tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                               rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+      
+      ! Free storage
+      call storage_free(h_Ksep)
+      
+    case(LSYSSC_MATRIX9)
+      !-------------------------------------------------------------------------
+      ! Matrix format 9
+      !-------------------------------------------------------------------------
+      
       ! Set pointers
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-      call afcstab_getbase_IsubdiagEdge(rafcstab,    p_IsubdiagonalEdges)
-      call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
-      call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1),  p_flux)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2),  p_flux0)
-      call lsyssc_getbase_double(rmatrixJ, p_Jac)
-      call lsyssc_getbase_double(ru,       p_u)
-      call lsyssc_getbase_double(ru0,      p_u0)
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      
+      ! Assembled extended Jacobian matrix
+      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
 
-      ! What kind of matrix format are we?
-      select case(rmatrixJ%cmatrixFormat)
-      case(LSYSSC_MATRIX7)
+      call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                               p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
+                               p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                               tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                               rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
         
-        ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
-        call lsyssc_getbase_Kcol(rmatrixJ, p_Kcol)
-
-        ! Create diagonal separator
-        h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
-        call lalg_vectorAddScalarInt(p_Ksep, 1)
-
-        ! Assembled extended Jacobian matrix
-        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-        if (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS) then
-          ! Set pointers
-          call lsyssc_getbase_double(rmatrixMC, p_MC)
-          call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-          call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-          
-          call doJacobianMat79_GP(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                  p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                  p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                  p_MC, p_u, p_u0, p_flux, p_flux0,&
-                                  p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
-                                  theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                  rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
-          
-        else
-          call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                   p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                   p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                   theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                   rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
-        end if
-
-        ! Free storage
-        call storage_free(h_Ksep)
-
-      case(LSYSSC_MATRIX9)
-
-        ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
-        call lsyssc_getbase_Kcol(rmatrixJ, p_Kcol)
-        call lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
-        
-        ! Create diagonal separator
-        h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
-
-        ! Assembled extended Jacobian matrix
-        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-        if (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS) then
-          ! Set pointers
-          call lsyssc_getbase_double(rmatrixMC, p_MC)
-          call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-          call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-
-          call doJacobianMat79_GP(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                  p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                  p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                  p_MC, p_u, p_u0, p_flux, p_flux0,&
-                                  p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
-                                  theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                  rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
-        else
-          call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                   p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                   p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                   theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                   rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
-        end if
-
-        ! Free storage
-        call storage_free(h_Ksep)
-        
-      case DEFAULT
-        call output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarTVD')
-        call sys_halt()
-      end select
+      ! Free storage
+      call storage_free(h_Ksep)
       
     case DEFAULT
-      call output_line('Invalid type of AFC stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarTVD')
+      call output_line('Unsupported matrix format!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarTVD')
       call sys_halt()
     end select
-
+    
   contains
-
+    
     ! Here, the working routine follow
     
     !**************************************************************    
@@ -8703,26 +8821,26 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     pure subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_VECIDX), intent(IN)                  :: k
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: k
+
+      integer, dimension(:), intent(INOUT) :: Ksep
       
-      integer(PREC_MATIDX) :: ild,isep
-      integer(PREC_VECIDX) :: l
-      integer :: iloc
+      ! local variables
+      integer :: ild,isep,l,iloc
+      
       
       ! Loop over all entries of the k-th row
       do ild = Kld(k)+1, Kld(k+1)-1
-
+        
         ! Get the column number
         l = Kcol(ild)
-
+        
         ! Move separator to next position
         Ksep(l) = Ksep(l)+1
       end do
     end subroutine adjustKsepMat7
-
+    
     
     !**************************************************************    
     ! Adjust the diagonal separator.
@@ -8732,14 +8850,14 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     pure subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_VECIDX), intent(IN)                  :: k
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: k
       
-      integer(PREC_MATIDX) :: ild,isep
-      integer(PREC_VECIDX) :: l
-      integer :: iloc
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      integer :: ild,isep,l,iloc
+      
       
       ! Loop over all entries of the k-th row
       do ild = Kld(k), Kld(k+1)-1
@@ -8759,41 +8877,29 @@ contains
     pure subroutine doJacobianMat79_TVD(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
                                         IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
-                                        u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
+                                        u, flux, pp, pm, qp, qm, tstep, hstep,&
                                         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
-      real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                :: u
-      real(DP), dimension(:), intent(IN)                :: flux
-      real(DP), dimension(:), intent(IN)                :: pp,pm,qp,qm
-      real(DP), intent(IN)                              :: theta,tstep,hstep
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdges
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      integer(PREC_MATIDX), intent(IN)                  :: NEDGE
-      integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bisExtended
-      logical, intent(IN)                               :: bisMat7
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: u,flux,pp,pm,qp,qm
+      real(DP), intent(IN) :: tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(IN) :: bisExtended,bisMat7
 
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
       ! local variables
-      integer(PREC_VECIDX), dimension(NNVEDGE) :: Kloc
-      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc
-      real(DP), dimension(2,0:NNVEDGE) :: qploc,qmloc
-      real(DP), dimension(2,0:NNVEDGE) :: rploc,rmloc
-      real(DP), dimension(2,0:NNVEDGE) :: fluxloc
-           
-      integer(PREC_MATIDX) :: ild,iedge
-      integer(PREC_VECIDX) :: k,l
-      integer :: iloc,nloc
-
+      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc
+      integer, dimension(NNVEDGE) :: Kloc
+      integer :: k,l,ild,iedge,iloc,nloc
+      
+      
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
 
@@ -8839,8 +8945,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0._DP, 1._DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0._DP, 1._DP)
+        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -8891,26 +8997,20 @@ contains
                                             iedge, iloc, k, pploc, pmloc,&
                                             qploc, qmloc, fluxloc, Kloc)
       
-      real(DP), dimension(:,:), intent(IN)                 :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                   :: u
-      real(DP), dimension(:), intent(IN)                   :: pp,pm,qp,qm
-      real(DP), intent(IN)                                 :: tstep,hstep
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)     :: IverticesAtEdge
-      integer(PREC_MATIDX), intent(IN)                     :: iedge
-      integer(PREC_VECIDX), intent(IN)                     :: k
-      integer, intent(IN)                                  :: iloc
-
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: u,pp,pm,qp,qm
+      real(DP), intent(IN) :: tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: iedge,k,iloc
+      
       ! We actually know, that all local quantities start at index zero
-      real(DP), dimension(:,0:), intent(INOUT)             :: pploc,pmloc
-      real(DP), dimension(:,0:), intent(INOUT)             :: qploc,qmloc
-      real(DP), dimension(:,0:), intent(INOUT)             :: fluxloc
-      integer(PREC_VECIDX), dimension(:), intent(INOUT)    :: Kloc
+      real(DP), dimension(:,0:), intent(INOUT) :: pploc,pmloc,qploc,qmloc,fluxloc
+      integer, dimension(:), intent(INOUT) :: Kloc
 
       ! local variables
-      integer(PREC_VECIDX) :: i,j
       real(DP) :: d_ij,f_ij,l_ij,l_ji,diff,dsign
-      integer  :: iperturb
-
+      integer :: i,j,iperturb
+      
       
       ! Determine indices. Obviously, either i or j must be equal to k.
       ! Otherwise, the edge ij would not be present in the list of 
@@ -8948,8 +9048,8 @@ contains
         ! Update nodal coefficients for vertex j (!) which is the downwind node
         pploc(:,iloc) = pp(j)
         pmloc(:,iloc) = pm(j)
-        qploc(:,iloc) = qp(j)-max(0._DP, f_ij)
-        qmloc(:,iloc) = qm(j)-min(0._DP, f_ij)
+        qploc(:,iloc) = qp(j)-max(0.0_DP, f_ij)
+        qmloc(:,iloc) = qm(j)-min(0.0_DP, f_ij)
 
         do iperturb = 1, 2
           
@@ -8961,14 +9061,14 @@ contains
           fluxloc(iperturb,iloc) = f_ij
 
           ! For node k which is the upwind node
-          pploc(iperturb,0) = pploc(iperturb,0)+max(0._DP, f_ij)
-          pmloc(iperturb,0) = pmloc(iperturb,0)+min(0._DP, f_ij)
-          qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP,-f_ij)
-          qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP,-f_ij)
+          pploc(iperturb,0) = pploc(iperturb,0)+max(0.0_DP, f_ij)
+          pmloc(iperturb,0) = pmloc(iperturb,0)+min(0.0_DP, f_ij)
+          qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,-f_ij)
+          qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,-f_ij)
           
           ! For node l opposite to k which is the downwind node
-          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP,f_ij)
-          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP,f_ij)
+          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,f_ij)
+          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP,f_ij)
         end do
 
       else
@@ -8977,10 +9077,10 @@ contains
         Kloc(iloc) = i
         
         ! Update nodal coefficients for vertex i (!) which is the upwind node
-        pploc(:,iloc) = pp(i)-max(0._DP, f_ij)
-        pmloc(:,iloc) = pm(i)-min(0._DP, f_ij)
-        qploc(:,iloc) = qp(i)-max(0._DP,-f_ij)
-        qmloc(:,iloc) = qm(i)-min(0._DP,-f_ij)
+        pploc(:,iloc) = pp(i)-max(0.0_DP, f_ij)
+        pmloc(:,iloc) = pm(i)-min(0.0_DP, f_ij)
+        qploc(:,iloc) = qp(i)-max(0.0_DP,-f_ij)
+        qmloc(:,iloc) = qm(i)-min(0.0_DP,-f_ij)
 
         do iperturb = 1, 2
           
@@ -8992,14 +9092,14 @@ contains
           fluxloc(iperturb,iloc) = f_ij
           
           ! For node k which is the downwind node
-          qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP,f_ij)
-          qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP,f_ij)
+          qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,f_ij)
+          qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,f_ij)
           
           ! For node l opposite to k
-          pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP, f_ij)
-          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP, f_ij)
-          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP,-f_ij)
-          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP,-f_ij)
+          pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP, f_ij)
+          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP, f_ij)
+          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,-f_ij)
+          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP,-f_ij)
         end do
       end if
     end subroutine updateJacobianMat79_TVD
@@ -9012,27 +9112,22 @@ contains
                                               flux, Kloc, rploc, rmloc, fluxloc,&
                                               hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
 
-      real(DP), dimension(:), intent(IN)                :: flux
-      real(DP), dimension(:,0:), intent(IN)             :: rploc,rmloc
-      real(DP), dimension(:,0:), intent(IN)             :: fluxloc
-      real(DP), intent(IN)                              :: hstep
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kloc
-      integer(PREC_MATIDX), intent(IN)                  :: iedge
-      integer(PREC_VECIDX), intent(IN)                  :: k,l
-      integer, intent(IN)                               :: iloc
-      logical, intent(IN)                               :: bisExtended
+      real(DP), dimension(:), intent(IN) :: flux
+      real(DP), dimension(:,0:), intent(IN) :: rploc,rmloc,fluxloc
+      real(DP), intent(IN) :: hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: Kdiagonal,Kloc
+      integer, intent(IN) :: iedge,k,l,iloc
+      logical, intent(IN) :: bisExtended
 
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
 
       ! local variables
-      integer(PREC_MATIDX) :: ik,jk
-      integer(PREC_VECIDX) :: i,j,m
-      real(DP)             :: f_ij,df_ij
-      integer              :: iperturb
+      real(DP) :: f_ij,df_ij
+      integer :: ik,jk,i,j,m,iperturb
+      
       
       ! Get global node number for edge IJ and the 
       ! number of the node m which is not l
@@ -9133,6 +9228,298 @@ contains
       end if
     end subroutine assembleJacobianMat79_TVD
 
+  end subroutine gfsc_buildJacLinearScalarTVD
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildJacLinearBlockGP(rconsistentMassMatrix, ru, ru0, theta, tstep,&
+                                        hstep, bclear, rafcstab, rjacobianMatrix)
+
+!<description>
+    ! This subroutine assembles the Jacobian matrix for the
+    ! stabilisation part of the discrete transport operator for a
+    ! scalar convection equation.  Note that the velocity is assumed
+    ! to be linear.  Note that this routine serves as a wrapper for
+    ! block vectors. If there is only one block, then the
+    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! thrown.
+!</description>
+
+!<input>
+    ! consistent mass matrix
+    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: ru
+
+    ! initial solution vector
+    type(t_vectorBlock), intent(IN) :: ru0
+
+    ! implicitness parameter
+    real(DP), intent(IN) :: theta
+
+    ! time step size
+    real(DP), intent(IN) :: tstep
+
+    ! perturbation parameter
+    real(DP), intent(IN) :: hstep
+    
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(IN) :: bclear
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(INOUT) :: rafcstab
+
+    ! Jacobian matrix
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
+!</inputoutput>
+!</subroutine>
+
+    if (ru%nblocks  .ne. 1 .or.&
+        ru0%nblocks .ne. 1) then
+
+      call output_line('Vector must not contain more than one block!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearBlockGP')
+      call sys_halt()
+
+    else
+
+      call gfsc_buildJacLinearScalarGP(rconsistentMassMatrix, ru%RvectorBlock(1),&
+                                       ru0%RvectorBlock(1), theta, tstep, hstep,&
+                                       bclear, rafcstab, rjacobianMatrix)
+
+    end if
+  end subroutine gfsc_buildJacLinearBlockGP
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildJacLinearScalarGP(rconsistentMassMatrix, ru, ru0, theta, tstep,&
+                                         hstep, bclear, rafcstab, rjacobianMatrix)
+
+!<description>
+    ! This subroutine assembles the Jacobian matrix for the stabilisation part
+    ! of the discrete transport operator for a scalar convection equation.
+    ! Note that the velocity is assumed to be linear.
+!</description>
+
+!<input>
+    ! consistent mass matrix
+    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+
+    ! solution vector
+    type(t_vectorScalar), intent(IN) :: ru
+
+    ! initial solution vector
+    type(t_vectorScalar), intent(IN) :: ru0
+
+    ! implicitness parameter
+    real(DP), intent(IN) :: theta
+
+    ! time step size
+    real(DP), intent(IN) :: tstep
+
+    ! perturbation parameter
+    real(DP), intent(IN) :: hstep
+    
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(IN) :: bclear
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(INOUT) :: rafcstab
+
+    ! Jacobian matrix
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
+    real(DP), dimension(:), pointer :: p_MC,p_Jac,p_u,p_u0,p_flux,p_flux0
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagonalEdges
+    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
+    integer :: h_Ksep
+    logical :: bisExtended
+
+    ! Clear matrix?
+    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+
+    ! Check if stabilisation is prepared
+    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
+      call output_line('Stabilisation does not provide required structures',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarGP')
+      call sys_halt()
+    end if
+    
+    ! Check if subdiagonal edges need to be generated
+    if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
+        call afcstab_generateSubdiagEdges(rafcstab)
+    
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagonalEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_flux)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux0)
+    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+    call lsyssc_getbase_double(ru, p_u)
+    call lsyssc_getbase_double(ru0, p_u0)
+    
+    ! What kind of matrix format are we?
+    select case(rjacobianMatrix%cmatrixFormat)
+    case(LSYSSC_MATRIX7)
+      !-------------------------------------------------------------------------
+      ! Matrix format 7
+      !-------------------------------------------------------------------------
+      
+      ! Set pointers
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call lalg_vectorAddScalarInt(p_Ksep, 1)
+      
+      ! Assembled extended Jacobian matrix
+      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
+
+      call doJacobianMat79_GP(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                              p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                              p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
+                              p_MC, p_u, p_u0, p_flux, p_flux0,&
+                              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
+                              theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                              rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+      
+      ! Free storage
+      call storage_free(h_Ksep)
+      
+    case(LSYSSC_MATRIX9)
+      !-------------------------------------------------------------------------
+      ! Matrix format 9
+      !-------------------------------------------------------------------------
+      
+      ! Set pointers
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      
+      ! Assembled extended Jacobian matrix
+      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
+
+      call doJacobianMat79_GP(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                              p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                              p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
+                              p_MC, p_u, p_u0, p_flux, p_flux0,&
+                              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
+                              theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                              rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+      
+      ! Free storage
+      call storage_free(h_Ksep)
+      
+    case DEFAULT
+      call output_line('Unsupported matrix format!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarGP')
+      call sys_halt()
+    end select
+    
+  contains
+    
+    ! Here, the working routine follow
+    
+    !**************************************************************    
+    ! Adjust the diagonal separator.
+    ! The separator is initialied by the column separator (increased
+    ! by one if this is necessary for matrix format 7).
+    ! Based on the matric structure given by Kld/Kcol, the separator
+    ! is "moved" to the given column "k". For efficiency reasons, only
+    ! those entries are considered which are present in column "k".
+    pure subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: k
+
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      integer :: ild,isep,l,iloc
+      
+      
+      ! Loop over all entries of the k-th row
+      do ild = Kld(k)+1, Kld(k+1)-1
+        
+        ! Get the column number
+        l = Kcol(ild)
+        
+        ! Move separator to next position
+        Ksep(l) = Ksep(l)+1
+      end do
+    end subroutine adjustKsepMat7
+
+    
+    !**************************************************************    
+    ! Adjust the diagonal separator.
+    ! The separator is initialied by the column separator (increased
+    ! by one if this is necessary for matrix format 7).
+    ! Based on the matric structure given by Kld/Kcol, the separator
+    ! is "moved" to the given column "k". For efficiency reasons, only
+    ! those entries are considered which are present in column "k".
+    pure subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: k
+      
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      integer :: ild,isep,l,iloc
+      
+      
+      ! Loop over all entries of the k-th row
+      do ild = Kld(k), Kld(k+1)-1
+
+        ! Get the column number
+        l = Kcol(ild)
+
+        ! Move separator to next position
+        Ksep(l) = Ksep(l)+1
+      end do
+    end subroutine adjustKsepMat9
     
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-GP,
@@ -9144,39 +9531,26 @@ contains
                                   theta, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
                                   bisExtended, bisMat7, Ksep, Jac)
     
-      real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                :: MC
-      real(DP), dimension(:), intent(IN)                :: u,u0
-      real(DP), dimension(:), intent(IN)                :: flux,flux0
-      real(DP), dimension(:), intent(IN)                :: pp,pm,qp,qm,rp,rm
-      real(DP), intent(IN)                              :: theta,tstep,hstep
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdges
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      integer(PREC_MATIDX), intent(IN)                  :: NEDGE
-      integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bisExtended
-      logical, intent(IN)                               :: bisMat7
-
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(IN) :: bisExtended,bisMat7
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
       ! local variables
-      integer(PREC_VECIDX), dimension(NNVEDGE) :: Kloc
-      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc
-      real(DP), dimension(2,0:NNVEDGE) :: qploc,qmloc
-      real(DP), dimension(2,0:NNVEDGE) :: rploc,rmloc
-      real(DP), dimension(2,0:NNVEDGE) :: fluxloc,fluxloc0
-
-      integer(PREC_MATIDX) :: ild,iedge
-      integer(PREC_VECIDX) :: k,l
-      integer :: iloc,nloc
-
+      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc,fluxloc0
+      integer, dimension(NNVEDGE) :: Kloc
+      integer :: k,l,ild,iedge,iloc,nloc
+      
+      
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
@@ -9224,8 +9598,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0._DP, 1._DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0._DP, 1._DP)
+        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -9276,29 +9650,20 @@ contains
                                       pploc, pmloc, qploc, qmloc,&
                                       fluxloc, fluxloc0, Kloc)
       
-      real(DP), dimension(:,:), intent(IN)                 :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                   :: MC
-      real(DP), dimension(:), intent(IN)                   :: u,u0
-      real(DP), dimension(:), intent(IN)                   :: flux,flux0
-      real(DP), dimension(:), intent(IN)                   :: pp,pm,qp,qm
-      real(DP), intent(IN)                                 :: theta,tstep,hstep
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)     :: IverticesAtEdge
-      integer(PREC_MATIDX), intent(IN)                     :: iedge
-      integer(PREC_VECIDX), intent(IN)                     :: k
-      integer, intent(IN)                                  :: iloc
-
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: MC,u,u0,flux,flux0,pp,pm,qp,qm
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, intent(IN) :: iedge,k,iloc
+      
       ! We actually know, that all local quantities start at index zero
-      real(DP), dimension(:,0:), intent(INOUT)             :: pploc,pmloc
-      real(DP), dimension(:,0:), intent(INOUT)             :: qploc,qmloc
-      real(DP), dimension(:,0:), intent(INOUT)             :: fluxloc,fluxloc0
-      integer(PREC_VECIDX), dimension(:), intent(INOUT)    :: Kloc
+      real(DP), dimension(:,0:), intent(INOUT) :: pploc,pmloc,qploc,qmloc,fluxloc,fluxloc0
+      integer, dimension(:), intent(INOUT)    :: Kloc
 
       ! local variables
-      integer(PREC_VECIDX) :: i,j,ij
-      real(DP) :: m_ij,d_ij,df_ij,f_ij,l_ij,l_ji,p_ij,pf_ij,q_ij,q_ji
-      real(DP) :: diff,diff1,diff0,dsign
-      integer  :: iperturb
-
+      real(DP) :: m_ij,d_ij,df_ij,f_ij,l_ij,l_ji,p_ij,pf_ij,q_ij,q_ji,diff,diff1,diff0,dsign
+      integer :: i,j,ij,iperturb
+      
       
       ! Determine indices. Obviously, either i or j must be equal
       ! to k. Otherwise, the edge ij would not be present in the
@@ -9329,7 +9694,7 @@ contains
         p_ij = 0.0_DP
         f_ij = 0.0_DP
       else
-        p_ij = max(0._DP, m_ij*(diff1-diff0)/diff+d_ij)
+        p_ij = max(0.0_DP, m_ij*(diff1-diff0)/diff+d_ij)
         f_ij = p_ij*diff
       end if
 
@@ -9358,10 +9723,10 @@ contains
         Kloc(iloc) = j
 
         ! Update nodal coefficients for vertex j (!) which is the downwind node
-        pploc(:,iloc) = pp(j)-max(0._DP,-df_ij)
-        pmloc(:,iloc) = pm(j)-min(0._DP,-df_ij)
-        qploc(:,iloc) = qp(j)-max(0._DP, diff)*q_ji
-        qmloc(:,iloc) = qm(j)-min(0._DP, diff)*q_ji
+        pploc(:,iloc) = pp(j)-max(0.0_DP,-df_ij)
+        pmloc(:,iloc) = pm(j)-min(0.0_DP,-df_ij)
+        qploc(:,iloc) = qp(j)-max(0.0_DP, diff)*q_ji
+        qmloc(:,iloc) = qm(j)-min(0.0_DP, diff)*q_ji
 
         do iperturb = 1, 2
           
@@ -9379,7 +9744,7 @@ contains
             p_ij = 0.0_DP
             f_ij = 0.0_DP
           else
-            p_ij = max(0._DP, m_ij*(diff1-diff0)/diff+d_ij)
+            p_ij = max(0.0_DP, m_ij*(diff1-diff0)/diff+d_ij)
             f_ij = p_ij*diff
           end if
           
@@ -9392,16 +9757,16 @@ contains
           fluxloc(iperturb,iloc) = df_ij
           
           ! For node k which is the upwind node
-          pploc(iperturb,0) = pploc(iperturb,0)+max(0._DP, f_ij)
-          pmloc(iperturb,0) = pmloc(iperturb,0)+min(0._DP, f_ij)
-          qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP,-diff)*q_ij
-          qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP,-diff)*q_ij
+          pploc(iperturb,0) = pploc(iperturb,0)+max(0.0_DP, f_ij)
+          pmloc(iperturb,0) = pmloc(iperturb,0)+min(0.0_DP, f_ij)
+          qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,-diff)*q_ij
+          qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,-diff)*q_ij
           
           ! For node l opposite to k which is the downwind node
-          pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP,-df_ij)
-          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP,-df_ij)
-          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP, diff)*q_ji
-          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP, diff)*q_ji
+          pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP,-df_ij)
+          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP,-df_ij)
+          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP, diff)*q_ji
+          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP, diff)*q_ji
         end do
 
       else
@@ -9410,10 +9775,10 @@ contains
         Kloc(iloc) = i
 
         ! Update nodal coefficients for vertex i (!) which is the upwind node
-        pploc(:,iloc) = pp(i)-max(0._DP, f_ij)
-        pmloc(:,iloc) = pm(i)-min(0._DP, f_ij)
-        qploc(:,iloc) = qp(i)-max(0._DP,-diff)*q_ij
-        qmloc(:,iloc) = qm(i)-min(0._DP,-diff)*q_ij
+        pploc(:,iloc) = pp(i)-max(0.0_DP, f_ij)
+        pmloc(:,iloc) = pm(i)-min(0.0_DP, f_ij)
+        qploc(:,iloc) = qp(i)-max(0.0_DP,-diff)*q_ij
+        qmloc(:,iloc) = qm(i)-min(0.0_DP,-diff)*q_ij
 
         do iperturb = 1, 2
         
@@ -9431,7 +9796,7 @@ contains
             p_ij = 0.0_DP
             f_ij = 0.0_DP
           else
-            p_ij = max(0._DP, m_ij*(diff1-diff0)/diff+d_ij)
+            p_ij = max(0.0_DP, m_ij*(diff1-diff0)/diff+d_ij)
             f_ij = p_ij*diff
           end if
           
@@ -9444,86 +9809,21 @@ contains
           fluxloc(iperturb,iloc) = df_ij
 
           ! For node k which is the downwind node
-          pploc(iperturb,0) = pploc(iperturb,0)+max(0._DP,-df_ij)
-          pmloc(iperturb,0) = pmloc(iperturb,0)+min(0._DP,-df_ij)
-          qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP, diff)*q_ji
-          qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP, diff)*q_ji
+          pploc(iperturb,0) = pploc(iperturb,0)+max(0.0_DP,-df_ij)
+          pmloc(iperturb,0) = pmloc(iperturb,0)+min(0.0_DP,-df_ij)
+          qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP, diff)*q_ji
+          qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP, diff)*q_ji
           
           ! For node l opposite to k
-          pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP, f_ij)
-          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP, f_ij)
-          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP,-diff)*q_ij
-          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP,-diff)*q_ij
+          pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP, f_ij)
+          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP, f_ij)
+          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,-diff)*q_ij
+          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP,-diff)*q_ij
         end do
       end if
-     
-        
-!!$      DO iperturb = 1, 2
-!!$        
-!!$        ! Compute correct sign of perturbation
-!!$        dsign = -2*iperturb+3
-!!$        
-!!$        ! The velocity is assumed to be linear.
-!!$        ! Hence the orientation convention for the edge ij is preserved
-
-!!$        ! Save oriented node numbers
-!!$        Kloc(2*iperturb:2*iperturb+1,iloc) = (/i,j/)
-        
-!!$        ! Update solution difference
-!!$        diff1 = u(i)-u(j)+dsign*(hstep_ik-hstep_jk)
-!!$        
-!!$        ! Update total solution difference
-!!$        diff = tstep*(theta*diff1+(1-theta)*diff0)
-!!$        
-!!$        ! Compute antidiffusive flux
-!!$        IF (ABS(diff) < SYS_EPSREAL) THEN
-!!$          p_ij = 0
-!!$          f_ij = 0
-!!$        ELSE
-!!$          p_ij = MAX(0._DP, m_ij*(diff1-diff0)/diff+d_ij)
-!!$          f_ij = p_ij*diff
-!!$        END IF
-!!$        
-!!$        ! Prelimit the antidiffusive flux
-!!$        pf_ij = MIN(p_ij, l_ji)*diff
-!!$        fluxloc0(iperturb,iloc) = pf_ij
-!!$        
-!!$        ! Compute the remaining flux
-!!$        df_ij = f_ij-pf_ij
-!!$        fluxloc(iperturb,iloc) = df_ij
-!!$        
-!!$        IF (i .EQ. k) THEN
-!!$
-!!$          ! For node k which is the upwind node
-!!$          pploc(iperturb,0) = pploc(iperturb,0)+MAX(0._DP, f_ij)
-!!$          pmloc(iperturb,0) = pmloc(iperturb,0)+MIN(0._DP, f_ij)
-!!$          qploc(iperturb,0) = qploc(iperturb,0)+MAX(0._DP,-diff)*q_ij
-!!$          qmloc(iperturb,0) = qmloc(iperturb,0)+MIN(0._DP,-diff)*q_ij
-!!$          
-!!$          ! For node l opposite to k which is the downwind node
-!!$          pploc(iperturb,iloc) = pploc(iperturb,iloc)+MAX(0._DP,-df_ij)
-!!$          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+MIN(0._DP,-df_ij)
-!!$          qploc(iperturb,iloc) = qploc(iperturb,iloc)+MAX(0._DP, diff)*q_ji
-!!$          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+MIN(0._DP, diff)*q_ji
-!!$
-!!$        ELSE
-!!$
-!!$          ! For node k which is the downwind node
-!!$          pploc(iperturb,0) = pploc(iperturb,0)+MAX(0._DP,-df_ij)
-!!$          pmloc(iperturb,0) = pmloc(iperturb,0)+MIN(0._DP,-df_ij)
-!!$          qploc(iperturb,0) = qploc(iperturb,0)+MAX(0._DP, diff)*q_ji
-!!$          qmloc(iperturb,0) = qmloc(iperturb,0)+MIN(0._DP, diff)*q_ji
-!!$          
-!!$          ! For node l opposite to k
-!!$          pploc(iperturb,iloc) = pploc(iperturb,iloc)+MAX(0._DP, f_ij)
-!!$          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+MIN(0._DP, f_ij)
-!!$          qploc(iperturb,iloc) = qploc(iperturb,iloc)+MAX(0._DP,-diff)*q_ij
-!!$          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+MIN(0._DP,-diff)*q_ij
-!!$
-!!$        END IF        
-!!$      END DO
+      
     end subroutine updateJacobianMat79_GP
-
+    
 
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-GP,
@@ -9534,28 +9834,21 @@ contains
                                         hstep, iedge, iloc, k, l,&
                                         bisExtended, Ksep, Jac)
 
-      real(DP), dimension(:), intent(IN)                :: flux,flux0
-      real(DP), dimension(:), intent(IN)                :: rp,rm
-      real(DP), dimension(:,0:), intent(IN)             :: rploc,rmloc
-      real(DP), dimension(:,0:), intent(IN)             :: fluxloc,fluxloc0
-      real(DP), intent(IN)                              :: hstep
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kloc
-      integer(PREC_MATIDX), intent(IN)                  :: iedge
-      integer, intent(IN)                               :: iloc
-      integer(PREC_VECIDX), intent(IN)                  :: k,l
-      logical, intent(IN)                               :: bisExtended
+      real(DP), dimension(:,0:), intent(IN) :: rploc,rmloc,fluxloc,fluxloc0
+      real(DP), dimension(:), intent(IN) :: rp,rm,flux,flux0
+      real(DP), intent(IN) :: hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: Kdiagonal,Kloc
+      integer, intent(IN) :: iedge,iloc,k,l
+      logical, intent(IN) :: bisExtended
 
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-
-
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
       ! local variables
-      integer(PREC_MATIDX) :: ik,jk
-      integer(PREC_VECIDX) :: i,j,m
-      real(DP)             :: f_ij,pf_ij,df_ij
-      integer              :: iperturb
+      real(DP) :: f_ij,pf_ij,df_ij
+      integer :: ik,jk,i,j,m,iperturb
+      
       
       ! Get global node number for edge IJ and the 
       ! number of the node m which is not l
@@ -9578,10 +9871,6 @@ contains
           ! Retrieve precomputed fluxes
           df_ij = fluxloc(iperturb,iloc)
           pf_ij = fluxloc0(iperturb,iloc)
-
-!!$          ! Adjust edge orientation
-!!$          i = Kloc(2*iperturb,iloc)
-!!$          j = Kloc(2*iperturb+1,iloc)
           
           ! Which node is located upwind?
           if (i .eq. k) then
@@ -9707,72 +9996,75 @@ contains
         end if
       end if
     end subroutine assembleJacobianMat79_GP
-  end subroutine gfsc_buildJacLinearScalarTVD
+  end subroutine gfsc_buildJacLinearScalarGP
 
   !*****************************************************************************
   
 !<subroutine>
 
-  subroutine gfsc_buildJacobianBlockFCT(RcoeffMatrices, rmatrixMC, ru, &
-                                        fcb_calcConvection, theta, tstep, hstep,&
-                                        bclear, rafcstab, rmatrixJ)
+  subroutine gfsc_buildJacobianBlockFCT(RcoeffMatrices, ru, fcb_calcConvection,&
+                                        theta, tstep, hstep, bclear, rafcstab,&
+                                        rjacobianMatrix, rconsistentMassMatrix)
 
 !<description>
-    ! This subroutine assembles the Jacobian matrix for the stabilisation part
-    ! of the discrete transport operator for a scalar convection equation.
-    ! The velocity is assumed to be nonlinear/arbitrary.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! This subroutine assembles the Jacobian matrix for the
+    ! stabilisation part of the discrete transport operator for a
+    ! scalar convection equation.  The velocity is assumed to be
+    ! nonlinear/arbitrary.  Note that this routine serves as a wrapper
+    ! for block vectors. If there is only one block, then the
+    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! thrown.
 !</description>
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
     type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
-
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)               :: rmatrixMC
-
+    
     ! solution vector
-    type(t_vectorBlock), intent(IN)                :: ru
+    type(t_vectorBlock), intent(IN) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN)                           :: theta
+    real(DP), intent(IN) :: theta
 
     ! time step size
-    real(DP), intent(IN)                           :: tstep
+    real(DP), intent(IN) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN)                           :: hstep
+    real(DP), intent(IN) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                            :: bclear
+    logical, intent(IN) :: bclear
 
-     ! callback functions to compute velocity
+    ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
+
+    ! OPTIONAL: consistent mass matrix
+    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)                 :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT)            :: rmatrixJ   
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
     if (ru%nblocks  .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlockFCT')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlockFCT')
       call sys_halt()
 
     else
 
-      call gfsc_buildJacobianScalarFCT(RcoeffMatrices, rmatrixMC, ru%RvectorBlock(1),&
-          fcb_calcConvection, theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      call gfsc_buildJacobianScalarFCT(RcoeffMatrices, ru%RvectorBlock(1),&
+                                       fcb_calcConvection, theta, tstep, hstep,&
+                                       bclear, rafcstab, rjacobianMatrix,&
+                                       rconsistentMassMatrix)
 
     end if
   end subroutine gfsc_buildJacobianBlockFCT
@@ -9781,167 +10073,210 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianScalarFCT(RcoeffMatrices, rmatrixMC, ru,&
-                                         fcb_calcConvection, theta, tstep, hstep,&
-                                         bclear, rafcstab, rmatrixJ)
+  subroutine gfsc_buildJacobianScalarFCT(RcoeffMatrices, ru, fcb_calcConvection,&
+                                         theta, tstep, hstep, bclear, rafcstab,&
+                                         rjacobianMatrix, rconsistentMassMatrix)
 
 !<description>
-    ! This subroutine assembles the Jacobian matrix for the stabilisation
-    ! part of the discrete transport operator for a scalar convection equation.
-    ! The velocity is assumed to be nonlinear/arbitrary. 
-    ! This routine will also work for linear velocities but then it is inefficient
-    ! since the solution perturbation does not affect the velocity.
+    ! This subroutine assembles the Jacobian matrix for the
+    ! stabilisation part of the discrete transport operator for a
+    ! scalar convection equation.  The velocity is assumed to be
+    ! nonlinear/arbitrary.  This routine will also work for linear
+    ! velocities but then it is inefficient since the solution
+    ! perturbation does not affect the velocity.
 !</description>
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
     type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)               :: rmatrixMC
-
     ! solution vector
-    type(t_vectorScalar), intent(IN)               :: ru
+    type(t_vectorScalar), intent(IN) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN)                           :: theta
+    real(DP), intent(IN) :: theta
 
     ! time step size
-    real(DP), intent(IN)                           :: tstep
+    real(DP), intent(IN) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN)                           :: hstep
+    real(DP), intent(IN) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                            :: bclear
-
-     ! callback functions to compute velocity
+    logical, intent(IN) :: bclear
+    
+    ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
+    
+    ! OPTIONAL: consistent mass matrix
+    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)                 :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT)            :: rmatrixJ   
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kld
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kdiagonal
-    real(DP), dimension(:,:), pointer             :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer               :: p_flux,p_flux0
-    real(DP), dimension(:), pointer               :: p_u
-    real(DP), dimension(:), pointer               :: p_Cx,p_Cy,p_Cz,p_MC,p_Jac
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    real(DP), dimension(:), pointer :: p_flux,p_flux0,p_u,p_Cx,p_Cy,p_Cz,p_MC,p_Jac
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     integer :: ndim
-
+    
     
     ! Check if stabilisation is prepared
     if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0 .or.&
         iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .eq. 0 .or.&
         iand(rafcstab%iSpec, AFCSTAB_FLUXES)        .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarFCT')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarFCT')
       call sys_halt()
     end if
     
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rmatrixJ)
+    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_flux)
     call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux0)
-    call lsyssc_getbase_double(rmatrixMC, p_MC)
-    call lsyssc_getbase_double(rmatrixJ,  p_Jac)
-    call lsyssc_getbase_double(ru,        p_u)
+    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(ru, p_u)
     
-    ! Set spatial dimensions
+    ! How many dimensions do we have?
     ndim = size(RcoeffMatrices,1)
+    select case(ndim)
+    case (NDIM1D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
 
+    case (NDIM2D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+
+    case (NDIM3D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+
+    case DEFAULT
+      call output_line('Unsupported spatial dimension!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarFCT')
+      call sys_halt()
+    end select
+    
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
       
     case (AFCSTAB_FEMFCT)
       
       ! What kind of matrix format are we?
-      select case(rmatrixJ%cmatrixFormat)
+      select case(rjacobianMatrix%cmatrixFormat)
       case(LSYSSC_MATRIX7)
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
+        !-----------------------------------------------------------------------
+        ! Matrix format 7
+        !-----------------------------------------------------------------------
+
+        ! Set pointers
+        call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
         
         ! How many dimensions do we have?
         select case(ndim)
         case (NDIM1D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-          
-          call doJacobian_implFCT_1D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_Kld, p_Cx, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
-              rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
+          if (present(rconsistentMassMatrix)) then
+            call doJacobian_implFCTconsMass_1D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx,&
+                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          else
+            call doJacobian_implFCTnoMass_1D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx,&
+                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          end if
           
         case (NDIM2D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-          
-          call doJacobian_implFCT_2D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_Kld, p_Cx, p_Cy, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
-              rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
+          if (present(rconsistentMassMatrix)) then
+            call doJacobian_implFCTconsMass_2D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx, p_Cy,&
+                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE,  p_Jac)
+          else
+            call doJacobian_implFCTnoMass_2D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx, p_Cy,&
+                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          end if
           
         case (NDIM3D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)        
-          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-          call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
-          
-          call doJacobian_implFCT_3D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_Kld, p_Cx, p_Cy, p_Cz, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
-              rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
+          if (present(rconsistentMassMatrix)) then
+            call doJacobian_implFCTconsMass_3D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx, p_Cy, p_Cz,&
+                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          else
+            call doJacobian_implFCTnoMass_3D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx, p_Cy, p_Cz,&
+                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          end if
         end select
         
         
       case(LSYSSC_MATRIX9)
-        call lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
+        !-----------------------------------------------------------------------
+        ! Matrix format 9
+        !-----------------------------------------------------------------------
+
+        ! Set pointers
+        call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
         
         ! How many dimensions do we have?
         select case(ndim)
         case (NDIM1D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-          
-          call doJacobian_implFCT_1D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_Kdiagonal, p_Cx, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
-              rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
-          
+          if (present(rconsistentMassMatrix)) then
+            call doJacobian_implFCTconsMass_1D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx,&
+                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          else
+            call doJacobian_implFCTnoMass_1D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx,&
+                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          end if
+            
         case (NDIM2D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-          
-          call doJacobian_implFCT_2D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_Kdiagonal, p_Cx, p_Cy, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
-              rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
+          if (present(rconsistentMassMatrix)) then
+            call doJacobian_implFCTconsMass_2D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx, p_Cy,&
+                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          else
+            call doJacobian_implFCTnoMass_2D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx, p_Cy,&
+                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          end if
           
         case (NDIM3D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)        
-          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-          call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
-          
-          call doJacobian_implFCT_3D(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_Kdiagonal, p_Cx, p_Cy, p_Cz, p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep,&
-              rafcstab%NEDGE, (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS), p_Jac)
+          if (present(rconsistentMassMatrix)) then
+            call doJacobian_implFCTconsMass_3D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx, p_Cy, p_Cz,&
+                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          else
+            call doJacobian_implFCTnoMass_3D(&
+                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx, p_Cy, p_Cz,&
+                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+          end if
         end select
         
       case DEFAULT
         call output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarFCT')
+                         OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarFCT')
         call sys_halt()
       end select
 
     case DEFAULT
       call output_line('Invalid type of AFC stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarFCT')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarFCT')
       call sys_halt()
     end select
 
@@ -9949,802 +10284,847 @@ contains
     
     ! Here, the working routine follow
 
-     !**************************************************************
-    ! Assemble the Jacobian matrix for FEM-FCT in 1D
+    !**************************************************************
+    ! Assemble the Jacobian matrix for FEM-FCT in 1D,
+    ! whereby no mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
-    subroutine doJacobian_implFCT_1D(IverticesAtEdge, DcoefficientsAtEdge,&
-                                     Kdiagonal, Cx, MC, u, flux, flux0,&
-                                     theta, tstep, hstep, NEDGE, bmass, Jac)
+    subroutine doJacobian_implFCTnoMass_1D(IverticesAtEdge, DcoefficientsAtEdge,&
+                                           Kdiagonal, Cx, u, flux, flux0,&
+                                           theta, tstep, hstep, NEDGE, Jac)
 
-      integer(PREC_MATIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)   :: Kdiagonal
-      real(DP), dimension(:), intent(IN)               :: Cx,MC
-      real(DP), dimension(:), intent(IN)               :: flux,flux0
-      real(DP), dimension(:), intent(IN)               :: u
-      real(DP), intent(IN)                             :: theta,tstep,hstep
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      logical, intent(IN)                              :: bmass
-      real(DP), dimension(:), intent(INOUT)            :: Jac
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,u,flux,flux0
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: Kdiagonal
+      integer, intent(IN) :: NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      integer(PREC_MATIDX) :: iedge,ij,ji,ii,jj
-      integer(PREC_VECIDX) :: i,j
-      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji
-      real(DP) :: diff,diff_i,diff_j
-
-      ! Should we apply the consistent mass matrix?
-      if (bmass) then
-
-        ! Loop over all edges
-        do iedge = 1, NEDGE
-          
-          ! Determine vertex numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
-
-          ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
-          
-          ! Determine diagonal indices
-          ii = Kdiagonal(i); jj = Kdiagonal(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-
-          ! Compute solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine perturbed solution differences
-          diff_i = diff+hstep
-          diff_j = diff-hstep
-          
-          !------------------------------------------------------------
-          ! Compute flux for i-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          a_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
-          f_i = a_ij*diff_i+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          b_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_j+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-
-          
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply i-th column
-          Jac(ii) = Jac(ii)-f_ij
-          Jac(ji) = Jac(ji)+f_ij
-
-          !------------------------------------------------------------
-          ! Compute flux for j-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          a_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
-          f_i = a_ij*diff_j+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          b_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_i+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply j-th column
-          Jac(ij) = Jac(ij)-f_ij
-          Jac(jj) = Jac(jj)+f_ij
-        end do
-
-      else
-
-        ! Loop over all edges
-        do iedge = 1, NEDGE
-          
-          ! Determine vertex numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
-
-          ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
-          
-          ! Determine diagonal indices
-          ii = Kdiagonal(i); jj = Kdiagonal(j)
-                    
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-
-          ! Compute solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine perturbed solution differences
-          diff_i = diff+hstep
-          diff_j = diff-hstep
-          
-          
-          !------------------------------------------------------------
-          ! Compute flux for i-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          a_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
-          f_i = a_ij*diff_i+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          b_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
+      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji,diff,diff_i,diff_j
+      integer :: iedge,ij,ji,ii,jj,i,j
+      
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
         
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_j+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply i-th column
-          Jac(ii) = Jac(ii)-f_ij
-          Jac(ji) = Jac(ji)+f_ij
-
-          !------------------------------------------------------------
-          ! Compute flux for j-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          a_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
-          f_i = a_ij*diff_j+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          b_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_i+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply j-th column
-          Jac(ij) = Jac(ij)-f_ij
-          Jac(jj) = Jac(jj)+f_ij
-        end do
+        ! Determine vertex numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
         
-      end if
-    end subroutine doJacobian_implFCT_1D
+        ! Determine matrix indices
+        ij = IverticesAtEdge(3,iedge)
+        ji = IverticesAtEdge(4,iedge)
+        
+        ! Determine diagonal indices
+        ii = Kdiagonal(i); jj = Kdiagonal(j)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        
+        ! Compute solution difference
+        diff = u(i)-u(j)
+        
+        ! Determine perturbed solution differences
+        diff_i = diff+hstep
+        diff_j = diff-hstep
+        
+        
+        !------------------------------------------------------------
+        ! Compute flux for i-th column
+        !------------------------------------------------------------
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient a_ij(u+hstep*e_i)
+        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
+        f_i = a_ij*diff_i+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_i)
+        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_j+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply i-th column
+        Jac(ii) = Jac(ii)-f_ij
+        Jac(ji) = Jac(ji)+f_ij
+        
+        !------------------------------------------------------------
+        ! Compute flux for j-th column
+        !------------------------------------------------------------
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient a_ij(u+hstep*e_j)
+        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
+        f_i = a_ij*diff_j+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_j)
+        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_i+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply j-th column
+        Jac(ij) = Jac(ij)-f_ij
+        Jac(jj) = Jac(jj)+f_ij
+      end do
+      
+    end subroutine doJacobian_implFCTnoMass_1D
 
 
     !**************************************************************
-    ! Assemble the Jacobian matrix for FEM-FCT in 2D
+    ! Assemble the Jacobian matrix for FEM-FCT in 1D,
+    ! whereby consistent mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
-    subroutine doJacobian_implFCT_2D(IverticesAtEdge, DcoefficientsAtEdge,&
-                                     Kdiagonal, Cx, Cy, MC, u, flux, flux0,&
-                                     theta, tstep, hstep, NEDGE, bmass, Jac)
+    subroutine doJacobian_implFCTconsMass_1D(IverticesAtEdge, DcoefficientsAtEdge,&
+                                                Kdiagonal, Cx, MC, u, flux, flux0,&
+                                                theta, tstep, hstep, NEDGE, Jac)
 
-      integer(PREC_MATIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)   :: Kdiagonal
-      real(DP), dimension(:), intent(IN)               :: Cx,Cy,MC
-      real(DP), dimension(:), intent(IN)               :: flux,flux0
-      real(DP), dimension(:), intent(IN)               :: u
-      real(DP), intent(IN)                             :: theta,tstep,hstep
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      logical, intent(IN)                              :: bmass
-      real(DP), dimension(:), intent(INOUT)            :: Jac
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,MC,u,flux,flux0
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: Kdiagonal
+      integer, intent(IN) :: NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
+
+      ! local variables
+      real(DP), dimension(NDIM1D) :: C_ij,C_ji
+      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji,diff,diff_i,diff_j
+      integer :: iedge,ij,ji,ii,jj,i,j
+      
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Determine vertex numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        
+        ! Determine matrix indices
+        ij = IverticesAtEdge(3,iedge)
+        ji = IverticesAtEdge(4,iedge)
+        
+        ! Determine diagonal indices
+        ii = Kdiagonal(i); jj = Kdiagonal(j)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        
+        ! Compute solution difference
+        diff = u(i)-u(j)
+        
+        ! Determine perturbed solution differences
+        diff_i = diff+hstep
+        diff_j = diff-hstep
+        
+        !------------------------------------------------------------
+        ! Compute flux for i-th column
+        !------------------------------------------------------------
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient a_ij(u+hstep*e_i)
+        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
+        f_i = a_ij*diff_i+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_i)
+        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_j+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply i-th column
+        Jac(ii) = Jac(ii)-f_ij
+        Jac(ji) = Jac(ji)+f_ij
+        
+        !------------------------------------------------------------
+        ! Compute flux for j-th column
+        !------------------------------------------------------------
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient a_ij(u+hstep*e_j)
+        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
+        f_i = a_ij*diff_j+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_j)
+        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_i+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply j-th column
+        Jac(ij) = Jac(ij)-f_ij
+        Jac(jj) = Jac(jj)+f_ij
+      end do
+      
+    end subroutine doJacobian_implFCTconsMass_1D
+
+
+    !**************************************************************
+    ! Assemble the Jacobian matrix for FEM-FCT in 2D,
+    ! whereby no mass antidiffusion is built into the Jacobian.
+    ! All matrices can be stored in matrix format 7 or 9
+    subroutine doJacobian_implFCTnoMass_2D(IverticesAtEdge, DcoefficientsAtEdge,&
+                                           Kdiagonal, Cx, Cy, u, flux, flux0,&
+                                           theta, tstep, hstep, NEDGE, Jac)
+
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u,flux,flux0
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN)   :: Kdiagonal
+      integer, intent(IN) :: NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      integer(PREC_MATIDX) :: iedge,ij,ji,ii,jj
-      integer(PREC_VECIDX) :: i,j
-      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji
-      real(DP) :: diff,diff_i,diff_j
-
-      ! Should we apply the consistent mass matrix?
-      if (bmass) then
-
-        ! Loop over all edges
-        do iedge = 1, NEDGE
-          
-          ! Determine vertex numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
-
-          ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
-          
-          ! Determine diagonal indices
-          ii = Kdiagonal(i); jj = Kdiagonal(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-
-          ! Compute solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine perturbed solution differences
-          diff_i = diff+hstep
-          diff_j = diff-hstep
-          
-          !------------------------------------------------------------
-          ! Compute flux for i-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          a_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
-          f_i = a_ij*diff_i+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          b_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_j+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-
-          
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply i-th column
-          Jac(ii) = Jac(ii)-f_ij
-          Jac(ji) = Jac(ji)+f_ij
-
-          !------------------------------------------------------------
-          ! Compute flux for j-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          a_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
-          f_i = a_ij*diff_j+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          b_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_i+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply j-th column
-          Jac(ij) = Jac(ij)-f_ij
-          Jac(jj) = Jac(jj)+f_ij
-        end do
-
-      else
-
-        ! Loop over all edges
-        do iedge = 1, NEDGE
-          
-          ! Determine vertex numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
-
-          ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
-          
-          ! Determine diagonal indices
-          ii = Kdiagonal(i); jj = Kdiagonal(j)
-
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-   
-          ! Compute solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine perturbed solution differences
-          diff_i = diff+hstep
-          diff_j = diff-hstep
-          
-          
-          !------------------------------------------------------------
-          ! Compute flux for i-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          a_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
-          f_i = a_ij*diff_i+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          b_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
+      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji,diff,diff_i,diff_j
+      integer :: iedge,ij,ji,ii,jj,i,j
+      
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
         
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_j+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply i-th column
-          Jac(ii) = Jac(ii)-f_ij
-          Jac(ji) = Jac(ji)+f_ij
-
-          !------------------------------------------------------------
-          ! Compute flux for j-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          a_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
-          f_i = a_ij*diff_j+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          b_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_i+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply j-th column
-          Jac(ij) = Jac(ij)-f_ij
-          Jac(jj) = Jac(jj)+f_ij
-        end do
+        ! Determine vertex numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
         
-      end if
-    end subroutine doJacobian_implFCT_2D
-
+        ! Determine matrix indices
+        ij = IverticesAtEdge(3,iedge)
+        ji = IverticesAtEdge(4,iedge)
+        
+        ! Determine diagonal indices
+        ii = Kdiagonal(i); jj = Kdiagonal(j)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        
+        ! Compute solution difference
+        diff = u(i)-u(j)
+        
+        ! Determine perturbed solution differences
+        diff_i = diff+hstep
+        diff_j = diff-hstep
+        
+        
+        !------------------------------------------------------------
+        ! Compute flux for i-th column
+        !------------------------------------------------------------
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient a_ij(u+hstep*e_i)
+        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
+        f_i = a_ij*diff_i+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_i)
+        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_j+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply i-th column
+        Jac(ii) = Jac(ii)-f_ij
+        Jac(ji) = Jac(ji)+f_ij
+        
+        !------------------------------------------------------------
+        ! Compute flux for j-th column
+        !------------------------------------------------------------
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient a_ij(u+hstep*e_j)
+        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
+        f_i = a_ij*diff_j+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_j)
+        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_i+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply j-th column
+        Jac(ij) = Jac(ij)-f_ij
+        Jac(jj) = Jac(jj)+f_ij
+      end do
+      
+    end subroutine doJacobian_implFCTnoMass_2D
 
     !**************************************************************
-    ! Assemble the Jacobian matrix for FEM-FCT in 3D
+    ! Assemble the Jacobian matrix for FEM-FCT in 2D,
+    ! whereby consistent mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
-    subroutine doJacobian_implFCT_3D(IverticesAtEdge, DcoefficientsAtEdge,&
-                                     Kdiagonal, Cx, Cy, Cz, MC, u, flux, flux0,&
-                                     theta, tstep, hstep, NEDGE, bmass, Jac)
+    subroutine doJacobian_implFCTconsMass_2D(IverticesAtEdge, DcoefficientsAtEdge,&
+                                                Kdiagonal, Cx, Cy, MC, u, flux, flux0,&
+                                                theta, tstep, hstep, NEDGE, Jac)
 
-      integer(PREC_MATIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)             :: DcoefficientsAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)   :: Kdiagonal
-      real(DP), dimension(:), intent(IN)               :: Cx,Cy,Cz,MC
-      real(DP), dimension(:), intent(IN)               :: flux,flux0
-      real(DP), dimension(:), intent(IN)               :: u
-      real(DP), intent(IN)                             :: theta,tstep,hstep
-      integer(PREC_MATIDX), intent(IN)                 :: NEDGE
-      logical, intent(IN)                              :: bmass
-      real(DP), dimension(:), intent(INOUT)            :: Jac
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,MC,u,flux,flux0
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN)   :: Kdiagonal
+      integer, intent(IN) :: NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
+
+      ! local variables
+      real(DP), dimension(NDIM2D) :: C_ij,C_ji
+      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji,diff,diff_i,diff_j
+      integer :: iedge,ij,ji,ii,jj,i,j
+      
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Determine vertex numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        
+        ! Determine matrix indices
+        ij = IverticesAtEdge(3,iedge)
+        ji = IverticesAtEdge(4,iedge)
+        
+        ! Determine diagonal indices
+        ii = Kdiagonal(i); jj = Kdiagonal(j)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+        ! Compute solution difference
+        diff = u(i)-u(j)
+        
+        ! Determine perturbed solution differences
+        diff_i = diff+hstep
+        diff_j = diff-hstep
+        
+        !------------------------------------------------------------
+        ! Compute flux for i-th column
+        !------------------------------------------------------------
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient a_ij(u+hstep*e_i)
+        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
+        f_i = a_ij*diff_i+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_i)
+        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_j+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply i-th column
+        Jac(ii) = Jac(ii)-f_ij
+        Jac(ji) = Jac(ji)+f_ij
+        
+        !------------------------------------------------------------
+        ! Compute flux for j-th column
+        !------------------------------------------------------------
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient a_ij(u+hstep*e_j)
+        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
+        f_i = a_ij*diff_j+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_j)
+        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_i+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply j-th column
+        Jac(ij) = Jac(ij)-f_ij
+        Jac(jj) = Jac(jj)+f_ij
+      end do
+
+    end subroutine doJacobian_implFCTconsMass_2D
+    
+    
+    !**************************************************************
+    ! Assemble the Jacobian matrix for FEM-FCT in 3D
+    ! whereby no mass antidiffusion is built into the Jacobian.
+    ! All matrices can be stored in matrix format 7 or 9
+    subroutine doJacobian_implFCTnoMass_3D(IverticesAtEdge, DcoefficientsAtEdge,&
+                                           Kdiagonal, Cx, Cy, Cz, u, flux, flux0,&
+                                           theta, tstep, hstep, NEDGE, Jac)
+      
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u,flux,flux0
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: Kdiagonal
+      integer, intent(IN) :: NEDGE
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      integer(PREC_MATIDX) :: iedge,ij,ji,ii,jj
-      integer(PREC_VECIDX) :: i,j
-      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji
-      real(DP) :: diff,diff_i,diff_j
+      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji,diff,diff_i,diff_j
+      integer :: iedge,ij,ji,ii,jj,i,j
 
-      ! Should we apply the consistent mass matrix?
-      if (bmass) then
-
-        ! Loop over all edges
-        do iedge = 1, NEDGE
-          
-          ! Determine vertex numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
-
-          ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
-          
-          ! Determine diagonal indices
-          ii = Kdiagonal(i); jj = Kdiagonal(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
-
-          ! Compute solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine perturbed solution differences
-          diff_i = diff+hstep
-          diff_j = diff-hstep
-          
-          !------------------------------------------------------------
-          ! Compute flux for i-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          a_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
-          f_i = a_ij*diff_i+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          b_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_j+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-
-          
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply i-th column
-          Jac(ii) = Jac(ii)-f_ij
-          Jac(ji) = Jac(ji)+f_ij
-
-          !------------------------------------------------------------
-          ! Compute flux for j-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          a_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
-          f_i = a_ij*diff_j+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          b_ij = MC(ij)+theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_i+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply j-th column
-          Jac(ij) = Jac(ij)-f_ij
-          Jac(jj) = Jac(jj)+f_ij
-        end do
-
-      else
-
-        ! Loop over all edges
-        do iedge = 1, NEDGE
-          
-          ! Determine vertex numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
-
-          ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
-          
-          ! Determine diagonal indices
-          ii = Kdiagonal(i); jj = Kdiagonal(j)
-
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
         
-          ! Compute solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine perturbed solution differences
-          diff_i = diff+hstep
-          diff_j = diff-hstep
-          
-          
-          !------------------------------------------------------------
-          ! Compute flux for i-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-          a_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
-          f_i = a_ij*diff_i+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-          b_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
+        ! Determine vertex numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
         
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_j+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply i-th column
-          Jac(ii) = Jac(ii)-f_ij
-          Jac(ji) = Jac(ji)+f_ij
-
-          !------------------------------------------------------------
-          ! Compute flux for j-th column
-          !------------------------------------------------------------
-          
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-          a_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
-          f_i = a_ij*diff_j+flux0(iedge)
-          if (f_i > 0.0_DP) then
-            f_i = min(f_i, max(flux(iedge), 0._DP))
-          else
-            f_i = max(f_i, min(flux(iedge), 0._DP))
-          end if
-
-
-          ! Compute perturbed velocity
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-
-          ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-          b_ij = theta*tstep*max(-l_ij, 0._DP, -l_ji)
-          
-          ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
-          f_j = b_ij*diff_i+flux0(iedge)
-          if (f_j > 0.0_DP) then
-            f_j = min(f_j, max(flux(iedge), 0._DP))
-          else
-            f_j = max(f_j, min(flux(iedge), 0._DP))
-          end if
-          
-
-          ! Compute divided differences of fluxes
-          f_ij = 0.5_DP*(f_i-f_j)/hstep
-          
-          ! Apply j-th column
-          Jac(ij) = Jac(ij)-f_ij
-          Jac(jj) = Jac(jj)+f_ij
-        end do
+        ! Determine matrix indices
+        ij = IverticesAtEdge(3,iedge)
+        ji = IverticesAtEdge(4,iedge)
         
-      end if
-    end subroutine doJacobian_implFCT_3D
+        ! Determine diagonal indices
+        ii = Kdiagonal(i); jj = Kdiagonal(j)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+        ! Compute solution difference
+        diff = u(i)-u(j)
+
+        ! Determine perturbed solution differences
+        diff_i = diff+hstep
+        diff_j = diff-hstep
+
+
+        !------------------------------------------------------------
+        ! Compute flux for i-th column
+        !------------------------------------------------------------
+
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+
+        ! Compute perturbed coefficient a_ij(u+hstep*e_i)
+        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
+        f_i = a_ij*diff_i+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+
+
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+
+        ! Compute perturbed coefficient b_ij(u-hstep*e_i)
+        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_j+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+
+
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+
+        ! Apply i-th column
+        Jac(ii) = Jac(ii)-f_ij
+        Jac(ji) = Jac(ji)+f_ij
+
+        !------------------------------------------------------------
+        ! Compute flux for j-th column
+        !------------------------------------------------------------
+
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+
+        ! Compute perturbed coefficient a_ij(u+hstep*e_j)
+        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
+        f_i = a_ij*diff_j+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_j)
+        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_i+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply j-th column
+        Jac(ij) = Jac(ij)-f_ij
+        Jac(jj) = Jac(jj)+f_ij
+      end do
+      
+    end subroutine doJacobian_implFCTnoMass_3D
+    
+
+    !**************************************************************
+    ! Assemble the Jacobian matrix for FEM-FCT in 3D
+    ! whereby consistent mass antidiffusion is built into the Jacobian.
+    ! All matrices can be stored in matrix format 7 or 9
+    subroutine doJacobian_implFCTconsMass_3D(IverticesAtEdge, DcoefficientsAtEdge,&
+                                                Kdiagonal, Cx, Cy, Cz, MC, u, flux, flux0,&
+                                                theta, tstep, hstep, NEDGE, Jac)
+
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,MC,u,flux,flux0
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: Kdiagonal
+      integer, intent(IN) :: NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
+
+      ! local variables
+      real(DP), dimension(NDIM3D) :: C_ij,C_ji
+      real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,b_ij,l_ij,l_ji,diff,diff_i,diff_j
+      integer :: iedge,ij,ji,ii,jj,i,j
+      
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Determine vertex numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        
+        ! Determine matrix indices
+        ij = IverticesAtEdge(3,iedge)
+        ji = IverticesAtEdge(4,iedge)
+        
+        ! Determine diagonal indices
+        ii = Kdiagonal(i); jj = Kdiagonal(j)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        
+        ! Compute solution difference
+        diff = u(i)-u(j)
+        
+        ! Determine perturbed solution differences
+        diff_i = diff+hstep
+        diff_j = diff-hstep
+        
+        !------------------------------------------------------------
+        ! Compute flux for i-th column
+        !------------------------------------------------------------
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient a_ij(u+hstep*e_i)
+        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
+        f_i = a_ij*diff_i+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_i)
+        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_j+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply i-th column
+        Jac(ii) = Jac(ii)-f_ij
+        Jac(ji) = Jac(ji)+f_ij
+        
+        !------------------------------------------------------------
+        ! Compute flux for j-th column
+        !------------------------------------------------------------
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient a_ij(u+hstep*e_j)
+        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
+        f_i = a_ij*diff_j+flux0(iedge)
+        if (f_i > 0.0_DP) then
+          f_i = min(f_i, max(flux(iedge), 0.0_DP))
+        else
+          f_i = max(f_i, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute perturbed velocity
+        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        
+        ! Compute perturbed coefficient b_ij(u-hstep*e_j)
+        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        
+        ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
+        f_j = b_ij*diff_i+flux0(iedge)
+        if (f_j > 0.0_DP) then
+          f_j = min(f_j, max(flux(iedge), 0.0_DP))
+        else
+          f_j = max(f_j, min(flux(iedge), 0.0_DP))
+        end if
+        
+        
+        ! Compute divided differences of fluxes
+        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        
+        ! Apply j-th column
+        Jac(ij) = Jac(ij)-f_ij
+        Jac(jj) = Jac(jj)+f_ij
+      end do
+    
+    end subroutine doJacobian_implFCTconsMass_3D
+
   end subroutine gfsc_buildJacobianScalarFCT
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianBlockTVD(RcoeffMatrices, rmatrixMC, ru, ru0,&
-                                        fcb_calcConvection, theta, tstep, hstep,&
-                                        bclear, rafcstab, rmatrixJ)
+  subroutine gfsc_buildJacobianBlockTVD(RcoeffMatrices, ru, fcb_calcConvection,&
+                                        tstep, hstep, bclear, rafcstab, rjacobianMatrix)
 
 !<description>
-    ! This subroutine assembles the Jacobian matrix for the stabilisation part
-    ! of the discrete transport operator for a scalar convection equation.
-    ! The velocity is assumed to be nonlinear/arbitrary.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! This subroutine assembles the Jacobian matrix for the
+    ! stabilisation part of the discrete transport operator for a
+    ! scalar convection equation.  The velocity is assumed to be
+    ! nonlinear/arbitrary.  Note that this routine serves as a wrapper
+    ! for block vectors. If there is only one block, then the
+    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! thrown.
 !</description>
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
     type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)               :: rmatrixMC
-
     ! solution vector
-    type(t_vectorBlock), intent(IN)                :: ru
-
-    ! initial solution vector
-    type(t_vectorBlock), intent(IN)                :: ru0
-
-    ! implicitness parameter
-    real(DP), intent(IN)                           :: theta
+    type(t_vectorBlock), intent(IN) :: ru
 
     ! time step size
-    real(DP), intent(IN)                           :: tstep
+    real(DP), intent(IN) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN)                           :: hstep
+    real(DP), intent(IN) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                            :: bclear
+    logical, intent(IN) :: bclear
 
      ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -10752,25 +11132,24 @@ contains
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)                 :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT)            :: rmatrixJ   
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
-    if (ru%nblocks  .ne. 1 .or.&
-        ru0%nblocks .ne. 1) then
-
+    if (ru%nblocks  .ne. 1) then
+      
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlockTVD')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlockTVD')
       call sys_halt()
 
     else
 
-      call gfsc_buildJacobianScalarTVD(RcoeffMatrices, rmatrixMC,&
-          ru%RvectorBlock(1), ru0%RvectorBlock(1), fcb_calcConvection,&
-          theta, tstep, hstep, bclear, rafcstab, rmatrixJ)
+      call gfsc_buildJacobianScalarTVD(RcoeffMatrices, ru%RvectorBlock(1),&
+                                       fcb_calcConvection, tstep, hstep,&
+                                       bclear, rafcstab, rjacobianMatrix)
 
     end if
   end subroutine gfsc_buildJacobianBlockTVD
@@ -10779,9 +11158,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianScalarTVD(RcoeffMatrices, rmatrixMC, ru, ru0,&
-                                         fcb_calcConvection, theta, tstep, hstep,&
-                                         bclear, rafcstab, rmatrixJ)
+  subroutine gfsc_buildJacobianScalarTVD(RcoeffMatrices, ru, fcb_calcConvection,&
+                                         tstep, hstep, bclear, rafcstab, rjacobianMatrix)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -10795,28 +11173,19 @@ contains
     ! array of coefficient matrices C = (phi_i,D phi_j)
     type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
 
-    ! consistent mass matrix
-    type(t_matrixScalar), intent(IN)               :: rmatrixMC
-
     ! solution vector
-    type(t_vectorScalar), intent(IN)               :: ru
-
-    ! initial solution vector
-    type(t_vectorScalar), intent(IN)               :: ru0
-
-    ! implicitness parameter
-    real(DP), intent(IN)                           :: theta
+    type(t_vectorScalar), intent(IN) :: ru
 
     ! time step size
-    real(DP), intent(IN)                           :: tstep
+    real(DP), intent(IN) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN)                           :: hstep
+    real(DP), intent(IN) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                            :: bclear
+    logical, intent(IN) :: bclear
 
      ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -10824,441 +11193,179 @@ contains
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)                 :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT)            :: rmatrixJ   
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_IsuperdiagonalEdgesIdx
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_IsubdiagonalEdges
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_IsubdiagonalEdgesIdx
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kld,p_Ksep
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kdiagonal
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_Kcol
-    real(DP), dimension(:,:), pointer             :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer               :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer               :: p_flux,p_flux0
-    real(DP), dimension(:), pointer               :: p_u,p_u0
-    real(DP), dimension(:), pointer               :: p_Cx,p_Cy,p_Cz,p_MC,p_Jac
-    integer :: h_Ksep
-    integer :: ndim
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_flux
+    real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_Jac,p_u
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagonalEdges
+    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
+    integer :: h_Ksep,ndim
     logical :: bisExtended
     
-    ! Set spatial dimensions
-    ndim = size(RcoeffMatrices,1)
-    
+
+    ! Check if stabilisation is prepared
+    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
+      call output_line('Stabilisation does not provide required structures',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarTVD')
+      call sys_halt()
+    end if
+
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rmatrixJ)
-    
-    ! What kind of stabilisation are we?
-    select case(rafcstab%ctypeAFCstabilisation)
-      
-    case(AFCSTAB_FEMTVD)
-      
-      ! Check if stabilisation is prepared
-      if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
-        call output_line('Stabilisation does not provide required structures',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarTVD')
-        call sys_halt()
-      end if
+    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
 
-      ! Check if subdiagonal edges need to be generated
-      if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
-          call afcstab_generateSubdiagEdges(rafcstab)
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagonalEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_flux)
+    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(ru, p_u)
 
-      ! Set pointers
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-      call afcstab_getbase_IsubdiagEdge(rafcstab,    p_IsubdiagonalEdges)
-      call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
-      call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1),  p_flux)
-      call lsyssc_getbase_double(rmatrixJ, p_Jac)
-      call lsyssc_getbase_double(ru,       p_u)
+    ! How many dimensions do we have?
+    ndim = size(RcoeffMatrices,1)
+    select case(ndim)
+    case (NDIM1D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
 
-      ! What kind of matrix format are we?
-      select case(rmatrixJ%cmatrixFormat)
-      case(LSYSSC_MATRIX7)
-        
-        ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
-        call lsyssc_getbase_Kcol(rmatrixJ, p_Kcol)
+    case (NDIM2D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
 
-        ! Create diagonal separator
-        h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
-        call lalg_vectorAddScalarInt(p_Ksep, 1)
-
-        ! Assembled extended Jacobian matrix
-        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-
-        ! How many dimensions do we have?
-        select case(ndim)
-        case (NDIM1D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-
-          call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                      p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                      p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                      p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                      theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
-
-        case (NDIM2D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-
-          call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                      p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                      p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                      p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                      theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
-          
-        case (NDIM3D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-          call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
-
-          call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                      p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                      p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                      p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                      theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
-        end select
-               
-        ! Free storage
-        call storage_free(h_Ksep)
-
-        
-      case(LSYSSC_MATRIX9)
-
-        ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
-        call lsyssc_getbase_Kcol(rmatrixJ,   p_Kcol)
-        call lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
-        
-        ! Create diagonal separator
-        h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
-
-        ! Assembled extended Jacobian matrix
-        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-
-        ! How many dimensions do we have?
-        select case(ndim)
-        case (NDIM1D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-          
-          call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                      p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                      p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                      p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                      theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
-
-        case (NDIM2D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-
-          call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                      p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                      p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                      p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                      theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
-
-        case (NDIM3D)
-          call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-          call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-          call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
-
-          call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                      p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                      p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                      p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                      theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                      rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
-        end select
-        
-        ! Free storage
-        call storage_free(h_Ksep)
-
-        
-      case DEFAULT
-        call output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarTVD')
-        call sys_halt()
-      end select
-
-      
-    case(AFCSTAB_FEMGP)
-      
-      ! Check if stabilisation is prepared
-      if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
-        call output_line('Stabilisation does not provide required structures',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarTVD')
-        call sys_halt()
-      end if
-
-      ! Check if subdiagonal edges need to be generated
-      if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
-          call afcstab_generateSubdiagEdges(rafcstab)
-
-      ! Set pointers
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-      call afcstab_getbase_IsubdiagEdge(rafcstab,    p_IsubdiagonalEdges)
-      call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
-      call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1),  p_flux)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2),  p_flux0)
-      call lsyssc_getbase_double(rmatrixJ, p_Jac)
-      call lsyssc_getbase_double(ru,       p_u)
-      call lsyssc_getbase_double(ru0,      p_u0)
-
-      ! What kind of matrix format are we?
-      select case(rmatrixJ%cmatrixFormat)
-      case(LSYSSC_MATRIX7)
-        
-        ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
-        call lsyssc_getbase_Kcol(rmatrixJ, p_Kcol)
-
-        ! Create diagonal separator
-        h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
-        call lalg_vectorAddScalarInt(p_Ksep, 1)
-
-        ! Assembled extended Jacobian matrix
-        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-        if (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS) then
-          
-          ! Set pointers
-          call lsyssc_getbase_double(rmatrixMC, p_MC)
-          call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-          call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-
-          ! How many dimensions do we have?
-          select case(ndim)
-          case (NDIM1D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-
-            call doJacobianMat79_GP_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                       p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
-                                       p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
-                                       rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bisExtended, .true., p_Ksep, p_Jac)
-
-          case (NDIM2D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-
-            call doJacobianMat79_GP_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                       p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
-                                       p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
-                                       rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bisExtended, .true., p_Ksep, p_Jac)
-            
-          case (NDIM3D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-            call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
-
-            call doJacobianMat79_GP_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                       p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
-                                       p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
-                                       rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bisExtended, .true., p_Ksep, p_Jac)
-          end select
-
-        else
-
-          ! How many dimensions do we have?
-          select case(ndim)
-          case (NDIM1D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            
-            call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                        p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                        p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                        theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
-            
-          case (NDIM2D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-
-            call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                        p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                        p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                        theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
-            
-          case (NDIM3D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-            call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
-
-            call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                        p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-                                        p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                        theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
-          end select
-
-        end if
-
-        ! Free storage
-        call storage_free(h_Ksep)
-        
-      case(LSYSSC_MATRIX9)
-
-        ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
-        call lsyssc_getbase_Kcol(rmatrixJ, p_Kcol)
-        call lsyssc_getbase_Kdiagonal(rmatrixJ, p_Kdiagonal)
-        
-        ! Create diagonal separator
-        h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
-
-        ! Assembled extended Jacobian matrix
-        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-        if (rafcstab%imass .eq. AFCSTAB_CONSISTENTMASS) then
-          
-          ! Set pointers
-          call lsyssc_getbase_double(rmatrixMC, p_MC)
-          call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-          call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-
-          ! How many dimensions do we have?
-          select case(ndim)
-          case (NDIM1D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            
-            call doJacobianMat79_GP_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                       p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
-                                       p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
-                                       rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bisExtended, .false., p_Ksep, p_Jac)
-
-          case (NDIM2D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-
-            call doJacobianMat79_GP_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                       p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
-                                       p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
-                                       rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bisExtended, .false., p_Ksep, p_Jac)
-            
-          case (NDIM3D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-            call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
-
-            call doJacobianMat79_GP_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                       p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                       p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                       p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
-                                       p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
-                                       rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
-                                       bisExtended, .false., p_Ksep, p_Jac)
-          end select
-
-        else
-
-          ! How many dimensions do we have?
-          select case(ndim)
-          case (NDIM1D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            
-            call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                        p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                        p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                        theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
-            
-          case (NDIM2D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-            
-            call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                        p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                        p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                        theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
-            
-          case (NDIM3D)
-            call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-            call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-            call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
-
-            call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                        p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
-                                        p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-                                        p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
-                                        theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-                                        rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
-          end select
-
-        end if
-
-        ! Free storage
-        call storage_free(h_Ksep)
-        
-      case DEFAULT
-        call output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarTVD')
-        call sys_halt()
-      end select
+    case (NDIM3D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
 
     case DEFAULT
-      call output_line('Invalid type of stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarTVD')
+      call output_line('Unsupported spatial dimension!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarTVD')
+      call sys_halt()
+    end select
+
+    ! Check if subdiagonal edges need to be generated
+    if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
+        call afcstab_generateSubdiagEdges(rafcstab)
+    
+    
+    ! What kind of matrix format are we?
+    select case(rjacobianMatrix%cmatrixFormat)
+    case(LSYSSC_MATRIX7)
+      !-------------------------------------------------------------------------
+      ! Matrix format 7
+      !-------------------------------------------------------------------------
+      
+      ! Set pointers
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call lalg_vectorAddScalarInt(p_Ksep, 1)
+      
+      ! Assembled extended Jacobian matrix?
+      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
+      
+      ! How many dimensions do we have?
+      select case(ndim)
+      case (NDIM1D)
+        call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
+                                    p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                                    tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                    rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+      case (NDIM2D)
+        call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
+                                    p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                                    tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                    rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+      case (NDIM3D)
+        call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
+                                    p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                                    tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                    rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+      end select
+      
+      ! Free storage
+      call storage_free(h_Ksep)
+      
+        
+    case(LSYSSC_MATRIX9)
+      !-------------------------------------------------------------------------
+      ! Matrix format 9
+      !-------------------------------------------------------------------------
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix,   p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      
+      ! Assembled extended Jacobian matrix?
+      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
+
+      ! How many dimensions do we have?
+      select case(ndim)
+      case (NDIM1D)
+        call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
+                                    p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                                    tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                    rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+      case (NDIM2D)
+        call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
+                                    p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                                    tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                    rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+      case (NDIM3D)
+        call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
+                                    p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+                                    tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                    rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+      end select
+        
+      ! Free storage
+      call storage_free(h_Ksep)
+
+    case DEFAULT
+      call output_line('Unsupported matrix format!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarTVD')
       call sys_halt()
     end select
 
@@ -11270,25 +11377,25 @@ contains
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
-    ! Based on the matric structure given by Kld/Kcol, the separator
+    ! Based on the matrix structure given by Kld/Kcol, the separator
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_VECIDX), intent(IN)                  :: k
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: k
+
+      integer, dimension(:), intent(INOUT) :: Ksep
       
-      integer(PREC_MATIDX) :: ild,isep
-      integer(PREC_VECIDX) :: l
-      integer :: iloc
+      ! local variables
+      integer :: ild,isep,l,iloc
+      
       
       ! Loop over all entries of the k-th row
       do ild = Kld(k)+1, Kld(k+1)-1
-
+        
         ! Get the column number
         l = Kcol(ild)
-
+        
         ! Move separator to next position
         Ksep(l) = Ksep(l)+1
       end do
@@ -11299,25 +11406,25 @@ contains
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
-    ! Based on the matric structure given by Kld/Kcol, the separator
+    ! Based on the matrix structure given by Kld/Kcol, the separator
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_VECIDX), intent(IN)                  :: k
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: k
+
+      integer, dimension(:), intent(INOUT) :: Ksep
       
-      integer(PREC_MATIDX) :: ild,isep
-      integer(PREC_VECIDX) :: l
-      integer :: iloc
+      ! local variables
+      integer :: ild,isep,l,iloc
+      
       
       ! Loop over all entries of the k-th row
       do ild = Kld(k), Kld(k+1)-1
-
+        
         ! Get the column number
         l = Kcol(ild)
-
+        
         ! Move separator to next position
         Ksep(l) = Ksep(l)+1
       end do
@@ -11330,43 +11437,30 @@ contains
     subroutine doJacobianMat79_TVD_1D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
                                       IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                       DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
-                                      Cx, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
+                                      Cx, u, flux, pp, pm, qp, qm, tstep, hstep,&
                                       NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
+      
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,u,flux,pp,pm,qp,qm
+      real(DP), intent(IN) :: tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(IN) :: bisExtended,bisMat7
 
-      real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                :: Cx
-      real(DP), dimension(:), intent(IN)                :: u
-      real(DP), dimension(:), intent(IN)                :: flux
-      real(DP), dimension(:), intent(IN)                :: pp,pm,qp,qm
-      real(DP), intent(IN)                              :: theta,tstep,hstep
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdges
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      integer(PREC_MATIDX), intent(IN)                  :: NEDGE
-      integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bisExtended
-      logical, intent(IN)                               :: bisMat7
-
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(:), intent(INOUT)             :: Jac
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
       ! local variables
-      integer(PREC_VECIDX), dimension(5,NNVEDGE) :: Kloc
-      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc
-      real(DP), dimension(2,0:NNVEDGE) :: qploc,qmloc
-      real(DP), dimension(2,0:NNVEDGE) :: rploc,rmloc
-      real(DP), dimension(2,0:NNVEDGE) :: fluxloc
-      real(DP), dimension(NDIM1D)      :: c_ij, c_ji
+      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc
+      real(DP), dimension(NDIM1D) :: c_ij, c_ji
+      integer, dimension(5,NNVEDGE) :: Kloc
+      integer :: ij,ji,ild,iedge,i,j,k,l,iloc,nloc
 
-      integer(PREC_MATIDX) :: ij,ji,ild,iedge
-      integer(PREC_VECIDX) :: i,j,k,l
-      integer :: iloc,nloc
-
+      
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
@@ -11436,8 +11530,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0._DP, 1._DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0._DP, 1._DP)
+        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -11486,42 +11580,30 @@ contains
     subroutine doJacobianMat79_TVD_2D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
                                       IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                       DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
-                                      Cx, Cy, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
+                                      Cx, Cy, u, flux, pp, pm, qp, qm, tstep, hstep,&
                                       NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
-      real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy
-      real(DP), dimension(:), intent(IN)                :: u
-      real(DP), dimension(:), intent(IN)                :: flux
-      real(DP), dimension(:), intent(IN)                :: pp,pm,qp,qm
-      real(DP), intent(IN)                              :: theta,tstep,hstep
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdges
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      integer(PREC_MATIDX), intent(IN)                  :: NEDGE
-      integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bisExtended
-      logical, intent(IN)                               :: bisMat7
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(:), intent(INOUT)             :: Jac
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,u,flux,pp,pm,qp,qm
+      real(DP), intent(IN) :: tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(IN) :: bisExtended,bisMat7
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
       ! local variables
-      integer(PREC_VECIDX), dimension(5,NNVEDGE) :: Kloc
-      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc
-      real(DP), dimension(2,0:NNVEDGE) :: qploc,qmloc
-      real(DP), dimension(2,0:NNVEDGE) :: rploc,rmloc
-      real(DP), dimension(2,0:NNVEDGE) :: fluxloc
-      real(DP), dimension(NDIM2D)      :: c_ij, c_ji
-
-      integer(PREC_MATIDX) :: ij,ji,ild,iedge
-      integer(PREC_VECIDX) :: i,j,k,l
-      integer :: iloc,nloc
-
+      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc
+      real(DP), dimension(NDIM2D) :: c_ij, c_ji
+      integer, dimension(5,NNVEDGE) :: Kloc
+      integer :: ij,ji,ild,iedge,i,j,k,l,iloc,nloc      
+      
+      
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
@@ -11591,8 +11673,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0._DP, 1._DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0._DP, 1._DP)
+        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -11641,41 +11723,29 @@ contains
     subroutine doJacobianMat79_TVD_3D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
                                       IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                       DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
-                                      Cx, Cy, Cz, u, flux, pp, pm, qp, qm, theta, tstep, hstep,&
+                                      Cx, Cy, Cz, u, flux, pp, pm, qp, qm, tstep, hstep,&
                                       NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
+      
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u,flux,pp,pm,qp,qm
+      real(DP), intent(IN) :: tstep,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(IN) :: bisExtended,bisMat7
 
-      real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz
-      real(DP), dimension(:), intent(IN)                :: u
-      real(DP), dimension(:), intent(IN)                :: flux
-      real(DP), dimension(:), intent(IN)                :: pp,pm,qp,qm
-      real(DP), intent(IN)                              :: theta,tstep,hstep
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdges
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      integer(PREC_MATIDX), intent(IN)                  :: NEDGE
-      integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bisExtended
-      logical, intent(IN)                               :: bisMat7
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(:), intent(INOUT)             :: Jac
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
       ! local variables
-      integer(PREC_VECIDX), dimension(5,NNVEDGE) :: Kloc
-      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc
-      real(DP), dimension(2,0:NNVEDGE) :: qploc,qmloc
-      real(DP), dimension(2,0:NNVEDGE) :: rploc,rmloc
-      real(DP), dimension(2,0:NNVEDGE) :: fluxloc
-      real(DP), dimension(NDIM3D)      :: c_ij, c_ji
+      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc
+      real(DP), dimension(NDIM3D) :: c_ij, c_ji
+      integer, dimension(5,NNVEDGE) :: Kloc
+      integer :: ij,ji,ild,iedge,i,j,k,l,iloc,nloc
 
-      integer(PREC_MATIDX) :: ij,ji,ild,iedge
-      integer(PREC_VECIDX) :: i,j,k,l
-      integer :: iloc,nloc
 
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
@@ -11746,8 +11816,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0._DP, 1._DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0._DP, 1._DP)
+        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -11798,26 +11868,19 @@ contains
                                        i, j, ij, ji, iloc, k,&
                                        pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
       
-      real(DP), dimension(:,:), intent(IN)                 :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                   :: u
-      real(DP), dimension(:), intent(IN)                   :: pp,pm,qp,qm
-      real(DP), dimension(:), intent(IN)                   :: C_ij,C_ji      
-      real(DP), intent(IN)                                 :: tstep,hstep
-      integer(PREC_MATIDX), intent(IN)                     :: iedge
-      integer(PREC_VECIDX), intent(IN)                     :: i,j
-      integer(PREC_MATIDX), intent(IN)                     :: ij,ji
-      integer, intent(IN)                                  :: iloc
-      integer(PREC_VECIDX), intent(IN)                     :: k
-
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: u,pp,pm,qp,qm,C_ij,C_ji
+      real(DP), intent(IN) :: tstep,hstep
+      integer, intent(IN) :: iedge,i,j,k,ij,ji,iloc
+      
       ! We actually know, that all local quantities start at index zero
-      real(DP), dimension(:,0:), intent(INOUT)             :: pploc,pmloc
-      real(DP), dimension(:,0:), intent(INOUT)             :: qploc,qmloc
-      real(DP), dimension(:,0:), intent(INOUT)             :: fluxloc
-      integer(PREC_VECIDX), dimension(:,:), intent(INOUT)  :: Kloc
+      real(DP), dimension(:,0:), intent(INOUT) :: pploc,pmloc,qploc,qmloc,fluxloc
+      integer, dimension(:,:), intent(INOUT) :: Kloc
 
       ! local variables
       real(DP) :: d_ij,f_ij,l_ij,l_ji,diff,hstep_ik,hstep_jk,dsign
       integer  :: iperturb
+      
 
       !------------------------------------------------------------
       ! (1) unperturbed values: Retrieve the global Ps and Qs and
@@ -11840,13 +11903,13 @@ contains
         Kloc(1,iloc) = j
 
         ! Compute signed perturbation parameters
-        hstep_ik = hstep; hstep_jk = 0._DP
+        hstep_ik = hstep; hstep_jk = 0.0_DP
         
         ! Update nodal coefficients for vertex j (!) which is the downwind node
         pploc(:,iloc) = pp(j)
         pmloc(:,iloc) = pm(j)
-        qploc(:,iloc) = qp(j)-max(0._DP, f_ij)
-        qmloc(:,iloc) = qm(j)-min(0._DP, f_ij)
+        qploc(:,iloc) = qp(j)-max(0.0_DP, f_ij)
+        qmloc(:,iloc) = qm(j)-min(0.0_DP, f_ij)
 
       else
 
@@ -11854,13 +11917,13 @@ contains
         Kloc(1,iloc) = i
 
         ! Compute signed perturbation parameters
-        hstep_ik = 0._DP; hstep_jk = hstep
+        hstep_ik = 0.0_DP; hstep_jk = hstep
         
         ! Update nodal coefficients for vertex i (!) which is the upwind node
-        pploc(:,iloc) = pp(i)-max(0._DP, f_ij)
-        pmloc(:,iloc) = pm(i)-min(0._DP, f_ij)
-        qploc(:,iloc) = qp(i)-max(0._DP,-f_ij)
-        qmloc(:,iloc) = qm(i)-min(0._DP,-f_ij)
+        pploc(:,iloc) = pp(i)-max(0.0_DP, f_ij)
+        pmloc(:,iloc) = pm(i)-min(0.0_DP, f_ij)
+        qploc(:,iloc) = qp(i)-max(0.0_DP,-f_ij)
+        qmloc(:,iloc) = qm(i)-min(0.0_DP,-f_ij)
       end if
 
       !------------------------------------------------------------
@@ -11880,7 +11943,7 @@ contains
                                 C_ij, C_ji, i, j, l_ij, l_ji)
         
         ! Compute diffusion coefficient
-        d_ij = max(-l_ij, 0._DP, -l_ji)
+        d_ij = max(-l_ij, 0.0_DP, -l_ji)
 
         ! Apply discrete upwinding
         l_ij = l_ij+d_ij
@@ -11902,26 +11965,26 @@ contains
           if (i .eq. k) then
 
             ! For node k which is the upwind node
-            pploc(iperturb,0) = pploc(iperturb,0)+max(0._DP, f_ij)
-            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0._DP, f_ij)
-            qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP,-f_ij)
-            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP,-f_ij)
+            pploc(iperturb,0) = pploc(iperturb,0)+max(0.0_DP, f_ij)
+            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0.0_DP, f_ij)
+            qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,-f_ij)
+            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,-f_ij)
             
             ! For node l opposite to k which is the downwind node
-            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP,f_ij)
-            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP,f_ij)
+            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,f_ij)
+            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP,f_ij)
 
           else
 
             ! For node k which is the downwind node
-            qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP,f_ij)
-            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP,f_ij)
+            qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,f_ij)
+            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,f_ij)
             
             ! For node l opposite to k
-            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP, f_ij)
-            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP, f_ij)
-            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP,-f_ij)
-            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP,-f_ij)
+            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP, f_ij)
+            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP, f_ij)
+            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,-f_ij)
+            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP,-f_ij)
 
           end if
           
@@ -11938,26 +12001,26 @@ contains
           if (j .eq. k) then
 
             ! For node k which is the upwind node
-            pploc(iperturb,0) = pploc(iperturb,0)+max(0._DP, f_ij)
-            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0._DP, f_ij)
-            qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP,-f_ij)
-            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP,-f_ij)
+            pploc(iperturb,0) = pploc(iperturb,0)+max(0.0_DP, f_ij)
+            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0.0_DP, f_ij)
+            qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,-f_ij)
+            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,-f_ij)
             
             ! For node "l" opposite to k which is the downwind node
-            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP,f_ij)
-            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP,f_ij)
+            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,f_ij)
+            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP,f_ij)
 
           else
 
             ! For node k which is the downwind node
-            qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP,f_ij)
-            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP,f_ij)
+            qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,f_ij)
+            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,f_ij)
             
             ! For node "l" opposite to k which is the upwind node
-            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP, f_ij)
-            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP, f_ij)
-            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP,-f_ij)
-            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP,-f_ij)
+            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP, f_ij)
+            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP, f_ij)
+            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,-f_ij)
+            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP,-f_ij)
           end if
         end if
       end do
@@ -11971,26 +12034,21 @@ contains
                                          Kloc, rploc, rmloc, fluxloc, hstep,&
                                          iedge, iloc, k, l, bisExtended, Ksep, Jac)
 
-      real(DP), dimension(:), intent(IN)                :: flux
-      real(DP), dimension(:,0:), intent(IN)             :: rploc,rmloc
-      real(DP), dimension(:,0:), intent(IN)             :: fluxloc
-      real(DP), intent(IN)                              :: hstep
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:,:), intent(IN)  :: Kloc
-      integer(PREC_MATIDX), intent(IN)                  :: iedge
-      integer, intent(IN)                               :: iloc
-      integer(PREC_VECIDX), intent(IN)                  :: k,l
-      logical, intent(IN)                               :: bisExtended
+      real(DP), dimension(:,0:), intent(IN) :: rploc,rmloc,fluxloc
+      real(DP), dimension(:), intent(IN) :: flux
+      real(DP), intent(IN) :: hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge,Kloc
+      integer, dimension(:), intent(IN) :: Kdiagonal
+      integer, intent(IN) :: iedge,iloc,k,l
+      logical, intent(IN) :: bisExtended
 
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
       ! local variables
-      integer(PREC_MATIDX) :: ik,jk
-      integer(PREC_VECIDX) :: i,j,m
-      real(DP)             :: f_ij
-      integer              :: iperturb
+      real(DP) :: f_ij
+      integer :: ik,jk,i,j,m,iperturb
+      
       
       ! Get global node number for edge IJ and the 
       ! number of the node m which is not l
@@ -12090,52 +12148,412 @@ contains
         end if
       end if
     end subroutine assembleJacobianMat79_TVD
+    
+  end subroutine gfsc_buildJacobianScalarTVD
 
+  !*****************************************************************************
 
+!<subroutine>
+
+  subroutine gfsc_buildJacobianBlockGP(RcoeffMatrices, rconsistentMassMatrix,&
+                                       ru, ru0, fcb_calcConvection, theta, tstep,&
+                                       hstep, bclear, rafcstab, rjacobianMatrix)
+
+!<description>
+    ! This subroutine assembles the Jacobian matrix for the
+    ! stabilisation part of the discrete transport operator for a
+    ! scalar convection equation.  The velocity is assumed to be
+    ! nonlinear/arbitrary.  Note that this routine serves as a wrapper
+    ! for block vectors. If there is only one block, then the
+    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! thrown.
+!</description>
+
+!<input>
+    ! array of coefficient matrices C = (phi_i,D phi_j)
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+
+    ! consistent mass matrix
+    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: ru
+
+    ! initial solution vector
+    type(t_vectorBlock), intent(IN) :: ru0
+
+    ! implicitness parameter
+    real(DP), intent(IN) :: theta
+
+    ! time step size
+    real(DP), intent(IN) :: tstep
+
+    ! perturbation parameter
+    real(DP), intent(IN) :: hstep
+    
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(IN) :: bclear
+
+     ! callback functions to compute velocity
+    include 'intf_gfsccallback.inc'
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(INOUT) :: rafcstab
+
+    ! Jacobian matrix
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+!</inputoutput>
+!</subroutine>
+
+    if (ru%nblocks  .ne. 1 .or.&
+        ru0%nblocks .ne. 1) then
+
+      call output_line('Vector must not contain more than one block!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlockGP')
+      call sys_halt()
+      
+    else
+      
+      call gfsc_buildJacobianScalarGP(RcoeffMatrices, rconsistentMassMatrix,&
+                                      ru%RvectorBlock(1), ru0%RvectorBlock(1),&
+                                      fcb_calcConvection, theta, tstep, hstep,&
+                                      bclear, rafcstab, rjacobianMatrix)
+
+    end if
+  end subroutine gfsc_buildJacobianBlockGP
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildJacobianScalarGP(RcoeffMatrices, rconsistentMassMatrix,&
+                                        ru, ru0, fcb_calcConvection, theta, tstep,&
+                                        hstep, bclear, rafcstab, rjacobianMatrix)
+
+!<description>
+    ! This subroutine assembles the Jacobian matrix for the stabilisation
+    ! part of the discrete transport operator for a scalar convection equation.
+    ! The velocity is assumed to be nonlinear/arbitrary. 
+    ! This routine will also work for linear velocities but then it is inefficient
+    ! since the solution perturbation does not affect the velocity.
+!</description>
+
+!<input>
+    ! array of coefficient matrices C = (phi_i,D phi_j)
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+
+    ! consistent mass matrix
+    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+
+    ! solution vector
+    type(t_vectorScalar), intent(IN) :: ru
+
+    ! initial solution vector
+    type(t_vectorScalar), intent(IN) :: ru0
+
+    ! implicitness parameter
+    real(DP), intent(IN) :: theta
+
+    ! time step size
+    real(DP), intent(IN) :: tstep
+
+    ! perturbation parameter
+    real(DP), intent(IN) :: hstep
+    
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(IN) :: bclear
+
+     ! callback functions to compute velocity
+    include 'intf_gfsccallback.inc'
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(INOUT) :: rafcstab
+
+    ! Jacobian matrix
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm,p_flux,p_flux0
+    real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_MC,p_Jac,p_u,p_u0
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagonalEdges
+    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
+    integer :: h_Ksep,ndim
+    logical :: bisExtended
+    
+    
+    ! Check if stabilisation is prepared
+    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
+      call output_line('Stabilisation does not provide required structures',&
+                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarGP')
+      call sys_halt()
+    end if
+
+    ! Clear matrix?
+    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagonalEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_flux)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux0)
+    call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(ru, p_u)
+    call lsyssc_getbase_double(ru0, p_u0)
+    
+    ! How many dimensions do we have?
+    ndim = size(RcoeffMatrices,1)
+    select case(ndim)
+    case (NDIM1D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+
+    case (NDIM2D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+
+    case (NDIM3D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+
+    case DEFAULT
+      call output_line('Unsupported spatial dimension!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarGP')
+      call sys_halt()
+    end select
+
+    ! Check if subdiagonal edges need to be generated
+    if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
+        call afcstab_generateSubdiagEdges(rafcstab)
+    
+    
+    ! What kind of matrix format are we?
+    select case(rjacobianMatrix%cmatrixFormat)
+    case(LSYSSC_MATRIX7)
+      !-------------------------------------------------------------------------
+      ! Matrix format 7
+      !-------------------------------------------------------------------------
+      
+      ! Set pointers
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call lalg_vectorAddScalarInt(p_Ksep, 1)
+      
+      ! Assembled extended Jacobian matrix?
+      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
+      
+      ! How many dimensions do we have?
+      select case(ndim)
+      case (NDIM1D)
+        call doJacobianMat79_GP_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                   p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
+                                   p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                                   p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+                                   tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                   rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+      case (NDIM2D)
+        call doJacobianMat79_GP_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                   p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
+                                   p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                                   p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+                                   tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                   rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+      case (NDIM3D)
+        call doJacobianMat79_GP_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                   p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
+                                   p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                                   p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+                                   tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                   rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+      end select
+      
+      ! Free storage
+      call storage_free(h_Ksep)
+      
+    case(LSYSSC_MATRIX9)
+      !-------------------------------------------------------------------------
+      ! Matrix format 9
+      !-------------------------------------------------------------------------
+      
+      ! Set pointers
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      
+      ! Assembled extended Jacobian matrix?
+      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
+      
+      ! How many dimensions do we have?
+      select case(ndim)
+      case (NDIM1D)
+        call doJacobianMat79_GP_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                   p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
+                                   p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                                   p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+                                   tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                   rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+      case (NDIM2D)
+        call doJacobianMat79_GP_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                   p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
+                                   p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                                   p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+                                   tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                   rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+      case (NDIM3D)
+        call doJacobianMat79_GP_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                   p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
+                                   p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
+                                   p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+                                   tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                   rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+      end select
+
+      ! Free storage
+      call storage_free(h_Ksep)
+      
+    case DEFAULT
+      call output_line('Unsupported matrix format!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarGP')
+      call sys_halt()
+    end select
+    
+  contains
+
+    ! Here, the working routine follow
+    
+    !**************************************************************    
+    ! Adjust the diagonal separator.
+    ! The separator is initialied by the column separator (increased
+    ! by one if this is necessary for matrix format 7).
+    ! Based on the matrix structure given by Kld/Kcol, the separator
+    ! is "moved" to the given column "k". For efficiency reasons, only
+    ! those entries are considered which are present in column "k".
+    subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: k
+
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      integer :: ild,isep,l,iloc
+      
+      
+      ! Loop over all entries of the k-th row
+      do ild = Kld(k)+1, Kld(k+1)-1
+        
+        ! Get the column number
+        l = Kcol(ild)
+        
+        ! Move separator to next position
+        Ksep(l) = Ksep(l)+1
+      end do
+    end subroutine adjustKsepMat7
+
+    
+    !**************************************************************    
+    ! Adjust the diagonal separator.
+    ! The separator is initialied by the column separator (increased
+    ! by one if this is necessary for matrix format 7).
+    ! Based on the matrix structure given by Kld/Kcol, the separator
+    ! is "moved" to the given column "k". For efficiency reasons, only
+    ! those entries are considered which are present in column "k".
+    subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: k
+
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      integer :: ild,isep,l,iloc
+      
+      
+      ! Loop over all entries of the k-th row
+      do ild = Kld(k), Kld(k+1)-1
+        
+        ! Get the column number
+        l = Kcol(ild)
+        
+        ! Move separator to next position
+        Ksep(l) = Ksep(l)+1
+      end do
+    end subroutine adjustKsepMat9
+
+    
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-GP in 1D,
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP_1D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
                                      IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                      DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
-                                     Cx, MC, u, u0, flux, flux0,&
-                                     pp, pm, qp, qm, rp, rm,&
-                                     theta, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
-                                     bisExtended, bisMat7, Ksep, Jac)
-
-      real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                :: Cx,MC
-      real(DP), dimension(:), intent(IN)                :: u,u0
-      real(DP), dimension(:), intent(IN)                :: flux,flux0
-      real(DP), dimension(:), intent(IN)                :: pp,pm,qp,qm,rp,rm
-      real(DP), intent(IN)                              :: theta,tstep,hstep  
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdges
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      integer(PREC_MATIDX), intent(IN)                  :: NEDGE
-      integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bisExtended
-      logical, intent(IN)                               :: bisMat7
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(:), intent(INOUT)             :: Jac
+                                     Cx, MC, u, u0, flux, flux0, pp, pm,&
+                                     qp, qm, rp, rm, theta, tstep, hstep,&
+                                     NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
+      
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
+      real(DP), intent(IN) :: theta,tstep,hstep  
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(IN) :: bisExtended,bisMat7
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
       ! local variables
-      integer(PREC_VECIDX), dimension(5,NNVEDGE) :: Kloc
-      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc
-      real(DP), dimension(2,0:NNVEDGE) :: qploc,qmloc
-      real(DP), dimension(2,0:NNVEDGE) :: rploc,rmloc
-      real(DP), dimension(2,0:NNVEDGE) :: fluxloc,fluxloc0
-      real(DP), dimension(NDIM1D)      :: c_ij,c_ji
+      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc,fluxloc0
+      real(DP), dimension(NDIM1D) :: c_ij,c_ji
+      integer, dimension(5,NNVEDGE) :: Kloc
+      integer :: ij,ji,ild,iedge,i,j,k,l,iloc,nloc
       
-      integer(PREC_MATIDX) :: ij,ji,ild,iedge
-      integer(PREC_VECIDX) :: i,j,k,l
-      integer :: iloc,nloc
-
+      
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
@@ -12210,8 +12628,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0._DP, 1._DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0._DP, 1._DP)
+        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -12261,44 +12679,31 @@ contains
     subroutine doJacobianMat79_GP_2D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
                                      IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                      DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
-                                     Cx, Cy, MC, u, u0, flux, flux0,&
-                                     pp, pm, qp, qm, rp, rm,&
-                                     theta, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
-                                     bisExtended, bisMat7, Ksep, Jac)
+                                     Cx, Cy, MC, u, u0, flux, flux0, pp, pm,&
+                                     qp, qm, rp, rm, theta, tstep, hstep,&
+                                     NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
-      real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge    
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,MC
-      real(DP), dimension(:), intent(IN)                :: u,u0
-      real(DP), dimension(:), intent(IN)                :: flux,flux0
-      real(DP), dimension(:), intent(IN)                :: pp,pm,qp,qm,rp,rm
-      real(DP), intent(IN)                              :: theta,tstep,hstep
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdges
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      integer(PREC_MATIDX), intent(IN)                  :: NEDGE
-      integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bisExtended
-      logical, intent(IN)                               :: bisMat7
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(:), intent(INOUT)             :: Jac
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
+      real(DP), intent(IN) :: theta,tstep,hstep  
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(IN) :: bisExtended,bisMat7
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
       ! local variables
-      integer(PREC_VECIDX), dimension(5,NNVEDGE) :: Kloc
-      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc
-      real(DP), dimension(2,0:NNVEDGE) :: qploc,qmloc
-      real(DP), dimension(2,0:NNVEDGE) :: rploc,rmloc
-      real(DP), dimension(2,0:NNVEDGE) :: fluxloc,fluxloc0
-      real(DP), dimension(NDIM2D)      :: c_ij,c_ji
-      
-      integer(PREC_MATIDX) :: ij,ji,ild,iedge
-      integer(PREC_VECIDX) :: i,j,k,l
-      integer :: iloc,nloc
+      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc,fluxloc0
+      real(DP), dimension(NDIM2D) :: c_ij,c_ji
+      integer, dimension(5,NNVEDGE) :: Kloc
+      integer :: ij,ji,ild,iedge,i,j,k,l,iloc,nloc
 
+      
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
@@ -12373,8 +12778,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0._DP, 1._DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0._DP, 1._DP)
+        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -12424,43 +12829,30 @@ contains
     subroutine doJacobianMat79_GP_3D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
                                      IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
                                      DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
-                                     Cx, Cy, Cz, MC, u, u0, flux, flux0,&
-                                     pp, pm, qp, qm, rp, rm,&
-                                     theta, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
-                                     bisExtended, bisMat7, Ksep, Jac)
+                                     Cx, Cy, Cz, MC, u, u0, flux, flux0, pp, pm,&
+                                     qp, qm, rp, rm, theta, tstep, hstep,&
+                                     NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
-      real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge    
-      real(DP), dimension(:), intent(IN)                :: Cx,Cy,Cz,MC
-      real(DP), dimension(:), intent(IN)                :: u,u0
-      real(DP), dimension(:), intent(IN)                :: flux,flux0
-      real(DP), dimension(:), intent(IN)                :: pp,pm,qp,qm,rp,rm
-      real(DP), intent(IN)                              :: theta,tstep,hstep
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdges
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      integer(PREC_MATIDX), intent(IN)                  :: NEDGE
-      integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bisExtended
-      logical, intent(IN)                               :: bisMat7
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(:), intent(INOUT)             :: Jac
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
+      real(DP), intent(IN) :: theta,tstep,hstep  
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(IN) :: bisExtended,bisMat7
+      
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
       ! local variables
-      integer(PREC_VECIDX), dimension(5,NNVEDGE) :: Kloc
-      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc
-      real(DP), dimension(2,0:NNVEDGE) :: qploc,qmloc
-      real(DP), dimension(2,0:NNVEDGE) :: rploc,rmloc
-      real(DP), dimension(2,0:NNVEDGE) :: fluxloc,fluxloc0
-      real(DP), dimension(NDIM3D)      :: c_ij,c_ji
-      
-      integer(PREC_MATIDX) :: ij,ji,ild,iedge
-      integer(PREC_VECIDX) :: i,j,k,l
-      integer :: iloc,nloc
+      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc,fluxloc0
+      real(DP), dimension(NDIM3D) :: c_ij,c_ji
+      integer, dimension(5,NNVEDGE) :: Kloc
+      integer :: ij,ji,ild,iedge,i,j,k,l,iloc,nloc
+
 
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
@@ -12536,8 +12928,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0._DP, 1._DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0._DP, 1._DP)
+        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -12590,29 +12982,19 @@ contains
                                            iloc, k, pploc, pmloc, qploc, qmloc,&
                                            fluxloc, fluxloc0, Kloc)
       
-      real(DP), dimension(:,:), intent(IN)                 :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                   :: MC
-      real(DP), dimension(:), intent(IN)                   :: u,u0
-      real(DP), dimension(:), intent(IN)                   :: flux,flux0
-      real(DP), dimension(:), intent(IN)                   :: pp,pm,qp,qm
-      real(DP), dimension(:), intent(IN)                   :: C_ij,C_ji
-      real(DP), intent(IN)                                 :: theta,tstep,hstep
-      integer(PREC_MATIDX), intent(IN)                     :: iedge
-      integer(PREC_VECIDX), intent(IN)                     :: i,j
-      integer(PREC_MATIDX), intent(IN)                     :: ij,ji
-      integer, intent(IN)                                  :: iloc
-      integer(PREC_VECIDX), intent(IN)                     :: k
-
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: MC,u,u0,flux,flux0,pp,pm,qp,qm,C_ij,C_ji
+      real(DP), intent(IN) :: theta,tstep,hstep
+      integer, intent(IN) :: iedge,i,j,k,ij,ji,iloc
+      
       ! We actually know, that all local quantities start at index zero
-      real(DP), dimension(:,0:), intent(INOUT)             :: pploc,pmloc
-      real(DP), dimension(:,0:), intent(INOUT)             :: qploc,qmloc
-      real(DP), dimension(:,0:), intent(INOUT)             :: fluxloc,fluxloc0
-      integer(PREC_VECIDX), dimension(:,:), intent(INOUT)  :: Kloc
+      real(DP), dimension(:,0:), intent(INOUT) :: pploc,pmloc,qploc,qmloc,fluxloc,fluxloc0
+      integer, dimension(:,:), intent(INOUT)  :: Kloc
 
       ! local variables
       real(DP) :: m_ij,d_ij,df_ij,f_ij,l_ij,l_ji,p_ij,pf_ij,q_ij,q_ji
       real(DP) :: diff,diff1,diff0,hstep_ik,hstep_jk,dsign
-      integer  :: iperturb
+      integer :: iperturb
 
       
       !------------------------------------------------------------
@@ -12643,7 +13025,7 @@ contains
         p_ij = 0
         f_ij = 0
       else
-        p_ij = max(0._DP, m_ij*(diff1-diff0)/diff+d_ij)
+        p_ij = max(0.0_DP, m_ij*(diff1-diff0)/diff+d_ij)
         f_ij = p_ij*diff
       end if
 
@@ -12659,13 +13041,13 @@ contains
         Kloc(1,iloc) = j
 
         ! Compute signed perturbation parameters
-        hstep_ik = hstep; hstep_jk = 0._DP
+        hstep_ik = hstep; hstep_jk = 0.0_DP
         
         ! Update nodal coefficients for vertex j (!) which is the downwind node
-        pploc(:,iloc) = pp(j)-max(0._DP,-df_ij)
-        pmloc(:,iloc) = pm(j)-min(0._DP,-df_ij)
-        qploc(:,iloc) = qp(j)-max(0._DP, diff)*q_ji
-        qmloc(:,iloc) = qm(j)-min(0._DP, diff)*q_ji
+        pploc(:,iloc) = pp(j)-max(0.0_DP,-df_ij)
+        pmloc(:,iloc) = pm(j)-min(0.0_DP,-df_ij)
+        qploc(:,iloc) = qp(j)-max(0.0_DP, diff)*q_ji
+        qmloc(:,iloc) = qm(j)-min(0.0_DP, diff)*q_ji
 
       else
 
@@ -12673,13 +13055,13 @@ contains
         Kloc(1,iloc) = i
 
         ! Compute signed perturbation parameters
-        hstep_ik = 0._DP; hstep_jk = hstep
+        hstep_ik = 0.0_DP; hstep_jk = hstep
         
         ! Update nodal coefficients for vertex i (!) which is the upwind node
-        pploc(:,iloc) = pp(i)-max(0._DP, f_ij)
-        pmloc(:,iloc) = pm(i)-min(0._DP, f_ij)
-        qploc(:,iloc) = qp(i)-max(0._DP,-diff)*q_ij
-        qmloc(:,iloc) = qm(i)-min(0._DP,-diff)*q_ij
+        pploc(:,iloc) = pp(i)-max(0.0_DP, f_ij)
+        pmloc(:,iloc) = pm(i)-min(0.0_DP, f_ij)
+        qploc(:,iloc) = qp(i)-max(0.0_DP,-diff)*q_ij
+        qmloc(:,iloc) = qm(i)-min(0.0_DP,-diff)*q_ij
       end if
 
       !------------------------------------------------------------
@@ -12699,7 +13081,7 @@ contains
             u(j)+dsign*hstep_jk, C_ij, C_ji, i, j, l_ij, l_ji)
 
         ! Compute diffusion coefficient
-        d_ij = max(-l_ij, 0._DP, -l_ji)
+        d_ij = max(-l_ij, 0.0_DP, -l_ji)
 
         ! Perform discrete upwinding
         l_ij = l_ij+d_ij
@@ -12728,7 +13110,7 @@ contains
             p_ij = 0
             f_ij = 0
           else
-            p_ij = max(0._DP,m_ij*(diff1-diff0)/diff+d_ij)
+            p_ij = max(0.0_DP,m_ij*(diff1-diff0)/diff+d_ij)
             f_ij = p_ij*diff
           end if
           
@@ -12743,30 +13125,30 @@ contains
           if (i .eq. k) then
 
             ! For node k which is the upwind node
-            pploc(iperturb,0) = pploc(iperturb,0)+max(0._DP, f_ij)
-            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0._DP, f_ij)
-            qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP,-diff)*q_ij
-            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP,-diff)*q_ij
+            pploc(iperturb,0) = pploc(iperturb,0)+max(0.0_DP, f_ij)
+            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0.0_DP, f_ij)
+            qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,-diff)*q_ij
+            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,-diff)*q_ij
             
             ! For node l opposite to k which is the downwind node
-            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP,-df_ij)
-            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP,-df_ij)
-            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP, diff)*q_ji
-            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP, diff)*q_ji
+            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP,-df_ij)
+            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP,-df_ij)
+            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP, diff)*q_ji
+            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP, diff)*q_ji
 
           else
 
             ! For node k which is the downwind node
-            pploc(iperturb,0) = pploc(iperturb,0)+max(0._DP,-df_ij)
-            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0._DP,-df_ij)
-            qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP, diff)*q_ji
-            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP, diff)*q_ji
+            pploc(iperturb,0) = pploc(iperturb,0)+max(0.0_DP,-df_ij)
+            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0.0_DP,-df_ij)
+            qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP, diff)*q_ji
+            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP, diff)*q_ji
             
             ! For node l opposite to k
-            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP, f_ij)
-            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP, f_ij)
-            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP,-diff)*q_ij
-            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP,-diff)*q_ij
+            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP, f_ij)
+            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP, f_ij)
+            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,-diff)*q_ij
+            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP,-diff)*q_ij
 
           end if
           
@@ -12779,14 +13161,14 @@ contains
           diff1 = u(i)-u(j)+dsign*(hstep_ik-hstep_jk)
           
           ! Update total solution difference
-          diff = tstep*(theta*diff1+(1._DP-theta)*diff0)
+          diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
 
           ! Compute antidiffusive flux
           if (abs(diff) < SYS_EPSREAL) then
             p_ij = 0
             f_ij = 0
           else
-            p_ij = max(0._DP, m_ij*(diff1-diff0)/diff+d_ij)
+            p_ij = max(0.0_DP, m_ij*(diff1-diff0)/diff+d_ij)
             f_ij = -p_ij*diff
           end if
 
@@ -12801,30 +13183,30 @@ contains
           if (j .eq. k) then
             
             ! For node k which is the upwind node
-            pploc(iperturb,0) = pploc(iperturb,0)+max(0._DP, f_ij)
-            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0._DP, f_ij)
-            qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP, diff)*q_ij
-            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP, diff)*q_ij
+            pploc(iperturb,0) = pploc(iperturb,0)+max(0.0_DP, f_ij)
+            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0.0_DP, f_ij)
+            qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP, diff)*q_ij
+            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP, diff)*q_ij
                        
             ! For node "l" opposite to k which is the downwind node
-            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP,-df_ij)
-            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP,-df_ij)
-            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP,-diff)*q_ji
-            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP,-diff)*q_ji
+            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP,-df_ij)
+            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP,-df_ij)
+            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,-diff)*q_ji
+            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP,-diff)*q_ji
 
           else
 
             ! For node k which is the downwind node
-            pploc(iperturb,0) = pploc(iperturb,0)+max(0._DP,-df_ij)
-            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0._DP,-df_ij)
-            qploc(iperturb,0) = qploc(iperturb,0)+max(0._DP,-diff)*q_ji
-            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0._DP,-diff)*q_ji
+            pploc(iperturb,0) = pploc(iperturb,0)+max(0.0_DP,-df_ij)
+            pmloc(iperturb,0) = pmloc(iperturb,0)+min(0.0_DP,-df_ij)
+            qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,-diff)*q_ji
+            qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,-diff)*q_ji
             
             ! For node "l" opposite to k which is the upwind node
-            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP, f_ij)
-            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP, f_ij)
-            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP, diff)*q_ij
-            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP, diff)*q_ij
+            pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP, f_ij)
+            pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP, f_ij)
+            qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP, diff)*q_ij
+            qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP, diff)*q_ij
 
           end if
         end if
@@ -12840,27 +13222,21 @@ contains
                                              fluxloc, fluxloc0, hstep, iedge,&
                                              iloc, k, l, bisExtended, Ksep, Jac)
 
-      real(DP), dimension(:), intent(IN)                :: flux,flux0
-      real(DP), dimension(:), intent(IN)                :: rp,rm
-      real(DP), dimension(:,0:), intent(IN)             :: rploc,rmloc
-      real(DP), dimension(:,0:), intent(IN)             :: fluxloc,fluxloc0
-      real(DP), intent(IN)                              :: hstep
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:,:), intent(IN)  :: Kloc
-      integer(PREC_MATIDX), intent(IN)                  :: iedge
-      integer, intent(IN)                               :: iloc
-      integer(PREC_VECIDX), intent(IN)                  :: k,l
-      logical, intent(IN)                               :: bisExtended
+      real(DP), dimension(:,0:), intent(IN) :: rploc,rmloc,fluxloc,fluxloc0
+      real(DP), dimension(:), intent(IN) :: flux,flux0,rp,rm
+      real(DP), intent(IN) :: hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge,Kloc
+      integer, dimension(:), intent(IN) :: Kdiagonal
+      integer, intent(IN) :: iedge,iloc,k,l
+      logical, intent(IN) :: bisExtended
 
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
       ! local variables
-      integer(PREC_MATIDX) :: ik,jk
-      integer(PREC_VECIDX) :: i,j,m
-      real(DP)             :: f_ij,pf_ij,df_ij
-      integer              :: iperturb
+      real(DP) :: f_ij,pf_ij,df_ij
+      integer :: ik,jk,i,j,m,iperturb
+      
       
       ! Get global node number for edge IJ and the 
       ! number of the node m which is not l
@@ -13016,60 +13392,60 @@ contains
         end if
       end if
     end subroutine assembleJacobianMat79_GP
-  end subroutine gfsc_buildJacobianScalarTVD
+    
+  end subroutine gfsc_buildJacobianScalarGP
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianBlockSymm(ru, dscale, hstep, bclear, rafcstab, rmatrixJ)
+  subroutine gfsc_buildJacobianBlockSymm(ru, dscale, hstep, bclear,&
+                                         rafcstab, rjacobianMatrix)
 
 !<description>
-    ! This subroutine assembles the Jacobian matrix for the stabilisation part
-    ! of the discrete diffusion operator for a scalar convection equation.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! This subroutine assembles the Jacobian matrix for the
+    ! stabilisation part of the discrete diffusion operator for a
+    ! scalar convection equation.  Note that this routine serves as a
+    ! wrapper for block vectors. If there is only one block, then the
+    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! thrown.
 !</description>
 
 !<input>
     ! solution vector
-    type(t_vectorBlock), intent(IN)                :: ru
+    type(t_vectorBlock), intent(IN) :: ru
 
     ! scaling parameter
-    real(DP), intent(IN)                           :: dscale
+    real(DP), intent(IN) :: dscale
 
     ! perturbation parameter
-    real(DP), intent(IN)                           :: hstep
+    real(DP), intent(IN) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                            :: bclear
-
-     ! callback functions to compute velocity
-    include 'intf_gfsccallback.inc'
+    logical, intent(IN) :: bclear
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)                 :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT)            :: rmatrixJ   
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
-    if (ru%nblocks  .ne. 1) then
+    if (ru%nblocks .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlockSymm')
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlockSymm')
       call sys_halt()
 
     else
 
-      call gfsc_buildJacobianScalarSymm(ru%RvectorBlock(1), dscale,&
-          hstep, bclear, rafcstab, rmatrixJ)
+      call gfsc_buildJacobianScalarSymm(ru%RvectorBlock(1), dscale, hstep,&
+                                        bclear, rafcstab, rjacobianMatrix)
 
     end if
   end subroutine gfsc_buildJacobianBlockSymm
@@ -13078,7 +13454,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianScalarSymm(ru, dscale, hstep, bclear, rafcstab, rmatrixJ)
+  subroutine gfsc_buildJacobianScalarSymm(ru, dscale, hstep, bclear,&
+                                          rafcstab, rjacobianMatrix)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -13087,125 +13464,141 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorScalar), intent(IN)               :: ru
+    type(t_vectorScalar), intent(IN) :: ru
 
     ! scaling parameter
-    real(DP), intent(IN)                           :: dscale
+    real(DP), intent(IN) :: dscale
 
     ! perturbation parameter
-    real(DP), intent(IN)                           :: hstep
+    real(DP), intent(IN) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN)                            :: bclear
-
-     ! callback functions to compute velocity
-    include 'intf_gfsccallback.inc'
+    logical, intent(IN) :: bclear
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)                 :: rafcstab
+    type(t_afcstab), intent(INOUT) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT)            :: rmatrixJ   
+    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_IsuperdiagonalEdgesIdx
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_IsubdiagonalEdges
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_IsubdiagonalEdgesIdx
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_Kld,p_Ksep
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_Kcol
-    real(DP), dimension(:,:), pointer             :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer               :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer               :: p_flux
-    real(DP), dimension(:), pointer               :: p_u
-    real(DP), dimension(:), pointer               :: p_Jac
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
+    real(DP), dimension(:), pointer :: p_flux,p_u,p_Jac
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagonalEdges
+    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
     integer :: h_Ksep
     logical :: bisExtended
 
-    ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rmatrixJ)
     
-    ! What kind of stabilisation are we?
-    select case(rafcstab%ctypeAFCstabilisation)
-
-    case(AFCSTAB_SYMMETRIC)
-
-      ! Check if stabilisation is prepared
-      if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
-        call output_line('Stabilisation does not provide required structures',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarSymm')
-        call sys_halt()
-      end if
-      
-      ! Check if subdiagonal edges need to be generated
-      if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
-          call afcstab_generateSubdiagEdges(rafcstab)
+    ! Check if stabilisation is prepared
+    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
+      call output_line('Stabilisation does not provide required structures',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarSymm')
+      call sys_halt()
+    end if
+    
+    ! Clear matrix?
+    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+    
+    ! Check if subdiagonal edges need to be generated
+    if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
+        call afcstab_generateSubdiagEdges(rafcstab)
+    
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagonalEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+    call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_flux)
+    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(ru, p_u)
+    
+    ! What kind of matrix format are we?
+    select case(rjacobianMatrix%cmatrixFormat)
+    case(LSYSSC_MATRIX7)
+      !-------------------------------------------------------------------------
+      ! Matrix format 7
+      !-------------------------------------------------------------------------
       
       ! Set pointers
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-      call afcstab_getbase_IsubdiagEdge(rafcstab,    p_IsubdiagonalEdges)
-      call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
-      call afcstab_getbase_DcoeffsAtEdge(rafcstab,   p_DcoefficientsAtEdge)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1),  p_flux)
-      call lsyssc_getbase_Kcol(rmatrixJ,   p_Kcol)
-      call lsyssc_getbase_double(rmatrixJ, p_Jac)
-      call lsyssc_getbase_double(ru,       p_u)
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
       
-      ! What kind of matrix format are we?
-      select case(rmatrixJ%cmatrixFormat)
-      case(LSYSSC_MATRIX7)
-        
-        ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixJ, p_Kld)
-        
-        ! Create diagonal separator
-        h_Ksep = ST_NOHANDLE
-        call storage_copy(rmatrixJ%h_Kld, h_Ksep)
-        call storage_getbase_int(h_Ksep, p_Ksep, rmatrixJ%NEQ+1)
-        call lalg_vectorAddScalarInt(p_Ksep, 1)
-
-        ! Assembled extended Jacobian matrix
-        bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-
-        call doJacobian_Symm(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-            p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges, p_DcoefficientsAtEdge,&
-            p_Kld, p_Kcol, p_u, p_flux, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, dscale,&
-            hstep, rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE, bisExtended, p_Ksep, p_Jac)
-
-        ! Free storage
-        call storage_free(h_Ksep)
-        
-        
-      case DEFAULT
-        call output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarSymm')
-        call sys_halt()
-      end select
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call lalg_vectorAddScalarInt(p_Ksep, 1)
       
+      ! Assembled extended Jacobian matrix?
+      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
 
+      call doJacobianMat79_Symm(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
+                                p_u, p_flux, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
+                                dscale, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+
+      ! Free storage
+      call storage_free(h_Ksep)
+
+    case(LSYSSC_MATRIX9)
+      !-------------------------------------------------------------------------
+      ! Matrix format 9
+      !-------------------------------------------------------------------------
+      
+      ! Set pointers
+      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call lalg_vectorAddScalarInt(p_Ksep, 1)
+      
+      ! Assembled extended Jacobian matrix?
+      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
+
+      call doJacobianMat79_Symm(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
+                                p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+                                p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
+                                p_u, p_flux, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
+                                dscale, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
+                                rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+
+      ! Free storage
+      call storage_free(h_Ksep)
+      
     case DEFAULT
-      call output_line('Invalid type of stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarSymm')
+      call output_line('Unsupported matrix format!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarSymm')
       call sys_halt()
     end select
-
+    
   contains
     
     ! Here, the working routine follow
@@ -13214,68 +13607,87 @@ contains
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
-    ! Based on the matric structure given by Kld/Kcol, the separator
+    ! Based on the matrix structure given by Kld/Kcol, the separator
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
-    subroutine adjustKsep(Kld, Kcol, k, Ksep)
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      integer(PREC_VECIDX), intent(IN)                  :: k
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      
-      integer(PREC_MATIDX) :: ild,isep
-      integer(PREC_VECIDX) :: l
-      integer :: iloc
+    subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: k
 
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      integer :: ild,isep,l,iloc
+      
+      
+      ! Loop over all entries of the k-th row
+      do ild = Kld(k)+1, Kld(k+1)-1
+        
+        ! Get the column number
+        l = Kcol(ild)
+        
+        ! Move separator to next position
+        Ksep(l) = Ksep(l)+1
+      end do
+    end subroutine adjustKsepMat7
+
+
+    !**************************************************************    
+    ! Adjust the diagonal separator.
+    ! The separator is initialied by the column separator (increased
+    ! by one if this is necessary for matrix format 7).
+    ! Based on the matrix structure given by Kld/Kcol, the separator
+    ! is "moved" to the given column "k". For efficiency reasons, only
+    ! those entries are considered which are present in column "k".
+    subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
+      integer, dimension(:), intent(IN) :: Kld,Kcol
+      integer, intent(IN) :: k
+
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      integer :: ild,isep,l,iloc
+      
+      
       ! Loop over all entries of the k-th row
       do ild = Kld(k), Kld(k+1)-1
         
-        ! Get the column number and the position of the separator
-        l = Kcol(ild); isep = Ksep(l)
-
-        ! If the separator does not point to the k-th column
-        ! it must be adjusted accordingly
-        if (Kcol(isep) < k) Ksep(l) = Ksep(l)+1
+        ! Get the column number
+        l = Kcol(ild)
+        
+        ! Move separator to next position
+        Ksep(l) = Ksep(l)+1
       end do
-    end subroutine adjustKsep
+    end subroutine adjustKsepMat9
 
 
     !**************************************************************
     ! Assemble the Jacobian matrix for symmetric flux limiting
-    subroutine doJacobian_Symm(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                               IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
-                               DcoefficientsAtEdge, Kld, Kcol, u, flux,&
-                               pp, pm, qp, qm, rp, rm, dscale, hstep,&
-                               NEQ, NEDGE, NNVEDGE, bisExtended, Ksep, Jac)
+    subroutine doJacobianMat79_Symm(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
+                                    IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+                                    DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
+                                    u, flux, pp, pm, qp, qm, rp, rm, dscale, hstep,&
+                                    NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
+
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: u,flux,pp,pm,qp,qm,rp,rm
+      real(DP), intent(IN) :: dscale,hstep
+      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
+      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(IN) :: bisExtended,bisMat7
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: IsuperdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdgesIdx
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: IsubdiagonalEdges
-      real(DP), dimension(:,:), intent(IN)              :: DcoefficientsAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      real(DP), dimension(:), intent(IN)                :: u
-      real(DP), dimension(:), intent(IN)                :: flux
-      real(DP), dimension(:), intent(IN)                :: pp,pm,qp,qm,rp,rm
-      real(DP), intent(IN)                              :: dscale,hstep
-      integer(PREC_VECIDX), intent(IN)                  :: NEQ
-      integer(PREC_MATIDX), intent(IN)                  :: NEDGE
-      integer, intent(IN)                               :: NNVEDGE
-      logical, intent(IN)                               :: bisExtended
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(:), intent(INOUT)             :: Jac
-
       ! local variables
-      integer(PREC_VECIDX), dimension(5,NNVEDGE) :: Kloc
-      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc
-      real(DP), dimension(2,0:NNVEDGE) :: qploc,qmloc
-      real(DP), dimension(2,0:NNVEDGE) :: rploc,rmloc
-      real(DP), dimension(2,0:NNVEDGE) :: fluxloc
-
-      integer(PREC_MATIDX) :: ild,iedge
-      integer(PREC_VECIDX) :: k,l
-      integer :: iloc,nloc
+      real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc
+      integer, dimension(5,NNVEDGE) :: Kloc
+      integer :: ild,iedge,i,j,k,l,iloc,nloc
+      
 
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
@@ -13298,11 +13710,15 @@ contains
           
           ! Increase local counter
           iloc = iloc+1
+
+          ! Determine indices
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
           
           ! Update local coefficients
-          call updateJacobian_Symm(IverticesAtEdge, DcoefficientsAtEdge,&
-              u, pp, pm, qp, qm, hstep, iedge, iloc, k,&
-              pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
+          call updateJacobianMat79_Symm(DcoefficientsAtEdge, u, pp, pm, qp, qm,&
+                                        hstep, iedge, i, j, iloc, k,&
+                                        pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
         end do
 
         ! Loop over all superdiagonal edges
@@ -13310,23 +13726,26 @@ contains
 
           ! Increase local counter
           iloc = iloc+1
-                    
+             
+          ! Determine indices
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+
           ! Update local coefficients
-          call updateJacobian_Symm(IverticesAtEdge, DcoefficientsAtEdge,&
-              u, pp, pm, qp, qm, hstep, iedge, iloc, k,&
-              pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
+          call updateJacobianMat79_Symm(DcoefficientsAtEdge, u, pp, pm, qp, qm,&
+                                        hstep, iedge, i, j, iloc, k,&
+                                        pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
         end do
 
         ! Save total number of local neighbors
         nloc = iloc
         
-        ! Adjust the diagonal separator
-        call adjustKsep(Kld, Kcol, k, Ksep)
 
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0._DP, 1._DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0._DP, 1._DP)
+        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -13343,56 +13762,50 @@ contains
             ! Get edge number
             iedge = IsubdiagonalEdges(ild)
             
-            call assembleJacobian_Symm(IverticesAtEdge, Kld, Kcol, flux, rp, rm,&
-                Kloc, rploc, rmloc, fluxloc, dscale, hstep,&
-                iedge, iloc, k, l, bisExtended, Ksep, Jac)
+            call assembleJacobianMat79_Symm(IverticesAtEdge, Kld, Kcol, flux, rp, rm,&
+                                            Kloc, rploc, rmloc, fluxloc, dscale, hstep,&
+                                            iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
           
           ! Loop over all superdiagonal edges
           do iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
             
-            call assembleJacobian_Symm(IverticesAtEdge, Kld, Kcol, flux, rp, rm,&
-                Kloc, rploc, rmloc, fluxloc, dscale, hstep,&
-                iedge, iloc, k, l, bisExtended, Ksep, Jac)
+            call assembleJacobianMat79_Symm(IverticesAtEdge, Kld, Kcol, flux, rp, rm,&
+                                            Kloc, rploc, rmloc, fluxloc, dscale, hstep,&
+                                            iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
         end do
+        
+        ! Adjust the diagonal separator
+        if (bisMat7) then
+          call adjustKsepMat7(Kld, Kcol, k, Ksep)
+        else
+          call adjustKsepMat9(Kld, Kcol, k, Ksep)
+        end if
       end do   ! end-of k-loop
-    end subroutine doJacobian_Symm
+    end subroutine doJacobianMat79_Symm
 
     
     !**************************************************************
     ! Update the local coefficients for symmetric flux limiting
-    subroutine updateJacobian_Symm(IverticesAtEdge, DcoefficientsAtEdge,&
-                                   u, pp, pm, qp, qm, hstep, iedge, iloc, k,&
-                                   pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
+    subroutine updateJacobianMat79_Symm(DcoefficientsAtEdge, u, pp, pm, qp, qm,&
+                                        hstep, iedge, i, j, iloc, k,&
+                                        pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
 
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)     :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(IN)                 :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN)                   :: u
-      real(DP), dimension(:), intent(IN)                   :: pp,pm,qp,qm
-      real(DP), intent(IN)                                 :: hstep
-      integer(PREC_MATIDX), intent(IN)                     :: iedge
-      integer, intent(IN)                                  :: iloc
-      integer(PREC_VECIDX), intent(IN)                     :: k
-
+      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(IN) :: u,pp,pm,qp,qm
+      real(DP), intent(IN) :: hstep
+      integer, intent(IN) :: iedge,i,j,k,iloc
+      
       ! We actually know, that all local quantities start at index zero
-      real(DP), dimension(:,0:), intent(INOUT)             :: pploc,pmloc
-      real(DP), dimension(:,0:), intent(INOUT)             :: qploc,qmloc
-      real(DP), dimension(:,0:), intent(INOUT)             :: fluxloc
-      integer(PREC_VECIDX), dimension(:,:), intent(INOUT)  :: Kloc
+      real(DP), dimension(:,0:), intent(INOUT) :: pploc,pmloc,qploc,qmloc,fluxloc
+      integer, dimension(:,:), intent(INOUT) :: Kloc
 
       ! local variables
-      integer(PREC_VECIDX) :: i,j
       real(DP) :: d_ij,f_ij,s_ij,diff,hstep_ik,hstep_jk,dsign
-      integer  :: iperturb
+      integer :: iperturb
 
-
-      ! Determine indices. Obviously, either i or j must be equal
-      ! to k. Otherwise, the edge ij would not be present in the
-      ! list of incident edges for node k.
-      i = IverticesAtEdge(1,iedge)
-      j = IverticesAtEdge(2,iedge)
-
+      
       !------------------------------------------------------------
       ! (1) unperturbed values: Retrieve the global Ps and Qs and
       !     copy their content to the local ones. Moreover,
@@ -13412,21 +13825,21 @@ contains
         Kloc(1,iloc) = j
 
         ! Compute signed perturbation parameters
-        hstep_ik = hstep; hstep_jk = 0._DP
+        hstep_ik = hstep; hstep_jk = 0.0_DP
         
         ! Compute raw antidiffusve flux
         f_ij = d_ij*diff
         
         ! Update sums of raw antidiffusive fluxes
-        pploc(:,iloc) = pp(j)-max(0._DP, -f_ij)
-        pmloc(:,iloc) = pm(j)-max(0._DP, -f_ij)
+        pploc(:,iloc) = pp(j)-max(0.0_DP, -f_ij)
+        pmloc(:,iloc) = pm(j)-max(0.0_DP, -f_ij)
         
         ! Compute admissible edge contribution
         f_ij = -s_ij*diff
         
         ! Update upper/lower bounds
-        qploc(:,iloc) = qp(j)-max(0._DP, -f_ij)
-        qmloc(:,iloc) = qm(j)-min(0._DP, -f_ij)
+        qploc(:,iloc) = qp(j)-max(0.0_DP, -f_ij)
+        qmloc(:,iloc) = qm(j)-min(0.0_DP, -f_ij)
         
       else
         
@@ -13434,21 +13847,21 @@ contains
         Kloc(1,iloc) = i
         
         ! Compute signed perturbation parameters
-        hstep_ik = 0._DP; hstep_jk = hstep
+        hstep_ik = 0.0_DP; hstep_jk = hstep
         
         ! Compute raw antidiffusve flux
         f_ij = d_ij*diff
         
         ! Update sums of raw antidiffusive fluxes
-        pploc(:,iloc) = pp(i)-max(0._DP, f_ij)
-        pmloc(:,iloc) = pm(i)-min(0._DP, f_ij)
+        pploc(:,iloc) = pp(i)-max(0.0_DP, f_ij)
+        pmloc(:,iloc) = pm(i)-min(0.0_DP, f_ij)
         
         ! Compute admissible edge contribution
         f_ij = -s_ij*diff
         
         ! Update upper/lower bounds
-        qploc(:,iloc) = qp(i)-max(0._DP, f_ij)
-        qmloc(:,iloc) = qm(i)-min(0._DP, f_ij)
+        qploc(:,iloc) = qp(i)-max(0.0_DP, f_ij)
+        qmloc(:,iloc) = qm(i)-min(0.0_DP, f_ij)
       end if
       
       !------------------------------------------------------------
@@ -13477,19 +13890,19 @@ contains
           fluxloc(iperturb,iloc) = f_ij
 
           ! Update sums of raw antidiffusive fluxes
-          pploc(iperturb,0)    = pploc(iperturb,0)+max(0._DP, f_ij)
-          pmloc(iperturb,0)    = pmloc(iperturb,0)+min(0._DP, f_ij)
-          pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP, -f_ij)
-          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP, -f_ij)
+          pploc(iperturb,0)    = pploc(iperturb,0)+max(0.0_DP, f_ij)
+          pmloc(iperturb,0)    = pmloc(iperturb,0)+min(0.0_DP, f_ij)
+          pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP, -f_ij)
+          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP, -f_ij)
 
           ! Compute admissible edge contribution
           f_ij = -s_ij*(diff+dsign*(hstep_ik-hstep_jk))
 
           ! Update upper/lower bounds
-          qploc(iperturb,0)    = qploc(iperturb,0)+max(0._DP, f_ij)
-          qmloc(iperturb,0)    = qmloc(iperturb,0)+min(0._DP, f_ij)
-          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP, -f_ij)
-          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP, -f_ij)
+          qploc(iperturb,0)    = qploc(iperturb,0)+max(0.0_DP, f_ij)
+          qmloc(iperturb,0)    = qmloc(iperturb,0)+min(0.0_DP, f_ij)
+          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP, -f_ij)
+          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP, -f_ij)
           
         else
           
@@ -13498,54 +13911,46 @@ contains
           fluxloc(iperturb,iloc) = f_ij
 
           ! Update sums of raw antidiffusive fluxes
-          pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0._DP, f_ij)
-          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0._DP, f_ij)
-          pploc(iperturb,0)    = pploc(iperturb,0)+max(0._DP, -f_ij)
-          pmloc(iperturb,0)    = pmloc(iperturb,0)+min(0._DP, -f_ij)
+          pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP, f_ij)
+          pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP, f_ij)
+          pploc(iperturb,0)    = pploc(iperturb,0)+max(0.0_DP, -f_ij)
+          pmloc(iperturb,0)    = pmloc(iperturb,0)+min(0.0_DP, -f_ij)
 
           ! Compute admissible edge contribution
           f_ij = -s_ij*(diff+dsign*(hstep_ik-hstep_jk))
           
           ! Update upper/lower bounds
-          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0._DP, f_ij)
-          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0._DP, f_ij)
-          qploc(iperturb,0)    = qploc(iperturb,0)+max(0._DP, -f_ij)
-          qmloc(iperturb,0)    = qmloc(iperturb,0)+min(0._DP, -f_ij)
+          qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP, f_ij)
+          qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP, f_ij)
+          qploc(iperturb,0)    = qploc(iperturb,0)+max(0.0_DP, -f_ij)
+          qmloc(iperturb,0)    = qmloc(iperturb,0)+min(0.0_DP, -f_ij)
         end if
       end do
-    end subroutine updateJacobian_Symm
+    end subroutine updateJacobianMat79_Symm
 
     
     !**************************************************************
     ! Assemble the given column of the Jacobian for symmetric flux limiting
-    subroutine assembleJacobian_Symm(IverticesAtEdge, Kdiagonal, Kcol,&
-                                     flux, rp, rm, Kloc, rploc, rmloc, fluxloc,&
-                                     dscale, hstep, iedge, iloc, k, l,&
-                                     bisExtended, Ksep, Jac)
-      
-      integer(PREC_MATIDX), dimension(:,:), intent(IN)  :: IverticesAtEdge
-      integer(PREC_MATIDX), dimension(:), intent(IN)    :: Kdiagonal
-      integer(PREC_VECIDX), dimension(:), intent(IN)    :: Kcol
-      real(DP), dimension(:), intent(IN)                :: flux
-      real(DP), dimension(:), intent(IN)                :: rp,rm
-      integer(PREC_VECIDX), dimension(:,:), intent(IN)  :: Kloc
-      real(DP), dimension(:,0:), intent(IN)             :: rploc,rmloc
-      real(DP), dimension(:,0:), intent(IN)             :: fluxloc
-      real(DP), intent(IN)                              :: dscale,hstep
-      integer(PREC_MATIDX), intent(IN)                  :: iedge
-      integer, intent(IN)                               :: iloc
-      integer(PREC_VECIDX), intent(IN)                  :: k,l
-      logical, intent(IN)                               :: bisExtended
+    subroutine assembleJacobianMat79_Symm(IverticesAtEdge, Kdiagonal, Kcol, flux,&
+                                          rp, rm, Kloc, rploc, rmloc, fluxloc,&
+                                          dscale, hstep, iedge, iloc, k, l,&
+                                          bisExtended, Ksep, Jac)
 
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(:), intent(INOUT)             :: Jac
+      real(DP), dimension(:,0:), intent(IN) :: rploc,rmloc,fluxloc
+      real(DP), dimension(:), intent(IN) :: rp,rm,flux
+      real(DP), intent(IN) :: dscale,hstep
+      integer, dimension(:,:), intent(IN)  :: IverticesAtEdge,Kloc
+      integer, dimension(:), intent(IN) :: Kdiagonal,Kcol
+      integer, intent(IN) :: iedge,iloc,k,l
+      logical, intent(IN) :: bisExtended
+
+      real(DP), dimension(:), intent(INOUT) :: Jac
+      integer, dimension(:), intent(INOUT) :: Ksep
       
       ! local variables
-      integer(PREC_MATIDX) :: ik,jk
-      integer(PREC_VECIDX) :: i,j,m
-      real(DP)             :: f_ij
-      integer              :: iperturb
-
+      real(DP) :: f_ij
+      integer :: ik,jk,i,j,m,iperturb
+      
       ! Get global node number for edge IJ and the 
       ! number of the node m which is not l
       i = IverticesAtEdge(1,iedge)
@@ -13664,7 +14069,7 @@ contains
         end if
 
       end if
-    end subroutine assembleJacobian_Symm
+    end subroutine assembleJacobianMat79_Symm
   end subroutine gfsc_buildJacobianScalarSymm
 
   !*****************************************************************************
