@@ -4137,7 +4137,7 @@ contains
       
     allocate(p_IvariableBase(nsize+16))
     if (associated(rexport%p_IvariableBase)) then
-      p_IvariableSpec(1:nsize) = rexport%p_IvariableBase
+      p_IvariableBase(1:nsize) = rexport%p_IvariableBase
       deallocate(rexport%p_IvariableBase)
     end if
     rexport%p_IvariableBase => p_IvariableBase
