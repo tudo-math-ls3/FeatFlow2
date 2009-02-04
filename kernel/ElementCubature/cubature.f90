@@ -723,7 +723,7 @@ contains
   integer :: i,j,k,l,ncubp
   
   ! Auxiliary arrays for Gauss-Legendre rules
-  real(DP), dimension(5) :: Dv, Dw
+  real(DP), dimension(6) :: Dv, Dw
   integer :: ndim, npts
   
     ndim = 0
@@ -943,10 +943,10 @@ contains
       
       case(4)
         daux = sqrt(4.8_DP)
-        Dv(1) = -sqrt(3.0_DP + daux) / 7.0_DP
-        Dv(2) = -sqrt(3.0_DP - daux) / 7.0_DP
-        Dv(3) =  sqrt(3.0_DP - daux) / 7.0_DP
-        Dv(4) =  sqrt(3.0_DP + daux) / 7.0_DP
+        Dv(1) = -sqrt((3.0_DP + daux) / 7.0_DP)
+        Dv(2) = -sqrt((3.0_DP - daux) / 7.0_DP)
+        Dv(3) =  sqrt((3.0_DP - daux) / 7.0_DP)
+        Dv(4) =  sqrt((3.0_DP + daux) / 7.0_DP)
         daux = sqrt(30.0_DP)
         Dw(1) = (18.0_DP - daux) / 36.0_DP
         Dw(2) = (18.0_DP + daux) / 36.0_DP
@@ -962,9 +962,9 @@ contains
         Dv(5) =  sqrt(5.0_DP + daux) / 3.0_DP
         daux = 13.0_DP * sqrt(70.0_DP)
         Dw(1) = (322.0_DP - daux) / 900.0_DP
-        Dw(2) = (322.0_DP - daux) / 900.0_DP
+        Dw(2) = (322.0_DP + daux) / 900.0_DP
         Dw(3) =  128.0_DP / 225.0_DP
-        Dw(4) = (322.0_DP - daux) / 900.0_DP
+        Dw(4) = (322.0_DP + daux) / 900.0_DP
         Dw(5) = (322.0_DP - daux) / 900.0_DP
 
       case(6)
