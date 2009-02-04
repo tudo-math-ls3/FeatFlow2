@@ -1524,6 +1524,9 @@ contains
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB1)
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStokes)
+      if (lsyssc_hasMatrixStructure(rproblem%RlevelInfo(i)%rmatrixStabil)) then
+        call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStabil)
+      end if
       
       ! Release the template matrices. This is the point, where the
       ! memory of the matrix structure is released.
