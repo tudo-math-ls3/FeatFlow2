@@ -11,6 +11,8 @@
 program flagship
 
   use codire_application
+  use euler_application
+  use mhd_application
   use genoutput
   use paramlist
   use signal
@@ -81,6 +83,10 @@ program flagship
     call codire(rparlist)
 
   case('euler')
+    call euler(rparlist)
+
+  case('mhdsimple')
+    call mhd_simple(rparlist)
 
   case DEFAULT
     call output_line('Invalid application name!',&

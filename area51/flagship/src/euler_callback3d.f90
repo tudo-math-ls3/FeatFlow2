@@ -9,49 +9,49 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) fcb_calcFluxGalerkin3d
+!# 1.) euler_calcFluxGalerkin3d
 !#     -> compute inviscid fluxes for standard Galerkin scheme
 !#
-!# 2.) fcb_calcFluxTVD3d
+!# 2.) euler_calcFluxTVD3d
 !#     -> compute inviscid fluxes for TVD scheme
 !#
-!# 3.) fcb_calcFluxScalarDiss3d
+!# 3.) euler_calcFluxScalarDiss3d
 !#     -> compute inviscid fluxes for low-order discretization
 !#        adopting scalar artificial viscosities
 !#
-!# 4.) fcb_calcFluxTensorDiss3d
+!# 4.) euler_calcFluxTensorDiss3d
 !#     -> compute inviscid fluxes for low-order discretization
 !#        adopting tensorial artificial viscosities
 !#
-!# 5.) fcb_calcMatrixGalerkinDiag3d
+!# 5.) euler_calcMatrixGalerkinDiag3d
 !#     -> compute local matrices for standard Galerkin scheme
 !#
-!# 6.) fcb_calcMatrixGalerkin3d
+!# 6.) euler_calcMatrixGalerkin3d
 !#     -> compute local matrices for standard Galerkin scheme
 !#
-!# 7.) fcb_calcMatrixScalarDissDiag3d
+!# 7.) euler_calcMatrixScalarDissDiag3d
 !#     -> compute local matrices for low-order discretization
 !#        adopting scalar artificial viscosities
 !#
-!# 8.) fcb_calcMatrixScalarDiss3d
+!# 8.) euler_calcMatrixScalarDiss3d
 !#     -> compute local matrices for low-order discretization
 !#        adopting scalar artificial viscosities
 !#
-!# 9.) fcb_calcMatrixTensorDissDiag3d
+!# 9.) euler_calcMatrixTensorDissDiag3d
 !#     -> compute local matrices for low-order discretization
 !#        adopting tensorial artificial viscosities
 !#
-!# 10.) fcb_calcMatrixTensorDiss3d
+!# 10.) euler_calcMatrixTensorDiss3d
 !#      -> compute local matrices for low-order discretization
 !#         adopting tensorial artificial viscosities
 !#
-!# 11.) fcb_calcCharacteristics3d
+!# 11.) euler_calcCharacteristics3d
 !#      -> compute characteristic variables in 3D
 !#
-!# 12.) fcb_calcBoundaryvalues3d
+!# 12.) euler_calcBoundaryvalues3d
 !#      -> compute the boundary values for a given node
 !#
-!# 13.) fcb_setBoundary3d
+!# 13.) euler_setBoundary3d
 !#      -> impose boundary conditions for nonlinear solver
 !#
 !# </purpose>
@@ -59,56 +59,44 @@
 
 module euler_callback3d
 
-  use afcstabilisation
-  use bilinearformevaluation
+  use boundaryfilter
   use collection
+  use euler_basic
   use fsystem
   use genoutput
-  use graph
   use groupfemsystem
   use linearsystemblock
   use linearsystemscalar
-  use paramlist
-  use pprocerror
-  use pprocgradients
-  use spatialdiscretisation
-  use stdoperators
-  use storage
-  use ucd
-
-  use boundaryfilter
-  use euler_basic
   use problem
   use solver
+  use storage
   use thermodynamics
 
   implicit none
 
   private
-
-  public :: fcb_calcFluxGalerkin3d
-  public :: fcb_calcFluxTVD3d
-  public :: fcb_calcFluxScalarDiss3d
-  public :: fcb_calcFluxTensorDiss3d
-  public :: fcb_calcRawFluxFCT3d
-  public :: fcb_calcMatrixGalerkinDiag3d
-  public :: fcb_calcMatrixGalerkin3d
-  public :: fcb_calcMatrixScalarDissDiag3d
-  public :: fcb_calcMatrixScalarDiss3d
-  public :: fcb_calcMatrixTensorDissDiag3d
-  public :: fcb_calcMatrixTensorDiss3d
-  public :: fcb_calcCharacteristics3d
-
-  public :: fcb_setBoundary3d
-  public :: fcb_calcBoundaryvalues3d
-
+  public :: euler_calcFluxGalerkin3d
+  public :: euler_calcFluxTVD3d
+  public :: euler_calcFluxScalarDiss3d
+  public :: euler_calcFluxTensorDiss3d
+  public :: euler_calcRawFluxFCT3d
+  public :: euler_calcMatrixGalerkinDiag3d
+  public :: euler_calcMatrixGalerkin3d
+  public :: euler_calcMatrixScalarDissDiag3d
+  public :: euler_calcMatrixScalarDiss3d
+  public :: euler_calcMatrixTensorDissDiag3d
+  public :: euler_calcMatrixTensorDiss3d
+  public :: euler_calcCharacteristics3d
+  public :: euler_calcBoundaryvalues3d
+  public :: euler_setBoundary3d
+  
 contains
   
   !*****************************************************************************
   
 !<subroutine>
 
-  subroutine fcb_calcFluxGalerkin3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxGalerkin3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard Galerkin 
@@ -274,13 +262,13 @@ contains
 !!$      F_ji = F_ij
 !!$
 !!$    END IF
-  end subroutine fcb_calcFluxGalerkin3d
+  end subroutine euler_calcFluxGalerkin3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcFluxTVD3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxTVD3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
 
 !<description>
     ! This subroutine computes the inviscid fluxes 
@@ -367,13 +355,13 @@ contains
 !!$
 !!$    ! Assemble fluxes
 !!$    F_ji = F_ij
-  end subroutine fcb_calcFluxTVD3d
+  end subroutine euler_calcFluxTVD3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcFluxScalarDiss3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxScalarDiss3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -505,13 +493,13 @@ contains
 !!$      F_ji = F_ji-Daux
 !!$
 !!$    end if
-  end subroutine fcb_calcFluxScalarDiss3d
+  end subroutine euler_calcFluxScalarDiss3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcFluxTensorDiss3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxTensorDiss3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -738,13 +726,13 @@ contains
 !!$      F_ji = F_ji-Daux
 !!$      
 !!$    end if
-  end subroutine fcb_calcFluxTensorDiss3d
+  end subroutine euler_calcFluxTensorDiss3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcRawFluxFCT3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, istatus)
+  subroutine euler_calcRawFluxFCT3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, istatus)
 
 !<description>
     ! This subroutine computes the raw antidiffusive flux
@@ -834,13 +822,13 @@ contains
 !!$    
 !!$    ! Assemble antidiffusive flux
 !!$    F_ij = F_ij+d_ij*diff
-  end subroutine fcb_calcRawFluxFCT3d
+  end subroutine euler_calcRawFluxFCT3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcMatrixGalerkinDiag3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixGalerkinDiag3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices in 3D
@@ -893,13 +881,13 @@ contains
 !!$    S_ij(2) = aux2-G6*u_ij*s(1)
 !!$    S_ij(3) = aux2-G6*v_ij*s(2)
 !!$    S_ij(4) = GAMMA*aux2
-  end subroutine fcb_calcMatrixGalerkinDiag3d
+  end subroutine euler_calcMatrixGalerkinDiag3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcMatrixGalerkin3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixGalerkin3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
 
 !<description>
     ! This subroutine computes the local Roe matrices in 3D
@@ -991,13 +979,13 @@ contains
 !!$    S_ij(14) =   G1*s(1)
 !!$    S_ij(15) =                         G1*s(2)
 !!$    S_ij(16) =   GAMMA*aux2
-  end subroutine fcb_calcMatrixGalerkin3d
+  end subroutine euler_calcMatrixGalerkin3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcMatrixScalarDissDiag3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixScalarDissDiag3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -1058,13 +1046,13 @@ contains
 !!$
 !!$    ! Compute scalar viscosities
 !!$    S_ij(1:4) = -abs(vel)-cnrm*cs_ij
-  end subroutine fcb_calcMatrixScalarDissDiag3d
+  end subroutine euler_calcMatrixScalarDissDiag3d
 
 !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcMatrixScalarDiss3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixScalarDiss3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
 
 !<description>
     ! This subroutine computes the local Roe matrices
@@ -1147,13 +1135,13 @@ contains
 !!$    S_ij( 6) = -abs(vel)-cnrm*cs_ij
 !!$    S_ij(11) = -abs(vel)-cnrm*cs_ij
 !!$    S_ij(16) = -abs(vel)-cnrm*cs_ij
-  end subroutine fcb_calcMatrixScalarDiss3d
+  end subroutine euler_calcMatrixScalarDiss3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcMatrixTensorDissDiag3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixTensorDissDiag3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -1308,13 +1296,13 @@ contains
 !!$                      R_ij(4,2)*L_ij(2,4)+&
 !!$                      R_ij(4,3)*L_ij(3,4)+&
 !!$                      R_ij(4,4)*L_ij(4,4)  )
-  end subroutine fcb_calcMatrixTensorDissDiag3d
+  end subroutine euler_calcMatrixTensorDissDiag3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcMatrixTensorDiss3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixTensorDiss3d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -1472,13 +1460,13 @@ contains
 !!$    ! Compute D_ij = R_ij*|Lbd_ij|*L_ij
 !!$    call DGEMM('n', 'n', NVAR3D, NVAR3D, NVAR3D, -cnrm,&
 !!$               R_ij, NVAR3D, L_ij, NVAR3D, 0._DP, S_ij, NVAR3D)
-  end subroutine fcb_calcMatrixTensorDiss3d
+  end subroutine euler_calcMatrixTensorDiss3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcCharacteristics3d(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij, istatus)
+  subroutine euler_calcCharacteristics3d(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij, istatus)
 
 !<description>
     ! This subroutine computes the characteristic variables in 3D
@@ -1662,13 +1650,13 @@ contains
 !!$                  cx*Diff(3)
 !!$      end if
 !!$    end if
-  end subroutine fcb_calcCharacteristics3d
+  end subroutine euler_calcCharacteristics3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_calcBoundaryvalues3d(DbdrNormal, DpointNormal,&
+  subroutine euler_calcBoundaryvalues3d(DbdrNormal, DpointNormal,&
                                       DbdrValue, ibdrCondType, Du, Du0, istatus)
 
 !<description>
@@ -1818,7 +1806,7 @@ contains
 !!$          return
 !!$        else
 !!$          call output_line('Riemann solver failed due to vacuum',&
-!!$                           OU_CLASS_ERROR,OU_MODE_STD,'fcb_calcBoundaryvalues3d')
+!!$                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues3d')
 !!$          call sys_halt()
 !!$        end if
 !!$      end if
@@ -1897,7 +1885,7 @@ contains
 !!$        else
 !!$          call output_line('Riemann solver failed due to divergence in&
 !!$                           & Newton-Raphson iteration',&
-!!$                           OU_CLASS_ERROR,OU_MODE_STD,'fcb_calcBoundaryvalues3d')
+!!$                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues3d')
 !!$          call sys_halt()
 !!$        end if
 !!$      end if
@@ -2151,16 +2139,17 @@ contains
 !!$
 !!$    case DEFAULT
 !!$      call output_line('Unsupported type of boundary condition!',&
-!!$                       OU_CLASS_ERROR,OU_MODE_STD,'fcb_calcBoundaryvalues3d')
+!!$                       OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues3d')
 !!$      call sys_halt()
 !!$    end select
-  end subroutine fcb_calcBoundaryvalues3d
+  end subroutine euler_calcBoundaryvalues3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine fcb_setBoundary3d(rproblemLevel, rtimestep, rsolver, ru, rres, ru0, istatus)
+  subroutine euler_setBoundary3d(rproblemLevel, rtimestep, rsolver,&
+                                rsol, rres, rsol0, rcollection)
 
 !<description>
     ! This subroutine imposes the nonlinear boundary conditions.
@@ -2174,53 +2163,70 @@ contains
     type(t_solver), intent(IN) :: rsolver
 
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: ru0
+    type(t_vectorBlock), intent(IN) :: rsol0
 !</input>
 
 !<inputoutput>
-    ! multigrid level
+    ! problem level structure
     type(t_problemLevel), intent(INOUT) :: rproblemLevel
 
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(INOUT) :: rsol
 
     ! residual vector
     type(t_vectorBlock), intent(INOUT) :: rres
 
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
+    ! collection structure to provide additional
+    ! information to the boundary setting routine
+    type(t_collection), intent(InOUT) :: rcollection
 !</inputoutput>
 !</subroutine>
 
+    ! local variables
+    integer :: imatrix, istatus
+    
 
     select case(rsolver%iprecond)
     case (NLSOL_PRECOND_BLOCKD,&
           NLSOL_PRECOND_DEFCOR,&
           NLSOL_PRECOND_NEWTON_FAILED)
       
-      ! Impose (time-dependent) boundary conditions for system
+      ! Impose boundary conditions for the solution vector and impose
+      ! zeros in the residual vector and the off-diagonal positions 
+      ! of the system matrix which is obtained from the collection
+      imatrix = collct_getvalue_int(rcollection, 'SystemMatrix')
+
       call bdrf_filterSolution(rsolver%rboundaryCondition,&
                                rproblemLevel%rtriangulation,&
-                               rproblemLevel%RmatrixBlock(CNSE_MATRIX_A),&
-                               ru, rres, ru0, rtimestep%dTime,&
+                               rproblemLevel%RmatrixBlock(imatrix),&
+                               rsol, rres, rsol0, rtimestep%dTime,&
                                rproblemLevel%p_rproblem%rboundary,&
-                               fcb_calcBoundaryvalues3d, istatus)
+                               euler_calcBoundaryvalues3d, istatus)
       
+      rcollection%IquickAccess(1) = istatus
+
     case (NLSOL_PRECOND_NEWTON)
+
+      ! Impose boundary conditions for the solution vector and impose
+      ! zeros in the residual vector and the off-diagonal positions 
+      ! of the system matrix which is obtained from the collection
+      imatrix = collct_getvalue_int(rcollection, 'JacobianMatrix')
 
       ! Impose nonlinear boundary conditions for solution
       call bdrf_filterSolution(rsolver%rboundaryCondition,&
                                rproblemLevel%rtriangulation,&
-                               rproblemLevel%Rmatrix(CNSE_MATRIX_J),&
-                               ru, rres, ru0, rtimestep%dTime,&
+                               rproblemLevel%RmatrixBlock(imatrix),&
+                               rsol, rres, rsol0, rtimestep%dTime,&
                                rproblemLevel%p_rproblem%rboundary,&
-                               fcb_calcBoundaryvalues3d, istatus)
+                               euler_calcBoundaryvalues3d, istatus)
+
+      rcollection%IquickAccess(1) = istatus
 
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'fcb_setBoundary3d')
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundary3d')
       call sys_halt()
     end select
-  end subroutine fcb_setBoundary3d
+  end subroutine euler_setBoundary3d
  
 end module euler_callback3d

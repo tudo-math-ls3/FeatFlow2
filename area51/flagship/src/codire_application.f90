@@ -73,11 +73,23 @@
 !#     -> Initializes the solution vector based on the parameter
 !#        settings given by the parameter list
 !#
-!# 8.) codire_initSolutionFromParser
-!#     -> Initializes the solution vector based on the given function parser
+!# 8.) codire_outputSolution
+!#     -> Outputs the solution vector to file in UCD format
 !#
-!# 9.) codire_initSolutionFromImage
-!#     -> Initializes the solution vector based on the given image map
+!# 9.) codire_outputStatistics
+!#     -> Outputs the application statitics
+!#
+!# 10.) codire_solveTransientPrimal
+!#      -> Solves the primal formulation of the time-dependent 
+!#         convection-diffusion-reaction equation.
+!#
+!# 11.) codire_solvePeudoTransientPrimal
+!#      -> Solves the primal formulation of the steady convection-
+!#         diffusion-reaction equation using pseudo time-stepping.
+!#
+!# 12.) codire_solveSteadyStatePrimal
+!#      -> Solves the primal formulation of the steady convection-
+!#         diffusion-reaction equation directly
 !#
 !#
 !# The following auxiliary routines are available:
@@ -111,8 +123,10 @@ module codire_application
   use linearsystemblock
   use linearsystemscalar
   use paramlist
+  use pprocsolution
   use problem
   use solver
+  use spatialdiscretisation
   use statistics
   use stdoperators
   use storage
@@ -178,15 +192,20 @@ contains
     ! Solution vector for the dual problem
     type(t_vectorBlock) :: rsolutionDual
 
+    ! Right-hand side vector 
+    type(t_vectorBlock) :: rrhs
+
     ! Timer for the total solution process
     type(t_timer) :: rtimerTotal
 
     ! Parameter file and section names
     character(LEN=SYS_STRLEN) :: sinputoutputName
+    character(LEN=SYS_STRLEN) :: sbenchmarkName
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
-
+    character(LEN=SYS_STRLEN) :: algorithm
     
+
     ! Start total time measurement
     call stat_clearTimer(rtimerTotal)
     call stat_startTimer(rtimerTotal)
@@ -226,10 +245,11 @@ contains
     ! Initialize the primal solution vector
     call codire_initSolution(rparlist, 'codire', rproblem%p_rproblemLevelMax,&
                              0.0_DP, rsolutionPrimal)
-    
+        
+
     ! Prepare internal data arrays of the solver structure
-    call codire_updateSolverMatrix(rproblem%p_rproblemLevelMax,&
-                                   rsolver, 1, UPDMAT_ALL)
+    call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax, rsolver,&
+                                     1, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
     call solver_updateStructure(rsolver)
 
     ! Stop time measurement for pre-processing
@@ -237,200 +257,140 @@ contains
     
 
     !---------------------------------------------------------------------------
-    ! Solution procedure
+    ! Solution algorithm
     !---------------------------------------------------------------------------
     
     if (rtimestep%dfinalTime > 0) then
       
       ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist, 'codire', "benchmark", sbenchmarkName)
+      call parlst_getvalue_string(rparlist, trim(sbenchmarkName), "algorithm", algorithm)
       call parlst_getvalue_string(rparlist, 'codire', "inputoutput", sinputoutputName)
       call parlst_getvalue_string(rparlist, trim(sinputoutputName), "indatfile", sindatfileName)
-
+      
       ! The boundary condition for the primal problem is required for all 
       ! solution strategies so initialize it from the parameter file
+      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
+                                  "sprimalbdrcondname", sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
-                                      '[boundary_conditions_primal]', rappDescriptor%ndimension)
+                                      '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
 
       ! Impose primal boundary conditions explicitely
       call bdrf_filterVectorExplicit(rbdrCondPrimal,&
           rproblem%p_rproblemLevelMax%rtriangulation, rsolutionPrimal, 0.0_DP)
 
-!!$      
-!!$      select case(iflowtype)
-!!$        
-!!$      case (FLOW_TRANSIENT)
-!!$        call codire_solveTransient()
-!!$        
-!!$        ! Postprocessing
-!!$        call codire_postprocess(rprimalSolution)
-!!$        
-!!$        
-!!$      case (FLOW_PSEUDOTRANSIENT)
-!!$        call codire_solvePseudoTransient()
-!!$        
-!!$        ! Postprocessing
-!!$        call codire_postprocess(rprimalSolution)
-!!$
-!!$
-!!$      case (FLOW_STEADYSTATE)
 
-      call codire_solveSteadyStatePrimal(rappDescriptor, rbdrCondPrimal, rproblem, &
-                                         rtimestep, rsolver, rsolutionPrimal, rcollection)
-!!$        call codire_solvePrimalDual()
-!!$        
-!!$        ! Postprocessing
-!!$        call codire_postprocess(rprimalSolution, rdualSolution)
-!!$        
-!!$        
-!!$      case DEFAULT
-!!$        call output_line('Unsupported flow type!',&
-!!$                         OU_CLASS_ERROR,OU_MODE_STD,'codire_start')
-!!$        call sys_halt()
-!!$      end select
+      ! What solution algorithm should be applied?
+      select case(trim(algorithm))
+
+      case ('transient_primal')
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        ! Solve the primal formulation for the time-dependent problem
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        call codire_solveTransientPrimal(rappDescriptor, rbdrCondPrimal,&
+                                         rproblem, rtimestep, rsolver,&
+                                         rsolutionPrimal, rcollection)
+        call codire_outputSolution(rparlist, 'codire', rproblem,&
+                                   rsolutionPrimal, dtime=rtimestep%dTime)
+        
+      case ('transient_primaldual')
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        ! Solve the primal and dual formulation for the time-dependent problem
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+      case ('pseudotransient_primal')
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        ! Solve the primal formulation for the pseudo time-dependent problem
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        call codire_solvePseudoTransientPrimal(rappDescriptor, rbdrCondPrimal,&
+                                               rproblem, rtimestep, rsolver,&
+                                               rsolutionPrimal, rcollection)
+        call codire_outputSolution(rparlist, 'codire', rproblem,&
+                                   rsolutionPrimal, dtime=rtimestep%dTime)
+
+
+      case ('pseudotransient_primaldual')
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        ! Solve the primal and dual formulation for the pseudo time-dependent problem
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        
+      case ('stationary_primal')
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        ! Solve the primal formulation for the stationary problem
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        call codire_solveSteadyStatePrimal(rappDescriptor, rbdrCondPrimal,&
+                                           rproblem, rtimestep, rsolver,&
+                                           rsolutionPrimal, rcollection)
+        call codire_outputSolution(rparlist, 'codire', rproblem,&
+                                   rsolutionPrimal, dtime=rtimestep%dTime)
+
+
+      case ('stationary_primaldual')
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        ! Solve the primal and dual formulation for the stationary problem
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
+                                    "sdualbdrcondname", sbdrcondName)
+        call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
+                                      '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
+
+        call codire_solveSteadyStatePrimalDual(rappDescriptor, rbdrCondPrimal,&
+                                               rbdrCondDual, rproblem, rtimestep,&
+                                               rsolver, rsolutionPrimal,&
+                                               rsolutionDual, rcollection)
+        call codire_outputSolution(rparlist, 'codire', rproblem,&
+                                   rsolutionPrimal, rsolutionDual, rtimestep%dTime)
+
+
+      case DEFAULT
+        call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_start')
+        call sys_halt()
+      end select
     end if
     
     !---------------------------------------------------------------------------
     ! Post-processing
     !---------------------------------------------------------------------------
 
-    call codire_outputSolution(rparlist, 'codire', rproblem,&
-                               rsolutionPrimal, dtime=0.0_DP)
-    
+    ! Start time measurement for pre-processing
+    call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
 
-!!$    ! Release parameter list
-!!$    call parlst_done(rparlist)
-!!$    
-!!$    ! Release solvers
-!!$    call solver_releaseTimestep(rtimestep)
-!!$    call solver_releaseSolver(rsolver)
-!!$    
-!!$    ! Release problem structure
-!!$    call problem_releaseProblem(rproblem)
-!!$    
-!!$    ! Release boundary conditions
-!!$    call bdrf_release(rprimalBoundaryCondition)
-!!$    call bdrf_release(rdualBoundaryCondition)
-!!$    
-!!$    ! Release vectors
-!!$    call lsysbl_releaseVector(rprimalSolution)
-!!$    call lsysbl_releaseVector(rdualSolution)
-!!$    call lsysbl_releaseVector(rrhs)
+    ! Release parameter list
+    call parlst_done(rparlist)
     
-!!$    ! Release grid adaptation structure
-!!$    call hadapt_releaseAdaptation(rhadapt)
-!!$    
-!!$    ! Release error estimator
-!!$    call errest_releaseErrorEstimator(rerrorEstimator)
-!!$    
-!!$    ! Release function parser for velocity
-!!$    call fparser_release(rvelocityParser)
-!!$    
-!!$    ! Release function parser for right-hand side
-!!$    call fparser_release(rrhsParser)
-!!$    
-!!$    ! Release function parser
-!!$    call fparser_done()
-!!$    
-!!$    ! Release data of callback routine
-!!$    call codire_hadaptCallback1D(rcollection, HADAPT_OPR_DONECALLBACK,&
-!!$                              (/0/), (/0/))
-!!$    call codire_hadaptCallback2D(rcollection, HADAPT_OPR_DONECALLBACK,&
-!!$                              (/0/), (/0/))
-!!$    call codire_hadaptCallback3D(rcollection, HADAPT_OPR_DONECALLBACK,&
-!!$                              (/0/), (/0/))
+    ! Release solvers
+    call solver_releaseTimestep(rtimestep)
+    call solver_releaseSolver(rsolver)
     
-    print *, "All done well"
+    ! Release problem structure
+    call problem_releaseProblem(rproblem)
     
-    stop
+    ! Release boundary conditions
+    call bdrf_release(rbdrCondPrimal)
+    call bdrf_release(rbdrCondDual)
+
+    ! Release vectors
+    call lsysbl_releaseVector(rsolutionPrimal)
+    call lsysbl_releaseVector(rsolutionDual)
+    call lsysbl_releaseVector(rrhs)
+
+    ! Release function parser
+    call fparser_done()
+
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
+
+    ! Stop time measurement for total time measurement
+    call stat_stopTimer(rtimerTotal)
+
+    ! Output statistics
+    call codire_outputStatistics(rappDescriptor, rtimerTotal)
     
   end subroutine codire
   
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine codire_parseCmdlArguments(rparlist)
-
-!<description>
-    ! This subroutine parses the commandline arguments and modifies the
-    ! parameter values in the global parameter list.
-!</description>
-
-!<inputoutput>
-    ! parameter list
-    type(t_parlist), intent(INOUT) :: rparlist
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    character(LEN=SYS_STRLEN) :: cbuffer
-    integer :: iarg, narg
-    
-    iarg = 1; narg = command_argument_count()
-    
-    cmdarg: do
-      ! Retrieve next command line argument
-      call get_command_argument(iarg,cbuffer)
-      select case(trim(adjustl(cbuffer)))
-        
-      case ('-A','--adaptivity')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "adaptivity", trim(adjustl(cbuffer)))
-
-      case ('-B','--benchmark')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "benchmark", trim(adjustl(cbuffer)))
-       
-      case ('-DC','--dualconv')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "dualconv", trim(adjustl(cbuffer)))
-        
-      case ('-DD','--dualdiff')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "dualdiff", trim(adjustl(cbuffer)))
-
-      case ('-E','--errorest')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "errorest", trim(adjustl(cbuffer)))
-        
-      case ('-I','--io')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "inputoutput", trim(adjustl(cbuffer)))
-        
-      case ('-PC','--primalconv')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "primalconv", trim(adjustl(cbuffer)))
-        
-      case ('-PD','--primaldiff')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "primaldiff", trim(adjustl(cbuffer)))
-
-      case ('-S','--solver')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "solver", trim(adjustl(cbuffer)))
-        
-      case ('-T','--timestep')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "timestep", trim(adjustl(cbuffer)))
-        
-      case DEFAULT
-        iarg = iarg+1
-        if (iarg .ge. narg) exit cmdarg
-      end select
-    end do cmdarg
-
-  end subroutine codire_parseCmdlArguments
-
   !*****************************************************************************
 
 !<subroutine>
@@ -582,7 +542,7 @@ contains
     call collct_setvalue_int(rcollection, 'ieltype',&
                              rappDescriptor%ieltype, .true.)
     call collct_setvalue_int(rcollection, 'imatrixformat',&
-                             rappDescriptor%imatrixformat, .true.)
+                             rappDescriptor%imatrixFormat, .true.)
 
     ! Add timer structures
     call collct_setvalue_timer(rcollection, 'timerSolution',&
@@ -1268,112 +1228,98 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! local variables
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
-    type(t_fparser) :: rfparser
-    integer :: isolutiontype
-    
     ! section names
     character(LEN=SYS_STRLEN) :: sbenchmarkName
     character(LEN=SYS_STRLEN) :: sinputoutputName
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: ssolutionName
 
+    ! local variables
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    type(t_fparser) :: rfparser
+    type(t_pgm) :: rpgm
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    integer :: isolutiontype,iblock,ieq,neq,ndim
+
     ! symbolic variable names
     character(LEN=*), dimension(4), parameter ::&
                       cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
-
+    
+    
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName, "benchmark",   sbenchmarkName)
     call parlst_getvalue_string(rparlist, ssectionName, "inputoutput", sinputoutputName)
+    call parlst_getvalue_string(rparlist, trim(sinputoutputName), "indatfile", sindatfileName)
+    call parlst_getvalue_string(rparlist, trim(sinputoutputName), "ssolutionname", ssolutionName)
+    call parlst_getvalue_int(rparlist, trim(sbenchmarkName), "isolutiontype", isolutiontype)
     
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "isolutiontype", isolutiontype)
-
     ! Create new solution vector based on the spatial discretisation
     p_rdiscretisation => rproblemLevel%rdiscretisation
     call lsysbl_createVectorBlock(p_rdiscretisation, rvector, .false., ST_DOUBLE)
 
     ! How should the solution be initialized?
-    select case(isolutiontype)
+    select case(isolutionType)
     case (0)
       ! Initialize solution by zeros
       call lsysbl_clearVector(rvector)
 
     case (1)
       ! Initialize solution from analytic profile
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                 "indatfile", sindatfileName)
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                 "ssolutionname", ssolutionName)
       call flagship_readParserFromFile(sindatfileName, '['//trim(ssolutionName)//']',&
                                        cvariables, rfparser)
-      call codire_initSolutionFromParser(rfparser, rproblemLevel, dtime, rvector)
+      
+      ! Set pointers
+      call storage_getbase_double2D(&
+          rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+      
+      ndim = rproblemLevel%rtriangulation%ndim
+      
+      ! Initialize variable values
+      Dvalue = 0.0_DP
+      
+      ! Loop over all blocks of the solution vector
+      do iblock = 1, rvector%nblocks
+        
+        ! Get number of equations of scalar subvector
+        neq = rvector%RvectorBlock(iblock)%NEQ
+        call lsyssc_getbase_double(rvector%RvectorBlock(iblock), p_Ddata)
+        
+        ! Loop over all equations of scalar subvector
+        do ieq = 1, neq
+          Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
+          Dvalue(NDIM3D+1) = dtime
+          call fparser_evalFunction(rfparser, iblock, Dvalue, p_Ddata(ieq))
+        end do
+      end do
+      
+      call fparser_release(rfparser)
+      
 
+    case (2)
+      ! Initialize solution from portable graymap image
+      call ppsol_readPGM(0, ssolutionName, rpgm)
+      
+      ! Set pointers
+      call storage_getbase_double2D(&
+          rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+      call storage_getbase_double(rvector%h_Ddata, p_Ddata)
+    
+      ! Initialize the solution by the image data
+      call ppsol_initArrayPGM_Dble(rpgm, p_DvertexCoords, p_Ddata)
+      
+      ! Release portable graymap image
+      call ppsol_releasePGM(rpgm)
+      
+      
+    case DEFAULT
+      call output_line('Invalid type of solution profile!',&
+                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_initSolution')
+      call sys_halt()
     end select
 
   end subroutine codire_initSolution
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine codire_initSolutionFromParser(rfparser, rproblemLevel, dtime, rvector)
-
-!<description>
-    ! This subroutine initializes the solution vector from parser
-!</description>
-
-!<input>
-    ! function parser
-    type(t_fparser), intent(IN) :: rfparser
-
-    ! problem level
-    type(t_problemLevel), intent(IN), target :: rproblemLevel
-
-    ! time for solution evaluation
-    real(DP), intent(IN) :: dtime
-!</input>
-
-!<intputoutput>
-    ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rvector
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_triangulation), pointer :: p_rtriangulation
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_Ddata
-    real(DP), dimension(NDIM3D+1) :: Dvalue
-    integer :: iblock,ieq,neq
-
-    ! Set pointers
-    p_rtriangulation  => rproblemLevel%rtriangulation
-    call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
-    ! Initialize variable values
-    Dvalue = 0.0_DP
-
-    ! Loop over all blocks of the solution vector
-    do iblock = 1, rvector%nblocks
-
-      ! Get number of equations of scalar subvector
-      neq = rvector%RvectorBlock(iblock)%NEQ
-      call lsyssc_getbase_double(rvector%RvectorBlock(iblock), p_Ddata)
-
-      ! Loop over all equations of scalar subvector
-      do ieq = 1, neq
-
-        Dvalue(1:p_rtriangulation%ndim) = p_DvertexCoords(:,ieq)
-        Dvalue(NDIM3D+1)                = dtime
-
-        call fparser_evalFunction(rfparser, iblock, Dvalue, p_Ddata(ieq))
-
-      end do
-    end do
-
-  end subroutine codire_initSolutionFromParser
 
   !*****************************************************************************
 
@@ -1450,12 +1396,79 @@ contains
     call ucd_release(rexport)
 
   end subroutine codire_outputSolution
+  
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine codire_outputStatistics(rappDescriptor, rtimerTotal)
+
+!<description>
+    ! This subroutine output application statistics
+!</description>
+
+!<input>
+    ! application descriptor
+    type(t_codire), intent(INOUT) :: rappDescriptor
+
+    ! timer for total time measurement
+    type(t_timer), intent(IN) :: rtimerTotal
+!</input>
+!</subroutine>
+
+    ! local variable
+    type(t_timer) :: rtimerSolution
+    real(DP) :: dtotalTime, dfraction
+
+    call output_lbrk(nlbrk=5)
+    call output_separator (OU_SEP_STAR)
+    write(*,FMT='(24X,A)') '*** TIME MEASUREMENT ***'
+    call output_separator (OU_SEP_STAR)
+    
+    rtimerSolution = rappDescriptor%rtimerSolution
+    call stat_subTimers(rappDescriptor%rtimerAssemblyMatrix, rtimerSolution)
+    call stat_subTimers(rappDescriptor%rtimerAssemblyVector, rtimerSolution)
+
+    dtotalTime = max(rtimerTotal%delapsedCPU, rtimerTotal%delapsedReal)
+    dfraction  = 100.0_DP/dtotalTime
+
+    call output_line('  Time for computing solution   : '//&
+                     trim(sys_sdL(rtimerSolution%delapsedCPU, 2))//'  '//&
+                     trim(sys_sdL(dfraction*rtimerSolution%delapsedCPU, 2))//' %')
+    call output_line('  Time for mesh adaptivity      : '//&
+                     trim(sys_sdL(rappDescriptor%rtimerAdaptation%delapsedCPU, 2))//'  '//&
+                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAdaptation%delapsedCPU, 2))//' %')
+    call output_line('  Time for error estimation     : '//&
+                     trim(sys_sdL(rappDescriptor%rtimerErrorEstimation%delapsedCPU, 2))//'  '//&
+                     trim(sys_sdL(dfraction*rappDescriptor%rtimerErrorEstimation%delapsedCPU, 2))//' %')
+    call output_line('  Time for triangulation        : '//&
+                     trim(sys_sdL(rappDescriptor%rtimerTriangulation%delapsedCPU, 2))//'  '//&
+                     trim(sys_sdL(dfraction*rappDescriptor%rtimerTriangulation%delapsedCPU, 2))//' %')
+    call output_line('  Time for coefficient assembly : '//&
+                     trim(sys_sdL(rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 2))//'  '//&
+                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 2))//' %')
+    call output_line('  Time for matrix assembly      : '//&
+                     trim(sys_sdL(rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 2))//'  '//&
+                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 2))//' %')
+    call output_line('  Time for vector assembly:       '//&
+                     trim(sys_sdL(rappDescriptor%rtimerAssemblyVector%delapsedCPU, 2))//'  '//&
+                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyVector%delapsedCPU, 2))//' %')
+    call output_line('  Time for pre-/post-processing : '//&
+                     trim(sys_sdL(rappDescriptor%rtimerPrePostprocess%delapsedCPU, 2))//'  '//&
+                     trim(sys_sdL(dfraction*rappDescriptor%rtimerPrePostprocess%delapsedCPU, 2))//' %')
+    call output_separator (OU_SEP_MINUS)
+    call output_line('  Time for total simulation     : '//&
+                     trim(sys_sdL(dtotalTime, 2)))
+    call output_lbrk()
+  end subroutine codire_outputStatistics
 
   !*****************************************************************************
 
 !<subroutine>
 
-    subroutine codire_solveTransientPrimal()
+    subroutine codire_solveTransientPrimal(rappDescriptor, rbdrCond, rproblem,&
+                                           rtimestep, rsolver, rsolution,&
+                                           rcollection, rrhs)
 
 !<description>
     ! This subroutine solves the transient primal flow problem
@@ -1464,14 +1477,105 @@ contains
     !
     ! for a scalar quantity $u$ in the domain $\Omega$.
 !</description>
+
+!<input>
+    ! boundary condition structure
+    type(t_boundaryCondition), intent(IN) :: rbdrCond
+
+    ! OPTIONAL: right-hand side vector
+    type(t_vectorBlock), INTENT(IN), optional :: rrhs
+!</input>
+
+!<inputoutput>
+    ! application descriptor
+    type(t_codire), intent(INOUT) :: rappDescriptor
+
+    ! problem structure
+    type(t_problem), intent(INOUT) :: rproblem
+
+    ! time-stepping structure
+    type(t_timestep), intent(INOUT) :: rtimestep
+
+    ! solver struchture
+    type(t_solver), intent(INOUT), target :: rsolver
+
+    ! primal solution vector
+    type(t_vectorBlock), intent(INOUT) :: rsolution
+
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection    
+!</inputoutput>
 !</subroutine>
 
-    ! Primal boundary condition structure
-    type(t_boundaryCondition) :: rprimalBoundaryCondition
 
-!!$    ! Read the primal boundary conditions
-!!$    call bdrf_readBoundaryCondition(rprimalBoundaryCondition, indatfile,&
-!!$                                    '[boundary_conditions_primal]', ndimension)
+    ! Infinite time stepping loop
+    timeloop: do
+      
+      ! Check for user interaction
+      call codire_UserInterface
+      
+      !-------------------------------------------------------------------------
+      ! Advance solution in time
+      !-------------------------------------------------------------------------
+      
+      ! Start time measurement for solution procedure
+      call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
+      
+      ! What time-stepping scheme should be used?
+      select case(rtimestep%ctimestepType)
+
+      case (SV_RK_SCHEME)
+        
+        ! Adopt explicit Runge-Kutta scheme
+        if (present(rrhs)) then
+          call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep,&
+                                      rsolver, rsolution, codire_calcRHS,&
+                                      codire_setBoundary, rcollection, rrhs)
+        else
+          call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep,&
+                                      rsolver, rsolution, codire_calcRHS,&
+                                      codire_setBoundary, rcollection)
+        end if
+        
+      case (SV_THETA_SCHEME)
+        
+        ! Adopt two-level theta-scheme
+        if (present(rrhs)) then
+          call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep,&
+                                         rsolver, rsolution, codire_calcResidual,&
+                                         codire_calcJacobian, codire_applyJacobian,&
+                                         codire_setBoundary, rcollection, rrhs)
+        else
+          call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep,&
+                                         rsolver, rsolution, codire_calcResidual,&
+                                         codire_calcJacobian, codire_applyJacobian,&
+                                         codire_setBoundary, rcollection)
+        end if
+        
+      case DEFAULT
+        call output_line('Unsupported time-stepping algorithm!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransient')
+        call sys_halt()
+      end select
+
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(rappDescriptor%rtimerSolution)
+      
+      ! Reached final time, then exit the infinite time loop?
+      if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
+
+
+      !-------------------------------------------------------------------------
+      ! Post-process intermediate solution
+      !-------------------------------------------------------------------------
+      
+!!$      if (dstepUCD .gt. 0._DP .and. rtimestep%dTime .ge. dtimeUCD) then
+!!$        call codire_outputSolution(rproblem%p_rproblemLevelMax, rprimalSolution,&
+!!$                                   rtimestep%dTime, sfilenameUCDsolution, iformatUCD)
+!!$        dtimeUCD = dtimeUCD+dstepUCD
+!!$      end if
+
+    end do timeloop
 
   end subroutine codire_solveTransientPrimal
 
@@ -1479,7 +1583,9 @@ contains
 
 !<subroutine>
 
-  subroutine codire_solvePseudoTransientPrimal()
+  subroutine codire_solvePseudoTransientPrimal(rappDescriptor, rbdrCond, rproblem,&
+                                               rtimestep, rsolver, rsolution,&
+                                               rcollection, rrhs, rhadapt, rerrorEstimator)
 !<description>
     ! This subroutine solves the pseudo-transient primal flow problem
     !
@@ -1487,16 +1593,166 @@ contains
     !
     ! for a scalar quantity $u$ in the domain $\Omega$.
 !</description>
+
+!<input>
+    ! boundary condition structure
+    type(t_boundaryCondition), intent(IN) :: rbdrCond
+
+    ! OPTIONAL: right-hand side vector
+    type(t_vectorBlock), INTENT(IN), optional :: rrhs
+!</input>
+
+!<inputoutput>
+    ! application descriptor
+    type(t_codire), intent(INOUT) :: rappDescriptor
+
+    ! problem structure
+    type(t_problem), intent(INOUT) :: rproblem
+
+    ! time-stepping structure
+    type(t_timestep), intent(INOUT) :: rtimestep
+
+    ! solver struchture
+    type(t_solver), intent(INOUT), target :: rsolver
+
+    ! primal solution vector
+    type(t_vectorBlock), intent(INOUT) :: rsolution
+
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
+
+    ! OPTIONAL: mesh adaptation structure
+    type(t_hadapt), intent(INOUT), optional :: rhadapt
+
+    ! OPTIONAL: error estimation structure
+    type(t_errorEstimator), intent(INOUT), optional :: rerrorEstimator
+!</inputoutput>
 !</subroutine>
 
+    ! local variables
+    type(t_vectorScalar) :: rindicator
+    integer :: iadapt, nadapt
+
+    
+    ! Adaptation loop
+    adaptloop: do iadapt = 0, nadapt
+      
+      ! Reset time stepping algorithm
+      call solver_resetTimestep(rtimestep, .true.)
+      
+      ! Infinite time stepping loop
+      timeloop: do
+        
+        ! Check for user interaction
+        call codire_UserInterface
+        
+        !-----------------------------------------------------------------------
+        ! Advance solution in time
+        !-----------------------------------------------------------------------
+        
+        ! Start time measurement for solution procedure
+        call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
+        
+        ! What time-stepping scheme should be used?
+        select case(rtimestep%ctimestepType)
+          
+        case (SV_RK_SCHEME)
+          
+          ! Adopt explicit Runge-Kutta scheme
+          if (present(rrhs)) then
+            call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep,&
+                                        rsolver, rsolution, codire_calcRHS,&
+                                        codire_setBoundary, rcollection, rrhs)
+          else
+            call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep,&
+                                        rsolver, rsolution, codire_calcRHS,&
+                                        codire_setBoundary, rcollection)
+          end if
+          
+        case (SV_THETA_SCHEME)
+          
+          ! Adopt two-level theta-scheme
+          if (present(rrhs)) then
+            call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep,&
+                                           rsolver, rsolution, codire_calcResidual,&
+                                           codire_calcJacobian, codire_applyJacobian,&
+                                           codire_setBoundary, rcollection, rrhs)
+          else
+            call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep,&
+                                           rsolver, rsolution, codire_calcResidual,&
+                                           codire_calcJacobian, codire_applyJacobian,&
+                                           codire_setBoundary, rcollection)
+          end if
+          
+        case DEFAULT
+          call output_line('Unsupported time-stepping algorithm!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solvePseudoTransient')
+          call sys_halt()
+        end select
+        
+        ! Stop time measurement for solution procedure
+        call stat_stopTimer(rappDescriptor%rtimerSolution)
+        
+        ! Reached final time, then exit infinite time loop?
+        if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
+        
+        ! Reached steady state limit?
+        if (rtimestep%depsSteady > 0.0_DP) then
+
+          ! Check if steady-state residual exceeds tolerance
+          if (      (rsolver%dfinalDefect < rsolver%dinitialDefect)&
+              .and. ( (iadapt .eq. nadapt)&
+                       .and. (rsolver%dinitialDefect .le. rtimestep%dStep*rtimestep%depsSteady)&
+                       .or.  (rsolver%dinitialDefect .le. rtimestep%dStep*sqrt(rtimestep%depsSteady))&
+                    )&
+             ) exit timeloop
+        end if
+        
+      end do timeloop
+
+      !-------------------------------------------------------------------------
+      ! Perform mesh adaptation
+      !-------------------------------------------------------------------------
+
+      if (present(rhadapt)) then
+        
+!!$        ! Perform error estimation?
+!!$        if (present(rerrorEstimator)) then
+!!$          call codire_prepareErrorEstimator(rproblem%p_rproblemLevelMax,&
+!!$                                            rsolution, rerrorEstimator)
+!!$          call codire_performErrorEstimation(rerrorEstimator, rindicator,&
+!!$                                             rhadapt%drefinementTolerance)
+!!$          call errest_clearErrorEstimator(rerrorEstimator)
+!!$        end if
+
+!!$        ! What dimension are we?
+!!$        select case(rproblem%p_rproblemLevelMax%rtriangulation%ndim)
+!!$        case (NDIM1D)
+!!$          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+!!$                                            rsolution, rindicator, codire_hadaptCallback1D)
+!!$        case (NDIM2D)
+!!$          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+!!$                                            rsolution, rindicator, codire_hadaptCallback2D)
+!!$        case (NDIM3D)
+!!$          call codire_performGridAdaptation(rcollection, rhadapt, rproblem%p_rproblemLevelMax,&
+!!$                                            rsolution, rindicator, codire_hadaptCallback3D)
+!!$        end select
+
+        ! Release indicator
+        call lsyssc_releaseVector(rindicator)
+      end if
+      
+    end do adaptloop
+    
   end subroutine codire_solvePseudoTransientPrimal
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_solveSteadyStatePrimal(rappDescriptor, rbdrCond, rproblem, rtimestep,&
-                                           rsolver, rsolution, rcollection, rrhs)
+  subroutine codire_solveSteadyStatePrimal(rappDescriptor, rbdrCond, rproblem,&
+                                           rtimestep, rsolver, rsolution,&
+                                           rcollection, rrhs)
 
 !<description>
     ! This subroutine solves the steady-state primal flow problem
@@ -1629,5 +1885,274 @@ contains
     end if
 
   end subroutine codire_solveSteadyStatePrimal
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine codire_solveSteadyStatePrimalDual(rappDescriptor, rbdrCondPrimal, rbdrCondDual,&
+                                               rproblem, rtimestep, rsolver, rsolutionPrimal,&
+                                               rsolutionDual, rcollection, rrhs, rhadapt)
+
+!<description>
+    ! This subroutine solves the steady-state primal flow problem
+    !
+    ! $$\nabla\cdot{\bf f}(u)=s(u)$$
+    !
+    ! for a scalar quantity $u$ in the domain $\Omega$ both for the
+    ! primal and the dual formulation and performs goal-oriented
+    ! mesh adaptation if the optional parameter rhadapt is present.
+!</description>
+
+!<input>
+    ! boundary condition structure for the primal problem
+    type(t_boundaryCondition), intent(IN) :: rbdrCondPrimal
+
+    ! boundary condition structure for the dual problem
+    type(t_boundaryCondition), intent(IN) :: rbdrCondDual
+
+    ! OPTIONAL: right-hand side vector
+    type(t_vectorBlock), INTENT(IN), optional :: rrhs
+!</input>
+
+!<inputoutput>
+    ! application descriptor
+    type(t_codire), intent(INOUT) :: rappDescriptor
+
+    ! problem structure
+    type(t_problem), intent(INOUT) :: rproblem
+
+    ! time-stepping structure
+    type(t_timestep), intent(INOUT) :: rtimestep
+
+    ! solver struchture
+    type(t_solver), intent(INOUT), target :: rsolver
+
+    ! primal solution vector
+    type(t_vectorBlock), intent(INOUT) :: rsolutionPrimal
+
+    ! dual solution vector
+    type(t_vectorBlock), intent(INOUT) :: rsolutionDual
+
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
+
+    ! OPTIONAL: mesh adaptation structure
+    type(t_hadapt), intent(INOUT), optional :: rhadapt
+!</inputoutput>
+!</subroutine>
+
+    ! Pointer to the current multigrid level
+    type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! Vector for the linear target functional
+    type(t_vectorBlock) :: rtargetFunc
+
+    ! local variables
+    integer :: nlmin
+
+    
+    ! Adjust time stepping scheme
+    rtimestep%ctimestepType = SV_THETA_SCHEME
+    rtimestep%dinitialTime  = 0.0_DP
+    rtimestep%dinitialStep  = 1.0_DP
+    rtimestep%dfinalTime    = 1.0_DP
+    rtimestep%theta         = 1.0_DP
+
+    call solver_resetTimestep(rtimestep, .true.)
+
+    ! Set pointer to maximum problem level
+    p_rproblemLevel => rproblem%p_rproblemLevelMax
+
+
+    !---------------------------------------------------------------------------
+    ! Compute steady-state solution for the primal problem
+    !---------------------------------------------------------------------------
+
+    ! Start time measurement for solution procedure
+    call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
+
+    ! Calculate the velocity field
+    nlmin = solver_getMinimumMultigridlevel(rsolver)
+    call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+                                  rtimestep%dtime, rcollection, nlmin)
+
+    ! Attach the boundary condition to the solver structure
+    call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
+    
+    ! Set collection to primal problem mode
+    call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
+
+    ! Solve the primal problem
+    call timestep_performThetaStep(p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
+                                   codire_calcResidual, codire_calcJacobian,&
+                                   codire_applyJacobian, codire_setBoundary,&
+                                   rcollection, rrhs)
+
+    ! Stop time measurement for solution procedure
+    call stat_stopTimer(rappDescriptor%rtimerSolution)
+
+
+    !---------------------------------------------------------------------------
+    ! Compute the right-hand side for the dual problem
+    !---------------------------------------------------------------------------
+
+    ! Start time measurement for error estimation
+    call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
+
+    ! Create dual solution vector
+    call lsysbl_releaseVector(rsolutionDual)
+    call lsysbl_duplicateVector(rsolutionPrimal, rsolutionDual,&
+                                LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
+    call lsysbl_clearVector(rsolutionDual)
+
+    ! Stop time measurement for error estimation
+    call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
+
+
+    !---------------------------------------------------------------------------
+    ! Compute steady-state solution for the dual problem
+    !---------------------------------------------------------------------------
+
+    ! Start time measurement for solution procedure
+    call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
+
+    ! Calculate the velocity field
+    nlmin = solver_getMinimumMultigridlevel(rsolver)
+    call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+                                  rtimestep%dtime, rcollection, nlmin)
+
+    ! Attach the boundary condition to the solver structure
+    call solver_setBoundaryCondition(rsolver, rbdrCondDual, .true.)
+    
+    ! Set collection to primal problem mode
+    call collct_setvalue_int(rcollection, 'primaldual', 2, .true.)
+
+    ! Solve the dual problem
+    call timestep_performThetaStep(p_rproblemLevel, rtimestep, rsolver, rsolutionDual,&
+                                   codire_calcResidual, codire_calcJacobian,&
+                                   codire_applyJacobian, codire_setBoundary,&
+                                   rcollection, rtargetFunc)
+    
+    ! Release the target functional
+    call lsysbl_releaseVector(rtargetFunc)
+
+    ! Stop time measurement for solution procedure
+    call stat_stopTimer(rappDescriptor%rtimerSolution)
+
+
+    !---------------------------------------------------------------------------
+    ! Perform goal-oriented error estimation
+    !---------------------------------------------------------------------------
+
+  end subroutine codire_solveSteadyStatePrimalDual
+
+  !*****************************************************************************
+  ! AUXILIARY ROUTINES
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine codire_parseCmdlArguments(rparlist)
+
+!<description>
+    ! This subroutine parses the commandline arguments and modifies the
+    ! parameter values in the global parameter list.
+!</description>
+
+!<inputoutput>
+    ! parameter list
+    type(t_parlist), intent(INOUT) :: rparlist
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    character(LEN=SYS_STRLEN) :: cbuffer
+    integer :: iarg, narg
+    
+    iarg = 1; narg = command_argument_count()
+    
+    cmdarg: do
+      ! Retrieve next command line argument
+      call get_command_argument(iarg,cbuffer)
+      select case(trim(adjustl(cbuffer)))
+        
+      case ('-A','--adaptivity')
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', "adaptivity", trim(adjustl(cbuffer)))
+
+      case ('-B','--benchmark')
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', "benchmark", trim(adjustl(cbuffer)))
+       
+      case ('-DC','--dualconv')
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', "dualconv", trim(adjustl(cbuffer)))
+        
+      case ('-DD','--dualdiff')
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', "dualdiff", trim(adjustl(cbuffer)))
+
+      case ('-E','--errorest')
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', "errorest", trim(adjustl(cbuffer)))
+        
+      case ('-I','--io')
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', "inputoutput", trim(adjustl(cbuffer)))
+        
+      case ('-PC','--primalconv')
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', "primalconv", trim(adjustl(cbuffer)))
+        
+      case ('-PD','--primaldiff')
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', "primaldiff", trim(adjustl(cbuffer)))
+
+      case ('-S','--solver')
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', "solver", trim(adjustl(cbuffer)))
+        
+      case ('-T','--timestep')
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', "timestep", trim(adjustl(cbuffer)))
+        
+      case DEFAULT
+        iarg = iarg+1
+        if (iarg .ge. narg) exit cmdarg
+      end select
+    end do cmdarg
+
+  end subroutine codire_parseCmdlArguments
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine codire_UserInterface()
+
+!<description>
+    ! This subroutine enables the user to interact with the simulation.
+!</description>
+
+!</subroutine>
+    
+!!$    ! local variables
+!!$    integer, external :: signal_SIGINT
+!!$    
+!!$    ! Perform intermediate output
+!!$    if (signal_SIGINT(-1) > 0 ) call codire_postprocess(rsolution)
+    
+  end subroutine codire_UserInterface
 
 end module codire_application

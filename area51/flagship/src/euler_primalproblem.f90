@@ -105,40 +105,7 @@ contains
     integer :: nlmin,nlmax,iblock,jblock
     
     ! Start time measurement for global operator
-    call stat_startTimer(rtimer_assembly_matrix, STAT_TIMERSHORT)
-
-    ! Check if vector has correct dimensions
-    select case(isystemFormat)
-
-    case (SYSTEM_INTERLEAVEFORMAT)
-      if ((ru%nblocks .ne. 1) .or.&
-          (ru%RvectorBlock(1)%NVAR .ne. euler_getNVAR(rproblemLevel))) then
-        call output_line('Invalid format of solution vector!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
-        call sys_halt()
-      end if
-
-    case (SYSTEM_BLOCKFORMAT)
-      if (ru%nblocks .ne. rproblemLevel%rtriangulation%ndim) then
-        call output_line('Invalid format of solution vector!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
-        call sys_halt()
-      else
-        do iblock = 1, ru%nblocks
-          if (ru%RvectorBlock(iblock)%NVAR .ne. 1) then
-            call output_line('Invalid format of solution vector!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
-            call sys_halt()
-          end if
-        end do
-      end if
-
-    case DEFAULT
-      call output_line('Unsupported system format!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrimalPrecond')
-      call sys_halt()
-    end select
-    
+    call stat_startTimer(rtimer_assembly_matrix, STAT_TIMERSHORT)    
     
     ! Set minimal/maximal levels: If given by the user, adopt these values.
     ! Otherwise, use the values of the given multigrid solver structure.
