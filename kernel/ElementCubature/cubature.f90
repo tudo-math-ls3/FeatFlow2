@@ -29,9 +29,98 @@
 !#     -> Returns the element shape identifier on which a cubature formula
 !#        is defined.
 !#
-!# 4.) cub_getCubPoints
+!# 4.) cub_igetCoordDim
+!#     -> Returns the dimension of the coordinates for a given cubature
+!#        type identifier.
+!#
+!# 5.) cub_getCubature
+!#     -> Returns the cubature points and weights for a given cubature type
+!#        identifier.
+!#
+!# 6.) cub_getCubPoints
+!#     => DEPRECATED: See note below.
 !#     -> Get information about cubature points for a specific cubature
 !#        formula: Coordinates, number and weights.
+!#
+!#
+!# A note on cub_getCubPoints and cub_getCubature
+!# ----------------------------------------------
+!# The old routine 'cub_getCubPoints' and the parameter 'CUB_MAXCUBP' have
+!# been marked as deprecated for several reasons:
+!# 1. The CUB_MAXCUBP constant leads to a kind of 'sloppy' programming style,
+!#    the dimension of array variables on the stack is set to this value which
+!#    may lead to stack overflow once cubature rules with *many* points are
+!#    added in future.
+!#
+!# 2. The cub_getCubPoints routine returned the arrays in Feat 1.x style, so
+!#    that the array had to be transposed before it could be used by other
+!#    Feat 2 kernel routines, which had to be done by the caller.
+!#
+!# 3. All cubature points and weights are 'hard-coded' in the cub_getCubPoints
+!#    routines with a precision of maximal 16 digits, so the rules may be
+!#    inaccurate when running Feat 2 on a platform with higher precision.
+!#
+!# Therefore a new routine 'cub_getCubature' has been implemented to replace
+!# the old routine 'cub_getCubPoints'. To see the differences between the call
+!# of the old 'cub_getCubPoints' and the new 'cub_getCubature' routine, see
+!# the two code examples below.
+!#
+!# Remarks:
+!# The new 'cub_getCubature' routine supports all cubature formulas that the
+!# old 'cub_getCubPoints' supports, as it acts as a wrapper for the old routine
+!# in the case that no new implementation for the given cubature formula exists.
+!# Also, the new routine supports even more cubature formulas, e.g. Gauss-rules
+!# up to degree 12 for 1D lines, 2D quadrilaterals and 3D hexahedra, which are
+!# not supported by the old routine.
+!#
+!# Previously, one used a code like the one below to get the cubature formula:
+!# <code>
+!#
+!#   ! Cubature points
+!#   real(DP), dimension(CUB_MAXCUBP,4) :: Dxi
+!#   real(DP), dimension(4,CUB_MAXCUBP) :: Dpoints
+!# 
+!#   ! Cubature weights
+!#   real(DP), dimension(CUB_MAXCUBP) :: Domega
+!#
+!#   ! Number of points
+!#   integer :: ncubp
+!#
+!#     ! Get trapezoidal rule for quads
+!#     call cub_getCubPoints(CUB_TRZ, ncubp, Dxi, Domega)
+!#
+!#     ! Transpose points
+!#     Dpoints = transpose(Dxi)
+!# 
+!# </code>
+!# 
+!# The new recommended style is:
+!# <code>
+!#
+!#   ! Cubature points
+!#   real(DP), dimension(:,:), allocatable :: Dpoints
+!# 
+!#   ! Cubature weights
+!#   real(DP), dimension(:), allocatable :: Domega
+!#
+!#   ! Number of points and coordinate dimension
+!#   integer :: ncubp, ncdim
+!#
+!#     ! Get number of points and coordinate dimension
+!#     ncubp = cub_igetNumPts(CUB_TRZ)
+!#     ncdim = cub_igetCoordDim(CUB_TRZ)
+!#
+!#     ! Allocate arrays
+!#     allocate(Dpoints(ncdim,ncubp))
+!#     allocate(Domega(ncubp))
+!#
+!#     ! Get trapezoidal rule for quads
+!#     call cub_getCubature(CUB_TRZ, Dpoints, Domega)
+!#
+!#     ! Don't forget to deallocate Dpoints and Domega after you used them!
+!#
+!# </code>
+!#
 !# </purpose>
 !##############################################################################
 
@@ -76,6 +165,7 @@ module cubature
 
   ! 1x1 Gauss formula, degree = 2, ncubp = 1
   integer, parameter :: CUB_G1X1 = 201
+  integer, parameter :: CUB_G1_2D = CUB_G1X1
 
   ! trapezoidal rule, degree = 2, ncubp = 4
   integer, parameter :: CUB_TRZ = 202
@@ -85,6 +175,7 @@ module cubature
 
   ! 2x2 Gauss formula, degree = 4, ncubp = 4
   integer, parameter :: CUB_G2X2 = 204
+  integer, parameter :: CUB_G2_2D = CUB_G2X2
 
   ! Newton formula 1, degree = 4, ncubp = 4 
   integer, parameter :: CUB_NS1 = 205
@@ -97,15 +188,18 @@ module cubature
 
   ! 3x3 Gauss formula, degree = 6, ncubp = 9
   integer, parameter :: CUB_G3X3 = 208
+  integer, parameter :: CUB_G3_2D = CUB_G3X3
 
   ! Gauss formula, degree = 7, ncubp = 12
   integer, parameter :: CUB_G = 209
 
   ! 4x4 Gauss formula, degree = 8, ncubp = 16
   integer, parameter :: CUB_G4X4 = 210
+  integer, parameter :: CUB_G4_2D = CUB_G4X4
 
   ! 5x5 Gauss formula, degree = 10, ncubp = 25
   integer, parameter :: CUB_G5X5 = 211
+  integer, parameter :: CUB_G5_2D = CUB_G5X5
 
   ! piecewise 1x1 Gauss formula, degree = 2, ncubp = 4
   integer, parameter :: CUB_PG1X1 = 212
@@ -124,6 +218,10 @@ module cubature
 
   ! Simpson 3/8 rule (corners and 1/3 + 2/3), degree = 3, ncubp = 16
   integer, parameter :: CUB_3_8 = 217
+
+  ! 6x6 Gauss formula, degree = 12, ncubp = 36
+  ! NOT SUPPORTED BY 'cub_getCubPoints' !
+  integer, parameter :: CUB_G6_2D = 218
 
 !</constantblock>
 
@@ -161,6 +259,18 @@ module cubature
   
   ! 3-point Gauss formula, 3D, degree = 6, ncubp = 27
   integer, parameter :: CUB_G3_3D = 305
+  
+  ! 4-point Gauss formula, 3D, degree = 8, ncubp = 64
+  ! NOT SUPPORTED BY 'cub_getCubPoints' !
+  integer, parameter :: CUB_G4_3D = 306
+  
+  ! 5-point Gauss formula, 3D, degree = 10, ncubp = 125
+  ! NOT SUPPORTED BY 'cub_getCubPoints' !
+  integer, parameter :: CUB_G5_3D = 307
+
+  ! 6-point Gauss formula, degree = 12, ncubp = 216
+  ! NOT SUPPORTED BY 'cub_getCubPoints' !
+  integer, parameter :: CUB_G6_3D = 308
 
 !</constantblock>
 
@@ -205,17 +315,17 @@ module cubature
   
 !</constantblock>
 
-  ! maximal size of cubature node field
+  ! DEPRECATED: maximal size of cubature node field
   integer, parameter :: CUB_MAXCUBP = 36
 
-  ! maximal number of cubature points in 1D
+  ! DEPRECATED: maximal number of cubature points in 1D
   integer, parameter :: CUB_MAXCUBP_1D = 6
   
-  ! maximal number of cubature points in 2D
+  ! DEPRECATED: maximal number of cubature points in 2D
   integer, parameter :: CUB_MAXCUBP_2D = 36
   
-  ! maximal number of cubature points in 3D
-  integer, parameter :: CUB_MAXCUBP_3D = 15
+  ! DEPRECATED: maximal number of cubature points in 3D
+  integer, parameter :: CUB_MAXCUBP_3D = 27
 
 !</constants>
 
@@ -265,28 +375,28 @@ contains
     cub_igetID=CUB_G6_1D
 
   ! 2D-fomulas, quadrilateral
-  case ("G1X1")
-    cub_igetID=CUB_G1X1
+  case ("G1X1","G1_2D")
+    cub_igetID=CUB_G1_2D
   case ("TRZ")
     cub_igetID=CUB_TRZ
   case ("MID")
     cub_igetID=CUB_MID
-  case ("G2X2")
-    cub_igetID=CUB_G2X2
+  case ("G2X2","G2_2D")
+    cub_igetID=CUB_G2_2D
   case ("NS1")
     cub_igetID=CUB_NS1
   case ("NS2")
     cub_igetID=CUB_NS2
   case ("NS3")
     cub_igetID=CUB_NS3
-  case ("G3X3")
-    cub_igetID=CUB_G3X3
+  case ("G3X3","G3_2D")
+    cub_igetID=CUB_G3_2D
   case ("G")
     cub_igetID=CUB_G
-  case ("G4X4")
-    cub_igetID=CUB_G4X4
-  case ("G5X5")
-    cub_igetID=CUB_G5X5
+  case ("G4X4","G4_2D")
+    cub_igetID=CUB_G4_2D
+  case ("G5X5","G5_2D")
+    cub_igetID=CUB_G5_2D
   case ("PG1X1")
     cub_igetID=CUB_PG1X1
   case ("PTRZ")
@@ -295,6 +405,8 @@ contains
     cub_igetID=CUB_PG2X2
   case ("PG3X3")
     cub_igetID=CUB_PG3X3
+  case ("G6_2D")
+    cub_igetID=CUB_G6_2D
     
   ! 2D-formulas, triangle
   case ("G1_T")
@@ -319,6 +431,12 @@ contains
     cub_igetID=CUB_G2_3D
   case("G3_3D")
     cub_igetID=CUB_G3_3D
+  case("G4_3D")
+    cub_igetID=CUB_G4_3D
+  case("G5_3D")
+    cub_igetID=CUB_G5_3D
+  case("G6_3D")
+    cub_igetID=CUB_G6_3D
   
   ! 3D-formulas, tetrahedron
   case("G1_3D_T")
@@ -368,7 +486,7 @@ contains
 !</result>
 
 !<input>
-  ! Cubature tpye identifier
+  ! Cubature type identifier
   integer, intent(IN) :: ccubType
 !</input>
   
@@ -398,23 +516,23 @@ contains
       n = 7
     
     ! -= 2D Quadrilateral Formulas =-
-    case (CUB_G1X1)
+    case (CUB_G1_2D)
       n = 1
-    case (CUB_G2X2,CUB_TRZ,CUB_MID,CUB_NS1,CUB_PG1X1)
+    case (CUB_G2_2D,CUB_TRZ,CUB_MID,CUB_NS1,CUB_PG1X1)
       n = 4
     case (CUB_NS2)
       n = 6
     case (CUB_NS3)
       n = 7
-    case (CUB_G3X3,CUB_PTRZ,CUB_SIMPSON)
+    case (CUB_G3_2D,CUB_PTRZ,CUB_SIMPSON)
       n = 9
     case (CUB_G)
       n = 12
-    case (CUB_G4X4,CUB_PG2X2,CUB_3_8)
+    case (CUB_G4_2D,CUB_PG2X2,CUB_3_8)
       n = 16
-    case (CUB_G5X5)
+    case (CUB_G5_2D)
       n = 25
-    case (CUB_PG3X3)
+    case (CUB_G6_2D,CUB_PG3X3)
       n = 36
       
     ! -= 3D Tetrahedron Formulas =-
@@ -436,6 +554,12 @@ contains
       n = 8
     case (CUB_G3_3D)
       n = 27
+    case (CUB_G4_3D)
+      n = 64
+    case (CUB_G5_3D)
+      n = 125
+    case (CUB_G6_3D)
+      n = 216
     
     ! -= 3D Pyramid Formulas =-
     case (CUB_G1_3D_Y)
@@ -511,6 +635,357 @@ contains
 
 
   end function
+
+  !****************************************************************************
+
+!<function>
+
+  integer function cub_igetCoordDim(ccubType) result(n)
+  
+!<description>
+  ! This routine returns the dimension of the coordinates for a given
+  ! cubature type identifier.
+!</description>
+
+!<result>
+  ! The coordinate dimension of the formula.
+!</result>
+
+!<input>
+  ! Cubature type identifier
+  integer, intent(IN) :: ccubType
+!</input>
+  
+!</function>
+
+    ! Get the shape of the cubature id
+    select case(cub_igetShape(ccubType))
+    case(BGEOM_SHAPE_LINE)
+      ! 1D line formula -> reference coordinates
+      n = 1
+    case(BGEOM_SHAPE_TRIA)
+      ! 2D triangle formula -> barycentric coordinates
+      n = 3
+    case(BGEOM_SHAPE_QUAD)
+      ! 2D quadrilateral formula -> reference coordinates
+      n = 2
+    case(BGEOM_SHAPE_TETRA)
+      ! 3D tetrahedron formula -> barycentric coordinates
+      n = 4
+    case(BGEOM_SHAPE_HEXA)
+      ! 3D hexahedron formula -> reference coordinates
+      n = 3
+    case(BGEOM_SHAPE_PYRA)
+      ! 3D pyramid formula -> reference coordinates
+      n = 3
+    case(BGEOM_SHAPE_PRISM)
+      ! 3D prism formula -> reference coordinates
+      n = 3
+    case default
+      ! unknown formula
+      n = 0
+    end select
+
+  end function
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine cub_getCubature(ccubType, Dpoints, Domega)
+
+!<descrption>
+  ! This routine returns the cubature point coordinates and the corresponding
+  ! weights for a given cubature type identifier.
+!</descrption>
+
+!<input>
+  ! id of the cubature formula to be set
+  integer, intent(IN) :: ccubType
+!</input>
+
+!<output>
+  ! Coordinates of the cubature points.
+  ! The dimension is assumed to be at least Dpoints(1:NDIM,1:NPTS), where:
+  ! NDIM is the dimension of a point, which is returned by cub_igetCoordDim.
+  ! NPTS is the number of cubatue points, which is returned by cub_igetNumPts.
+  real(DP), dimension(:,:), intent(OUT) :: Dpoints
+  
+  ! For every cubature point the corresponding cubature weight.
+  ! The dimension is assumed to be at least Domega(1:NPTS) (see Dpoints).
+  real(DP), dimension(:), intent(OUT) :: Domega
+!</output>
+
+!</subroutine>
+
+  ! local variables for wrapper
+  real(DP), dimension(CUB_MAXCUBP,4) :: Dxi
+  integer :: i,j,k,l,ncubp
+  
+  ! Auxiliary arrays for Gauss-Legendre rules
+  real(DP), dimension(5) :: Dv, Dw
+  integer :: ndim, npts
+  
+    ndim = 0
+    npts = 0
+    
+    ! Okay, let's see what cubature rule we have here...
+    select case(ccubType)
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! 1D LINE CUBATURE RULES
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    case (CUB_G1_1D)
+      ndim = 1
+      npts = 1
+    
+    case (CUB_G2_1D)
+      ndim = 1
+      npts = 2
+    
+    case (CUB_G3_1D)
+      ndim = 1
+      npts = 3
+    
+    case (CUB_G4_1D)
+      ndim = 1
+      npts = 4
+    
+    case (CUB_G5_1D)
+      ndim = 1
+      npts = 5
+    
+    case (CUB_G6_1D)
+      ndim = 1
+      npts = 6
+
+    case(CUB_TRZ_1D) ! trapezoidal rule
+      Dpoints(1,1) = -1.0_DP
+      Dpoints(1,2) =  1.0_DP
+      Domega(1) = 1.0_DP
+      Domega(2) = 1.0_DP
+
+    case(CUB_SIMPSON_1D) ! Simpson rule
+      Dpoints(1,1) = -1.0_DP
+      Dpoints(1,2) =  0.0_DP
+      Dpoints(1,3) =  1.0_DP
+      Domega(1) = 1.0_DP / 3.0_DP
+      Domega(2) = 4.0_DP / 3.0_DP
+      Domega(3) = 1.0_DP / 3.0_DP
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! 2D TRIANGLE CUBATURE RULES
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! 2D QUADRILATERAL CUBATURE RULES
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    case (CUB_G1_2D)
+      ndim = 2
+      npts = 1
+    
+    case (CUB_G2_2D)
+      ndim = 2
+      npts = 2
+    
+    case (CUB_G3_2D)
+      ndim = 2
+      npts = 3
+    
+    case (CUB_G4_2D)
+      ndim = 2
+      npts = 4
+    
+    case (CUB_G5_2D)
+      ndim = 2
+      npts = 5
+    
+    case (CUB_G6_2D)
+      ndim = 2
+      npts = 6
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! 3D TETRAHEDRON CUBATURE RULES
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! 3D HEXAHEDRON CUBATURE RULES
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    case (CUB_G1_3D)
+      ndim = 3
+      npts = 1
+    
+    case (CUB_G2_3D)
+      ndim = 3
+      npts = 2
+    
+    case (CUB_G3_3D)
+      ndim = 3
+      npts = 3
+    
+    case (CUB_G4_3D)
+      ndim = 3
+      npts = 4
+    
+    case (CUB_G5_3D)
+      ndim = 3
+      npts = 5
+    
+    case (CUB_G6_3D)
+      ndim = 3
+      npts = 6
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! 3D PYRAMID CUBATURE RULES
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! 3D PRISM CUBATURE RULES
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! OLD INTERFACE WRAPPER
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    case default
+  
+      ! call old routine
+      call cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
+      
+      ! transpose the point array
+      do i = 1, min(4,size(Dpoints,1))
+        do j = 1, min(ncubp,size(Dpoints,2))
+          Dpoints(i,j) = Dxi(i,j)
+        end do
+      end do
+      
+      ! And get out of here
+      return
+      
+    end select
+    
+    ! Gauss-Legendre rule ?
+    if((ndim .gt. 0) .and. (npts .gt. 0)) then
+    
+      ! Okay, get the corresponding Gauss-Legendre rule
+      call cub_auxGaussLegendre(npts,Dv,Dw)
+      
+      ! What dimension should the rule be for?
+      select case(ndim)
+      case (1)
+        ! 1D Gauss rule
+        do i = 1, npts
+          Dpoints(1,i) = Dv(i)
+          Domega(i) = Dw(i)
+        end do
+      
+      case (2)
+        ! 2D Gauss rule for quadrilaterals
+        l = 1
+        do i = 1, npts
+          do j = 1, npts
+            Dpoints(1,l) = Dv(i)
+            Dpoints(2,l) = Dv(j)
+            Domega(l) = Dw(i)*Dw(j)
+            l = l+1
+          end do
+        end do
+      
+      case(3)
+        ! 3D Gauss rule for hexahedra
+        l = 1
+        do i = 1, npts
+          do j = 1, npts
+            do k = 1, npts
+              Dpoints(1,l) = Dv(i)
+              Dpoints(2,l) = Dv(j)
+              Dpoints(3,l) = Dv(k)
+              Domega(l) = Dw(i)*Dw(j)*Dw(k)
+              l = l+1
+            end do
+          end do
+        end do
+        
+      end select
+    
+    end if
+    
+    ! That's it
+    
+  contains
+  
+  ! -------------------------------------------------------
+  
+    pure subroutine cub_auxGaussLegendre(n,Dv,Dw)
+    integer, intent(IN) :: n
+    real(DP), dimension(:), intent(OUT) :: Dv, Dw
+    
+    real(DP) :: daux
+    
+      ! How many points for Gauss-formula?
+      select case(n)
+      case(1)
+        Dv(1) =  0.0_DP
+        Dw(1) =  2.0_DP
+      
+      case(2)
+        Dv(1) = -sqrt(1.0_DP / 3.0_DP)
+        Dv(2) =  sqrt(1.0_DP / 3.0_DP)
+        Dw(1) =  1.0_DP
+        Dw(2) =  1.0_DP
+      
+      case(3)
+        Dv(1) = -sqrt(0.6_DP)
+        Dv(2) =  0.0_DP
+        Dv(3) =  sqrt(0.6_DP)
+        Dw(1) =  5.0_DP / 9.0_DP
+        Dw(2) =  8.0_DP / 9.0_DP
+        Dw(3) =  5.0_DP / 9.0_DP
+      
+      case(4)
+        daux = sqrt(4.8_DP)
+        Dv(1) = -sqrt(3.0_DP + daux) / 7.0_DP
+        Dv(2) = -sqrt(3.0_DP - daux) / 7.0_DP
+        Dv(3) =  sqrt(3.0_DP - daux) / 7.0_DP
+        Dv(4) =  sqrt(3.0_DP + daux) / 7.0_DP
+        daux = sqrt(30.0_DP)
+        Dw(1) = (18.0_DP - daux) / 36.0_DP
+        Dw(2) = (18.0_DP + daux) / 36.0_DP
+        Dw(3) = (18.0_DP + daux) / 36.0_DP
+        Dw(4) = (18.0_DP - daux) / 36.0_DP
+      
+      case(5)
+        daux = 2.0_DP * sqrt(10.0_DP / 7.0_DP)
+        Dv(1) = -sqrt(5.0_DP + daux) / 3.0_DP
+        Dv(2) = -sqrt(5.0_DP - daux) / 3.0_DP
+        Dv(3) =  0.0_DP
+        Dv(4) =  sqrt(5.0_DP - daux) / 3.0_DP
+        Dv(5) =  sqrt(5.0_DP + daux) / 3.0_DP
+        daux = 13.0_DP * sqrt(70.0_DP)
+        Dw(1) = (322.0_DP - daux) / 900.0_DP
+        Dw(2) = (322.0_DP - daux) / 900.0_DP
+        Dw(3) =  128.0_DP / 225.0_DP
+        Dw(4) = (322.0_DP - daux) / 900.0_DP
+        Dw(5) = (322.0_DP - daux) / 900.0_DP
+
+      case(6)
+        Dv(1) = -0.932469514203152_DP
+        Dv(2) = -0.661209386466265_DP
+        Dv(3) = -0.238619186083197_DP
+        Dv(4) =  0.238619186083197_DP
+        Dv(5) =  0.661209386466265_DP
+        Dv(6) =  0.932469514203152_DP
+        Dw(1) =  0.171324492379170_DP
+        Dw(2) =  0.360761573048139_DP
+        Dw(3) =  0.467913934572691_DP
+        Dw(4) =  0.467913934572691_DP
+        Dw(5) =  0.360761573048139_DP
+        Dw(6) =  0.171324492379170_DP
+    
+      end select
+      
+    end subroutine cub_auxGaussLegendre
+
+  end subroutine cub_getCubature
 
   !****************************************************************************
 
