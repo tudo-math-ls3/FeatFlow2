@@ -32,24 +32,20 @@ SRC += flagship.f90 \
        flagship_basic.f90
 
 # application source files for CODIRE module
-SRC += codire_adaptation.f90 \
-       codire_application.f90 \
+SRC += codire_application.f90 \
        codire_basic.f90 \
-       codire_callback.f90 \
-       codire_estimation.f90 \
-       codire_init.f90 \
-       codire_postprocessing.f90
+       codire_callback.f90
 
 # application source files for EULER module
-#SRC += euler_adaptation.f90 \
-#       euler_basic.f90 \
-#       euler_callback1d.f90 \
-#       euler_callback2d.f90 \
-#       euler_callback3d.f90 \
-#       euler_estimation.f90 \
-#       euler_init.f90 \
-#       euler_postprocessing.f90 \
-#       euler_primalproblem.f90
+SRC += euler_application.f90 \
+       euler_basic.f90 \
+       euler_callback.f90 \
+       euler_callback1d.f90 \
+       euler_callback2d.f90 \
+       euler_callback3d.f90
+
+# application source files for MHD module
+SRC += mhd_application.f90
 
 # path for the make where to look for application source files
 vpath %.f src src/kernel
