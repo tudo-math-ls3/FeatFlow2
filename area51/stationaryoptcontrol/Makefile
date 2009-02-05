@@ -12,9 +12,13 @@ INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
         -I$(MPI_HOME)/include
 
 # The source files 
-SRC =   poisson2d_callback.f90 \
+SRC =   navstokes2d_callback.f90 \
+        navstokes2d_method0_simple.f90 \
+        poisson2d_callback.f90 \
         poisson2d_method0_simple.f90 \
-        poisson.f90
+        stationaryoptcontrol.f90 \
+        stokes2d_callback.f90 \
+        stokes2d_method0_simple.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk
