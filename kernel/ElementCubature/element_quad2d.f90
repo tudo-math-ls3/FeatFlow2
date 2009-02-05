@@ -848,11 +848,11 @@ contains
 ! </subroutine>
 
   !auxiliary vector containing the first derivatives on the reference element
-  real(DP), dimension(9,NDIM2D) :: Dhelp
+  real(DP), dimension(9,5) :: Dhelp
   real(DP) :: dx,dy
 
   integer :: idof
-  real(DP) :: dxj !auxiliary variable
+  real(DP) :: dxj,dxjs,dc1,dc2,dc3 !auxiliary variable
   
   real(DP), parameter :: Q2 = 0.5_DP
   real(DP), parameter :: Q4 = 0.25_DP
@@ -918,6 +918,140 @@ contains
     endif
   endif
     
+  ! if xx-, xy or yy-derivatives are desired
+  if (Bder(DER_DERIV_XX) .or. Bder(DER_DERIV_XY) .or. Bder(DER_DERIV_YY)) then
+    dxj = 1.0_DP / ddetj
+    
+    !x- and y-derivatives on reference element
+
+    ! Now we have to compute the derivatives on the real element by those on
+    ! the reference element. This is a little bit tricky!
+    !
+    ! Let's assume, out finite element function on the real element is
+    ! f(x) and the corresponding function on the reference element g(y),
+    ! so x is the real coordinate and y the reference coordinate.
+    ! There is a mapping s:[-1,1]->R2 that maps to the real element.
+    ! It's inverse s^{-1} maps to the reference element.
+    ! We have:
+    !
+    !   f(x) = g(y) = g(s^{-1}(x))
+    !
+    ! We want to compute the hessian
+    !
+    !   Hf(x) = [ f11 f12 ]
+    !           [ f21 f22 ]
+    !
+    ! with fij = di dj f. By the chain rule, we have:
+    !
+    !  Hf(x)  =  H [ g(s^{-1}(x)) ]
+    !         =  D [ D ( g(s^{-1}(x)) ) ]
+    !         =  D [ Dg (s^{-1}(x)) Ds^{-1}(x) ]
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)  +  Dg (s^{-1}(x)) Hs^{-1}(x)
+    !
+    ! Now the big assumption: We assume that out mapping s is bilinear!
+    ! From this assumption we derive that Hs^{-1}(x), so the 2nd term
+    ! vanishes. We clearly point out that this is of course not true for 
+    ! isoparametric mappings!
+    !
+    ! With this assumption, we continue:
+    !
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
+    !
+    ! This is computable now. Let's write:
+    !
+    !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
+    !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
+    !
+    ! then we get:
+    !
+    !  Hf(x) = 1/det^2
+    !  [(s22*g11-s21*g21)*s22-(s22*g12-s21*g22)*s21, -(s22*g11-s21*g21)*s12+(s22*g12-s21*g22)*s11],
+    !  [(-s12*g11+s11*g21)*s22-(-s12*g12+s11*g22)*s21, -(-s12*g11+s11*g21)*s12+(-s12*g12+s11*g22)*s11]])
+    !
+    ! This can be simplified by the fact that g12=g21 (as (gij) is a Hessian):
+    !
+    !  = 1/det^2
+    !    [s22^2*g11-2*s22*s21*g21+s21^2*g22, -s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22]
+    !    [-s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22, s12^2*g11-2*s12*s11*g21+s11^2*g22]])
+    !
+    ! so we have
+    !
+    !  f11       = 1/det^2 * [ s22^2*g11    - 2*s22*s21*g21               + s21^2*g22 ]
+    !  f12 = f21 = 1/det^2 * [ -s22*s12*g11 + ( s22*s11 + s12*s21 ) * g21 - s21*s11*g22 ]
+    !  f22       = 1/det^2 * [ s12^2*g11    - 2*s12*s11*g21               + s11^2*g22 ]
+    !
+    
+    dxjs = dxj*dxj
+    
+    !xx-, xy and yy-derivatives on reference element
+    Dhelp(1,3) = Q2*(-1.0_DP+dy)*dy
+    Dhelp(2,3) = Q2*(-1.0_DP+dy)*dy
+    Dhelp(3,3) = Q2*(1.0_DP+dy)*dy
+    Dhelp(4,3) = Q2*(1.0_DP+dy)*dy
+    Dhelp(5,3) = -(-1.0_DP+dy)*dy
+    Dhelp(6,3) = 1.0_DP-dy**2
+    Dhelp(7,3) = -(1.0_DP+dy)*dy
+    Dhelp(8,3) = 1.0_DP-dy**2
+    Dhelp(9,3) = -2.0_DP+2.0_DP*dy**2
+
+    Dhelp(1,4) = dx*dy-Q2*dx-Q2*dy+Q4
+    Dhelp(2,4) = dx*dy-Q2*dx+Q2*dy-Q4
+    Dhelp(3,4) = dx*dy+Q2*dx+Q2*dy+Q4
+    Dhelp(4,4) = dx*dy+Q2*dx-Q2*dy-Q4
+    Dhelp(5,4) = -2.0_DP*dx*dy+dx
+    Dhelp(6,4) = -2.0_DP*dx*dy-dy
+    Dhelp(7,4) = -2.0_DP*dx*dy-dx
+    Dhelp(8,4) = -2.0_DP*dx*dy+dy
+    Dhelp(9,4) = 4.0_DP*dx*dy
+
+    Dhelp(1,5) = Q2*(-1.0_DP+dx)*dx
+    Dhelp(2,5) = Q2*(1.0_DP+dx)*dx
+    Dhelp(3,5) = Q2*(1.0_DP+dx)*dx
+    Dhelp(4,5) = Q2*(-1.0_DP+dx)*dx
+    Dhelp(5,5) = 1.0_DP-dx**2
+    Dhelp(6,5) = -(1.0_DP+dx)*dx
+    Dhelp(7,5) = 1.0_DP-dx**2
+    Dhelp(8,5) = -(-1.0_DP+dx)*dx
+    Dhelp(9,5) = -2.0_DP+2.0_DP*dx**2
+    
+    ! WARNING: NOT TESTED!!!
+    
+    ! xx-derivatives on current element
+    if (Bder(DER_DERIV_XX)) then
+      dc1 = dxjs * Djac(4)**2
+      dc2 = dxjs * ( -2.0_DP * Djac(4) * Djac(2) )
+      dc3 = dxjs * Djac(2)**2
+      do idof = 1,9
+        Dbas(idof,DER_DERIV_XX) = &
+            dc1 * Dhelp(idof,3) + dc2 * Dhelp(idof,4) + dc3 * Dhelp(idof,5)
+      end do
+    endif
+    
+    ! xy-derivatives on current element
+    if (Bder(DER_DERIV_YY)) then
+      dc1 = - dxjs * Djac(4) * Djac(3)
+      dc2 = dxjs * ( Djac(4) * Djac(1) + Djac(3) * Djac(2) )
+      dc3 = - dxjs * Djac(1) * Djac(4)
+      do idof = 1,9
+        Dbas(idof,DER_DERIV_Y) = &
+            dc1 * Dhelp(idof,3) + dc2 * Dhelp(idof,4) + dc3 * Dhelp(idof,5)
+      end do
+    endif    
+    
+    ! yy-derivatives on current element
+    if (Bder(DER_DERIV_YY)) then
+      dc1 = dxjs * Djac(3)**2
+      dc2 = dxjs * ( -2.0_DP * Djac(3) * Djac(1) )
+      dc3 = dxjs * Djac(1)**2
+      do idof = 1,9
+        Dbas(idof,DER_DERIV_Y) = &
+            dc1 * Dhelp(idof,3) + dc2 * Dhelp(idof,4) + dc3 * Dhelp(idof,5)
+      end do
+    endif
+  endif
+      
   end subroutine 
   
   !************************************************************************
@@ -990,9 +1124,9 @@ contains
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  real(DP), dimension(9,NDIM2D,npoints) :: Dhelp
+  real(DP), dimension(9,5,npoints) :: Dhelp
   real(DP) :: dx,dy
-  real(DP),dimension(npoints) :: Dxj !auxiliary variable
+  real(DP),dimension(npoints) :: Dxj,Dxjs,Dc1,Dc2,Dc3 !auxiliary variable
   
   integer :: i,idof   ! point counter
     
@@ -1073,6 +1207,159 @@ contains
         end do
       end do
 !    ENDIF
+  endif
+  
+  ! if xx-, xy or yy-derivatives are desired
+  if (Bder(DER_DERIV_XX) .or. Bder(DER_DERIV_XY) .or. Bder(DER_DERIV_YY)) then
+    
+    !x- and y-derivatives on reference element
+
+    ! Now we have to compute the derivatives on the real element by those on
+    ! the reference element. This is a little bit tricky!
+    !
+    ! Let's assume, out finite element function on the real element is
+    ! f(x) and the corresponding function on the reference element g(y),
+    ! so x is the real coordinate and y the reference coordinate.
+    ! There is a mapping s:[-1,1]->R2 that maps to the real element.
+    ! It's inverse s^{-1} maps to the reference element.
+    ! We have:
+    !
+    !   f(x) = g(y) = g(s^{-1}(x))
+    !
+    ! We want to compute the hessian
+    !
+    !   Hf(x) = [ f11 f12 ]
+    !           [ f21 f22 ]
+    !
+    ! with fij = di dj f. By the chain rule, we have:
+    !
+    !  Hf(x)  =  H [ g(s^{-1}(x)) ]
+    !         =  D [ D ( g(s^{-1}(x)) ) ]
+    !         =  D [ Dg (s^{-1}(x)) Ds^{-1}(x) ]
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)  +  Dg (s^{-1}(x)) Hs^{-1}(x)
+    !
+    ! Now the big assumption: We assume that out mapping s is bilinear!
+    ! From this assumption we derive that Hs^{-1}(x), so the 2nd term
+    ! vanishes. We clearly point out that this is of course not true for 
+    ! isoparametric mappings!
+    !
+    ! With this assumption, we continue:
+    !
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
+    !
+    ! This is computable now. Let's write:
+    !
+    !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
+    !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
+    !
+    ! then we get:
+    !
+    !  Hf(x) = 1/det^2
+    !  [(s22*g11-s21*g21)*s22-(s22*g12-s21*g22)*s21, -(s22*g11-s21*g21)*s12+(s22*g12-s21*g22)*s11],
+    !  [(-s12*g11+s11*g21)*s22-(-s12*g12+s11*g22)*s21, -(-s12*g11+s11*g21)*s12+(-s12*g12+s11*g22)*s11]])
+    !
+    ! This can be simplified by the fact that g12=g21 (as (gij) is a Hessian):
+    !
+    !  = 1/det^2
+    !    [s22^2*g11-2*s22*s21*g21+s21^2*g22, -s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22]
+    !    [-s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22, s12^2*g11-2*s12*s11*g21+s11^2*g22]])
+    !
+    ! so we have
+    !
+    !  f11       = 1/det^2 * [ s22^2*g11    - 2*s22*s21*g21               + s21^2*g22 ]
+    !  f12 = f21 = 1/det^2 * [ -s22*s12*g11 + ( s22*s11 + s12*s21 ) * g21 - s21*s11*g22 ]
+    !  f22       = 1/det^2 * [ s12^2*g11    - 2*s12*s11*g21               + s11^2*g22 ]
+    
+    !x- and y-derivatives on reference element
+    Dxj = 1.0E0_DP / Ddetj
+    Dxjs = Dxj*Dxj
+
+    do i=1,npoints
+      dx = Dpoints(1,i)
+      dy = Dpoints(2,i)
+      
+      !xx-, xy and yy-derivatives on reference element
+      Dhelp(1,3,i) = Q2*(-1.0_DP+dy)*dy
+      Dhelp(2,3,i) = Q2*(-1.0_DP+dy)*dy
+      Dhelp(3,3,i) = Q2*(1.0_DP+dy)*dy
+      Dhelp(4,3,i) = Q2*(1.0_DP+dy)*dy
+      Dhelp(5,3,i) = -(-1.0_DP+dy)*dy
+      Dhelp(6,3,i) = 1.0_DP-dy**2
+      Dhelp(7,3,i) = -(1.0_DP+dy)*dy
+      Dhelp(8,3,i) = 1.0_DP-dy**2
+      Dhelp(9,3,i) = -2.0_DP+2.0_DP*dy**2
+               
+      Dhelp(1,4,i) = dx*dy-Q2*dx-Q2*dy+Q4
+      Dhelp(2,4,i) = dx*dy-Q2*dx+Q2*dy-Q4
+      Dhelp(3,4,i) = dx*dy+Q2*dx+Q2*dy+Q4
+      Dhelp(4,4,i) = dx*dy+Q2*dx-Q2*dy-Q4
+      Dhelp(5,4,i) = -2.0_DP*dx*dy+dx
+      Dhelp(6,4,i) = -2.0_DP*dx*dy-dy
+      Dhelp(7,4,i) = -2.0_DP*dx*dy-dx
+      Dhelp(8,4,i) = -2.0_DP*dx*dy+dy
+      Dhelp(9,4,i) = 4.0_DP*dx*dy
+               
+      Dhelp(1,5,i) = Q2*(-1.0_DP+dx)*dx
+      Dhelp(2,5,i) = Q2*(1.0_DP+dx)*dx
+      Dhelp(3,5,i) = Q2*(1.0_DP+dx)*dx
+      Dhelp(4,5,i) = Q2*(-1.0_DP+dx)*dx
+      Dhelp(5,5,i) = 1.0_DP-dx**2
+      Dhelp(6,5,i) = -(1.0_DP+dx)*dx
+      Dhelp(7,5,i) = 1.0_DP-dx**2
+      Dhelp(8,5,i) = -(-1.0_DP+dx)*dx
+      Dhelp(9,5,i) = -2.0_DP+2.0_DP*dx**2
+      
+    end do
+      
+    ! WARNING: NOT TESTED!!!
+      
+    ! xx-derivatives on current element
+    !if (Bder(DER_DERIV_XX)) then
+      do i=1,npoints
+        Dc1(i) = Dxjs(i) * Djac(4,i)**2
+        Dc2(i) = Dxjs(i) * ( -2.0_DP * Djac(4,i) * Djac(2,i) )
+        Dc3(i) = Dxjs(i) * Djac(2,i)**2
+      end do
+      
+      do i=1,npoints
+        do idof = 1,9
+          Dbas(idof,DER_DERIV_XX,i) = &
+              Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+        end do
+      end do
+    !endif
+    
+    ! xy-derivatives on current element
+    !if (Bder(DER_DERIV_XY)) then
+      do i=1,npoints
+        Dc1(i) = - Dxjs(i) * Djac(4,i) * Djac(3,i)
+        Dc2(i) = Dxjs(i) * ( Djac(4,i) * Djac(1,i) + Djac(3,i) * Djac(2,i) )
+        Dc3(i) = - Dxjs(i) * Djac(1,i) * Djac(4,i)
+      end do
+      
+      do i=1,npoints
+        do idof = 1,9
+          Dbas(idof,DER_DERIV_XY,i) = &
+              Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+        end do
+      end do
+    !endif    
+    
+    ! yy-derivatives on current element
+    !if (Bder(DER_DERIV_YY)) then
+      do i=1,npoints
+        Dc1(i) = Dxjs(i) * Djac(3,i)**2
+        Dc2(i) = Dxjs(i) * ( -2.0_DP * Djac(3,i) * Djac(1,i) )
+        Dc3(i) = Dxjs(i) * Djac(1,i)**2
+      end do
+      
+      do idof = 1,9
+        Dbas(idof,DER_DERIV_YY,i) = &
+            Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+      end do
+    !endif
   endif
     
   end subroutine 
@@ -1163,9 +1450,9 @@ contains
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  real(DP), dimension(9,NDIM2D,npoints) :: Dhelp
+  real(DP), dimension(9,5,npoints) :: Dhelp
   real(DP) :: dx,dy
-  real(DP),dimension(npoints) :: Dxj !auxiliary variable
+  real(DP),dimension(npoints) :: Dxj,Dxjs,Dc1,Dc2,Dc3 !auxiliary variables
   
   integer :: i   ! point counter
   integer :: j   ! element counter
@@ -1264,7 +1551,164 @@ contains
 
     end do
     !$omp end parallel do
+    
+  end if
       
+  ! if xx-, xy or yy-derivatives are desired
+  if (Bder(DER_DERIV_XX) .or. Bder(DER_DERIV_XY) .or. Bder(DER_DERIV_YY)) then
+    
+    !x- and y-derivatives on reference element
+
+    ! Now we have to compute the derivatives on the real element by those on
+    ! the reference element. This is a little bit tricky!
+    !
+    ! Let's assume, out finite element function on the real element is
+    ! f(x) and the corresponding function on the reference element g(y),
+    ! so x is the real coordinate and y the reference coordinate.
+    ! There is a mapping s:[-1,1]->R2 that maps to the real element.
+    ! It's inverse s^{-1} maps to the reference element.
+    ! We have:
+    !
+    !   f(x) = g(y) = g(s^{-1}(x))
+    !
+    ! We want to compute the hessian
+    !
+    !   Hf(x) = [ f11 f12 ]
+    !           [ f21 f22 ]
+    !
+    ! with fij = di dj f. By the chain rule, we have:
+    !
+    !  Hf(x)  =  H [ g(s^{-1}(x)) ]
+    !         =  D [ D ( g(s^{-1}(x)) ) ]
+    !         =  D [ Dg (s^{-1}(x)) Ds^{-1}(x) ]
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)  +  Dg (s^{-1}(x)) Hs^{-1}(x)
+    !
+    ! Now the big assumption: We assume that out mapping s is bilinear!
+    ! From this assumption we derive that Hs^{-1}(x), so the 2nd term
+    ! vanishes. We clearly point out that this is of course not true for 
+    ! isoparametric mappings!
+    !
+    ! With this assumption, we continue:
+    !
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
+    !
+    ! This is computable now. Let's write:
+    !
+    !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
+    !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
+    !
+    ! then we get:
+    !
+    !  Hf(x) = 1/det^2
+    !  [(s22*g11-s21*g21)*s22-(s22*g12-s21*g22)*s21, -(s22*g11-s21*g21)*s12+(s22*g12-s21*g22)*s11],
+    !  [(-s12*g11+s11*g21)*s22-(-s12*g12+s11*g22)*s21, -(-s12*g11+s11*g21)*s12+(-s12*g12+s11*g22)*s11]])
+    !
+    ! This can be simplified by the fact that g12=g21 (as (gij) is a Hessian):
+    !
+    !  = 1/det^2
+    !    [s22^2*g11-2*s22*s21*g21+s21^2*g22, -s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22]
+    !    [-s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22, s12^2*g11-2*s12*s11*g21+s11^2*g22]])
+    !
+    ! so we have
+    !
+    !  f11       = 1/det^2 * [ s22^2*g11    - 2*s22*s21*g21               + s21^2*g22 ]
+    !  f12 = f21 = 1/det^2 * [ -s22*s12*g11 + ( s22*s11 + s12*s21 ) * g21 - s21*s11*g22 ]
+    !  f22       = 1/det^2 * [ s12^2*g11    - 2*s12*s11*g21               + s11^2*g22 ]
+    
+    !x- and y-derivatives on reference element
+    do j=1,nelements
+      Dxj = 1.0E0_DP / Ddetj(:,j)
+      Dxjs = Dxj*Dxj
+
+      do i=1,npoints
+        dx = Dpoints(1,i,j)
+        dy = Dpoints(2,i,j)
+        
+        !xx-, xy and yy-derivatives on reference element
+        Dhelp(1,3,i) = Q2*(-1.0_DP+dy)*dy
+        Dhelp(2,3,i) = Q2*(-1.0_DP+dy)*dy
+        Dhelp(3,3,i) = Q2*(1.0_DP+dy)*dy
+        Dhelp(4,3,i) = Q2*(1.0_DP+dy)*dy
+        Dhelp(5,3,i) = -(-1.0_DP+dy)*dy
+        Dhelp(6,3,i) = 1.0_DP-dy**2
+        Dhelp(7,3,i) = -(1.0_DP+dy)*dy
+        Dhelp(8,3,i) = 1.0_DP-dy**2
+        Dhelp(9,3,i) = -2.0_DP+2.0_DP*dy**2
+                 
+        Dhelp(1,4,i) = dx*dy-Q2*dx-Q2*dy+Q4
+        Dhelp(2,4,i) = dx*dy-Q2*dx+Q2*dy-Q4
+        Dhelp(3,4,i) = dx*dy+Q2*dx+Q2*dy+Q4
+        Dhelp(4,4,i) = dx*dy+Q2*dx-Q2*dy-Q4
+        Dhelp(5,4,i) = -2.0_DP*dx*dy+dx
+        Dhelp(6,4,i) = -2.0_DP*dx*dy-dy
+        Dhelp(7,4,i) = -2.0_DP*dx*dy-dx
+        Dhelp(8,4,i) = -2.0_DP*dx*dy+dy
+        Dhelp(9,4,i) = 4.0_DP*dx*dy
+                 
+        Dhelp(1,5,i) = Q2*(-1.0_DP+dx)*dx
+        Dhelp(2,5,i) = Q2*(1.0_DP+dx)*dx
+        Dhelp(3,5,i) = Q2*(1.0_DP+dx)*dx
+        Dhelp(4,5,i) = Q2*(-1.0_DP+dx)*dx
+        Dhelp(5,5,i) = 1.0_DP-dx**2
+        Dhelp(6,5,i) = -(1.0_DP+dx)*dx
+        Dhelp(7,5,i) = 1.0_DP-dx**2
+        Dhelp(8,5,i) = -(-1.0_DP+dx)*dx
+        Dhelp(9,5,i) = -2.0_DP+2.0_DP*dx**2
+        
+      end do
+      
+      ! WARNING: NOT TESTED!!!
+        
+      ! xx-derivatives on current element
+      !if (Bder(DER_DERIV_XX)) then
+        do i=1,npoints
+          Dc1(i) = Dxjs(i) * Djac(4,i,j)**2
+          Dc2(i) = Dxjs(i) * ( -2.0_DP * Djac(4,i,j) * Djac(2,i,j) )
+          Dc3(i) = Dxjs(i) * Djac(2,i,j)**2
+        end do
+        
+        do i=1,npoints
+          do idof = 1,9
+            Dbas(idof,DER_DERIV_XX,i,j) = &
+                Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+          end do
+        end do
+      !endif
+      
+      ! xy-derivatives on current element
+      !if (Bder(DER_DERIV_XY)) then
+        do i=1,npoints
+          Dc1(i) = - Dxjs(i) * Djac(4,i,j) * Djac(3,i,j)
+          Dc2(i) = Dxjs(i) * ( Djac(4,i,j) * Djac(1,i,j) + Djac(3,i,j) * Djac(2,i,j) )
+          Dc3(i) = - Dxjs(i) * Djac(1,i,j) * Djac(4,i,j)
+        end do
+        
+        do i=1,npoints
+          do idof = 1,9
+            Dbas(idof,DER_DERIV_XY,i,j) = &
+                Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+          end do
+        end do
+      !endif    
+      
+      ! yy-derivatives on current element
+      !if (Bder(DER_DERIV_YY)) then
+        do i=1,npoints
+          Dc1(i) = Dxjs(i) * Djac(3,i,j)**2
+          Dc2(i) = Dxjs(i) * ( -2.0_DP * Djac(3,i,j) * Djac(1,i,j) )
+          Dc3(i) = Dxjs(i) * Djac(1,i,j)**2
+        end do
+        
+        do idof = 1,9
+          Dbas(idof,DER_DERIV_YY,i,j) = &
+              Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+        end do
+      !endif
+      
+    end do
+
   end if
     
   end subroutine 
