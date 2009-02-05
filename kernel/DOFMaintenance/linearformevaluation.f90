@@ -1208,18 +1208,15 @@ contains
 
   ! local variables
   integer :: i,i1,k,icurrentElementDistr, ICUBP, IALBET, IA
-  integer(I32) :: IEL, IELmax, IELset, IDOFE
+  integer :: IEL, IELmax, IELset, IDOFE
   real(DP) :: OM,AUX
   
   ! Array to tell the element which derivatives to calculate
   logical, dimension(EL_MAXNDER) :: Bder
   
-  ! Cubature point coordinates on the reference element
-  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  real(DP), dimension(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(:), allocatable :: Domega
   
   ! number of cubature points on the reference element
   integer :: ncubp
@@ -1237,7 +1234,7 @@ contains
   real(DP), dimension(:,:,:,:), allocatable, target :: DbasTest
   
   ! Number of entries in the vector - for quicker access
-  integer(I32) :: NEQ
+  integer :: NEQ
   
   ! Type of transformation from the reference to the real element 
   integer :: ctrafoType
@@ -1253,7 +1250,7 @@ contains
   type(t_triangulation), pointer :: p_rtriangulation
   
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList
+  integer, dimension(:), pointer :: p_IelementList
   
   ! A small vector holding only the additive controbutions of
   ! one element
@@ -1377,19 +1374,15 @@ contains
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_elementDistribution%celement)
 
-    ! Allocate some memory to hold the cubature points on the reference element
-    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+    ! Get the number of cubature points for the cubature formula
+    ncubp = cub_igetNumPts(p_elementDistribution%ccubTypeLinForm)
+
+    ! Allocate two arrays for the points and the weights
+    allocate(Domega(ncubp))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
     
-    ! Initialise the cubature formula,
-    ! Get cubature weights and point coordinates on the reference element
-    call cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
-    
-    ! Reformat the cubature points; they are in the wrong shape!
-    do i=1,ncubp
-      do k=1,ubound(p_DcubPtsRef,1)
-        p_DcubPtsRef(k,i) = Dxi(i,k)
-      end do
-    end do
+    ! Get the cubature formula
+    call cub_getCubature(p_elementDistribution%ccubTypeLinForm,p_DcubPtsRef, Domega)
     
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
@@ -1627,6 +1620,7 @@ contains
     !%OMP END PARALLEL
 
     deallocate(p_DcubPtsRef)
+    deallocate(Domega)
 
   end do ! icurrentElementDistr
   

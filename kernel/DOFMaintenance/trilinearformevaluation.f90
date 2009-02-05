@@ -274,19 +274,16 @@ contains
   ! Array to tell the element which derivatives to calculate
   logical, dimension(EL_MAXNDER) :: BderTrialTempl, BderTestTempl, BderFuncTempl
   logical, dimension(EL_MAXNDER) :: BderTrial, BderTest, BderFunc
-  
-  ! Cubature point coordinates on the reference element
-  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  real(DP), dimension(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(:), allocatable :: Domega
   
   ! number of cubature points on the reference element
   integer :: ncubp
   
   ! Pointer to KLD, KCOL, DA
-  integer(I32), dimension(:), pointer :: p_KLD, p_KCOL
+  integer, dimension(:), pointer :: p_KLD, p_KCOL
   real(DP), dimension(:), pointer :: p_DA
   
   ! An allocateable array accepting the DOF's of a set of elements.
@@ -517,19 +514,15 @@ contains
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_elementDistrTest%celement)
     
-    ! Allocate some memory to hold the cubature points on the reference element
-    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-
-    ! Initialise the cubature formula,
-    ! Get cubature weights and point coordinates on the reference element
-    call cub_getCubPoints(p_elementDistrTest%ccubTypeBilForm, ncubp, Dxi, Domega)
+    ! Get the number of cubature points for the cubature formula
+    ncubp = cub_igetNumPts(p_elementDistrTest%ccubTypeBilForm)
     
-    ! Reformat the cubature points; they are in the wrong shape!
-    do i=1,ncubp
-      do k=1,ubound(p_DcubPtsRef,1)
-        p_DcubPtsRef(k,i) = Dxi(i,k)
-      end do
-    end do
+    ! Allocate two arrays for the points and the weights
+    allocate(Domega(ncubp))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
+    
+    ! Get the cubature formula
+    call cub_getCubature(p_elementDistrTest%ccubTypeBilForm,p_DcubPtsRef, Domega)
     
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
@@ -1072,6 +1065,7 @@ contains
     !%OMP END PARALLEL
 
     deallocate(p_DcubPtsRef)
+    deallocate(Domega)
 
   end do ! icurrentElementDistr
 

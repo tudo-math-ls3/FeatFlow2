@@ -312,18 +312,15 @@ contains
 
     ! local variables
     integer :: i,k,icurrentElementDistr, ICUBP, NVE
-    integer(I32) :: IEL, IELmax, IELset
+    integer :: IEL, IELmax, IELset
     real(DP) :: OM
     
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
     
-    ! Cubature point coordinates on the reference element
-    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
     ! For every cubature point on the reference element,
     ! the corresponding cubature weight
-    real(DP), dimension(CUB_MAXCUBP) :: Domega
+    real(DP), dimension(:), allocatable :: Domega
     
     ! number of cubature points on the reference element
     integer :: ncubp
@@ -335,7 +332,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -348,7 +345,7 @@ contains
     type(t_elementDistribution), pointer :: p_relementDistribution
     
     ! Number of elements in the current element distribution
-    integer(PREC_ELEMENTIDX) :: NEL
+    integer :: NEL
 
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
@@ -370,7 +367,7 @@ contains
     integer(I32) :: cevaluationTag
 
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTrial
+    integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! Which derivatives of basis functions are needed?
     ! Check the descriptors of the bilinear form and set BDER
@@ -382,7 +379,7 @@ contains
       Bder(DER_FUNC1D) = .true.
     case (PPERR_H1ERROR) 
       Bder(DER_DERIV1D_X) = .true.
-    case DEFAULT
+    case default
       call output_line('Unknown error type identifier!',&
           OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar1d_conf')
       call sys_halt()
@@ -420,21 +417,21 @@ contains
       
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
-      call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
+      !call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
       ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
-      ! Allocate some memory to hold the cubature points on the reference element
-      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-
-      ! Reformat the cubature points; they are in the wrong shape!
-      do i=1,ncubp
-        do k=1,ubound(p_DcubPtsRef,1)
-          p_DcubPtsRef(k,i) = Dxi(i,k)
-        end do
-      end do
+      ! Get the number of cubature points for the cubature formula
+      ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeEval)
+      
+      ! Allocate two arrays for the points and the weights
+      allocate(Domega(ncubp))
+      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
+      
+      ! Get the cubature formula
+      call cub_getCubature(p_relementDistribution%ccubTypeEval,p_DcubPtsRef, Domega)
 
       ! Allocate memory for the DOF's of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
@@ -519,9 +516,9 @@ contains
                         int(IELmax-IELset+1),ncubp, &
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,1),rcollection)
           else
-            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
 
           ! Calculate the values of the FE function in the
@@ -530,7 +527,7 @@ contains
           
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC1D,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+                  Dcoefficients(:,1:IELmax-IELset+1,2))
                   
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -574,9 +571,9 @@ contains
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,1),rcollection)
           else
-            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
 
           ! Calculate the values of the FE function in the
@@ -585,7 +582,7 @@ contains
           
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC1D,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+                  Dcoefficients(:,1:IELmax-IELset+1,2))
 
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -629,10 +626,10 @@ contains
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,1),rcollection)
                         
           else
-            Dcoefficients(:,1:IELmax-IELset+1_I32,1:2) = 0.0_DP
+            Dcoefficients(:,1:IELmax-IELset+1,1:2) = 0.0_DP
           end if
           
           ! Calculate the X/Y-derivative of the FE function in the
@@ -641,7 +638,7 @@ contains
           
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV1D_X,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+                  Dcoefficients(:,1:IELmax-IELset+1,2))
 
           ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives
           ! the error "grad(u-u_h)(cubature pt.)"!
@@ -673,7 +670,7 @@ contains
 
           end do ! IEL
         
-        case DEFAULT
+        case default
           call output_line('Unknown error type identifier!',&
               OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar1d_conf')
           call sys_halt()
@@ -690,6 +687,7 @@ contains
       deallocate(p_DcubPtsRef)
       deallocate(Dcoefficients)
       deallocate(IdofsTrial)
+      deallocate(Domega)
 
     end do ! icurrentElementDistr
 
@@ -746,18 +744,15 @@ contains
 
     ! local variables
     integer :: i,k,icurrentElementDistr, ICUBP, NVE
-    integer(I32) :: IEL, IELmax, IELset
+    integer :: IEL, IELmax, IELset
     real(DP) :: OM
     
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
     
-    ! Cubature point coordinates on the reference element
-    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
     ! For every cubature point on the reference element,
     ! the corresponding cubature weight
-    real(DP), dimension(CUB_MAXCUBP) :: Domega
+    real(DP), dimension(:), allocatable :: Domega
     
     ! number of cubature points on the reference element
     integer :: ncubp
@@ -769,7 +764,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -782,7 +777,7 @@ contains
     type(t_elementDistribution), pointer :: p_relementDistribution
     
     ! Number of elements in the current element distribution
-    integer(PREC_ELEMENTIDX) :: NEL
+    integer :: NEL
 
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
@@ -797,7 +792,7 @@ contains
     type(t_evalElementSet) :: revalElementSet
     
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTrial
+    integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! Type of transformation from the reference to the real element 
     integer :: ctrafoType
@@ -817,7 +812,7 @@ contains
     case (PPERR_H1ERROR) 
       Bder(DER_DERIV_X) = .true.
       Bder(DER_DERIV_Y) = .true.
-    case DEFAULT
+    case default
       call output_line('Unknown error type identifier!',&
           OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar2d_conf')
       call sys_halt()
@@ -855,21 +850,21 @@ contains
       
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
-      call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
+      !call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
       ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
-      ! Allocate some memory to hold the cubature points on the reference element
-      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-
-      ! Reformat the cubature points; they are in the wrong shape!
-      do i=1,ncubp
-        do k=1,ubound(p_DcubPtsRef,1)
-          p_DcubPtsRef(k,i) = Dxi(i,k)
-        end do
-      end do
+      ! Get the number of cubature points for the cubature formula
+      ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeEval)
+      
+      ! Allocate two arrays for the points and the weights
+      allocate(Domega(ncubp))
+      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
+      
+      ! Get the cubature formula
+      call cub_getCubature(p_relementDistribution%ccubTypeEval,p_DcubPtsRef, Domega)
       
       ! Allocate memory for the DOF's of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
@@ -954,9 +949,9 @@ contains
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,1),rcollection)
           else
-            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
 
           ! Calculate the values of the FE function in the
@@ -965,7 +960,7 @@ contains
           
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+                  Dcoefficients(:,1:IELmax-IELset+1,2))
 
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -1009,9 +1004,9 @@ contains
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,1),rcollection)
           else
-            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
 
           ! Calculate the values of the FE function in the
@@ -1020,7 +1015,7 @@ contains
           
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+                  Dcoefficients(:,1:IELmax-IELset+1,2))
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -1060,7 +1055,7 @@ contains
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,1),rcollection)
                         
             ! Calculate the Y-derivative to Dcoefficients(:,:,2)
 
@@ -1068,9 +1063,9 @@ contains
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,2),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,2),rcollection)
           else
-            Dcoefficients(:,1:IELmax-IELset+1_I32,1:2) = 0.0_DP
+            Dcoefficients(:,1:IELmax-IELset+1,1:2) = 0.0_DP
           end if
           
           ! Calculate the X/Y-derivative of the FE function in the
@@ -1079,11 +1074,11 @@ contains
           
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV_X,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,3))
+                  Dcoefficients(:,1:IELmax-IELset+1,3))
 
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV_Y,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,4))
+                  Dcoefficients(:,1:IELmax-IELset+1,4))
 
           ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives
           ! the error "grad(u-u_h)(cubature pt.)"!
@@ -1116,7 +1111,7 @@ contains
 
           end do ! IEL
         
-        case DEFAULT
+        case default
           call output_line('Unknown error type identifier!',&
               OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar2d_conf')
           call sys_halt()
@@ -1133,6 +1128,7 @@ contains
       deallocate(p_DcubPtsRef)
       deallocate(Dcoefficients)
       deallocate(IdofsTrial)
+      deallocate(Domega)
 
     end do ! icurrentElementDistr
 
@@ -1189,18 +1185,15 @@ contains
 
     ! local variables
     integer :: i,k,icurrentElementDistr, ICUBP, NVE
-    integer(I32) :: IEL, IELmax, IELset
+    integer :: IEL, IELmax, IELset
     real(DP) :: OM
     
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
     
-    ! Cubature point coordinates on the reference element
-    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
     ! For every cubature point on the reference element,
     ! the corresponding cubature weight
-    real(DP), dimension(CUB_MAXCUBP) :: Domega
+    real(DP), dimension(:), allocatable :: Domega
     
     ! number of cubature points on the reference element
     integer :: ncubp
@@ -1212,7 +1205,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -1225,7 +1218,7 @@ contains
     type(t_elementDistribution), pointer :: p_relementDistribution
     
     ! Number of elements in the current element distribution
-    integer(PREC_ELEMENTIDX) :: NEL
+    integer :: NEL
 
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
@@ -1240,7 +1233,7 @@ contains
     type(t_evalElementSet) :: revalElementSet
     
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTrial
+    integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! Type of transformation from the reference to the real element 
     integer :: ctrafoType
@@ -1261,7 +1254,7 @@ contains
       Bder(DER_DERIV3D_X) = .true.
       Bder(DER_DERIV3D_Y) = .true.
       Bder(DER_DERIV3D_Z) = .true.
-    case DEFAULT
+    case default
       call output_line('Unknown error type identifier!',&
           OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar3d_conf')
       call sys_halt()
@@ -1299,21 +1292,21 @@ contains
       
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
-      call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
+      !call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
       ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
-      ! Allocate some memory to hold the cubature points on the reference element
-      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-
-      ! Reformat the cubature points; they are in the wrong shape!
-      do i=1,ncubp
-        do k=1,ubound(p_DcubPtsRef,1)
-          p_DcubPtsRef(k,i) = Dxi(i,k)
-        end do
-      end do
+      ! Get the number of cubature points for the cubature formula
+      ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeEval)
+      
+      ! Allocate two arrays for the points and the weights
+      allocate(Domega(ncubp))
+      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
+      
+      ! Get the cubature formula
+      call cub_getCubature(p_relementDistribution%ccubTypeEval,p_DcubPtsRef, Domega)
       
       ! Allocate memory for the DOF's of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
@@ -1398,9 +1391,9 @@ contains
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,1),rcollection)
           else
-            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
 
           ! Calculate the values of the FE function in the
@@ -1409,7 +1402,7 @@ contains
           
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC3D,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+                  Dcoefficients(:,1:IELmax-IELset+1,2))
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -1453,9 +1446,9 @@ contains
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,1),rcollection)
           else
-            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
 
           ! Calculate the values of the FE function in the
@@ -1464,7 +1457,7 @@ contains
           
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC3D,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+                  Dcoefficients(:,1:IELmax-IELset+1,2))
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -1508,23 +1501,23 @@ contains
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,1),rcollection)
                         
             ! Calculate the Y-derivative to Dcoefficients(:,:,2)
             call ffunctionReference (DER_DERIV3D_Y,rdiscretisation, &
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset,&
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,2),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,2),rcollection)
 
             ! Calculate the Z-derivative to Dcoefficients(:,:,3)
             call ffunctionReference (DER_DERIV3D_Z,rdiscretisation, &
                         int(IELmax-IELset+1),ncubp,&
                         revalElementSet%p_DpointsReal,&
                         IdofsTrial,rintSubset, &
-                        Dcoefficients(:,1:IELmax-IELset+1_I32,3),rcollection)
+                        Dcoefficients(:,1:IELmax-IELset+1,3),rcollection)
           else
-            Dcoefficients(:,1:IELmax-IELset+1_I32,1:3) = 0.0_DP
+            Dcoefficients(:,1:IELmax-IELset+1,1:3) = 0.0_DP
           end if
           
           ! Calculate the X/Y/Z-derivative of the FE function in the
@@ -1533,15 +1526,15 @@ contains
           
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_X,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,4))
+                  Dcoefficients(:,1:IELmax-IELset+1,4))
 
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Y,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,5))
+                  Dcoefficients(:,1:IELmax-IELset+1,5))
 
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Z,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,6))
+                  Dcoefficients(:,1:IELmax-IELset+1,6))
 
           ! Subtraction of Dcoefficients(:,:,1..3) from Dcoefficients(:,:,4..6) gives
           ! the error "grad(u-u_h)(cubature pt.)"!
@@ -1575,7 +1568,7 @@ contains
 
           end do ! IEL
         
-        case DEFAULT
+        case default
           call output_line('Unknown error type identifier!',&
               OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar3d_conf')
           call sys_halt()
@@ -1592,6 +1585,7 @@ contains
       deallocate(p_DcubPtsRef)
       deallocate(Dcoefficients)
       deallocate(IdofsTrial)
+      deallocate(Domega)
 
     end do ! icurrentElementDistr
 
@@ -1779,23 +1773,23 @@ contains
 
     ! local variables
     integer(I32), dimension(:), allocatable :: IelementOrientation
-    integer(PREC_ELEMENTIDX), dimension(:), allocatable :: Ielements
+    integer, dimension(:), allocatable :: Ielements
     real(DP), dimension(:,:), allocatable :: DedgePosition
     
     integer :: ibdc,ibdcoffset,iedge,ilocaledge
-    integer(PREC_ELEMENTIDX) :: NEL,NELbdc,iel
+    integer :: NEL,NELbdc,iel
     integer(I32) :: ctrafoType
     
     ! The triangulation structure - to shorten some things...
     type(t_triangulation), pointer :: p_rtriangulation
-    integer(I32), dimension(:), pointer :: p_IboundaryCpIdx
-    integer(PREC_EDGEIDX), dimension(:), pointer :: p_IedgesAtBoundary
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtBoundary
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    integer, dimension(:), pointer :: p_IedgesAtBoundary
+    integer, dimension(:), pointer :: p_IelementsAtBoundary
     real(DP), dimension(:), pointer :: p_DedgeParameterValue
     real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
     real(DP), dimension(:), pointer :: p_DvertexParameterValue
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
 
     ! Arrays for cubature points
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
@@ -2331,7 +2325,7 @@ contains
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     type(t_spatialDiscretisation), pointer :: p_rdiscretisationRef
     integer      :: i,k,icurrentElementDistr,iblock,ICUBP,NVE
-    integer(I32) :: IEL, IELmax, IELset,IELGlobal
+    integer :: IEL, IELmax, IELset,IELGlobal
     real(DP)     :: OM,delementError
 
     ! Array to tell the element which derivatives to calculate
@@ -2354,7 +2348,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -2370,7 +2364,7 @@ contains
     type(t_elementDistribution), pointer :: p_relementDistribution,p_relementDistributionRef
     
     ! Number of elements in the current element distribution
-    integer(PREC_ELEMENTIDX) :: NEL
+    integer :: NEL
 
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
@@ -2391,7 +2385,7 @@ contains
     type(t_evalElementSet) :: revalElementSet
     
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTrial,IdofsTrialRef
+    integer, dimension(:,:), allocatable, target :: IdofsTrial,IdofsTrialRef
     
     ! Get the correct discretisation structure for the solution vector
     p_rdiscretisation => rvector%p_rblockDiscr%RspatialDiscr(1)
@@ -2585,12 +2579,12 @@ contains
             ! solution vector
             call fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
                     p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
-                    Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock))
+                    Dcoefficients(:,1:IELmax-IELset+1,2*iblock))
 
             ! solution reference vector
             call fevl_evaluate_sim3 (rvectorRef%RvectorBlock(iblock), revalElementSet,&
                     p_relementDistributionRef%celement, IdofsTrialRef, DER_FUNC,&
-                    Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1))
+                    Dcoefficients(:,1:IELmax-IELset+1,2*iblock-1))
 
           end do
 
@@ -2654,12 +2648,12 @@ contains
             ! solution vector
             call fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
                     p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
-                    Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock))
+                    Dcoefficients(:,1:IELmax-IELset+1,2*iblock))
 
             ! solution reference vector
             call fevl_evaluate_sim3 (rvectorRef%RvectorBlock(iblock), revalElementSet,&
                     p_relementDistributionRef%celement, IdofsTrialRef, DER_FUNC,&
-                    Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1))
+                    Dcoefficients(:,1:IELmax-IELset+1,2*iblock-1))
 
           end do
 
@@ -2845,7 +2839,7 @@ contains
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     integer      :: i,k,icurrentElementDistr,iblock,ICUBP,NVE,idim
-    integer(I32) :: IEL, IELmax, IELset,IELGlobal
+    integer :: IEL, IELmax, IELset,IELGlobal
     real(DP)     :: OM,delementDeviation
 
     ! Array to tell the element which derivatives to calculate
@@ -2868,7 +2862,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -2888,7 +2882,7 @@ contains
     type(t_elementDistribution), pointer :: p_relementDistribution
     
     ! Number of elements in the current element distribution
-    integer(PREC_ELEMENTIDX) :: NEL
+    integer :: NEL
 
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
@@ -2912,7 +2906,7 @@ contains
     type(t_evalElementSet) :: revalElementSet
 
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTrial
+    integer, dimension(:,:), allocatable, target :: IdofsTrial
     
     ! Get the correct discretisation structure for the solution vector
     p_rdiscretisation => rvector%p_rblockDiscr%RspatialDiscr(1)
@@ -3053,7 +3047,7 @@ contains
           ! solution vector
           call fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,iblock))
+                  Dcoefficients(:,1:IELmax-IELset+1,iblock))
                   
         end do
 
@@ -3225,7 +3219,7 @@ contains
           ! solution vector
           call fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
                   p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
-                  Dcoefficients(:,1:IELmax-IELset+1_I32,iblock))
+                  Dcoefficients(:,1:IELmax-IELset+1,iblock))
                   
         end do
 
