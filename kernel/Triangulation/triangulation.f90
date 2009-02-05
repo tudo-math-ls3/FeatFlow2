@@ -2705,6 +2705,9 @@ contains
         call tria_genEdgeNodalProperty3D (rtriangulation)
         call tria_genFaceNodalProperty3D (rtriangulation)
       end if
+
+      if (checkGen(iflag, TR_GEN_ITWISTINDEX))&
+          call tria_genTwistIndex (rtriangulation)
       
       ! CALL tria_genElementVolume3D (rtriangulation)
     
@@ -8462,9 +8465,9 @@ p_InodalPropertyDest = -4711
             ! Calculate orientation
             if(p_IverticesAtFace(mod(ivt,Itav(iat))+1,iface) .ne. &
               p_IverticesAtElement(Itfn(iat),iel)) then
-              itwist = ior(itwist, ishft(ivt+4,12+3*iat))
+              itwist = ior(itwist, ishft(ivt+3,9+3*iat))
             else
-              itwist = ior(itwist, ishft(ivt,12+3*iat))
+              itwist = ior(itwist, ishft(ivt-1,9+3*iat))
             end if
           end do ! iat
         
@@ -8494,9 +8497,9 @@ p_InodalPropertyDest = -4711
             ! Calculate orientation
             if(p_IverticesAtFace(mod(ivt,Iyav(iat))+1,iface) .ne. &
               p_IverticesAtElement(Iyfn(iat),iel)) then
-              itwist = ior(itwist, ishft(ivt+4,12+3*iat))
+              itwist = ior(itwist, ishft(ivt+3,9+3*iat))
             else
-              itwist = ior(itwist, ishft(ivt,12+3*iat))
+              itwist = ior(itwist, ishft(ivt-1,9+3*iat))
             end if
           end do ! iat
 
@@ -8526,9 +8529,9 @@ p_InodalPropertyDest = -4711
             ! Calculate orientation
             if(p_IverticesAtFace(mod(ivt,Irav(iat))+1,iface) .ne. &
               p_IverticesAtElement(Irfn(iat),iel)) then
-              itwist = ior(itwist, ishft(ivt+4,12+3*iat))
+              itwist = ior(itwist, ishft(ivt+3,9+3*iat))
             else
-              itwist = ior(itwist, ishft(ivt,12+3*iat))
+              itwist = ior(itwist, ishft(ivt-1,9+3*iat))
             end if
           end do ! iat
 
@@ -8558,14 +8561,15 @@ p_InodalPropertyDest = -4711
             ! Calculate orientation
             if(p_IverticesAtFace(mod(ivt,Ihav(iat))+1,iface) .ne. &
               p_IverticesAtElement(Ihfn(iat),iel)) then
-              itwist = ior(itwist, ishft(ivt+4,12+3*iat))
+              itwist = ior(itwist, ishft(ivt+3,9+3*iat))
             else
-              itwist = ior(itwist, ishft(ivt,12+3*iat))
+              itwist = ior(itwist, ishft(ivt-1,9+3*iat))
             end if
           end do ! iat
 
         case default
           ! Unknown cell type...
+          itwist = 0
         
         end select
         
