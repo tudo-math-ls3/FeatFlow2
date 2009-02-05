@@ -307,14 +307,14 @@ contains
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ, .false., ST_DOUBLE)
+                                 rafcstab%NEQ, .false., ST_DOUBLE)
       end do
 
       ! We need 2 edgewise vectors for the explicit and implicit fluxes
       allocate(rafcstab%RedgeVectors(2))
       do i = 1, 2
         call lsyssc_createVector(rafcstab%RedgeVectors(i),&
-            rafcstab%NEDGE, .false., ST_DOUBLE)
+                                 rafcstab%NEDGE, .false., ST_DOUBLE)
       end do
 
 
@@ -344,13 +344,13 @@ contains
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ, .false., ST_DOUBLE)
+                                 rafcstab%NEQ, .false., ST_DOUBLE)
       end do
       
       ! We need 1 edgewise vector for the fluxes
       allocate(rafcstab%RedgeVectors(1))
       call lsyssc_createVector(rafcstab%RedgeVectors(1),&
-          rafcstab%NEDGE, .false., ST_DOUBLE)
+                               rafcstab%NEDGE, .false., ST_DOUBLE)
 
 
     case DEFAULT
@@ -361,6 +361,7 @@ contains
 
     ! Set specifier
     rafcstab%iSpec = AFCSTAB_INITIALISED
+
   end subroutine gfsc_initStabilisation
 
   !*****************************************************************************
@@ -4556,7 +4557,7 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_S,p_L
+    real(DP), dimension(:), pointer :: p_S,p_DiffOp
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal,p_IsuperdiagonalEdgesIdx
     integer :: h_Ksep
@@ -4567,7 +4568,7 @@ contains
 
     ! Set pointers
     call lsyssc_getbase_double(rcoeffMatrix, p_S)
-    call lsyssc_getbase_double(rdiffMatrix, p_L)      
+    call lsyssc_getbase_double(rdiffMatrix, p_DiffOp)      
 
     
     ! What kind of matrix are we?
@@ -4602,7 +4603,7 @@ contains
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     
         call doLoworderMat7_AFC(p_Kld, p_Kcol, p_Ksep, rdiffMatrix%NEQ,&
-                                p_S, p_L, p_IsuperdiagonalEdgesIdx,&
+                                p_S, p_DiffOp, p_IsuperdiagonalEdgesIdx,&
                                 p_IverticesAtEdge, p_DcoefficientsAtEdge)
 
         ! Release diagonal separator
@@ -4619,7 +4620,7 @@ contains
         call storage_copy(rdiffMatrix%h_Kld, h_Ksep)
         call storage_getbase_int(h_Ksep, p_Ksep, rdiffMatrix%NEQ+1)
 
-        call doLoworderMat7(p_Kld, p_Kcol, p_Ksep, rdiffMatrix%NEQ, p_S, p_L)
+        call doLoworderMat7(p_Kld, p_Kcol, p_Ksep, rdiffMatrix%NEQ, p_S, p_DiffOp)
 
         ! Release diagonal separator
         call storage_free(h_Ksep)
@@ -4663,7 +4664,7 @@ contains
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
 
         call doLoworderMat9_AFC(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rdiffMatrix%NEQ,&
-                                p_S, p_L, p_IsuperdiagonalEdgesIdx,&
+                                p_S, p_DiffOp, p_IsuperdiagonalEdgesIdx,&
                                 p_IverticesAtEdge, p_DcoefficientsAtEdge)
 
         ! Release diagonal separator
@@ -4680,7 +4681,7 @@ contains
         call storage_copy(rdiffMatrix%h_Kld, h_Ksep)
         call storage_getbase_int(h_Ksep, p_Ksep, rdiffMatrix%NEQ+1)
 
-        call doLoworderMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rdiffMatrix%NEQ, p_S, p_L)
+        call doLoworderMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, rdiffMatrix%NEQ, p_S, p_DiffOp)
 
         ! Release diagonal separator
         call storage_free(h_Ksep)
