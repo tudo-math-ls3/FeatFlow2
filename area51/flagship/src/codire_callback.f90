@@ -21,25 +21,28 @@
 !# 4.) codire_calcJacobian
 !#     -> Calculates the Jacobian matrix
 !#
-!# 4.) codire_calcResidual
+!# 5.) codire_applyJacobian
+!#     -> Applies the Jacobian matrix to a given vector
+!#
+!# 6.) codire_calcResidual
 !#     -> Calculates the nonlinear residual vector
 !#
-!# 5.) codire_calcRHS
+!# 7.) codire_calcRHS
 !#     -> Calculates the right-hand side vector
 !#
-!# 6.) codire_calcVelocityField
+!# 8.) codire_calcVelocityField
 !#     -> Calculates the velocity field
 !#
-!# 7.) codire_setVelocityField
+!# 9.) codire_setVelocityField
 !#     -> Sets the velocity field internally
 !#
-!# 8.) codire_hadaptCallback1d
-!#     -> Performs application specific tasks in the adaptation algorithm in 1D
+!# 10.) codire_hadaptCallback1d
+!#      -> Performs application specific tasks in the adaptation algorithm in 1D
 !#
-!# 9.) codire_hadaptCallback2d
-!#     -> Performs application specific tasks in the adaptation algorithm in 2D
+!# 11.) codire_hadaptCallback2d
+!#      -> Performs application specific tasks in the adaptation algorithm in 2D
 !#
-!# 10.) codire_hadaptCallback3d
+!# 12.) codire_hadaptCallback3d
 !#      -> Performs application specific tasks in the adaptation algorithm in 3D
 !#
 !#
@@ -778,8 +781,8 @@ contains
     ! Assemble the global system operator
     !---------------------------------------------------------------------------
     
-    systemMatrix  = collct_getvalue_int(rcollection, 'systemmatrix')
-    imasstype     = collct_getvalue_int(rcollection, 'imasstype')
+    systemMatrix = collct_getvalue_int(rcollection, 'systemmatrix')
+    imasstype    = collct_getvalue_int(rcollection, 'imasstype')
 
     select case(imasstype)
     case (MASS_LUMPED)
@@ -787,8 +790,8 @@ contains
       !
       !   $ A = ML-theta*dt*L $
 
-      lumpedMassMatrix  = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
-      call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(lumpedMassMatrix), 1._DP,&
+      lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+      call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
                                    rproblemLevel%Rmatrix(transportMatrix),&
                                    -rtimestep%theta*rtimestep%dStep,&
                                    rproblemLevel%Rmatrix(systemMatrix),&
@@ -798,8 +801,8 @@ contains
       !
       !   $ A = MC-theta*dt*L $
 
-      consistentMassMatrix  = collct_getvalue_int(rcollection, 'consistentmassmatrix')
-      call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(consistentMassMatrix), 1._DP,&
+      consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+      call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
                                    rproblemLevel%Rmatrix(transportMatrix),&
                                    -rtimestep%theta*rtimestep%dStep,&
                                    rproblemLevel%Rmatrix(systemMatrix),&
@@ -812,7 +815,7 @@ contains
       !
       call lsyssc_copyMatrix(rproblemLevel%Rmatrix(transportMatrix),&
                              rproblemLevel%Rmatrix(systemMatrix))
-      call lsyssc_scaleMatrix(rproblemLevel%Rmatrix(systemMatrix), -1._DP)
+      call lsyssc_scaleMatrix(rproblemLevel%Rmatrix(systemMatrix), -1.0_DP)
     
     end select
     
@@ -926,7 +929,7 @@ contains
       ! M. Pernice, H.F. Walker, NITSOL: a Newton iterative solver
       ! for nonlinear systems, SIAM J. Sci. Comput. 19 (1998) 302-318.
       hstep = ( (1+&
-          lsysbl_vectorNorm(rsol, LINALG_NORMEUCLID))*SYS_EPSREAL )**(1._DP/3._DP)
+          lsysbl_vectorNorm(rsol, LINALG_NORMEUCLID))*SYS_EPSREAL )**(1.0_DP/3._DP)
       
     case (PERTURB_SQRTEPS)
       hstep= sqrt(SYS_EPSREAL)
@@ -1147,7 +1150,7 @@ contains
       
       call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(transportMatrix),&
                                    -rtimestep%theta*rtimestep%dStep,&
-                                   rproblemLevel%Rmatrix(lumpedMassMatrix), 1._DP,&
+                                   rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
                                    .false., .false., .true., bisExactStructure)
     case (MASS_CONSISTENT)
@@ -1157,7 +1160,7 @@ contains
       
       call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(transportMatrix),&
                                    -rtimestep%theta*rtimestep%dStep,&
-                                   rproblemLevel%Rmatrix(consistentMassMatrix), 1._DP,&
+                                   rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
                                    .false., .false., .true., bisExactStructure)
     case DEFAULT
@@ -1165,8 +1168,8 @@ contains
       !
       !   $ J = -L $
       
-      call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(transportMatrix), -1._DP,&
-                                   rproblemLevel%Rmatrix(jacobianMatrix), 0._DP,&
+      call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(transportMatrix), -1.0_DP,&
+                                   rproblemLevel%Rmatrix(jacobianMatrix), 0.0_DP,&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
                                    .false., .false., .true., bisExactStructure)
     end select
@@ -1185,7 +1188,7 @@ contains
       ! Anisotropic diffusion
       select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
       case (AFCSTAB_SYMMETRIC)
-        call gfsc_buildJacobianSymm(rsol, 1._DP, hstep, .false.,&
+        call gfsc_buildJacobianSymm(rsol, 1.0_DP, hstep, .false.,&
                                     rproblemLevel%Rafcstab(diffusionAFC),&
                                     rproblemLevel%Rmatrix(jacobianMatrix))
       end select
@@ -1610,7 +1613,7 @@ contains
       !
       ! - the residual $ r=dt*L*u^n+f $ and
       !
-      ! - the right hand side $ b=[M_L+(1-theta)*dt*L]*u^n $
+      ! - the right hand side $ b=[M+(1-theta)*dt*L]*u^n $
       !
       !-------------------------------------------------------------------------
       
@@ -1766,7 +1769,7 @@ contains
         ! Compute the low-order residual
         !
         !   $ res = L(u^(m))*u^(m) $
-        !
+        
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsol%rvectorBlock(1),&
                                  rres%RvectorBlock(1),&
@@ -1902,10 +1905,10 @@ contains
     !   $ rhs = weight*(1-theta)*dt*L(u)*u $
 
     dweight = rtimestep%DmultistepWeights(istep)*&
-              rtimestep%dStep*(1._DP-rtimestep%theta)
+              rtimestep%dStep*(1.0_DP-rtimestep%theta)
     call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                              rsol%rvectorBlock(1),&
-                             rrhs%RvectorBlock(1), dweight, 0._DP)
+                             rrhs%RvectorBlock(1), dweight, 0.0_DP)
 
 
     ! Perform algebraic flux correction for the convective term if required
@@ -1956,7 +1959,7 @@ contains
     select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
           
     case (AFCSTAB_SYMMETRIC)
-      call gfsc_buildResidualSymm(rsol, 1._DP, rrhs, rproblemLevel%Rafcstab(diffusionAFC))
+      call gfsc_buildResidualSymm(rsol, 1.0_DP, rrhs, rproblemLevel%Rafcstab(diffusionAFC))
     end select
     
     ! Stop time measurement for residual/rhs evaluation

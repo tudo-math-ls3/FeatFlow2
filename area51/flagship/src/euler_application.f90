@@ -220,12 +220,7 @@ contains
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
 
-
-    call euler_outputSolution(rparlist, 'euler', rproblem,&
-                              rsolutionPrimal, dtime=rtimestep%dTime)
-
-stop
-
+    
     !---------------------------------------------------------------------------
     ! Solution algorithm
     !---------------------------------------------------------------------------
