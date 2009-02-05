@@ -17,14 +17,29 @@ application = codire
 [Codire]
 ################################################################################
 
-benchmark   = Benchmark
+# Section name of the benchmark configuration
+benchmark = Benchmark
+
+# Section name of the input and output configuration
 inputoutput = InputOutput
-primalconv  = Convection
-primaldiff  = Diffusion
-timestep    = Timestepping
-solver      = FullMultigridSolver
-adaptivity  = Adaptivity
-errorest    = ErrorEstimator
+
+# Section name of the primal convection stabilization
+primalconv = Convection
+
+# Section name of the primal diffusion stabilization
+primaldiff = Diffusion
+
+# Section name of the time-stepping algorithm
+timestep = Timestepping
+
+# Section name of the top-level solver
+solver = FullMultigridSolver
+
+# Section name of the adaptation configuration
+adaptivity = Adaptivity
+
+# Section name of the error estimation configuration
+errorest = ErrorEstimator
 
 ################################################################################
 [Benchmark]
@@ -33,14 +48,21 @@ errorest    = ErrorEstimator
 # spatial dimension
 ndimension  = 2
 
-# 0 = time-dependent flow, 1 = steady-state, 2 = pseudo time-dependent flow
-iflowtype = 1
+# solution algorithm
+algorithm = stationary_primaldual
 
+# type of mass matrix
 # 0 = no mass matrix
 # 1 = consistent mass matrix
 # 2 = lumped mass matrix
 imasstype = 0
 
+# type of mass antidiffusion
+# 0 = no mass antidiffusion
+# 1 = consistent mass antidiffusion
+imassantidiffusion = 1
+
+# type of flow velocity
 # 0 = zero velocity v=0
 # 1 = linear constant velocity v=v(x)
 # 2 = linear time-dependent velocity v=v(x,t)
@@ -49,34 +71,44 @@ imasstype = 0
 # 6 = Burgers' equation in 2D
 ivelocitytype = 2
 
+# type of flow diffusion
 # 0 = zero diffusion
 # 1 = isotropic diffusion
 # 2 = anisotropic diffusion
 # 3 = variable diffusion
 idiffusiontype = 0
 
+# type of flow reaction
 # 0 = zero reactive term
 # 1 = analytical initial solution
 ireactiontype = 0
 
+# type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
 irhstype = 0
 
+# type of initial solution profile
 # 0 = zero initial solution
 # 1 = analytical initial solution
+# 2 = PGM image
 isolutiontype = 1
 
-# type of elements
-# =1, P1 finite elements, =11 Q1 finite elements
-# =2, P2 finite elements, =12 Q3 finite elements
-# =-1 mixed P1/Q1 finite elements, =-2 mixed P2/Q2 finite elements
+# type of finite element space
+#  1 = P1 finite elements
+#  2 = P2 finite elements
+# 11 = Q1 finite elements
+# 12 = Q2 finite elements
+# -1 = mixed P1/Q1 finite elements
+# -2 = mixed P2/Q2 finite elements
 ieltype = 11
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
 
 # type of matrix format
+# 7 = matrix format 7
+# 9 = matrix format 9
 imatrixformat = 9
 
 # number of pre-adaptation steps
@@ -124,7 +156,10 @@ ssolutionname = initial_solution
 sexactsolutionname = exact_solution
 
 # type of UCD output format
-# =0, no output; =1, GMV; =2, AVS; =3, VTK
+# 0 = no output
+# 1 = GMV
+# 2 = AVS
+# 3 = VTK
 iformatUCD = 1
 
 # time interval for UCD output
@@ -206,7 +241,14 @@ depsSteady = 0.0
 # =10, semi-impl. FEM-FCT; =11 semi-expl. FEM-FCT;
 # =12, linearized FEM-FCT;
 # =20, FEM-TVD; =21, FEM-GP;
-istabilisation = 1
+istabilisation = 20
+
+# mass matrix: 
+# =0, use row-sum lumped mass matrix; =1, use consistent mass matrix
+imass = 0
+
+# extend Jacobian matrix
+iextendedJacobian = 1
 
 
 ################################################################################
@@ -217,6 +259,9 @@ istabilisation = 1
 # =0, no stabilization (Galerkin); =2, maximum principle preservation;
 # =30, symmetric limiting
 istabilisation = 0
+
+# extend Jacobian matrix
+iextendedJacobian = 0
 
 
 ################################################################################
@@ -230,10 +275,10 @@ istabilisation = 0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 3
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 3
+nlmax = 4
 
 # type of multigrid cycle
 # =0, F-cylce; =1, V-cycle; =2, W-cycle, =3,=4,=5, corresponding saw tooth variants
@@ -342,7 +387,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 10
+nmaxIterations = 1000
 
 # preconditioner for the nonlinear solver
 # =1, block-diagonal; =2, defect-correction; =3, algebraic Newton

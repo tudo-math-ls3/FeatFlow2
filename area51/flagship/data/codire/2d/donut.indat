@@ -13,20 +13,24 @@
 
 defexpr:  sqr1 = SQRT((x-1)^2+y^2)
 
-# Specify the initial solution by logical expressions and solution values
+# Specify the initial solution
+#-------------------------------------------------------------------------------
 [initial_solution]
 NCOMP
 1
 if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0)
 
-# Specify the exact solution by logical expressions and solution values
+
+# Specify the exact solution
+#-------------------------------------------------------------------------------
 [exact_solution]
 NCOMP
 1
 if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0)
 
 
-# Specify the velocity field by logical expressions
+# Specify the velocity field
+#-------------------------------------------------------------------------------
 [velocityfield]
 NCOMP
 2
@@ -34,14 +38,15 @@ y
 1-x
 
 
+# Specify the quantity of interest
+[targetfunctional]
+NCOMP
+1
+if(x >= 0.9 & x <= 1.1, 1, 0)
+
+
 # Specify the boundary conditions for the primal problem
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
+#-------------------------------------------------------------------------------
 [boundary_conditions_primal]
 NBCT
 1
@@ -60,7 +65,9 @@ PARAMETERS
 3.0   F 0
 4.0   T 1   0.0
 
-# Specify the boundary conditions for the primal problem
+
+# Specify the boundary conditions for the dual problem
+#-------------------------------------------------------------------------------
 [boundary_conditions_dual]
 NBCT
 1
