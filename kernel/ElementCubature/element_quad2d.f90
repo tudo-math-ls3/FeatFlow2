@@ -1701,9 +1701,11 @@ contains
           Dc3(i) = Dxjs(i) * Djac(1,i,j)**2
         end do
         
-        do idof = 1,9
-          Dbas(idof,DER_DERIV_YY,i,j) = &
-              Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+        do i=1,npoints
+          do idof = 1,9
+            Dbas(idof,DER_DERIV_YY,i,j) = &
+                Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+          end do
         end do
       !endif
       
