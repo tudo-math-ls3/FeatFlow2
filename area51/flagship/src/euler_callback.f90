@@ -194,7 +194,6 @@ contains
       ! What kind of preconditioner is applied?
       select case(iprecond)
 
-
       case (AFCSTAB_GALERKIN)
 
         ! Assemble divergence operator for standard Galerin scheme
@@ -281,7 +280,6 @@ contains
 
       ! What kind of preconditioner is applied?
       select case(iprecond)
-        
         
       case (AFCSTAB_GALERKIN)
         
@@ -709,9 +707,7 @@ contains
 
         case (AFCSTAB_SCALARDISSIPATION)
 
-          ! Scalar dissipation proportional to the spectral radius of the Roe matrix
-          !
-          !   $ D = I*d_{ij} $
+          ! Assemble divergence operator with scalar dissipation
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
@@ -727,10 +723,8 @@ contains
 
         case (AFCSTAB_TENSORDISSIPATION)
 
-          ! Tensorial dissipation 
-          !
-          !   $ D = D_{ij} $
-
+          ! Assemble divergence operator with tensorial dissipation
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
@@ -913,9 +907,7 @@ contains
 
         case (AFCSTAB_SCALARDISSIPATION)
 
-          ! Scalar dissipation proportional to the spectral radius of the Roe matrix
-          !
-          !   $ D = I*d_{ij} $
+
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
@@ -934,9 +926,7 @@ contains
 
         case (AFCSTAB_TENSORDISSIPATION)
 
-          ! Tensorial dissipation 
-          !
-          !   $ D = D_{ij} $
+          ! Assemble divergence operator with tensorial dissipation
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
@@ -1037,7 +1027,179 @@ contains
     type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
 !</subroutine>
+    
+    ! local variables
+    type(t_timer), pointer :: rtimer
+    real(DP) :: dscale
+    integer :: lumpedMassMatrix, consistentMassMatrix
+    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
+    integer :: imasstype,inviscidAFC
+    integer :: iblock
 
+    ! Start time measurement for residual/rhs evaluation
+    rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
+    call stat_startTimer(rtimer, STAT_TIMERSHORT)
+
+    ! Get parameters from collection which are required unconditionally
+    coeffMatrix_CX = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
+    coeffMatrix_CY = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
+    coeffMatrix_CZ = collct_getvalue_int(rcollection, 'coeffMatrix_CZ')
+    inviscidAFC    = collct_getvalue_int(rcollection, 'inviscidAFC')
+
+
+    !---------------------------------------------------------------------------
+    ! Initialize the right-hand side vector
+    !---------------------------------------------------------------------------
+    imasstype = collct_getvalue_int(rcollection, 'imasstype')
+
+    select case(imasstype)
+    case (MASS_LUMPED)
+      
+      ! Initialize the right-hand side vector
+      !
+      !  $ M_L*U
+
+      lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+      do iblock = 1, rsol%nblocks
+        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                 rsol%RvectorBlock(iblock),&
+                                 rrhs%RvectorBlock(iblock), 1.0_DP, 0.0_DP)
+      end do
+
+    case(MASS_CONSISTENT)
+      
+      ! Initialize the right-hand side vector
+      !
+      !  $ M_C*U
+
+      consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+      do iblock = 1, rsol%nblocks
+        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
+                                 rsol%RvectorBlock(iblock),&
+                                 rrhs%RvectorBlock(iblock), 1.0_DP, 0.0_DP)
+      end do
+
+    case DEFAULT
+
+      ! Initialize the right-hand side vector by zeros
+      call lsysbl_clearVector(rrhs)
+    end select
+
+    
+    !---------------------------------------------------------------------------
+    ! Compute the divergence term of the right-hand side
+    !---------------------------------------------------------------------------
+    
+    inviscidAFC = collct_getvalue_int(rcollection, 'inviscidAFC')
+
+    select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)      
+      
+    case (AFCSTAB_GALERKIN)
+
+      ! Compute the high-order right-hand side
+      !
+      !   $ rhs = M*U+weight*(1-theta)*dt*K(U)*U
+      
+      dscale = rtimestep%DmultistepWeights(istep)*(1.0_DP-rtimestep%theta)*rtimestep%dStep
+
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                                 rsol, euler_calcFluxGalerkin1d, dscale, .false., rrhs)
+      case (NDIM2D)
+        call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                                 rsol, euler_calcFluxGalerkin2d, dscale, .false., rrhs)
+      case (NDIM3D)
+        call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                                 rsol, euler_calcFluxGalerkin3d, dscale, .false., rrhs)
+      end select
+
+      !-----------------------------------------------------------------------
+
+    case (AFCSTAB_UPWIND)
+
+      ! Compute the low-order right-hand side
+      !
+      !   $ rhs = M*U+weight*(1-theta)*dt*L(U)*U
+      
+      dscale = rtimestep%DmultistepWeights(istep)*(1.0_DP-rtimestep%theta)*rtimestep%dStep
+
+      select case(rproblemLevel%Rafcstab(inviscidAFC)%idissipation)
+        
+      case (AFCSTAB_SCALARDISSIPATION)
+
+        ! Assemble divergence operator with scalar dissipation
+
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                                   rsol, euler_calcFluxScalarDiss1d, dscale, .false., rrhs)
+        case (NDIM2D)
+          call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                                   rsol, euler_calcFluxScalarDiss2d, dscale, .false., rrhs)
+        case (NDIM3D)
+          call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                                   rsol, euler_calcFluxScalarDiss3d, dscale, .false., rrhs)
+        end select
+
+      case (AFCSTAB_TENSORDISSIPATION)
+
+        ! Assemble divergence operator with tensorial dissipation
+
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                                   rsol, euler_calcFluxTensorDiss1d, dscale, .false., rrhs)
+        case (NDIM2D)
+          call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                                   rsol, euler_calcFluxTensorDiss2d, dscale, .false., rrhs)
+        case (NDIM3D)
+          call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                                   rsol, euler_calcFluxTensorDiss3d, dscale, .false., rrhs)
+        end select
+
+      case DEFAULT
+        call output_line('Invalid type of dissipation!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRHS')
+        call sys_halt()
+      end select
+
+      !-----------------------------------------------------------------------
+
+    case (AFCSTAB_FEMTVD)
+
+      ! Compute the low-order right-hand side + FEM-TVD stabilization
+      !
+      !   $ rhs = M*U+weight*(1-theta)*dt*L(U)*U + F(U)
+
+      dscale = rtimestep%DmultistepWeights(istep)*(1.0_DP-rtimestep%theta)*rtimestep%dStep
+
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        call gfsys_buildResidualTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                                    rsol, euler_calcFluxTVD1d, euler_calcCharacteristics1d,&
+                                    rproblemLevel%Rafcstab(inviscidAFC), dscale, .false., rrhs)
+      case (NDIM2D)
+        call gfsys_buildResidualTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                                    rsol, euler_calcFluxTVD2d, euler_calcCharacteristics2d,&
+                                    rproblemLevel%Rafcstab(inviscidAFC), dscale, .false., rrhs)
+      case (NDIM3D)
+        call gfsys_buildResidualTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                                    rsol, euler_calcFluxTVD3d, euler_calcCharacteristics3d,&
+                                    rproblemLevel%Rafcstab(inviscidAFC), dscale, .false., rrhs)
+      end select
+
+      !-----------------------------------------------------------------------
+
+    case DEFAULT
+      call output_line('Invalid type of stabilization!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRHS')
+      call sys_halt()
+    end select
+
+    ! Stop time measurement for global operator
+    call stat_stopTimer(rtimer)
+    
   end subroutine euler_calcRHS
 
 end module euler_callback
