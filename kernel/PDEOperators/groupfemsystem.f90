@@ -4491,7 +4491,7 @@ contains
       integer, dimension(:), intent(INOUT) :: Ksep
       
       ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
+      real(DP), dimension(NDIM2D) :: C_ij,C_ji
       real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar

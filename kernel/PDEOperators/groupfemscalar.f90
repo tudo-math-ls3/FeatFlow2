@@ -10691,8 +10691,8 @@ contains
     ! whereby consistent mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTconsMass_2D(IverticesAtEdge, DcoefficientsAtEdge,&
-                                                Kdiagonal, Cx, Cy, MC, u, flux, flux0,&
-                                                theta, tstep, hstep, NEDGE, Jac)
+                                             Kdiagonal, Cx, Cy, MC, u, flux, flux0,&
+                                             theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(IN) :: Cx,Cy,MC,u,flux,flux0
@@ -14099,10 +14099,10 @@ contains
     select case(rafcstab%ctypeAFCstabilisation)
     case(AFCSTAB_FEMTVD,&
          AFCSTAB_FEMGP)
-      bhasOrientation = .TRUE.
+      bhasOrientation = .true.
       
     case DEFAULT
-      bhasOrientation = .FALSE.
+      bhasOrientation = .false.
     end select
   end function gfsc_hasOrientation
 
