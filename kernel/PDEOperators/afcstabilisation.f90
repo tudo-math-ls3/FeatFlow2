@@ -107,57 +107,39 @@ module afcstabilisation
   
 !</constantblock>
 
-!<constantblock description="Global format flags for dissipation">
-
-  ! Employ scalar dissipation (default)
-  integer, parameter, public :: AFCSTAB_SCALARDISSIPATION = 1
-
-  ! Employ tensorial dissipation
-  integer, parameter, public :: AFCSTAB_TENSORDISSIPATION = 2
-
-!</constantblock>
-
 !<constantblock description="Bitfield identifiers for state of stabilisation">
   
   ! Stabilisation is undefined
-  integer, parameter, public :: AFCSTAB_UNDEFINED       = 2**0
+  integer, parameter, public :: AFCSTAB_UNDEFINED         = 2**0
 
   ! Stabilisation has been initialised
-  integer, parameter, public :: AFCSTAB_INITIALISED     = 2**1
+  integer, parameter, public :: AFCSTAB_INITIALISED       = 2**1
 
   ! Edge-based structure generated: KEDGE
-  integer, parameter, public :: AFCSTAB_EDGESTRUCTURE   = 2**2
+  integer, parameter, public :: AFCSTAB_EDGESTRUCTURE     = 2**2
 
   ! Edge-based structure oriented: KEDGE
-  integer, parameter, public :: AFCSTAB_EDGEORIENTATION = 2**3
+  integer, parameter, public :: AFCSTAB_EDGEORIENTATION   = 2**3
 
   ! Edge-based values computed from matrix: DEDGE
-  integer, parameter, public :: AFCSTAB_EDGEVALUES      = 2**4
+  integer, parameter, public :: AFCSTAB_EDGEVALUES        = 2**4
 
   ! Nodal antidiffusion: PP,PM
-  integer, parameter, public :: AFCSTAB_ANTIDIFFUSION   = 2**5
+  integer, parameter, public :: AFCSTAB_ANTIDIFFUSION     = 2**5
 
   ! Nodal upper/lower bounds: QP,QM
-  integer, parameter, public :: AFCSTAB_BOUNDS          = 2**6
+  integer, parameter, public :: AFCSTAB_BOUNDS            = 2**6
   
   ! Nodal correction factors computed: RP,RM
-  integer, parameter, public :: AFCSTAB_LIMITER         = 2**7
+  integer, parameter, public :: AFCSTAB_LIMITER           = 2**7
 
   ! Antidiffusive fluxes precomputed
-  integer, parameter, public :: AFCSTAB_FLUXES          = 2**8
+  integer, parameter, public :: AFCSTAB_FLUXES            = 2**8
   
   ! Subdiagonal edge-based structure generated
-  integer, parameter, public :: AFCSTAB_SUBDIAGONALEDGES= 2**9
+  integer, parameter, public :: AFCSTAB_SUBDIAGONALEDGES  = 2**9
 !</constantblock>
 
-!<constantblock description="Global type of mass matrix treatment">
-
-  ! Adopt the lumped-mass discretisation
-  integer, parameter, public :: AFCSTAB_LUMPEDMASS      = 0
-
-  ! Adopt the consistent-mass discretisation
-  integer, parameter, public :: AFCSTAB_CONSISTENTMASS  = 1
-!</constantblock>
 !</constants>
 
   ! *****************************************************************************
@@ -173,23 +155,8 @@ module afcstabilisation
     ! Format Tag. Identifies the type of stabilisation
     integer :: ctypeAFCstabilisation                   = AFCSTAB_GALERKIN
 
-    ! Format Tag. Specifies the type of dissipation
-    integer :: idissipation                            = AFCSTAB_SCALARDISSIPATION
-
     ! Format Tag: Specifies the stabilisation
     integer :: iSpec                                   = AFCSTAB_UNDEFINED
-
-    ! Format Tag: Specifies whether an extended stencil should be
-    ! created for the Jacobian matrix if required
-    !   iextendedJacobian = 0 : use sparsity pattern of FE-matrix
-    !   iextendedJacobian = 1 : extend sparsity pattern accordingly
-    integer :: iextendedJacobian                       = 0
-
-    ! Format Tag: Specifies whether the consistent mass matrix should
-    ! be considered in the stabilisation procedure
-    !   imass = 0 : neglect consistent mass matrix
-    !   imass = 1 : consider consistent mass matrix
-    integer :: imass                                   = AFCSTAB_LUMPEDMASS
 
     ! Number of equations of the sparsity pattern
     integer(PREC_VECIDX) :: NEQ                        = 0
@@ -262,13 +229,13 @@ module afcstabilisation
     integer :: h_IsortPermutation                      = ST_NOHANDLE
 
     ! Auxiliary nodal vectors; used internally
-    type(t_vectorScalar), dimension(:), pointer :: RnodalVectors      => NULL()
+    type(t_vectorScalar), dimension(:), pointer :: RnodalVectors      => null()
 
     ! Auxiliary nodal block vectors; used internally
-    type(t_vectorBlock), dimension(:), pointer  :: RnodalBlockVectors => NULL()
+    type(t_vectorBlock), dimension(:), pointer  :: RnodalBlockVectors => null()
 
     ! Auxiliary edge vectors; used internally
-    type(t_vectorScalar), dimension(:), pointer :: RedgeVectors       => NULL()
+    type(t_vectorScalar), dimension(:), pointer :: RedgeVectors       => null()
   end type t_afcstab
 !</typeblock>
 !</types>
@@ -339,13 +306,6 @@ contains
       rafcstab%iSpec                 = AFCSTAB_UNDEFINED
       rafcstab%ctypeAFCstabilisation = istabilisation
       
-      ! Set additional parameters
-      call parlst_getvalue_int(rparlist, ssectionName,&
-          "iextendedJacobian", rafcstab%iextendedJacobian, 0)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-          "idissipation", rafcstab%idissipation, AFCSTAB_SCALARDISSIPATION)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-          "imass", rafcstab%imass, AFCSTAB_LUMPEDMASS)
     end if
   end subroutine afcstab_initFromParameterlist
 
@@ -382,9 +342,7 @@ contains
     
     ! Reset atomic data
     rafcstab%ctypeAFCstabilisation = AFCSTAB_GALERKIN
-    rafcstab%iDissipation          = AFCSTAB_SCALARDISSIPATION
     rafcstab%iSpec                 = AFCSTAB_UNDEFINED
-    rafcstab%imass                 = 0
     rafcstab%NEQ                   = 0
     rafcstab%NVAR                  = 1
     rafcstab%NEDGE                 = 0
@@ -889,7 +847,7 @@ contains
 
 !<function>
   
-  ELEMENTAL function afcstab_limit_unbounded(p, q, default) result(r)
+  elemental function afcstab_limit_unbounded(p, q, default) result(r)
 
 !<description>
     ! This function computes the ratio Q/P. If the denominator is
@@ -921,7 +879,7 @@ contains
 
 !<function>
   
-  ELEMENTAL function afcstab_limit_bounded(p, q, default, dbound) result(r)
+  elemental function afcstab_limit_bounded(p, q, default, dbound) result(r)
 
 !<description>
     ! This function computes the limited ratio Q/P and bounds the

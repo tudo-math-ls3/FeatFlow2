@@ -8611,7 +8611,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacLinearBlockTVD(ru, tstep, hstep, bclear, rafcstab, rjacobianMatrix)
+  subroutine gfsc_buildJacLinearBlockTVD(ru, tstep, hstep, bclear, rafcstab,&
+                                         rjacobianMatrix, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -8637,6 +8638,11 @@ contains
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
     logical, intent(IN) :: bclear
+
+    ! OPTIONAL: Switch for matrix assembly
+    ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
+    ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
+    logical, intent(IN), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
@@ -8657,7 +8663,7 @@ contains
     else
 
       call gfsc_buildJacLinearScalarTVD(ru%RvectorBlock(1), tstep, hstep,&
-                                        bclear, rafcstab, rjacobianMatrix)
+                                        bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
 
     end if
   end subroutine gfsc_buildJacLinearBlockTVD
@@ -8666,7 +8672,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacLinearScalarTVD(ru, tstep, hstep, bclear, rafcstab, rjacobianMatrix)
+  subroutine gfsc_buildJacLinearScalarTVD(ru, tstep, hstep, bclear, rafcstab,&
+                                          rjacobianMatrix, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation part
@@ -8688,6 +8695,11 @@ contains
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
     logical, intent(IN) :: bclear
+
+    ! OPTIONAL: Switch for matrix assembly
+    ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
+    ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
+    logical, intent(IN), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
@@ -8746,6 +8758,14 @@ contains
     call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
     call lsyssc_getbase_double(ru, p_u)
     
+    ! Assembled extended Jacobian matrix?
+    if (present(bextendedSparsity)) then
+      bisExtended = bextendedSparsity
+    else
+      bisExtended = .TRUE.
+    end if
+
+
     ! What kind of matrix format are we?
     select case(rjacobianMatrix%cmatrixFormat)
     case(LSYSSC_MATRIX7)
@@ -8763,9 +8783,6 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
-      ! Assembled extended Jacobian matrix?
-      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-
       call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
@@ -8791,9 +8808,6 @@ contains
       call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       
-      ! Assembled extended Jacobian matrix
-      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-
       call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
@@ -9235,8 +9249,9 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacLinearBlockGP(rconsistentMassMatrix, ru, ru0, theta, tstep,&
-                                        hstep, bclear, rafcstab, rjacobianMatrix)
+  subroutine gfsc_buildJacLinearBlockGP(rconsistentMassMatrix, ru, ru0, theta,&
+                                        tstep, hstep, bclear, rafcstab,&
+                                        rjacobianMatrix, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -9271,6 +9286,11 @@ contains
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
     logical, intent(IN) :: bclear
+
+    ! OPTIONAL: Switch for matrix assembly
+    ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
+    ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
+    logical, intent(IN), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
@@ -9293,7 +9313,7 @@ contains
 
       call gfsc_buildJacLinearScalarGP(rconsistentMassMatrix, ru%RvectorBlock(1),&
                                        ru0%RvectorBlock(1), theta, tstep, hstep,&
-                                       bclear, rafcstab, rjacobianMatrix)
+                                       bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
 
     end if
   end subroutine gfsc_buildJacLinearBlockGP
@@ -9302,8 +9322,9 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacLinearScalarGP(rconsistentMassMatrix, ru, ru0, theta, tstep,&
-                                         hstep, bclear, rafcstab, rjacobianMatrix)
+  subroutine gfsc_buildJacLinearScalarGP(rconsistentMassMatrix, ru, ru0, theta,&
+                                         tstep, hstep, bclear, rafcstab,&
+                                         rjacobianMatrix, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation part
@@ -9334,6 +9355,11 @@ contains
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
     logical, intent(IN) :: bclear
+
+    ! OPTIONAL: Switch for matrix assembly
+    ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
+    ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
+    logical, intent(IN), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
@@ -9394,7 +9420,15 @@ contains
     call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
     call lsyssc_getbase_double(ru, p_u)
     call lsyssc_getbase_double(ru0, p_u0)
-    
+
+    ! Assembled extended Jacobian matrix?
+    if (present(bextendedSparsity)) then
+      bisExtended = bextendedSparsity
+    else
+      bisExtended = .TRUE.
+    end if
+
+
     ! What kind of matrix format are we?
     select case(rjacobianMatrix%cmatrixFormat)
     case(LSYSSC_MATRIX7)
@@ -9412,9 +9446,6 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
-      ! Assembled extended Jacobian matrix
-      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-
       call doJacobianMat79_GP(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                               p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
@@ -9441,9 +9472,6 @@ contains
       call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       
-      ! Assembled extended Jacobian matrix
-      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-
       call doJacobianMat79_GP(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                               p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
@@ -11097,7 +11125,8 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianBlockTVD(RcoeffMatrices, ru, fcb_calcConvection,&
-                                        tstep, hstep, bclear, rafcstab, rjacobianMatrix)
+                                        tstep, hstep, bclear, rafcstab,&
+                                        rjacobianMatrix, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -11127,7 +11156,12 @@ contains
     ! FLASE : assemble matrix in an additive way
     logical, intent(IN) :: bclear
 
-     ! callback functions to compute velocity
+    ! OPTIONAL: Switch for matrix assembly
+    ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
+    ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
+    logical, intent(IN), optional :: bextendedSparsity
+    
+    ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
 !</input>
 
@@ -11150,7 +11184,7 @@ contains
 
       call gfsc_buildJacobianScalarTVD(RcoeffMatrices, ru%RvectorBlock(1),&
                                        fcb_calcConvection, tstep, hstep,&
-                                       bclear, rafcstab, rjacobianMatrix)
+                                       bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
 
     end if
   end subroutine gfsc_buildJacobianBlockTVD
@@ -11160,7 +11194,8 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianScalarTVD(RcoeffMatrices, ru, fcb_calcConvection,&
-                                         tstep, hstep, bclear, rafcstab, rjacobianMatrix)
+                                         tstep, hstep, bclear, rafcstab,&
+                                         rjacobianMatrix, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -11187,8 +11222,13 @@ contains
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
     logical, intent(IN) :: bclear
-
-     ! callback functions to compute velocity
+    
+    ! OPTIONAL: Switch for matrix assembly
+    ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
+    ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
+    logical, intent(IN), optional :: bextendedSparsity
+    
+    ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
 !</input>
 
@@ -11268,6 +11308,13 @@ contains
     if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
         call afcstab_generateSubdiagEdges(rafcstab)
     
+    ! Assembled extended Jacobian matrix?
+    if (present(bextendedSparsity)) then
+      bisExtended = bextendedSparsity
+    else
+      bisExtended = .TRUE.
+    end if
+
     
     ! What kind of matrix format are we?
     select case(rjacobianMatrix%cmatrixFormat)
@@ -11285,9 +11332,6 @@ contains
       call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
-      
-      ! Assembled extended Jacobian matrix?
-      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
       
       ! How many dimensions do we have?
       select case(ndim)
@@ -11333,9 +11377,6 @@ contains
       call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       
-      ! Assembled extended Jacobian matrix?
-      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-
       ! How many dimensions do we have?
       select case(ndim)
       case (NDIM1D)
@@ -12158,7 +12199,8 @@ contains
 
   subroutine gfsc_buildJacobianBlockGP(RcoeffMatrices, rconsistentMassMatrix,&
                                        ru, ru0, fcb_calcConvection, theta, tstep,&
-                                       hstep, bclear, rafcstab, rjacobianMatrix)
+                                       hstep, bclear, rafcstab, rjacobianMatrix,&
+                                       bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -12197,6 +12239,11 @@ contains
     ! FLASE : assemble matrix in an additive way
     logical, intent(IN) :: bclear
 
+    ! OPTIONAL: Switch for matrix assembly
+    ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
+    ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
+    logical, intent(IN), optional :: bextendedSparsity
+
      ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
 !</input>
@@ -12222,7 +12269,7 @@ contains
       call gfsc_buildJacobianScalarGP(RcoeffMatrices, rconsistentMassMatrix,&
                                       ru%RvectorBlock(1), ru0%RvectorBlock(1),&
                                       fcb_calcConvection, theta, tstep, hstep,&
-                                      bclear, rafcstab, rjacobianMatrix)
+                                      bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
 
     end if
   end subroutine gfsc_buildJacobianBlockGP
@@ -12233,7 +12280,8 @@ contains
 
   subroutine gfsc_buildJacobianScalarGP(RcoeffMatrices, rconsistentMassMatrix,&
                                         ru, ru0, fcb_calcConvection, theta, tstep,&
-                                        hstep, bclear, rafcstab, rjacobianMatrix)
+                                        hstep, bclear, rafcstab, rjacobianMatrix,&
+                                        bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -12270,7 +12318,12 @@ contains
     ! FLASE : assemble matrix in an additive way
     logical, intent(IN) :: bclear
 
-     ! callback functions to compute velocity
+    ! OPTIONAL: Switch for matrix assembly
+    ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
+    ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
+    logical, intent(IN), optional :: bextendedSparsity
+
+    ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
 !</input>
 
@@ -12355,6 +12408,13 @@ contains
     if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
         call afcstab_generateSubdiagEdges(rafcstab)
     
+    ! Assembled extended Jacobian matrix?
+    if (present(bextendedSparsity)) then
+      bisExtended = bextendedSparsity
+    else
+      bisExtended = .TRUE.
+    end if
+
     
     ! What kind of matrix format are we?
     select case(rjacobianMatrix%cmatrixFormat)
@@ -12372,9 +12432,6 @@ contains
       call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
-      
-      ! Assembled extended Jacobian matrix?
-      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
       
       ! How many dimensions do we have?
       select case(ndim)
@@ -12421,10 +12478,7 @@ contains
       h_Ksep = ST_NOHANDLE
       call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
-      
-      ! Assembled extended Jacobian matrix?
-      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-      
+            
       ! How many dimensions do we have?
       select case(ndim)
       case (NDIM1D)
@@ -13400,8 +13454,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianBlockSymm(ru, dscale, hstep, bclear,&
-                                         rafcstab, rjacobianMatrix)
+  subroutine gfsc_buildJacobianBlockSymm(ru, dscale, hstep, bclear, rafcstab,&
+                                         rjacobianMatrix, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -13426,6 +13480,11 @@ contains
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
     logical, intent(IN) :: bclear
+
+    ! OPTIONAL: Switch for matrix assembly
+    ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
+    ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
+    logical, intent(IN), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
@@ -13445,8 +13504,8 @@ contains
 
     else
 
-      call gfsc_buildJacobianScalarSymm(ru%RvectorBlock(1), dscale, hstep,&
-                                        bclear, rafcstab, rjacobianMatrix)
+      call gfsc_buildJacobianScalarSymm(ru%RvectorBlock(1), dscale, hstep, bclear, &
+                                        rafcstab, rjacobianMatrix, bextendedSparsity)
 
     end if
   end subroutine gfsc_buildJacobianBlockSymm
@@ -13455,8 +13514,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianScalarSymm(ru, dscale, hstep, bclear,&
-                                          rafcstab, rjacobianMatrix)
+  subroutine gfsc_buildJacobianScalarSymm(ru, dscale, hstep, bclear, rafcstab,&
+                                          rjacobianMatrix, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -13477,6 +13536,11 @@ contains
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
     logical, intent(IN) :: bclear
+
+    ! OPTIONAL: Switch for matrix assembly
+    ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
+    ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
+    logical, intent(IN), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
@@ -13535,6 +13599,14 @@ contains
     call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
     call lsyssc_getbase_double(ru, p_u)
     
+    ! Assembled extended Jacobian matrix?
+    if (present(bextendedSparsity)) then
+      bisExtended = bextendedSparsity
+    else
+      bisExtended = .TRUE.
+    end if
+
+
     ! What kind of matrix format are we?
     select case(rjacobianMatrix%cmatrixFormat)
     case(LSYSSC_MATRIX7)
@@ -13552,9 +13624,6 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
-      ! Assembled extended Jacobian matrix?
-      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-
       call doJacobianMat79_Symm(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                 p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
@@ -13581,9 +13650,6 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
-      ! Assembled extended Jacobian matrix?
-      bisExtended = (rafcstab%iextendedJacobian .ne. 0)
-
       call doJacobianMat79_Symm(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
                                 p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
                                 p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
