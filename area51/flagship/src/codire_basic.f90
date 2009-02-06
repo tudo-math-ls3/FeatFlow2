@@ -155,6 +155,9 @@ module codire_basic
     ! Matrix format
     integer :: imatrixFormat
 
+    ! Jacobian format
+    integer :: ijacobianFormat
+
     ! Function parser for the velocity field
     type(t_fparser) :: rfparserVelocityField
 

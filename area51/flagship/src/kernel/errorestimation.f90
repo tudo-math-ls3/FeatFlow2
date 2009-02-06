@@ -36,6 +36,7 @@
 
 module errorestimation
 
+  use fparser
   use fsystem
   use genoutput
   use geometryaux
@@ -102,6 +103,9 @@ module errorestimation
   ! Second-difference indicator (by Löhner)
   integer, parameter, public :: ERREST_SECONDDIFF    = 7
 
+  ! Goal-oriented error estimation
+  integer, parameter, public :: ERREST_GOALORIENTED  = 8
+
 !</constantblock>
 
 !<constantblock description="Global constants for error redistribution">
@@ -138,13 +142,13 @@ module errorestimation
   type t_gradientRecovery
 
     ! Type of gradient recovery
-    integer :: ierrorestimator       = 0
+    integer :: ierrorestimator = 0
 
     ! Type of element
-    integer :: ieltype               = 0
+    integer :: ieltype = 0
 
     ! Number of error variable
-    integer :: ierrorvariable        = 0
+    integer :: ierrorvariable = 0
 
     ! Scalar error variable
     type(t_vectorScalar) :: rerrorVariable
@@ -182,10 +186,10 @@ module errorestimation
     integer :: ierrorvariable  = 0
 
     ! Tolerance for noise filter
-    real(DP) :: dnoiseFilter   = 0._DP
+    real(DP) :: dnoiseFilter = 0._DP
 
     ! Absolute tolerance for filter
-    real(DP) :: dabsFilter     = 0._DP
+    real(DP) :: dabsFilter = 0._DP
 
     ! Scalar indicator variable
     type(t_vectorScalar) :: rerrorVariable
@@ -204,11 +208,14 @@ module errorestimation
     integer :: ierrorestimator = 0
 
     ! Type of grid-indicator
-    integer :: igridindicator  = 0
+    integer :: igridindicator = 0
     
     ! Number of protection layers
-    integer :: nprotectlayers  = 0
+    integer :: nprotectlayers = 0
     
+    ! Function parser for goal-oriented error estimation
+    type(t_fparser) :: rfparser
+
     ! Pointer to gradient recovery
     type(t_gradientRecovery), pointer :: p_rgradientRecovery => null()
 
@@ -226,7 +233,7 @@ contains
 
 !<subroutine>
 
-  subroutine errest_initErrorEstimator(rerrorEstimator, rparlist, ssection)
+  subroutine errest_initErrorEstimator(rparlist, ssectionName, rerrorEstimator)
 
 !<description>
     ! This subroutine initializes the error estimator
@@ -238,7 +245,7 @@ contains
     type(t_parlist), intent(IN) :: rparlist
 
     ! name of the section
-    character(LEN=*), intent(IN) :: ssection
+    character(LEN=*), intent(IN) :: ssectionName
 !</input>
 
 !<output>
@@ -248,38 +255,38 @@ contains
 !</subroutine>
 
     ! Set the type of error estimator
-    call parlst_getvalue_int(rparlist, ssection, "ierrorestimator",&
-        rerrorEstimator%ierrorestimator, ERREST_SECONDDIFF)
+    call parlst_getvalue_int(rparlist, ssectionName, "ierrorestimator",&
+                             rerrorEstimator%ierrorestimator)
     
     ! Set the type of grid indicator
-    call parlst_getvalue_int(rparlist, ssection, "igridindicator",&
-        rerrorEstimator%igridindicator, ERREST_ASIS)
+    call parlst_getvalue_int(rparlist, ssectionName, "igridindicator",&
+                             rerrorEstimator%igridindicator, ERREST_ASIS)
     
     ! Set the number of protection layers
-    call parlst_getvalue_int(rparlist, ssection, "nprotectlayers",&
-        rerrorEstimator%nprotectlayers, 0)
+    call parlst_getvalue_int(rparlist, ssectionName, "nprotectlayers",&
+                             rerrorEstimator%nprotectlayers, 0)
     
 
     ! What kind of error estimator are we?
     select case(rerrorEstimator%ierrorestimator)
 
-    case (ERREST_CSPR_FACE: ERREST_LIMAVR)
+    case (ERREST_CSPR_FACE:ERREST_LIMAVR)
 
       ! Recovery-based error estimator
       allocate(rerrorEstimator%p_rgradientRecovery)
-
+      
       ! Set the type of gradient recovery
-      rerrorEstimator%p_rgradientRecovery%ierrorestimator =&
-          rerrorEstimator%ierrorestimator
+      rerrorEstimator%p_rgradientRecovery%ierrorestimator = rerrorEstimator%ierrorestimator
 
       ! Set the error variable
-      call parlst_getvalue_int(rparlist, ssection, "ierrorvariable",&
-          rerrorEstimator%p_rgradientRecovery%ierrorvariable, 1)
+      call parlst_getvalue_int(rparlist, ssectionName, "ierrorvariable",&
+                               rerrorEstimator%p_rgradientRecovery%ierrorvariable, 1)
 
       ! Set the type of element
-      call parlst_getvalue_int(rparlist, ssection, "ieltype",&
-          rerrorEstimator%p_rgradientRecovery%ieltype)
+      call parlst_getvalue_int(rparlist, ssectionName, "ieltype",&
+                               rerrorEstimator%p_rgradientRecovery%ieltype)
 
+      !-------------------------------------------------------------------------
 
     case (ERREST_FIRSTDIFF:ERREST_SECONDDIFF)
 
@@ -287,20 +294,19 @@ contains
       allocate(rerrorEstimator%p_rdifferenceIndicator)
       
       ! Set the type of difference indicator
-      rerrorEstimator%p_rdifferenceIndicator%ierrorestimator =&
-          rerrorEstimator%ierrorestimator
-
+      rerrorEstimator%p_rdifferenceIndicator%ierrorestimator = rerrorEstimator%ierrorestimator
+      
       ! Set the error variable
-      call parlst_getvalue_int(rparlist, ssection, "ierrorvariable",&
-          rerrorEstimator%p_rdifferenceIndicator%ierrorvariable, 1)
+      call parlst_getvalue_int(rparlist, ssectionName, "ierrorvariable",&
+                               rerrorEstimator%p_rdifferenceIndicator%ierrorvariable, 1)
 
       ! Set the value for the noise filter
-      call parlst_getvalue_double(rparlist, ssection, "dnoiseFilter",&
-          rerrorEstimator%p_rdifferenceIndicator%dnoiseFilter, 5e-3_DP)
+      call parlst_getvalue_double(rparlist, ssectionName, "dnoiseFilter",&
+                                  rerrorEstimator%p_rdifferenceIndicator%dnoiseFilter, 5e-3_DP)
 
       ! Set the value for the absolute filter
-      call parlst_getvalue_double(rparlist, ssection, "dabsFilter",&
-          rerrorEstimator%p_rdifferenceIndicator%dabsFilter, 1e-6_DP)
+      call parlst_getvalue_double(rparlist, ssectionName, "dabsFilter",&
+                                  rerrorEstimator%p_rdifferenceIndicator%dabsFilter, 1e-6_DP)
       
     case DEFAULT
       call output_line('Invalid type of error estimator!',&

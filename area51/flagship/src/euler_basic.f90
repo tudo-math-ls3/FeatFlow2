@@ -64,6 +64,16 @@ module euler_basic
 
 !</constantblock>
 
+!<constantblock description="Global type of dissipation">
+
+  ! Employ scalar dissipation (default)
+  integer, parameter, public :: DISSIPATION_SCALAR = 1
+
+  ! Employ tensorial dissipation
+  integer, parameter, public :: DISSIPATION_TENSOR = 2
+
+!</constantblock>
+
 
 !<constantblock description="Global types of perturbation parameters">
 
@@ -132,6 +142,9 @@ module euler_basic
 
     ! Type of mass antidiffusion
     integer :: imassantidiffusion
+
+    ! Type of dissipation
+    integer :: idissipationtype
 
     ! Type of coupling
     integer :: icoupled

@@ -11,18 +11,25 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) timestep_performThetaStep = timestep_performThetaStepScalar /
-!#                                 timestep_performThetaStepBlock
-!#     -> Perform one step by the two-level theta scheme to compute the
+!# 1.) tstep_performThetaStep = tstep_performThetaStepScalar /
+!#                              tstep_performThetaStepBlock
+!#     -> Performs one step by the two-level theta scheme to compute the
 !#        solution for the time interval dTime..dTime+dStep. 
 !#
-!# 2.) timestep_performRKStep = timestep_performRKStepScalar /
-!#                              timestep_performRKStepBlock
-!#     -> Perform one step of an explicit Runge-Kutta scheme to compute the
+!# 2.) tstep_performRKStep = tstep_performRKStepScalar /
+!#                           tstep_performRKStepBlock
+!#     -> Performs one step of an explicit Runge-Kutta scheme to compute the
 !#        solution for the time interval dTime..dTime+dStep
 !#
-!# 3.) timestep_checkTimestep
-!#     -> Check the solution computed in one time step and adjust
+!# 3.) tstep_performPseudoStepping = tstep_performPseudoStepScalar /
+!#                                   tstep_performPseudoStepBlock
+!#     -> Performs pseudo time-stepping to compute the steady state solution
+!#
+!#
+!# The following auxiliary routines are available: 
+!#
+!# 1.) tstep_checkTimestep
+!#     -> Checks the solution computed in one time step and adjust
 !#        the size of the time step accordingly
 !#
 !# </purpose>
@@ -44,9 +51,10 @@ module timestep
   implicit none
 
   private
-  public :: timestep_performThetaStep
-  public :: timestep_performRKStep
-  public :: timestep_checkTimestep
+  public :: tstep_performThetaStep
+  public :: tstep_performRKStep
+  public :: tstep_performPseudoStepping
+
 
   ! *****************************************************************************
   ! *****************************************************************************
@@ -79,14 +87,19 @@ module timestep
   ! *****************************************************************************
   ! *****************************************************************************
 
-  interface timestep_performThetaStep
-    module procedure timestep_performThetaStepScalar
-    module procedure timestep_performThetaStepBlock
+  interface tstep_performThetaStep
+    module procedure tstep_performThetaStepScalar
+    module procedure tstep_performThetaStepBlock
   end interface
 
-  interface timestep_performRKStep
-    module procedure timestep_performRKStepScalar
-    module procedure timestep_performRKStepBlock
+  interface tstep_performRKStep
+    module procedure tstep_performRKStepScalar
+    module procedure tstep_performRKStepBlock
+  end interface
+
+  interface tstep_performPseudoStepping
+    module procedure tstep_performPseudoSteppingScalar
+    module procedure tstep_performPseudoSteppingBlock
   end interface
 
 contains
@@ -97,10 +110,10 @@ contains
 
   !<subroutine>
   
-  subroutine timestep_performThetaStepScalar(rproblemLevel, rtimestep, rsolver, rsolution,&
-                                             fcb_calcResidual, fcb_calcJacobian,&
-                                             fcb_applyJacobian, fcb_setBoundary,&
-                                             rcollection, rrhs)
+  subroutine tstep_performThetaStepScalar(rproblemLevel, rtimestep, rsolver, rsolution,&
+                                          fcb_calcResidual, fcb_calcJacobian,&
+                                          fcb_applyJacobian, fcb_setBoundary,&
+                                          rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one step by means of the two-level theta-scheme
@@ -142,35 +155,35 @@ contains
 
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
       call lsysbl_createVecFromScalar(rrhs, rrhsBlock)
-      call timestep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                          rsolutionBlock,&
-                                          fcb_calcResidual, fcb_calcJacobian,&
-                                          fcb_applyJacobian, fcb_setBoundary,&
-                                          rcollection, rrhsBlock)
+      call tstep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
+                                       rsolutionBlock,&
+                                       fcb_calcResidual, fcb_calcJacobian,&
+                                       fcb_applyJacobian, fcb_setBoundary,&
+                                       rcollection, rrhsBlock)
       call lsysbl_releaseVector(rsolutionBlock)
       call lsysbl_releaseVector(rrhsBlock)
 
     else
       
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-      call timestep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                          rsolutionBlock,&
-                                          fcb_calcResidual, fcb_calcJacobian,&
-                                          fcb_applyJacobian, fcb_setBoundary,&
-                                          rcollection)
+      call tstep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
+                                       rsolutionBlock,&
+                                       fcb_calcResidual, fcb_calcJacobian,&
+                                       fcb_applyJacobian, fcb_setBoundary,&
+                                       rcollection)
       call lsysbl_releaseVector(rsolutionBlock)
 
     end if
-  end subroutine timestep_performThetaStepScalar
+  end subroutine tstep_performThetaStepScalar
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine timestep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver, rsolution,&
-                                            fcb_calcResidual, fcb_calcJacobian,&
-                                            fcb_applyJacobian, fcb_setBoundary,&
-                                            rcollection, rrhs)
+  subroutine tstep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver, rsolution,&
+                                         fcb_calcResidual, fcb_calcJacobian,&
+                                         fcb_applyJacobian, fcb_setBoundary,&
+                                         rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one step by means of the two-level theta-scheme
@@ -224,7 +237,7 @@ contains
 
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'timestep_performThetaStepBlock')
+                       OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlock')
       call sys_halt()
     end if
 
@@ -308,8 +321,8 @@ contains
 
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
-        breject = timestep_checkTimestep(rtimestep, p_rsolver,&
-                                         p_rsolutionRef, p_rsolutionOld)
+        breject = tstep_checkTimestep(rtimestep, p_rsolver,&
+                                      p_rsolutionRef, p_rsolutionOld)
 
         ! Prepare time step size for next "large" time step
         rtimestep%dStep = rtimestep%dStep*2.0_DP
@@ -318,8 +331,8 @@ contains
 
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
-        breject = timestep_checkTimestep(rtimestep, p_rsolver,&
-                                         rsolution, p_rsolutionOld)
+        breject = tstep_checkTimestep(rtimestep, p_rsolver,&
+                                      rsolution, p_rsolutionOld)
 
       end if
       
@@ -345,14 +358,14 @@ contains
         exit timeadapt
       end if
     end do timeadapt
-  end subroutine timestep_performThetaStepBlock
+  end subroutine tstep_performThetaStepBlock
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine timestep_performRKStepScalar(rproblemLevel, rtimestep, rsolver, rsolution,&
-                                          fcb_calcRHS, fcb_setBoundary, rcollection, rrhs)
+  subroutine tstep_performRKStepScalar(rproblemLevel, rtimestep, rsolver, rsolution,&
+                                       fcb_calcRHS, fcb_setBoundary, rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
@@ -394,27 +407,27 @@ contains
 
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
       call lsysbl_createVecFromScalar(rrhs, rrhsBlock)
-      call timestep_performRKStepBlock(rproblemLevel, rtimestep, rsolver, rsolutionBlock,&
-                                       fcb_calcRHS, fcb_setBoundary, rcollection, rrhsBlock)
+      call tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver, rsolutionBlock,&
+                                    fcb_calcRHS, fcb_setBoundary, rcollection, rrhsBlock)
       call lsysbl_releaseVector(rsolutionBlock)
       call lsysbl_releaseVector(rrhsBlock)
 
     else
       
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-      call timestep_performRKStepBlock(rproblemLevel, rtimestep, rsolver, rsolutionBlock,&
-                                       fcb_calcRHS, fcb_setBoundary, rcollection)
+      call tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver, rsolutionBlock,&
+                                    fcb_calcRHS, fcb_setBoundary, rcollection)
       call lsysbl_releaseVector(rsolutionBlock)
 
     end if
-  end subroutine timestep_performRKStepScalar
+  end subroutine tstep_performRKStepScalar
   
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine timestep_performRKStepBlock(rproblemLevel, rtimestep, rsolver, rsolution, &
-                                         fcb_calcRHS, fcb_setBoundary, rcollection, rrhs)
+  subroutine tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver, rsolution, &
+                                      fcb_calcRHS, fcb_setBoundary, rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
@@ -471,7 +484,7 @@ contains
 
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'timestep_performRKStepBlock')
+                       OU_CLASS_ERROR,OU_MODE_STD,'tstep_performRKStepBlock')
       call sys_halt()
     end if
     
@@ -615,8 +628,8 @@ contains
 
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
-        breject = timestep_checkTimestep(rtimestep, p_rsolver,&
-                                         p_rsolutionRef, p_rsolutionOld)
+        breject = tstep_checkTimestep(rtimestep, p_rsolver,&
+                                      p_rsolutionRef, p_rsolutionOld)
 
         ! Prepare time step size for next "large" time step
         rtimestep%dStep = rtimestep%dStep*2.0_DP
@@ -625,8 +638,8 @@ contains
 
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
-        breject = timestep_checkTimestep(rtimestep, p_rsolver,&
-                                         rsolution, p_rsolutionOld)
+        breject = tstep_checkTimestep(rtimestep, p_rsolver,&
+                                      rsolution, p_rsolutionOld)
 
       end if
 
@@ -652,14 +665,187 @@ contains
         exit timeadapt
       end if
     end do timeadapt
-  end subroutine timestep_performRKStepBlock
-  
+  end subroutine tstep_performRKStepBlock
+
   ! *****************************************************************************
+  
+!<subroutine>
+
+  subroutine tstep_performPseudoSteppingBlock(rproblemLevel, rtimestep, rsolver, rsolution,&
+                                              fcb_calcRHS, fcb_calcResidual, fcb_calcJacobian,&
+                                              fcb_applyJacobian, fcb_setBoundary, rcollection, rrhs)
+
+!<description>
+    ! This subroutine performs pseudo time-stepping to compute the
+    ! steady state solution to a stationary problem. Each pseudo
+    ! time step can be performed by the forward Euler (theta=0), 
+    ! backward Euler (theta=1), the Crank-Nicolson (theta=0.5) 
+    ! time stepping algorithm and an explicit Runge-Kutta scheme.
+!</description>
+
+!<input>
+    ! Callback routines
+    include 'intf_nlsolcallback.inc'
+
+    ! OPTIONAL: right-hand side vector
+    type(t_vectorBlock), intent(IN), optional :: rrhs
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+
+    ! time-stepping structure
+    type(t_timestep), intent(INOUT) :: rtimestep
+
+    ! solver structure
+    type(t_solver), intent(INOUT), target :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), intent(INOUT) :: rsolution
+
+    ! collection
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+
+    ! Infinite time loop
+    timeloop: do
+
+      ! What time-stepping scheme should be used?
+      select case(rtimestep%ctimestepType)
+        
+      case (SV_RK_SCHEME)
+        
+        ! Adopt explicit Runge-Kutta scheme
+        call tstep_performRKStep(rproblemLevel, rtimestep,&
+                                 rsolver, rsolution, fcb_calcRHS,&
+                                 fcb_setBoundary, rcollection, rrhs)
+        
+      case (SV_THETA_SCHEME)
+        
+        ! Adopt two-level theta-scheme
+        call tstep_performThetaStep(rproblemLevel, rtimestep,&
+                                    rsolver, rsolution, fcb_calcResidual,&
+                                    fcb_calcJacobian, fcb_applyJacobian,&
+                                    fcb_setBoundary, rcollection, rrhs)
+          
+      case DEFAULT
+        call output_line('Unsupported time-stepping algorithm!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingBlock')
+        call sys_halt()
+      end select
+
+      ! Reached final time, then exit infinite time loop?
+      if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
+        
+      ! Reached steady state limit?
+      if (rtimestep%depsSteady > 0.0_DP) then
+        
+        ! Check if steady-state residual exceeds tolerance
+        if ((rsolver%dfinalDefect   < rsolver%dinitialDefect) .and.&
+            (rsolver%dinitialDefect < rtimestep%dStep*rtimestep%depsSteady)) exit timeloop
+      end if
+
+    end do timeloop
+
+  end subroutine tstep_performPseudoSteppingBlock
+
+  ! *****************************************************************************
+  
+!<subroutine>
+
+  subroutine tstep_performPseudoSteppingScalar(rproblemLevel, rtimestep, rsolver, rsolution,&
+                                               fcb_calcRHS, fcb_calcResidual, fcb_calcJacobian,&
+                                               fcb_applyJacobian, fcb_setBoundary, rcollection, rrhs)
+
+!<description>
+    ! This subroutine performs pseudo time-stepping to compute the
+    ! steady state solution to a stationary problem. Each pseudo
+    ! time step can be performed by the forward Euler (theta=0), 
+    ! backward Euler (theta=1), the Crank-Nicolson (theta=0.5) 
+    ! time stepping algorithm and an explicit Runge-Kutta scheme.
+!</description>
+
+!<input>
+    ! Callback routines
+    include 'intf_nlsolcallback.inc'
+
+    ! OPTIONAL: right-hand side vector
+    type(t_vectorScalar), intent(IN), optional :: rrhs
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+
+    ! time-stepping structure
+    type(t_timestep), intent(INOUT) :: rtimestep
+
+    ! solver structure
+    type(t_solver), intent(INOUT), target :: rsolver
+
+    ! solution vector
+    type(t_vectorScalar), intent(INOUT) :: rsolution
+
+    ! collection
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! Infinite time loop
+    timeloop: do
+
+      ! What time-stepping scheme should be used?
+      select case(rtimestep%ctimestepType)
+        
+      case (SV_RK_SCHEME)
+        
+        ! Adopt explicit Runge-Kutta scheme
+        call tstep_performRKStep(rproblemLevel, rtimestep,&
+                                 rsolver, rsolution, fcb_calcRHS,&
+                                 fcb_setBoundary, rcollection, rrhs)
+        
+      case (SV_THETA_SCHEME)
+        
+        ! Adopt two-level theta-scheme
+        call tstep_performThetaStep(rproblemLevel, rtimestep,&
+                                    rsolver, rsolution, fcb_calcResidual,&
+                                    fcb_calcJacobian, fcb_applyJacobian,&
+                                    fcb_setBoundary, rcollection, rrhs)
+          
+      case DEFAULT
+        call output_line('Unsupported time-stepping algorithm!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingScalar')
+        call sys_halt()
+      end select
+
+      ! Reached final time, then exit infinite time loop?
+      if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
+        
+      ! Reached steady state limit?
+      if (rtimestep%depsSteady > 0.0_DP) then
+        
+        ! Check if steady-state residual exceeds tolerance
+        if ((rsolver%dfinalDefect   < rsolver%dinitialDefect) .and.&
+            (rsolver%dinitialDefect < rtimestep%dStep*rtimestep%depsSteady)) exit timeloop
+      end if
+
+    end do timeloop
+
+  end subroutine tstep_performPseudoSteppingScalar
+
+
+  ! *****************************************************************************
+  ! AUXILIARY ROUTINES
+  ! *****************************************************************************
+
 
 !<function>
   
-  function timestep_checkTimestep(rtimestep, rsolver,&
-                                  rsolution1, rsolution2) result(breject)
+  function tstep_checkTimestep(rtimestep, rsolver,&
+                               rsolution1, rsolution2) result(breject)
 
 !<description>
     ! This functions checks the result of the current time step and
@@ -716,7 +902,7 @@ contains
       ! admissible time step, then the simulation is terminated.
       if (rtimestep%dStep .le. rtimestep%dminStep + SYS_EPSREAL) then
         call output_line('Time step reached smallest admissible value!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'timestep_checkTimestep')
+            OU_CLASS_ERROR,OU_MODE_STD,'tstep_checkTimestep')
         call sys_halt()
       end if
       
@@ -923,6 +1109,6 @@ contains
       
     end select
 
-  end function timestep_checkTimestep
+  end function tstep_checkTimestep
 
 end module timestep

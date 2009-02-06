@@ -786,6 +786,7 @@ contains
 
     select case(imasstype)
     case (MASS_LUMPED)
+
       ! Compute the global operator for transient flow
       !
       !   $ A = ML-theta*dt*L $
@@ -797,6 +798,7 @@ contains
                                    rproblemLevel%Rmatrix(systemMatrix),&
                                    .false., .false., .true., .true.)
     case (MASS_CONSISTENT)
+
       ! Compute the global operator for transient flow
       !
       !   $ A = MC-theta*dt*L $
@@ -809,6 +811,7 @@ contains
                                    .false., .false., .true., .true.)
 
     case DEFAULT
+
       ! Compute the global operator for steady-state flow
       !
       !   $ A = -L $
@@ -885,12 +888,11 @@ contains
     integer :: templateMatrix
     integer :: transportMatrix, jacobianMatrix
     integer :: consistentMassMatrix, lumpedMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
-    integer :: coeffMatrix_S
-    integer :: convectionAFC, diffusionAFC
+    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
+    integer :: convectionAFC, diffusionAFC, ijacobianFormat
     integer :: imasstype, imassantidiffusion, ivelocitytype, idiffusiontype
     integer :: primaldual, velocityfield
-    logical :: bStabilize, bisExactStructure
+    logical :: bStabilize, bisExactStructure, bisExtendedSparsity
 
 
     ! Start time measurement for matrix evaluation
@@ -906,7 +908,7 @@ contains
     coeffMatrix_CY        = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
     coeffMatrix_CZ        = collct_getvalue_int(rcollection, 'coeffMatrix_CZ')
     coeffMatrix_S         = collct_getvalue_int(rcollection, 'coeffMatrix_S')
-
+   
     !---------------------------------------------------------------------------
     ! If the Newton iteration failed completely, adopt the low-order
     ! preconditioner and return from this subroutine
@@ -1055,7 +1057,7 @@ contains
         call sys_halt()
       end select
 
-    else
+    else   ! primaldual /= 1
       
       select case (abs(ivelocitytype))
       case (VELOCITY_ZERO)
@@ -1114,12 +1116,13 @@ contains
     ! Check if the Jacobian operator needs to be generated
     if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(jacobianMatrix))) then
       
-      templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
-
-      if ((rproblemLevel%Rafcstab(diffusionAFC)%iextendedJacobian .eq. 0) .and.&
-          (rproblemLevel%Rafcstab(convectionAFC)%iextendedJacobian .eq. 0)) then
+      templateMatrix  = collct_getvalue_int(rcollection, 'templateMatrix')
+      ijacobianFormat = collct_getvalue_int(rcollection, 'ijacobianFormat')
+      
+      if (ijacobianFormat .eq. 0) then
         
-        bisExactStructure = .true.
+        bisExactStructure   = .true.
+        bisExtendedSparsity = .false.
 
         ! Adopt the standard sparsity pattern from the template matrix
         call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
@@ -1127,7 +1130,8 @@ contains
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       else
 
-        bisExactStructure = .false.
+        bisExactStructure   = .false.
+        bisExtendedSparsity = .true.
 
         ! Extend the standard sparsity pattern of the template matrix
         call afcstab_generateExtSparsity(rproblemLevel%Rmatrix(templateMatrix),&
@@ -1190,7 +1194,8 @@ contains
       case (AFCSTAB_SYMMETRIC)
         call gfsc_buildJacobianSymm(rsol, 1.0_DP, hstep, .false.,&
                                     rproblemLevel%Rafcstab(diffusionAFC),&
-                                    rproblemLevel%Rmatrix(jacobianMatrix))
+                                    rproblemLevel%Rmatrix(jacobianMatrix),&
+                                    bisExtendedSparsity)
       end select
 
     case (DIFFUSION_VARIABLE)
@@ -1238,13 +1243,15 @@ contains
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rsol, rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
-                                   rproblemLevel%Rmatrix(jacobianMatrix))
+                                   rproblemLevel%Rmatrix(jacobianMatrix),&
+                                   bisExtendedSparsity)
 
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(consistentMassMatrix), rsol,&
                                   rsol0, rtimestep%theta, rtimestep%dStep, hstep,&
                                   .false., rproblemLevel%Rafcstab(convectionAFC),&
-                                  rproblemLevel%Rmatrix(jacobianMatrix))
+                                  rproblemLevel%Rmatrix(jacobianMatrix),&
+                                  bisExtendedSparsity)
       end select
 
     case(VELOCITY_BURGERS_SPACETIME)
@@ -1277,7 +1284,8 @@ contains
                                    rsol, codire_calcConvectionBurgersSpT2d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
-                                   rproblemLevel%Rmatrix(jacobianMatrix))
+                                   rproblemLevel%Rmatrix(jacobianMatrix),&
+                                   bisExtendedSparsity)
 
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
@@ -1285,7 +1293,8 @@ contains
                                   rsol, rsol0, codire_calcConvectionBurgersSpT2d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
-                                  rproblemLevel%Rmatrix(jacobianMatrix))
+                                  rproblemLevel%Rmatrix(jacobianMatrix),&
+                                  bisExtendedSparsity)
       end select
 
     case(VELOCITY_BUCKLEV_SPACETIME)
@@ -1318,7 +1327,8 @@ contains
                                    rsol, codire_calcConvectionBuckLevSpT2d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
-                                   rproblemLevel%Rmatrix(jacobianMatrix))
+                                   rproblemLevel%Rmatrix(jacobianMatrix),&
+                                   bisExtendedSparsity)
         
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
@@ -1326,7 +1336,8 @@ contains
                                   rsol, rsol0, codire_calcConvectionBuckLevSpT2d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
-                                  rproblemLevel%Rmatrix(jacobianMatrix))
+                                  rproblemLevel%Rmatrix(jacobianMatrix),&
+                                  bisExtendedSparsity)
       end select
       
     case(VELOCITY_BURGERS1D)
@@ -1359,7 +1370,8 @@ contains
                                    rsol, codire_calcConvectionBurgers1d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
-                                   rproblemLevel%Rmatrix(jacobianMatrix))
+                                   rproblemLevel%Rmatrix(jacobianMatrix),&
+                                   bisExtendedSparsity)
 
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
@@ -1367,7 +1379,8 @@ contains
                                   rsol, rsol0, codire_calcConvectionBurgers1d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
-                                  rproblemLevel%Rmatrix(jacobianMatrix))
+                                  rproblemLevel%Rmatrix(jacobianMatrix),&
+                                  bisExtendedSparsity)
       end select
 
     case(VELOCITY_BURGERS2D)
@@ -1400,7 +1413,8 @@ contains
                                    rsol, codire_calcConvectionBurgers2d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
-                                   rproblemLevel%Rmatrix(jacobianMatrix))
+                                   rproblemLevel%Rmatrix(jacobianMatrix),&
+                                   bisExtendedSparsity)
 
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
@@ -1408,7 +1422,8 @@ contains
                                   rsol, rsol0, codire_calcConvectionBurgers2d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
-                                  rproblemLevel%Rmatrix(jacobianMatrix))
+                                  rproblemLevel%Rmatrix(jacobianMatrix),&
+                                  bisExtendedSparsity)
       end select
       
     case(VELOCITY_BUCKLEV1D)
@@ -1441,7 +1456,8 @@ contains
                                    rsol, codire_calcConvectionBuckLev1d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
-                                   rproblemLevel%Rmatrix(jacobianMatrix))
+                                   rproblemLevel%Rmatrix(jacobianMatrix),&
+                                   bisExtendedSparsity)
 
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
@@ -1449,7 +1465,8 @@ contains
                                   rsol, rsol0, codire_calcConvectionBuckLev1d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
-                                  rproblemLevel%Rmatrix(jacobianMatrix))
+                                  rproblemLevel%Rmatrix(jacobianMatrix),&
+                                  bisExtendedSparsity)
       end select
       
     case DEFAULT

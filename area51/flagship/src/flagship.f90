@@ -95,6 +95,8 @@ program flagship
     
   end select
   
+  ! Release parameter list
+  call parlst_done(rparlist)
 
   ! Release storage
   call storage_info(.true.)

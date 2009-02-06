@@ -73,21 +73,24 @@
 !#     -> Initializes the solution vector based on the parameter
 !#        settings given by the parameter list
 !#
-!# 8.) codire_outputSolution
+!# 8.) codire_initTargetFunc
+!#     -> Initializes the target functional for the dual problem
+!#
+!# 9.) codire_outputSolution
 !#     -> Outputs the solution vector to file in UCD format
 !#
-!# 9.) codire_outputStatistics
-!#     -> Outputs the application statitics
+!# 10.) codire_outputStatistics
+!#      -> Outputs the application statitics
 !#
-!# 10.) codire_solveTransientPrimal
+!# 11.) codire_solveTransientPrimal
 !#      -> Solves the primal formulation of the time-dependent 
 !#         convection-diffusion-reaction equation.
 !#
-!# 11.) codire_solvePeudoTransientPrimal
+!# 12.) codire_solvePseudoTransientPrimal
 !#      -> Solves the primal formulation of the steady convection-
 !#         diffusion-reaction equation using pseudo time-stepping.
 !#
-!# 12.) codire_solveSteadyStatePrimal
+!# 13.) codire_solveSteadyStatePrimal
 !#      -> Solves the primal formulation of the steady convection-
 !#         diffusion-reaction equation directly
 !#
@@ -199,8 +202,6 @@ contains
     type(t_timer) :: rtimerTotal
 
     ! Parameter file and section names
-    character(LEN=SYS_STRLEN) :: sinputoutputName
-    character(LEN=SYS_STRLEN) :: sbenchmarkName
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
     character(LEN=SYS_STRLEN) :: algorithm
@@ -263,15 +264,12 @@ contains
     if (rtimestep%dfinalTime > 0) then
       
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, 'codire', "benchmark", sbenchmarkName)
-      call parlst_getvalue_string(rparlist, trim(sbenchmarkName), "algorithm", algorithm)
-      call parlst_getvalue_string(rparlist, 'codire', "inputoutput", sinputoutputName)
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName), "indatfile", sindatfileName)
+      call parlst_getvalue_string(rparlist, 'codire', 'algorithm', algorithm)
+      call parlst_getvalue_string(rparlist, 'codire', 'indatfile', sindatfileName)
       
       ! The boundary condition for the primal problem is required for all 
       ! solution strategies so initialize it from the parameter file
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                  "sprimalbdrcondname", sbdrcondName)
+      call parlst_getvalue_string(rparlist, 'codire', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
 
@@ -287,7 +285,7 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call codire_solveTransientPrimal(rappDescriptor, rbdrCondPrimal,&
+        call codire_solveTransientPrimal(rappDescriptor, rparlist, rbdrCondPrimal,&
                                          rproblem, rtimestep, rsolver,&
                                          rsolutionPrimal, rcollection)
         call codire_outputSolution(rparlist, 'codire', rproblem,&
@@ -303,7 +301,7 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call codire_solvePseudoTransientPrimal(rappDescriptor, rbdrCondPrimal,&
+        call codire_solvePseudoTransientPrimal(rappDescriptor, rparlist, rbdrCondPrimal,&
                                                rproblem, rtimestep, rsolver,&
                                                rsolutionPrimal, rcollection)
         call codire_outputSolution(rparlist, 'codire', rproblem,&
@@ -320,7 +318,7 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call codire_solveSteadyStatePrimal(rappDescriptor, rbdrCondPrimal,&
+        call codire_solveSteadyStatePrimal(rappDescriptor, rparlist, rbdrCondPrimal,&
                                            rproblem, rtimestep, rsolver,&
                                            rsolutionPrimal, rcollection)
         call codire_outputSolution(rparlist, 'codire', rproblem,&
@@ -331,15 +329,14 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                    "sdualbdrcondname", sbdrcondName)
+        call parlst_getvalue_string(rparlist, 'codire', 'sdualbdrcondname', sbdrcondName)
         call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
 
-        call codire_solveSteadyStatePrimalDual(rappDescriptor, rbdrCondPrimal,&
-                                               rbdrCondDual, rproblem, rtimestep,&
-                                               rsolver, rsolutionPrimal,&
-                                               rsolutionDual, rcollection)
+        call codire_solveSteadyStatePrimalDual(rappDescriptor, rparlist,&
+                                               rbdrCondPrimal, rbdrCondDual,&
+                                               rproblem, rtimestep, rsolver,&
+                                               rsolutionPrimal, rsolutionDual, rcollection)
         call codire_outputSolution(rparlist, 'codire', rproblem,&
                                    rsolutionPrimal, rsolutionDual, rtimestep%dTime)
 
@@ -357,9 +354,6 @@ contains
 
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
-
-    ! Release parameter list
-    call parlst_done(rparlist)
     
     ! Release solvers
     call solver_releaseTimestep(rtimestep)
@@ -417,8 +411,6 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sbenchmarkName
-    character(LEN=SYS_STRLEN) :: sinputoutputName
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: svelocityName
     character(LEN=SYS_STRLEN) :: sdiffusionName
@@ -431,9 +423,7 @@ contains
 
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "benchmark",   sbenchmarkName)
-    call parlst_getvalue_string(rparlist, ssectionName, "inputoutput", sinputoutputName)
-    call parlst_getvalue_string(rparlist, trim(sinputoutputName), "indatfile", sindatfileName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
 
     ! Initialize function parser
     call fparser_init()
@@ -441,62 +431,42 @@ contains
     call fparser_parseFileForKeyword(sindatfileName, 'defexpr',  FPAR_EXPRESSION)
 
     ! Get application specifig parameters from the parameterlist
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "ndimension", rappDescriptor%ndimension)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "imasstype", rappDescriptor%imasstype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "imassantidiffusion", rappDescriptor%imassantidiffusion)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "ivelocitytype", rappDescriptor%ivelocitytype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "idiffusiontype", rappDescriptor%idiffusiontype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "ireactiontype", rappDescriptor%ireactiontype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "irhstype", rappDescriptor%irhstype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "ieltype", rappDescriptor%ieltype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "imatrixformat", rappDescriptor%imatrixformat)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rappDescriptor%ndimension)
+    call parlst_getvalue_int(rparlist, ssectionName, 'imasstype', rappDescriptor%imasstype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'imassantidiffusion', rappDescriptor%imassantidiffusion)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', rappDescriptor%ivelocitytype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'idiffusiontype', rappDescriptor%idiffusiontype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ireactiontype', rappDescriptor%ireactiontype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', rappDescriptor%irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ieltype', rappDescriptor%ieltype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'imatrixformat', rappDescriptor%imatrixformat)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ijacobianformat', rappDescriptor%ijacobianformat)
 
     
     ! Initialize the function parser for the velocity field if required
     if (rappDescriptor%ivelocitytype .ne. VELOCITY_ZERO) then
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                  "indatfile", sindatfileName)
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                  "svelocityname", svelocityName)
+      call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname', svelocityName)
       call flagship_readParserFromFile(sindatfileName, '['//trim(svelocityName)//']',&
                                        cvariables, rappDescriptor%rfparserVelocityField)
     end if
 
     ! Initialize the function parser for the diffusion tensor if required
     if (rappDescriptor%idiffusiontype .ne. DIFFUSION_ZERO) then
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                  "indatfile", sindatfileName)
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                  "sdiffusionname", sdiffusionName)
+      call parlst_getvalue_string(rparlist, ssectionName, 'sdiffusionname', sdiffusionName)
       call flagship_readParserFromFile(sindatfileName, '['//trim(sdiffusionName)//']',&
                                        cvariables, rappDescriptor%rfparserDiffusionTensor)
     end if
 
     ! Initialize the function parser for the reactive term if required
     if (rappDescriptor%ireactiontype .ne. REACTION_ZERO) then
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                  "indatfile", sindatfileName)
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                  "sreactionname", sreactionName)
+      call parlst_getvalue_string(rparlist, ssectionName, 'sreactionname', sreactionName)
       call flagship_readParserFromFile(sindatfileName, '['//trim(sreactionName)//']',&
                                        cvariables, rappDescriptor%rfparserReaction)
     end if
 
     ! Initialize the function parser for the right-hand side if required
     if (rappDescriptor%irhstype .ne. RHS_ZERO) then
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                  "indatfile", sindatfileName)
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                  "srhsname", srhsName)
+      call parlst_getvalue_string(rparlist, ssectionName, 'srhsname', srhsName)
       call flagship_readParserFromFile(sindatfileName, '['//trim(srhsName)//']',&
                                        cvariables, rappDescriptor%rfparserRHS)
     end if
@@ -543,6 +513,9 @@ contains
                              rappDescriptor%ieltype, .true.)
     call collct_setvalue_int(rcollection, 'imatrixformat',&
                              rappDescriptor%imatrixFormat, .true.)
+    call collct_setvalue_int(rcollection, 'ijacobianformat',&
+                             rappDescriptor%ijacobianFormat, .true.)
+    
 
     ! Add timer structures
     call collct_setvalue_timer(rcollection, 'timerSolution',&
@@ -655,8 +628,8 @@ contains
  
     
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "timestep", stimestepName)
-    call parlst_getvalue_string(rparlist, ssectionName, "solver",   ssolverName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'timestep', stimestepName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'solver',   ssolverName)
 
     ! Initialize time-stepping
     call solver_createTimestep(rparlist, stimestepName, rtimestep)
@@ -709,8 +682,6 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sbenchmarkName
-    character(LEN=SYS_STRLEN) :: sinputoutputName
     character(LEN=SYS_STRLEN) :: sconvectionName
     character(LEN=SYS_STRLEN) :: sdiffusionName
 
@@ -727,18 +698,13 @@ contains
     
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "benchmark",   sbenchmarkName)
-    call parlst_getvalue_string(rparlist, ssectionName, "inputoutput", sinputoutputName)
-    call parlst_getvalue_string(rparlist, ssectionName, "primaldiff",  sdiffusionName)
-    call parlst_getvalue_string(rparlist, ssectionName, "primalconv",  sconvectionName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'diffusionprimal', sdiffusionName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'convectionprimal', sconvectionName)
     
 
-    call parlst_getvalue_int(rparlist, trim(adjustl(sbenchmarkName)),&
-                             "ndimension", rproblemDescriptor%ndimension)
-    call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "trifile", rproblemDescriptor%trifile, '')
-    call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "prmfile", rproblemDescriptor%prmfile, '')
+    call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rproblemDescriptor%ndimension)
+    call parlst_getvalue_string(rparlist, ssectionName, 'trifile', rproblemDescriptor%trifile)
+    call parlst_getvalue_string(rparlist, ssectionName, 'prmfile', rproblemDescriptor%prmfile)
     
     ! Set additional problem descriptor
     rproblemDescriptor%nafcstab      = 2   ! for convective and diffusive stabilization
@@ -750,8 +716,7 @@ contains
     rproblemDescriptor%nvectorBlock  = 1   ! for velocity field
 
     ! Check if quadrilaterals should be converted to triangles
-    call parlst_getvalue_int(rparlist, trim(adjustl(sbenchmarkName)),&
-                             "iconvtotria", iconvToTria, 0)
+    call parlst_getvalue_int(rparlist, ssectionName, 'iconvtotria', iconvToTria, 0)
     if (iconvToTria .eq. 1)&
         rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
                                         + PROBDESC_MSPEC_CONVTRIANGLES   
@@ -1229,8 +1194,6 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sbenchmarkName
-    character(LEN=SYS_STRLEN) :: sinputoutputName
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: ssolutionName
 
@@ -1249,11 +1212,9 @@ contains
     
     
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "benchmark",   sbenchmarkName)
-    call parlst_getvalue_string(rparlist, ssectionName, "inputoutput", sinputoutputName)
-    call parlst_getvalue_string(rparlist, trim(sinputoutputName), "indatfile", sindatfileName)
-    call parlst_getvalue_string(rparlist, trim(sinputoutputName), "ssolutionname", ssolutionName)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName), "isolutiontype", isolutiontype)
+    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'ssolutionname', ssolutionName)
+    call parlst_getvalue_int(rparlist, ssectionName, 'isolutiontype', isolutiontype)
     
     ! Create new solution vector based on the spatial discretisation
     p_rdiscretisation => rproblemLevel%rdiscretisation
@@ -1325,6 +1286,76 @@ contains
 
 !<subroutine>
 
+  subroutine codire_initTargetFunc(rparlist, ssectionName, rproblemLevel, dtime, rvector)
+
+!<description>
+    ! This subroutine initializes the target functional which serves as
+    ! right-hand side vector for the dual problem in the framework of
+    ! goal-oriented error estimation.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
+
+    ! problem level structure
+    type(t_problemLevel), intent(IN) :: rproblemLevel
+
+    ! time for target function evaluation
+    real(DP), intent(IN) :: dtime
+!</input>
+
+!<inputoutput>
+    ! target function vector
+    type(t_vectorBlock), intent(INOUT) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! section names
+    character(LEN=SYS_STRLEN) :: sindatfileName
+    character(LEN=SYS_STRLEN) :: serrorestimatorName
+    character(LEN=SYS_STRLEN) :: stargetfunctionalName
+
+    ! symbolic variable names
+    character(LEN=*), dimension(4), parameter ::&
+                      cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
+
+    ! local variables
+    type(t_fparser) :: rfparser   
+    integer :: itargetfunctionaltype
+    
+
+    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'stargetfunctionalName', stargetfunctionalName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'stargetfunctionalName', stargetfunctionalName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
+    call parlst_getvalue_int(rparlist, trim(serrorestimatorName),&
+                             'itargetfunctionaltype', itargetfunctionaltype)
+    
+    select case(itargetfunctionaltype)
+    case (1)
+      
+      ! Create function parser for target functional
+       call flagship_readParserFromFile(sindatfileName,&
+           '['//trim(stargetfunctionalName)//']', cvariables, rfparser)
+
+    end select
+
+    print *, itargetfunctionaltype
+
+
+
+    stop
+    
+  end subroutine codire_initTargetFunc
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine codire_outputSolution(rparlist, ssectionName, rproblem,&
                                    rsolutionPrimal, rsolutionDual, dtime)
 
@@ -1354,7 +1385,7 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sinputoutputName
+    character(LEN=SYS_STRLEN) :: soutputName
     character(LEN=SYS_STRLEN) :: ucdsolution
 
     ! persistent variable
@@ -1367,9 +1398,9 @@ contains
 
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "inputoutput", sinputoutputName)
-    call parlst_getvalue_string(rparlist, trim(sinputoutputName), "ucdsolution", ucdsolution)
-    call parlst_getvalue_int(rparlist, trim(sinputoutputName), "iformatucd", iformatUCD)
+    call parlst_getvalue_string(rparlist, ssectionName, 'output', soutputName)
+    call parlst_getvalue_string(rparlist, trim(soutputName), 'ucdsolution', ucdsolution)
+    call parlst_getvalue_int(rparlist, trim(soutputName), 'iformatucd', iformatUCD)
 
     ! Initialize the UCD exporter
     call flagship_initUCDexport(rproblem%p_rproblemLevelMax, ucdsolution,&
@@ -1466,9 +1497,9 @@ contains
 
 !<subroutine>
 
-    subroutine codire_solveTransientPrimal(rappDescriptor, rbdrCond, rproblem,&
-                                           rtimestep, rsolver, rsolution,&
-                                           rcollection, rrhs)
+    subroutine codire_solveTransientPrimal(rappDescriptor, rparlist, rbdrCond,&
+                                           rproblem, rtimestep, rsolver,&
+                                           rsolution, rcollection, rrhs)
 
 !<description>
     ! This subroutine solves the transient primal flow problem
@@ -1479,11 +1510,14 @@ contains
 !</description>
 
 !<input>
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
     ! boundary condition structure
     type(t_boundaryCondition), intent(IN) :: rbdrCond
 
     ! OPTIONAL: right-hand side vector
-    type(t_vectorBlock), INTENT(IN), optional :: rrhs
+    type(t_vectorBlock), intent(IN), optional :: rrhs
 !</input>
 
 !<inputoutput>
@@ -1527,30 +1561,17 @@ contains
       case (SV_RK_SCHEME)
         
         ! Adopt explicit Runge-Kutta scheme
-        if (present(rrhs)) then
-          call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep,&
-                                      rsolver, rsolution, codire_calcRHS,&
-                                      codire_setBoundary, rcollection, rrhs)
-        else
-          call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep,&
-                                      rsolver, rsolution, codire_calcRHS,&
-                                      codire_setBoundary, rcollection)
-        end if
+        call tstep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep,&
+                                 rsolver, rsolution, codire_calcRHS,&
+                                 codire_setBoundary, rcollection, rrhs)
         
       case (SV_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
-        if (present(rrhs)) then
-          call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep,&
-                                         rsolver, rsolution, codire_calcResidual,&
-                                         codire_calcJacobian, codire_applyJacobian,&
-                                         codire_setBoundary, rcollection, rrhs)
-        else
-          call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep,&
-                                         rsolver, rsolution, codire_calcResidual,&
-                                         codire_calcJacobian, codire_applyJacobian,&
-                                         codire_setBoundary, rcollection)
-        end if
+        call tstep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep,&
+                                    rsolver, rsolution, codire_calcResidual,&
+                                    codire_calcJacobian, codire_applyJacobian,&
+                                    codire_setBoundary, rcollection, rrhs)
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -1583,9 +1604,9 @@ contains
 
 !<subroutine>
 
-  subroutine codire_solvePseudoTransientPrimal(rappDescriptor, rbdrCond, rproblem,&
-                                               rtimestep, rsolver, rsolution,&
-                                               rcollection, rrhs, rhadapt, rerrorEstimator)
+  subroutine codire_solvePseudoTransientPrimal(rappDescriptor, rparlist, rbdrCond,&
+                                               rproblem, rtimestep, rsolver,&
+                                               rsolution, rcollection, rrhs)
 !<description>
     ! This subroutine solves the pseudo-transient primal flow problem
     !
@@ -1595,11 +1616,14 @@ contains
 !</description>
 
 !<input>
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
     ! boundary condition structure
     type(t_boundaryCondition), intent(IN) :: rbdrCond
 
     ! OPTIONAL: right-hand side vector
-    type(t_vectorBlock), INTENT(IN), optional :: rrhs
+    type(t_vectorBlock), intent(IN), optional :: rrhs
 !</input>
 
 !<inputoutput>
@@ -1620,12 +1644,6 @@ contains
 
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection
-
-    ! OPTIONAL: mesh adaptation structure
-    type(t_hadapt), intent(INOUT), optional :: rhadapt
-
-    ! OPTIONAL: error estimation structure
-    type(t_errorEstimator), intent(INOUT), optional :: rerrorEstimator
 !</inputoutput>
 !</subroutine>
 
@@ -1636,85 +1654,27 @@ contains
     
     ! Adaptation loop
     adaptloop: do iadapt = 0, nadapt
-      
-      ! Reset time stepping algorithm
-      call solver_resetTimestep(rtimestep, .true.)
-      
-      ! Infinite time stepping loop
-      timeloop: do
-        
-        ! Check for user interaction
-        call codire_UserInterface
-        
-        !-----------------------------------------------------------------------
-        ! Advance solution in time
-        !-----------------------------------------------------------------------
-        
-        ! Start time measurement for solution procedure
-        call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
-        
-        ! What time-stepping scheme should be used?
-        select case(rtimestep%ctimestepType)
-          
-        case (SV_RK_SCHEME)
-          
-          ! Adopt explicit Runge-Kutta scheme
-          if (present(rrhs)) then
-            call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep,&
-                                        rsolver, rsolution, codire_calcRHS,&
-                                        codire_setBoundary, rcollection, rrhs)
-          else
-            call timestep_performRKStep(rproblem%p_rproblemLevelMax, rtimestep,&
-                                        rsolver, rsolution, codire_calcRHS,&
-                                        codire_setBoundary, rcollection)
-          end if
-          
-        case (SV_THETA_SCHEME)
-          
-          ! Adopt two-level theta-scheme
-          if (present(rrhs)) then
-            call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep,&
-                                           rsolver, rsolution, codire_calcResidual,&
-                                           codire_calcJacobian, codire_applyJacobian,&
-                                           codire_setBoundary, rcollection, rrhs)
-          else
-            call timestep_performThetaStep(rproblem%p_rproblemLevelMax, rtimestep,&
-                                           rsolver, rsolution, codire_calcResidual,&
-                                           codire_calcJacobian, codire_applyJacobian,&
-                                           codire_setBoundary, rcollection)
-          end if
-          
-        case DEFAULT
-          call output_line('Unsupported time-stepping algorithm!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solvePseudoTransient')
-          call sys_halt()
-        end select
-        
-        ! Stop time measurement for solution procedure
-        call stat_stopTimer(rappDescriptor%rtimerSolution)
-        
-        ! Reached final time, then exit infinite time loop?
-        if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
-        
-        ! Reached steady state limit?
-        if (rtimestep%depsSteady > 0.0_DP) then
 
-          ! Check if steady-state residual exceeds tolerance
-          if (      (rsolver%dfinalDefect < rsolver%dinitialDefect)&
-              .and. ( (iadapt .eq. nadapt)&
-                       .and. (rsolver%dinitialDefect .le. rtimestep%dStep*rtimestep%depsSteady)&
-                       .or.  (rsolver%dinitialDefect .le. rtimestep%dStep*sqrt(rtimestep%depsSteady))&
-                    )&
-             ) exit timeloop
-        end if
-        
-      end do timeloop
+      !-------------------------------------------------------------------------
+      ! Compute the steady-state solution
+      !-------------------------------------------------------------------------
+      
+      ! Start time measurement for solution procedure
+      call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
 
+      call tstep_performPseudoStepping(rproblem%p_rproblemLevelMax, rtimestep, rsolver,&
+                                       rsolution, codire_calcRHS, codire_calcResidual,&
+                                       codire_calcJacobian, codire_applyJacobian,&
+                                       codire_setBoundary, rcollection, rrhs)
+      
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(rappDescriptor%rtimerSolution)
+      
       !-------------------------------------------------------------------------
       ! Perform mesh adaptation
       !-------------------------------------------------------------------------
 
-      if (present(rhadapt)) then
+!      if (present(rhadapt)) then
         
 !!$        ! Perform error estimation?
 !!$        if (present(rerrorEstimator)) then
@@ -1739,8 +1699,12 @@ contains
 !!$        end select
 
         ! Release indicator
-        call lsyssc_releaseVector(rindicator)
-      end if
+ !       call lsyssc_releaseVector(rindicator)
+
+!      end if
+
+      ! Reset time stepping algorithm
+      call solver_resetTimestep(rtimestep, .true.)
       
     end do adaptloop
     
@@ -1750,9 +1714,9 @@ contains
 
 !<subroutine>
 
-  subroutine codire_solveSteadyStatePrimal(rappDescriptor, rbdrCond, rproblem,&
-                                           rtimestep, rsolver, rsolution,&
-                                           rcollection, rrhs)
+  subroutine codire_solveSteadyStatePrimal(rappDescriptor, rparlist, rbdrCond,&
+                                           rproblem, rtimestep, rsolver,&
+                                           rsolution, rcollection, rrhs)
 
 !<description>
     ! This subroutine solves the steady-state primal flow problem
@@ -1763,11 +1727,14 @@ contains
 !</description>
 
 !<input>
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
     ! boundary condition structure
     type(t_boundaryCondition), intent(IN) :: rbdrCond
 
     ! OPTIONAL: right-hand side vector
-    type(t_vectorBlock), INTENT(IN), optional :: rrhs
+    type(t_vectorBlock), intent(IN), optional :: rrhs
 !</input>
 
 !<inputoutput>
@@ -1868,10 +1835,10 @@ contains
                                     rtimestep%dtime, rcollection, nlmin)
 
       ! Solve the primal problem
-      call timestep_performThetaStep(p_rproblemLevel, rtimestep, p_rsolver, rsolution,&
-                                     codire_calcResidual, codire_calcJacobian,&
-                                     codire_applyJacobian, codire_setBoundary,&
-                                     rcollection, rrhs)
+      call tstep_performThetaStep(p_rproblemLevel, rtimestep, p_rsolver, rsolution,&
+                                  codire_calcResidual, codire_calcJacobian,&
+                                  codire_applyJacobian, codire_setBoundary,&
+                                  rcollection, rrhs)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescriptor%rtimerSolution)
@@ -1890,9 +1857,11 @@ contains
 
 !<subroutine>
 
-  subroutine codire_solveSteadyStatePrimalDual(rappDescriptor, rbdrCondPrimal, rbdrCondDual,&
-                                               rproblem, rtimestep, rsolver, rsolutionPrimal,&
-                                               rsolutionDual, rcollection, rrhs, rhadapt)
+  subroutine codire_solveSteadyStatePrimalDual(rappDescriptor, rparlist,&
+                                               rbdrCondPrimal, rbdrCondDual,&
+                                               rproblem, rtimestep, rsolver,&
+                                               rsolutionPrimal, rsolutionDual,&
+                                               rcollection, rrhs)
 
 !<description>
     ! This subroutine solves the steady-state primal flow problem
@@ -1912,12 +1881,15 @@ contains
     type(t_boundaryCondition), intent(IN) :: rbdrCondDual
 
     ! OPTIONAL: right-hand side vector
-    type(t_vectorBlock), INTENT(IN), optional :: rrhs
+    type(t_vectorBlock), intent(IN), optional :: rrhs
 !</input>
 
 !<inputoutput>
     ! application descriptor
     type(t_codire), intent(INOUT) :: rappDescriptor
+
+    ! parameter list
+    type(t_parlist), intent(INOUT) :: rparlist
 
     ! problem structure
     type(t_problem), intent(INOUT) :: rproblem
@@ -1936,9 +1908,6 @@ contains
 
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection
-
-    ! OPTIONAL: mesh adaptation structure
-    type(t_hadapt), intent(INOUT), optional :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -1947,7 +1916,7 @@ contains
 
     ! Vector for the linear target functional
     type(t_vectorBlock) :: rtargetFunc
-
+    
     ! local variables
     integer :: nlmin
 
@@ -1984,10 +1953,10 @@ contains
     call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
 
     ! Solve the primal problem
-    call timestep_performThetaStep(p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
-                                   codire_calcResidual, codire_calcJacobian,&
-                                   codire_applyJacobian, codire_setBoundary,&
-                                   rcollection, rrhs)
+    call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
+                                rsolutionPrimal, codire_calcResidual,&
+                                codire_calcJacobian, codire_applyJacobian,&
+                                codire_setBoundary, rcollection, rrhs)
 
     ! Stop time measurement for solution procedure
     call stat_stopTimer(rappDescriptor%rtimerSolution)
@@ -2001,10 +1970,10 @@ contains
     call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
 
     ! Create dual solution vector
-    call lsysbl_releaseVector(rsolutionDual)
-    call lsysbl_duplicateVector(rsolutionPrimal, rsolutionDual,&
-                                LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
-    call lsysbl_clearVector(rsolutionDual)
+    call lsysbl_createVectorBlock(rsolutionPrimal, rsolutionDual, .true.)
+
+    ! Initialize target functional
+    call codire_initTargetFunc(rparlist, 'codire', p_rproblemLevel, 1.0_DP, rtargetFunc)
 
     ! Stop time measurement for error estimation
     call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
@@ -2029,10 +1998,10 @@ contains
     call collct_setvalue_int(rcollection, 'primaldual', 2, .true.)
 
     ! Solve the dual problem
-    call timestep_performThetaStep(p_rproblemLevel, rtimestep, rsolver, rsolutionDual,&
-                                   codire_calcResidual, codire_calcJacobian,&
-                                   codire_applyJacobian, codire_setBoundary,&
-                                   rcollection, rtargetFunc)
+    call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver, rsolutionDual,&
+                                codire_calcResidual, codire_calcJacobian,&
+                                codire_applyJacobian, codire_setBoundary,&
+                                rcollection, rtargetFunc)
     
     ! Release the target functional
     call lsysbl_releaseVector(rtargetFunc)
@@ -2080,52 +2049,52 @@ contains
       case ('-A','--adaptivity')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "adaptivity", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'adaptivity', trim(adjustl(cbuffer)))
 
       case ('-B','--benchmark')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "benchmark", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'benchmark', trim(adjustl(cbuffer)))
        
       case ('-DC','--dualconv')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "dualconv", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'dualconv', trim(adjustl(cbuffer)))
         
       case ('-DD','--dualdiff')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "dualdiff", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'dualdiff', trim(adjustl(cbuffer)))
 
       case ('-E','--errorest')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "errorest", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'errorest', trim(adjustl(cbuffer)))
         
       case ('-I','--io')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "inputoutput", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'inputoutput', trim(adjustl(cbuffer)))
         
       case ('-PC','--primalconv')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "primalconv", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'primalconv', trim(adjustl(cbuffer)))
         
       case ('-PD','--primaldiff')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "primaldiff", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'primaldiff', trim(adjustl(cbuffer)))
 
       case ('-S','--solver')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "solver", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
         
       case ('-T','--timestep')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "timestep", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
         
       case DEFAULT
         iarg = iarg+1

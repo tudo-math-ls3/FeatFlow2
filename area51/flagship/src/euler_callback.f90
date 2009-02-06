@@ -218,7 +218,7 @@ contains
         end select
         
         
-      case (AFCSTAB_SCALARDISSIPATION)
+      case (DISSIPATION_SCALAR)
 
         ! Assemble divergence operator with scalar dissipation
         
@@ -242,7 +242,7 @@ contains
         end select
 
 
-      case (AFCSTAB_TENSORDISSIPATION)
+      case (DISSIPATION_TENSOR)
         
         ! Assemble divergence operator with tensorial dissipation
         
@@ -305,7 +305,7 @@ contains
         end select
 
 
-      case (AFCSTAB_SCALARDISSIPATION)             
+      case (DISSIPATION_SCALAR)
         
         ! Assemble divergence operator with scalar dissipation
         
@@ -329,7 +329,7 @@ contains
         end select
 
         
-      case (AFCSTAB_TENSORDISSIPATION)
+      case (DISSIPATION_TENSOR)
 
         ! Assemble divergence operator with tensorial dissipation
         
@@ -647,7 +647,7 @@ contains
     type(t_timer), pointer :: rtimer
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: consistentMassMatrix, lumpedMassMatrix
-    integer :: inviscidAFC, imasstype
+    integer :: inviscidAFC, imasstype, idissipationtype
     integer :: iblock
 
 
@@ -703,9 +703,11 @@ contains
         !
         !   $ res = dt*L(U^n)*U^n $
 
-        select case(rproblemLevel%Rafcstab(inviscidAFC)%idissipation)
+        idissipationtype = collct_getvalue_int(rcollection, 'idissipationtype')
 
-        case (AFCSTAB_SCALARDISSIPATION)
+        select case(idissipationtype)
+
+        case (DISSIPATION_SCALAR)
 
           ! Assemble divergence operator with scalar dissipation
 
@@ -721,7 +723,7 @@ contains
                                      rsol, euler_calcFluxScalarDiss3d, rtimestep%dStep, .true., rres)
           end select
 
-        case (AFCSTAB_TENSORDISSIPATION)
+        case (DISSIPATION_TENSOR)
 
           ! Assemble divergence operator with tensorial dissipation
           
@@ -903,9 +905,11 @@ contains
         !
         !   $ res = res + dt*theta*L(U^{(m)})*U^(m) $
 
-        select case(rproblemLevel%Rafcstab(inviscidAFC)%idissipation)
+        idissipationtype = collct_getvalue_int(rcollection, 'idissipationtype')
 
-        case (AFCSTAB_SCALARDISSIPATION)
+        select case(idissipationtype)
+
+        case (DISSIPATION_SCALAR)
 
 
 
@@ -924,7 +928,7 @@ contains
                                      rtimestep%theta*rtimestep%dStep, .false., rres)
           end select
 
-        case (AFCSTAB_TENSORDISSIPATION)
+        case (DISSIPATION_TENSOR)
 
           ! Assemble divergence operator with tensorial dissipation
 
@@ -1033,7 +1037,7 @@ contains
     real(DP) :: dscale
     integer :: lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
-    integer :: imasstype,inviscidAFC
+    integer :: imasstype, inviscidAFC, idissipationtype
     integer :: iblock
 
     ! Start time measurement for residual/rhs evaluation
@@ -1092,6 +1096,12 @@ contains
     
     inviscidAFC = collct_getvalue_int(rcollection, 'inviscidAFC')
 
+    ! Compute the scaling parameter
+    !
+    !   $ weight*(1-theta)*dt
+
+    dscale = rtimestep%DmultistepWeights(istep)*(1.0_DP-rtimestep%theta)*rtimestep%dStep
+
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)      
       
     case (AFCSTAB_GALERKIN)
@@ -1100,8 +1110,6 @@ contains
       !
       !   $ rhs = M*U+weight*(1-theta)*dt*K(U)*U
       
-      dscale = rtimestep%DmultistepWeights(istep)*(1.0_DP-rtimestep%theta)*rtimestep%dStep
-
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildResidual(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
@@ -1122,11 +1130,11 @@ contains
       !
       !   $ rhs = M*U+weight*(1-theta)*dt*L(U)*U
       
-      dscale = rtimestep%DmultistepWeights(istep)*(1.0_DP-rtimestep%theta)*rtimestep%dStep
+      idissipationtype = collct_getvalue_int(rcollection, 'idissipationtype')
 
-      select case(rproblemLevel%Rafcstab(inviscidAFC)%idissipation)
+      select case(idissipationtype)
         
-      case (AFCSTAB_SCALARDISSIPATION)
+      case (DISSIPATION_SCALAR)
 
         ! Assemble divergence operator with scalar dissipation
 
@@ -1142,7 +1150,7 @@ contains
                                    rsol, euler_calcFluxScalarDiss3d, dscale, .false., rrhs)
         end select
 
-      case (AFCSTAB_TENSORDISSIPATION)
+      case (DISSIPATION_TENSOR)
 
         ! Assemble divergence operator with tensorial dissipation
 
@@ -1171,8 +1179,6 @@ contains
       ! Compute the low-order right-hand side + FEM-TVD stabilization
       !
       !   $ rhs = M*U+weight*(1-theta)*dt*L(U)*U + F(U)
-
-      dscale = rtimestep%DmultistepWeights(istep)*(1.0_DP-rtimestep%theta)*rtimestep%dStep
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)

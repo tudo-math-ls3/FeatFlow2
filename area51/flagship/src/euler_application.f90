@@ -277,9 +277,6 @@ contains
 
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
-
-    ! Release parameter list
-    call parlst_done(rparlist)
     
     ! Release solvers
     call solver_releaseTimestep(rtimestep)
@@ -359,6 +356,8 @@ contains
     call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
                              "imassantidiffusion", rappDescriptor%imassantidiffusion)
     call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
+                             "idissipationtype", rappDescriptor%idissipationtype)
+    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
                              "icoupled", rappDescriptor%icoupled)
     call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
                              "iprecond", rappDescriptor%iprecond)
@@ -400,6 +399,8 @@ contains
                              rappDescriptor%imasstype, .true.)
     call collct_setvalue_int(rcollection, 'imassantidiffusion',&
                              rappDescriptor%imassantidiffusion, .true.)
+    call collct_setvalue_int(rcollection, 'idissipationtype',&
+                             rappDescriptor%idissipationtype, .true.)
     call collct_setvalue_int(rcollection, 'icoupled',&
                              rappDescriptor%icoupled, .true.)
     call collct_setvalue_int(rcollection, 'iprecond',&

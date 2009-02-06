@@ -17,39 +17,22 @@ application = codire
 [Codire]
 ################################################################################
 
-# Section name of the benchmark configuration
-benchmark = Benchmark
+# file which contains the application specific data
+indatfile = data/codire/2d/donut.indat
 
-# Section name of the input and output configuration
-inputoutput = InputOutput
+# section name of boundary condition for primal problem
+sprimalbdrcondname = boundary_conditions_primal
 
-# Section name of the primal convection stabilization
-primalconv = Convection
+# section name of boundary condition for dual problem
+sdualbdrcondname = boundary_conditions_dual
 
-# Section name of the primal diffusion stabilization
-primaldiff = Diffusion
-
-# Section name of the time-stepping algorithm
-timestep = Timestepping
-
-# Section name of the top-level solver
-solver = FullMultigridSolver
-
-# Section name of the adaptation configuration
-adaptivity = Adaptivity
-
-# Section name of the error estimation configuration
-errorest = ErrorEstimator
-
-################################################################################
-[Benchmark]
-################################################################################
-
-# spatial dimension
-ndimension  = 2
+# number of spatial dimensions
+ndimension = 2
 
 # solution algorithm
 algorithm = stationary_primaldual
+
+#-------------------------------------------------------------------------------
 
 # type of mass matrix
 # 0 = no mass matrix
@@ -71,6 +54,9 @@ imassantidiffusion = 1
 # 6 = Burgers' equation in 2D
 ivelocitytype = 2
 
+# section name of velocity field
+svelocityname = velocityfield
+
 # type of flow diffusion
 # 0 = zero diffusion
 # 1 = isotropic diffusion
@@ -78,21 +64,50 @@ ivelocitytype = 2
 # 3 = variable diffusion
 idiffusiontype = 0
 
+# section name of diffusion tensor
+sdiffusionname = 
+
 # type of flow reaction
 # 0 = zero reactive term
 # 1 = analytical initial solution
 ireactiontype = 0
+
+# section name of reactive term
+sreactionname = 
 
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
 irhstype = 0
 
+# section name of right-hand side vector
+srhsname =
+
 # type of initial solution profile
 # 0 = zero initial solution
 # 1 = analytical initial solution
 # 2 = PGM image
 isolutiontype = 1
+
+# section name of initial solution
+ssolutionname = initial_solution
+
+# type of exact solution profile
+# 0 = no exact solution available
+# 1 = analytical initial solution
+# 2 = PGM image
+iexactsolutiontype = 1
+
+# section name of exact solution
+sexactsolutionname = exact_solution
+
+#-------------------------------------------------------------------------------
+
+# file which contains the boundary parametrization
+prmfile = grids/2d/rect_2x1.prm
+
+# file which contains the triangulation
+trifile = grids/2d/rect_2x1.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -111,49 +126,70 @@ iconvToTria = 0
 # 9 = matrix format 9
 imatrixformat = 9
 
-# number of pre-adaptation steps
-npreadapt = 0
+# type of Jacobian matrix
+# 0 = standard sparsity pattern
+# 1 = extended sparsity pattern
+ijacobianformat = 1
 
-# number of adaptation steps
-nadapt = 5
+#-------------------------------------------------------------------------------
+
+# section name of the primal convection stabilization
+convectionPrimal = Convection
+
+# section name of the dual convection stabilization
+convectionDual = Convection
+
+# section name of the primal diffusion stabilization
+diffusionPrimal = Diffusion
+
+# section name of the dual diffusion stabilization
+diffusionDual = Diffusion
+
+# section name of the time-stepping algorithm
+timestep = Timestepping
+
+# section name of the top-level solver
+solver = FullMultigridSolver
+
+# section name of the output configuration
+output = Output
+
+# section name of the adaptation configuration
+adaptivity = Adaptivity
+
+# section name of the error estimation configuration
+errorestimator = ErrorEstimator
 
 
 ################################################################################
-[InputOutput]
+[Convection]
 ################################################################################
 
-# file which contains the boundary parametrization
-prmfile = grids/2d/rect_2x1.prm
+# type of spatial stabilization: 
+#  0 = no stabilization (Galerkin)
+#  1 = discrete upwinding
+# 10 = semi-impl. FEM-FCT
+# 11 = semi-expl. FEM-FCT
+# 12 = linearized FEM-FCT
+# 20 = FEM-TVD
+# 21 = FEM-GP
+istabilisation = 20
 
-# file which contains the triangulation
-trifile = grids/2d/rect_2x1.tri
 
-# file which contains the application specific data
-indatfile = data/codire/2d/donut.indat
+################################################################################
+[Diffusion]
+################################################################################
 
-# section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+# type of spatial stabilization: 
+#  0 = no stabilization (Galerkin)
+#  2 = maximum principle preservation
+# 30 = symmetric limiting
+istabilisation = 0
 
-# section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
 
-# section name of velocity field
-svelocityname = velocityfield
-
-# section name of diffusion tensor
-sdiffusionname = 
-
-# section name of reactive term
-sreactionname = 
-
-# section name of right-hand side vector
-srhsname =
-
-# section name of initial solution
-ssolutionname = initial_solution
-
-# section name of exact solution
-sexactsolutionname = exact_solution
+################################################################################
+[Ouput]
+################################################################################
 
 # type of UCD output format
 # 0 = no output
@@ -177,16 +213,25 @@ ucderror = out/donut_error
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, errors; =2, errors+warnings;
-# =3, information; =4, verbose output; >9, file output
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 2
 
 # type of time-stepping algorithm
-# =5, two-level theta-scheme; =6, explicit Runge-Kutta scheme; =7, full MG
+# 5 = two-level theta-scheme
+# 6 = explicit Runge-Kutta scheme
+# 7 = full MG
 ctimestepType = 5
 
 # norm to use for solution variation checking
-# =0, Euclidian norm; =1, L1-norm; =2, L2-norm; =3, MAX-norm
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1].
@@ -233,45 +278,17 @@ depsSteady = 0.0
 
 
 ################################################################################
-[Convection]
-################################################################################
-
-# type of spatial stabilization: 
-# =0, no stabilization (Galerkin); =1, discrete upwinding;
-# =10, semi-impl. FEM-FCT; =11 semi-expl. FEM-FCT;
-# =12, linearized FEM-FCT;
-# =20, FEM-TVD; =21, FEM-GP;
-istabilisation = 20
-
-# mass matrix: 
-# =0, use row-sum lumped mass matrix; =1, use consistent mass matrix
-imass = 0
-
-# extend Jacobian matrix
-iextendedJacobian = 1
-
-
-################################################################################
-[Diffusion]
-################################################################################
-
-# type of spatial stabilization: 
-# =0, no stabilization (Galerkin); =2, maximum principle preservation;
-# =30, symmetric limiting
-istabilisation = 0
-
-# extend Jacobian matrix
-iextendedJacobian = 0
-
-
-################################################################################
 [FullMultigridSolver]
  csolverType = 7
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, errors; =2, errors+warnings;
-# =3, information; =4, verbose output; >9, file output
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 0
 
 # minimum multigrid level number
@@ -281,7 +298,10 @@ nlmin = 4
 nlmax = 4
 
 # type of multigrid cycle
-# =0, F-cylce; =1, V-cycle; =2, W-cycle, =3,=4,=5, corresponding saw tooth variants
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 =  corresponding saw tooth variants
 icycle = 0
 
 # minimum number of multigrid steps
@@ -291,7 +311,8 @@ ilmin = 1
 ilmax = 1
 
 # nonlinear subsolver
-# =1 nonlinear single-grid solver, =3 nonlinear multigrid solver
+# 1 = nonlinear single-grid solver
+# 3 = nonlinear multigrid solver
 isolver = 1
 
 # name of the subsolver
@@ -304,12 +325,19 @@ ssolvername = NonlinearSolver
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, errors; =2, errors+warnings;
-# =3, information; =4, verbose output; >9, file output
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
-# =0, Euclidian norm; =1, L1-norm; =2, L2-norm; =3, MAX-norm
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 iresNorm = 0
 
 # minimum multigrid level number
@@ -326,11 +354,15 @@ ilmin = 1
 ilmax = 1
 
 # type of multigrid cycle
-# =0, F-cylce; =1, V-cycle; =2, W-cycle, =3,=4,=5, corresponding saw tooth variants
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 =  corresponding saw tooth variants
 icycle = 1
 
 # nonlinear coarse grid solver
-# =1, nonlinear single-grid solver, =3, nonlinear multigrid solver
+# 1 = nonlinear single-grid solver
+# 3 = nonlinear multigrid solver
 isolver = 1
 
 # name of nonlinear coarse grid solver
@@ -375,12 +407,19 @@ depsStag = 0.0
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, errors; =2, errors+warnings;
-# =3, information; =4, verbose output; >9, file output
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 4
 
 # norm to use for defect checking
-# =0, Euclidian norm; =1, L1-norm; =2, L2-norm; =3, MAX-norm
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 iresNorm = 0
 
 # minimum number of nonlinear steps
@@ -390,27 +429,33 @@ nminIterations = 1
 nmaxIterations = 1000
 
 # preconditioner for the nonlinear solver
-# =1, block-diagonal; =2, defect-correction; =3, algebraic Newton
+# 1 = block-diagonal preconditioner
+# 2 = defect-correction algorithm
+# 3 = algebraic Newton algorithm
 iprecond = 3
 
 # nonlinear solver
-# =101, fixed-point iteration
-# =102, predictor-corrector fixed-point iteration
+# 101 = fixed-point iteration
+# 102 = predictor-corrector fixed-point iteration
 isolver = 101
 
 # strategy for choosing the perturbation parameter in Newton's method
-# =1, NITSOL; =2, SQRT(EPS); otherwise, user-defined value
+# 1 = NITSOL
+# 2 = SQRT(EPS)
+# otherwise, user-defined value
 dperturbationStrategy = 2
 
 # strategy for choosing the forcing term in Newton's method
-# =1, choice 1 by Eisenstat/Walker; =2, choice 2 by Eisenstat/Walker;
-# =3, choice by Brown/Saad; =4, choice by Dembo/Steihaug; 
+# 1 = choice 1 by Eisenstat/Walker
+# 2 = choice 2 by Eisenstat/Walker
+# 3 = choice by Brown/Saad
+# 4 = choice by Dembo/Steihaug
 # otherwise, user-defined fixed value
 dforcingStrategy = 1e-1
 
 # check sufficient decrease condition in globalization
-# =0, apply Newton increment without globalization;
-# =1, check sufficient decrease condition and perform backtracking if required
+# 0 = apply Newton increment without globalization
+# 1 = check sufficient decrease condition and perform backtracking if required
 icheckSufficientDecrease = 1
 
 # maximum number of backtracking steps
@@ -441,12 +486,19 @@ ssolvername = LinearSolver
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, errors; =2, errors+warnings;
-# =3, information; =4, verbose output; >9, file output
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
-# =0, Euclidian norm; =1, L1-norm; =2, L2-norm; =3, MAX-norm
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 iresNorm = 0
 
 # minimum multigrid level number
@@ -463,18 +515,22 @@ ilmin = 1
 ilmax = 100
 
 # type of multigrid cycle
-# =0, F-cylce; =1, V-cycle; =2, W-cycle, =3,=4,=5, corresponding saw tooth variants
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 =  corresponding saw tooth variants
 icycle = 1
 
 # linear coarse grid solver
-# =2 linear single-grid solver
+# 2 = linear single-grid solver
 isolver = 2
 
 # name of linear coarse grid solver
 ssolvername = LinearSolver
 
 # smoother for the linear multigrid solver
-# =2, linear single-grid solver, =4, linear multigrid solver
+# 2 = linear single-grid solver
+# 4 = linear multigrid solver
 ismoother = 2
 
 # name of smoother
@@ -512,7 +568,12 @@ depsStag = 0.0
 ################################################################################
 
 # smoother for the linear multigrid solver
-# =2, Jacobi; =4, SOR; =5, SSOR; =7, BiCGSTAB; =8, FGMRES; =50, ILU
+#  2 = Jacobi
+#  4 = SOR
+#  5 = SSOR
+#  7 = BiCGSTAB
+#  8 = FGMRES
+# 50 = ILU
 isolver = 4
 
 # dimension of the Krylov subspace for FGMRES method
@@ -537,12 +598,19 @@ sprecondName = LinearPrecond
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, errors; =2, errors+warnings;
-# =3, information; =4, verbose output; >9, file output
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 2
 
 # norm to use for defect checking
-# =0, Euclidian norm; =1, L1-norm; =2, L2-norm; =3, MAX-norm
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 iresNorm = 0
 
 # minimum number of linear steps
@@ -552,7 +620,12 @@ nminIterations = 1
 nmaxIterations = 100
 
 # type of linear solver
-# =2, Jacobi; =4, SOR; =5, SSOR; =7, BiCGSTAB; =8, FGMRES; =11, UMFPACK4
+#  2 = Jacobi
+#  4 = SOR
+#  5 = SSOR
+#  7 = BiCGSTAB
+#  8 = FGMRES
+# 11 = UMFPACK4
 isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
@@ -580,7 +653,10 @@ sprecondName = LinearPrecond
 ################################################################################
 
 # preconditioner for the linear single-grid solver
-# =2, Jacobi; =4, SOR; 5=, SSOR; =50, ILU
+#  2 = Jacobi
+#  4 = SOR
+#  5 = SSOR
+# 50 = ILU
 isolver = 50
 
 # tolerance of (M)ILU-preconditioner
@@ -596,6 +672,13 @@ domega = 1.0
 ################################################################################
 [Adaptivity]
 ################################################################################
+
+# number of pre-adaptation steps
+npreadapt = 0
+
+# number of adaptation steps
+nadapt = 5
+
 # time for grid adaptivity
 dtimeadapt = 0.0
 
@@ -620,16 +703,30 @@ dcoarseningtolerance = 1e-8
 ################################################################################
 
 # type of error estimator
-# =1, L2-projection, =2, node-based SPR, =3, element-based SPR,
-# =4, face-based SPR, =5, limited averaging,
-# =6, first-difference indicator, =7, second-difference indicator
+# 1 = L2-projection
+# 2 = node-based SPR
+# 3 = element-based SPR
+# 4 = face-based SPR
+# 5 = limited averaging
+# 6 = first-difference indicator
+# 7 = second-difference indicator
+# 8 = goal-oriented estimator
 ierrorestimator = 3
 
+# type of target functional
+# 1 = volume integral
+itargetfunctionaltype = 1
+
+# section name of target functional
+stargetfunctionalname = targetfunctional
+
 # type or grid indicator
-# =0, as is, =1, equidistribution, =2, logarithmic equidistribution
+# 0 = as is
+# 1 = equidistribution
+# 2 = logarithmic equidistribution
 igridindicator = 1
 
-# noise filter used as weight for the mean
+# noise filter used as weight for the mean value
 dnoisefilter = 0.01
 
 # absolute noise filter
