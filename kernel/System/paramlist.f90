@@ -930,9 +930,8 @@ contains
   ! ***************************************************************************
   
 !<subroutine>
-  subroutine parlst_getvalue_string_indir (rsection, &
-                                           sparameter, svalue, sdefault, &
-                                           isubstring)
+  subroutine parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                           sdefault, isubstring)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
@@ -945,7 +944,7 @@ contains
   ! behind the '=' sign in the line of the parameter, isubstring>0 returns
   ! the array-entry in the lines below the parameter.
   !
-  ! When ommitting isubstring, the value directly behind the '=' sign
+  ! When omitting isubstring, the value directly behind the '=' sign
   ! is returned.
   
 !</description>
@@ -958,10 +957,10 @@ contains
   ! The parameter name.
   character(LEN=*), intent(IN) :: sparameter
 
-  ! Optional: A default value
+  ! OPTIONAL: A default value
   character(LEN=*), intent(IN), optional :: sdefault
   
-  ! Optional: The number of the substring to be returned.
+  ! OPTIONAL: The number of the substring to be returned.
   ! =0: returns the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns substring isubstring.
@@ -1021,15 +1020,15 @@ contains
   ! ***************************************************************************
   
 !<subroutine>
-  subroutine parlst_getvalue_string_fetch (rsection, &
-                                           iparameter, svalue, bexists,&
-                                           isubstring)
+  subroutine parlst_getvalue_string_fetch (rsection, iparameter, svalue,&
+                                           bexists, isubstring)
 !<description>
   
   ! Returns the value of a parameter in the section rsection.
   ! iparameter specifies the number of the parameter in section rsection.
   ! If bexists does not appear, an error is thrown if a nonexisting
   ! parameter is accessed.
+  !
   ! If bexists is given, it will be set to TRUE if the parameter number
   ! iparameter exists, otherwise it will be set to FALSE and svalue=''.
   !  
@@ -1039,7 +1038,7 @@ contains
   ! behind the '=' sign in the line of the parameter, isubstring>0 returns
   ! the array-entry in the lines below the parameter.
   !
-  ! When ommitting isubstring, the value directly behind the '=' sign
+  ! When omitting isubstring, the value directly behind the '=' sign
   ! is returned.
   
 !</description>
@@ -1052,7 +1051,7 @@ contains
   ! The number of the parameter.
   integer, intent(IN) :: iparameter
 
-  ! Optional: The number of the substring to be returned.
+  ! OPTIONAL: The number of the substring to be returned.
   ! =0: returns the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns substring isubstring.
@@ -1065,7 +1064,7 @@ contains
   ! The value of the parameter
   character(LEN=*), intent(OUT) :: svalue
   
-  ! Optional: Parameter existance check
+  ! OPTIONAL: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
   logical, intent(OUT), optional :: bexists
   
@@ -1128,7 +1127,7 @@ contains
   ! behind the '=' sign in the line of the parameter, isubstring>0 returns
   ! the array-entry in the lines below the parameter.
   !
-  ! When ommitting isubstring, the value directly behind the '=' sign
+  ! When omitting isubstring, the value directly behind the '=' sign
   ! is returned.
   
 !</description>
@@ -1144,10 +1143,10 @@ contains
   ! The parameter name.
   character(LEN=*), intent(IN) :: sparameter
 
-  ! Optional: A default value
+  ! OPTIONAL: A default value
   character(LEN=*), intent(IN), optional :: sdefault
   
-  ! Optional: The number of the substring to be returned.
+  ! OPTIONAL: The number of the substring to be returned.
   ! =0: returns the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns substring isubstring.
@@ -1196,12 +1195,22 @@ contains
   ! ***************************************************************************
   
 !<subroutine>
-  subroutine parlst_getvalue_single_indir (rsection, sparameter, fvalue, fdefault)
+  subroutine parlst_getvalue_single_indir (rsection, sparameter, fvalue, &
+                                           fdefault, iarrayindex)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
   ! If the value does not exist, idefault is returned.
   ! If idefault is not given, an error will be thrown.
+  !
+  ! If the value is an array of singles, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the single to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
   
 !</description>
   
@@ -1213,9 +1222,15 @@ contains
   ! The parameter name.
   character(LEN=*), intent(IN) :: sparameter
 
-  ! Optional: A default value
+  ! OPTIONAL: A default value
   real(SP), intent(IN), optional :: fdefault
-  
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(IN), optional :: iarrayindex
+
 !</input>
   
 !<output>
@@ -1233,9 +1248,11 @@ contains
   ! Call the string routine, perform a conversion afterwards.
   if (present(fdefault)) then
     write (sdefault,'(E17.10E2)') fdefault
-    call parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       sdefault, iarrayindex)
   else
-    call parlst_getvalue_string_indir (rsection, sparameter, svalue)
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       isubstring=iarrayindex)
   end if
 
   fvalue = sys_Str2Single(svalue,'(E17.10E2)')
@@ -1246,17 +1263,28 @@ contains
   
 !<subroutine>
   
-  subroutine parlst_getvalue_single_fetch (rsection, iparameter, fvalue, bexists)
+  subroutine parlst_getvalue_single_fetch (rsection, iparameter, fvalue, &
+                                           bexists, iarrayindex)
 
 !<description>
   
   ! Returns the value of a parameter in the section rsection.
   ! iparameter specifies the number of the parameter in section rsection.
+  !
   ! If bexists does not appear, an error is thrown if a nonexisting
   ! parameter is accessed.
   ! If bexists is given, it will be set to TRUE if the parameter number
   ! iparameter exists, otherwise it will be set to FALSE and ivalue=0.
-  
+  !
+  ! If the value is an array of singles, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the single to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
 !</description>
   
 !<input>
@@ -1266,6 +1294,12 @@ contains
 
   ! The number of the parameter.
   integer, intent(IN) :: iparameter
+  
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(IN), optional :: iarrayindex
 
 !</input>
   
@@ -1274,7 +1308,7 @@ contains
   ! The value of the parameter
   real(SP), intent(OUT) :: fvalue
   
-  ! Optional: Parameter existance check
+  ! OPTIONAL: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
   logical, intent(OUT), optional :: bexists
   
@@ -1286,8 +1320,8 @@ contains
   character (LEN=PARLST_MLDATA) :: svalue
   
   svalue = '0.0E0'
-  call parlst_getvalue_string_fetch (rsection, &
-                                     iparameter, svalue, bexists)
+  call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
+                                     bexists, iarrayindex)
   
   fvalue = sys_Str2Single(svalue,'(E17.10E2)')
   
@@ -1297,13 +1331,22 @@ contains
   
 !<subroutine>
   subroutine parlst_getvalue_single_direct (rparlist, ssectionName, &
-                                            sparameter, fvalue, fdefault)
+                                            sparameter, fvalue, fdefault,&
+                                            iarrayindex)
 !<description>
   
-  ! Returns the value of a parameter in the section ssection.
-  ! If the value does not exist, ddefault is returned.
-  ! If ddefault is not given, an error will be thrown.
-  
+  ! Returns the value of a parameter in the section ssection. If the
+  ! value does not exist, ddefault is returned.  If fdefault is not
+  ! given, an error will be thrown.
+  !
+  ! If the value is an array of singles, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the single to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
 !</description>
   
 !<input>
@@ -1317,9 +1360,15 @@ contains
   ! The parameter name.
   character(LEN=*), intent(IN) :: sparameter
 
-  ! Optional: A default value
+  ! OPTIONAL: A default value
   real(SP), intent(IN), optional :: fdefault
   
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(IN), optional :: iarrayindex
+
 !</input>
   
 !<output>
@@ -1338,10 +1387,12 @@ contains
   if (present(fdefault)) then
     write (sdefault,'(E17.10E2)') fdefault
     call parlst_getvalue_string_direct (rparlist, ssectionName, &
-                                        sparameter, svalue, sdefault)
+                                        sparameter, svalue, sdefault, &
+                                        iarrayindex)
   else
     call parlst_getvalue_string_direct (rparlist, ssectionName, &
-                                        sparameter, svalue)
+                                        sparameter, svalue, &
+                                        isubstring=iarrayindex)
   end if
   
   fvalue = sys_Str2Single(svalue,'(E17.10E2)')
@@ -1351,12 +1402,22 @@ contains
   ! ***************************************************************************
   
 !<subroutine>
-  subroutine parlst_getvalue_double_indir (rsection, sparameter, dvalue, ddefault)
+  subroutine parlst_getvalue_double_indir (rsection, sparameter, dvalue, &
+                                           ddefault, iarrayindex)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
   ! If the value does not exist, idefault is returned.
   ! If idefault is not given, an error will be thrown.
+  !
+  ! If the value is an array of doubles, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the double to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
   
 !</description>
   
@@ -1368,9 +1429,15 @@ contains
   ! The parameter name.
   character(LEN=*), intent(IN) :: sparameter
 
-  ! Optional: A default value
+  ! OPTIONAL: A default value
   real(DP), intent(IN), optional :: ddefault
   
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(IN), optional :: iarrayindex
+
 !</input>
   
 !<output>
@@ -1388,9 +1455,11 @@ contains
   ! Call the string routine, perform a conversion afterwards.
   if (present(ddefault)) then
     write (sdefault,'(E27.19E3)') ddefault
-    call parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       sdefault, iarrayindex)
   else
-    call parlst_getvalue_string_indir (rsection, sparameter, svalue)
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       isubstring=iarrayindex)
   end if
 
   dvalue = sys_Str2Double(svalue,'(E27.19E3)')
@@ -1401,16 +1470,27 @@ contains
   
 !<subroutine>
   
-  subroutine parlst_getvalue_double_fetch (rsection, iparameter, dvalue, bexists)
+  subroutine parlst_getvalue_double_fetch (rsection, iparameter, dvalue, &
+                                           bexists, iarrayindex)
 
 !<description>
   
   ! Returns the value of a parameter in the section rsection.
   ! iparameter specifies the number of the parameter in section rsection.
+  !
   ! If bexists does not appear, an error is thrown if a nonexisting
   ! parameter is accessed.
   ! If bexists is given, it will be set to TRUE if the parameter number
   ! iparameter exists, otherwise it will be set to FALSE and ivalue=0.
+  !
+  ! If the value is an array of doubles, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the double to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.  
   
 !</description>
   
@@ -1422,6 +1502,12 @@ contains
   ! The number of the parameter.
   integer, intent(IN) :: iparameter
 
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(IN), optional :: iarrayindex
+
 !</input>
   
 !<output>
@@ -1429,7 +1515,7 @@ contains
   ! The value of the parameter
   real(DP), intent(OUT) :: dvalue
   
-  ! Optional: Parameter existance check
+  ! OPTIONAL: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
   logical, intent(OUT), optional :: bexists
   
@@ -1441,8 +1527,8 @@ contains
   character (LEN=PARLST_MLDATA) :: svalue
   
   svalue = '0.0E0'
-  call parlst_getvalue_string_fetch (rsection, &
-                                     iparameter, svalue, bexists)
+  call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
+                                     bexists, iarrayindex)
   
   dvalue = sys_Str2Double(svalue,'(E27.19E3)')
   
@@ -1452,13 +1538,23 @@ contains
   
 !<subroutine>
   subroutine parlst_getvalue_double_direct (rparlist, ssectionName, &
-                                            sparameter, dvalue, ddefault)
+                                            sparameter, dvalue, ddefault,&
+                                            iarrayindex)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
   ! If the value does not exist, ddefault is returned.
   ! If ddefault is not given, an error will be thrown.
-  
+  !
+  ! If the value is an array of doubles, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the double to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
 !</description>
   
 !<input>
@@ -1472,9 +1568,15 @@ contains
   ! The parameter name.
   character(LEN=*), intent(IN) :: sparameter
 
-  ! Optional: A default value
+  ! OPTIONAL: A default value
   real(DP), intent(IN), optional :: ddefault
-  
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(IN), optional :: iarrayindex
+
 !</input>
   
 !<output>
@@ -1493,10 +1595,12 @@ contains
   if (present(ddefault)) then
     write (sdefault,'(E27.19E3)') ddefault
     call parlst_getvalue_string_direct (rparlist, ssectionName, &
-                                        sparameter, svalue, sdefault)
+                                        sparameter, svalue, sdefault, &
+                                        iarrayindex)
   else
     call parlst_getvalue_string_direct (rparlist, ssectionName, &
-                                        sparameter, svalue)
+                                        sparameter, svalue, &
+                                        isubstring=iarrayindex)
   end if
   
   dvalue = sys_Str2Double(svalue,'(E27.19E3)')
@@ -1506,13 +1610,22 @@ contains
   ! ***************************************************************************
   
 !<subroutine>
-  subroutine parlst_getvalue_int_indir (rsection, sparameter, ivalue, idefault)
+  subroutine parlst_getvalue_int_indir (rsection, sparameter, ivalue, &
+                                        idefault, iarrayindex)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
   ! If the value does not exist, idefault is returned.
   ! If idefault is not given, an error will be thrown.
-  
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
 !</description>
   
 !<input>
@@ -1523,9 +1636,15 @@ contains
   ! The parameter name.
   character(LEN=*), intent(IN) :: sparameter
 
-  ! Optional: A default value
- integer, intent(IN), optional :: idefault
+  ! OPTIONAL: A default value
+  integer, intent(IN), optional :: idefault
   
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(IN), optional :: iarrayindex
+
 !</input>
   
 !<output>
@@ -1543,9 +1662,11 @@ contains
   ! Call the string routine, perform a conversion afterwards.
   if (present(idefault)) then
     write (sdefault,*) idefault
-    call parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       sdefault, iarrayindex)
   else
-    call parlst_getvalue_string_indir (rsection, sparameter, svalue)
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       isubstring=iarrayindex)
   end if
   
   read(svalue,*) ivalue
@@ -1555,15 +1676,26 @@ contains
   ! ***************************************************************************
   
 !<subroutine>
-  subroutine parlst_getvalue_int_fetch (rsection, iparameter, ivalue, bexists)
+  subroutine parlst_getvalue_int_fetch (rsection, iparameter, ivalue, &
+                                        bexists, iarrayindex)
 !<description>
   
   ! Returns the value of a parameter in the section rsection.
   ! iparameter specifies the number of the parameter in section rsection.
   ! If bexists does not appear, an error is thrown if a nonexisting
   ! parameter is accessed.
+  !
   ! If bexists is given, it will be set to TRUE if the parameter number
   ! iparameter exists, otherwise it will be set to FALSE and ivalue=0.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
   
 !</description>
   
@@ -1575,6 +1707,12 @@ contains
   ! The number of the parameter.
   integer, intent(IN) :: iparameter
 
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(IN), optional :: iarrayindex
+
 !</input>
   
 !<output>
@@ -1582,7 +1720,7 @@ contains
   ! The value of the parameter
   integer, intent(OUT) :: ivalue
   
-  ! Optional: Parameter existance check
+  ! OPTIONAL: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
   logical, intent(OUT), optional :: bexists
   
@@ -1594,8 +1732,8 @@ contains
   character (LEN=PARLST_MLDATA) :: svalue
   
   svalue = '0'
-  call parlst_getvalue_string_fetch (rsection, &
-                                     iparameter, svalue, bexists)
+  call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
+                                     bexists, iarrayindex)
   read(svalue,*) ivalue
 
   end subroutine
@@ -1604,12 +1742,22 @@ contains
   
 !<subroutine>
   subroutine parlst_getvalue_int_direct (rparlist, ssectionName, &
-                                         sparameter, ivalue, idefault)
+                                         sparameter, ivalue, idefault,&
+                                         iarrayindex)
 !<description>
   
-  ! Returns the value of a parameter in the section ssection.
-  ! If the value does not exist, idefault is returned.
-  ! If idefault is not given, an error will be thrown.
+  ! Returns the value of a parameter in the section ssection. If the
+  ! value does not exist, idefault is returned.  If idefault is not
+  ! given, an error will be thrown.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
   
 !</description>
   
@@ -1624,9 +1772,15 @@ contains
   ! The parameter name.
   character(LEN=*), intent(IN) :: sparameter
 
-  ! Optional: A default value
+  ! OPTIONAL: A default value
   integer, intent(IN), optional :: idefault
   
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(IN), optional :: iarrayindex
+
 !</input>
   
 !<output>
@@ -1645,10 +1799,12 @@ contains
   if (present(idefault)) then
     write (sdefault,*) idefault
     call parlst_getvalue_string_direct (rparlist, ssectionName, &
-                                        sparameter, svalue, sdefault)
+                                        sparameter, svalue, sdefault, &
+                                        iarrayindex)
   else
     call parlst_getvalue_string_direct (rparlist, ssectionName, &
-                                        sparameter, svalue)
+                                        sparameter, svalue, &
+                                        isubstring=iarrayindex)
   end if
   
   read(svalue,*) ivalue
@@ -1681,7 +1837,7 @@ contains
   ! The value of the parameter
   character(LEN=*), intent(IN) :: svalue
   
-  ! Optional: Number of substrings. This allows a parameter to have
+  ! OPTIONAL: Number of substrings. This allows a parameter to have
   ! multiple substrings, which can be accessed via the 'isubstring'
   ! parameter in the GET-routines.
   integer, intent(IN), optional :: nsubstrings
@@ -1777,7 +1933,7 @@ contains
   ! The value of the parameter
   character(LEN=*), intent(IN) :: svalue
   
-  ! Optional: Number of substrings. This allows a parameter to have
+  ! OPTIONAL: Number of substrings. This allows a parameter to have
   ! multiple substrings, which can be accessed via the 'isubstring'
   ! parameter in the GET-routines.
   integer, intent(IN), optional :: nsubstrings
@@ -1827,7 +1983,7 @@ contains
   ! iparameter exists and was modified, otherwise it will be set to NO.
   !
   ! isubstring allows to specify the numer of a substring of the parameter to
-  ! change. If ommitted or = 0, the 'headline' directly behind the '='
+  ! change. If omitted or = 0, the 'headline' directly behind the '='
   ! sign of the line 'name=value' is modified. Otherwise, the corresponding
   ! substring is changed.
   
@@ -1848,7 +2004,7 @@ contains
   ! The new value of the parameter
   character(LEN=*), intent(IN) :: svalue
   
-  ! Optional: The number of the substring to be changed.
+  ! OPTIONAL: The number of the substring to be changed.
   ! =0: changes the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: changes substring isubstring.
@@ -1913,7 +2069,7 @@ contains
   ! If the parameter does not exist, an error is thrown.
   !
   ! isubstring allows to specify the numer of a substring of the parameter to
-  ! change. If ommitted or = 0, the 'headline' directly behind the '='
+  ! change. If omitted or = 0, the 'headline' directly behind the '='
   ! sign of the line 'name=value' is modified. Otherwise, the corresponding
   ! substring is changed.
   
@@ -1934,7 +2090,7 @@ contains
   ! The new value of the parameter
   character(LEN=*), intent(IN) :: svalue
   
-  ! Optional: The number of the substring to be changed.
+  ! OPTIONAL: The number of the substring to be changed.
   ! =0: changes the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: changes substring isubstring.
@@ -1989,7 +2145,7 @@ contains
   ! If the parameter does not exist, an error is thrown.
   !
   ! isubstring allows to specify the numer of a substring of the parameter to
-  ! change. If ommitted or = 0, the 'headline' directly behind the '='
+  ! change. If omitted or = 0, the 'headline' directly behind the '='
   ! sign of the line 'name=value' is modified. Otherwise, the corresponding
   ! substring is changed.
   
@@ -2013,7 +2169,7 @@ contains
   ! The new value of the parameter
   character(LEN=*), intent(IN) :: svalue
   
-  ! Optional: The number of the substring to be changed.
+  ! OPTIONAL: The number of the substring to be changed.
   ! =0: changes the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: changes substring isubstring.
