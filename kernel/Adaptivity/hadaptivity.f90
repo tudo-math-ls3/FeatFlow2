@@ -23,38 +23,41 @@
 !# The following routines are available:
 !#
 !#  1.) hadapt_initFromParameterlist
-!#      -> Initialize adaptivity structure from parameterlist
+!#      -> Initializes adaptivity structure from parameterlist
 !#
 !#  2.) hadapt_initFromTriangulation
-!#      -> Initialize adaptivity structure from triangulation structure
+!#      -> Initializes adaptivity structure from triangulation structure
 !#
 !#  3.) hadapt_generateRawMesh
-!#      ->  Generate the raw mesh from the adaptivity structure
+!#      ->  Generates the raw mesh from the adaptivity structure
 !#
 !#  4.) hadapt_releaseAdaptation
-!#      -> Release all internal adaptation structures
+!#      -> Releases all internal adaptation structures
 !#
 !#  5.) hadapt_duplicateAdaptation
-!#      -> Create a duplicate / backup of an adaptivity structure.
+!#      -> Creates a duplicate / backup of an adaptivity structure.
 !#
 !#  6.) hadapt_restoreAdaptation
 !#      -> Restores an adaptivity structure previously backed up with 
 !#         hadapt_duplicateAdapation
 !#
 !#  7.) hadapt_refreshAdaptation
-!#      -> Refresh pointers of adaptation structure
+!#      -> Refreshes pointers of adaptation structure
 !#
 !#  8.) hadapt_performAdaptation
-!#      -> perform one step of grid adaptation
+!#      -> Performes one step of grid adaptation
 !#
 !#  9.) hadapt_infoStatistics
-!#      -> output information about the adaptivity structure
+!#      -> Outputs information about the adaptivity structure
 !#
 !# 10.) hadapt_writeGridGMV
-!#      -> write the adapted grid to file in GMV format
+!#      -> Writes the adapted grid to file in GMV format
 !#
 !# 12.) hadapt_checkConsistency
-!#      -> check the internal consistency of dynamic data structures
+!#      -> Checks the internal consistency of dynamic data structures
+!#
+!# 13.) hadapt_calcProtectionLayers
+!#      -> Computes the protection layer for a given element indicator
 !#
 !# </purpose>
 !##############################################################################
@@ -94,6 +97,7 @@ module hadaptivity
   public :: hadapt_infoStatistics
   public :: hadapt_writeGridGMV
   public :: hadapt_checkConsistency 
+  public :: hadapt_calcProtectionLayers
 
 contains
   
@@ -1658,4 +1662,140 @@ contains
                        merge('PASSED','FAILED',btest))
     end if
   end subroutine hadapt_checkConsistency
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hadapt_calcProtectionLayers(rtriangulation, rindicator,&
+                                         nprotectionLayers, dprotectionThreshold)
+
+!<description>
+    ! This subroutine adjusts the grid indicator to include a prescribed
+    ! number of protection layers based on the given threshold level.
+!</description>
+
+!<input>
+    ! triangulation
+    type(t_triangulation), intent(IN) :: rtriangulation
+
+    ! number of protection layers
+    integer, intent(IN) :: nprotectionLayers
+
+    ! threshold value
+    real(DP), intent(IN) :: dprotectionThreshold
+!</input>
+
+!<inputoutput>
+    ! elementwise grid indicator
+    type(t_vectorScalar), intent(INOUT) :: rindicator
+!</inputoutput>
+!</subroutine>
+
+    ! Pointer to element indicator
+    real(DP), dimension(:), pointer :: p_Dindicator
+    
+    ! Pointer to vertices at element
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+
+    ! Pointer to neighbours at element
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement
+
+    ! Pointer to BisactiveElement
+    logical, dimension(:), pointer :: p_BisactiveElement
+
+    ! Handle for h_Bisactiveelement
+    integer :: h_BisactiveElement
+    
+    ! local variables
+    integer :: iprotectionLayer
+
+    
+    ! Create memory
+    h_BisactiveElement = ST_NOHANDLE
+    call storage_new('errest_calcProtectionLayers',' BisactiveElement',&
+                     rtriangulation%NEL, ST_LOGICAL,&
+                     h_BisactiveElement, ST_NEWBLOCK_NOINIT)
+    call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
+
+    ! Set pointers
+    call storage_getbase_int2D(rtriangulation%h_IneighboursAtElement,&
+                               p_IneighboursAtElement)
+    call storage_getbase_int2D(rtriangulation%h_IverticesAtElement,&
+                               p_IverticesAtElement)
+    call lsyssc_getbase_double(rindicator, p_Dindicator)
+
+    ! Compute protection layers
+    do iprotectionLayer = 1, nprotectionLayers
+
+      ! Reset activation flag
+      p_BisActiveElement = .false.
+
+      ! Compute a single-width protection layer
+      call doProtectionLayer(p_IverticesAtElement, p_IneighboursAtElement,&
+                             rtriangulation%NEL, dprotectionThreshold,&
+                             p_Dindicator, p_BisActiveElement)
+    end do
+
+    ! Release memory
+    call storage_free(h_BisactiveElement)
+
+  contains
+    
+    ! Here, the real working routines follow.
+    
+    !**************************************************************
+    ! Compute one protection layer
+
+    subroutine doProtectionLayer(IverticesAtElement, IneighboursAtElement, NEL,&
+                                 dthreshold, Dindicator, BisactiveElement)
+
+      integer, dimension(:,:), intent(IN) :: IverticesAtElement
+      integer, dimension(:,:), intent(IN) :: IneighboursAtElement     
+      real(DP), intent(IN) :: dthreshold
+      integer, intent(IN) :: NEL
+      
+      real(DP), dimension(:), intent(INOUT) :: Dindicator
+      logical, dimension(:), intent(INOUT) :: BisactiveElement
+      
+      
+      ! local variables
+      integer :: iel,jel,ive
+
+      ! Loop over all elements in triangulation
+      do iel = 1, NEL
+        
+        ! Do nothing if element belongs to active layer
+        if (BisactiveElement(iel)) cycle
+
+        ! Do nothing if element indicator does not exceed threshold
+        if (Dindicator(iel) .lt. dthreshold) cycle
+
+        ! Loop over neighbouring elements
+        do ive = 1, tria_getNVE(IverticesAtElement, iel)
+          
+          ! Get number of neighbouring element
+          jel = IneighboursAtElement(ive, iel)
+
+          ! Do nothing at the boundary
+          if (jel .eq. 0) cycle
+
+          ! Check if element belongs to active layer
+          if (BisactiveElement(jel)) then
+            ! If yes, then just update the element indicator
+            Dindicator(jel) = max(Dindicator(jel), Dindicator(iel))
+          else
+            ! Otherwise, we have to check if the neighbouring element
+            ! exceeds the prescribed threshold level. If this is the case
+            ! it will be processed later or has already been processed
+            if (Dindicator(jel) .lt. dthreshold) then
+              Dindicator(jel) = max(Dindicator(jel), Dindicator(iel))
+              BisactiveElement(jel) = .true.
+            end if
+          end if
+        end do
+      end do
+    end subroutine doProtectionLayer
+  end subroutine hadapt_calcProtectionLayers
+    
 end module hadaptivity
