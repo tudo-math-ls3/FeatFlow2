@@ -21,42 +21,26 @@
 !#        $L_1$-norm, $L_2$-norm or $H_1$-norm of a FE function.
 !#   $$ int_\Gamma u-cu_h dx , \qquad int_\Gamma \nabla u-c\nabla u_h dx $$
 !#
-!# 3.) pperr_scalarL2ErrorEstimate
-!#     -> Calculate $L_2$-error to two different scalar vectors of a 
+!# 3.) pperr_scalarErrorEstimate
+!#     -> Calculate error to two different scalar vectors of a 
 !#        FE function:
 !#   $$ int_\Omega u_h-u_ref dx $$
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is 
 !#        some reference solution vector which is supposed to be a 
 !#        better approximation of the true solution.
 !#
-!# 4.) pperr_blockL2ErrorEstimate
-!#     -> Calculate $L_2$-error to two different block vectors of a 
+!# 4.) pperr_blockErrorEstimate
+!#     -> Calculate error to two different block vectors of a 
 !#        FE function:
 !#   $$ int_\Omega u_h-u_ref dx $$
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is
 !#        some reference solution vector which is supposed to be a 
 !#        better approximation of the true solution.
 !#
-!# 5.) pperr_scalarL1ErrorEstimate
-!#     -> Calculate $L_1$-error to two different scalar vectors of a 
-!#        FE function:
-!#   $$ int_\Omega u_h-u_ref dx $$
-!#        where $u_h$ denotes the FE solution vector and $u_ref$ is 
-!#        some reference solution vector which is supposed to be a 
-!#        better approximation of the true solution.
-!#
-!# 6.) pperr_blockL1ErrorEstimate
-!#     -> Calculate $L_1$-error to two different block vectors of a 
-!#        FE function:
-!#   $$ int_\Omega u_h-u_ref dx $$
-!#        where $u_h$ denotes the FE solution vector and $u_ref$ is
-!#        some reference solution vector which is supposed to be a 
-!#        better approximation of the true solution.
-!#
-!# 7.) pperr_scalarStandardDeviation
+!# 5.) pperr_scalarStandardDeviation
 !#     -> Calculate the standard deviation of a scalar vector
 !#
-!# 8.) pperr_blockStandardDeviation
+!# 6.) pperr_blockStandardDeviation
 !#     -> Calculate the standard deviation of a block vector
 !# </purpose>
 !#########################################################################
@@ -2192,7 +2176,7 @@ contains
                                         rdiscretisationRef,relementError)
 
 !<description>
-  ! This routine calculates the L2-error of a given FE function in rvector
+  ! This routine calculates the error of a given FE function in rvector
   ! and a reference vector given in rvectorRef. Both vectors must have the
   ! same number of blocks. As an example, one can think of the consistent
   ! FE gradient and some recovered reference gradient, c.f. ZZ-technique.
@@ -2280,7 +2264,7 @@ contains
                                        rdiscretisationRef,relementError)
 
 !<description>
-  ! This routine calculates the L2-error of a given FE function in rvector
+  ! This routine calculates the error of a given FE function in rvector
   ! and a reference vector given in rvectorRef. Both vectors must have the
   ! same number of blocks. As an example, one can think of the consistent
   ! FE gradient and some recovered reference gradient, c.f. ZZ-technique.
@@ -2298,7 +2282,9 @@ contains
     type(t_vectorBlock), intent(IN), target                     :: rvectorRef
             
     ! Type of error to compute. A PPERR_xxERROR constant.
-    ! PPERR_L2ERROR computes the L2-error, PPERR_L1ERROR the L1-error.
+    ! PPERR_L2ERROR computes the L2-error.
+    ! PPERR_L1ERROR computes the L1-error.
+    ! PPERR_H1ERROR computes the H1-error.
     integer, intent(IN) :: ctype
 
     ! OPTIONAL: A discretisation structure specifying how to compute the error.
@@ -2324,9 +2310,9 @@ contains
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     type(t_spatialDiscretisation), pointer :: p_rdiscretisationRef
-    integer      :: i,k,icurrentElementDistr,iblock,ICUBP,NVE
+    integer :: i,k,icurrentElementDistr,iblock,ICUBP,NVE
     integer :: IEL, IELmax, IELset,IELGlobal
-    real(DP)     :: OM,delementError
+    real(DP) :: OM,delementError
 
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
@@ -2691,7 +2677,7 @@ contains
               end do
 
             end do ! ICUBP 
-
+            
             ! Apply to global error
             derror = derror + delementError
 
