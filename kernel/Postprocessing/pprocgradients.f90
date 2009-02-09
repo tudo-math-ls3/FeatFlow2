@@ -1839,7 +1839,6 @@ contains
           ! Allocate memory for coefficient values; for mixed triangulations
           ! $ncubpMax$ is an upper bound for the number of cubature points.
           allocate(Dcoefficients(ncubpMax,nelementsPerBlock,p_rtriangulation%ndim))
-!!$          ALLOCATE(DcoefficientsMixed(ncubpMax*nelementsPerBlock,p_rtriangulation%ndim))
 
           ! Calculate the global DOF's into IdofsTrial.
           call dof_locGlobMapping_mult(p_rdiscrSource, &
@@ -2021,7 +2020,6 @@ contains
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV1D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
-!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
                 
               case (NDIM2D)
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
@@ -2030,7 +2028,6 @@ contains
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV2D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
-!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
 
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
@@ -2038,7 +2035,6 @@ contains
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV2D_Y, &
                     Dcoefficients(:,idxsubgroup:idx2,2))
-!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,2))
                 
               case (NDIM3D)
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
@@ -2047,7 +2043,6 @@ contains
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
-!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,1))
                 
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
@@ -2055,7 +2050,6 @@ contains
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,2))
-!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,2))
                 
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
@@ -2063,7 +2057,6 @@ contains
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_Z, &
                     Dcoefficients(:,idxsubgroup:idx2,3))
-!!$                    DcoefficientsMixed(nnpoints-ncubp+1:nnpoints,3))
                 
               case DEFAULT
                 call output_line('Invalid spatial dimension!',&
@@ -2626,12 +2619,31 @@ contains
     ! We are nearly done. The final thing: divide the calculated derivatives by the
     ! number of elements adjacent to each vertex. That closes the calculation
     ! of the 'mean' of the derivatives.
-    do i=1,size(p_DxDeriv)
-      ! Div/0 should not occur, otherwise the triangulation is crap as there's a point
-      ! not connected to any element!
-      p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
-      p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
-    end do
+    select case(p_rtriangulation%ndim)
+    case (NDIM1D)
+      do i=1,size(p_DxDeriv)
+        ! Div/0 should not occur, otherwise the triangulation is crap
+        ! as there's a point not connected to any element!
+        p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
+      end do
+
+    case (NDIM2D)
+      do i=1,size(p_DxDeriv)
+        ! Div/0 should not occur, otherwise the triangulation is crap
+        ! as there's a point not connected to any element!
+        p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
+        p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
+      end do
+
+    case (NDIM3D)
+      do i=1,size(p_DxDeriv)
+        ! Div/0 should not occur, otherwise the triangulation is crap
+        ! as there's a point not connected to any element!
+        p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
+        p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
+        p_DzDeriv(i) = p_DzDeriv(i) / p_IcontributionsAtDOF(i)
+      end do
+    end select
 
     ! Free temporary memory
     call storage_free(h_IcontributionsAtDOF)
@@ -2672,7 +2684,7 @@ contains
 
       ! local variables
       integer :: ipatch,idx,idxFirst,idxLast
-      real(DP) :: xmin,ymin,xmax,ymax
+      real(DP) :: xmin,ymin,xmax,ymax,zmin,zmax
 
       select case (size(DpointsReal,1))
 
@@ -2717,8 +2729,8 @@ contains
           
           ! Loop over all elements
           do idx = idxFirst, idxLast
-            select case(IelemNVE(idx))
-            case(TRIA_NVETRI2D)
+            select case (IelemNVE(idx))
+            case (TRIA_NVETRI2D)
               ! Store physical coordinates of patch element corners
               DpointsReal(1,1,idx) = xmin
               DpointsReal(2,1,idx) = ymin
@@ -2746,6 +2758,121 @@ contains
           end do
         end do
         
+      case (NDIM3D)
+
+        ! Loop over all patches
+        do ipatch = 1, npatches
+          idxFirst = IelementsInPatchIdx(ipatch)
+          idxLast  = IelementsInPatchIdx(ipatch+1)-1
+
+          ! Determine minimum/maximum coordinates of the patch
+          xmin = minval(DpointsReal(1,:,idxFirst:idxLast))
+          xmax = maxval(DpointsReal(1,:,idxFirst:idxLast))
+          ymin = minval(DpointsReal(2,:,idxFirst:idxLast))
+          ymax = maxval(DpointsReal(2,:,idxFirst:idxLast))
+          zmin = minval(DpointsReal(3,:,idxFirst:idxLast))
+          zmax = maxval(DpointsReal(3,:,idxFirst:idxLast))
+
+          ! Store minimum/maximum coordinates
+          DpointsBound(1,1,ipatch) = xmin
+          DpointsBound(2,1,ipatch) = ymin
+          DpointsBound(3,1,ipatch) = zmin
+          DpointsBound(1,2,ipatch) = xmax
+          DpointsBound(2,2,ipatch) = ymax
+          DpointsBound(3,2,ipatch) = zmax
+
+          ! Loop over all elements
+          do idx = idxFirst, idxLast
+            select case (IelemNVE(idx))
+            case (TRIA_NVETET3D)
+              ! Store physical coordinates of patch element corners
+              DpointsReal(1,1,idx) = xmin
+              DpointsReal(2,1,idx) = ymin
+              DpointsReal(3,1,idx) = zmin
+              DpointsReal(1,2,idx) = xmax+ymax-zmax-ymin+zmin
+              DpointsReal(2,2,idx) = ymin
+              DpointsReal(3,2,idx) = zmin
+              DpointsReal(1,3,idx) = xmin
+              DpointsReal(2,3,idx) = xmax+ymax-zmax-xmin+zmin
+              DpointsReal(3,3,idx) = zmin
+              DpointsReal(1,4,idx) = xmin
+              DpointsReal(2,4,idx) = ymin
+              DpointsReal(3,4,idx) = -xmax-ymax+zmax+xmin+ymin
+
+            case (TRIA_NVEPYR3D)
+              ! Store physical coordinates of patch element corners
+              DpointsReal(1,1,idx) = xmin
+              DpointsReal(2,1,idx) = ymin
+              DpointsReal(3,1,idx) = zmin
+              DpointsReal(1,2,idx) = xmax+zmax-zmin
+              DpointsReal(2,2,idx) = ymin
+              DpointsReal(3,2,idx) = zmin
+              DpointsReal(1,3,idx) = xmax+zmax-zmin
+              DpointsReal(2,3,idx) = ymax+zmax-zmin
+              DpointsReal(3,3,idx) = zmin
+              DpointsReal(1,4,idx) = xmin
+              DpointsReal(2,4,idx) = ymax+zmax-zmin
+              DpointsReal(3,4,idx) = zmin
+              DpointsReal(1,5,idx) = xmin
+              DpointsReal(2,5,idx) = ymin
+              DpointsReal(3,5,idx) = xmax+zmax-xmin
+
+            case (TRIA_NVEPRIS3D)
+              ! Store physical coordinates of patch element corners
+              DpointsReal(1,1,idx) = xmin
+              DpointsReal(2,1,idx) = ymin
+              DpointsReal(3,1,idx) = zmin
+              DpointsReal(1,2,idx) = xmax+ymax-ymin
+              DpointsReal(2,2,idx) = ymin
+              DpointsReal(3,2,idx) = zmin
+              DpointsReal(1,3,idx) = xmin
+              DpointsReal(2,3,idx) = xmax+ymax-xmin
+              DpointsReal(3,3,idx) = zmin
+              DpointsReal(1,4,idx) = xmin
+              DpointsReal(2,4,idx) = ymin
+              DpointsReal(3,4,idx) = zmax
+              DpointsReal(1,5,idx) = xmax+ymax-ymin
+              DpointsReal(2,5,idx) = ymin
+              DpointsReal(3,5,idx) = zmax
+              DpointsReal(1,6,idx) = xmin
+              DpointsReal(2,6,idx) = xmax+ymax-xmin
+              DpointsReal(3,6,idx) = zmax
+              
+            case (TRIA_NVEHEXA3D)
+              ! Store physical coordinates of patch element corners
+              DpointsReal(1,1,idx) = xmin
+              DpointsReal(2,1,idx) = ymin
+              DpointsReal(3,1,idx) = zmin
+              DpointsReal(1,2,idx) = xmax
+              DpointsReal(2,2,idx) = ymin
+              DpointsReal(3,2,idx) = zmin
+              DpointsReal(1,3,idx) = xmax
+              DpointsReal(2,3,idx) = ymax
+              DpointsReal(3,3,idx) = zmin
+              DpointsReal(1,4,idx) = xmin
+              DpointsReal(2,4,idx) = ymax
+              DpointsReal(3,4,idx) = zmin
+              DpointsReal(1,5,idx) = xmin
+              DpointsReal(2,5,idx) = ymin
+              DpointsReal(3,5,idx) = zmax
+              DpointsReal(1,6,idx) = xmax
+              DpointsReal(2,6,idx) = ymin
+              DpointsReal(3,6,idx) = zmax
+              DpointsReal(1,7,idx) = xmax
+              DpointsReal(2,7,idx) = ymax
+              DpointsReal(3,7,idx) = zmax
+              DpointsReal(1,8,idx) = xmin
+              DpointsReal(2,8,idx) = ymax
+              DpointsReal(3,8,idx) = zmax
+
+            case DEFAULT
+              call output_line ('Invalid number of vertices per elements!', &
+                  OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_mult')
+              call sys_halt()
+            end select
+          end do
+        end do
+                    
       case DEFAULT
         call output_line ('Invalid number of spatial dimensions!', &
             OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_mult')
@@ -2785,11 +2912,11 @@ contains
 
       ! local variables
       integer :: ipatch,idxFirst,idxLast
-      real(DP) :: xmin,ymin,xmax,ymax
+      real(DP) :: xmin,ymin,xmax,ymax,zmin,zmax
 
-      select case (NVE)
-
-      case (TRIA_NVELINE1D)
+      select case (size(DpointsReal,1))
+        
+      case (NDIM1D)
 
         ! Simple: Just find minimal/maximal value
         
@@ -2811,71 +2938,272 @@ contains
           DpointsReal(1,2,idxFirst:idxLast) = xmax
         end do
 
-      case(TRIA_NVETRI2D)
-        
-        ! Tricky: Find minimal/maximal value and compute the lower-right
-        ! and upper-left corner by hand.
+      case (NDIM2D)
 
-        ! Loop over all patches
-        do ipatch = 1, npatches
-          idxFirst = IelementsInPatchIdx(ipatch)
-          idxLast  = IelementsInPatchIdx(ipatch+1)-1
+        select case (NVE)
 
-          ! Determine minimum/maximum coordinates of the patch
-          xmin = minval(DpointsReal(1,:,idxFirst:idxLast))
-          xmax = maxval(DpointsReal(1,:,idxFirst:idxLast))
-          ymin = minval(DpointsReal(2,:,idxFirst:idxLast))
-          ymax = maxval(DpointsReal(2,:,idxFirst:idxLast))
+        case(TRIA_NVETRI2D)
           
-          ! Store minimum/maximum coordinates
-          DpointsBound(1,1,ipatch) = xmin
-          DpointsBound(2,1,ipatch) = ymin
-          DpointsBound(1,2,ipatch) = xmax
-          DpointsBound(2,2,ipatch) = ymax
+          ! Tricky: Find minimal/maximal value and compute the lower-right
+          ! and upper-left corner by hand.
+          
+          ! Loop over all patches
+          do ipatch = 1, npatches
+            idxFirst = IelementsInPatchIdx(ipatch)
+            idxLast  = IelementsInPatchIdx(ipatch+1)-1
+            
+            ! Determine minimum/maximum coordinates of the patch
+            xmin = minval(DpointsReal(1,:,idxFirst:idxLast))
+            xmax = maxval(DpointsReal(1,:,idxFirst:idxLast))
+            ymin = minval(DpointsReal(2,:,idxFirst:idxLast))
+            ymax = maxval(DpointsReal(2,:,idxFirst:idxLast))
+            
+            ! Store minimum/maximum coordinates
+            DpointsBound(1,1,ipatch) = xmin
+            DpointsBound(2,1,ipatch) = ymin
+            DpointsBound(1,2,ipatch) = xmax
+            DpointsBound(2,2,ipatch) = ymax
+            
+            ! Store physical coordinates of patch element corners
+            DpointsReal(1,1,idxFirst:idxLast) = xmin
+            DpointsReal(2,1,idxFirst:idxLast) = ymin
+            DpointsReal(1,2,idxFirst:idxLast) = xmax+ymax-ymin
+            DpointsReal(2,2,idxFirst:idxLast) = ymin
+            DpointsReal(1,3,idxFirst:idxLast) = xmin
+            DpointsReal(2,3,idxFirst:idxLast) = xmax+ymax-xmin
+          end do
+          
+        case (TRIA_NVEQUAD2D)
+          
+          ! Simple: Just find minimal/maximal value
+          
+          ! Loop over all patches
+          do ipatch = 1, npatches
+            idxFirst = IelementsInPatchIdx(ipatch)
+            idxLast  = IelementsInPatchIdx(ipatch+1)-1
+            
+            ! Determine minimum/maximum coordinates of the patch
+            xmin = minval(DpointsReal(1,:,idxFirst:idxLast))
+            xmax = maxval(DpointsReal(1,:,idxFirst:idxLast))
+            ymin = minval(DpointsReal(2,:,idxFirst:idxLast))
+            ymax = maxval(DpointsReal(2,:,idxFirst:idxLast))
+            
+            ! Store minimum/maximum coordinates
+            DpointsBound(1,1,ipatch) = xmin
+            DpointsBound(2,1,ipatch) = ymin
+            DpointsBound(1,2,ipatch) = xmax
+            DpointsBound(2,2,ipatch) = ymax
+            
+            ! Store physical coordinates of patch element corners
+            DpointsReal(1,1,idxFirst:idxLast) = xmin
+            DpointsReal(2,1,idxFirst:idxLast) = ymin
+            DpointsReal(1,2,idxFirst:idxLast) = xmax
+            DpointsReal(2,2,idxFirst:idxLast) = ymin
+            DpointsReal(1,3,idxFirst:idxLast) = xmax
+            DpointsReal(2,3,idxFirst:idxLast) = ymax
+            DpointsReal(1,4,idxFirst:idxLast) = xmin
+            DpointsReal(2,4,idxFirst:idxLast) = ymax
+          end do
+          
+        case DEFAULT
+          call output_line ('Invalid number of vertices per elements!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_sim')
+          call sys_halt()
+        end select
 
-          ! Store physical coordinates of patch element corners
-          DpointsReal(1,1,idxFirst:idxLast) = xmin
-          DpointsReal(2,1,idxFirst:idxLast) = ymin
-          DpointsReal(1,2,idxFirst:idxLast) = xmax+ymax-ymin
-          DpointsReal(2,2,idxFirst:idxLast) = ymin
-          DpointsReal(1,3,idxFirst:idxLast) = xmin
-          DpointsReal(2,3,idxFirst:idxLast) = xmax+ymax-xmin
-        end do
+      case (NDIM3D)
         
-      case (TRIA_NVEQUAD2D)
-        
-        ! Simple: Just find minimal/maximal value
+        select case (NVE)
+          
+        case (TRIA_NVETET3D)
+          ! Tricky: Find minimal/maximal value and compute corners by hand.
+          ! Loop over all patches
+          do ipatch = 1, npatches
+            idxFirst = IelementsInPatchIdx(ipatch)
+            idxLast  = IelementsInPatchIdx(ipatch+1)-1
+            
+            ! Determine minimum/maximum coordinates of the patch
+            xmin = minval(DpointsReal(1,:,idxFirst:idxLast))
+            xmax = maxval(DpointsReal(1,:,idxFirst:idxLast))
+            ymin = minval(DpointsReal(2,:,idxFirst:idxLast))
+            ymax = maxval(DpointsReal(2,:,idxFirst:idxLast))
+            zmin = minval(DpointsReal(3,:,idxFirst:idxLast))
+            zmax = maxval(DpointsReal(3,:,idxFirst:idxLast))
+            
+            ! Store minimum/maximum coordinates
+            DpointsBound(1,1,ipatch) = xmin
+            DpointsBound(2,1,ipatch) = ymin
+            DpointsBound(3,1,ipatch) = zmin
+            DpointsBound(1,2,ipatch) = xmax
+            DpointsBound(2,2,ipatch) = ymax
+            DpointsBound(3,2,ipatch) = zmax
 
-        ! Loop over all patches
-        do ipatch = 1, npatches
-          idxFirst = IelementsInPatchIdx(ipatch)
-          idxLast  = IelementsInPatchIdx(ipatch+1)-1
+            ! Store physical coordinates of patch element corners
+            DpointsReal(1,1,idxFirst:idxLast) = xmin
+            DpointsReal(2,1,idxFirst:idxLast) = ymin
+            DpointsReal(3,1,idxFirst:idxLast) = zmin
+            DpointsReal(1,2,idxFirst:idxLast) = xmax+ymax-zmax-ymin+zmin
+            DpointsReal(2,2,idxFirst:idxLast) = ymin
+            DpointsReal(3,2,idxFirst:idxLast) = zmin
+            DpointsReal(1,3,idxFirst:idxLast) = xmin
+            DpointsReal(2,3,idxFirst:idxLast) = xmax+ymax-zmax-xmin+zmin
+            DpointsReal(3,3,idxFirst:idxLast) = zmin
+            DpointsReal(1,4,idxFirst:idxLast) = xmin
+            DpointsReal(2,4,idxFirst:idxLast) = ymin
+            DpointsReal(3,4,idxFirst:idxLast) = -xmax-ymax+zmax+xmin+ymin
+          end do
+          
+        case (TRIA_NVEPYR3D)
+          ! Tricky: Find minimal/maximal value and compute the lower-right
+          ! and upper-left corner by hand. For the z-coordinate it 
+          ! suffices to find the minial/maximal value
+          
+          ! Loop over all patches
+          do ipatch = 1, npatches
+            idxFirst = IelementsInPatchIdx(ipatch)
+            idxLast  = IelementsInPatchIdx(ipatch+1)-1
+            
+            ! Determine minimum/maximum coordinates of the patch
+            xmin = minval(DpointsReal(1,:,idxFirst:idxLast))
+            xmax = maxval(DpointsReal(1,:,idxFirst:idxLast))
+            ymin = minval(DpointsReal(2,:,idxFirst:idxLast))
+            ymax = maxval(DpointsReal(2,:,idxFirst:idxLast))
+            zmin = minval(DpointsReal(3,:,idxFirst:idxLast))
+            zmax = maxval(DpointsReal(3,:,idxFirst:idxLast))
+            
+            ! Store minimum/maximum coordinates
+            DpointsBound(1,1,ipatch) = xmin
+            DpointsBound(2,1,ipatch) = ymin
+            DpointsBound(3,1,ipatch) = zmin
+            DpointsBound(1,2,ipatch) = xmax
+            DpointsBound(2,2,ipatch) = ymax
+          
+            ! Store physical coordinates of patch element corners
+            DpointsReal(1,1,idxFirst:idxLast) = xmin
+            DpointsReal(2,1,idxFirst:idxLast) = ymin
+            DpointsReal(3,1,idxFirst:idxLast) = zmin
+            DpointsReal(1,2,idxFirst:idxLast) = xmax+zmax-zmin
+            DpointsReal(2,2,idxFirst:idxLast) = ymin
+            DpointsReal(3,2,idxFirst:idxLast) = zmin
+            DpointsReal(1,3,idxFirst:idxLast) = xmax+zmax-zmin
+            DpointsReal(2,3,idxFirst:idxLast) = ymax+zmax-zmin
+            DpointsReal(3,3,idxFirst:idxLast) = zmin
+            DpointsReal(1,4,idxFirst:idxLast) = xmin
+            DpointsReal(2,4,idxFirst:idxLast) = ymax+zmax-zmin
+            DpointsReal(3,4,idxFirst:idxLast) = zmin
+            DpointsReal(1,5,idxFirst:idxLast) = xmin
+            DpointsReal(2,5,idxFirst:idxLast) = ymin
+            DpointsReal(3,5,idxFirst:idxLast) = xmax+zmax-xmin
+          end do
+          
+        case (TRIA_NVEPRIS3D)        
 
-          ! Determine minimum/maximum coordinates of the patch
-          xmin = minval(DpointsReal(1,:,idxFirst:idxLast))
-          xmax = maxval(DpointsReal(1,:,idxFirst:idxLast))
-          ymin = minval(DpointsReal(2,:,idxFirst:idxLast))
-          ymax = maxval(DpointsReal(2,:,idxFirst:idxLast))
-                  
-          ! Store minimum/maximum coordinates
-          DpointsBound(1,1,ipatch) = xmin
-          DpointsBound(2,1,ipatch) = ymin
-          DpointsBound(1,2,ipatch) = xmax
-          DpointsBound(2,2,ipatch) = ymax
+          ! Tricky: Find minimal/maximal value and compute the lower-right
+          ! and upper-left corner by hand. For the z-coordinate it 
+          ! suffices to find the minial/maximal value
+          
+          ! Loop over all patches
+          do ipatch = 1, npatches
+            idxFirst = IelementsInPatchIdx(ipatch)
+            idxLast  = IelementsInPatchIdx(ipatch+1)-1
+            
+            ! Determine minimum/maximum coordinates of the patch
+            xmin = minval(DpointsReal(1,:,idxFirst:idxLast))
+            xmax = maxval(DpointsReal(1,:,idxFirst:idxLast))
+            ymin = minval(DpointsReal(2,:,idxFirst:idxLast))
+            ymax = maxval(DpointsReal(2,:,idxFirst:idxLast))
+            zmin = minval(DpointsReal(3,:,idxFirst:idxLast))
+            zmax = maxval(DpointsReal(3,:,idxFirst:idxLast))
+            
+            ! Store minimum/maximum coordinates
+            DpointsBound(1,1,ipatch) = xmin
+            DpointsBound(2,1,ipatch) = ymin
+            DpointsBound(3,1,ipatch) = zmin
+            DpointsBound(1,2,ipatch) = xmax
+            DpointsBound(2,2,ipatch) = ymax
+            DpointsBound(3,2,ipatch) = zmax
+            
+            ! Store physical coordinates of patch element corners
+            DpointsReal(1,1,idxFirst:idxLast) = xmin
+            DpointsReal(2,1,idxFirst:idxLast) = ymin
+            DpointsReal(3,1,idxFirst:idxLast) = zmin
+            DpointsReal(1,2,idxFirst:idxLast) = xmax+ymax-ymin
+            DpointsReal(2,2,idxFirst:idxLast) = ymin
+            DpointsReal(3,2,idxFirst:idxLast) = zmin
+            DpointsReal(1,3,idxFirst:idxLast) = xmin
+            DpointsReal(2,3,idxFirst:idxLast) = xmax+ymax-xmin
+            DpointsReal(3,3,idxFirst:idxLast) = zmin
+            DpointsReal(1,4,idxFirst:idxLast) = xmin
+            DpointsReal(2,4,idxFirst:idxLast) = ymin
+            DpointsReal(3,4,idxFirst:idxLast) = zmax
+            DpointsReal(1,5,idxFirst:idxLast) = xmax+ymax-ymin
+            DpointsReal(2,5,idxFirst:idxLast) = ymin
+            DpointsReal(3,5,idxFirst:idxLast) = zmax
+            DpointsReal(1,6,idxFirst:idxLast) = xmin
+            DpointsReal(2,6,idxFirst:idxLast) = xmax+ymax-xmin
+            DpointsReal(3,6,idxFirst:idxLast) = zmax
+          end do
+          
+        case (TRIA_NVEHEXA3D)
+          
+          ! Simple: Just find minimal/maximal value
+          
+          ! Loop over all patches
+          do ipatch = 1, npatches
+            idxFirst = IelementsInPatchIdx(ipatch)
+            idxLast  = IelementsInPatchIdx(ipatch+1)-1
+            
+            ! Determine minimum/maximum coordinates of the patch
+            xmin = minval(DpointsReal(1,:,idxFirst:idxLast))
+            xmax = maxval(DpointsReal(1,:,idxFirst:idxLast))
+            ymin = minval(DpointsReal(2,:,idxFirst:idxLast))
+            ymax = maxval(DpointsReal(2,:,idxFirst:idxLast))
+            zmin = minval(DpointsReal(3,:,idxFirst:idxLast))
+            zmax = maxval(DpointsReal(3,:,idxFirst:idxLast))
+            
+            ! Store minimum/maximum coordinates
+            DpointsBound(1,1,ipatch) = xmin
+            DpointsBound(2,1,ipatch) = ymin
+            DpointsBound(3,1,ipatch) = zmin
+            DpointsBound(1,2,ipatch) = xmax
+            DpointsBound(2,2,ipatch) = ymax
+            DpointsBound(3,2,ipatch) = zmax
+            
+            ! Store physical coordinates of patch element corners
+            DpointsReal(1,1,idxFirst:idxLast) = xmin
+            DpointsReal(2,1,idxFirst:idxLast) = ymin
+            DpointsReal(3,1,idxFirst:idxLast) = zmin
+            DpointsReal(1,2,idxFirst:idxLast) = xmax
+            DpointsReal(2,2,idxFirst:idxLast) = ymin
+            DpointsReal(3,2,idxFirst:idxLast) = zmin
+            DpointsReal(1,3,idxFirst:idxLast) = xmax
+            DpointsReal(2,3,idxFirst:idxLast) = ymax
+            DpointsReal(3,3,idxFirst:idxLast) = zmin
+            DpointsReal(1,4,idxFirst:idxLast) = xmin
+            DpointsReal(2,4,idxFirst:idxLast) = ymax
+            DpointsReal(3,4,idxFirst:idxLast) = zmin
+            DpointsReal(1,5,idxFirst:idxLast) = xmin
+            DpointsReal(2,5,idxFirst:idxLast) = ymin
+            DpointsReal(3,5,idxFirst:idxLast) = zmax
+            DpointsReal(1,6,idxFirst:idxLast) = xmax
+            DpointsReal(2,6,idxFirst:idxLast) = ymin
+            DpointsReal(3,6,idxFirst:idxLast) = zmax
+            DpointsReal(1,7,idxFirst:idxLast) = xmax
+            DpointsReal(2,7,idxFirst:idxLast) = ymax
+            DpointsReal(3,7,idxFirst:idxLast) = zmax
+            DpointsReal(1,8,idxFirst:idxLast) = xmin
+            DpointsReal(2,8,idxFirst:idxLast) = ymax
+            DpointsReal(3,8,idxFirst:idxLast) = zmax
+          end do
+          
+        case DEFAULT
+          call output_line ('Invalid number of vertices per elements!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_sim')
+          call sys_halt()
+        end select
 
-          ! Store physical coordinates of patch element corners
-          DpointsReal(1,1,idxFirst:idxLast) = xmin
-          DpointsReal(2,1,idxFirst:idxLast) = ymin
-          DpointsReal(1,2,idxFirst:idxLast) = xmax
-          DpointsReal(2,2,idxFirst:idxLast) = ymin
-          DpointsReal(1,3,idxFirst:idxLast) = xmax
-          DpointsReal(2,3,idxFirst:idxLast) = ymax
-          DpointsReal(1,4,idxFirst:idxLast) = xmin
-          DpointsReal(2,4,idxFirst:idxLast) = ymax
-        end do
-        
       case DEFAULT
-        call output_line ('Invalid number of vertices per elements!', &
+        call output_line ('Invalid number of spatial dimensions!', &
             OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_sim')
         call sys_halt()
       end select
