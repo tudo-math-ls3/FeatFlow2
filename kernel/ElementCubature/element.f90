@@ -379,6 +379,7 @@ module element
   ! element, given by function value in the midpoint and the two
   ! derivatives.
   integer(I32), parameter, public :: EL_QP1     = EL_2D + 21
+  integer(I32), parameter, public :: EL_QP1_2D  = EL_QP1
 
   ! General rotated bilinear $\tilde Q1$ element, all variants (conformal, 
   ! nonconformal, parametric, nonparametric).
@@ -458,6 +459,11 @@ module element
   ! ID of rotated triquadratic nonconforming quadrilateral FE, Q2~.
   integer(I32), parameter, public :: EL_Q2T_3D  = EL_3D + 50
   integer(I32), parameter, public :: EL_E050_3D = EL_Q2T_3D
+
+  ! ID of nonconforming parametric linear P1 element on a hexahedral
+  ! element, given by function value in the midpoint and the three
+  ! derivatives.
+  integer(I32), parameter, public :: EL_QP1_3D  = EL_3D + 21
 
 !</constantblock>
 
@@ -640,8 +646,8 @@ contains
       elem_igetID = EL_Q2_2D
     case("EL_Q3","EL_Q3_2D")
       elem_igetID = EL_Q3_2D
-    case("EL_QP1")
-      elem_igetID = EL_QP1
+    case("EL_QP1","EL_QP1_2D")
+      elem_igetID = EL_QP1_2D
     case("EL_Q1T","EL_Q1T_2D","EL_E030","EL_E030_2D")
       elem_igetID = EL_E030_2D
     case("EL_EM30","EL_EM30_2D")
@@ -674,6 +680,8 @@ contains
       elem_igetID = EL_Q0_3D
     case("EL_Q1_3D","EL_E011_3D")
       elem_igetID = EL_Q1_3D
+    case("EL_QP1_3D")
+      elem_igetID = EL_QP1_3D
     case("EL_Q1T_3D","EL_E031_3D")
       elem_igetID = EL_E031_3D
     case("EL_E030_3D")
@@ -798,6 +806,9 @@ contains
     case (EL_Q1_3D)
       ! local DOFs for 3D Q1
       elem_igetNDofLoc = 8
+    case (EL_QP1_3d)
+      ! local DOFs for 3D QP1
+      elem_igetNDofLoc = 4
     case (EL_Y1_3D)
       ! local DOFs for 3D Y1
       elem_igetNDofLoc = 5
@@ -811,7 +822,7 @@ contains
       ! local DOFs for 3D Ex50
       elem_igetNDofLoc = 19
       
-    case DEFAULT
+    case default
       elem_igetNDofLoc = 0
     end select
 
@@ -937,6 +948,9 @@ contains
     case (EL_Q1_3D)
       ! local DOFs for Q1
       ndofAtVertices = 8
+    case (EL_QP1_3D)
+      ! local DOFs for QP1
+      ndofAtElement  = 4
     case (EL_Y1_3D)
       ! local DOFs for Y1
       ndofAtVertices = 5
@@ -1037,7 +1051,7 @@ contains
     case (EL_P0_3D, EL_P1_3D)
       ! Tetrahedral elements work in barycentric coordinates
       elem_igetCoordSystem = TRAFO_CS_BARY3DTETRA
-    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D, EL_Q2T_3D)
+    case (EL_Q0_3D, EL_Q1_3D, EL_QP1_3D, EL_Q1T_3D, EL_Q2T_3D)
       ! These work on the reference hexahedron
       elem_igetCoordSystem = TRAFO_CS_REF3DHEXA
     case (EL_Y0_3D, EL_Y1_3D)
@@ -1098,7 +1112,7 @@ contains
       ! Linear tetrahedral transrormation, 3D
       elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_3D
     
-    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D, EL_Q2T_3D)
+    case (EL_Q0_3D, EL_Q1_3D, EL_QP1_3D, EL_Q1T_3D, EL_Q2T_3D)
       ! Trilinear hexahedral transformation, 3D
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_3D
     
@@ -1207,8 +1221,8 @@ contains
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
     case (EL_Q2)
-      ! Function + 1st derivative
-      elem_getMaxDerivative = 3
+      ! Function + 1st derivative + 2nd derivative
+      elem_getMaxDerivative = 6
     case (EL_Q3)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
@@ -1230,6 +1244,9 @@ contains
       ! Function + 1st derivative
       elem_getMaxDerivative = 4
     case (EL_Q1_3D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 4
+    case (EL_QP1_3D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 4
     case (EL_Y1_3D)
@@ -1424,7 +1441,7 @@ contains
       ! 3D Tetrahedron
       ishp = BGEOM_SHAPE_TETRA
     
-    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D, EL_Q2T_3D)
+    case (EL_Q0_3D, EL_Q1_3D, EL_QP1_3D, EL_Q1T_3D, EL_Q2T_3D)
       ! 3D Hexahedron
       ishp = BGEOM_SHAPE_HEXA
     
@@ -2323,6 +2340,9 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
+    
+    case (EL_QP1_3D)
+      call elem_eval_QP1_3D(ieltyp, revalElementSet, Bder, Dbas)
 
     case (EL_EM30_3D)
       call elem_EM30_3D_sim (ieltyp, revalElementSet%p_Dcoords, &

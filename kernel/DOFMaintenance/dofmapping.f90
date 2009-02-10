@@ -302,6 +302,9 @@ contains
     case (EL_P1_3D, EL_Q1_3D, EL_Y1_3D, EL_R1_3D)
       ! DOF's in the vertices
       NDFG_uniform3D = rtriangulation%NVT
+    case (EL_QP1_3D)
+      ! 4 DOF's in the midpoint of the element.
+      NDFG_uniform3D = 4*rtriangulation%NEL
     case (EL_Q1T_3D)
       ! DOF's in the face midpoints
       NDFG_uniform3D = rtriangulation%NAT
@@ -650,6 +653,10 @@ contains
           ! DOF's in the vertices
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           call dof_locGlobUniMult_P1Q1_3D(p_2darray, IelIdx, IdofGlob)
+          return
+        case (EL_QP1)
+          ! DOF's for QP1
+          call dof_locGlobUniMult_QP1_3D(p_rtriangulation%NEL,IelIdx, IdofGlob)
           return
         case (EL_Q1T_3D)
           ! DOF's in the face midpoints
@@ -1608,6 +1615,57 @@ contains
       ! Calculate the global DOF's - which are simply the vertex numbers of the 
       ! corners.
       IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_QP1_3D(NEL, IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be QP1.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Number of elements in the triangulation
+  integer, intent(IN) :: NEL
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(IN) :: IelIdx
+
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF's.
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! 1st Global DOF = number of the element = function value
+      IdofGlob(1,i) = IelIdx(i)
+      ! 2nd Global DOF = NEL + number of the element = X-derivative
+      IdofGlob(2,i) = NEL+IelIdx(i)
+      ! 3rd Global DOF = 2*NEL + number of the element = Y-derivative
+      IdofGlob(3,i) = 2*NEL+IelIdx(i)
+      ! 4th Global DOF = 3*NEL + number of the element = Z-derivative
+      IdofGlob(4,i) = 3*NEL+IelIdx(i)
     end do
 
   end subroutine
