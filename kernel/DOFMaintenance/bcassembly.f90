@@ -3322,11 +3322,18 @@ contains
   integer, dimension(EL_MAXNBAS) :: IdofGlob
   logical :: buniform
   integer :: iidx
+  real(DP) :: daux1, daux2, daux3, daux4
   
   real(DP), parameter :: Q12 = 0.5_DP
   real(DP), parameter :: Q13 = 0.333333333333333_DP
   real(DP), parameter :: Q14 = 0.25_DP
   real(DP), parameter :: Q18 = 0.125_DP
+  
+  real(DP), parameter :: G2P = 0.577350269189626_DP ! = sqrt(1/3)
+  real(DP), parameter :: G3P = 0.774596669241483_DP ! = sqrt(3/5)
+  
+  ! Value of second Legendre-Polynomial in G3P
+  real(DP), parameter :: L2G3P = 0.4_DP
 
     ! Get the spatial discretisation and the triangulation
     p_rspatDisc => rblockDiscretisation%RspatialDiscr(iequation)
@@ -3496,18 +3503,34 @@ contains
       ! 2D P2 element
       case (EL_P2)
         ndofs = iregionNVT + iregionNMT
+      
+      ! 2D Q2 element
+      case (EL_Q2)
+        ndofs = iregionNVT + iregionNMT + iregionNEL
             
       ! 2D P1~/Q1~ element
       case (EL_P1T,EL_Q1T)
         ndofs = iregionNMT
       
-      ! 2D Q2 element
-      case (EL_Q2)
-        ndofs = iregionNVT + iregionNMT + iregionNEL
+      ! 2D Q1~ with bubble element
+      case (EL_Q1TB)
+        ndofs = iregionNMT + iregionNEL
+      
+      ! 2D Q2~ element
+      case (EL_Q2T)
+        ndofs = 2*iregionNMT + iregionNEL
+       
+      ! 2D Q2~ with bubble element
+      case (EL_Q2TB)
+        ndofs = 2*iregionNMT + 2*iregionNEL
       
       ! 3D Q1~ element
       case (EL_Q1T_3D)
         ndofs = iregionNAT
+      
+      ! 3D Q2~ element
+      case (EL_Q2T_3D)
+        ndofs = 2*iregionNAT + iregionNEL
       
       end select
 
@@ -3521,7 +3544,7 @@ contains
     Iwhere = 0
     
     ! First of all, go through all vertices in the mesh region (if any at all)
-    do i=1, iregionNVT
+    do i = 1, iregionNVT
     
       ! Get the index of the vertice
       ivt = p_IvertexIdx(i)
@@ -3552,7 +3575,7 @@ contains
         select case(elem_getPrimaryElement(ielemType))
         ! 1D P1/P2/S31 element
         case (EL_P1_1D,EL_P2_1D,EL_S31_1D)
-          do j=1,2
+          do j = 1, 2
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
               exit
@@ -3561,7 +3584,7 @@ contains
           
         ! 2D P1/P2/P3 element
         case (EL_P1,EL_P2,EL_P3)
-          do j=1,3
+          do j = 1, 3
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
               exit
@@ -3570,7 +3593,7 @@ contains
 
         ! 2D Q1/Q2/Q3 element
         case (EL_Q1,EL_Q2,EL_Q3)
-          do j=1,4 
+          do j = 1, 4 
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
               exit
@@ -3579,7 +3602,7 @@ contains
 
         ! 3D P1 element
         case (EL_P1_3D)
-          do j=1,4
+          do j = 1, 4
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
               exit
@@ -3588,7 +3611,7 @@ contains
 
         ! 3D Q1 element
         case (EL_Q1_3D)
-          do j=1,8
+          do j = 1, 8
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
               exit
@@ -3597,7 +3620,7 @@ contains
 
         ! 3D Y1 element
         case (EL_Y1_3D)
-          do j=1,5
+          do j = 1, 5
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
               exit
@@ -3606,7 +3629,7 @@ contains
 
         ! 3D R1 element
         case (EL_R1_3D)
-          do j=1,6
+          do j = 1, 6
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
               exit
@@ -3699,15 +3722,6 @@ contains
                 exit
               end if
             end do
-            
-          ! 2D Q1~ element
-          case (EL_Q1T)
-            do j=1,4
-              if ((p_IedgesAtElem(j,iel)) .eq. imt) then
-                idof = IdofGlob(j)
-                exit
-              end if
-            end do
 
           ! 2D Q2 element
           case (EL_Q2)
@@ -3718,6 +3732,71 @@ contains
                 exit
               end if
             end do
+            
+          ! 2D Q1~ element
+          case (EL_Q1T,EL_Q1TB)
+            do j=1,4
+              if ((p_IedgesAtElem(j,iel)) .eq. imt) then
+                idof = IdofGlob(j)
+                exit
+              end if
+            end do
+            
+          ! 2D Q2~ element
+          case (EL_Q2T,EL_Q2TB)
+            do j=1,4
+            
+              if ((p_IedgesAtElem(j,iel)) .ne. imt) cycle
+
+              ! Get the first DOF on this edge
+              idof = IdofGlob(j)
+
+              ! Let's check if we have already processed this dof
+              idofHigh = ishft(idof-1,-5) + 1
+              idofMask = int(ishft(1,iand(idof-1,31)),I32)
+              if (iand(p_IdofBitmap(idofHigh),idofMask) .ne. 0) exit
+              
+              ! Okay, the DOF hasn't been set yet.
+              ! So let's take care of the first Gauss point.
+              Dwhere(1) = -G2P
+              Dcoord2D(1:2) = Q12 * (&
+                (1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtEdge(1,imt))+&
+                (1.0_DP-G2P)*p_DvertexCoords(1:2,p_IvertsAtEdge(2,imt)))
+              call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+                  cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord2D, Dvalues, rcollection)
+              daux1 = Dvalues(1)
+
+              ! And take care of the second Gauss point.
+              Dwhere(1) = G2P
+              Dcoord2D(1:2) = Q12 * (&
+                (1.0_DP-G2P)*p_DvertexCoords(1:2,p_IvertsAtEdge(1,imt))+&
+                (1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtEdge(2,imt)))
+              call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+                  cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord2D, Dvalues, rcollection)
+              daux2 = Dvalues(1)
+              
+              ! Add integral-mean DOF value
+              call addDofToDirichletEntry(p_rdirichlet, idof, &
+                  0.5_DP*(daux1+daux2), ndofs)
+              p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+              
+              ! Calculate DOF of weighted integral-mean
+              idof = IdofGlob(j+4)
+              idofHigh = ishft(idof-1,-5) + 1
+              idofMask = int(ishft(1,iand(idof-1,31)),I32)
+              
+              ! Add weighted integral-mean DOF value
+              call addDofToDirichletEntry(p_rdirichlet, idof, &
+                  0.5_DP*G2P*(-daux1+daux2), ndofs)
+              p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+              
+              ! That's it for this edge
+              exit
+              
+            end do
+            
+            ! Set idof to 0 to avoid that the code below is executed
+            idof = 0
           
           ! 2D P3, Q3 and others are currently not supported
           
@@ -3806,6 +3885,101 @@ contains
               exit
             end if
           end do
+        
+        ! 3D Q2~ element
+        case (EL_Q2T_3D)
+          do j = 1, 6
+          
+            if ((p_IfacesAtElem(j,iel)) .ne. iat) cycle
+
+            ! Get the first DOF on this face
+            idof = IdofGlob(j)
+
+            ! Let's check if we have already processed this dof
+            idofHigh = ishft(idof-1,-5) + 1
+            idofMask = int(ishft(1,iand(idof-1,31)),I32)
+            if (iand(p_IdofBitmap(idofHigh),idofMask) .ne. 0) exit
+
+            ! Okay, the DOF hasn't been set yet.
+            ! So let's take care of the first Gauss point.
+            Dwhere(1:2) = -G2P
+            Dcoord3D(1:3) = Q14 * (&
+              (1.0_DP+G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(1,iat)) +&
+              (1.0_DP-G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(2,iat)) +&
+              (1.0_DP-G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(3,iat)) +&
+              (1.0_DP+G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(4,iat)))
+            call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+                cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord3D, Dvalues, rcollection)
+            daux1 = Dvalues(1)
+
+            ! Second Gauss point.
+            Dwhere(1) =  G2P
+            Dwhere(2) = -G2P
+            Dcoord3D(1:3) = Q14 * (&
+              (1.0_DP-G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(1,iat)) +&
+              (1.0_DP+G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(2,iat)) +&
+              (1.0_DP+G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(3,iat)) +&
+              (1.0_DP-G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(4,iat)))
+            call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+                cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord3D, Dvalues, rcollection)
+            daux2 = Dvalues(1)
+
+            ! Third Gauss point.
+            Dwhere(1) =  G2P
+            Dwhere(2) =  G2P
+            Dcoord3D(1:3) = Q14 * (&
+              (1.0_DP-G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(1,iat)) +&
+              (1.0_DP+G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(2,iat)) +&
+              (1.0_DP+G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(3,iat)) +&
+              (1.0_DP-G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(4,iat)))
+            call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+                cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord3D, Dvalues, rcollection)
+            daux3 = Dvalues(1)
+
+            ! Fourth Gauss point.
+            Dwhere(1) = -G2P
+            Dwhere(2) =  G2P
+            Dcoord3D(1:3) = Q14 * (&
+              (1.0_DP+G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(1,iat)) +&
+              (1.0_DP-G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(2,iat)) +&
+              (1.0_DP-G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(3,iat)) +&
+              (1.0_DP+G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(4,iat)))
+            call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+                cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord3D, Dvalues, rcollection)
+            daux4 = Dvalues(1)
+
+            ! Add integral-mean DOF value
+            call addDofToDirichletEntry(p_rdirichlet, idof, &
+                0.25_DP*(daux1+daux2+daux3+daux4), ndofs)
+            p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+
+            ! Calculate DOF of first weighted integral-mean
+            idof = IdofGlob(6+2*(j-1)+1)
+            idofHigh = ishft(idof-1,-5) + 1
+            idofMask = int(ishft(1,iand(idof-1,31)),I32)
+              
+            ! Add first weighted integral-mean DOF value
+            call addDofToDirichletEntry(p_rdirichlet, idof, &
+               0.25_DP*G2P*(-daux1+daux2+daux3-daux4), ndofs)
+            p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+
+            ! Calculate DOF of second weighted integral-mean
+            idof = IdofGlob(6+2*(j-1)+2)
+            idofHigh = ishft(idof-1,-5) + 1
+            idofMask = int(ishft(1,iand(idof-1,31)),I32)
+              
+            ! Add second weighted integral-mean DOF value
+            call addDofToDirichletEntry(p_rdirichlet, idof, &
+               0.25_DP*G2P*(-daux1-daux2+daux3+daux4), ndofs)
+            p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+            
+            ! That's it for this face
+            exit
+          
+          end do
+
+          ! Set idof to 0 to avoid that the code below is executed
+          idof = 0
         
         ! Currently there are no other 3D elements with DOFs on the faces
         
@@ -3992,7 +4166,85 @@ contains
 
         ! Add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+        
+      ! 2D Q1TB element
+      case (EL_Q1TB)
+        ! The quad-integral-mean DOF has number 5
+        idof = IdofGlob(5)
+        
+        ! Calculate quad-midpoint to approximate the integral mean
+        Dcoord2D(1:2) = Q14 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
+        
+        ! Dwhere is (0,0)
+        Dwhere = 0.0_DP
+        
+        ! Call the boundary condition callback routine
+        call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
 
+        ! Add the DOF into the list
+        call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+        
+      ! 2D Q2T element
+      case (EL_Q2T)
+        ! The quad-integral-mean DOF has number 9
+        idof = IdofGlob(9)
+        
+        ! Gauss-Point 1
+        Dwhere(1) = -G2P
+        Dwhere(2) = -G2P
+        Dcoord2D(1:2) = Q14 * (&
+          (1.0_DP+G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          (1.0_DP-G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          (1.0_DP-G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
+          (1.0_DP+G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
+        call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
+        daux1 = Dvalues(1)
+
+        ! Gauss-Point 2
+        Dwhere(1) =  G2P
+        Dwhere(2) = -G2P
+        Dcoord2D(1:2) = Q14 * (&
+          (1.0_DP-G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          (1.0_DP+G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          (1.0_DP+G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
+          (1.0_DP-G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
+        call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
+        daux2 = Dvalues(1)
+
+        ! Gauss-Point 3
+        Dwhere(1) =  G2P
+        Dwhere(2) =  G2P
+        Dcoord2D(1:2) = Q14 * (&
+          (1.0_DP-G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          (1.0_DP+G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          (1.0_DP+G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
+          (1.0_DP-G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
+        call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
+        daux3 = Dvalues(1)
+
+        ! Gauss-Point 4
+        Dwhere(1) = -G2P
+        Dwhere(2) =  G2P
+        Dcoord2D(1:2) = Q14 * (&
+          (1.0_DP+G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          (1.0_DP-G2P)*(1.0_DP-G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          (1.0_DP-G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
+          (1.0_DP+G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
+        call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
+        daux4 = Dvalues(1)
+
+        ! Add the integral-mean DOF into the list
+        call addDofToDirichletEntry(p_rdirichlet, idof, &
+            0.25_DP*(daux1+daux2+daux3+daux4), ndofs)
+        
       ! 3D Q0 element
       case (EL_Q0_3D)
         ! The hexa-midpoint DOF has number 1

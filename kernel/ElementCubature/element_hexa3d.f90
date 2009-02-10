@@ -3413,4 +3413,330 @@ contains
   ! That's it
   end subroutine
 
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_E050_3D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(IN)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(IN)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(IN)     :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 19
+
+  ! derivatives on reference element
+  real(DP), dimension(NBAS,NDIM3D) :: DrefDer
+  
+  ! Twist matrices
+  real(DP), dimension(2,2,0:7) :: Dtwist
+  real(DP), dimension(2,2,6) :: Dtm
+  
+  real(DP), dimension(2,6) :: DL
+
+  ! Local variables
+  real(DP) :: ddet,dx,dy,dz,dx2,dy2,dz2
+  integer :: i,j
+  integer(I32) :: itwist
+
+  ! Some parameters to make the code less readable... ^_^
+  real(DP), parameter :: P1 = 0.75_DP
+  real(DP), parameter :: P2 = 1.0_DP
+  real(DP), parameter :: P3 = 2.5_DP
+  real(DP), parameter :: P4 = 3.0_DP
+  real(DP), parameter :: Q1 = 0.75_DP
+  real(DP), parameter :: Q2 = 1.0_DP
+  real(DP), parameter :: Q3 = 1.5_DP
+  real(DP), parameter :: Q4 = 1.875_DP
+  real(DP), parameter :: Q5 = 2.25_DP
+  real(DP), parameter :: Q6 = 4.5_DP
+  real(DP), parameter :: Q7 = 5.625_DP
+  
+    ! Set up twist matrices
+    Dtwist(:,:,0) = reshape( (/ 1.0_DP, 0.0_DP, 0.0_DP, 1.0_DP/) , (/2,2/) )
+    Dtwist(:,:,1) = reshape( (/ 0.0_DP, 1.0_DP,-1.0_DP, 0.0_DP/) , (/2,2/) )
+    Dtwist(:,:,2) = reshape( (/-1.0_DP, 0.0_DP, 0.0_DP,-1.0_DP/) , (/2,2/) )
+    Dtwist(:,:,3) = reshape( (/ 0.0_DP,-1.0_DP, 1.0_DP, 0.0_DP/) , (/2,2/) )
+    Dtwist(:,:,4) = reshape( (/ 0.0_DP, 1.0_DP, 1.0_DP, 0.0_DP/) , (/2,2/) )
+    Dtwist(:,:,5) = reshape( (/-1.0_DP, 0.0_DP, 0.0_DP, 1.0_DP/) , (/2,2/) )
+    Dtwist(:,:,6) = reshape( (/ 0.0_DP,-1.0_DP,-1.0_DP, 0.0_DP/) , (/2,2/) )
+    Dtwist(:,:,7) = reshape( (/ 1.0_DP, 0.0_DP, 0.0_DP,-1.0_DP/) , (/2,2/) )
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC3D)) then
+    
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Get the six twist matrices for this element
+        itwist = reval%p_ItwistIndex(j)
+        Dtm(:,:,1) = Dtwist(:,:,iand(ishft(itwist,-12),7))
+        Dtm(:,:,2) = Dtwist(:,:,iand(ishft(itwist,-15),7))
+        Dtm(:,:,3) = Dtwist(:,:,iand(ishft(itwist,-18),7))
+        Dtm(:,:,4) = Dtwist(:,:,iand(ishft(itwist,-21),7))
+        Dtm(:,:,5) = Dtwist(:,:,iand(ishft(itwist,-24),7))
+        Dtm(:,:,6) = Dtwist(:,:,iand(ishft(itwist,-27),7))
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+          
+          ! Pre-calculate squares
+          dx2 = dx * dx
+          dy2 = dy * dy
+          dz2 = dz * dz
+
+          ! Evaluate basis functions
+          DL(1,1) = P1*dx*(-P2 + dz*(-P2 + dz*( P4 - P3*dz) + P3*dx2))
+          DL(2,1) = P1*dy*(-P2 + dz*(-P2 + dz*( P4 - P3*dz) + P3*dy2))
+          DL(1,2) = P1*dz*(-P2 + dy*(-P2 + dy*( P4 - P3*dy) + P3*dz2))
+          DL(2,2) = P1*dx*(-P2 + dy*(-P2 + dy*( P4 - P3*dy) + P3*dx2))
+          DL(1,3) = P1*dz*(-P2 + dx*( P2 + dx*( P4 + P3*dx) - P3*dz2))
+          DL(2,3) = P1*dy*(-P2 + dx*( P2 + dx*( P4 + P3*dx) - P3*dy2))
+          DL(1,4) = P1*dz*(-P2 + dy*( P2 + dy*( P4 + P3*dy) - P3*dz2))
+          DL(2,4) = P1*dx*( P2 + dy*(-P2 + dy*(-P4 - P3*dy) + P3*dx2))
+          DL(1,5) = P1*dz*(-P2 + dx*(-P2 + dx*( P4 - P3*dx) + P3*dz2))
+          DL(2,5) = P1*dy*( P2 + dx*( P2 + dx*(-P4 + P3*dx) - P3*dy2))
+          DL(1,6) = P1*dy*(-P2 + dz*( P2 + dz*( P4 + P3*dz) - P3*dy2))
+          DL(2,6) = P1*dx*(-P2 + dz*( P2 + dz*( P4 + P3*dz) - P3*dx2))
+
+          Dbas( 1,DER_FUNC3D,i,j) = dz*(-P2 + P1*(dz + dx2 + dy2)) - 0.25_DP
+          Dbas( 2,DER_FUNC3D,i,j) = dy*(-P2 + P1*(dy + dx2 + dz2)) - 0.25_DP
+          Dbas( 3,DER_FUNC3D,i,j) = dx*( P2 + P1*(dx - dy2 - dz2)) - 0.25_DP
+          Dbas( 4,DER_FUNC3D,i,j) = dy*( P2 + P1*(dy - dx2 - dz2)) - 0.25_DP
+          Dbas( 5,DER_FUNC3D,i,j) = dx*(-P2 + P1*(dx + dy2 + dz2)) - 0.25_DP
+          Dbas( 6,DER_FUNC3D,i,j) = dz*( P2 + P1*(dz - dx2 - dy2)) - 0.25_DP
+          Dbas( 7,DER_FUNC3D,i,j) = Dtm(1,1,1)*DL(1,1) + Dtm(1,2,1)*DL(2,1)
+          Dbas( 8,DER_FUNC3D,i,j) = Dtm(2,1,1)*DL(1,1) + Dtm(2,2,1)*DL(2,1)
+          Dbas( 9,DER_FUNC3D,i,j) = Dtm(1,1,2)*DL(1,2) + Dtm(1,2,2)*DL(2,2)
+          Dbas(10,DER_FUNC3D,i,j) = Dtm(2,1,2)*DL(1,2) + Dtm(2,2,2)*DL(2,2)
+          Dbas(11,DER_FUNC3D,i,j) = Dtm(1,1,3)*DL(1,3) + Dtm(1,2,3)*DL(2,3)
+          Dbas(12,DER_FUNC3D,i,j) = Dtm(2,1,3)*DL(1,3) + Dtm(2,2,3)*DL(2,3)
+          Dbas(13,DER_FUNC3D,i,j) = Dtm(1,1,4)*DL(1,4) + Dtm(1,2,4)*DL(2,4)
+          Dbas(14,DER_FUNC3D,i,j) = Dtm(2,1,4)*DL(1,4) + Dtm(2,2,4)*DL(2,4)
+          Dbas(15,DER_FUNC3D,i,j) = Dtm(1,1,5)*DL(1,5) + Dtm(1,2,5)*DL(2,5)
+          Dbas(16,DER_FUNC3D,i,j) = Dtm(2,1,5)*DL(1,5) + Dtm(2,2,5)*DL(2,5)
+          Dbas(17,DER_FUNC3D,i,j) = Dtm(1,1,6)*DL(1,6) + Dtm(1,2,6)*DL(2,6)
+          Dbas(18,DER_FUNC3D,i,j) = Dtm(2,1,6)*DL(1,6) + Dtm(2,2,6)*DL(2,6)
+          Dbas(19,DER_FUNC3D,i,j) = 2.5_DP - 1.5_DP*(dx2 + dy2 + dz2)
+          
+        end do ! i
+      
+      end do ! j
+
+    end if
+
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
+
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Get the six twist matrices for this element
+        itwist = reval%p_ItwistIndex(j)
+        Dtm(:,:,1) = Dtwist(:,:,iand(ishft(itwist,-12),7))
+        Dtm(:,:,2) = Dtwist(:,:,iand(ishft(itwist,-15),7))
+        Dtm(:,:,3) = Dtwist(:,:,iand(ishft(itwist,-18),7))
+        Dtm(:,:,4) = Dtwist(:,:,iand(ishft(itwist,-21),7))
+        Dtm(:,:,5) = Dtwist(:,:,iand(ishft(itwist,-24),7))
+        Dtm(:,:,6) = Dtwist(:,:,iand(ishft(itwist,-27),7))
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+          
+          ! Pre-calculate squares
+          dx2 = dx * dx
+          dy2 = dy * dy
+          dz2 = dz * dz
+          
+          ! Calculate derivatives on reference element
+          ! X-derivatives
+          DL(1,1) = -Q1 + dz*(-Q1 + Q7*dx2 + dz*( Q5 - Q4*dz))
+          DL(2,1) =  0.0_DP
+          DL(1,2) =  0.0_DP
+          DL(2,2) = -Q1 + dy*(-Q1 + Q7*dx2 + dy*( Q5 - Q4*dy))
+          DL(1,3) =  dz*( Q1 + dx*( Q6 + Q7*dx) - Q4*dz2)
+          DL(2,3) =  dy*( Q1 + dx*( Q6 + Q7*dx) - Q4*dy2)
+          DL(1,4) =  0.0_DP
+          DL(2,4) =  Q1 + dy*(-Q1 + Q7*dx2 + dy*(-Q5 - Q4*dy))
+          DL(1,5) =  dz*(-Q1 + dx*( Q6 - Q7*dx) + Q4*dz2)
+          DL(2,5) =  dy*( Q1 + dx*(-Q6 + Q7*dx) - Q4*dy2)
+          DL(1,6) =  0.0_DP
+          DL(2,6) = -Q1 + dz*( Q1 - Q7*dx2 + dz*( Q5 + Q4*dz))
+
+          DrefDer( 1,1) =  Q3*dx*dz
+          DrefDer( 2,1) =  Q3*dx*dy
+          DrefDer( 3,1) =  Q2 + Q3*dx - Q1*dy2 - Q1*dz2
+          DrefDer( 4,1) = -Q3*dx*dy
+          DrefDer( 5,1) = -Q2 + Q3*dx + Q1*dy2 + Q1*dz2
+          DrefDer( 6,1) = -Q3*dx*dz
+          DrefDer( 7,1) = Dtm(1,1,1)*DL(1,1) + Dtm(1,2,1)*DL(2,1)
+          DrefDer( 8,1) = Dtm(2,1,1)*DL(1,1) + Dtm(2,2,1)*DL(2,1)
+          DrefDer( 9,1) = Dtm(1,1,2)*DL(1,2) + Dtm(1,2,2)*DL(2,2)
+          DrefDer(10,1) = Dtm(2,1,2)*DL(1,2) + Dtm(2,2,2)*DL(2,2)
+          DrefDer(11,1) = Dtm(1,1,3)*DL(1,3) + Dtm(1,2,3)*DL(2,3)
+          DrefDer(12,1) = Dtm(2,1,3)*DL(1,3) + Dtm(2,2,3)*DL(2,3)
+          DrefDer(13,1) = Dtm(1,1,4)*DL(1,4) + Dtm(1,2,4)*DL(2,4)
+          DrefDer(14,1) = Dtm(2,1,4)*DL(1,4) + Dtm(2,2,4)*DL(2,4)
+          DrefDer(15,1) = Dtm(1,1,5)*DL(1,5) + Dtm(1,2,5)*DL(2,5)
+          DrefDer(16,1) = Dtm(2,1,5)*DL(1,5) + Dtm(2,2,5)*DL(2,5)
+          DrefDer(17,1) = Dtm(1,1,6)*DL(1,6) + Dtm(1,2,6)*DL(2,6)
+          DrefDer(18,1) = Dtm(2,1,6)*DL(1,6) + Dtm(2,2,6)*DL(2,6)
+          DrefDer(19,1) = -3.0_DP*dx
+          
+          ! Y-derivatives
+          DL(1,1) =  0.0_DP
+          DL(2,1) = -Q1 + dz*(-Q1 + Q7*dy2 + dz*( Q5 - Q4*dz))
+          DL(1,2) =  dz*(-Q1 + dy*( Q6 - Q7*dy) + Q4*dz2)
+          DL(2,2) =  dx*(-Q1 + dy*( Q6 - Q7*dy) + Q4*dx2)
+          DL(1,3) =  0.0_DP
+          DL(2,3) = -Q1 + dx*( Q1 - Q7*dy2 + dx*( Q5 + Q4*dx))
+          DL(1,4) =  dz*( Q1 + dy*( Q6 + Q7*dy) - Q4*dz2)
+          DL(2,4) =  dx*(-Q1 + dy*(-Q6 - Q7*dy) + Q4*dx2)
+          DL(1,5) =  0.0_DP
+          DL(2,5) =  Q1 + dx*( Q1 - Q7*dy2 + dx*(-Q5 + Q4*dx))
+          DL(1,6) = -Q1 + dz*( Q1 - Q7*dy2 + dz*( Q5 + Q4*dz))
+          DL(2,6) =  0.0_DP
+
+          DrefDer( 1,2) =  Q3*dy*dz
+          DrefDer( 2,2) = -Q2 + Q3*dy + Q1*dx2 + Q1*dz2
+          DrefDer( 3,2) = -Q3*dx*dy
+          DrefDer( 4,2) =  Q2 + Q3*dy - Q1*dx2 - Q1*dz2
+          DrefDer( 5,2) =  Q3*dx*dy
+          DrefDer( 6,2) = -Q3*dy*dz
+          DrefDer( 7,2) = Dtm(1,1,1)*DL(1,1) + Dtm(1,2,1)*DL(2,1)
+          DrefDer( 8,2) = Dtm(2,1,1)*DL(1,1) + Dtm(2,2,1)*DL(2,1)
+          DrefDer( 9,2) = Dtm(1,1,2)*DL(1,2) + Dtm(1,2,2)*DL(2,2)
+          DrefDer(10,2) = Dtm(2,1,2)*DL(1,2) + Dtm(2,2,2)*DL(2,2)
+          DrefDer(11,2) = Dtm(1,1,3)*DL(1,3) + Dtm(1,2,3)*DL(2,3)
+          DrefDer(12,2) = Dtm(2,1,3)*DL(1,3) + Dtm(2,2,3)*DL(2,3)
+          DrefDer(13,2) = Dtm(1,1,4)*DL(1,4) + Dtm(1,2,4)*DL(2,4)
+          DrefDer(14,2) = Dtm(2,1,4)*DL(1,4) + Dtm(2,2,4)*DL(2,4)
+          DrefDer(15,2) = Dtm(1,1,5)*DL(1,5) + Dtm(1,2,5)*DL(2,5)
+          DrefDer(16,2) = Dtm(2,1,5)*DL(1,5) + Dtm(2,2,5)*DL(2,5)
+          DrefDer(17,2) = Dtm(1,1,6)*DL(1,6) + Dtm(1,2,6)*DL(2,6)
+          DrefDer(18,2) = Dtm(2,1,6)*DL(1,6) + Dtm(2,2,6)*DL(2,6)
+          DrefDer(19,2) = -3.0_DP*dy
+
+          ! Z-derivatives
+          DL(1,1) =  dx*(-Q1 + dz*( Q6 - Q7*dz) + Q4*dx2)
+          DL(2,1) =  dy*(-Q1 + dz*( Q6 - Q7*dz) + Q4*dy2)
+          DL(1,2) = -Q1 + dy*(-Q1 + Q7*dz2 + dy*( Q5 - Q4*dy))
+          DL(2,2) =  0.0_DP
+          DL(1,3) = -Q1 + dx*( Q1 - Q7*dz2 + dx*( Q5 + Q4*dx))
+          DL(2,3) =  0.0_DP
+          DL(1,4) = -Q1 + dy*( Q1 - Q7*dz2 + dy*( Q5 + Q4*dy))
+          DL(2,4) =  0.0_DP
+          DL(1,5) = -Q1 + dx*(-Q1 + Q7*dz2 + dx*( Q5 - Q4*dx))
+          DL(2,5) =  0.0_DP
+          DL(1,6) =  dy*( Q1 + dz*( Q6 + Q7*dz) - Q4*dy2)
+          DL(2,6) =  dx*( Q1 + dz*( Q6 + Q7*dz) - Q4*dx2)
+
+          DrefDer( 1,3) = -Q2 + Q3*dz + Q1*dx2 + Q1*dy2
+          DrefDer( 2,3) =  Q3*dy*dz
+          DrefDer( 3,3) = -Q3*dx*dz
+          DrefDer( 4,3) = -Q3*dy*dz
+          DrefDer( 5,3) =  Q3*dx*dz
+          DrefDer( 6,3) =  Q2 + Q3*dz - Q1*dx2 - Q1*dy2
+          DrefDer( 7,3) = Dtm(1,1,1)*DL(1,1) + Dtm(1,2,1)*DL(2,1)
+          DrefDer( 8,3) = Dtm(2,1,1)*DL(1,1) + Dtm(2,2,1)*DL(2,1)
+          DrefDer( 9,3) = Dtm(1,1,2)*DL(1,2) + Dtm(1,2,2)*DL(2,2)
+          DrefDer(10,3) = Dtm(2,1,2)*DL(1,2) + Dtm(2,2,2)*DL(2,2)
+          DrefDer(11,3) = Dtm(1,1,3)*DL(1,3) + Dtm(1,2,3)*DL(2,3)
+          DrefDer(12,3) = Dtm(2,1,3)*DL(1,3) + Dtm(2,2,3)*DL(2,3)
+          DrefDer(13,3) = Dtm(1,1,4)*DL(1,4) + Dtm(1,2,4)*DL(2,4)
+          DrefDer(14,3) = Dtm(2,1,4)*DL(1,4) + Dtm(2,2,4)*DL(2,4)
+          DrefDer(15,3) = Dtm(1,1,5)*DL(1,5) + Dtm(1,2,5)*DL(2,5)
+          DrefDer(16,3) = Dtm(2,1,5)*DL(1,5) + Dtm(2,2,5)*DL(2,5)
+          DrefDer(17,3) = Dtm(1,1,6)*DL(1,6) + Dtm(1,2,6)*DL(2,6)
+          DrefDer(18,3) = Dtm(2,1,6)*DL(1,6) + Dtm(2,2,6)*DL(2,6)
+          DrefDer(19,3) = -3.0_DP*dz
+          
+          ! Remark: Please note that the following code is universal and does
+          ! not need to be modified for other parametric 3D hexahedron elements!
+          
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+          
+          ! X-derivatives on real element
+          dx = (reval%p_Djac(5,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(6,i,j)*reval%p_Djac(8,i,j))*ddet
+          dy = (reval%p_Djac(8,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(2,i,j)*reval%p_Djac(9,i,j))*ddet
+          dz = (reval%p_Djac(2,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(5,i,j)*reval%p_Djac(3,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_X,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+        
+          ! Y-derivatives on real element
+          dx = (reval%p_Djac(7,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(9,i,j))*ddet
+          dy = (reval%p_Djac(1,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(3,i,j))*ddet
+          dz = (reval%p_Djac(4,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(6,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Y,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+
+          ! Z-derivatives on real element
+          dx = (reval%p_Djac(4,i,j)*reval%p_Djac(8,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(5,i,j))*ddet
+          dy = (reval%p_Djac(7,i,j)*reval%p_Djac(2,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(8,i,j))*ddet
+          dz = (reval%p_Djac(1,i,j)*reval%p_Djac(5,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(2,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Z,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+        
+        end do ! i
+
+      end do ! j
+          
+    end if
+
+  end subroutine
+
 end module

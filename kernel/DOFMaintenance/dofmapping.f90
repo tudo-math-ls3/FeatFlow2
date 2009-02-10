@@ -305,6 +305,9 @@ contains
     case (EL_Q1T_3D)
       ! DOF's in the face midpoints
       NDFG_uniform3D = rtriangulation%NAT
+    case (EL_Q2T_3D)
+      ! DOF's in the face midpoints
+      NDFG_uniform3D = 3*rtriangulation%NAT + rtriangulation%NEL
     end select
     
     end function
@@ -653,11 +656,16 @@ contains
           call storage_getbase_int2D(p_rtriangulation%h_IfacesAtElement,p_2darray)
           call dof_locGlobUniMult_Q1T_3D(p_2darray, IelIdx, IdofGlob)
           return
+        case (EL_Q2T_3D)
+          ! DOF's in the face midpoints
+          call storage_getbase_int2D(p_rtriangulation%h_IfacesAtElement,p_2darray)
+          call dof_locGlobUniMult_Q2T_3D(p_rtriangulation%NAT,p_2darray, IelIdx, IdofGlob)
+          return
         end select
         
       end if
     
-    case DEFAULT
+    case default
       print *,'dof_locGlobMapping_mult: invalid discretisation!'
       call sys_halt()
     end select
@@ -701,11 +709,11 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Global DOF = number of the element
-    IdofGlob(1,i) = IelIdx(i)
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Global DOF = number of the element
+      IdofGlob(1,i) = IelIdx(i)
+    end do
 
   end subroutine
 
@@ -747,12 +755,12 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's - which are simply the vertex numbers of the 
-    ! corners.
-    IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! corners.
+      IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
+    end do
 
   end subroutine
 
@@ -798,13 +806,13 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's - which are simply the vertex numbers of the 
-    ! corners and the cell midpoints.
-    IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
-    IdofGlob(3,i) = NVT + IelIdx(i)
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! corners and the cell midpoints.
+      IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
+      IdofGlob(3,i) = NVT + IelIdx(i)
+    end do
 
   end subroutine
 
@@ -850,13 +858,13 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's - which are simply the vertex numbers of the 
-    ! corners.
-    IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
-    IdofGlob(3:4,i) = NVT + IdofGlob(1:2,i)
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! corners.
+      IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
+      IdofGlob(3:4,i) = NVT + IdofGlob(1:2,i)
+    end do
 
   end subroutine
 
@@ -894,11 +902,11 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Global DOF = number of the element
-    IdofGlob(1,i) = IelIdx(i)
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Global DOF = number of the element
+      IdofGlob(1,i) = IelIdx(i)
+    end do
 
   end subroutine
 
@@ -940,17 +948,17 @@ contains
   ! local variables 
   integer :: i,j
   
-  ! Get the number of local DOF's - usually either 3 or 4, depending on
-  ! the element. The first dimension of IdofGlob indicates the number of 
-  ! DOF's.
-  j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
-  
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's - which are simply the vertex numbers of the 
-    ! corners.
-    IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
-  end do
+    ! Get the number of local DOF's - usually either 3 or 4, depending on
+    ! the element. The first dimension of IdofGlob indicates the number of 
+    ! DOF's.
+    j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
+    
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! corners.
+      IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
+    end do
 
   end subroutine
 
@@ -997,20 +1005,20 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's.
-    ! The P2 element has global DOF's in the corners and edge midpoints
-    ! of the triangles. 
-    !
-    ! Take the numbers of the corners of the triangles at first.
-    IdofGlob(1:3,i) = IverticesAtElement(1:3,IelIdx(i))
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's.
+      ! The P2 element has global DOF's in the corners and edge midpoints
+      ! of the triangles. 
+      !
+      ! Take the numbers of the corners of the triangles at first.
+      IdofGlob(1:3,i) = IverticesAtElement(1:3,IelIdx(i))
 
-    ! Then append the numbers of the edges as midpoint numbers.
-    ! Note that the number in this array is NVT+1..NVT+NMT.
-    IdofGlob(4:6,i) = NVT + IedgesAtElement(1:3,IelIdx(i))
-    
-  end do
+      ! Then append the numbers of the edges as midpoint numbers.
+      ! Note that the number in this array is NVT+1..NVT+NMT.
+      IdofGlob(4:6,i) = NVT + IedgesAtElement(1:3,IelIdx(i))
+      
+    end do
 
   end subroutine
 
@@ -1061,24 +1069,24 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's.
-    ! The Q2 element has global DOF's in the corners, edge midpoints
-    ! and element midpoints of the quads.
-    !
-    ! Take the numbers of the corners of the triangles at first.
-    IdofGlob(1:4,i) = IverticesAtElement(1:4,IelIdx(i))
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's.
+      ! The Q2 element has global DOF's in the corners, edge midpoints
+      ! and element midpoints of the quads.
+      !
+      ! Take the numbers of the corners of the triangles at first.
+      IdofGlob(1:4,i) = IverticesAtElement(1:4,IelIdx(i))
 
-    ! Then append the numbers of the edges as midpoint numbers.
-    ! Note that the number in this array is NVT+1..NVT+NMT.
-    IdofGlob(5:8,i) = NVT+IedgesAtElement(1:4,IelIdx(i))
-    
-    ! At last append the element number - shifted by NVT+NMT to get
-    ! a number behind.
-    IdofGlob(9,i) = IelIdx(i)+NVT+NMT
-    
-  end do
+      ! Then append the numbers of the edges as midpoint numbers.
+      ! Note that the number in this array is NVT+1..NVT+NMT.
+      IdofGlob(5:8,i) = NVT+IedgesAtElement(1:4,IelIdx(i))
+      
+      ! At last append the element number - shifted by NVT+NMT to get
+      ! a number behind.
+      IdofGlob(9,i) = IelIdx(i)+NVT+NMT
+      
+    end do
 
   end subroutine
 
@@ -1139,49 +1147,49 @@ contains
   ! local variables 
   integer :: i
   
-  if (NVE .eq. 3) then
-    ! This element set consists of triangular elements.
-     
-    ! Loop through the elements to handle
-    do i=1,size(IelIdx)
-      ! Calculate the global DOF's.
-      ! The P2 element has global DOF's in the corners and edge midpoints.
-      !
-      ! Take the numbers of the corners of the triangles at first.
-      IdofGlob(1:3,i) = IverticesAtElement(1:3,IelIdx(i))
+    if (NVE .eq. 3) then
+      ! This element set consists of triangular elements.
+       
+      ! Loop through the elements to handle
+      do i=1,size(IelIdx)
+        ! Calculate the global DOF's.
+        ! The P2 element has global DOF's in the corners and edge midpoints.
+        !
+        ! Take the numbers of the corners of the triangles at first.
+        IdofGlob(1:3,i) = IverticesAtElement(1:3,IelIdx(i))
 
-      ! Then append the numbers of the edges as midpoint numbers.
-      ! Note that the number in this array is NVT+1..NVT+NMT.
-      IdofGlob(4:6,i) = NVT+IedgesAtElement(1:3,IelIdx(i))
-      
-    end do
-     
-  else
-    ! This element set consists of quad elements.
+        ! Then append the numbers of the edges as midpoint numbers.
+        ! Note that the number in this array is NVT+1..NVT+NMT.
+        IdofGlob(4:6,i) = NVT+IedgesAtElement(1:3,IelIdx(i))
+        
+      end do
+       
+    else
+      ! This element set consists of quad elements.
 
-    ! Loop through the elements to handle
-    do i=1,size(IelIdx)
-      ! Calculate the global DOF's.
-      ! The Q2 element has global DOF's in the corners, edge midpoints
-      ! and element midpoints of the quads.
-      !
-      ! Take the numbers of the corners of the triangles at first.
-      IdofGlob(1:4,i) = IverticesAtElement(1:4,IelIdx(i))
+      ! Loop through the elements to handle
+      do i=1,size(IelIdx)
+        ! Calculate the global DOF's.
+        ! The Q2 element has global DOF's in the corners, edge midpoints
+        ! and element midpoints of the quads.
+        !
+        ! Take the numbers of the corners of the triangles at first.
+        IdofGlob(1:4,i) = IverticesAtElement(1:4,IelIdx(i))
 
-      ! Then append the numbers of the edges as midpoint numbers.
-      ! Note that the number in this array is NVT+1..NVT+NMT.
-      IdofGlob(5:8,i) = NVT+IedgesAtElement(1:4,IelIdx(i))
+        ! Then append the numbers of the edges as midpoint numbers.
+        ! Note that the number in this array is NVT+1..NVT+NMT.
+        IdofGlob(5:8,i) = NVT+IedgesAtElement(1:4,IelIdx(i))
+        
+        ! At last append the element number - shifted by NVT+NMT to get
+        ! a number behind. Note that we must not specify the actual element
+        ! number here, but the element number in the set of quad elements!
+        ! This is due to the fact that the element midpoints of triangular 
+        ! elements don't contribute to DOF's in a mixed P2/Q2 discretisatrion!
+        IdofGlob(9,i) = IelementCounter(IelIdx(i))+NVT+NMT
+        
+      end do
       
-      ! At last append the element number - shifted by NVT+NMT to get
-      ! a number behind. Note that we must not specify the actual element
-      ! number here, but the element number in the set of quad elements!
-      ! This is due to the fact that the element midpoints of triangular 
-      ! elements don't contribute to DOF's in a mixed P2/Q2 discretisatrion!
-      IdofGlob(9,i) = IelementCounter(IelIdx(i))+NVT+NMT
-      
-    end do
-    
-  end if
+    end if
 
   end subroutine
 
@@ -1222,15 +1230,15 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! 1st Global DOF = number of the element = function value
-    IdofGlob(1,i) = IelIdx(i)
-    ! 2nd Global DOF = NEL + number of the element = X-derivative
-    IdofGlob(2,i) = NEL+IelIdx(i)
-    ! 3rd Global DOF = 2*NEL + number of the element = Y-derivative
-    IdofGlob(3,i) = 2*NEL+IelIdx(i)
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! 1st Global DOF = number of the element = function value
+      IdofGlob(1,i) = IelIdx(i)
+      ! 2nd Global DOF = NEL + number of the element = X-derivative
+      IdofGlob(2,i) = NEL+IelIdx(i)
+      ! 3rd Global DOF = 2*NEL + number of the element = Y-derivative
+      IdofGlob(3,i) = 2*NEL+IelIdx(i)
+    end do
 
   end subroutine
 
@@ -1272,15 +1280,15 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's - which are simply the vertex numbers of the 
-    ! corners.
-    ! We always copy all elements of IedgesAtElement (:,.).
-    ! There's no harm and the compiler can optimise better.
-    
-    IdofGlob(1:TRIA_NVETRI2D,i) = IedgesAtElement(1:TRIA_NVETRI2D,IelIdx(i))
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! corners.
+      ! We always copy all elements of IedgesAtElement (:,.).
+      ! There's no harm and the compiler can optimise better.
+      
+      IdofGlob(1:TRIA_NVETRI2D,i) = IedgesAtElement(1:TRIA_NVETRI2D,IelIdx(i))
+    end do
 
   end subroutine
 
@@ -1322,14 +1330,14 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's - which are simply the edge numbers.
-    ! We always copy all elements of IedgesAtElement (:,.).
-    ! There's no harm and the compiler can optimise better.
-    
-    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's - which are simply the edge numbers.
+      ! We always copy all elements of IedgesAtElement (:,.).
+      ! There's no harm and the compiler can optimise better.
+      
+      IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
+    end do
 
   end subroutine
 
@@ -1374,16 +1382,16 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's - which are simply the numbers of the 
-    ! edges. The DOF in the element gets the element number.
-    ! We always copy all elements of IedgesAtElement (:,.).
-    ! There's no harm and the compiler can optimise better.
-    
-    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
-    IdofGlob(TRIA_NVEQUAD2D+1,i) = iNMT + IelIdx(i)
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's - which are simply the numbers of the 
+      ! edges. The DOF in the element gets the element number.
+      ! We always copy all elements of IedgesAtElement (:,.).
+      ! There's no harm and the compiler can optimise better.
+      
+      IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
+      IdofGlob(TRIA_NVEQUAD2D+1,i) = iNMT + IelIdx(i)
+    end do
 
   end subroutine
 
@@ -1428,20 +1436,20 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's.
-    ! The first 4 DOF's are the number of the edges.
-    ! The next 4 DOF's are the number of the edges + nmt.
-    ! The last DOF is the element number + 2*nmt.
-    ! We always copy all elements of IedgesAtElement (:,.).
-    ! There's no harm and the compiler can optimise better.
-    
-    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
-    IdofGlob(TRIA_NVEQUAD2D+1:2*TRIA_NVEQUAD2D,i) = &
-        IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))+iNMT
-    IdofGlob(2*TRIA_NVEQUAD2D+1,i) = 2*iNMT + IelIdx(i)
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's.
+      ! The first 4 DOF's are the number of the edges.
+      ! The next 4 DOF's are the number of the edges + nmt.
+      ! The last DOF is the element number + 2*nmt.
+      ! We always copy all elements of IedgesAtElement (:,.).
+      ! There's no harm and the compiler can optimise better.
+      
+      IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
+      IdofGlob(TRIA_NVEQUAD2D+1:2*TRIA_NVEQUAD2D,i) = &
+          IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))+iNMT
+      IdofGlob(2*TRIA_NVEQUAD2D+1,i) = 2*iNMT + IelIdx(i)
+    end do
 
   end subroutine
 
@@ -1490,22 +1498,22 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's.
-    ! The first 4 DOF's are the number of the edges.
-    ! The next 4 DOF's are the number of the edges + nmt.
-    ! The 9th DOF is at 2*nmt + element number
-    ! The 10th DOF is at 2*nmt + inel + element number
-    ! We always copy all elements of IedgesAtElement (:,.).
-    ! There's no harm and the compiler can optimise better.
-    
-    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
-    IdofGlob(TRIA_NVEQUAD2D+1:2*TRIA_NVEQUAD2D,i) = &
-        IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))+iNMT
-    IdofGlob(2*TRIA_NVEQUAD2D+1,i) = 2*iNMT + IelIdx(i)
-    IdofGlob(2*TRIA_NVEQUAD2D+2,i) = 2*iNMT + iNEL + IelIdx(i)
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's.
+      ! The first 4 DOF's are the number of the edges.
+      ! The next 4 DOF's are the number of the edges + nmt.
+      ! The 9th DOF is at 2*nmt + element number
+      ! The 10th DOF is at 2*nmt + inel + element number
+      ! We always copy all elements of IedgesAtElement (:,.).
+      ! There's no harm and the compiler can optimise better.
+      
+      IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
+      IdofGlob(TRIA_NVEQUAD2D+1:2*TRIA_NVEQUAD2D,i) = &
+          IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))+iNMT
+      IdofGlob(2*TRIA_NVEQUAD2D+1,i) = 2*iNMT + IelIdx(i)
+      IdofGlob(2*TRIA_NVEQUAD2D+2,i) = 2*iNMT + iNEL + IelIdx(i)
+    end do
 
   end subroutine
 
@@ -1543,11 +1551,11 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Global DOF = number of the element
-    IdofGlob(1,i) = IelIdx(i)
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Global DOF = number of the element
+      IdofGlob(1,i) = IelIdx(i)
+    end do
 
   end subroutine
 
@@ -1590,17 +1598,17 @@ contains
   ! local variables 
   integer :: i,j
   
-  ! Get the number of local DOF's - usually either 3 or 4, depending on
-  ! the element. The first dimension of IdofGlob indicates the number of 
-  ! DOF's.
-  j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
-  
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's - which are simply the vertex numbers of the 
-    ! corners.
-    IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
-  end do
+    ! Get the number of local DOF's - usually either 3 or 4, depending on
+    ! the element. The first dimension of IdofGlob indicates the number of 
+    ! DOF's.
+    j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
+    
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! corners.
+      IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
+    end do
 
   end subroutine
 
@@ -1642,11 +1650,73 @@ contains
   ! local variables 
   integer :: i
   
-  ! Loop through the elements to handle
-  do i=1,size(IelIdx)
-    ! Calculate the global DOF's - which are simply the face numbers.
-    IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
-  end do
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's - which are simply the face numbers.
+      IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_Q2T_3D(iNAT,IfacesAtElement, IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be Q2~.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Number of faces in the triangulation.
+  integer, intent(IN) :: iNAT
+
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  integer, dimension(:,:), intent(IN) :: IfacesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(IN) :: IelIdx
+  
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF's.
+  integer, dimension(:,:), intent(OUT) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's - which are simply the face numbers.
+      IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
+      IdofGlob( 7,i) = iNAT + 2*(IfacesAtElement(1,IelIdx(i))-1)+1
+      IdofGlob( 8,i) = iNAT + 2*(IfacesAtElement(1,IelIdx(i))-1)+2
+      IdofGlob( 9,i) = iNAT + 2*(IfacesAtElement(2,IelIdx(i))-1)+1
+      IdofGlob(10,i) = iNAT + 2*(IfacesAtElement(2,IelIdx(i))-1)+2
+      IdofGlob(11,i) = iNAT + 2*(IfacesAtElement(3,IelIdx(i))-1)+1
+      IdofGlob(12,i) = iNAT + 2*(IfacesAtElement(3,IelIdx(i))-1)+2
+      IdofGlob(13,i) = iNAT + 2*(IfacesAtElement(4,IelIdx(i))-1)+1
+      IdofGlob(14,i) = iNAT + 2*(IfacesAtElement(4,IelIdx(i))-1)+2
+      IdofGlob(15,i) = iNAT + 2*(IfacesAtElement(5,IelIdx(i))-1)+1
+      IdofGlob(16,i) = iNAT + 2*(IfacesAtElement(5,IelIdx(i))-1)+2
+      IdofGlob(17,i) = iNAT + 2*(IfacesAtElement(6,IelIdx(i))-1)+1
+      IdofGlob(18,i) = iNAT + 2*(IfacesAtElement(6,IelIdx(i))-1)+2
+      IdofGlob(19,i) = 3*iNAT + IelIdx(i)
+    end do
 
   end subroutine
 

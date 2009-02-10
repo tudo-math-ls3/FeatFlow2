@@ -454,6 +454,10 @@ module element
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
   ! non-parametric, integral mean value based
   integer(I32), parameter, public :: EL_EM30_3D = EL_Q1T_3D + EL_NONPARAMETRIC + 2**16
+  
+  ! ID of rotated triquadratic nonconforming quadrilateral FE, Q2~.
+  integer(I32), parameter, public :: EL_Q2T_3D  = EL_3D + 50
+  integer(I32), parameter, public :: EL_E050_3D = EL_Q2T_3D
 
 !</constantblock>
 
@@ -547,7 +551,7 @@ module element
   integer, parameter, public :: EL_MAXNDOF_PER_EDGE = 2
   
   ! Maximum number of DOFs per face.
-  integer, parameter, public :: EL_MAXNDOF_PER_FACE = 1
+  integer, parameter, public :: EL_MAXNDOF_PER_FACE = 3
   
   ! Maximum number of DOFs per element.
   integer, parameter, public :: EL_MAXNDOF_PER_ELEM = 4
@@ -676,6 +680,8 @@ contains
       elem_igetID = EL_E030_3D
     case("EL_EM31_3D")
       elem_igetID = EL_EM30_3D
+    case("EL_Q2T_3D","EL_E050_3D")
+      elem_igetID = EL_E050_3D
     
     ! -= 3D Pyramid Elements =-
     case("EL_Y0_3D")
@@ -801,6 +807,9 @@ contains
     case (EL_Q1T_3D)
       ! local DOFs for 3D Ex30
       elem_igetNDofLoc = 6
+    case (EL_Q2T_3D)
+      ! local DOFs for 3D Ex50
+      elem_igetNDofLoc = 19
       
     case DEFAULT
       elem_igetNDofLoc = 0
@@ -937,6 +946,10 @@ contains
     case (EL_Q1T_3D)
       ! local DOFs for Ex30
       ndofAtFaces = 6
+    case (EL_Q2T_3D)
+      ! local DOFs for Ex50
+      ndofAtFaces = 18
+      ndofAtElement = 1
     end select
 
   end subroutine
@@ -1024,7 +1037,7 @@ contains
     case (EL_P0_3D, EL_P1_3D)
       ! Tetrahedral elements work in barycentric coordinates
       elem_igetCoordSystem = TRAFO_CS_BARY3DTETRA
-    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D)
+    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D, EL_Q2T_3D)
       ! These work on the reference hexahedron
       elem_igetCoordSystem = TRAFO_CS_REF3DHEXA
     case (EL_Y0_3D, EL_Y1_3D)
@@ -1085,7 +1098,7 @@ contains
       ! Linear tetrahedral transrormation, 3D
       elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_3D
     
-    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D)
+    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D, EL_Q2T_3D)
       ! Trilinear hexahedral transformation, 3D
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_3D
     
@@ -1228,6 +1241,9 @@ contains
     case (EL_Q1T_3D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 4
+    case (EL_Q2T_3D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 4
     case default
       ! We don't know
       elem_getMaxDerivative = DER_MAXNDER
@@ -1267,7 +1283,7 @@ contains
     case (EL_P0_1D, EL_P0, EL_P0_3D)
       ! No information about Jacobian necessary
       elem_getEvaluationTag = 0
-    case (EL_Q2T, EL_Q2TB)
+    case (EL_Q2T, EL_Q2TB, EL_Q2T_3D)
       ! We need the twist indices.
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
         EL_EVLTAG_JAC + EL_EVLTAG_DETJ + EL_EVLTAG_TWISTIDX
@@ -1408,7 +1424,7 @@ contains
       ! 3D Tetrahedron
       ishp = BGEOM_SHAPE_TETRA
     
-    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D)
+    case (EL_Q0_3D, EL_Q1_3D, EL_Q1T_3D, EL_Q2T_3D)
       ! 3D Hexahedron
       ishp = BGEOM_SHAPE_HEXA
     
@@ -2325,6 +2341,9 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
+        
+    case (EL_E050_3D)
+      call elem_eval_E050_3D(ieltyp, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 3D pyramid elements
