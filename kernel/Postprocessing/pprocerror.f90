@@ -22,16 +22,14 @@
 !#   $$ int_\Gamma u-cu_h dx , \qquad int_\Gamma \nabla u-c\nabla u_h dx $$
 !#
 !# 3.) pperr_scalarErrorEstimate
-!#     -> Calculate error to two different scalar vectors of a 
-!#        FE function:
+!#     -> Calculate error to two different scalar vectors of a  FE function:
 !#   $$ int_\Omega u_h-u_ref dx $$
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is 
 !#        some reference solution vector which is supposed to be a 
 !#        better approximation of the true solution.
 !#
 !# 4.) pperr_blockErrorEstimate
-!#     -> Calculate error to two different block vectors of a 
-!#        FE function:
+!#     -> Calculate error to two different block vectors of a  FE function:
 !#   $$ int_\Omega u_h-u_ref dx $$
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is
 !#        some reference solution vector which is supposed to be a 
@@ -126,7 +124,7 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN)                      :: cerrortype
+  integer, intent(IN) :: cerrortype
   
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -271,14 +269,14 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN)                      :: cerrortype
+  integer, intent(IN) :: cerrortype
   
   ! A discretisation structure specifying how to compute the error.
   type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
   
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(INOUT), optional :: rcollection
 
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -703,14 +701,14 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN)                      :: cerrortype
+  integer, intent(IN) :: cerrortype
   
   ! A discretisation structure specifying how to compute the error.
   type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
   
   ! Optional: A collection structure to provide additional 
   ! information for callback routines.
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(INOUT), optional :: rcollection
 
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -1144,14 +1142,14 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN)                      :: cerrortype
+  integer, intent(IN) :: cerrortype
   
   ! A discretisation structure specifying how to compute the error.
   type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
   
   ! Optional: A collection structure to provide additional 
   ! information for callback routines.
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(INOUT), optional :: rcollection
 
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -1168,7 +1166,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,k,icurrentElementDistr, ICUBP, NVE
+    integer :: icurrentElementDistr, ICUBP, NVE
     integer :: IEL, IELmax, IELset
     real(DP) :: OM
     
@@ -1612,10 +1610,10 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN)                      :: cerrortype
+  integer, intent(IN) :: cerrortype
   
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer, intent(IN)                      :: ccubType
+  integer, intent(IN) :: ccubType
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
@@ -1723,10 +1721,10 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN)                      :: cerrortype
+  integer, intent(IN) :: cerrortype
   
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer, intent(IN)                      :: ccubType
+  integer, intent(IN) :: ccubType
 
   ! A t_boundaryRegion specifying the boundary region where
   ! to calculate. 
@@ -1740,7 +1738,7 @@ contains
   
   ! Optional: A collection structure to provide additional 
   ! information for callback routines.
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(INOUT), optional :: rcollection
 
   ! OPTIONAL: A callback function that provides a coefficient in front
   ! of the FE function. If not specified, a value of 1 is assumed.
@@ -2176,10 +2174,10 @@ contains
                                         rdiscretisationRef,relementError)
 
 !<description>
-  ! This routine calculates the error of a given FE function in rvector
-  ! and a reference vector given in rvectorRef. Both vectors must have the
-  ! same number of blocks. As an example, one can think of the consistent
-  ! FE gradient and some recovered reference gradient, c.f. ZZ-technique.
+  ! This routine calculates the error of a given FE function in
+  ! rvector and a reference vector given in rvectorRef. As an example,
+  ! one can think of the consistent FE gradient and some recovered
+  ! reference gradient, c.f. ZZ-technique.
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
   ! element distributions in the discretisation structure specifies the 
@@ -2188,10 +2186,10 @@ contains
 
 !<input>
     ! FE solution vector
-    type(t_vectorScalar), intent(IN), target                    :: rvector
+    type(t_vectorScalar), intent(IN), target :: rvector
 
     ! FE reference solution vector
-    type(t_vectorScalar), intent(IN), target                    :: rvectorRef
+    type(t_vectorScalar), intent(IN), target :: rvectorRef
             
     ! Type of error to compute. A PPERR_xxERROR constant.
     ! PPERR_L2ERROR computes the L2-error, PPERR_L1ERROR the L1-error.
@@ -2208,12 +2206,12 @@ contains
 
 !<inputoutput>
     ! OPTIONAL: Scalar vector that stores the calculated error on each element.
-    type(t_vectorScalar), intent(INOUT), optional               :: relementError
+    type(t_vectorScalar), intent(INOUT), optional :: relementError
 !</inputoutput>
 
 !<output>
     ! The calculated error.
-    real(DP), intent(OUT)                                       :: derror 
+    real(DP), intent(OUT) :: derror 
 !</output>
 !</subroutine>
 
@@ -2276,10 +2274,10 @@ contains
 
 !<input>
     ! FE solution block vector
-    type(t_vectorBlock), intent(IN), target                     :: rvector
+    type(t_vectorBlock), intent(IN), target :: rvector
 
     ! FE reference solution block vector
-    type(t_vectorBlock), intent(IN), target                     :: rvectorRef
+    type(t_vectorBlock), intent(IN), target :: rvectorRef
             
     ! Type of error to compute. A PPERR_xxERROR constant.
     ! PPERR_L2ERROR computes the L2-error.
@@ -2298,12 +2296,12 @@ contains
 
 !<inputoutput>
     ! OPTIONAL: Scalar vector that stores the calculated error on each element.
-    type(t_vectorScalar), intent(INOUT), optional               :: relementError
+    type(t_vectorScalar), intent(INOUT), optional :: relementError
 !</inputoutput>
 
 !<output>
     ! The calculated error.
-    real(DP), intent(OUT)                                       :: derror 
+    real(DP), intent(OUT) :: derror 
 !</output>
 !</subroutine>
 
@@ -2741,17 +2739,17 @@ contains
 
 !<input>
     ! FE solution vector
-    type(t_vectorScalar), intent(IN), target                    :: rvector
+    type(t_vectorScalar), intent(IN), target :: rvector
 !</input>
 
 !<inputoutput>
     ! OPTIONAL: Scalar vector that stores the calculated deviation on each element.
-    type(t_vectorScalar), intent(INOUT), optional               :: relementDeviation
+    type(t_vectorScalar), intent(INOUT), optional :: relementDeviation
 !</inputoutput>
 
 !<output>
     ! The calculated standard deviation.
-    real(DP), intent(OUT)                                       :: ddeviation
+    real(DP), intent(OUT) :: ddeviation
 !</output>
 !</subroutine>
 
@@ -2808,25 +2806,25 @@ contains
 
 !<input>
     ! FE solution block vector
-    type(t_vectorBlock), intent(IN), target                     :: rvector
+    type(t_vectorBlock), intent(IN), target :: rvector
 !</input>
 
 !<inputoutput>
     ! OPTIONAL: Scalar vector that stores the calculated deviation on each element.
-    type(t_vectorScalar), intent(INOUT), optional               :: relementDeviation
+    type(t_vectorScalar), intent(INOUT), optional :: relementDeviation
 !</inputoutput>
 
 !<output>
     ! The calculated deviation.
-    real(DP), intent(OUT)                                       :: ddeviation
+    real(DP), intent(OUT) :: ddeviation
 !</output>
 !</subroutine>
 
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
-    integer      :: i,k,icurrentElementDistr,iblock,ICUBP,NVE,idim
+    integer :: i,k,icurrentElementDistr,iblock,ICUBP,NVE,idim
     integer :: IEL, IELmax, IELset,IELGlobal
-    real(DP)     :: OM,delementDeviation
+    real(DP) :: OM,delementDeviation
 
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
@@ -3109,13 +3107,13 @@ contains
     do icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
     
       ! Activate the current element distribution
-      p_relementDistribution    => p_rdiscretisation%RelementDistr(icurrentElementDistr)
+      p_relementDistribution => p_rdiscretisation%RelementDistr(icurrentElementDistr)
 
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
 
       ! Get the number of local DOF's for trial functions
-      indofTrial    = elem_igetNDofLoc(p_relementDistribution%celement)
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
 
       ! Get the number of corner vertices of the element
       NVE = elem_igetNVE(p_relementDistribution%celement)
