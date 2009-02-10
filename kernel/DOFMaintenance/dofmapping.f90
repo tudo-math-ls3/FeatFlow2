@@ -654,7 +654,7 @@ contains
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           call dof_locGlobUniMult_P1Q1_3D(p_2darray, IelIdx, IdofGlob)
           return
-        case (EL_QP1)
+        case (EL_QP1_3D)
           ! DOF's for QP1
           call dof_locGlobUniMult_QP1_3D(p_rtriangulation%NEL,IelIdx, IdofGlob)
           return

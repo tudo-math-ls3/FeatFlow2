@@ -41,6 +41,8 @@ module spdiscprojection
   use linearsystemblock
   use derivatives
   use linearalgebra
+  use element
+  use elementpreprocessing
   
   implicit none
 
