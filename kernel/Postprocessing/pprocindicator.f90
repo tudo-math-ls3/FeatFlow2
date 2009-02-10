@@ -29,7 +29,7 @@ contains
 !<subroutine>
 
   subroutine ppind_secondDifference(rvectorScalar, dnoiseFilter,&
-                                    dabsFilter, rindicator, ivar)
+                                    dabsFilter, rindicator)
 
 !<description>
     ! This subroutine computes the second-difference indicator proposed
@@ -46,9 +46,6 @@ contains
 
     ! parameter for absolute filtering
     real(DP), intent(IN) :: dabsFilter
-
-    ! OPTIONAL: variable of scalar vector stored in interleave format
-    integer, intent(IN), optional :: ivar
 !</input>
 
 !<output>
@@ -129,10 +126,6 @@ contains
       call sys_halt()
     end if
 
-    ! Set number of interleave variable
-    i=1; if (present(ivar)) i=ivar
-    i=min(i, rvectorScalar%NVAR)
-
     ! Create scalar vector for element indicator
     call lsyssc_createVector(rindicator, p_rtriangulation%NEL, .true.)
 
@@ -168,9 +161,9 @@ contains
       ! Compute the second-difference indicator in 2D
       call doSecondDiffIndicator2D(p_Ddata, p_DvertexCoords, p_IverticesAtElement,&
                                    p_IneighboursAtElement, p_InodalProperty,&
-                                   dnoiseFilter, dabsFilter, rvectorScalar%NVAR,&
-                                   p_rtriangulation%NEL, p_rtriangulation%NVT, i,&
-                                   p_Dcoefficients, p_DnodalIndicator, p_Dindicator)
+                                   dnoiseFilter, dabsFilter, p_rtriangulation%NEL,&
+                                   p_rtriangulation%NVT, p_Dcoefficients,&
+                                   p_DnodalIndicator, p_Dindicator)
 
       ! Release temporal memory
       call storage_free(h_Dcoefficients)
@@ -194,16 +187,16 @@ contains
 
     subroutine doSecondDiffIndicator2D(Ddata, DvertexCoords, IverticesAtElement,&
                                        IneighboursAtElement, InodalProperty, &
-                                       dweight, dfilter, NVAR, NEL, NVT, ivar, &
-                                       Dcoefficients, DnodalIndicator, Dindicator)
+                                       dweight, dfilter, NEL, NVT, Dcoefficients,&
+                                       DnodalIndicator, Dindicator)
       
-      real(DP), dimension(NVAR,NVT), intent(IN) :: Ddata
+      real(DP), dimension(:), intent(IN) :: Ddata
       real(DP), dimension(:,:), intent(IN) :: DvertexCoords
       integer, dimension(:,:), intent(IN) :: IverticesAtElement
       integer, dimension(:,:), intent(IN) :: IneighboursAtElement
       integer(I32), dimension(:), intent(IN) :: InodalProperty
       real(DP), intent(IN) :: dweight,dfilter
-      integer, intent(IN) :: NVAR,NEL,NVT,ivar
+      integer, intent(IN) :: NEL,NVT
 
       real(DP), dimension(:,:), intent(OUT) :: Dcoefficients
       real(DP), dimension(:), intent(OUT) :: DnodalIndicator
@@ -244,9 +237,9 @@ contains
           y3 = DvertexCoords(2, i3)
 
           ! Determine solution values at vertices
-          u1 = Ddata(ivar, i1)
-          u2 = Ddata(ivar, i2)
-          u3 = Ddata(ivar, i3)
+          u1 = Ddata(i1)
+          u2 = Ddata(i2)
+          u3 = Ddata(i3)
 
 
           ! Calculate determinant and area for triangle
@@ -347,10 +340,10 @@ contains
           y4 = DvertexCoords(2, i4)
 
           ! Determine solution values at vertices
-          u1 = Ddata(ivar, i1)
-          u2 = Ddata(ivar, i2)
-          u3 = Ddata(ivar, i3)
-          u4 = Ddata(ivar,i4)
+          u1 = Ddata(i1)
+          u2 = Ddata(i2)
+          u3 = Ddata(i3)
+          u4 = Ddata(i4)
 
 
           ! Calculate determinant and area for triangle (1-2-3)
