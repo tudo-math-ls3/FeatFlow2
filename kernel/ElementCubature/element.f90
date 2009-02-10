@@ -423,6 +423,10 @@ module element
   integer(I32), parameter, public :: EL_P1_3D   = EL_3D + 1
   integer(I32), parameter, public :: EL_E001_3D = EL_P1_3D
 
+  ! ID of linear conforming tetrahedral FE, P2
+  integer(I32), parameter, public :: EL_P2_3D   = EL_3D + 2
+  integer(I32), parameter, public :: EL_E002_3D = EL_P2_3D
+
   ! ID of constant conforming hexahedral FE, Q0
   integer(I32), parameter, public :: EL_Q0_3D   = EL_3D + 10
   integer(I32), parameter, public :: EL_E010_3D = EL_Q0_3D
@@ -431,6 +435,10 @@ module element
   integer(I32), parameter, public :: EL_Q1_3D   = EL_3D + 11
   integer(I32), parameter, public :: EL_E011_3D = EL_Q1_3D
   
+  ! ID of trilinear conforming hexahedral FE, Q2
+  integer(I32), parameter, public :: EL_Q2_3D   = EL_3D + 13
+  integer(I32), parameter, public :: EL_E013_3D = EL_Q2_3D
+
   ! ID of constant conforming pyramid FE, Y0 = Q0
   integer(I32), parameter, public :: EL_Y0_3D   = EL_3D + 60
   
