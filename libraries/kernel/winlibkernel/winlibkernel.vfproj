@@ -154,6 +154,7 @@
 		<File RelativePath="..\..\..\kernel\Postprocessing\matrixio.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\pprocerror.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\pprocgradients.f90"/>
+		<File RelativePath="..\..\..\kernel\Postprocessing\pprocindicator.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\pprocnavierstokes.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\ucd.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\vectorio.f90"/></Filter>
