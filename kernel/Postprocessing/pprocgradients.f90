@@ -15,6 +15,10 @@
 !#        A parameter admits to choose a method which is used with
 !#        default parameters.
 !#
+!# 2.) ppgrd_calcGradientError
+!#     -> Calculate the gradient error by comparing the consistent FE
+!#        smoothed gradient obtained by gradient reconstruction
+!#
 !# Auxiliary routines, called internally.
 !#
 !# 1.) ppgrd_calcGradInterpP12Q12cnf
@@ -33,26 +37,26 @@
 !#        for an arbitrary conformal discretisation.
 !#        Uses the limited gradient averaging technique by M. Möller
 !#        and D. Kuzmin.
-!#
 !# </purpose>
 !#########################################################################
 
 module pprocgradients
 
-  use fsystem
-  use storage
   use boundary
-  use cubature
-  use triangulation
-  use linearsystemscalar
-  use linearsystemblock
-  use spatialdiscretisation
-  use domainintegration
   use collection
-  use feevaluation
-  use genoutput
+  use cubature
   use derivatives
+  use domainintegration
+  use feevaluation
+  use fsystem
+  use genoutput
+  use linearsystemblock
+  use linearsystemscalar
   use mprimitives
+  use pprocerror
+  use spatialdiscretisation
+  use storage
+  use triangulation
 
   implicit none
 
@@ -63,9 +67,12 @@ module pprocgradients
   ! Use standard interpolation to calculate a gradient vector. 1st order. 
   integer, parameter :: PPGRD_INTERPOL = 0
   
-  ! ZZ-technique for recovering a gradient. Only usable for special-type
-  ! meshes, e.g. pure quad meshes. 2nd order on regular meshes.
+  ! ZZ-technique for recovering a gradient. 2nd order on regular meshes.
   integer, parameter :: PPGRD_ZZTECHNIQUE = 1
+  
+  ! Limited gradient averaging technique. Only usable for special-type
+  ! meshes consisting of only P1/Q1 finite elements.
+  integer, parameter :: PPGRD_LATECHNIQUE = 2
   
 !</constantblock>
 
@@ -100,7 +107,7 @@ contains
 
 !<subroutine>
 
-  subroutine ppgrd_calcGradient (rvectorScalar,rvectorGradient,cgradType)
+  subroutine ppgrd_calcGradient (rvectorScalar,rvectorGradient,cgradType,cgradSubtype)
 
 !<description>
   ! Calculates the recovered gradient of a scalar finite element function.
@@ -112,19 +119,21 @@ contains
   ! this must be a 2D vector. For a 3D discretisation, this must be a 3D vector.
   ! The vector must provide a discretisation structure that defines the
   ! finite element space the reconstructed gradient should be calculated in.
-  !
-  ! Note: Currently, rvectorGradient must be prepared as $P_0,P_1$ or $Q_0,Q_1$
-  ! vector, respectively, other types of destination vectors are not allowed! 
 !</description>
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN)         :: rvectorScalar
+  type(t_vectorScalar), intent(IN) :: rvectorScalar
   
   ! OPTIONAL: Identifier for the method to use for calculating the gradient.
   ! One of the PPGRD_xxxx constants.
   ! If not specified, PPGRD_INTERPOL is taken as default.
-  integer, intent(IN), optional            :: cgradType
+  integer, intent(IN), optional :: cgradType
+
+  ! OPTIONAL: Identifier for the submethod to use for calculating the gradient.
+  ! One of the PPGRD_xxxx constants.
+  ! If not specified, PPGRD_NODEPATCH is taken as default.
+  integer, intent(IN), optional :: cgradSubtype
 !</input>
 
 !<inputoutput>
@@ -140,18 +149,16 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,j
-    logical :: bisP0,bisQ0,bisQ1, bisP1, bisQ2, bisP2, bisDifferent
-    type(t_spatialDiscretisation), pointer :: p_rdiscr
-    integer :: imethod
+    integer :: imethod,isubmethod
 
     ! Some basic checks:
     
     imethod = PPGRD_INTERPOL
     if (present(cgradType)) imethod = cgradType
+
+    isubmethod = PPGRD_NODEPATCH
+    if (present(cgradSubtype)) isubmethod = cgradSubtype
     
-    ! Dimension of triangulation must be less or equal than number of subvectors
-    ! in the block vector.
     
     if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
       call output_line ('No discretisation attached to the source vector!',&
@@ -179,57 +186,6 @@ contains
       call sys_halt()
     end if
     
-    ! There must be given discretisation structures in the destination vector.
-    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
-      call output_line ('No discretisation attached to the destination vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-      call sys_halt()
-    end if
-
-    ! Currently, the destination vector must be either 
-    ! pure Q1, Q2 or  pure P1, P2 or mixed Q1/P1, Q2/P2
-    ! everything else is currently not supported.
-    bisQ1 = .false.
-    bisP1 = .false.
-    bisQ2 = .false.
-    bisP2 = .false.
-    bisDifferent = .false.
-    
-    ! We only check the first NDIMxD subvectors which we overwrite.
-    ! Any additional subvectors are ignored!
-    do i=1,min(rvectorGradient%nblocks,&
-               rvectorScalar%p_rspatialDiscr%p_rtriangulation%ndim)
-      p_rdiscr => rvectorGradient%p_rblockDiscr%RspatialDiscr(i)
-      do j=1,p_rdiscr%inumFESpaces
-        select case (&
-            elem_getPrimaryElement (p_rdiscr%RelementDistr(j)%celement))
-        case (EL_Q0, EL_Q0_3D)
-          bisQ0 = .true.
-        case (EL_P0_1D, EL_P0, EL_P0_3D)
-          bisP0 = .true.
-        case (EL_Q1, EL_Q1_3D)
-          bisQ1 = .true.
-        case (EL_P1_1D, EL_P1, EL_P1_3D)
-          bisP1 = .true.
-        case (EL_Q2)
-          bisQ2 = .true.
-        case (EL_P2_1D, EL_P2)
-          bisP2 = .true.
-        case DEFAULT
-          bisDifferent = .true.
-        end select
-      end do
-    end do
-    
-    if (bisDifferent) then
-      call output_line ('Only Q0, Q1, P0, P1, Q2 and P2 supported as&
-          & discretisation for the destination vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-      call sys_halt()
-    end if
-    
-    ! The bisXXXX flags might get important later...
-    
     ! Depending on the method choosen, call the appropriate gradient
     ! recovery routine.
     select case (imethod)
@@ -240,16 +196,335 @@ contains
     case (PPGRD_ZZTECHNIQUE)
       ! 2nd order gradient with ZZ.
       ! Standard method is 'nodewise'.
-      call ppgrd_calcGradSuperPatchRecov (rvectorScalar,rvectorGradient,PPGRD_NODEPATCH)
+      call ppgrd_calcGradSuperPatchRecov (rvectorScalar,rvectorGradient,isubmethod)
+
+    case (PPGRD_LATECHNIQUE)
+      ! 1st order gradient
+      call ppgrd_calcGradLimAvgP1Q1cnf(rvectorScalar, rvectorGradient)
+      
+    case DEFAULT
+      call output_line ('Unsupported gradient recovery technique!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
+      call sys_halt()
     end select
 
-  end subroutine
+  end subroutine ppgrd_calcGradient
+
+  !****************************************************************************
+
+  subroutine ppgrd_calcGradientError (rvectorScalar, derror, cgradType,&
+                                      cgradSubtype, rerror)
+
+!<description>
+  ! Calculates the recovered gradient of a scalar finite element function
+  ! and the consistent finite element gradient and compares both values
+  ! to estimate the error between the approximate and the true gradient.
+!</description>
+
+!<input>
+  ! The FE solution vector. Represents a scalar FE function.
+  type(t_vectorScalar), intent(IN) :: rvectorScalar
+  
+  ! OPTIONAL: Identifier for the method to use for calculating the gradient.
+  ! One of the PPGRD_xxxx constants.
+  ! If not specified, PPGRD_INTERPOL is taken as default.
+  integer, intent(IN), optional :: cgradType
+
+  ! OPTIONAL: Identifier for the submethod to use for calculating the gradient.
+  ! One of the PPGRD_xxxx constants.
+  ! If not specified, PPGRD_NODEPATCH is taken as default.
+  integer, intent(IN), optional :: cgradSubtype
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL
+  type(t_vectorScalar), intent(INOUT), optional :: rerror
+!</inputoutput>
+
+!<output>
+  ! The calculated error.
+  real(DP), intent(OUT) :: derror
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
+    type(t_vectorBlock) :: rgradient,rgradientRef
+    integer :: imethod,isubmethod,idim,ccub,ieltyp,i
+
+    ! Some basic checks:
+    
+    imethod = PPGRD_INTERPOL
+    if (present(cgradType)) imethod = cgradType
+
+    isubmethod = PPGRD_NODEPATCH
+    if (present(cgradSubtype)) isubmethod = cgradSubtype
+
+
+    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+      call output_line ('No discretisation attached to the source vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
+      call sys_halt()
+    end if
+    
+    if ((rvectorScalar%p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) .and.&
+        (rvectorScalar%p_rspatialDiscr%ccomplexity .ne. SPDISC_CONFORMAL)) then
+      call output_line ('Only uniform and conformal discretisations supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
+      call sys_halt()
+    end if
+
+    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
+      call output_line ('No triangulation attached to the source vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
+      call sys_halt()
+    end if
+    
+    
+    select case(imethod)
+    case (PPGRD_INTERPOL, &
+          PPGRD_ZZTECHNIQUE)
+      
+      ! Set pointer
+      p_rspatialDiscr => rvectorScalar%p_rspatialDiscr
+      p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+      
+      ! Initialise block discretisations for the consistent/reconstructed gradient vectors
+      call spdiscr_initBlockDiscr(rdiscrBlock, p_rspatialDiscr%ndimension, p_rtriangulation)
+      call spdiscr_initBlockDiscr(rdiscrBlockRef, p_rspatialDiscr%ndimension, p_rtriangulation)
+
+      ! Duplicate the discretisation from the scalar vector and adjust 
+      ! the FE spaces for the consistent finite element gradient
+      do idim = 1, p_rspatialDiscr%ndimension
+        
+        call spdiscr_duplicateDiscrSc(p_rspatialDiscr, rdiscrBlock%RspatialDiscr(idim))
+        call spdiscr_duplicateDiscrSc(p_rspatialDiscr, rdiscrBlockRef%RspatialDiscr(idim))
+        
+        ! Adjust the FE space for the consistent gradient values
+        do i = 1, rdiscrBlock%RspatialDiscr(idim)%inumFESpaces
+          
+          select case(rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement)
+          case (EL_P1_1D)
+            ieltyp = EL_P0_1D
+          case (EL_P2_1D)
+            ieltyp = EL_P1_1D
+            
+          case (EL_P1_2D)
+            ieltyp = EL_P0_2D
+          case (EL_P2_2D)
+            ieltyp = EL_P1_2D
+          case (EL_P3_2D)
+            ieltyp = EL_P2_2D
+
+          case (EL_Q1_2D)
+            ieltyp = EL_Q0_2D
+          case (EL_Q2_2D)
+            ieltyp = EL_Q1_2D
+          case (EL_Q3_2D)
+            ieltyp = EL_Q2_2D
+
+          case (EL_P1_3D)
+            ieltyp = EL_P0_3D
+          case (EL_P2_3D)
+            ieltyp = EL_P1_3D
+
+          case (EL_Q1_3D)
+            ieltyp = EL_Q0_3D
+          case (EL_Q2_3D)
+            ieltyp = EL_Q1_3D
+            
+          case DEFAULT
+            call output_line('Unsupported element type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
+            call sys_halt()
+          end select
+          
+          ! Compute natural cubature rule
+          ccub = spdiscr_getStdCubature(ieltyp)
+          
+          ! Adjust element distribution
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement        = ieltyp
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeBilForm = ccub
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeLinForm = ccub
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeEval    = ccub
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(ieltyp)
+        end do
+      end do
+      
+      ! Create block vector for gradient values
+      call lsysbl_createVecBlockByDiscr(rdiscrBlock, rgradient, .true.)
+      call lsysbl_createVecBlockByDiscr(rdiscrBlockRef, rgradientRef, .true.)
+      
+      ! Recover consistent gradient vector
+      call ppgrd_calcGradient (rvectorScalar, rgradient)
+
+      ! Recover smoothed gradient vector
+      if (imethod .eq. PPGRD_INTERPOL) then
+        call ppgrd_calcGradInterpP12Q12cnf(rvectorScalar, rgradientRef)
+      else
+        call ppgrd_calcGradSuperPatchRecov(rvectorScalar, rgradientRef, isubmethod)
+      end if
+
+      ! Compute estimated gradient error
+      call pperr_blockErrorEstimate(rgradient, rgradientRef, PPERR_L2ERROR,&
+                                    derror, relementError=rerror)
+          
+      ! Release temporal discretizations
+      call spdiscr_releaseBlockDiscr(rdiscrBlock)
+      call spdiscr_releaseBlockDiscr(rdiscrBlockRef)
+      
+      ! Release temporal vectors
+      call lsysbl_releaseVector(rgradient)
+      call lsysbl_releaseVector(rgradientRef)
+
+
+    case (PPGRD_LATECHNIQUE)
+
+      ! Set pointer
+      p_rspatialDiscr => rvectorScalar%p_rspatialDiscr
+      p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+      
+      ! Initialise block discretisations for the consistent/reconstructed gradient vectors
+      call spdiscr_initBlockDiscr(rdiscrBlock, p_rspatialDiscr%ndimension, p_rtriangulation)
+      call spdiscr_initBlockDiscr(rdiscrBlockRef, p_rspatialDiscr%ndimension, p_rtriangulation)
+
+      ! Duplicate the discretisation from the scalar vector and adjust 
+      ! the FE spaces for the consistent finite element gradient
+      do idim = 1, p_rspatialDiscr%ndimension
+        
+        call spdiscr_duplicateDiscrSc(p_rspatialDiscr, rdiscrBlock%RspatialDiscr(idim))
+        
+        ! Adjust the FE space for the consistent gradient values
+        do i = 1, rdiscrBlock%RspatialDiscr(idim)%inumFESpaces
+          
+          select case(rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement)
+          case (EL_P1_1D)
+            ieltyp = EL_P0_1D
+          case (EL_P2_1D)
+            ieltyp = EL_P1_1D
+            
+          case (EL_P1_2D)
+            ieltyp = EL_P0_2D
+          case (EL_P2_2D)
+            ieltyp = EL_P1_2D
+          case (EL_P3_2D)
+            ieltyp = EL_P2_2D
+
+          case (EL_Q1_2D)
+            ieltyp = EL_Q0_2D
+          case (EL_Q2_2D)
+            ieltyp = EL_Q1_2D
+          case (EL_Q3_2D)
+            ieltyp = EL_Q2_2D
+
+          case (EL_P1_3D)
+            ieltyp = EL_P0_3D
+          case (EL_P2_3D)
+            ieltyp = EL_P1_3D
+
+          case (EL_Q1_3D)
+            ieltyp = EL_Q0_3D
+          case (EL_Q2_3D)
+            ieltyp = EL_Q1_3D
+            
+          case DEFAULT
+            call output_line('Unsupported element type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
+            call sys_halt()
+          end select
+          
+          ! Compute natural cubature rule
+          ccub = spdiscr_getStdCubature(ieltyp)
+          
+          ! Adjust element distribution
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement        = ieltyp
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeBilForm = ccub
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeLinForm = ccub
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeEval    = ccub
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(ieltyp)
+        end do
+      end do
+
+      ! Duplicate the discretisation from the scalar vector and adjust 
+      ! the FE spaces for the reconstructed finite element gradient
+      do idim = 1, p_rspatialDiscr%ndimension
+        
+        call spdiscr_duplicateDiscrSc(p_rspatialDiscr, rdiscrBlockRef%RspatialDiscr(idim))
+        
+        ! Adjust the FE space for the consistent gradient values
+        do i = 1, rdiscrBlockRef%RspatialDiscr(idim)%inumFESpaces
+          
+          select case(rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%celement)
+          case (EL_P1_2D)
+            ieltyp = EL_P1T_2D
+         
+          case (EL_Q1_2D)
+            ieltyp = EL_Q1T_2D
+
+          case (EL_Q1_3D)
+            ieltyp = EL_Q1T_3D
+            
+          case DEFAULT
+            call output_line('Unsupported element type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
+            call sys_halt()
+          end select
+          
+          ! Compute natural cubature rule
+          ccub = spdiscr_getStdCubature(ieltyp)
+          
+          ! Adjust element distribution
+          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%celement        = ieltyp
+          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeBilForm = ccub
+          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeLinForm = ccub
+          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeEval    = ccub
+          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(ieltyp)
+        end do
+      end do
+      
+      ! Create block vector for gradient values
+      call lsysbl_createVecBlockByDiscr(rdiscrBlock, rgradient, .true.)
+      call lsysbl_createVecBlockByDiscr(rdiscrBlockRef, rgradientRef, .true.)
+      
+      ! Recover consistent gradient vector
+      call ppgrd_calcGradient (rvectorScalar, rgradient)
+
+      ! Recover smoothed gradient vector
+      if (imethod .eq. PPGRD_INTERPOL) then
+        call ppgrd_calcGradInterpP12Q12cnf(rvectorScalar, rgradientRef)
+      else
+        call ppgrd_calcGradSuperPatchRecov(rvectorScalar, rgradientRef, isubmethod)
+      end if
+
+      ! Compute estimated gradient error
+      call pperr_blockErrorEstimate(rgradient, rgradientRef, PPERR_L2ERROR,&
+                                    derror, relementError=rerror)
+          
+      ! Release temporal discretizations
+      call spdiscr_releaseBlockDiscr(rdiscrBlock)
+      call spdiscr_releaseBlockDiscr(rdiscrBlockRef)
+      
+      ! Release temporal vectors
+      call lsysbl_releaseVector(rgradient)
+      call lsysbl_releaseVector(rgradientRef)
+
+
+    case DEFAULT
+      call output_line ('Unsupported gradient recovery technique!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
+      call sys_halt()
+    end select
+      
+
+  end subroutine ppgrd_calcGradientError
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine ppgrd_calcGradInterpP12Q12cnf (rvector,rvectorGradient)
+  subroutine ppgrd_calcGradInterpP12Q12cnf (rvectorScalar,rvectorGradient)
 
 !<description>
   ! Calculates the recovered gradient of a scalar finite element function
@@ -259,7 +534,7 @@ contains
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN) :: rvector
+  type(t_vectorScalar), intent(IN) :: rvectorScalar
 !</input>
 
 !<inputoutput>
@@ -275,14 +550,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,j,k,icurrentElementDistr, NVE
-    integer(I32) :: IELmax, IELset
+    integer :: i,j,k,icurrentElementDistr,NVE,IELmax,IELset
     
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
     
     ! Cubature point coordinates on the reference element
-    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
+    real(DP), dimension(CUB_MAXCUBP, 4) :: Dxi
 
     ! Cubature formula weights. The cotent is actually not used here.
     real(DP), dimension(CUB_MAXCUBP) :: Domega
@@ -306,7 +580,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -328,28 +602,53 @@ contains
     type(t_evalElementSet) :: revalElementSet
     
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), allocatable :: IdofsTrial
-    integer(PREC_DOFIDX), dimension(:,:), allocatable :: IdofsDest
+    integer, dimension(:,:), allocatable :: IdofsTrial
+    integer, dimension(:,:), allocatable :: IdofsDest
     
     ! Pointers to the X- and Y-derivative vector
     real(DP), dimension(:), pointer :: p_DxDeriv, p_DyDeriv, p_DzDeriv
     
     ! Number of elements in the current element distribution
-    integer(PREC_ELEMENTIDX) :: NEL
+    integer :: NEL
 
     ! Pointer to an array that counts the number of elements adjacent to a vertex.
     ! Ok, there's the same information in the triangulation, but that's not
     ! based on DOF's! Actually, we'll calculate how often we touch each DOF 
     ! in the destination space.
     integer :: h_IcontributionsAtDOF
-    integer(I32), dimension(:), pointer :: p_IcontributionsAtDOF
+    integer, dimension(:), pointer :: p_IcontributionsAtDOF
     
     ! Discretisation structures for the source- and destination vector(s)
     type(t_spatialDiscretisation), pointer :: p_rdiscrSource, p_rdiscrDest
-      
+     
+
+    ! Loop over all blocks of the gradient and over all FE spaces
+    do i = 1, min(rvectorGradient%nblocks,&
+                  rvectorScalar%p_rspatialDiscr%ndimension)
+      do j = 1, rvectorGradient%p_rblockDiscr%RspatialDiscr(i)%inumFESpaces
+        
+        select case(elem_getPrimaryElement(&
+            rvectorGradient%p_rblockDiscr%RspatialDiscr(i)%RelementDistr(j)%celement))
+        case (EL_Q0_2D, EL_Q0_3D,&
+              EL_P0_1D, EL_P0_2D, EL_P0_3D,&
+              EL_Q1_2D, EL_Q1_3D,&
+              EL_P1_1D, EL_P1_2D, EL_P1_3D,&
+              EL_Q2_2D, EL_Q2_3D,&
+              EL_P2_1D, EL_P2_2D, EL_P2_3D)
+          
+        case DEFAULT
+          call output_line ('Only Q0, Q1, Q2, P0, P1, and P2 supported as&
+              & discretisation for the destination vector!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpP12Q12cnf')
+          call sys_halt()
+        end select
+        
+      end do
+    end do
+
     ! Get the discretisation structures of the source- and destination space.
     ! Note that we assume here that all derivatives are discretised the same way!
-    p_rdiscrSource => rvector%p_rspatialDiscr
+    p_rdiscrSource => rvectorScalar%p_rspatialDiscr
     p_rdiscrDest => rvectorGradient%p_rblockDiscr%RspatialDiscr(1)
     
     ! Get a pointer to the triangulation - for easier access.
@@ -439,24 +738,8 @@ contains
       select case (elem_getPrimaryElement(p_relementDistrDest%celement))
       case (EL_P0_1D)
         call cub_getCubPoints(CUB_G1_1D, nlocalDOFsDest, Dxi, Domega)
-      case (EL_P0)
-        call cub_getCubPoints(CUB_G1_T, nlocalDOFsDest, Dxi, Domega)
-      case (EL_P0_3D)
-        call cub_getCubPoints(CUB_G1_3D, nlocalDOFsDest, Dxi, Domega)
-
-      case (EL_Q0)
-        call cub_getCubPoints(CUB_G1X1, nlocalDOFsDest, Dxi, Domega)
-
       case (EL_P1_1D)
         call cub_getCubPoints(CUB_TRZ_1D, nlocalDOFsDest, Dxi, Domega)
-      case (EL_P1)
-        call cub_getCubPoints(CUB_TRZ_T, nlocalDOFsDest, Dxi, Domega)
-      case (EL_P1_3D)
-        call cub_getCubPoints(CUB_TRZ_3D, nlocalDOFsDest, Dxi, Domega)
-        
-      case (EL_Q1)
-        call cub_getCubPoints(CUB_TRZ, nlocalDOFsDest, Dxi, Domega)
-
       case (EL_P2_1D)
         ! Manually calculate the coordinates of the 
         ! corners/midpoints on the reference element.
@@ -466,7 +749,15 @@ contains
 
         nlocalDOFsDest = 3
 
-      case (EL_P2)
+      case (EL_P0_2D)
+        call cub_getCubPoints(CUB_G1_T, nlocalDOFsDest, Dxi, Domega)
+      case (EL_Q0_2D)
+        call cub_getCubPoints(CUB_G1_2D, nlocalDOFsDest, Dxi, Domega)
+      case (EL_P1_2D)
+        call cub_getCubPoints(CUB_TRZ_T, nlocalDOFsDest, Dxi, Domega)
+      case (EL_Q1_2D)
+        call cub_getCubPoints(CUB_TRZ, nlocalDOFsDest, Dxi, Domega)
+      case (EL_P2_2D)
         ! Manually calculate the coordinates of the 
         ! corners/midpoints on the reference element.
         Dxi(1,1)  =  1.0_DP
@@ -495,8 +786,7 @@ contains
         
         nlocalDOFsDest = 6
         
-      case (EL_Q2)
-
+      case (EL_Q2_2D)
         ! Manually calculate the coordinates of the 
         ! corners/midpoints on the reference element.
         Dxi(1,1)  =  -1.0_DP
@@ -527,9 +817,157 @@ contains
         Dxi(9,2)  =  0.0_DP
         
         nlocalDOFsDest = 9
+
+      case (EL_P0_3D)
+        call cub_getCubPoints(CUB_G1_3D_T, nlocalDOFsDest, Dxi, Domega)
+      case (EL_Q0_3D)
+        call cub_getCubPoints(CUB_G1_3D, nlocalDOFsDest, Dxi, Domega)
+      case (EL_P1_3D)
+        call cub_getCubPoints(CUB_TRZ_3D_T, nlocalDOFsDest, Dxi, Domega)
+      case (EL_Q1_3D)
+        call cub_getCubPoints(CUB_TRZ_3D, nlocalDOFsDest, Dxi, Domega)
+      case (EL_P2_3D)
+        ! Manually calculate the coordinates of the 
+        ! corners/midpoints on the reference element.
+        Dxi(1,1)  =  1.0_DP
+        Dxi(1,2)  =  0.0_DP
+        Dxi(1,3)  =  0.0_DP
+        Dxi(1,4)  =  0.0_DP
+
+        Dxi(2,1)  =  0.0_DP
+        Dxi(2,2)  =  1.0_DP
+        Dxi(2,3)  =  0.0_DP
+        Dxi(2,4)  =  0.0_DP
         
+        Dxi(3,1)  =  0.0_DP
+        Dxi(3,2)  =  0.0_DP
+        Dxi(3,3)  =  1.0_DP
+        Dxi(3,4)  =  0.0_DP
+
+        Dxi(4,1)  =  0.0_DP
+        Dxi(4,2)  =  0.0_DP
+        Dxi(4,3)  =  0.0_DP
+        Dxi(4,4)  =  1.0_DP
+        
+        Dxi(5,1)  =  0.5_DP
+        Dxi(5,2)  =  0.5_DP
+        Dxi(5,3)  =  0.0_DP
+        Dxi(5,4)  =  0.0_DP
+
+        Dxi(6,1)  =  0.5_DP
+        Dxi(6,2)  =  0.0_DP
+        Dxi(6,3)  =  0.5_DP
+        Dxi(6,4)  =  0.0_DP
+
+        Dxi(7,1)  =  0.5_DP
+        Dxi(7,2)  =  0.0_DP
+        Dxi(7,3)  =  0.0_DP
+        Dxi(7,4)  =  0.5_DP
+
+        Dxi(8,1)  =  0.0_DP
+        Dxi(8,2)  =  0.5_DP
+        Dxi(8,3)  =  0.5_DP
+        Dxi(8,4)  =  0.0_DP
+
+        Dxi(9,1)  =  0.0_DP
+        Dxi(9,2)  =  0.5_DP
+        Dxi(9,3)  =  0.0_DP
+        Dxi(9,4)  =  0.5_DP
+
+        Dxi(10,1) =  0.0_DP
+        Dxi(10,2) =  0.0_DP
+        Dxi(10,3) =  0.5_DP
+        Dxi(10,4) =  0.5_DP
+
+        nlocalDOFsDest = 10
+
+      case (EL_Q2_3D)
+        ! Manually calculate the coordinates of the 
+        ! corners/midpoints on the reference element.
+        Dxi(1,1)  = -1.0_DP
+        Dxi(1,2)  = -1.0_DP
+        Dxi(1,3)  = -1.0_DP
+        
+        Dxi(2,1)  =  1.0_DP
+        Dxi(2,2)  = -1.0_DP
+        Dxi(2,3)  = -1.0_DP
+        
+        Dxi(3,1)  =  1.0_DP
+        Dxi(3,2)  =  1.0_DP
+        Dxi(3,3)  = -1.0_DP
+        
+        Dxi(4,1)  = -1.0_DP
+        Dxi(4,2)  =  1.0_DP
+        Dxi(4,3)  = -1.0_DP
+        
+        Dxi(5,1)  = -1.0_DP
+        Dxi(5,2)  = -1.0_DP
+        Dxi(5,3)  =  1.0_DP
+        
+        Dxi(6,1)  =  1.0_DP
+        Dxi(6,2)  = -1.0_DP
+        Dxi(6,3)  =  1.0_DP
+        
+        Dxi(7,1)  =  1.0_DP
+        Dxi(7,2)  =  1.0_DP
+        Dxi(7,3)  =  1.0_DP
+        
+        Dxi(8,1)  = -1.0_DP
+        Dxi(8,2)  =  1.0_DP
+        Dxi(8,3)  =  1.0_DP
+                
+        Dxi(9,1)  =  0.0_DP
+        Dxi(9,2)  = -1.0_DP
+        Dxi(9,3)  = -1.0_DP
+
+        Dxi(10,1) =  1.0_DP
+        Dxi(10,2) =  0.0_DP
+        Dxi(10,3) = -1.0_DP
+
+        Dxi(11,1)  =  0.0_DP
+        Dxi(11,2)  =  1.0_DP
+        Dxi(11,3)  = -1.0_DP
+
+        Dxi(12,1)  = -1.0_DP
+        Dxi(12,2)  =  0.0_DP
+        Dxi(12,3)  = -1.0_DP
+        
+        Dxi(13,1) =  0.0_DP
+        Dxi(13,2) = -1.0_DP
+        Dxi(13,3) =  1.0_DP
+
+        Dxi(14,1) =  1.0_DP
+        Dxi(14,2) =  0.0_DP
+        Dxi(14,3) =  1.0_DP
+
+        Dxi(15,1)  =  0.0_DP
+        Dxi(15,2)  =  1.0_DP
+        Dxi(15,3)  =  1.0_DP
+
+        Dxi(16,1)  = -1.0_DP
+        Dxi(16,2)  =  0.0_DP
+        Dxi(16,3)  =  1.0_DP
+
+        Dxi(17,1)  = -1.0_DP
+        Dxi(17,2)  = -1.0_DP
+        Dxi(17,3)  =  0.0_DP
+        
+        Dxi(18,1)  =  1.0_DP
+        Dxi(18,2)  = -1.0_DP
+        Dxi(18,3)  =  0.0_DP
+
+        Dxi(19,1)  =  1.0_DP
+        Dxi(19,2)  =  1.0_DP
+        Dxi(19,3)  =  0.0_DP
+
+        Dxi(20,1)  = -1.0_DP
+        Dxi(20,2)  =  1.0_DP
+        Dxi(20,3)  =  0.0_DP
+
+        nlocalDOFsDest = 20
+              
       case DEFAULT
-        call output_line ('Unsupported FE space in destination vector!',&
+        call output_line('Unsupported FE space in destination vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpP1Q1cnf')
         call sys_halt()
       end select
@@ -609,9 +1047,9 @@ contains
           ! Calculate the X-derivative in the corners of the elements
           ! into Dderivatives(:,:,1).
           
-          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
               p_relementDistribution%celement, IdofsTrial, DER_DERIV1D_X,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+              Dderivatives(:,1:IELmax-IELset+1,1))
 
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
@@ -632,13 +1070,13 @@ contains
           ! Calculate the X-derivative in the corners of the elements
           ! into Dderivatives(:,:,1) and the Y-derivative into Dderivatives(:,:,2).
           
-          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
               p_relementDistribution%celement, IdofsTrial, DER_DERIV2D_X,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+              Dderivatives(:,1:IELmax-IELset+1,1))
 
-          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
               p_relementDistribution%celement, IdofsTrial, DER_DERIV2D_Y,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,2))
+              Dderivatives(:,1:IELmax-IELset+1,2))
 
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
@@ -661,17 +1099,17 @@ contains
            ! into Dderivatives(:,:,1), the Y-derivative into Dderivatives(:,:,2)
            ! and the Z-derivative into Dderivatives(:,:,3)
           
-          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
               p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_X,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+              Dderivatives(:,1:IELmax-IELset+1,1))
 
-          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
               p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Y,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,2))
+              Dderivatives(:,1:IELmax-IELset+1,2))
 
-          call fevl_evaluate_sim3 (rvector, revalElementSet,&
+          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
               p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Z,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,3))
+              Dderivatives(:,1:IELmax-IELset+1,3))
           
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
@@ -737,7 +1175,7 @@ contains
     ! Release temp data
     call storage_free (h_IcontributionsAtDOF)
 
-  end subroutine
+  end subroutine ppgrd_calcGradInterpP12Q12cnf
 
   !****************************************************************************
 
@@ -755,10 +1193,10 @@ contains
 
 !<input>
     ! The FE solution vector. Represents a scalar FE function.
-    type(t_vectorScalar), intent(IN)         :: rvectorScalar
+    type(t_vectorScalar), intent(IN) :: rvectorScalar
     
     ! The type of patch used to recover the gradient values
-    integer, intent(IN)                      :: cpatchType
+    integer, intent(IN) :: cpatchType
 !</input>
 
 !<inputoutput>
@@ -774,14 +1212,12 @@ contains
 !</subroutine>
     
     ! local variables
-    integer :: IVE,NVE,NVEMax
+    real(DP), dimension(NDIM3D) :: Dval
+    integer :: IVE,NVE,NVEMax,IEL,JEL,KEL,IVT,IPATCH,NPATCH,PATCHset,PATCHmax
     integer :: icurrentElementDistr,ilastElementDistr,ilocalElementDistr
     integer :: i,j,k,ipoint,idx,idx2,icoordSystem,idxsubgroup
-    integer :: IPATCH,NPATCH,PATCHset,PATCHmax
     logical :: bnonparTrial
-    integer(PREC_ELEMENTIDX)    :: IEL,JEL,KEL
-    integer(PREC_VERTEXIDX)     :: IVT
-    real(DP), dimension(NDIM3D) :: Dval
+
 
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder,BderDest
@@ -844,12 +1280,12 @@ contains
     type(t_domainIntSubset) :: rintSubsetDest
 
     ! An allocatable array accepting the starting positions of each patch
-    integer(PREC_ELEMENTIDX), dimension(:), allocatable :: IelementsInPatchIdx
+    integer, dimension(:), allocatable :: IelementsInPatchIdx
 
     ! An allocatable array accepting the element numbers of each patch
     ! Note that the first member for each patch defines the patch details, i.e.,
     ! the cubature formular that should be used for this patch, etc.
-    integer(PREC_ELEMENTIDX), dimension(:), allocatable :: IelementsInPatch
+    integer, dimension(:), allocatable :: IelementsInPatch
 
     ! An allocatable array accepting the number of corners per element
     integer, dimension(:), allocatable :: IelementNVEInPatch
@@ -861,8 +1297,8 @@ contains
     integer, dimension(:), allocatable :: Inpoints
     
     ! An allocatable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), allocatable :: IdofsTrial
-    integer(PREC_DOFIDX), dimension(:,:), allocatable :: IdofsDest
+    integer, dimension(:,:), allocatable :: IdofsTrial
+    integer, dimension(:,:), allocatable :: IdofsDest
 
     ! An allocatable array accepting the coordinates of the patch bounding group
     real(DP), dimension(:,:,:), allocatable :: DpatchBound
@@ -880,19 +1316,19 @@ contains
     real(DP), dimension(:,:,:), allocatable :: Dderivatives
 
     ! Pointer to element-at-vertex index array of the triangulation
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertexIdx
+    integer, dimension(:), pointer :: p_IelementsAtVertexIdx
 
     ! Pointer to element-at-vertex list of the triangulation
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
+    integer, dimension(:), pointer :: p_IelementsAtVertex
 
     ! Pointer to elements-at-element list of the triangulation
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement
 
      ! Pointer to vertices-at-element list of the triangulation
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
 
     ! Pointer to an element-number list
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
 
     ! Pointer to vertex coordinates of the triangulation
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
@@ -934,7 +1370,7 @@ contains
     ! based on DOF's! Actually, we'll calculate how often we touch each DOF 
     ! in the destination space.
     integer :: h_IcontributionsAtDOF
-    integer(I32), dimension(:), pointer :: p_IcontributionsAtDOF
+    integer, dimension(:), pointer :: p_IcontributionsAtDOF
     
     ! Pointers to the X-, Y- and Z-derivative vector
     real(DP), dimension(:), pointer :: p_DxDeriv, p_DyDeriv, p_DzDeriv
@@ -942,6 +1378,31 @@ contains
     ! Auxiliary integers
     integer :: icubp,idim
     
+
+    ! Loop over all blocks of the gradient and over all FE spaces
+    do i = 1, min(rvectorGradient%nblocks,&
+                  rvectorScalar%p_rspatialDiscr%ndimension)
+      do j = 1, rvectorGradient%p_rblockDiscr%RspatialDiscr(i)%inumFESpaces
+        
+        select case(elem_getPrimaryElement(&
+            rvectorGradient%p_rblockDiscr%RspatialDiscr(i)%RelementDistr(j)%celement))
+        case (EL_Q0_2D, EL_Q0_3D,&
+              EL_P0_1D, EL_P0_2D, EL_P0_3D,&
+              EL_Q1_2D, EL_Q1_3D,&
+              EL_P1_1D, EL_P1_2D, EL_P1_3D,&
+              EL_Q2_2D, EL_Q2_3D,&
+              EL_P2_1D, EL_P2_2D, EL_P2_3D)
+          
+        case DEFAULT
+          call output_line ('Only Q0, Q1, Q2, P0, P1, and P2 supported as&
+              & discretisation for the destination vector!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
+          call sys_halt()
+        end select
+        
+      end do
+    end do
+
     !-----------------------------------------------------------------------
     ! (0)  Initialisation
     !-----------------------------------------------------------------------
@@ -2668,19 +3129,19 @@ contains
         npatches, IelemNVE, DpointsReal, DpointsBound)
       
       ! Index vector and list of elements in patch
-      integer, dimension(:), intent(IN)         :: IelementsInPatchIdx
+      integer, dimension(:), intent(IN) :: IelementsInPatchIdx
 
       ! Number of elements in patch
-      integer, intent(IN)                       :: npatches
+      integer, intent(IN) :: npatches
 
       ! Array with numbers of corners per element
-      integer, dimension(:), intent(IN)         :: IelemNVE
+      integer, dimension(:), intent(IN) :: IelemNVE
 
       ! Physical coordinates of the corner nodes of all elements in the patch
       real(DP), dimension(:,:,:), intent(INOUT) :: DpointsReal
 
       ! Physical coordinates of the bounds of all "patch" elements
-      real(DP), dimension(:,:,:), intent(OUT)   :: DpointsBound
+      real(DP), dimension(:,:,:), intent(OUT) :: DpointsBound
 
       ! local variables
       integer :: ipatch,idx,idxFirst,idxLast
@@ -2896,19 +3357,19 @@ contains
         npatches, NVE, DpointsReal, DpointsBound)
       
       ! Index vector and list of elements in patch
-      integer, dimension(:), intent(IN)         :: IelementsInPatchIdx
+      integer, dimension(:), intent(IN) :: IelementsInPatchIdx
 
       ! Number of elements in patch
-      integer, intent(IN)                       :: npatches
+      integer, intent(IN) :: npatches
 
       ! Number of vertices per element
-      integer, intent(IN)                       :: NVE
+      integer, intent(IN) :: NVE
 
       ! Physical coordinates of the corner nodes of all elements in the patch
       real(DP), dimension(:,:,:), intent(INOUT) :: DpointsReal
 
       ! Physical coordinates of the bounds of all "patch" elements
-      real(DP), dimension(:,:,:), intent(OUT)   :: DpointsBound
+      real(DP), dimension(:,:,:), intent(OUT) :: DpointsBound
 
       ! local variables
       integer :: ipatch,idxFirst,idxLast
@@ -3222,24 +3683,24 @@ contains
         npatches, NVE, DpointsReal, DpointsBound, DpointsRef)
 
       ! Index vector and list of elements in patch
-      integer, dimension(:), intent(IN)       :: IelementsInPatchIdx
+      integer, dimension(:), intent(IN) :: IelementsInPatchIdx
 
       ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
       ! the type of the coordinate system that is used for specifying the coordinates
       ! on the reference element.
-      integer, intent(IN)                     :: icoordSystem
+      integer, intent(IN) :: icoordSystem
       
       ! Number of elements in patch
-      integer, intent(IN)                     :: npatches
+      integer, intent(IN) :: npatches
 
       ! Number of vertices per element
-      integer, intent(IN)                     :: NVE
+      integer, intent(IN) :: NVE
       
       ! Coordinates of the points on the physical element.
-      real(DP), dimension(:,:,:), intent(IN)  :: DpointsReal
+      real(DP), dimension(:,:,:), intent(IN) :: DpointsReal
 
       ! Coordinates of the bounding group of each patch
-      real(DP), dimension(:,:,:), intent(IN)  :: DpointsBound
+      real(DP), dimension(:,:,:), intent(IN) :: DpointsBound
 
       ! Coordinates of the points on the reference elements.
       real(DP), dimension(:,:,:), intent(OUT) :: DpointsRef
@@ -3374,30 +3835,30 @@ contains
         Inpoints, indofTrial, Dcoefficients, Dpolynomials, Dderivatives)
       
       ! Index vector and list of elements in patch
-      integer, dimension(:), intent(IN)                   :: IelementsInPatchIdx
+      integer, dimension(:), intent(IN) :: IelementsInPatchIdx
 
       ! Number of elements in patch
-      integer, intent(IN)                                 :: npatches
+      integer, intent(IN) :: npatches
 
       ! Array with numbers of sampling points per patch
-      integer, dimension(:), intent(IN)                   :: Inpoints
+      integer, dimension(:), intent(IN) :: Inpoints
 
       ! Number of local degrees of freedom for test functions
-      integer, intent(IN)                                 :: indofTrial
+      integer, intent(IN) :: indofTrial
 
       ! Vector with consistent gradient values
-      real(DP), dimension(:,:), intent(IN)                :: Dcoefficients
+      real(DP), dimension(:,:), intent(IN) :: Dcoefficients
 
       ! Vector with aligned polynomial interpolants
-      real(DP), dimension(:), intent(INOUT)               :: Dpolynomials
+      real(DP), dimension(:), intent(INOUT) :: Dpolynomials
 
       ! Smoothe gradient values
-      real(DP), dimension(:,:,:), intent(OUT)             :: Dderivatives
+      real(DP), dimension(:,:,:), intent(OUT) :: Dderivatives
 
       ! local variables
-      integer  :: i,ipatch,icoeffFirst,icoeffLast,ipolyFirst,ipolyLast
-      real(DP), dimension(indofTrial,indofTrial)     :: Dv
-      real(DP), dimension(indofTrial)                :: Dd
+      integer :: i,ipatch,icoeffFirst,icoeffLast,ipolyFirst,ipolyLast
+      real(DP), dimension(indofTrial,indofTrial) :: Dv
+      real(DP), dimension(indofTrial) :: Dd
       
 
       ! Initialise position index
@@ -3444,40 +3905,40 @@ contains
         ncubp, indofTrial, Dcoefficients, Dpolynomials, Dderivatives)
 
       ! Index vector and list of elements in patch
-      integer, dimension(:), intent(IN)              :: IelementsInPatchIdx
+      integer, dimension(:), intent(IN) :: IelementsInPatchIdx
 
       ! Number of elements in patch
-      integer, intent(IN)                            :: npatches
+      integer, intent(IN) :: npatches
 
       ! Number of cubature points
-      integer, intent(IN)                            :: ncubp
+      integer, intent(IN) :: ncubp
 
       ! Number of local degrees of freedom for test functions
-      integer, intent(IN)                            :: indofTrial
+      integer, intent(IN) :: indofTrial
 
       ! Vector with consistent gradient values
       !
       !   Dcoefficients(ncubp, nelemPerBlock, ndim)
       !
-      real(DP), dimension(:,:,:), intent(IN)         :: Dcoefficients
+      real(DP), dimension(:,:,:), intent(IN) :: Dcoefficients
 
       ! Rectangular matrix with polynomial interpolants
       !
       !   Dpolynomials(indofTrial, 1, ncubp, nelemPerBlock)
       !
-      real(DP), dimension(:,:,:,:), intent(INOUT)    :: Dpolynomials
+      real(DP), dimension(:,:,:,:), intent(INOUT) :: Dpolynomials
 
       ! Smoothed gradient values
       !
       !   Derivatives(indofTrial, npatches, ndim)
       !
-      real(DP), dimension(:,:,:), intent(OUT)        :: Dderivatives
+      real(DP), dimension(:,:,:), intent(OUT) :: Dderivatives
 
       ! local variables
-      integer  :: i,ipatch,idxFirst,idxLast,npoints
+      integer :: i,ipatch,idxFirst,idxLast,npoints
 
-      real(DP), dimension(indofTrial,indofTrial)     :: Dv
-      real(DP), dimension(indofTrial)                :: Dd
+      real(DP), dimension(indofTrial,indofTrial) :: Dv
+      real(DP), dimension(indofTrial) :: Dd
       
       ! Loop over all patches
       do ipatch = 1, npatches
@@ -3612,7 +4073,7 @@ contains
 
 !<input>
     ! The FE solution vector. Represents a scalar FE function.
-    type(t_vectorScalar), intent(IN)         :: rvectorScalar
+    type(t_vectorScalar), intent(IN) :: rvectorScalar
 !</input>
 
 !<inputoutput>
@@ -3628,10 +4089,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,j,k,icurrentElementDistr, NVE
-    logical :: bisQ1, bisP1, bisQ1T, bisP1T, bisDifferent
+    integer :: i,j,k,icurrentElementDistr,NVE,IELmax,IELset,idof
     logical :: bnonparTrial
-    integer(I32) :: IELmax, IELset, idof
 
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
@@ -3654,7 +4113,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -3677,7 +4136,7 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_Djac
     
     ! Pointer to KVERT of the triangulation
-    integer(I32), dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
     
     ! Pointer to DCORVG of the triangulation
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
@@ -3698,18 +4157,18 @@ contains
     type(t_domainIntSubset) :: rintSubset
     
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), allocatable :: IdofsTrial
-    integer(PREC_DOFIDX), dimension(:,:), allocatable :: IdofsDest
+    integer, dimension(:,:), allocatable :: IdofsTrial
+    integer, dimension(:,:), allocatable :: IdofsDest
     
     ! Pointers to the X-, Y- and Z-derivative vector
     real(DP), dimension(:), pointer :: p_DxDeriv, p_DyDeriv, p_DzDeriv
     
     ! Number of elements in the current element distribution
-    integer(PREC_ELEMENTIDX) :: NEL
+    integer :: NEL
 
     ! Pointer to an array that counts if an edge has been visited.
     integer :: h_IcontributionsAtDOF
-    integer(I32), dimension(:), pointer :: p_IcontributionsAtDOF
+    integer, dimension(:), pointer :: p_IcontributionsAtDOF
     
     ! Discretisation structures for the source- and destination vector(s)
     type(t_spatialDiscretisation), pointer :: p_rdiscrSource, p_rdiscrDest
@@ -3750,57 +4209,37 @@ contains
       call sys_halt()
     end if
 
-    ! The source vector must be either pure Q1 or pure P1 or mixed Q1/P1
-    bisQ1 = .false.
-    bisP1 = .false.
-    bisDifferent = .false.
-
+    ! The source vector must be either pure Q1, P1 or mixed Q1/P1
     p_rdiscrSource => rvectorScalar%p_rspatialDiscr
-    do j=1,p_rdiscrSource%inumFESpaces
+    do j = 1, p_rdiscrSource%inumFESpaces
       select case (elem_getPrimaryElement (p_rdiscrSource%RelementDistr(j)%celement))
-      case (EL_Q1)
-        bisQ1 = .true.
-      case (EL_P1)
-        bisP1 = .true.
+      case (EL_Q1_2D, EL_Q1_3D, EL_P1_1D, EL_P1_2D, EL_P1_3D)
+        
       case DEFAULT
-        bisDifferent = .true.
+        call output_line ('Only Q1, and P1 supported as&
+            & discretisation for the source vector!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
+        call sys_halt()
       end select
     end do
-
-    if (bisDifferent) then
-      call output_line ('Only Q1, and P1 supported as&
-          & discretisation for the source vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
-      call sys_halt()
-    end if
-
-    ! The destination vector must be either pure Q1T or pure P1T or mixed Q1T/P1T
-    bisQ1T = .false.
-    bisP1T = .false.
-    bisDifferent = .false.
     
-    do i=1,min(rvectorGradient%nblocks,&
-        rvectorScalar%p_rspatialDiscr%p_rtriangulation%ndim,rvectorGradient%nblocks)
+    ! The destination vector must be either pure Q1T or pure P1T or mixed Q1T/P1T
+    do i = 1, min(rvectorGradient%nblocks,&
+                  rvectorScalar%p_rspatialDiscr%ndimension)
       p_rdiscrDest => rvectorGradient%p_rblockDiscr%RspatialDiscr(i)
-      do j=1,p_rdiscrDest%inumFESpaces
-        select case (elem_getPrimaryElement (p_rdiscrDest%RelementDistr(j)%celement))
-        case (EL_Q1T)
-          bisQ1T = .true.
-        case (EL_P1T)
-          bisP1T = .true.
+      do j = 1, p_rdiscrDest%inumFESpaces
+        select case(elem_getPrimaryElement(p_rdiscrDest%RelementDistr(j)%celement))
+        case (EL_Q1T_2D, EL_Q1T_3D, EL_P1T_2D)
+          
         case DEFAULT
-          bisDifferent = .true.
+          call output_line ('Only Q1T, and P1T supported as&
+              & discretisation for the destination vector!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
+          call sys_halt()
         end select
       end do
     end do
-
-    if (bisDifferent) then
-      call output_line ('Only Q1T, and P1T supported as&
-          & discretisation for the destination vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
-      call sys_halt()
-    end if
-
+    
     ! Get the discretisation structures of the source- and destination space.
     ! Note that we assume here that the X- and Y-derivative is discretised
     ! the same way!
@@ -4039,7 +4478,7 @@ contains
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_relementDistribution%celement, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV1D_X,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+              Dderivatives(:,1:IELmax-IELset+1,1))
 
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
@@ -4072,13 +4511,13 @@ contains
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_relementDistribution%celement, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV2D_X,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+              Dderivatives(:,1:IELmax-IELset+1,1))
           
           call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_relementDistribution%celement, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV2D_Y,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,2))
+              Dderivatives(:,1:IELmax-IELset+1,2))
           
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
@@ -4117,19 +4556,19 @@ contains
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_relementDistribution%celement, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_X,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,1))
+              Dderivatives(:,1:IELmax-IELset+1,1))
           
           call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_relementDistribution%celement, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_Y,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,2))
+              Dderivatives(:,1:IELmax-IELset+1,2))
 
           call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_relementDistribution%celement, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_Z,&
-              Dderivatives(:,1:IELmax-IELset+1_I32,3))
+              Dderivatives(:,1:IELmax-IELset+1,3))
 
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
