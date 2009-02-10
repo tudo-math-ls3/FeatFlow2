@@ -128,6 +128,7 @@ module cubature
 
   use fsystem
   use basicgeometry
+  use genoutput
 
   implicit none
   
@@ -465,11 +466,12 @@ contains
     cub_igetID=CUB_G2_3D_R
 
   case default
-    print *,'Error: Unknown cubature formula: ',scubname
+    call output_line('Unknown cubature formula: '//scubname,&
+                     OU_CLASS_ERROR,OU_MODE_STD,'cub_igetID')
     call sys_halt()
   end select
     
-  end function 
+  end function cub_igetID
 
   !****************************************************************************
 
@@ -574,11 +576,12 @@ contains
       n = 6
     
     case default
-      print *, 'Error: Unknown cubature formula'
+      call output_line('Unknown cubature type!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'cub_igetNumPts')
       call sys_halt()
     end select
 
-  end function
+  end function cub_igetNumPts
 
 
   !****************************************************************************
@@ -686,7 +689,7 @@ contains
       n = 0
     end select
 
-  end function
+  end function cub_igetCoordDim
 
   !****************************************************************************
 
@@ -871,14 +874,14 @@ contains
       
       ! What dimension should the rule be for?
       select case(ndim)
-      case (1)
+      case (NDIM1D)
         ! 1D Gauss rule
         do i = 1, npts
           Dpoints(1,i) = Dv(i)
           Domega(i) = Dw(i)
         end do
       
-      case (2)
+      case (NDIM2D)
         ! 2D Gauss rule for quadrilaterals
         l = 1
         do i = 1, npts
@@ -890,7 +893,7 @@ contains
           end do
         end do
       
-      case(3)
+      case(NDIM3D)
         ! 3D Gauss rule for hexahedra
         l = 1
         do i = 1, npts
@@ -2466,7 +2469,8 @@ contains
     ncubp = 6
 
   case default 
-    print *,'Error: unknown cubature formula: ',ccubType
+    call output_line('Unknown cubature type!',&
+                     OU_CLASS_ERROR,OU_MODE_STD,'cub_getCubPoints')
     call sys_halt()
   end select
    
