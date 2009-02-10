@@ -39,7 +39,6 @@ module spdiscprojection
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
-  use feevaluation
   use derivatives
   use linearalgebra
   
