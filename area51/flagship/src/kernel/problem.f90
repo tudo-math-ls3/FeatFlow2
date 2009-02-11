@@ -307,7 +307,7 @@ contains
     ! local variables
     type(t_problemLevel), pointer :: rproblemLevel, p_rproblemLevel
     integer :: ilev
-    logical :: berror, bnoExtendedRaw
+    logical :: bnoExtendedRaw
 
     ! Initialize global problem structure
     call problem_createProblem(rproblem)
