@@ -63,6 +63,10 @@ module domainintegration
     ! routine.
     integer, dimension(:), pointer                :: p_Ielements => null()
     
+    ! If p_IdofsTrial is assigned, this is an element identifier that
+    ! indicates the trial space.
+    integer(I32)                                  :: celement = 0
+    
     ! An array containing the the degrees of freedom on all the
     ! elements. For multilinear forms (bilinear, trilinear), this is a pointer
     ! to the DOF's of the trial space.

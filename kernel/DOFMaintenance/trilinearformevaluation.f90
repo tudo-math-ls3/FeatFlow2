@@ -874,6 +874,7 @@ contains
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial => p_IdofsTrial
+        rintSubset%celement = p_elementDistrTrial%celement
         
         call fcoeff_buildTrilMatrixSc_sim (p_rdiscrTest,p_rdiscrTrial,rform, &
                   IELmax-IELset+1_I32,ncubp,&

@@ -2036,6 +2036,11 @@ contains
   real(DP) :: cyact
   logical :: btrans = .false.
   
+  ! DEBUG!!!
+  real(DP), dimension(:), pointer :: p_Dx, p_Dy
+  call lsysbl_getbase_double (rx,p_Dx)
+  call lsysbl_getbase_double (ry,p_Dy)
+  
     if(present(btransposed)) btrans = btransposed
     
     ! The vectors must be compatible to each other.

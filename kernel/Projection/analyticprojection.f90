@@ -627,6 +627,7 @@ contains
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial => IdofsTrial
+        rintSubset%celement = p_relementDistribution%celement
     
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points

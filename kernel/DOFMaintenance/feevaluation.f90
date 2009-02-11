@@ -1558,9 +1558,6 @@ contains
   Bder = .false.
   Bder(iderType) = .true.
   
-  ! Get the pointer to the trail DOF's.
-  p_IdofsTrial => rdomainIntSubset%p_IdofsTrial
-  
   ! Get the currently active element
   ieltyp = rvectorScalar%p_rspatialDiscr%RelementDistr( &
       rdomainIntSubset%ielementDistribution)%celement
@@ -1571,6 +1568,17 @@ contains
   
   ! Evaluate the basis functions
   call elem_generic_sim2 (ieltyp, rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+  
+  ! Get the pointer to the trail DOF's.
+  ! If the IdofsTrial in the domain subset fits to our current element,
+  ! take that. Otherwise, we have to compute the actual DOF's.
+  if (rdomainIntSubset%celement .eq. ieltyp) then
+    p_IdofsTrial => rdomainIntSubset%p_IdofsTrial
+  else
+    allocate (p_IdofsTrial(indofTrial,nelements))
+    call dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscr, &
+        rdomainIntSubset%p_Ielements, p_IdofsTrial)
+  end if
   
   if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
   
@@ -1622,6 +1630,10 @@ contains
   
   ! Release memory, finish
   deallocate(DbasTrial)
+  
+  if (rdomainIntSubset%celement .ne. ieltyp) then
+    deallocate (p_IdofsTrial)
+  end if
 
   end subroutine
 

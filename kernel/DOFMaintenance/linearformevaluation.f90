@@ -1505,6 +1505,7 @@ contains
       rintSubset%ielementStartIdx = IELset
       rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
       rintSubset%p_IdofsTrial => IdofsTest
+      rintSubset%celement = p_elementDistribution%celement
       
       call fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
                 IELmax-IELset+1_I32,ncubp,revalElementSet%p_DpointsReal, &
