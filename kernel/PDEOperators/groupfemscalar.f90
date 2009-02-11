@@ -99,7 +99,7 @@
 !#                              gfsc_buildJacLinearBlockFCT /
 !#                              gfsc_buildJacobianScalarFCT /
 !#                              gfsc_buildJacobianBlockFCT
-!#      -> Aassembles the Jacobian matrix for the stabilisation part of FCT type;
+!#      -> Assembles the Jacobian matrix for the stabilisation part of FCT type;
 !#         For the first two routines, the velocity is assumed to be linear which
 !#         simplifies the evaluation of the Jacobian matrix significantly.
 !#         For the second two routines, the velocity can be arbitrary.
@@ -8762,7 +8762,7 @@ contains
     if (present(bextendedSparsity)) then
       bisExtended = bextendedSparsity
     else
-      bisExtended = .TRUE.
+      bisExtended = .true.
     end if
 
 
@@ -9425,7 +9425,7 @@ contains
     if (present(bextendedSparsity)) then
       bisExtended = bextendedSparsity
     else
-      bisExtended = .TRUE.
+      bisExtended = .true.
     end if
 
 
@@ -11312,7 +11312,7 @@ contains
     if (present(bextendedSparsity)) then
       bisExtended = bextendedSparsity
     else
-      bisExtended = .TRUE.
+      bisExtended = .true.
     end if
 
     
@@ -12412,7 +12412,7 @@ contains
     if (present(bextendedSparsity)) then
       bisExtended = bextendedSparsity
     else
-      bisExtended = .TRUE.
+      bisExtended = .true.
     end if
 
     
@@ -13603,7 +13603,7 @@ contains
     if (present(bextendedSparsity)) then
       bisExtended = bextendedSparsity
     else
-      bisExtended = .TRUE.
+      bisExtended = .true.
     end if
 
 
