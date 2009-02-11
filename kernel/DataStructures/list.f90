@@ -70,12 +70,18 @@
 !# 15.) list_printList
 !#      -> Print content of list
 !#
+!# 16.) list_clearList
+!#      -> Remove all content from list
+!#
 !# </purpose>
 !##############################################################################
 
 module list
+
   use fsystem
+  use genoutput
   use storage
+
   implicit none
   
   private
@@ -96,6 +102,7 @@ module list
   public :: list_deleteFromList
   public :: list_searchInList
   public :: list_printList
+  public :: list_clearList
 
 !<constants>
 
@@ -409,7 +416,8 @@ contains
       call storage_getbase_int(rlist%h_Key,rlist%IKey)
 
     case DEFAULT
-      print *, 'list_createList: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_createList')
       call sys_halt()
     end select
     
@@ -527,7 +535,8 @@ contains
       call storage_getbase_int(rlist%h_Key,rlist%IKey)
 
     case DEFAULT
-      print *, 'list_resizeList: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_resizeList')
       call sys_halt()
     end select
 
@@ -618,7 +627,8 @@ contains
       end do
       
     case DEFAULT
-      print *, 't_list_copy: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_copyFromListHandle')
       call sys_halt()
     end select
   end subroutine list_copyFromListHandle
@@ -649,7 +659,8 @@ contains
     integer :: ipos,jpos
 
     if (rlist%clistFormat .ne. ST_DOUBLE) then
-      print *, 'list_copyFromListDble: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_copyFromListDble')
       call sys_halt()
     end if
 
@@ -689,7 +700,8 @@ contains
     integer :: ipos,jpos
 
     if (rlist%clistFormat .ne. ST_SINGLE) then
-      print *, 'list_copyFromListSngl: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_copyFromListSngl')
       call sys_halt()
     end if
 
@@ -729,7 +741,8 @@ contains
     integer :: ipos,jpos
 
     if (rlist%clistFormat .ne. ST_INT) then
-      print *, 'list_copyFromListInt: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_copyFromListInt')
       call sys_halt()
     end if
 
@@ -788,7 +801,8 @@ contains
         call list_appendToList(rlist,p_IKey(ipos),kpos)
       end do
     case DEFAULT
-      print *, 't_list_copy: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_copyToListHandle')
       call sys_halt()
     end select
   end subroutine list_copyToListHandle
@@ -818,7 +832,8 @@ contains
     integer :: ipos,kpos
 
     if (rlist%clistFormat .ne. ST_DOUBLE) then
-      print *, 'list_copyToListDble: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_copyToListDble')
       call sys_halt()
     end if
     
@@ -852,7 +867,8 @@ contains
     integer :: ipos,kpos
 
     if (rlist%clistFormat .ne. ST_SINGLE) then
-      print *, 'list_copyToListSngl: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_copyToListSngl')
       call sys_halt()
     end if
     
@@ -886,7 +902,8 @@ contains
     integer :: ipos,kpos
 
     if (rlist%clistFormat .ne. ST_INT) then
-      print *, 'list_copyToListInt: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_copyToListInt')
       call sys_halt()
     end if
     
@@ -923,7 +940,9 @@ contains
         rlist1%isizeInt    .ne. rlist2%isizeInt .or.&
         rlist1%isizeDble   .ne. rlist2%isizeDble .or.&
         rlist1%isizeSngl   .ne. rlist2%isizeSngl) then
-      print *, "list_swapList: Lists are not compatible"
+
+      call output_line('Lists are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_swapList')
       call sys_halt()
     end if
 
@@ -950,7 +969,8 @@ contains
       call storage_getbase_int(rlist1%h_Key,rlist1%IKey)
 
     case DEFAULT
-      print *, 'list_swapList: Unsupported data type!'
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_swapList')
       call sys_halt()
     end select
 
@@ -979,7 +999,8 @@ contains
       call storage_getbase_int(rlist2%h_Key,rlist2%IKey)
 
     case DEFAULT
-      print *, 'list_swapList: Unsupported data type!'
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_swapList')
       call sys_halt()
     end select
 
@@ -1106,8 +1127,8 @@ contains
 !</function>
 
     if (rlist%clinkType .ne. LIST_DOUBLELINKED) then
-      print *, "list_getPrevInList: This operation is only available for&
-          & double-linked lists!"
+      call output_line('This operation is only available for double-linked lists!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_getPrevInList')
       call sys_halt()
     end if
     
@@ -1159,7 +1180,8 @@ contains
     
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_DOUBLE) then
-      print *, 'list_prependToListDble: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_prependToListDble')
       call sys_halt()
     end if
     
@@ -1204,7 +1226,8 @@ contains
       end if
 
     case DEFAULT
-      print *, "list_prependToListDble: Invalid link type!"
+      call output_line('Invalid link type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_prependToListDble')
       call sys_halt()
     end select
 
@@ -1259,7 +1282,8 @@ contains
     
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_SINGLE) then
-      print *, 'list_prependToListSngl: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_prependToListSngl')
       call sys_halt()
     end if
     
@@ -1303,7 +1327,8 @@ contains
         rlist%Kprev(ipos)  = LNULL
       end if
     case DEFAULT
-      print *, "list_prependToListSngl: Invalid linktype!"
+      call output_line('Invalid link type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_prependToListSngl')
       call sys_halt()
     end select
 
@@ -1358,7 +1383,8 @@ contains
     
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_INT) then
-      print *, 'list_prependToListInt: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_prependToListInt')
       call sys_halt()
     end if
     
@@ -1403,7 +1429,8 @@ contains
       end if
       
     case DEFAULT
-      print *, "list_prependToListInt: Invalid link type!"
+      call output_line('Invalid link type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_prependToListInt')
       call sys_halt()
     end select
 
@@ -1458,7 +1485,8 @@ contains
     
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_DOUBLE) then
-      print *, 'list_appendToListDble: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_appendToListDble')
       call sys_halt()
     end if
     
@@ -1504,7 +1532,8 @@ contains
       end if
 
     case DEFAULT
-      print *, "list_appendToListDble: Invalid link type!"
+      call output_line('Invalid link type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_appendToListDble')
       call sys_halt()
     end select
 
@@ -1559,7 +1588,8 @@ contains
     
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_SINGLE) then
-      print *, 'list_appendToListSngl: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_appendToListSngl')
       call sys_halt()
     end if
     
@@ -1605,7 +1635,8 @@ contains
       end if
 
     case DEFAULT
-      print *, "list_appendToListSngl: Invalid link type!"
+      call output_line('Invalid link type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_appendToListSngl')
       call sys_halt()
     end select
 
@@ -1660,7 +1691,8 @@ contains
     
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_INT) then
-      print *, 'list_appendToListInt: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_appendToListInt')
       call sys_halt()
     end if
     
@@ -1706,7 +1738,8 @@ contains
       end if
       
     case DEFAULT
-      print *, "list_appendToListInt: Invalid link type!"
+      call output_line('Invalid link type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_appendToListInt')
       call sys_halt()
     end select
 
@@ -1765,7 +1798,8 @@ contains
 
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_DOUBLE) then
-      print *, 'list_insertIntoListDble: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_insertIntoListDble')
       call sys_halt()
     end if
     
@@ -1819,7 +1853,8 @@ contains
       end if
 
     case DEFAULT
-      print *, "list_insertIntoListDble: Invalid link type!"
+      call output_line('Invalid link type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_insertIntoListDble')
       call sys_halt()
     end select
 
@@ -1878,7 +1913,8 @@ contains
 
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_SINGLE) then
-      print *, 'list_insertIntoListSngl: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_insertIntoListSngl')
       call sys_halt()
     end if
     
@@ -1932,7 +1968,8 @@ contains
       end if
 
     case DEFAULT
-      print *, "list_insertIntoListSngl: Invalid link type!"
+      call output_line('Invalid link type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_insertIntoListSngl')
       call sys_halt()
     end select
 
@@ -1991,7 +2028,8 @@ contains
 
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_INT) then
-      print *, 'list_insertIntoListInt: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_insertIntoListInt')
       call sys_halt()
     end if
     
@@ -2045,7 +2083,8 @@ contains
       end if
 
     case DEFAULT
-      print *, "list_insertIntoListInt: Invalid link type!"
+      call output_line('Invalid link type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_insertIntoListInt')
       call sys_halt()
     end select
 
@@ -2094,7 +2133,8 @@ contains
 
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_DOUBLE) then
-      print *, 'list_deleteFromListDble: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_deleteFromListDble')
       call sys_halt()
     end if
 
@@ -2144,7 +2184,8 @@ contains
 
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_SINGLE) then
-      print *, 'list_deleteFromListSngl: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_deleteFromListSngl')
       call sys_halt()
     end if
 
@@ -2194,7 +2235,8 @@ contains
 
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_INT) then
-      print *, 'list_deleteFromListInt: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_deleteFromListInt')
       call sys_halt()
     end if
 
@@ -2247,7 +2289,8 @@ contains
 
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_DOUBLE) then
-      print *, 'list_searchInListDble: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_searchInListDble')
       call sys_halt()
     end if
 
@@ -2344,7 +2387,8 @@ contains
 
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_SINGLE) then
-      print *, 'list_searchInListSngl: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_searchInListSngl')
       call sys_halt()
     end if
 
@@ -2441,7 +2485,8 @@ contains
 
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_INT) then
-      print *, 'list_searchInListInt: Unsupported data format!'
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_searchInListInt')
       call sys_halt()
     end if
 
@@ -2549,8 +2594,35 @@ contains
       end do
       
     case DEFAULT
-      print *, 'list_printList: Unsupported data type!'
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_printList')
       call sys_halt()
     end select
   end subroutine list_printList
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine list_clearList(rlist)
+
+!<description>
+    ! This subroutine clears the content of the list
+!</description>
+
+!<inputoutput>
+    ! list
+    type(t_list), intent(INOUT) :: rlist
+!</input>
+!</subroutine>
+
+    ! Initialize list structure
+    rlist%item         = LHEAD
+    rlist%na           = 0
+    rlist%Knext(LFREE) = 1
+    rlist%Knext(LHEAD) = LNULL
+    rlist%Knext(LTAIL) = LNULL
+    
+  end subroutine list_clearList
+
 end module list
