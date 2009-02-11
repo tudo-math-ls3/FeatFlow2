@@ -672,16 +672,16 @@ contains
 !</subroutine>
 
   ! Initialise the variables of the structure for the simple discretisation
-  rblockDiscr%ndimension             = rtriangulation%ndim
-  rblockDiscr%ccomplexity            = SPDISC_UNIFORM
-  rblockDiscr%p_rtriangulation       => rtriangulation
+  rblockDiscr%ndimension       = rtriangulation%ndim
+  rblockDiscr%ccomplexity      = SPDISC_UNIFORM
+  rblockDiscr%p_rtriangulation => rtriangulation
   if (present(rboundary)) then
-    rblockDiscr%p_rboundary            => rboundary
+    rblockDiscr%p_rboundary    => rboundary
   else
     nullify(rblockDiscr%p_rboundary)
   end if
 
-  rblockDiscr%ncomponents            = ncomponents
+  rblockDiscr%ncomponents      = ncomponents
   allocate(rblockDiscr%RspatialDiscr(ncomponents))
 
   ! That's it.  
@@ -721,13 +721,13 @@ contains
 !</subroutine>
 
     ! Initialise a new block discretisation with one component.
-    call spdiscr_initBlockDiscr (rblockDiscr,1,&
+    call spdiscr_initBlockDiscr (rblockDiscr, 1,&
         rspatialDiscr%p_rtriangulation, rspatialDiscr%p_rboundary)
     
     ! Put a copy of the spatial discretisation to first component
     ! of the the block discretisation. Share the data.
     call spdiscr_duplicateDiscrSc (rspatialDiscr,&
-        rblockDiscr%RspatialDiscr(1),.true.)
+        rblockDiscr%RspatialDiscr(1), .true.)
   
   end subroutine  
 
@@ -736,7 +736,7 @@ contains
 !<subroutine>
 
   subroutine spdiscr_deriveBlockDiscr (rsourceDiscr, rdestDiscr, &
-      ifirstBlock,ilastBlock)
+                                       ifirstBlock, ilastBlock)
   
 !<description>
   ! This routine derives a block discretisation structure from another one.
@@ -790,7 +790,7 @@ contains
 
     ! Evaluate the optional parameters
     ifirst = 1
-    ilast = rsourceDiscr%ncomponents
+    ilast  = rsourceDiscr%ncomponents
     
     if (present(ifirstBlock)) then
       ifirst = min(max(ifirst,ifirstBlock),ilast)
@@ -804,11 +804,11 @@ contains
     
     ! Copy all information from the source discretisation structure
 
-    rdestDiscr%ndimension             =  rsourceDiscr%ndimension           
-    rdestDiscr%ccomplexity            =  rsourceDiscr%ccomplexity          
-    rdestDiscr%p_rboundary            => rsourceDiscr%p_rboundary          
-    rdestDiscr%p_rtriangulation       => rsourceDiscr%p_rtriangulation     
-    rdestDiscr%ncomponents            =  ncount       
+    rdestDiscr%ndimension       =  rsourceDiscr%ndimension           
+    rdestDiscr%ccomplexity      =  rsourceDiscr%ccomplexity          
+    rdestDiscr%p_rboundary      => rsourceDiscr%p_rboundary          
+    rdestDiscr%p_rtriangulation => rsourceDiscr%p_rtriangulation     
+    rdestDiscr%ncomponents      =  ncount       
     
     ! Copy all substructures -- from ifirstBlock to ilastBlock.
     ! Use spdiscr_duplicateDiscrSc which savely copies the scalar discretisation
@@ -816,9 +816,9 @@ contains
     ! between the source and destination structure; the dynamic information 
     ! 'belongs' to rdiscrSource and not to the newly created rdiscrDest!
     allocate(rdestDiscr%RspatialDiscr(ncount))
-    do i=1,ncount
+    do i = 1, ncount
       call spdiscr_duplicateDiscrSc (rsourceDiscr%RspatialDiscr(ifirst+i-1), &
-          rdestDiscr%RspatialDiscr(i), .true.)
+                                     rdestDiscr%RspatialDiscr(i), .true.)
     end do
       
     end subroutine  
@@ -862,13 +862,14 @@ contains
     nullify(rblockDiscr%p_rboundary)
     
     ! Release substructures?
-    if (brelsub) then
-      do i=1,rblockDiscr%ncomponents
-        call spdiscr_releaseDiscr (rblockDiscr%RspatialDiscr(i))
-      end do
+    if (associated(rblockDiscr%RspatialDiscr)) then
+      if (brelsub) then
+        do i = 1, rblockDiscr%ncomponents
+          call spdiscr_releaseDiscr (rblockDiscr%RspatialDiscr(i))
+        end do
+      end if
+      deallocate(rblockDiscr%RspatialDiscr)
     end if
-    
-    deallocate(rblockDiscr%RspatialDiscr)
     rblockDiscr%ncomponents = 0
 
     ! Structure not initialised anymore
@@ -895,15 +896,15 @@ contains
 
 !<input>
   ! The element type identifier that is to be used for all elements.
-  integer(I32), intent(IN)                       :: ieltyp
+  integer(I32), intent(IN) :: ieltyp
   
   ! Cubature formula CUB_xxxx to use for calculating integrals.
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer, intent(IN)                       :: ccubType
+  integer, intent(IN) :: ccubType
   
   ! The triangulation structure underlying to the discretisation.
-  type(t_triangulation), intent(IN), target    :: rtriangulation
+  type(t_triangulation), intent(IN), target :: rtriangulation
   
   ! The underlying domain.
   type(t_boundary), intent(IN), target, optional :: rboundary
@@ -934,15 +935,14 @@ contains
   end if
 
   ! Initialise the variables of the structure for the simple discretisation
-  !rspatialDiscr%ndimension             = NDIM2D
-  rspatialDiscr%ndimension             = rtriangulation%ndim
-  rspatialDiscr%p_rtriangulation       => rtriangulation
+  rspatialDiscr%ndimension       =  rtriangulation%ndim
+  rspatialDiscr%p_rtriangulation => rtriangulation
   if (present(rboundary)) then
-    rspatialDiscr%p_rboundary            => rboundary
+    rspatialDiscr%p_rboundary    => rboundary
   else
     nullify(rspatialDiscr%p_rboundary)
   end if
-  rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
+  rspatialDiscr%ccomplexity      =  SPDISC_UNIFORM
   
   ! All trial elements are ieltyp:
   
@@ -956,15 +956,15 @@ contains
   rspatialDiscr%h_IelementDistr = ST_NOHANDLE
   
   ! Initialise the first element distribution
-  rspatialDiscr%inumFESpaces           = 1
+  rspatialDiscr%inumFESpaces = 1
   allocate(rspatialDiscr%RelementDistr(rspatialDiscr%inumFESpaces))
   p_relementDistr => rspatialDiscr%RelementDistr(1)
   
   ! Initialise FE space for that block
-  p_relementDistr%celement = ieltyp
+  p_relementDistr%celement        = ieltyp
   p_relementDistr%ccubTypeBilForm = ccub
   p_relementDistr%ccubTypeLinForm = ccub
-  p_relementDistr%ccubTypeEval = ccub
+  p_relementDistr%ccubTypeEval    = ccub
   
   ! Get the typical transformation used with the element
   p_relementDistr%ctrafoType = elem_igetTrafoType(ieltyp)
@@ -977,10 +977,10 @@ contains
   ! This list defines the sequence how elements are processed, e.g. in the
   ! assembly of matrices/vectors.
   call storage_new1D ('spdiscr_initDiscr_simple', 'h_IelementList', &
-        rtriangulation%NEL, ST_INT, p_relementDistr%h_IelementList,   &
-        ST_NEWBLOCK_NOINIT)
+      rtriangulation%NEL, ST_INT, p_relementDistr%h_IelementList,   &
+      ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (p_relementDistr%h_IelementList,p_Iarray)
-  do i=1,rtriangulation%NEL
+  do i = 1, rtriangulation%NEL
     p_Iarray(i) = i
   end do
   
@@ -996,9 +996,9 @@ contains
   
 !<subroutine>
 
-  subroutine spdiscr_initDiscr_triquad (rspatialDiscr,&
-      ieltyptri,ieltypquad,ccubTypeTri,ccubTypeQuad,&
-      rtriangulation, rboundary)
+  subroutine spdiscr_initDiscr_triquad (rspatialDiscr, ieltyptri, ieltypquad,&
+                                        ccubTypeTri, ccubTypeQuad,&
+                                        rtriangulation, rboundary)
   
 !<description>
   ! This routine initialises a discretisation structure for a conformal
@@ -1012,25 +1012,25 @@ contains
 
 !<input>
   ! The element type identifier that is to be used for all triangular elements.
-  integer(I32), intent(IN)                       :: ieltypTri
+  integer(I32), intent(IN) :: ieltypTri
 
   ! The element type identifier that is to be used for all quadrilateral elements.
-  integer(I32), intent(IN)                       :: ieltypQuad
+  integer(I32), intent(IN) :: ieltypQuad
   
   ! Cubature formula CUB_xxxx to use for calculating integrals 
   ! on triangular elements
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer, intent(IN)                       :: ccubTypeTri
+  integer, intent(IN) :: ccubTypeTri
 
   ! Cubature formula CUB_xxxx to use for calculating integrals on 
   ! quadrilateral elements
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer, intent(IN)                       :: ccubTypeQuad
+  integer, intent(IN) :: ccubTypeQuad
   
   ! The triangulation structure underlying to the discretisation.
-  type(t_triangulation), intent(IN), target    :: rtriangulation
+  type(t_triangulation), intent(IN), target :: rtriangulation
   
   ! The underlying domain.
   type(t_boundary), intent(IN), target, optional :: rboundary
@@ -1066,25 +1066,25 @@ contains
   end if
 
   ! Initialise the variables of the structure for the simple discretisation
-  rspatialDiscr%ndimension             = NDIM2D
-  rspatialDiscr%p_rtriangulation       => rtriangulation
+  rspatialDiscr%ndimension       = NDIM2D
+  rspatialDiscr%p_rtriangulation => rtriangulation
   if (present(rboundary)) then
-    rspatialDiscr%p_rboundary          => rboundary
+    rspatialDiscr%p_rboundary    => rboundary
   else
     nullify(rspatialDiscr%p_rboundary)
   end if
-  rspatialDiscr%ccomplexity            = SPDISC_CONFORMAL
+  rspatialDiscr%ccomplexity      = SPDISC_CONFORMAL
   
   ! Allocate an array containing the element distribution for each element
   call storage_new1D ('spdiscr_initDiscr_triquad', 'h_ItrialElements', &
-        rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementDistr,   &
-        ST_NEWBLOCK_NOINIT)
+      rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementDistr,   &
+      ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (rspatialDiscr%h_IelementDistr,p_Iarray)
 
   ! Allocate an array with an element counter for every element type.
   call storage_new1D ('spdiscr_initDiscr_triquad', 'h_IelementCounter', &
-        rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementCounter,   &
-        ST_NEWBLOCK_NOINIT)
+      rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementCounter,   &
+      ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (rspatialDiscr%h_IelementCounter,p_IelementCounter)
   
   ! Create both arrays simultaneously.
@@ -1093,7 +1093,7 @@ contains
   IelemCount(:) = 0
   if (ubound(p_IverticesAtElement,1) .ge. 4) then
     ! There are quads and probably triangles in the mesh
-    do i=1,rtriangulation%NEL
+    do i = 1, rtriangulation%NEL
       if (p_IverticesAtElement (4,i) .eq. 0) then
         ! Triangular elements are in element distribution 1
         p_Iarray(i) = 1
@@ -1112,7 +1112,7 @@ contains
     end do
   else
     ! Pure triangular mesh
-    do i=1,rtriangulation%NEL
+    do i = 1, rtriangulation%NEL
       ! Triangular elements are in element distribution 1
       p_Iarray(i) = 1
       
@@ -1123,21 +1123,21 @@ contains
   end if
   
   ! Initialise the first element distribution
-  rspatialDiscr%inumFESpaces           = 2
+  rspatialDiscr%inumFESpaces = 2
   allocate(rspatialDiscr%RelementDistr(rspatialDiscr%inumFESpaces))
   p_relementDistrTria => rspatialDiscr%RelementDistr(1)
   p_relementDistrQuad => rspatialDiscr%RelementDistr(2)
   
   ! Initialise test and trial space for that block
-  p_relementDistrTria%celement = ieltypTri
+  p_relementDistrTria%celement        = ieltypTri
   p_relementDistrTria%ccubTypeBilForm = ccubTri
   p_relementDistrTria%ccubTypeLinForm = ccubTri
-  p_relementDistrTria%ccubTypeEval = ccubTri
+  p_relementDistrTria%ccubTypeEval    = ccubTri
 
-  p_relementDistrQuad%celement = ieltypQuad
+  p_relementDistrQuad%celement        = ieltypQuad
   p_relementDistrQuad%ccubTypeBilForm = ccubQuad
   p_relementDistrQuad%ccubTypeLinForm = ccubQuad
-  p_relementDistrQuad%ccubTypeEval = ccubQuad
+  p_relementDistrQuad%ccubTypeEval    = ccubQuad
   
   ! Get the typical transformation used with the element
   p_relementDistrTria%ctrafoType = elem_igetTrafoType(ieltypTri)
@@ -1172,7 +1172,7 @@ contains
     
     if (ubound(p_IverticesAtElement,1) .ge. TRIA_NVEQUAD2D) then
       ! There are quads and probably triangles in the mesh
-      do i=1,rtriangulation%NEL
+      do i = 1, rtriangulation%NEL
         if (p_IverticesAtElement(TRIA_NVEQUAD2D,i) .eq. 0) then
           j = j+1
           p_Iarray(j) = i
@@ -1180,7 +1180,7 @@ contains
       end do
     else
       ! Pure triangular mesh
-      do i=1,rtriangulation%NEL
+      do i = 1, rtriangulation%NEL
         j = j+1
         p_Iarray(j) = i
       end do
@@ -1199,7 +1199,7 @@ contains
     call storage_getbase_int (p_relementDistrQuad%h_IelementList,p_Iarray)
     
     ! Because of the IF above, there are for sure quads in the mesh!
-    do i=1,rtriangulation%NEL
+    do i = 1, rtriangulation%NEL
       if (p_IverticesAtElement(4,i) .ne. 0) then
         j = j+1
         p_Iarray(j) = i
@@ -1238,7 +1238,7 @@ contains
 
   ! The element type identifier that is to be used for all elements
   ! in the new discretisation structure
-  integer(I32), intent(IN)                       :: ieltyp
+  integer(I32), intent(IN) :: ieltyp
   
   ! Cubature formula to use for calculating integrals
   ! in the new discretisation structure
@@ -1246,7 +1246,7 @@ contains
   ! automatically determine cubature formula.
   ! A value SPDISC_CUB_NOCHANGE means:
   ! take the cubature formula from the source discretisation.
-  integer, intent(IN)                       :: ccubType
+  integer, intent(IN) :: ccubType
 !</input>
   
 !<output>
@@ -1341,9 +1341,8 @@ contains
   
 !<subroutine>
 
-  subroutine spdiscr_deriveDiscr_triquad (&
-      rsourceDiscr, ieltypTri, ieltypQuad, ccubTypeTri, ccubTypeQuad,&
-      rdestDiscr)
+  subroutine spdiscr_deriveDiscr_triquad (rsourceDiscr, ieltypTri, ieltypQuad,&
+                                          ccubTypeTri, ccubTypeQuad, rdestDiscr)
   
 !<description>
   ! This routine derives a discretisation structure from another one.
@@ -1364,23 +1363,23 @@ contains
 
   ! The element type identifier that is to be used for all triangular
   ! elements in the new discretisation structure
-  integer(I32), intent(IN)                       :: ieltypTri
+  integer(I32), intent(IN) :: ieltypTri
 
   ! The element type identifier that is to be used for all quad
   ! elements in the new discretisation structure
-  integer(I32), intent(IN)                       :: ieltypQuad
+  integer(I32), intent(IN) :: ieltypQuad
   
   ! Cubature formula to use for calculating integrals on triangular
   ! elements in the new discretisation structure.
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer, intent(IN)                       :: ccubTypeTri
+  integer, intent(IN) :: ccubTypeTri
 
   ! Cubature formula to use for calculating integrals on quad
   ! elements in the new discretisation structure.
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer, intent(IN)                       :: ccubTypeQuad
+  integer, intent(IN) :: ccubTypeQuad
 !</input>
   
 !<output>
@@ -1521,7 +1520,7 @@ contains
     end if
     
     ! Loop through all element distributions
-    do i=1,rspatialDiscr%inumFESpaces
+    do i = 1, rspatialDiscr%inumFESpaces
     
       p_relementDistr => rspatialDiscr%RelementDistr(i)
       
@@ -1732,7 +1731,7 @@ contains
     call output_line ('ncomponents: '//trim(sys_siL(rdiscr%ncomponents,3)))
 
     if (associated(rdiscr%RspatialDiscr)) then
-      do icomponent=1,rdiscr%ncomponents
+      do icomponent = 1, rdiscr%ncomponents
         call spdiscr_infoDiscr(rdiscr%RspatialDiscr(icomponent))
       end do
     end if
@@ -1775,7 +1774,7 @@ contains
          //trim(sys_siL(rspatialDiscr%h_IelementCounter,15)))
 
      if (associated(rspatialDiscr%RelementDistr)) then
-       do inumFESpace=1,rspatialDiscr%inumFESpaces
+       do inumFESpace = 1, rspatialDiscr%inumFESpaces
          call spdisc_infoElementDistr(rspatialDiscr%RelementDistr(inumFESpace))
        end do
      end if
