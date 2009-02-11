@@ -26,6 +26,10 @@
 !# - small, fixed-size double precision arrays
 !# - a grid adaptation structure
 !# - a stabilisation structure
+!# - a linked list
+!# - an arraylist
+!# - a binary search tree
+!# - a graph structure
 !#
 !# The list supports 'level tags' and 'section tags" to group values:
 !# 
@@ -270,6 +274,10 @@ module collection
   use hadaptaux, only: t_hadapt
   use afcstabilisation, only: t_afcstab
   use statistics, only: t_timer
+  use list, only: t_list
+  use arraylist, only: t_arraylist
+  use binarytree, only: t_btree
+  use graph, only: t_graph
   
   implicit none
 
@@ -394,6 +402,18 @@ module collection
   ! Timer structure
   integer, parameter :: COLLCT_TIMER        = 28
 
+  ! Linked list
+  integer, parameter :: COLLCT_LIST         = 29
+
+  ! Array list
+  integer, parameter :: COLLCT_ARRAYLIST    = 30
+
+  ! Binary search tree
+  integer, parameter :: COLLCT_BTREE        = 31
+
+  ! Graph structure
+  integer, parameter :: COLLCT_GRAPH        = 32
+
 !</constantblock>
 
 !</constants>
@@ -419,7 +439,7 @@ module collection
     character :: csvalue = " "
 
     ! String value
-    character, dimension(:), pointer :: p_svalue => NULL()
+    character, dimension(:), pointer :: p_svalue => null()
     
     ! Integer value
     integer(I32) :: ivalue = 0
@@ -428,73 +448,85 @@ module collection
     real(DP)     :: dvalue = 0.0_DP
 
     ! Pointer to a spatial discretisation structure
-    type(t_spatialDiscretisation), pointer      :: p_rdiscretisation => NULL()
+    type(t_spatialDiscretisation), pointer      :: p_rdiscretisation => null()
 
     ! Pointer to a block discretisation structure
-    type(t_blockDiscretisation), pointer        :: p_rblockDiscretisation => NULL()
+    type(t_blockDiscretisation), pointer        :: p_rblockDiscretisation => null()
 
     ! Pointer to a triangulation structure
-    type(t_triangulation), pointer              :: p_rtriangulation => NULL()
+    type(t_triangulation), pointer              :: p_rtriangulation => null()
 
     ! Pointer to a scalar vector
-    type(t_vectorScalar), pointer               :: p_rvectorScalar => NULL()
+    type(t_vectorScalar), pointer               :: p_rvectorScalar => null()
 
     ! Pointer to a scalar matrix
-    type(t_matrixScalar), pointer               :: p_rmatrixScalar => NULL()
+    type(t_matrixScalar), pointer               :: p_rmatrixScalar => null()
     
     ! Pointer to a block vector
-    type(t_vectorBlock), pointer                :: p_rvector => NULL()
+    type(t_vectorBlock), pointer                :: p_rvector => null()
 
     ! Pointer to a block matrix
-    type(t_matrixBlock), pointer                :: p_rmatrix => NULL()
+    type(t_matrixBlock), pointer                :: p_rmatrix => null()
 
     ! Pointer to a parameter list
-    type(t_parlist), pointer                    :: p_rparlist => NULL()
+    type(t_parlist), pointer                    :: p_rparlist => null()
 
     ! Pointer to a linear solver structure
-    type(t_linsolNode), pointer                 :: p_rlinearSolver => NULL()
+    type(t_linsolNode), pointer                 :: p_rlinearSolver => null()
 
     ! A structure containing discretised boundary conditions
-    type(t_discreteBC), pointer                 :: p_rdiscreteBC     => NULL()
+    type(t_discreteBC), pointer                 :: p_rdiscreteBC     => null()
 
     ! Pointer to a domain
-    type(t_boundary), pointer                   :: p_rboundary => NULL()
+    type(t_boundary), pointer                   :: p_rboundary => null()
 
     ! Pointer to a geometry object
-    type(t_geometryObject), pointer             :: p_rgeometry => NULL()
+    type(t_geometryObject), pointer             :: p_rgeometry => null()
 
     ! Pointer to scalar boundary conditions
-    type(t_boundaryConditions), pointer         :: p_rboundaryConditions => NULL()
+    type(t_boundaryConditions), pointer         :: p_rboundaryConditions => null()
 
     ! Pointer to a scalar interlevel projection structure
-    type(t_interlevelProjectionScalar), pointer :: p_rilvprojectionSc => NULL()
+    type(t_interlevelProjectionScalar), pointer :: p_rilvprojectionSc => null()
 
     ! Pointer to a scalar interlevel projection structure
-    type(t_interlevelProjectionBlock), pointer  :: p_rilvprojection => NULL()
+    type(t_interlevelProjectionBlock), pointer  :: p_rilvprojection => null()
 
     ! Pointer to a parser object
-    type(t_fparser), pointer                    :: p_rparser => NULL()
+    type(t_fparser), pointer                    :: p_rparser => null()
 
     ! Pointer to a filter chain
-    type(t_filterChain), dimension(:), pointer  :: p_RfilterChain => NULL()
+    type(t_filterChain), dimension(:), pointer  :: p_RfilterChain => null()
 
     ! Pointer to an integer precision array
-    integer(I32), dimension(:), pointer         :: p_Iarray => NULL()
+    integer(I32), dimension(:), pointer         :: p_Iarray => null()
 
     ! Pointer to an real precision array
-    real(DP), dimension(:), pointer             :: p_Darray => NULL()
+    real(DP), dimension(:), pointer             :: p_Darray => null()
 
     ! Pointer to a collection structure
-    type(t_collection), pointer                 :: p_rcollection => NULL()
+    type(t_collection), pointer                 :: p_rcollection => null()
 
     ! Pointer to a grid adaptation structure
-    type(t_hadapt), pointer                     :: p_rhadapt => NULL()
+    type(t_hadapt), pointer                     :: p_rhadapt => null()
 
     ! Pointer to a stabilisation structure
-    type(t_afcstab), pointer                    :: p_rafcstab => NULL()
+    type(t_afcstab), pointer                    :: p_rafcstab => null()
 
     ! Pointer to a timer structure
-    type(t_timer), pointer                      :: p_rtimer => NULL()
+    type(t_timer), pointer                      :: p_rtimer => null()
+
+    ! Pointer to a linked list
+    type(t_list), pointer                       :: p_rlist => null()
+
+    ! Pointer to an array list
+    type(t_arraylist), pointer                  :: p_rarraylist => null()
+
+    ! Pointer to a binary search tree
+    type(t_btree), pointer                      :: p_rbtree => null()
+
+    ! Pointer to a graph structure
+    type(t_graph), pointer                      :: p_rgraph => null()
   end type
   
 !</typeblock>
@@ -515,7 +547,7 @@ module collection
     logical :: bisFull = .true.
     
     ! A list of values.
-    type(t_collctValue), dimension(:), pointer :: p_Rvalues => NULL()
+    type(t_collctValue), dimension(:), pointer :: p_Rvalues => null()
     
   end type
   
@@ -544,7 +576,7 @@ module collection
     
     ! A list of levels or NULL(), if there are no additional 'level'
     ! subgroups than level 0.
-    type(t_collctLevel), dimension(:), pointer :: p_Rlevels => NULL()
+    type(t_collctLevel), dimension(:), pointer :: p_Rlevels => null()
     
   end type
   
@@ -587,40 +619,40 @@ module collection
 
     ! USER DEFINED:
     ! A quick access pointer to a vector.
-    type(t_vectorBlock), pointer :: p_rvectorQuickAccess1 => NULL()
+    type(t_vectorBlock), pointer :: p_rvectorQuickAccess1 => null()
 
     ! USER DEFINED:
     ! A quick access pointer to a vector.
-    type(t_vectorBlock), pointer :: p_rvectorQuickAccess2 => NULL()
+    type(t_vectorBlock), pointer :: p_rvectorQuickAccess2 => null()
 
     ! USER DEFINED:
     ! A quick access pointer to a vector.
-    type(t_vectorBlock), pointer :: p_rvectorQuickAccess3 => NULL()
+    type(t_vectorBlock), pointer :: p_rvectorQuickAccess3 => null()
 
     ! USER DEFINED:
     ! A quick access pointer to a vector.
-    type(t_vectorBlock), pointer :: p_rvectorQuickAccess4 => NULL()
+    type(t_vectorBlock), pointer :: p_rvectorQuickAccess4 => null()
     
     ! USER DEFINED:
     ! A quick access pointer to a matrix.
-    type(t_matrixBlock), pointer :: p_rmatrixQuickAccess1 => NULL()
+    type(t_matrixBlock), pointer :: p_rmatrixQuickAccess1 => null()
 
     ! USER DEFINED:
     ! A quick access pointer to a matrix.
-    type(t_matrixBlock), pointer :: p_rmatrixQuickAccess2 => NULL()
+    type(t_matrixBlock), pointer :: p_rmatrixQuickAccess2 => null()
 
     ! USER DEFINED:
     ! A quick access pointer to a matrix.
-    type(t_matrixBlock), pointer :: p_rmatrixQuickAccess3 => NULL()
+    type(t_matrixBlock), pointer :: p_rmatrixQuickAccess3 => null()
 
     ! USER DEFINED:
     ! A quick access pointer to a matrix.
-    type(t_matrixBlock), pointer :: p_rmatrixQuickAccess4 => NULL()
+    type(t_matrixBlock), pointer :: p_rmatrixQuickAccess4 => null()
 
     ! USER DEFINED:
     ! A quick access pointer to another collection structure.
     ! Can be used to link collection structures.
-    type(t_collection), pointer :: p_rnextCollection => NULL()
+    type(t_collection), pointer :: p_rnextCollection => null()
     
     ! Actual number of sections in this collection.
     ! This is at least one, as every collection contains at least an
@@ -629,7 +661,7 @@ module collection
     
     ! A list of levels or NULL(), if there are no additional 'level'
     ! subgroups than level 0.
-    type(t_collctSection), dimension(:), pointer :: p_Rsections => NULL()
+    type(t_collctSection), dimension(:), pointer :: p_Rsections => null()
     
   end type
 
@@ -4018,6 +4050,258 @@ contains
 
   ! ***************************************************************************
   
+!<function>
+
+  function collct_getvalue_list (rcollection, sparameter, &
+                                 ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a linked list.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_list), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(IN), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(IN), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  logical, intent(OUT), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_LIST,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rlist
+    else
+      nullify(value)
+    end if
+    
+  end function collct_getvalue_list
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_arraylist (rcollection, sparameter, &
+                                      ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to an arraylist.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_arraylist), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(IN), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(IN), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  logical, intent(OUT), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_ARRAYLIST,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rarraylist
+    else
+      nullify(value)
+    end if
+    
+  end function collct_getvalue_arraylist
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_btree (rcollection, sparameter, &
+                                  ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a binary search tree.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_btree), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(IN), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(IN), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  logical, intent(OUT), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_BTREE,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rbtree
+    else
+      nullify(value)
+    end if
+    
+  end function collct_getvalue_btree
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_graph (rcollection, sparameter, &
+                                  ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_graph), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(IN), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(IN), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  logical, intent(OUT), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_GRAPH,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rgraph
+    else
+      nullify(value)
+    end if
+    
+  end function collct_getvalue_graph
+
+  ! ***************************************************************************
+  
 !<subroutine>
 
   subroutine collct_setvalue_char (rcollection, sparameter, value, badd, &
@@ -5688,5 +5972,249 @@ contains
     p_rvalue%p_rtimer => value
     
   end subroutine collct_setvalue_timer
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_list (rcollection, sparameter, value, badd, &
+                                   ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(IN) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_list), intent(IN), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(IN), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(IN), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_LIST,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rlist => value
+    
+  end subroutine collct_setvalue_list
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_arraylist (rcollection, sparameter, value, badd, &
+                                        ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(IN) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_arraylist), intent(IN), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(IN), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(IN), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_ARRAYLIST,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rarraylist => value
+    
+  end subroutine collct_setvalue_arraylist
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_btree (rcollection, sparameter, value, badd, &
+                                    ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(IN) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_btree), intent(IN), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(IN), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(IN), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_BTREE,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rbtree => value
+    
+  end subroutine collct_setvalue_btree
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_graph (rcollection, sparameter, value, badd, &
+                                    ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(IN) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_graph), intent(IN), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(IN), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(IN), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_GRAPH,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rgraph => value
+    
+  end subroutine collct_setvalue_graph
   
 end module collection
