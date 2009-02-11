@@ -9,40 +9,44 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) codire_coeffFunctionParser
-!#     -> Computes coefficients for the linear form by using a function parser
+!# 1.) codire_coeffRHS
+!#     -> Callback routine for the evaluation of the right-hand side
 !#
-!# 2.) codire_setBoundary
+!# 2.) codire_coeffTargetFuncVolInt
+!#     -> Callback function for the evaluation of target functionals 
+!#        defined in terms of volume integrals of the solution vector
+!#
+!# 3.) codire_setBoundary
 !#     -> Imposes boundary conditions for nonlinear solver
 !#
-!# 3.) codire_calcPreconditioner
+!# 4.) codire_calcPreconditioner
 !#     -> Calculates the nonlinear preconditioner
 !#
-!# 4.) codire_calcJacobian
+!# 5.) codire_calcJacobian
 !#     -> Calculates the Jacobian matrix
 !#
-!# 5.) codire_applyJacobian
+!# 6.) codire_applyJacobian
 !#     -> Applies the Jacobian matrix to a given vector
 !#
-!# 6.) codire_calcResidual
+!# 7.) codire_calcResidual
 !#     -> Calculates the nonlinear residual vector
 !#
-!# 7.) codire_calcRHS
+!# 8.) codire_calcRHS
 !#     -> Calculates the right-hand side vector
 !#
-!# 8.) codire_calcVelocityField
+!# 9.) codire_calcVelocityField
 !#     -> Calculates the velocity field
 !#
-!# 9.) codire_setVelocityField
-!#     -> Sets the velocity field internally
+!# 10.) codire_setVelocityField
+!#      -> Sets the velocity field internally
 !#
-!# 10.) codire_hadaptCallback1d
+!# 11.) codire_hadaptCallback1d
 !#      -> Performs application specific tasks in the adaptation algorithm in 1D
 !#
-!# 11.) codire_hadaptCallback2d
+!# 12.) codire_hadaptCallback2d
 !#      -> Performs application specific tasks in the adaptation algorithm in 2D
 !#
-!# 12.) codire_hadaptCallback3d
+!# 13.) codire_hadaptCallback3d
 !#      -> Performs application specific tasks in the adaptation algorithm in 3D
 !#
 !#
@@ -107,8 +111,8 @@ module codire_callback
   implicit none
 
   private
-  public :: codire_coeffFunctionParser
-  public :: codire_coeffTargetFunc
+  public :: codire_coeffRHS
+  public :: codire_coeffTargetFuncVolInt
   public :: codire_setBoundary
   public :: codire_calcPreconditioner
   public :: codire_calcJacobian
@@ -142,9 +146,9 @@ contains
 
 !<subroutine>
 
-  subroutine codire_coeffFunctionParser(rdiscretisation, rform, nelements,&
-                                        npointsPerElement, Dpoints, IdofsTest,&
-                                        rdomainIntSubset, Dcoefficients, rcollection)
+  subroutine codire_coeffRHS(rdiscretisation, rform, nelements,&
+                             npointsPerElement, Dpoints, IdofsTest,&
+                             rdomainIntSubset, Dcoefficients, rcollection)
     
     use basicgeometry
     use collection
@@ -213,7 +217,7 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: rfparser
-    integer(I32) :: ielement
+    integer :: ielement
     
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
@@ -225,15 +229,15 @@ contains
       call fparser_evalFunction(rfparser, 1, 2, Dpoints(:,:,ielement),&
                                 Dcoefficients(1,:,ielement))
     end do
-  end subroutine codire_coeffFunctionParser
+  end subroutine codire_coeffRHS
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine codire_coeffTargetFunc(rdiscretisation, rform, nelements,&
-                                    npointsPerElement, Dpoints, IdofsTest,&
-                                    rdomainIntSubset, Dcoefficients, rcollection)
+  subroutine codire_coeffTargetFuncVolInt(rdiscretisation, rform, nelements,&
+                                          npointsPerElement, Dpoints, IdofsTest,&
+                                          rdomainIntSubset, Dcoefficients, rcollection)
     
     use basicgeometry
     use collection
@@ -301,36 +305,51 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipoint, ielement
-    real(DP) :: x,y
+    type(t_fparser), pointer :: rfparser
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dtime
+    integer :: ipoint, ielement, ndim
+    
+    ! This subroutine assumes that the first quick access string
+    ! value holds the name of the function parser in the collection.
+    rfparser => collct_getvalue_pars(rcollection,&
+                                     trim(rcollection%SquickAccess(1)))
+
+    ! This subroutine also assumes that the first quick access double
+    ! value holds the simulation time
+    dtime = rcollection%DquickAccess(1)
+
+    ! Initialize values
+    Dvalue = 0.0_DP
+    Dvalue(NDIM3D+1) = dtime
+
+    ! Set number of spatial dimensions
+    ndim = size(Dpoints, 1)
 
     do ielement = 1, nelements
       do ipoint = 1, npointsPerElement
-        x = Dpoints(1, ipoint, ielement)
-        y = Dpoints(2, ipoint, ielement)
 
-        if (x .ge. 0.9 .and. x .le. 1.1) then
-          Dcoefficients(:, ipoint, ielement) = 1.0_DP
-        else
-          Dcoefficients(:, ipoint, ielement) = 0.0_DP
-        end if
+        ! Set values for function parser
+        Dvalue(1:ndim)   = Dpoints(:, ipoint, ielement)
+        
+        ! Evaluate function parser
+        call fparser_evalFunction(rfparser, 1, Dvalue, Dcoefficients(1,ipoint,ielement))
+      end do
+    end do
 
-!!$        if (sqrt(((x-1.625)**2 + (y-0.25)**2)) .le. 0.125) then
-!!$          Dcoefficients(:, ipoint, ielement) = 0.06283185_DP
-!!$        else
-!!$          Dcoefficients(:, ipoint, ielement) = 0.0_DP
-!!$        end if
-
-!!$        ! Are we in the rectangle [1,2] x [0,0.1]?
-!!$        if (x .gt. 1.0_DP .and. y .le. 0.1) then
+!!$        x = Dpoints(1, ipoint, ielement)
+!!$        y = Dpoints(2, ipoint, ielement)
+!!$
+!!$        if (x .ge. 0.9 .and. x .le. 1.1) then
 !!$          Dcoefficients(:, ipoint, ielement) = 1.0_DP
 !!$        else
 !!$          Dcoefficients(:, ipoint, ielement) = 0.0_DP
 !!$        end if
-      end do
-    end do
+
+
+
     
-  end subroutine codire_coeffTargetFunc
+  end subroutine codire_coeffTargetFuncVolInt
   
   !*****************************************************************************
 
@@ -486,33 +505,43 @@ contains
       
     case (DIFFUSION_ISOTROPIC)
       ! Isotropic diffusion
-      call gfsc_buildDiffusionOperator(&
-          rproblemLevel%Rmatrix(coeffMatrix_S), .false., .true.,&
-          rproblemLevel%Rmatrix(transportMatrix))
+      call gfsc_buildDiffusionOperator(rproblemLevel%Rmatrix(coeffMatrix_S),&
+                                       .false., .true.,&
+                                       rproblemLevel%Rmatrix(transportMatrix))
 
     case (DIFFUSION_ANISOTROPIC)
       ! Anisotropic diffusion
       diffusionAFC = collct_getvalue_int(rcollection, 'diffusionAFC')
 
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
-      case (AFCSTAB_SYMMETRIC)
-        ! Check if stabilisation structure is initialised
-        if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .eq. AFCSTAB_UNDEFINED)&
-            call gfsc_initStabilisation(&
-                rproblemLevel%Rmatrix(coeffMatrix_S),&
-                rproblemLevel%Rafcstab(diffusionAFC))
+      if (diffusionAFC > 0) then
+        
+        ! What kind of stabilisation should be applied?
+        select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+        case (AFCSTAB_SYMMETRIC)
+          ! Check if stabilisation structure is initialised
+          if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .eq. AFCSTAB_UNDEFINED)&
+              call gfsc_initStabilisation(rproblemLevel%Rmatrix(coeffMatrix_S),&
+                                          rproblemLevel%Rafcstab(diffusionAFC))
 
-        call gfsc_buildDiffusionOperator(&
-            rproblemLevel%Rmatrix(coeffMatrix_S), .true., .true.,&
-            rproblemLevel%Rmatrix(transportMatrix),&
-            rproblemLevel%Rafcstab(diffusionAFC))
+          call gfsc_buildDiffusionOperator(rproblemLevel%Rmatrix(coeffMatrix_S),&
+                                           .true., .true.,&
+                                           rproblemLevel%Rmatrix(transportMatrix),&
+                                           rproblemLevel%Rafcstab(diffusionAFC))
 
-      case DEFAULT
-        call gfsc_buildDiffusionOperator(&
-            rproblemLevel%Rmatrix(coeffMatrix_S), .false., .true.,&
-            rproblemLevel%Rmatrix(transportMatrix))
-      end select
+        case DEFAULT
+          call gfsc_buildDiffusionOperator(rproblemLevel%Rmatrix(coeffMatrix_S),&
+                                           .false., .true.,&
+                                           rproblemLevel%Rmatrix(transportMatrix))
+        end select
+
+      else   ! diffusionAFC > 0
+
+        call gfsc_buildDiffusionOperator(rproblemLevel%Rmatrix(coeffMatrix_S),&
+                                         .false., .true.,&
+                                         rproblemLevel%Rmatrix(transportMatrix))
+
+      end if   ! diffusionAFC > 0
+
 
     case (DIFFUSION_VARIABLE)
       print *, "Variable diffusion matrices are yet not implemented!"
@@ -537,21 +566,29 @@ contains
     ! Check if velocity is assumed to be discretely divergence free
     bisDivergenceFree = (ivelocitytype .gt. 0)
     
-    ! Check if stabilization should be applied
-    bStabilize = AFCSTAB_GALERKIN .ne. &
-                 rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+    if (convectionAFC > 0) then
 
-    ! Check if stabilization structure should be built
-    bbuildAFC = bStabilize .and. AFCSTAB_UPWIND .ne.&
-                rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+      ! Check if stabilization should be applied
+      bStabilize = AFCSTAB_GALERKIN .ne. &
+                   rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
-    ! Check if stabilisation structure is initialised
-    if (rproblemLevel%Rafcstab(convectionAFC)%iSpec .eq. AFCSTAB_UNDEFINED)&
-        call gfsc_initStabilisation(rproblemLevel%Rmatrix(transportMatrix),&
-                                    rproblemLevel%Rafcstab(convectionAFC))
+      ! Check if stabilization structure should be built
+      bbuildAFC = bStabilize .and. AFCSTAB_UPWIND .ne.&
+                  rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+      
+      ! Check if stabilisation structure is initialised
+      if (rproblemLevel%Rafcstab(convectionAFC)%iSpec .eq. AFCSTAB_UNDEFINED)&
+          call gfsc_initStabilisation(rproblemLevel%Rmatrix(transportMatrix),&
+                                      rproblemLevel%Rafcstab(convectionAFC))
+
+    else   ! convectionAFC > 0
+
+      bStabilize = .false.; bbuildAFC = .false.
+
+    end if   ! convectionAFC > 0
 
 
-    ! Are we in primal or dual mode
+    ! Are we in primal or dual mode?
     if (primaldual .eq. 1) then
       
       select case(abs(ivelocitytype))
@@ -1562,13 +1599,21 @@ contains
                                  rsol, rsol0, rrhs, rres, ite, rcollection)
 
 !<description>
-    ! This subroutine computes the nonlinear residual vector and the
-    ! constant right-hand side (only in the first iteration).
+    ! This subroutine computes the nonlinear residual vector
+    ! 
+    !   $$ r^{(m)} = b^n - [M-\theta\Delta t K^{(m)}]u^{(m)} $$
+    !
+    !  and the constant right-hand side (only in the zeroth iteration)
+    !
+    !  $$ b^n = [M+(1-\theta)\Delta t K^n]u^n $$
 !</description>
 
 !<input>
     ! time-stepping structure
     type(t_timestep), intent(IN) :: rtimestep
+
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: rsol
 
     ! initial solution vector
     type(t_vectorBlock), intent(IN) :: rsol0
@@ -1583,9 +1628,6 @@ contains
 
     ! solver structure
     type(t_solver), intent(INOUT) :: rsolver
-    
-    ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsol
 
     ! right-hand side vector
     type(t_vectorBlock), intent(INOUT) :: rrhs
@@ -1628,9 +1670,9 @@ contains
       !-------------------------------------------------------------------------
       ! In the first nonlinear iteration update we compute
       !
-      ! - the residual $ r=dt*L*u^n+f $ and
+      ! - the residual $ res = dt*L(u^n)*u^n+f(u^n,u^n) $ and
       !
-      ! - the right hand side $ b=[M+(1-theta)*dt*L]*u^n $
+      ! - the right hand side $ rhs = [M+(1-theta)*dt*L^n]*u^n $
       !
       !-------------------------------------------------------------------------
       
@@ -1641,29 +1683,31 @@ contains
         
         ! Compute the initial low-order residual
         !
-        !   $  res = dt*L(u^n)*u^n $
-
+        !   $  res^{(0)} = dt*L(u^n)*u^n $
+        
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsol%rvectorBlock(1),&
                                  rres%RvectorBlock(1),&
                                  rtimestep%dStep, 0.0_DP)
-        
+
         ! Compute the constant right-hand side, whereby the force vector
         ! is already given in the right-hand side vector
         !
-        !   $ rhs = M_L*u^n+(1-theta)*res $
+        !   $ rhs = M_L*u^n+(1-theta)*res^{(0)} $
 
-        call lsysbl_copyVector(rres, rrhs)
+        if (rtimestep%theta .lt. 1.0_DP) then
+          call lsysbl_copyVector(rres, rrhs)
+        end if
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                  rsol%RvectorBlock(1),&
                                  rrhs%RvectorBlock(1),&
                                  1.0_DP, 1.0_DP-rtimestep%theta)
+
       case (MASS_CONSISTENT)
-        
         ! Compute the initial low-order residual
         !
-        !   $  res = dt*L(u^n)*u^n $
-
+        !   $  res^{(0)} = dt*L(u^n)*u^n $
+        
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsol%rvectorBlock(1),&
                                  rres%RvectorBlock(1),&
@@ -1674,73 +1718,85 @@ contains
         !
         !   $ rhs = M_C*u^n+(1-theta)*res $
 
-        call lsysbl_copyVector(rres, rrhs)
+        if (rtimestep%theta .lt. 1.0_DP) then
+          call lsysbl_copyVector(rres, rrhs)
+        end if
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
                                  rsol%RvectorBlock(1),&
                                  rrhs%RvectorBlock(1),&
                                  1.0_DP, 1.0_DP-rtimestep%theta)
+
       case DEFAULT
-        
         ! Compute the initial low-order residual
         !
-        !   $ res = L(u^n)*u^n $
-        !
+        !   $  res^{(0)} = L(u^n)*u^n $
+
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsol%rvectorBlock(1),&
-                                 rres%RvectorBlock(1), 1.0_DP, 0.0_DP)      
+                                 rres%RvectorBlock(1),&
+                                 1.0_DP, 0.0_DP)
       end select
      
 
       ! Perform algebraic flux correction for the convective term if required
       !
-      !   $ res = res + f^*(u^n+1,u^n) $
+      !   $ res^{(0)} = res^{(0)} + f(u^n,u^n) $
 
       convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
-            
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+
+      if (convectionAFC > 0) then
+
+        ! What kind of stabilisation should be applied?
+        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
           
-      case (AFCSTAB_FEMFCT,&
-            AFCSTAB_FEMFCT_CLASSICAL)
+        case (AFCSTAB_FEMFCT,&
+              AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+          imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+          
+          ! Should we apply consistent mass antidiffusion?
+          if (imassantidiffusion .eq. MASS_CONSISTENT) then
+            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                       rsol, rtimestep%theta, rtimestep%dStep, .true.,&
+                                       rres, rproblemLevel%Rafcstab(convectionAFC),&
+                                       rproblemLevel%Rmatrix(consistentMassMatrix))
+          else
+            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                       rsol, rtimestep%theta, rtimestep%dStep, .true.,&
+                                       rres, rproblemLevel%Rafcstab(convectionAFC))
+          end if
+          
+        case (AFCSTAB_FEMTVD)
+          call gfsc_buildResidualTVD(rsol, rtimestep%dStep, rres,&
+                                     rproblemLevel%Rafcstab(convectionAFC))
+          
+        case (AFCSTAB_FEMGP)
+          call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
+                                    rsol, rsol0, rtimestep%theta, rtimestep%dStep,&
+                                    rres, rproblemLevel%Rafcstab(convectionAFC))
+        end select
 
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusion .eq. MASS_CONSISTENT) then
-          call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                     rsol, rtimestep%theta, rtimestep%dStep, .true.,&
-                                     rres, rproblemLevel%Rafcstab(convectionAFC),&
-                                     rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                     rsol, rtimestep%theta, rtimestep%dStep, .true.,&
-                                     rres, rproblemLevel%Rafcstab(convectionAFC))
-        end if
-
-      case (AFCSTAB_FEMTVD)
-        call gfsc_buildResidualTVD(rsol, rtimestep%dStep, rres,&
-                                   rproblemLevel%Rafcstab(convectionAFC))
-
-      case (AFCSTAB_FEMGP)
-        call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsol, rsol0, rtimestep%theta, rtimestep%dStep,&
-                                  rres, rproblemLevel%Rafcstab(convectionAFC))
-      end select
+      end if   ! convectionAFC > 0
 
       
       ! Perform algebraic flux correction for the diffusive term if required
       !
-      !   $ res = res + g^*(u^n+1,u^n) $
+      !   $ res^{(0)} = res^{(0)} + g(u^n,u^n) $
 
       diffusionAFC = collct_getvalue_int(rcollection, 'diffusionAFC')
 
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
-
-      case (AFCSTAB_SYMMETRIC)
-        call gfsc_buildResidualSymm(rsol, 1.0_DP, rres, rproblemLevel%Rafcstab(diffusionAFC))
-      end select
+      if (diffusionAFC > 0) then
+        
+        ! What kind of stabilisation should be applied?
+        select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+          
+        case (AFCSTAB_SYMMETRIC)
+          call gfsc_buildResidualSymm(rsol, 1.0_DP, rres, rproblemLevel%Rafcstab(diffusionAFC))
+        end select
       
+      end if   ! diffusionAFC > 0
+
+
     else   ! ite > 0
 
       !-------------------------------------------------------------------------
@@ -1755,9 +1811,9 @@ contains
         
         ! Compute the low-order residual
         !
-        !   $ res = rhs+dt*theta*L(u^(m))*u^(m)-M_L*u $
+        !   $ res^{(m)} = rhs - [M_L - dt*theta*L(u^{(m)})]*u^{(m)} $
 
-        call lsysbl_copyVector(rrhs, rrhs)
+        call lsysbl_copyVector(rrhs, rres)
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsol%rvectorBlock(1),&
                                  rres%RvectorBlock(1),&
@@ -1770,9 +1826,9 @@ contains
         
         ! Compute the low-order residual
         !
-        !   $ res = rhs+dt*theta*L(u^(m))*u^(m)-M_C*u $
+        !   $ res^{(m)} = rhs - [M_C - dt*theta*L(u^{(m)})]*u^{(m)} $
 
-        call lsysbl_copyVector(rrhs, rrhs)
+        call lsysbl_copyVector(rrhs, rres)
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsol%rvectorBlock(1),&
                                  rres%RvectorBlock(1),&
@@ -1785,7 +1841,7 @@ contains
         
         ! Compute the low-order residual
         !
-        !   $ res = L(u^(m))*u^(m) $
+        !   $ res^{(m)} = L(u^{(m)})*u^{(m)} $
         
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsol%rvectorBlock(1),&
@@ -1800,50 +1856,57 @@ contains
 
       convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
 
-      select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-          
-      case (AFCSTAB_FEMFCT,&
-            AFCSTAB_FEMFCT_CLASSICAL)
+      if (convectionAFC > 0) then
+
+        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        case (AFCSTAB_FEMFCT,&
+              AFCSTAB_FEMFCT_CLASSICAL)
         
-        imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+          imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+          
+          ! Should we apply consistent mass antidiffusion?
+          if (imassantidiffusion .eq. MASS_CONSISTENT) then
+            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                       rsol, rtimestep%theta, rtimestep%dStep, .false.,&
+                                       rres, rproblemLevel%Rafcstab(convectionAFC),&
+                                       rproblemLevel%Rmatrix(consistentMassMatrix))
+          else
+            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                       rsol, rtimestep%theta, rtimestep%dStep, .false.,&
+                                       rres, rproblemLevel%Rafcstab(convectionAFC))
+          end if
+          
+        case (AFCSTAB_FEMTVD)
+          call gfsc_buildResidualTVD(rsol, rtimestep%dStep, rres,&
+                                     rproblemLevel%Rafcstab(convectionAFC))
+          
+        case (AFCSTAB_FEMGP)
+          call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
+                                    rsol, rsol0, rtimestep%theta, rtimestep%dStep,&
+                                    rres, rproblemLevel%Rafcstab(convectionAFC))
+        end select
 
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusion .eq. MASS_CONSISTENT) then
-          call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                     rsol, rtimestep%theta, rtimestep%dStep, .false.,&
-                                     rres, rproblemLevel%Rafcstab(convectionAFC),&
-                                     rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                     rsol, rtimestep%theta, rtimestep%dStep, .false.,&
-                                     rres, rproblemLevel%Rafcstab(convectionAFC))
-        end if
+      end if   ! convectionAFC > 0
 
-      case (AFCSTAB_FEMTVD)
-        call gfsc_buildResidualTVD(rsol, rtimestep%dStep, rres,&
-                                   rproblemLevel%Rafcstab(convectionAFC))
-
-      case (AFCSTAB_FEMGP)
-        call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsol, rsol0, rtimestep%theta, rtimestep%dStep,&
-                                  rres, rproblemLevel%Rafcstab(convectionAFC))
-      end select
-
-
+      
       ! Perform algebraic flux correction for the diffusive term if required
       !
       !   $ res = res + g^*(u^n+1,u^n) $
 
       diffusionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
-      
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
 
-      case (AFCSTAB_SYMMETRIC)
-        call gfsc_buildResidualSymm(rsol, 1.0_DP, rres, rproblemLevel%Rafcstab(diffusionAFC))
-      end select
+      if (diffusionAFC > 0) then
+        
+        ! What kind of stabilisation should be applied?
+        select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+          
+        case (AFCSTAB_SYMMETRIC)
+          call gfsc_buildResidualSymm(rsol, 1.0_DP, rres, rproblemLevel%Rafcstab(diffusionAFC))
+        end select
       
-    end if
+      end if   ! diffusionAFC > 0
+
+    end if   ! ite = 0
 
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(rtimer)
@@ -1866,6 +1929,9 @@ contains
     ! time-stepping structure
     type(t_timestep), intent(IN) :: rtimestep
 
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: rsol
+
     ! initial solution vector
     type(t_vectorBlock), intent(IN) :: rsol0
 
@@ -1879,9 +1945,6 @@ contains
 
     ! solver structure
     type(t_solver), intent(INOUT) :: rsolver
-    
-    ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsol
 
     ! right-hand side vector
     type(t_vectorBlock), intent(INOUT) :: rrhs
@@ -2158,34 +2221,35 @@ contains
 
     ! local variables
     type(t_graph), save :: rgraph
-    type(t_matrixScalar), pointer, save :: rmatrix
+    type(t_matrixScalar), pointer :: rmatrix
     type(t_vectorBlock), pointer, save :: rsolution
     real(DP), dimension(:), pointer, save :: p_Dsolution
 
-    ! What operation should be performed
+
+    ! What operation should be performed?
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve matrix from collection and build sparsity-graph
-      rmatrix => collct_getvalue_matsca(rcollection, "MATRIX_TEMPLATE")
+      ! This subroutine assumes that the name of the template matrix
+      ! and the name of the solution vector is stored in the first and
+      ! second quick access string, respectively.
+
+      ! Retrieve template matrix from collection and build sparsity-graph.
+      rmatrix => collct_getvalue_matsca(rcollection,&
+                                        trim(rcollection%SquickAccess(1)))
       call grph_createGraphFromMatrix(rmatrix, rgraph)
 
       ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection, "VECTOR_SOLUTION")
+      rsolution => collct_getvalue_vec(rcollection,&
+                                       trim(rcollection%SquickAccess(2)))
       call lsysbl_getbase_double(rsolution, p_Dsolution)
 
 
     case(HADAPT_OPR_DONECALLBACK)
-      ! Release all data
+      ! Release the sparsity graph
       call grph_releaseGraph(rgraph)
-      nullify(rmatrix, rsolution, p_Dsolution)
 
-    case(-3)
-      ! Retrieve matrix from collection and generate template matrix
-      rmatrix => collct_getvalue_matsca(rcollection, "MATRIX_TEMPLATE")
-      call grph_generateMatrix(rgraph, rmatrix)
-
-
+           
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       if (rsolution%NEQ .ne. Ivertices(1)) then
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
@@ -2202,8 +2266,8 @@ contains
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
-      p_Dsolution(Ivertices(1)) = 0.5_DP*&
-          (p_Dsolution(Ivertices(2))+p_Dsolution(Ivertices(3)))
+      p_Dsolution(Ivertices(1)) = 0.5_DP*(p_Dsolution(Ivertices(2))+&
+                                          p_Dsolution(Ivertices(3)))
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
@@ -2216,11 +2280,13 @@ contains
         p_Dsolution(Ivertices(1)) = 0.0_DP
       end if
 
+      
     case(HADAPT_OPR_REF_LINE2LINE)
       ! Delete broken edge (I1,I2) and add new edges (I1,I3),(I2,I3)
       call grph_removeEdge(rgraph, Ivertices(1), Ivertices(2))
       call grph_insertEdge(rgraph, Ivertices(1), Ivertices(3))
       call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
+      
       
     case(HADAPT_OPR_CRS_2LINE1LINE)
       ! Delete broken edges (I1,I3) and (I2,I3) and add new edge (I1,I2)
@@ -2228,11 +2294,20 @@ contains
       call grph_removeEdge(rgraph, Ivertices(2), Ivertices(3))
       call grph_insertEdge(rgraph, Ivertices(1), Ivertices(2))
       
+      
     case DEFAULT
-      call output_line('Invalid operation!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_hadaptCallback1D')
-      call sys_halt()
+      ! Retrieve matrix from collection and generate template matrix
+      rmatrix => collct_getvalue_matsca(rcollection, &
+                                        trim(rcollection%SquickAccess(1)))
+      call grph_generateMatrix(rgraph, rmatrix)
+
+      ! Retrieve solution vector from collection and set dimensions
+      rsolution => collct_getvalue_vec(rcollection,&
+                                       trim(rcollection%SquickAccess(2)))
+      call lsysbl_resizeVectorBlock(rsolution, rmatrix%NEQ, .false.)
+
     end select
+    
   end subroutine codire_hadaptCallback1D
 
   !*****************************************************************************
@@ -2265,8 +2340,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_graph), save :: rgraph
-    type(t_matrixScalar), pointer, save :: rmatrix
+    type(t_graph), pointer, save :: rgraph
     type(t_vectorBlock), pointer, save :: rsolution
     real(DP), dimension(:), pointer, save :: p_Dsolution
 
@@ -2274,27 +2348,25 @@ contains
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve matrix from collection and build sparsity-graph
-      rmatrix => collct_getvalue_matsca(rcollection, "MATRIX_TEMPLATE")
-      call grph_createGraphFromMatrix(rmatrix, rgraph)
+      ! This subroutine assumes that the name of the sparsity pattern
+      ! and the name of the solution vector is stored in the first and
+      ! second quick access string, respectively.
 
+      ! Retrieve sparsity pattern from collection and build sparsity-graph.
+      rgraph => collct_getvalue_graph(rcollection,&
+                                      trim(rcollection%SquickAccess(1)))
+      
       ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection, "VECTOR_SOLUTION")
+      rsolution => collct_getvalue_vec(rcollection,&
+                                       trim(rcollection%SquickAccess(2)))
       call lsysbl_getbase_double(rsolution, p_Dsolution)
 
 
     case(HADAPT_OPR_DONECALLBACK)
-      ! Release all data
+      ! Release the sparsity graph
       call grph_releaseGraph(rgraph)
-      nullify(rmatrix, rsolution, p_Dsolution)
 
-
-    case(-3)
-      ! Retrieve matrix from collection and generate template matrix
-      rmatrix => collct_getvalue_matsca(rcollection, "MATRIX_TEMPLATE")
-      call grph_generateMatrix(rgraph, rmatrix)
-
-
+      
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       if (rsolution%NEQ .ne. Ivertices(1)) then
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
@@ -2311,8 +2383,8 @@ contains
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
-      p_Dsolution(Ivertices(1)) = 0.5_DP*&
-          (p_Dsolution(Ivertices(2))+p_Dsolution(Ivertices(3)))
+      p_Dsolution(Ivertices(1)) = 0.5_DP*(p_Dsolution(Ivertices(2))+&    
+                                          p_Dsolution(Ivertices(3)))
 
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
@@ -2324,11 +2396,12 @@ contains
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
-      p_Dsolution(Ivertices(1)) = 0.25_DP*&
-          (p_Dsolution(Ivertices(2))+p_Dsolution(Ivertices(3))+&
-           p_Dsolution(Ivertices(4))+p_Dsolution(Ivertices(5)))
+      p_Dsolution(Ivertices(1)) = 0.25_DP*(p_Dsolution(Ivertices(2))+&
+                                           p_Dsolution(Ivertices(3))+&
+                                           p_Dsolution(Ivertices(4))+&
+                                           p_Dsolution(Ivertices(5)))
 
-
+      
     case(HADAPT_OPR_REMOVEVERTEX)
       ! Remove vertex from sparsity graph and solution
       if (Ivertices(2) .ne. 0) then
@@ -3061,13 +3134,12 @@ contains
       
       ! Add new edge (I2,I7)
       call grph_insertEdge(rgraph, Ivertices(2), Ivertices(7))
-      
+
       
     case DEFAULT
-      call output_line('Invalid operation!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_hadaptCallback2D')
-      call sys_halt()
+      
     end select
+
   end subroutine codire_hadaptCallback2D
 
    !*****************************************************************************
@@ -3101,7 +3173,7 @@ contains
 
     ! local variables
     type(t_graph), save :: rgraph
-    type(t_matrixScalar), pointer, save :: rmatrix
+    type(t_matrixScalar), pointer :: rmatrix
     type(t_vectorBlock), pointer, save :: rsolution
     real(DP), dimension(:), pointer, save :: p_Dsolution
 
@@ -3109,27 +3181,26 @@ contains
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve matrix from collection and build sparsity-graph
-      rmatrix => collct_getvalue_matsca(rcollection, "MATRIX_TEMPLATE")
+      ! This subroutine assumes that the name of the template matrix
+      ! and the name of the solution vector is stored in the first and
+      ! second quick access string, respectively.
+
+      ! Retrieve template matrix from collection and build sparsity-graph.
+      rmatrix => collct_getvalue_matsca(rcollection,&
+                                        trim(rcollection%SquickAccess(1)))
       call grph_createGraphFromMatrix(rmatrix, rgraph)
 
       ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection, "VECTOR_SOLUTION")
+      rsolution => collct_getvalue_vec(rcollection,&
+                                       trim(rcollection%SquickAccess(2)))
       call lsysbl_getbase_double(rsolution, p_Dsolution)
 
 
     case(HADAPT_OPR_DONECALLBACK)
-      ! Release all data
+      ! Release the sparsity graph
       call grph_releaseGraph(rgraph)
-      nullify(rmatrix, rsolution, p_Dsolution)
 
-
-    case(-3)
-      ! Retrieve matrix from collection and generate template matrix
-      rmatrix => collct_getvalue_matsca(rcollection, "MATRIX_TEMPLATE")
-      call grph_generateMatrix(rgraph, rmatrix)
-
-
+      
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       if (rsolution%NEQ .ne. Ivertices(1)) then
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
@@ -3147,11 +3218,20 @@ contains
         p_Dsolution(Ivertices(1)) = 0.0_DP
       end if
 
+      
     case DEFAULT
-      call output_line('Invalid operation!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_hadaptCallback3D')
-      call sys_halt()
+      ! Retrieve matrix from collection and generate template matrix
+      rmatrix => collct_getvalue_matsca(rcollection, &
+                                        trim(rcollection%SquickAccess(1)))
+      call grph_generateMatrix(rgraph, rmatrix)
+
+      ! Retrieve solution vector from collection and set dimensions
+      rsolution => collct_getvalue_vec(rcollection,&
+                                       trim(rcollection%SquickAccess(2)))
+      call lsysbl_resizeVectorBlock(rsolution, rmatrix%NEQ, .false.)
+      
     end select
+    
   end subroutine codire_hadaptCallback3D
 
   !*****************************************************************************
