@@ -972,7 +972,8 @@ contains
         rtimestep%dStep  = max(rtimestep%dminStep, min(rtimestep%dmaxStep, dStepOpt))
 
         ! Calculate the relative changes for statistical information
-        rtimestep%drelChange = dChange/lalg_normDble(p_Ddata1, rtimestep%isolNorm)
+        rtimestep%drelChange = dChange/max(SYS_EPSREAL,&
+                                           lalg_normDble(p_Ddata1, rtimestep%isolNorm))
 
       end if
 
@@ -1094,7 +1095,8 @@ contains
       call lsysbl_getbase_double(rsolution1, p_Ddata1)
       call lsysbl_getbase_double(rsolution2, p_Ddata2)
       dChange = lalg_errorNormDble(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
-      rtimestep%drelChange = dChange/lalg_normDble(p_Ddata1, rtimestep%isolNorm)
+      rtimestep%drelChange = dChange/max(SYS_EPSREAL,&
+                                     lalg_normDble(p_Ddata1, rtimestep%isolNorm))
             
       
     case DEFAULT
@@ -1105,7 +1107,8 @@ contains
       call lsysbl_getbase_double(rsolution1, p_Ddata1)
       call lsysbl_getbase_double(rsolution2, p_Ddata2)
       dChange = lalg_errorNormDble(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
-      rtimestep%drelChange = dChange/lalg_normDble(p_Ddata1, rtimestep%isolNorm)
+      rtimestep%drelChange = dChange/max(SYS_EPSREAL,&
+                                         lalg_normDble(p_Ddata1, rtimestep%isolNorm))
       
     end select
 
