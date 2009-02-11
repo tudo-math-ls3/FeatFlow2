@@ -2483,7 +2483,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_arrayInt2D')
         call sys_halt()
       end if
-      select casE(iorder)
+      select case(iorder)
       case (BTREE_PREORDER)
         j=0; call preorderDataIntMask(rtree%p_Kchild(TRIGHT, TROOT))
       case (BTREE_INORDER)
@@ -3890,7 +3890,7 @@ contains
       integer, intent(IN) :: i
       
       write(*,FMT='(A)',ADVANCE='NO')&
-          trim(sys_sdEL(REAL(rtree%p_FKey(i),DP),16))//','
+          trim(sys_sdEL(real(rtree%p_FKey(i),DP),16))//','
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call preorderSngl(rtree%p_Kchild(TLEFT,i))
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
@@ -3936,7 +3936,7 @@ contains
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call postorderSngl(rtree%p_Kchild(TRIGHT,i))
       write(*,FMT='(A)',ADVANCE='NO')&
-          trim(sys_sdEL(REAL(rtree%p_FKey(i),DP),16))//','
+          trim(sys_sdEL(real(rtree%p_FKey(i),DP),16))//','
     end subroutine postorderSngl
 
     !**************************************************************
@@ -3976,7 +3976,7 @@ contains
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderSngl(rtree%p_Kchild(TLEFT,i))
       write(*,FMT='(A)',ADVANCE='NO')&
-          trim(sys_sdEL(REAL(rtree%p_FKey(i),DP),16))//','
+          trim(sys_sdEL(real(rtree%p_FKey(i),DP),16))//','
       if (rtree%p_Kchild(TRIGHT,i) .ne. TNULL)&
           call inorderSngl(rtree%p_Kchild(TRIGHT,i))
     end subroutine inorderSngl
