@@ -16,7 +16,8 @@
 !# 2.) afcstab_releaseStabilisation
 !#     -> release a stabilisation structure
 !#
-!# 3.) afcstab_resizeStabilisation
+!# 3.) afcstab_resizeStabilisation = afcstab_resizeStabDirect /
+!#                                   afcstab_resizeStabIndirect
 !#     -> resize a stabilisation structure
 !#
 !# 4.) afcstab_getbase_IsupdiagEdgeIdx
@@ -244,6 +245,11 @@ module afcstabilisation
   ! *****************************************************************************
   ! *****************************************************************************
 
+  interface afcstab_resizeStabilisation
+    module procedure afcstab_resizeStabDirect
+    module procedure afcstab_resizeStabIndirect
+  end interface
+
   interface afcstab_limit
     module procedure afcstab_limit_unbounded
     module procedure afcstab_limit_bounded
@@ -382,11 +388,11 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_resizeStabilisation(rafcstab, neq, nedge, nvar)
+  subroutine afcstab_resizeStabDirect(rafcstab, neq, nedge)
 
 !<description>
-    ! This subroutine resizes all vectors of the stabilisation structure
-    ! to the new values NEQ, NEDGE and eventually NVAR.
+    ! This subroutine resizes all vectors of the stabilisation
+    ! structure to the new values NEQ and NEDGE
     !
     ! NOTE: Only those vectors are resized which are actually present.
 !</description>
@@ -396,10 +402,7 @@ contains
     integer(PREC_VECIDX), intent(IN) :: neq
 
     ! number of edges
-    integer(PREC_VECIDX), intent(IN) :: nedge
-
-    ! OPTIONAL: number of local variables
-    integer, intent(IN), optional    :: nvar
+    integer(PREC_VECIDX), intent(IN) :: nedge   
 !</input>
 
 !<inputoutput>
@@ -411,15 +414,7 @@ contains
     ! local variables
     integer :: i
 
-    ! Check if dimension NVAR is correct
-    if (present(nvar)) then
-      if (rafcstab%NVAR .ne. nvar) then
-        call output_line('Invalid number of variables!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabilisation')
-        call sys_halt()
-      end if
-    end if
-
+    
     ! Resize nodal quantities
     if (rafcstab%NEQ .ne. neq) then
 
@@ -428,14 +423,14 @@ contains
       
       ! Resize edge index vector
       if (rafcstab%h_IsuperdiagonalEdgesIdx .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabilisation',&
+        call storage_realloc('afcstab_resizeStabDirect',&
             rafcstab%NEQ+1, rafcstab%h_IsuperdiagonalEdgesIdx,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
       
       ! Resize subdiagonal edge index vector
       if (rafcstab%h_IsubdiagonalEdgesIdx .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabilisation',&
+        call storage_realloc('afcstab_resizeStabDirect',&
             rafcstab%NEQ+1, rafcstab%h_IsubdiagonalEdgesIdx,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
@@ -468,21 +463,21 @@ contains
 
       ! Resize array of edges
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabilisation',&
+        call storage_realloc('afcstab_resizeStabDirect',&
             rafcstab%NEDGE, rafcstab%h_IverticesAtEdge,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
 
       ! Resize array of subdiagonal edges
       if (rafcstab%h_IsubdiagonalEdges .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabilisation',&
+        call storage_realloc('afcstab_resizeStabDirect',&
             rafcstab%NEDGE, rafcstab%h_IsubdiagonalEdges,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
 
       ! Resize array of edge data
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabilisation',&
+        call storage_realloc('afcstab_resizeStabDirect',&
             rafcstab%NEDGE, rafcstab%h_DcoefficientsAtEdge,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
@@ -496,7 +491,44 @@ contains
         end do
       end if
     end if
-  end subroutine afcstab_resizeStabilisation
+  end subroutine afcstab_resizeStabDirect
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_resizeStabIndirect(rafcstab, rmatrixTemplate)
+
+!<description>
+    ! This subroutine resizes all vectors of the stabilisation
+    ! structure so that they are compatible to the template matrix.
+    !
+    ! NOTE: Only those vectors are resized which are actually present.
+!</description>
+
+!<input>
+    ! template matrix
+    type(t_matrixScalar), intent(IN) :: rmatrixTemplate
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(INOUT)   :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: neq, nedge
+
+    
+    ! Determine number of equations and edges
+    neq   = rmatrixTemplate%NEQ
+    nedge = int(0.5*(rmatrixTemplate%NA-rmatrixTemplate%NEQ))
+
+    ! Call resize routine directly
+    call afcstab_resizeStabDirect(rafcstab, neq, nedge)
+
+  end subroutine afcstab_resizeStabIndirect
 
   !*****************************************************************************
 
