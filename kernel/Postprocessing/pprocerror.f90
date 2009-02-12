@@ -93,8 +93,9 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_scalar (rvectorScalar,cerrortype,derror,&
-                           ffunctionReference,rcollection,rdiscretisation)
+  subroutine pperr_scalar (rvectorScalar, cerrortype, derror,&
+                           ffunctionReference, rcollection,&
+                           rdiscretisation, relementError)
 
 !<description>
   ! This routine calculates the error or the norm, respectively, of a given 
@@ -102,11 +103,11 @@ contains
   ! callback function ffunctionReference.
   !
   ! If ffunctionReference is specified, the routine calculates
-  !   $$ ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{H_1}$$
+  !   $$ ||y-z||_{L_1}, ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{H_1}$$
   ! with $y$=rvectorScalar and $z$=ffunctionReference.
   !
   ! If ffunctionReference is not specified, the routine calculates
-  !   $$ ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}.$$
+  !   $$ ||y||_{L_1}, ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}.$$
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
   ! element distributions in the discretisation structure specifies the
@@ -145,6 +146,11 @@ contains
   type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisation
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: A scalar vector which holds the calculated error per element
+  type(t_vectorScalar), intent(INOUT), optional :: relementError
+!</inputoutput>
+
 !<output>
   ! The calculated error.
   real(DP), intent(OUT) :: derror
@@ -167,7 +173,7 @@ contains
     
     if (.not. associated(p_rdiscretisation)) then
       call output_line('No discretisation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
       call sys_halt()
     end if
     
@@ -207,54 +213,49 @@ contains
     end if
   
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if (p_rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then 
+    if ((p_rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) .or.&
+        (p_rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then 
     
-      if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
-      
+      select case(rvectorScalar%cdataType)
+
+      case (ST_DOUBLE)
         ! Do we have a 1D, 2D or 3D discretisation here?
         select case(p_rdiscretisation%ndimension)
         case (NDIM1D)
           call pperr_scalar1d_conf (rvectorScalar,cerrortype,derror,&
-                           p_rdiscretisation,ffunctionReference,rcollection)
+                                    p_rdiscretisation,ffunctionReference,&
+                                    rcollection, relementError)
         case (NDIM2D)
           call pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,&
-                           p_rdiscretisation,ffunctionReference,rcollection)
+                                    p_rdiscretisation,ffunctionReference,&
+                                    rcollection, relementError)
         case (NDIM3D)
           call pperr_scalar3d_conf (rvectorScalar,cerrortype,derror,&
-                           p_rdiscretisation,ffunctionReference,rcollection)
+                                    p_rdiscretisation,ffunctionReference,&
+                                    rcollection, relementError)
         end select
-      else
+
+      case DEFAULT
         call output_line('Single precision vectors currently not supported!',&
             OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
         call sys_halt()
-      end if
-    
-    ! Do we have a uniform triangulation? Would simplify a lot...
-    else if (p_rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL) then 
-    
-      if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
-        call pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,&
-                           p_rdiscretisation,ffunctionReference,rcollection)
-      else
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
-        call sys_halt() 
-      end if
+      end select
     
     else
       call output_line('General discretisation not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
       call sys_halt()
     end if
 
-  end subroutine
+  end subroutine pperr_scalar
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine pperr_scalar1d_conf (rvectorScalar,cerrortype,derror,&
-                                  rdiscretisation,ffunctionReference,rcollection)
+  subroutine pperr_scalar1d_conf (rvectorScalar, cerrortype, derror,&
+                                  rdiscretisation, ffunctionReference,&
+                                  rcollection, relementError)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -285,6 +286,11 @@ contains
   optional :: ffunctionReference
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: A scalar vector which holds the calculated error per element
+  type(t_vectorScalar), intent(INOUT), optional :: relementError
+!</inputoutput>
+
 !<output>
   ! Array receiving the calculated error.
   real(DP), intent(OUT) :: derror
@@ -293,8 +299,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,k,icurrentElementDistr, ICUBP, NVE
-    integer :: IEL, IELmax, IELset
+    integer :: icurrentElementDistr, ICUBP, NVE
+    integer :: IEL, IELmax, IELset, IELGlobal
     real(DP) :: OM
     
     ! Array to tell the element which derivatives to calculate
@@ -351,6 +357,10 @@ contains
     ! An allocateable array accepting the DOF's of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
+    ! Pointer to the element-wise error
+    real(DP), dimension(:), pointer :: p_Derror
+
+
     ! Which derivatives of basis functions are needed?
     ! Check the descriptors of the bilinear form and set BDER
     ! according to these.
@@ -363,7 +373,7 @@ contains
       Bder(DER_DERIV1D_X) = .true.
     case default
       call output_line('Unknown error type identifier!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar1d_conf')
+                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar1d_conf')
       call sys_halt()
     end select
     
@@ -379,6 +389,11 @@ contains
     ! Set the current error to 0 and add the error contributions of each element
     ! to that.
     derror = 0.0_DP
+
+    ! Set pointer to element-wise error
+    if (present(relementError)) then
+      call lsyssc_getbase_double(relementError, p_Derror)
+    end if
 
     ! Now loop over the different element distributions (=combinations
     ! of trial and test functions) in the discretisation.
@@ -396,10 +411,6 @@ contains
       
       ! Get the number of corner vertices of the element
       NVE = elem_igetNVE(p_relementDistribution%celement)
-      
-      ! Initialise the cubature formula,
-      ! Get cubature weights and point coordinates on the reference element
-      !call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
@@ -519,28 +530,60 @@ contains
           ! loop through the DOF's and cubature points to calculate the
           ! integral: int_Omega (u-u_h,u-u_h) dx
           
-          do IEL=1,IELmax-IELset+1
-          
-            ! Loop over all cubature points on the current element
-            do icubp = 1, ncubp
-            
-              ! calculate the current weighting factor in the cubature formula
-              ! in that cubature point.
-              !
-              ! Take the absolut value of the determinant of the mapping.
-              ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+          if (present(relementError)) then
 
-              OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+            do IEL=1,IELmax-IELset+1
               
-              ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+                
+                p_Derror(IELGlobal) = OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+
+                derror = derror + p_Derror(IELGlobal)
+                
+              end do ! ICUBP 
               
-              derror = derror + &
-                       OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+            end do ! IEL
 
-            end do ! ICUBP 
+          else
 
-          end do ! IEL
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
+                
+                derror = derror + &
+                         OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          end if
 
         case (PPERR_L1ERROR)
           
@@ -574,28 +617,60 @@ contains
           ! loop through the DOF's and cubature points to calculate the
           ! integral: int_Omega abs(u-u_h) dx
           
-          do IEL=1,IELmax-IELset+1
-          
-            ! Loop over all cubature points on the current element
-            do icubp = 1, ncubp
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! L1-error is:   int_... abs(u-u_h) dx
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+
+                p_Derror(IELGlobal) = OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+
+                derror = derror + p_Derror(IELGlobal)
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          else
+
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! L1-error is:   int_... abs(u-u_h) dx
+                
+                derror = derror + &
+                         OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
             
-              ! calculate the current weighting factor in the cubature formula
-              ! in that cubature point.
-              !
-              ! Take the absolut value of the determinant of the mapping.
-              ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
-
-              OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
-              
-              ! L1-error is:   int_... abs(u-u_h) dx
-              
-              derror = derror + &
-                       OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
-
-            end do ! ICUBP 
-
-          end do ! IEL
+          end if
 
         case (PPERR_H1ERROR)
 
@@ -630,28 +705,60 @@ contains
           ! loop through the DOF's and cubature points to calculate the
           ! integral: int_Omega (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
           
-          do IEL=1,IELmax-IELset+1
-          
-            ! Loop over all cubature points on the current element
-            do icubp = 1, ncubp
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+
+                p_Derror(IELGlobal) = OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+
+                derror = derror + p_Derror(IELGlobal)
+
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          else
             
-              ! calculate the current weighting factor in the cubature formula
-              ! in that cubature point.
-              !
-              ! Take the absolut value of the determinant of the mapping.
-              ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
-
-              OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+            do IEL=1,IELmax-IELset+1
               
-              ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+                
+                derror = derror + OM * &
+                         (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+                
+              end do ! ICUBP 
               
-              derror = derror + OM * &
-                       (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+            end do ! IEL
 
-            end do ! ICUBP 
-
-          end do ! IEL
+          end if
         
         case default
           call output_line('Unknown error type identifier!',&
@@ -678,16 +785,22 @@ contains
     if ((cerrortype .eq. PPERR_L2ERROR) .or.&
         (cerrortype .eq. PPERR_H1ERROR)) then
       derror = sqrt(derror)
+      if (present(relementError)) then
+        do IEL = 1, size(p_Derror,1)
+          p_Derror(IEL) = sqrt(p_Derror(IEL))
+        end do
+      end if
     end if
 
-  end subroutine
+  end subroutine pperr_scalar1d_conf
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,&
-                                  rdiscretisation,ffunctionReference,rcollection)
+  subroutine pperr_scalar2d_conf (rvectorScalar, cerrortype, derror,&
+                                  rdiscretisation, ffunctionReference,&
+                                  rcollection, relementError)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -718,6 +831,11 @@ contains
   optional :: ffunctionReference
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: A scalar vector which holds the calculated error per element
+  type(t_vectorScalar), intent(INOUT), optional :: relementError
+!</inputoutput>
+
 !<output>
   ! Array receiving the calculated error.
   real(DP), intent(OUT) :: derror
@@ -726,8 +844,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,k,icurrentElementDistr, ICUBP, NVE
-    integer :: IEL, IELmax, IELset
+    integer :: icurrentElementDistr, ICUBP, NVE
+    integer :: IEL, IELmax, IELset, IELGlobal
     real(DP) :: OM
     
     ! Array to tell the element which derivatives to calculate
@@ -784,6 +902,10 @@ contains
     ! the elements.
     integer(I32) :: cevaluationTag
 
+    ! Pointer to the element-wise error
+    real(DP), dimension(:), pointer :: p_Derror
+
+
     ! Which derivatives of basis functions are needed?
     ! Check the descriptors of the bilinear form and set BDER
     ! according to these.
@@ -797,7 +919,7 @@ contains
       Bder(DER_DERIV_Y) = .true.
     case default
       call output_line('Unknown error type identifier!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar2d_conf')
+                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar2d_conf')
       call sys_halt()
     end select
     
@@ -813,6 +935,11 @@ contains
     ! Set the current error to 0 and add the error contributions of each element
     ! to that.
     derror = 0.0_DP
+
+    ! Set pointer to element-wise error
+    if (present(relementError)) then
+      call lsyssc_getbase_double(relementError, p_Derror)
+    end if
 
     ! Now loop over the different element distributions (=combinations
     ! of trial and test functions) in the discretisation.
@@ -830,10 +957,6 @@ contains
       
       ! Get the number of corner vertices of the element
       NVE = elem_igetNVE(p_relementDistribution%celement)
-      
-      ! Initialise the cubature formula,
-      ! Get cubature weights and point coordinates on the reference element
-      !call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
@@ -953,28 +1076,60 @@ contains
           ! loop through the DOF's and cubature points to calculate the
           ! integral: int_Omega (u-u_h,u-u_h) dx
           
-          do IEL=1,IELmax-IELset+1
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
           
-            ! Loop over all cubature points on the current element
-            do icubp = 1, ncubp
-            
-              ! calculate the current weighting factor in the cubature formula
-              ! in that cubature point.
-            !
-              ! Take the absolut value of the determinant of the mapping.
-              ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
 
-              OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                IELGlobal = p_IelementList(IELset+IEL-1)
+                
+                p_Derror(IELGlobal) = OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+
+                derror = derror + p_Derror(IELGlobal)
+                
+              end do ! ICUBP 
               
-              ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
+            end do ! IEL
+
+          else
+
+            do IEL=1,IELmax-IELset+1
+          
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
+                
+                derror = derror + &
+                         OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+                
+              end do ! ICUBP 
               
-              derror = derror + &
-                       OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+            end do ! IEL
 
-            end do ! ICUBP 
-
-          end do ! IEL
+          end if
 
         case (PPERR_L1ERROR)
           
@@ -1008,24 +1163,52 @@ contains
           ! loop through the DOF's and cubature points to calculate the
           ! integral: int_Omega abs(u-u_h) dx
           
-          do IEL=1,IELmax-IELset+1
-          
-            ! Loop over all cubature points on the current element
-            do icubp = 1, ncubp
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                
+                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+                
+                ! L1-error is:   int_... abs(u-u_h) dx
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+
+                p_Derror(IELGlobal) = OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+
+                derror = derror + p_Derror(IELGlobal)
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          else
             
-              ! calculate the current weighting factor in the cubature formula
-              ! in that cubature point.
-
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            do IEL=1,IELmax-IELset+1
               
-              ! L1-error is:   int_... abs(u-u_h) dx
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                
+                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+                
+                ! L1-error is:   int_... abs(u-u_h) dx
+                
+                derror = derror + &
+                         OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+                
+              end do ! ICUBP 
               
-              derror = derror + &
-                       OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+            end do ! IEL
 
-            end do ! ICUBP 
-
-          end do ! IEL
+          end if
 
         case (PPERR_H1ERROR)
 
@@ -1071,29 +1254,62 @@ contains
           ! loop through the DOF's and cubature points to calculate the
           ! integral: int_Omega (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
           
-          do IEL=1,IELmax-IELset+1
-          
-            ! Loop over all cubature points on the current element
-            do icubp = 1, ncubp
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+
+                p_Derror(IELGlobal) = OM * ((Dcoefficients(icubp,IEL,3)-Dcoefficients(icubp,IEL,1))**2 + &
+                                            (Dcoefficients(icubp,IEL,4)-Dcoefficients(icubp,IEL,2))**2)
+
+                derror = derror + p_Derror(IELGlobal)
+
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          else
             
-              ! calculate the current weighting factor in the cubature formula
-              ! in that cubature point.
-              !
-              ! Take the absolut value of the determinant of the mapping.
-              ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
-
-              OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+            do IEL=1,IELmax-IELset+1
               
-              ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+                
+                derror = derror + OM * &
+                         ((Dcoefficients(icubp,IEL,3)-Dcoefficients(icubp,IEL,1))**2 + &
+                          (Dcoefficients(icubp,IEL,4)-Dcoefficients(icubp,IEL,2))**2)
+
+              end do ! ICUBP 
               
-              derror = derror + OM * &
-                       ((Dcoefficients(icubp,IEL,3)-Dcoefficients(icubp,IEL,1))**2 + &
-                        (Dcoefficients(icubp,IEL,4)-Dcoefficients(icubp,IEL,2))**2)
+            end do ! IEL
 
-            end do ! ICUBP 
-
-          end do ! IEL
+          end if
         
         case default
           call output_line('Unknown error type identifier!',&
@@ -1120,16 +1336,22 @@ contains
     if ((cerrortype .eq. PPERR_L2ERROR) .or.&
         (cerrortype .eq. PPERR_H1ERROR)) then
       derror = sqrt(derror)
+      if (present(relementError)) then
+        do IEL = 1, size(p_Derror,1)
+          p_Derror(IEL) = sqrt(p_Derror(IEL))
+        end do
+      end if
     end if
 
-  end subroutine
+  end subroutine pperr_scalar2d_conf
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine pperr_scalar3d_conf (rvectorScalar,cerrortype,derror,&
-                                  rdiscretisation,ffunctionReference,rcollection)
+  subroutine pperr_scalar3d_conf (rvectorScalar, cerrortype, derror,&
+                                  rdiscretisation, ffunctionReference,&
+                                  rcollection, relementError)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -1160,16 +1382,21 @@ contains
   optional :: ffunctionReference
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: A scalar vector which holds the calculated error per element
+  type(t_vectorScalar), intent(INOUT), optional :: relementError
+!</inputoutput>
+
 !<output>
   ! Array receiving the calculated error.
-  real(DP), intent(OUT) :: derror
+  real(DP), intent(OUT) :: derror 
 !</output>
 
 !</subroutine>
 
     ! local variables
     integer :: icurrentElementDistr, ICUBP, NVE
-    integer :: IEL, IELmax, IELset
+    integer :: IEL, IELmax, IELset, IELGlobal
     real(DP) :: OM
     
     ! Array to tell the element which derivatives to calculate
@@ -1226,6 +1453,10 @@ contains
     ! the elements.
     integer(I32) :: cevaluationTag
 
+    ! Pointer to the element-wise error
+    real(DP), dimension(:), pointer :: p_Derror
+
+
     ! Which derivatives of basis functions are needed?
     ! Check the descriptors of the bilinear form and set BDER
     ! according to these.
@@ -1257,6 +1488,11 @@ contains
     ! to that.
     derror = 0.0_DP
 
+    ! Set pointer to element-wise error
+    if (present(relementError)) then
+      call lsyssc_getbase_double(relementError, p_Derror)
+    end if
+
     ! Now loop over the different element distributions (=combinations
     ! of trial and test functions) in the discretisation.
 
@@ -1273,10 +1509,6 @@ contains
       
       ! Get the number of corner vertices of the element
       NVE = elem_igetNVE(p_relementDistribution%celement)
-      
-      ! Initialise the cubature formula,
-      ! Get cubature weights and point coordinates on the reference element
-      !call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
@@ -1396,28 +1628,60 @@ contains
           ! loop through the DOF's and cubature points to calculate the
           ! integral: int_Omega (u-u_h,u-u_h) dx
           
-          do IEL=1,IELmax-IELset+1
-          
-            ! Loop over all cubature points on the current element
-            do icubp = 1, ncubp
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+
+                p_Derror(IELGlobal) = OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+
+                derror = derror + p_Derror(IELGlobal)
+
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          else
             
-              ! calculate the current weighting factor in the cubature formula
-              ! in that cubature point.
-              !
-              ! Take the absolut value of the determinant of the mapping.
-              ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
-
-              OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+            do IEL=1,IELmax-IELset+1
               
-              ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
+                
+                derror = derror + &
+                         OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+                
+              end do ! ICUBP 
               
-              derror = derror + &
-                       OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+            end do ! IEL
 
-            end do ! ICUBP 
-
-          end do ! IEL
+          end if
 
         case (PPERR_L1ERROR)
           
@@ -1450,29 +1714,61 @@ contains
           ! Loop through elements in the set and for each element,
           ! loop through the DOF's and cubature points to calculate the
           ! integral: int_Omega abs(u-u_h) dx
-          
-          do IEL=1,IELmax-IELset+1
-          
-            ! Loop over all cubature points on the current element
-            do icubp = 1, ncubp
+
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! L1-error is:   int_... abs(u-u_h) dx
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+              
+                p_Derror(IELGlobal) = OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+                
+                derror = derror + p_Derror(IELGlobal)
+
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          else
             
-              ! calculate the current weighting factor in the cubature formula
-              ! in that cubature point.
-              !
-              ! Take the absolut value of the determinant of the mapping.
-              ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
-
-              OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+            do IEL=1,IELmax-IELset+1
               
-              ! L1-error is:   int_... abs(u-u_h) dx
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! L1-error is:   int_... abs(u-u_h) dx
+                
+                derror = derror + &
+                         OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+                
+              end do ! ICUBP 
               
-              derror = derror + &
-                       OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
-
-            end do ! ICUBP 
-
-          end do ! IEL
+            end do ! IEL
+            
+          end if
 
         case (PPERR_H1ERROR)
 
@@ -1527,31 +1823,64 @@ contains
           ! Loop through elements in the set and for each element,
           ! loop through the DOF's and cubature points to calculate the
           ! integral: int_Omega (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
-          
-          do IEL=1,IELmax-IELset+1
-          
-            ! Loop over all cubature points on the current element
-            do icubp = 1, ncubp
+
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+                IELGlobal = p_IelementList(IELset+IEL-1)
+
+                p_Derror(IELGlobal) = OM * ((Dcoefficients(icubp,IEL,4)-Dcoefficients(icubp,IEL,1))**2 + &
+                                            (Dcoefficients(icubp,IEL,5)-Dcoefficients(icubp,IEL,2))**2 + &
+                                            (Dcoefficients(icubp,IEL,6)-Dcoefficients(icubp,IEL,3))**2)
+
+                derror = derror + p_Derror(IELGlobal)
+
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          else
             
-              ! calculate the current weighting factor in the cubature formula
-              ! in that cubature point.
-              !
-              ! Take the absolut value of the determinant of the mapping.
-              ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
-
-              OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+            do IEL=1,IELmax-IELset+1
               
-              ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that's normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                
+                ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+                
+                derror = derror + OM * &
+                         ((Dcoefficients(icubp,IEL,4)-Dcoefficients(icubp,IEL,1))**2 + &
+                          (Dcoefficients(icubp,IEL,5)-Dcoefficients(icubp,IEL,2))**2 + &
+                          (Dcoefficients(icubp,IEL,6)-Dcoefficients(icubp,IEL,3))**2)
+                
+              end do ! ICUBP 
               
-              derror = derror + OM * &
-                       ((Dcoefficients(icubp,IEL,4)-Dcoefficients(icubp,IEL,1))**2 + &
-                        (Dcoefficients(icubp,IEL,5)-Dcoefficients(icubp,IEL,2))**2 + &
-                        (Dcoefficients(icubp,IEL,6)-Dcoefficients(icubp,IEL,3))**2)
+            end do ! IEL
 
-            end do ! ICUBP 
-
-          end do ! IEL
+          end if
         
         case default
           call output_line('Unknown error type identifier!',&
