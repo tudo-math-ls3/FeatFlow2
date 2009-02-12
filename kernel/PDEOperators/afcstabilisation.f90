@@ -867,12 +867,16 @@ contains
 !</subroutine>
     
     ! Clear output matrix
-    call lsyssc_releaseMatrix(rmatrixExtended)
-    
+    if (lsyssc_hasMatrixStructure(rmatrixExtended) .or.&
+        lsyssc_hasMatrixContent(rmatrixExtended)) then
+      call lsyssc_releaseMatrix(rmatrixExtended)
+    end if
+
     ! Compute Z=A*A and let the connectivity graph of Z be the
     ! extended sparsity pattern of the Jacobian matrix
-    call lsyssc_multMatMat(rmatrixSrc, rmatrixSrc,&
-        rmatrixExtended, .true., .true., .false.)
+    call lsyssc_multMatMat(rmatrixSrc, rmatrixSrc, rmatrixExtended,&
+                           .true., .true., .false.)
+
   end subroutine afcstab_generateExtSparsity
 
   !*****************************************************************************
