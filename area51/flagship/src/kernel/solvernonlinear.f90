@@ -741,7 +741,7 @@ contains
                             ru, ru0, p_rrhs, p_rres, 0, rcollection)
 
       ! Apply given right-hand side vector
-      if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1._DP, 1._DP)
+      if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1.0_DP, 1.0_DP)
       
       ! Impose boundary conditions
       call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
@@ -759,7 +759,7 @@ contains
                             ru, ru0, p_rrhs, p_rres, 0, rcollection)
 
       ! Apply given right-hand side vector
-      if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1._DP, 1._DP)
+      if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1.0_DP, 1.0_DP)
    
       ! Assemble Jacobian matrix
       call fcb_calcJacobian(rproblemLevel, rtimestep, p_rsolver, ru, ru0, .false., rcollection)
@@ -860,9 +860,9 @@ contains
         
         ! Add increment to solution vector
         if (p_rsolver%domega < 0.0_DP) then
-          call lsysbl_vectorLinearComb(p_raux, ru, 1._DP, 1._DP)
+          call lsysbl_vectorLinearComb(p_raux, ru, 1.0_DP, 1.0_DP)
         else
-          call lsysbl_vectorLinearComb(p_raux, ru, p_rsolver%domega, 1._DP)
+          call lsysbl_vectorLinearComb(p_raux, ru, p_rsolver%domega, 1.0_DP)
         end if
         
         ! Compute new defect
@@ -870,7 +870,7 @@ contains
                               ru, ru0, p_rrhs, p_rres, iiterations, rcollection)
         
         ! Apply given right-hand side vector
-        if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1._DP, 1._DP)
+        if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1.0_DP, 1.0_DP)
 
         ! Impose boundary conditions
         call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
@@ -914,9 +914,9 @@ contains
                 
         ! Add increment to solution vector
         if (p_rsolver%domega < 0.0_DP) then
-          call lsysbl_vectorLinearComb(p_raux, ru, 1._DP, 1._DP)
+          call lsysbl_vectorLinearComb(p_raux, ru, 1.0_DP, 1.0_DP)
         else
-          call lsysbl_vectorLinearComb(p_raux, ru, p_rsolver%domega, 1._DP)
+          call lsysbl_vectorLinearComb(p_raux, ru, p_rsolver%domega, 1.0_DP)
         end if
         
         ! Compute new defect
@@ -924,7 +924,7 @@ contains
                               ru, ru0, p_rrhs, p_rres, iiterations, rcollection)
 
         ! Apply given right-hand side vector
-        if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1._DP, 1._DP)
+        if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1.0_DP, 1.0_DP)
 
         ! Impose boundary conditions
         call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
@@ -982,7 +982,7 @@ contains
         
         ! Compute the values G(U).TRANSP.*F(U)+J(U)*dU
         call lsysbl_copyVector(p_rres, p_rresfs)
-        call fcb_applyJacobian(rproblemLevel, p_raux, p_rresfs, 1._DP, 1._DP, rcollection)
+        call fcb_applyJacobian(rproblemLevel, p_raux, p_rresfs, 1.0_DP, 1.0_DP, rcollection)
         drtlm = lsysbl_scalarProduct(p_rres, p_rresfs)
 
         ! Comput the value G(U).T.*J(U)*dU
@@ -1208,7 +1208,7 @@ contains
 
 
     ! Initialization
-    redfac  = 1._DP
+    redfac  = 1.0_DP
     istatus = 0
     call lsysbl_copyVector(ru,   ruFS)
     call lsysbl_copyVector(rres, rresFS)
@@ -1218,9 +1218,9 @@ contains
       
       ! Add increment to solution vector: u=u_k+aux
       if (rsolver%domega < 0.0_DP) then
-        call lsysbl_vectorLinearComb(raux, ruFS, 1._DP, 1._DP, ru)
+        call lsysbl_vectorLinearComb(raux, ruFS, 1.0_DP, 1.0_DP, ru)
       else
-        call lsysbl_vectorLinearComb(raux, ruFS, rsolver%domega, 1._DP, ru)
+        call lsysbl_vectorLinearComb(raux, ruFS, rsolver%domega, 1.0_DP, ru)
       end if
       
       ! Compute new provisional defect
@@ -1228,7 +1228,7 @@ contains
                             ru, ru0, rrhs, rres, iiterations, rcollection)
       
       ! Apply given right-hand side vector
-      if (present(rf)) call lsysbl_vectorLinearComb(rf, rres, 1._DP, 1._DP)
+      if (present(rf)) call lsysbl_vectorLinearComb(rf, rres, 1.0_DP, 1.0_DP)
 
       ! Impose boundary conditions
       call fcb_setBoundary(rproblemLevel, rtimestep, rsolver, ru, rres, ru0, rcollection)
@@ -1239,7 +1239,7 @@ contains
 
       ! Return if sufficient decrease condition is satisfied or no checks need to be performed
       if ((rsolver%p_solverNewton%icheckSufficientDecrease .eq. 0) .or. &
-          (rsolver%dfinalDefect .le. (1._DP-T*(1._DP-eta))*doldDefect)) then
+          (rsolver%dfinalDefect .le. (1.0_DP-T*(1.0_DP-eta))*doldDefect)) then
         return
       end if
       
@@ -1255,7 +1255,7 @@ contains
       
       ! Reduce inexact Newton step
       call lsysbl_scaleVector(raux, theta)
-      eta    = 1._DP-theta*(1._DP-eta)
+      eta    = 1.0_DP-theta*(1.0_DP-eta)
       redfac = theta*redfac
     end do backtrack
 
@@ -1344,14 +1344,14 @@ contains
     !               gamma*(||fcur||/||fprev||)**alpha; it is also used to
     !               determine the ETA_MIN safeguard. The default value is 2.0.
     !               Valid values are in the range (1.0, 2.0].
-    real(DP), parameter :: choice2_exp = 2._DP
+    real(DP), parameter :: choice2_exp = 2.0_DP
     
     ! CHOICE2_COEFF - parameter used in the update of the forcing term.
     !                 This is the coefficient GAMMA used in the expression
     !                 gamma*(||fcur||/||fprev||)**alpha; it is also used to
     !                 determine the ETA_MIN safeguard. The default value is 1.0.
     !                 Valid values are in the range (0.0, 1.0]
-    real(DP), parameter :: choice2_coeff = 1._DP
+    real(DP), parameter :: choice2_coeff = 1.0_DP
     
     ! ETA_CUTOFF - parameter used to determine when to disable safeguarding the 
     !              update of the forcing term. The default value is 0.1. A value
@@ -1368,7 +1368,7 @@ contains
     !           and cause the nonlinear iterations to nearly stagnate. In such cases
     !           a smaller value of ETA_MAX may prevent this. Valid values are
     !           in the range (0.0, 1.0).
-    real(DP), parameter :: eta_max = 1._DP-1E-4_DP
+    real(DP), parameter :: eta_max = 1.0_DP-1E-4_DP
     
     ! ETA_MIN - parameter used to provide a lower bound on the forcing term.
     !           The default value is 0.1.
@@ -1407,9 +1407,9 @@ contains
       ! eta_k <- MAX(eta_k,eta_{k-1}^(1+sqrt(5))/2 whenever eta_{k-1}^(1+sqrt(5))/2 > 0.1
       alpha  = choice1_exp
       etamin = eta**alpha
-      if (etamin .le. ETA_CUTOFF) etamin = 0._DP
+      if (etamin .le. ETA_CUTOFF) etamin = 0.0_DP
 
-      temp1  = 1._DP-redfac
+      temp1  = 1.0_DP-redfac
       temp2  = sqrt( (temp1*doldDefect)**2+2*redfac*temp1*drtlm+(redfac*dlinearDefect)**2 )
       eta    = abs(dDefect-temp2)/doldDefect
 
@@ -1424,7 +1424,7 @@ contains
       alpha  = choice2_exp
       gamma  = choice2_coeff
       etamin = gamma*eta*alpha
-      if (etamin .le. ETA_CUTOFF) etamin = 0._DP
+      if (etamin .le. ETA_CUTOFF) etamin = 0.0_DP
 
       eta = gamma*(dDefect/doldDefect)**alpha
 
@@ -1434,7 +1434,7 @@ contains
       !
       ! eta_k=1/2^(k+1)
       etamin = ETA_MIN
-      eta=1._DP/real(2**(iiterations+1),DP)
+      eta=1.0_DP/real(2**(min(30, iiterations+1)),DP)
 
 
     case (4)
@@ -1443,7 +1443,7 @@ contains
       !
       ! eta_k=MIN(1/(k+2), ||R(u_k)||)
       etamin = ETA_MIN
-      eta=min(1._DP/real(iiterations+2, DP), dDefect)
+      eta=min(1.0_DP/real(iiterations+2, DP), dDefect)
 
 
     case DEFAULT
