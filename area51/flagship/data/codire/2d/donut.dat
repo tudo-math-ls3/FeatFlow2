@@ -11,6 +11,11 @@
 #                                                                              #
 ################################################################################
 
+simportdatafiles(1) =
+  'data/codire/default.dat'
+
+################################################################################
+
 application = codire
 
 ################################################################################
@@ -43,7 +48,7 @@ imasstype = 0
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusion = 1
+imassantidiffusion = 0
 
 # type of flow velocity
 # 0 = zero velocity v=0
@@ -104,10 +109,11 @@ sexactsolutionname = exact_solution
 # type of target functional
 # 0 = no target variable
 # 1 = volume integral
-itargetfunctionaltype = 1
+# 2 = surface integral
+itargetfunctype = 1
 
 # section name of target functional
-stargetfunctionalname = targetfunctional
+stargetfuncname = targetfunctional
 
 #-------------------------------------------------------------------------------
 
@@ -124,7 +130,7 @@ trifile = grids/2d/rect_2x1.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-ieltype = 1
+ieltype = -1
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -132,7 +138,7 @@ iconvToTria = 0
 # type of matrix format
 # 7 = matrix format 7
 # 9 = matrix format 9
-imatrixformat = 7
+imatrixformat = 9
 
 # type of Jacobian matrix
 # 0 = standard sparsity pattern
@@ -303,7 +309,7 @@ nlmax = 3
 # 0 = F-cylce
 # 1 = V-cycle
 # 2 = W-cycle
-# 3,4,5 =  corresponding saw tooth variants
+# 3,4,5 = corresponding saw tooth variants
 icycle = 0
 
 # minimum number of multigrid steps
@@ -434,7 +440,7 @@ nmaxIterations = 1000
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 2
+iprecond = 3
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -445,7 +451,7 @@ isolver = 101
 # 1 = NITSOL
 # 2 = SQRT(EPS)
 # otherwise, user-defined value
-dperturbationStrategy = 2
+dperturbationStrategy = 1
 
 # strategy for choosing the forcing term in Newton's method
 # 1 = choice 1 by Eisenstat/Walker
@@ -453,7 +459,7 @@ dperturbationStrategy = 2
 # 3 = choice by Brown/Saad
 # 4 = choice by Dembo/Steihaug
 # otherwise, user-defined fixed value
-dforcingStrategy = 1e-1
+dforcingStrategy = 1
 
 # check sufficient decrease condition in globalization
 # 0 = apply Newton increment without globalization
@@ -694,10 +700,10 @@ nsubdividemax = 5
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementtolerance = 1e-4
+drefinementtolerance = 1e-6
 
 # coarsening tolerance
-dcoarseningtolerance = 1e-6
+dcoarseningtolerance = 1e-8
 
 
 ################################################################################
@@ -714,12 +720,6 @@ dcoarseningtolerance = 1e-6
 # 7 = goal-oriented estimator
 ierrorestimator = 3
 
-# variable(s) for error estimator
-ierrorvariable(3) = 
-                    4
-		    19
-		    3
-
 # type or grid indicator
 # 0 = as is
 # 1 = equidistribution
@@ -733,13 +733,10 @@ dnoisefilter = 0.01
 dabsfilter = 0.001
 
 # refinement tolerance
-drefinementtolerance = 0.05
+drefinementTolerance = 0.05
 
 # coarsening tolerance
-dcoarseningtolerance = 0.01
-
-# type of element
-ieltype = -1
+dcoarseningTolerance = 0.01
 
 # number of protection layers
-nprotectlayers = 0
+nprotectLayers = 0

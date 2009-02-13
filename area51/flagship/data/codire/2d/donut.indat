@@ -11,7 +11,14 @@
 #                                                                              #
 ################################################################################
 
+defconst: eps = 0.1
+defconst: x0  = 0.5
+defconst: y0  = 0.25
+defconst: C   = 1
+
 defexpr:  sqr1 = SQRT((x-1)^2+y^2)
+defexpr:  sqr2 = SQRT((x-_x0)^2+(y-_y0)^2)
+defexpr:  abs  =      (x-_x0)^2+(y-_y0)^2
 
 # Specify the initial solution
 #-------------------------------------------------------------------------------
@@ -42,6 +49,7 @@ y
 [targetfunctional]
 NCOMP
 1
+if(@sqr2 < _eps, _C/exp(@abs/_eps/_eps-1),0)
 if(x >= 0.9 & x <= 1.1, 1, 0)
 
 
