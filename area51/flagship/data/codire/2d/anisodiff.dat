@@ -37,6 +37,7 @@ ndimension = 2
 # solution algorithm
 algorithm = stationary_primal
 
+
 #-------------------------------------------------------------------------------
 
 # type of mass matrix
@@ -48,7 +49,7 @@ imasstype = 0
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusion = 1
+imassantidiffusion = 0
 
 # type of flow velocity
 # 0 = zero velocity v=0
@@ -57,7 +58,7 @@ imassantidiffusion = 1
 # 3 = Burgers equation in space-time
 # 4 = Buckley Leverett in space-time
 # 6 = Burgers' equation in 2D
-ivelocitytype = 2
+ivelocitytype = 0
 
 # section name of velocity field
 svelocityname = velocityfield
@@ -83,7 +84,7 @@ sreactionname = reactionterm
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 2
+irhstype = 0
 
 # section name of right-hand side vector
 srhsname = rhs
@@ -138,12 +139,12 @@ iconvToTria = 0
 # type of matrix format
 # 7 = matrix format 7
 # 9 = matrix format 9
-imatrixformat = 7
+imatrixformat = 9
 
 # type of Jacobian matrix
 # 0 = standard sparsity pattern
 # 1 = extended sparsity pattern
-ijacobianformat = 0
+ijacobianformat = 1
 
 #-------------------------------------------------------------------------------
 
@@ -192,7 +193,7 @@ istabilisation = 0
 #  0 = no stabilization (Galerkin)
 #  2 = maximum principle preservation
 # 30 = symmetric limiting
-istabilisation = 7
+istabilisation = 30
 
 
 ################################################################################
@@ -207,7 +208,7 @@ istabilisation = 7
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.0
 
 # file for UCD output of solution
 ucdsolution = out/anisodiff
@@ -227,7 +228,7 @@ ucderror = out/anisodiff_error
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 5 = two-level theta-scheme
@@ -252,7 +253,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime =
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 1.0
@@ -276,7 +277,7 @@ dincreaseFactor = 2.0
 dstepReductionFactor = 0.8
 
 # target tolerace for relative changes
-depsRel =
+depsRel = 0.0
 
 # absolute tolerance for relative changes
 depsAbs = 0.0
@@ -297,13 +298,13 @@ depsSteady = 0.0
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 5
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -339,7 +340,7 @@ ssolvername = NonlinearSolver
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 2
+ioutputlevel = 4
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -421,7 +422,7 @@ depsStag = 0.0
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 99
+ioutputlevel = 4
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -440,7 +441,7 @@ nmaxIterations = 1000
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 3
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -451,7 +452,7 @@ isolver = 101
 # 1 = NITSOL
 # 2 = SQRT(EPS)
 # otherwise, user-defined value
-dperturbationStrategy = 2
+dperturbationStrategy = 1
 
 # strategy for choosing the forcing term in Newton's method
 # 1 = choice 1 by Eisenstat/Walker
@@ -476,7 +477,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-12
+depsAbs = 1e-9
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -500,7 +501,7 @@ ssolvername = LinearSolver
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -612,7 +613,7 @@ sprecondName = LinearPrecond
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 0
+ioutputlevel = 2
 
 # norm to use for defect checking
 # 0 = Euclidian norm

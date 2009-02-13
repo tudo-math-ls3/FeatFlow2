@@ -23,43 +23,45 @@ defexpr: D12 = (COS(_ang)*_a11-SIN(_ang)*_a21)*SIN(_ang)+(COS(_ang)*_a12-SIN(_an
 defexpr: D21 = (SIN(_ang)*_a11+COS(_ang)*_a21)*COS(_ang)-(SIN(_ang)*_a12+COS(_ang)*_a22)*SIN(_ang)
 defexpr: D22 = (SIN(_ang)*_a11+COS(_ang)*_a21)*SIN(_ang)+(SIN(_ang)*_a12+COS(_ang)*_a22)*COS(_ang)
 
-# Specify the initial solution by logical expressions and solution values
+# Specify the initial solution
 [initial_solution]
 NCOMP
 1
 0.0
 
+# Specify the initial solution
 [exact_solution]
 NCOMP
 1
 0.0
 
-# Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
+# Specify the velocity field
+[velocityfield]
 NCOMP
 2
 0.0
 0.0
 
+# Specify the diffusion tensor
+[diffusiontensor]
+NCOMP
+4
+@D11
+@D12
+@D21
+@D22
+
 # Specify the right-hand side profile
 [rhs]
 NCOMP
 1
-0.0
-#-( -32*@D11*y*(1-y)+ ...
-#       @D12*(16*(1-x)*(1-y)-16*(1-x)*y-16*x*(1-y)+16*x*y)+ ...
-#       @D21*(16*(1-x)*(1-y)-16*(1-x)*y-16*x*(1-y)+16*x*y)+ ...
-#   -32*@D22*x*(1-x) )
+-( -32*@D11*y*(1-y)+ ...
+       @D12*(16*(1-x)*(1-y)-16*(1-x)*y-16*x*(1-y)+16*x*y)+ ...
+       @D21*(16*(1-x)*(1-y)-16*(1-x)*y-16*x*(1-y)+16*x*y)+ ...
+   -32*@D22*x*(1-x) )
 
 
 # Specify the boundary conditions for the primal problem
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
 [boundary_conditions_primal]
 NBCT
 2
