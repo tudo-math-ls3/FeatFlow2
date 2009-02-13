@@ -106,6 +106,20 @@ module codire_basic
 !</constantblock>
 
 
+!<constantblock description="Global type of target functional">
+
+  ! zero target functional
+  integer, parameter, public :: TFUNC_ZERO     = 0
+
+  ! volume integral target functional
+  integer, parameter, public :: TFUNC_VOLINTG  = 1
+
+  ! surface integral target functional
+  integer, parameter, public :: TFUNC_SURFINTG = 2
+
+!</constantblock>
+
+
 !<constantblock description="Global types of perturbation parameters">
 
   ! Perturbation parameter is chosen as in the NITSOL package
@@ -149,6 +163,9 @@ module codire_basic
     ! Type of the right-hand side
     integer :: irhstype
 
+    ! Type of the target functional
+    integer :: itargetfunctype
+
     ! Type of the element(s)
     integer :: ieltype
 
@@ -169,6 +186,9 @@ module codire_basic
 
     ! Function parser for the right-hand side vector
     type(t_fparser) :: rfparserRHS
+
+    ! Function parser for target functional
+    type(t_fparser) :: rfparserTargetFunc
 
     ! Timer for the solution process
     type(t_timer) :: rtimerSolution

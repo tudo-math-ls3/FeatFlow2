@@ -217,18 +217,50 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: rfparser
-    integer :: ielement
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dtime
+    integer :: ipoint, ielement, ndim
+    
     
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     rfparser => collct_getvalue_pars(rcollection,&
                                      trim(rcollection%SquickAccess(1)))
+   
+    ! This subroutine also assumes that the first quick access double
+    ! value holds the simulation time
+    dtime = rcollection%DquickAccess(1)
 
-    ! Evaluate all coefficients using the function parser
-    do ielement = 1, nelements
-      call fparser_evalFunction(rfparser, 1, 2, Dpoints(:,:,ielement),&
-                                Dcoefficients(1,:,ielement))
-    end do
+    if (dtime < 0.0) then
+
+      ! Evaluate all coefficients using the function parser
+      do ielement = 1, nelements
+        call fparser_evalFunction(rfparser, 1, 2, Dpoints(:,:,ielement),&
+                                  Dcoefficients(1,:,ielement))
+      end do
+
+    else
+
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      ! Set number of spatial dimensions
+      ndim = size(Dpoints, 1)
+      
+      do ielement = 1, nelements
+        do ipoint = 1, npointsPerElement
+          
+          ! Set values for function parser
+          Dvalue(1:ndim)   = Dpoints(:, ipoint, ielement)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(rfparser, 1, Dvalue, Dcoefficients(1,ipoint,ielement))
+        end do
+      end do
+
+    end if
+    
   end subroutine codire_coeffRHS
 
   ! ***************************************************************************
@@ -310,6 +342,7 @@ contains
     real(DP) :: dtime
     integer :: ipoint, ielement, ndim
     
+
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     rfparser => collct_getvalue_pars(rcollection,&
@@ -319,35 +352,35 @@ contains
     ! value holds the simulation time
     dtime = rcollection%DquickAccess(1)
 
-    ! Initialize values
-    Dvalue = 0.0_DP
-    Dvalue(NDIM3D+1) = dtime
+    if (dtime < 0.0) then
 
-    ! Set number of spatial dimensions
-    ndim = size(Dpoints, 1)
-
-    do ielement = 1, nelements
-      do ipoint = 1, npointsPerElement
-
-        ! Set values for function parser
-        Dvalue(1:ndim)   = Dpoints(:, ipoint, ielement)
-        
-        ! Evaluate function parser
-        call fparser_evalFunction(rfparser, 1, Dvalue, Dcoefficients(1,ipoint,ielement))
+      ! Evaluate all coefficients using the function parser
+      do ielement = 1, nelements
+        call fparser_evalFunction(rfparser, 1, 2, Dpoints(:,:,ielement),&
+                                  Dcoefficients(1,:,ielement))
       end do
-    end do
 
-!!$        x = Dpoints(1, ipoint, ielement)
-!!$        y = Dpoints(2, ipoint, ielement)
-!!$
-!!$        if (x .ge. 0.9 .and. x .le. 1.1) then
-!!$          Dcoefficients(:, ipoint, ielement) = 1.0_DP
-!!$        else
-!!$          Dcoefficients(:, ipoint, ielement) = 0.0_DP
-!!$        end if
+    else
+      
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      ! Set number of spatial dimensions
+      ndim = size(Dpoints, 1)
+      
+      do ielement = 1, nelements
+        do ipoint = 1, npointsPerElement
+          
+          ! Set values for function parser
+          Dvalue(1:ndim)   = Dpoints(:, ipoint, ielement)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(rfparser, 1, Dvalue, Dcoefficients(1,ipoint,ielement))
+        end do
+      end do
 
-
-
+    end if
     
   end subroutine codire_coeffTargetFuncVolInt
   
@@ -483,6 +516,11 @@ contains
 
     ! Check if the preconditioner has to be updated
     if (iand(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE) .eq. 0) return
+    
+    ! Remove update notifier for further calls. Depending on the
+    ! velocity, diffusion type it will be re-activited below.
+    rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
+                                      not(PROBLEV_MSPEC_UPDATE))
 
     ! Get parameters from collection which are required unconditionally
     transportMatrix = collct_getvalue_int(rcollection, 'transportmatrix')
@@ -498,6 +536,7 @@ contains
     
     idiffusiontype = collct_getvalue_int(rcollection, 'idiffusiontype')
     
+    ! Primal and dual mode are equivalent
     select case(idiffusiontype)
     case (DIFFUSION_ZERO)
       ! zero diffusion, clear the transport matrix
@@ -517,18 +556,27 @@ contains
         
         ! What kind of stabilisation should be applied?
         select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+
+        case (AFCSTAB_DMP)
+          ! Satisfy discrete maximum principle
+          call gfsc_buildDiffusionOperator(rproblemLevel%Rmatrix(coeffMatrix_S),&
+                                           .true., .true.,&
+                                           rproblemLevel%Rmatrix(transportMatrix))
+          
         case (AFCSTAB_SYMMETRIC)
           ! Check if stabilisation structure is initialised
           if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .eq. AFCSTAB_UNDEFINED)&
               call gfsc_initStabilisation(rproblemLevel%Rmatrix(coeffMatrix_S),&
                                           rproblemLevel%Rafcstab(diffusionAFC))
 
+          ! Satisfy discrete maximum principle and assemble stabilization structure
           call gfsc_buildDiffusionOperator(rproblemLevel%Rmatrix(coeffMatrix_S),&
                                            .true., .true.,&
                                            rproblemLevel%Rmatrix(transportMatrix),&
                                            rproblemLevel%Rafcstab(diffusionAFC))
 
         case DEFAULT
+          ! Compute the standard Galerkin approximation
           call gfsc_buildDiffusionOperator(rproblemLevel%Rmatrix(coeffMatrix_S),&
                                            .false., .true.,&
                                            rproblemLevel%Rmatrix(transportMatrix))
@@ -536,6 +584,7 @@ contains
 
       else   ! diffusionAFC > 0
 
+        ! Compute the standard Galerkin approximation
         call gfsc_buildDiffusionOperator(rproblemLevel%Rmatrix(coeffMatrix_S),&
                                          .false., .true.,&
                                          rproblemLevel%Rmatrix(transportMatrix))
@@ -546,6 +595,10 @@ contains
     case (DIFFUSION_VARIABLE)
       print *, "Variable diffusion matrices are yet not implemented!"
       stop
+
+      ! Set update notification in problem level structure
+      rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                       PROBLEV_MSPEC_UPDATE)
       
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
@@ -583,7 +636,8 @@ contains
 
     else   ! convectionAFC > 0
 
-      bStabilize = .false.; bbuildAFC = .false.
+      bStabilize = .false.
+      bbuildAFC  = .false.
 
     end if   ! convectionAFC > 0
 
@@ -595,13 +649,16 @@ contains
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
         
+
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP)
         ! linear velocity
+
         velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
         call codire_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
         if (bbuildAFC) then
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
@@ -624,7 +681,9 @@ contains
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC))
           end select
-        else
+          
+        else   ! bbuildAFC = false
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
@@ -644,82 +703,141 @@ contains
                 rsol, codire_calcPrimalConvConst3d, bisDivergenceFree,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
           end select
+          
+        end if
+
+        if (abs(ivelocitytype) .eq. VELOCITY_TIMEDEP) then
+          ! Set update notification in problem level structure
+          rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                       PROBLEV_MSPEC_UPDATE)
         end if
         
+
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers' equation in space-time
+
         if (bbuildAFC) then
+          
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsol, codire_calcConvectionBurgersSpT2d, bisDivergenceFree,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC))
-        else
+
+        else   ! bbuildAFC = no
+
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsol, codire_calcConvectionBurgersSpT2d, bisDivergenceFree,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
+
         end if
+        
+        ! Set update notification in problem level structure
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     PROBLEV_MSPEC_UPDATE)
+
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
+
         if (bbuildAFC) then
+
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsol, codire_calcConvectionBuckLevSpT2d, bisDivergenceFree,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC))
-        else
+
+        else   ! bbuildAFC = no
+
+
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsol, codire_calcConvectionBurgersSpT2d, bisDivergenceFree,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
+
         end if
+
+        ! Set update notification in problem level structure
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     PROBLEV_MSPEC_UPDATE)
+
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers' equation in 1D
+
         if (bbuildAFC) then
+
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rsol, codire_calcConvectionBurgers1d, bisDivergenceFree,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC))
-        else
+
+        else   ! bbuildAFC = no
+
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rsol, codire_calcConvectionBurgers1d, bisDivergenceFree,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
+
         end if
+
+        ! Set update notification in problem level structure
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     PROBLEV_MSPEC_UPDATE)
         
+
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers' equation in 2D
+
         if (bbuildAFC) then
+
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsol, codire_calcConvectionBurgers2d, bisDivergenceFree,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC))
-        else
+
+        else   ! bbuildAFC = no
+
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsol, codire_calcConvectionBurgers2d, bisDivergenceFree,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
+
         end if
+
+        ! Set update notification in problem level structure
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     PROBLEV_MSPEC_UPDATE)
+
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
+
         if (bbuildAFC) then
+
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rsol, codire_calcConvectionBuckLev1d, bisDivergenceFree,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC))
-        else
+
+        else   ! bbuildAFC = no
+
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rsol, codire_calcConvectionBuckLev1d, bisDivergenceFree,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
+
         end if
+
+        ! Set update notification in problem level structure
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     PROBLEV_MSPEC_UPDATE)
+
 
       case DEFAULT
         call output_line('Invalid velocity profile!',&
@@ -727,19 +845,22 @@ contains
         call sys_halt()
       end select
 
-    else
+    else   ! primaldual /= 1
 
       select case(abs(ivelocitytype))
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
         
+
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP)
         ! linear velocity
+
         velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
         call codire_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
         if (bbuildAFC) then
+
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
@@ -762,7 +883,9 @@ contains
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC))
           end select
-        else
+
+        else   ! bbuildAFC = false
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
@@ -782,6 +905,13 @@ contains
                 rsol, codire_calcDualConvConst3d, bisDivergenceFree,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
           end select
+
+        end if
+
+        if (abs(ivelocitytype) .eq. VELOCITY_TIMEDEP) then
+          ! Set update notification in problem level structure
+          rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                       PROBLEV_MSPEC_UPDATE)
         end if
         
 !!$      case (VELOCITY_BURGERS_SPACETIME)
@@ -799,6 +929,7 @@ contains
 !!$      case (VELOCITY_BUCKLEV1D)
 !!$        ! nonlinear Buckley-Leverett equation in 1D
         
+
       case DEFAULT
         call output_line('Invalid velocity profile!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPreconditioner')
@@ -806,14 +937,7 @@ contains
       end select
 
     end if
-
-    ! Remove update notifier for constant velocity
-    if (abs(ivelocitytype) .eq. VELOCITY_CONSTANT) then
-      rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
-                                        not(PROBLEV_MSPEC_UPDATE))
-    end if
-    
-    
+        
     !---------------------------------------------------------------------------
     ! Assemble the global system operator
     !---------------------------------------------------------------------------
@@ -1150,32 +1274,19 @@ contains
     end if
     
     
-    ! Check if the Jacobian operator needs to be generated
+    ! Check if the Jacobian operator has extended sparsity pattern
+    
     if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(jacobianMatrix))) then
-      
-      templateMatrix  = collct_getvalue_int(rcollection, 'templateMatrix')
       ijacobianFormat = collct_getvalue_int(rcollection, 'ijacobianFormat')
-      
       if (ijacobianFormat .eq. 0) then
-        
         bisExactStructure   = .true.
         bisExtendedSparsity = .false.
-
-        ! Adopt the standard sparsity pattern from the template matrix
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                    rproblemLevel%Rmatrix(jacobianMatrix),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       else
-
         bisExactStructure   = .false.
         bisExtendedSparsity = .true.
-
-        ! Extend the standard sparsity pattern of the template matrix
-        call afcstab_generateExtSparsity(rproblemLevel%Rmatrix(templateMatrix),&
-                                         rproblemLevel%Rmatrix(jacobianMatrix))
       end if
     end if
-    
+        
     
     !---------------------------------------------------------------------------
     ! Assemble the global system operator for the high-/low-order contribution
@@ -2086,13 +2197,17 @@ contains
     integer :: ieq, neq, idim, ndim, nlmin
     integer :: velocityfield
 
+    
+    ! Check if the velocity "vector" needs to be generated explicitly
+    if ((rappDescriptor%ivelocitytype .ne. VELOCITY_CONSTANT) .and.&
+        (rappDescriptor%ivelocitytype .ne. VELOCITY_TIMEDEP)) return
+
+    ! Get parameter from collection
+    velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
 
     ! Set minimum problem level
     nlmin = rproblemLevel%ilev
     if (present(nlminOpt)) nlmin = nlminOpt
-
-    ! Get parameter from collection
-    velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
 
     ! Initialize variable values
     Dvalue = 0.0_DP
@@ -2138,7 +2253,7 @@ contains
         end do
       end do
 
-      ! Specify velocity field as updated
+      ! Set update notification in problem level structure
       p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec,&
                                          PROBLEV_MSPEC_UPDATE)
       
