@@ -464,13 +464,14 @@ module element
   ! non-parametric, integral mean value based
   integer(I32), parameter, public :: EL_EM30_3D = EL_Q1T_3D + EL_NONPARAMETRIC + 2**16
   
-  ! ID of rotated triquadratic nonconforming quadrilateral FE, Q2~.
+  ! ID of nonconforming quadrilateral FE, Q2~.
   integer(I32), parameter, public :: EL_Q2T_3D  = EL_3D + 50
   integer(I32), parameter, public :: EL_E050_3D = EL_Q2T_3D
 
-  ! ID of nonconforming parametric linear P1 element on a hexahedral
-  ! element, given by function value in the midpoint and the three
-  ! derivatives.
+  ! ID of nonconforming quadrilateral FE, Q2~, non-parametric
+  integer(I32), parameter, public :: EL_EM50_3D = EL_Q2T_3D + EL_NONPARAMETRIC
+
+  ! ID of discontinous parametric linear hexahedron FE, P1
   integer(I32), parameter, public :: EL_QP1_3D  = EL_3D + 21
 
 !</constantblock>
@@ -527,6 +528,11 @@ module element
   integer(I32), parameter, public :: EL_EB50    = EL_Q2TB
   integer(I32), parameter, public :: EL_EB50_2D = EL_EB50
   
+  ! ID of $Q_2$ element with hierarchical basis functions.
+  ! WARNING: Do not use this element, as it is highly experimental and is not
+  ! yet supported by the majority of the kernel routines!
+  integer(I32), parameter, public :: EL_Q2H_2D = EL_Q2_2D + 2**16
+  
   ! Isoparametric $Q_2$ element with one edge mapped nonlinear from the reference
   ! to the real element. Additionally, one bit in the property bitfield must
   ! be set to identify the edge.
@@ -551,8 +557,10 @@ module element
 
 !<constantblock description="maximal values">
 
-  ! Maximum number of basic functions = maximum number of
+  ! DEPRECATED: Maximum number of basic functions = maximum number of
   ! local DOF's per element.
+  ! Do not use this constant anymore - determine the number of local basis
+  ! functions dynamically using the 'elem_igetNDofLoc' routine!
   integer, parameter, public :: EL_MAXNBAS = 21
   
   ! Maximum number of derivatives. Corresponds to DER_MAXNDER.
@@ -652,6 +660,8 @@ contains
       elem_igetID = EL_Q1_2D
     case("EL_Q2","EL_Q2_2D")
       elem_igetID = EL_Q2_2D
+    case("EL_Q2H_2D")
+      elem_igetID = EL_Q2H_2D
     case("EL_Q3","EL_Q3_2D")
       elem_igetID = EL_Q3_2D
     case("EL_QP1","EL_QP1_2D")
@@ -2270,6 +2280,9 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
+
+    case (EL_Q2H_2D)
+      call elem_eval_Q2H_2D(ieltyp, revalElementSet, Bder, Dbas)
     
     case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
       call elem_EM30_sim (ieltyp, revalElementSet%p_Dcoords, &
@@ -2372,6 +2385,9 @@ contains
         
     case (EL_E050_3D)
       call elem_eval_E050_3D(ieltyp, revalElementSet, Bder, Dbas)
+        
+    case (EL_EM50_3D)
+      call elem_eval_EM50_3D(ieltyp, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 3D pyramid elements

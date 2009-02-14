@@ -1211,4 +1211,400 @@ contains
 
   end subroutine 
 
+
+  !****************************************************************************
+  !****************************************************************************
+  
+  ! -------------- NEW ELEMENT INTERFACE IMPLEMENTATIONS FOLLOW --------------
+  
+  !****************************************************************************
+  !****************************************************************************
+
+
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_P1_1D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(IN)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(IN)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(IN)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The P1_1D element is specified by two polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  !
+  ! { 1, x }
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,2:
+  ! {
+  !   For all j = 1,...,2:
+  !   {
+  !     Pi(vj) = kronecker(i,j)
+  !   }
+  ! }
+  ! 
+  ! With:
+  ! vj being the j-th local corner vertice of the line
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  !
+  ! P1(x) = 1/2 * (1 - x)
+  ! P2(x) = 1/2 * (1 + x)
+
+  ! Local variables
+  real(DP) :: ddet,dx
+  integer :: i,j
+  
+    ! Calculate function values?
+    if(Bder(DER_FUNC1D)) then
+      
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          
+          ! Evaluate basis functions
+          Dbas(1,DER_FUNC1D,i,j) = 0.5_DP*(1.0_DP-dx)
+          Dbas(2,DER_FUNC1D,i,j) = 0.5_DP*(1.0_DP+dx)
+        
+        end do ! i
+      
+      end do ! j
+      
+    end if
+    
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV1D_X)) then
+
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+
+          ! X-derivatives on real element
+          Dbas(1,DER_DERIV1D_X,i,j) = -0.5_DP*ddet
+          Dbas(2,DER_DERIV1D_X,i,j) =  0.5_DP*ddet
+
+        end do ! i
+
+      end do ! j
+      
+    end if
+  
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_P2_1D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(IN)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(IN)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(IN)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The P2_1D element is specified by three polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  !
+  ! { 1, x, x^2 }
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,3:
+  ! {
+  !   For all j = 1,...,2:
+  !   {
+  !     Pi(vj) = kronecker(i,j)
+  !   }
+  !   Pi(0) = kronecker(i,3)
+  ! }
+  ! 
+  ! With:
+  ! vj being the j-th local corner vertice of the line
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  !
+  ! P1(x) = 1/2 * x * (1 - x)
+  ! P2(x) = 1/2 * x * (1 + x)
+  ! P3(x) = 1 - x^2
+
+  ! Local variables
+  real(DP) :: ddet,dx
+  integer :: i,j
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC1D)) then
+      
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          
+          ! Evaluate basis functions
+          Dbas(1,DER_FUNC1D,i,j) = 0.5_DP*dx*(1.0_DP-dx)
+          Dbas(2,DER_FUNC1D,i,j) = 0.5_DP*dx*(1.0_DP+dx)
+          Dbas(3,DER_FUNC1D,i,j) = 1.0_DP - dx*dx
+        
+        end do ! i
+      
+      end do ! j
+      
+    end if
+    
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV1D_X)) then
+
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+
+          ! X-derivatives on real element
+          Dbas(1,DER_DERIV1D_X,i,j) = (dx - 0.5_DP)*ddet
+          Dbas(2,DER_DERIV1D_X,i,j) = (dx + 0.5_DP)*ddet
+          Dbas(3,DER_DERIV1D_X,i,j) = -2.0_DP*dx*ddet
+
+        end do ! i
+
+      end do ! j
+      
+    end if
+  
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_S31_1D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(IN)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(IN)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(IN)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The S31_1D element is specified by four polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  !
+  ! { 1, x, x^2, x^3 }
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,4:
+  ! {
+  !   For all j = 1,...,2:
+  !   {
+  !     Pi  (vj) = kronecker(i,j)
+  !     Pi_x(vj) = kronecker(i,j+2)
+  !   }
+  ! }
+  ! 
+  ! With:
+  ! vj being the j-th local corner vertice of the line
+  ! Pi_x being the first derivative of Pi
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  !
+  !  P1(x) = 1/4 * x * (x^2 - 3) + 1/2
+  !  P2(x) = 1/4 * x * (3 - x^2) + 1/2
+  !  P3(x) = 1/4 * (x + 1) * (x - 1)^2
+  !  P4(x) = 1/4 * (x - 1) * (x + 1)^2
+  !
+
+  ! Local variables
+  real(DP) :: ddet,dx
+  integer :: i,j
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC1D)) then
+      
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          
+          ! Get the determinant for this point
+          ddet = reval%p_Ddetj(i,j)
+          
+          ! Evaluate basis functions
+          Dbas(1,DER_FUNC1D,i,j) =  0.25_DP*dx*(dx*dx - 3.0_DP) + 0.5_DP
+          Dbas(2,DER_FUNC1D,i,j) = -0.25_DP*dx*(dx*dx - 3.0_DP) + 0.5_DP
+          Dbas(3,DER_FUNC1D,i,j) = ddet*0.25_DP*(dx + 1.0_DP)*(dx - 1.0_DP)**2
+          Dbas(4,DER_FUNC1D,i,j) = ddet*0.25_DP*(dx - 1.0_DP)*(dx + 1.0_DP)**2
+        
+        end do ! i
+      
+      end do ! j
+      
+    end if
+    
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV1D_X)) then
+
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+          
+          ! X-derivatives on real element
+          Dbas(1,DER_DERIV1D_X,i,j) =  0.75_DP*(dx*dx - 1.0_DP)*ddet
+          Dbas(2,DER_DERIV1D_X,i,j) = -0.75_DP*(dx*dx - 1.0_DP)*ddet
+          Dbas(3,DER_DERIV1D_X,i,j) = 0.25_DP*(dx*(3.0_DP*dx - 1.0_DP) - 1.0_DP)
+          Dbas(4,DER_DERIV1D_X,i,j) = 0.25_DP*(dx*(3.0_DP*dx + 1.0_DP) - 1.0_DP)
+
+        end do ! i
+
+      end do ! j
+      
+    end if
+  
+  end subroutine
+
 end module
