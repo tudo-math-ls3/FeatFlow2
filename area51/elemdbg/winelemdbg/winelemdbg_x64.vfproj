@@ -22,6 +22,8 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>
 	<Files>
+		<Filter Name="Data Files" Filter="dat">
+		<File RelativePath="..\data\elemdbg.dat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="1D">
 		<File RelativePath="..\src\elemdbg1d_callback.f90"/>
