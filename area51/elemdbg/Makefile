@@ -32,7 +32,7 @@ vpath %.inc include \
 vpath %.h $(MPI_HOME)/include
 
 # The name of the final executable
-EXEC=poisson-$(ID)
+EXEC=elemdbg-$(ID)
 
 # used libraries
 FEATLIB= minisplib sysutils umfpack4 amd
