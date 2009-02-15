@@ -1,0 +1,50 @@
+
+# Name of the configuration section that is to be loaded
+SCONFIGSECTION = EXAMPLE
+
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Example Section
+[EXAMPLE]
+
+# Test that is to be loaded (non-optional)
+# 101 -> 1D Element-Debugger: L2-projection, SINUS solution
+# 102 -> 1D Element-Debugger: Poisson, SINUS solution
+# 201 -> 2D Element-Debugger: L2-projection, SINUS solution
+# 202 -> 2D Element-Debugger: Poisson, SINUS solution
+# 301 -> 3D Element-Debugger: L2-projection, SINUS solution
+# 302 -> 3D Element-Debugger: Poisson, SINUS solution
+ITEST = 202
+
+# Minimum and maximum levels (non-optional)
+NLMIN = 2
+NLMAX = 6
+
+# Element identifier (non-optional)
+SELEMENT = EL_EM50_2D
+
+# Cubature rule identifier (non-optional)
+SCUBATURE = G5_2D
+
+# Mesh distortion parameter (default: 0.0)
+#DMESHDISTORT = 0.2
+
+# Solver that is to be used (default: 0)
+# 0 -> UMFPACK4 solver
+# 1 -> CG-SSOR solver
+# 2 -> BiCGStab-ILU(0) solver
+ISOLVER = 1
+
+# Relaxation parameter for CG-SSOR (default: 1.2)
+DRELAX = 1.2
+
+# Output Level of solver (default: 0)
+IOUTPUT = 1
+
+# Maximum number of iterations for iterative solvers (default: 1000)
+NMAXITER = 1000
+
+# Relative tolerance for iterative solvers (default: 1e-8)
+DEPSREL = 1E-8
+
+# Absolute tolerance for iterative solvers (default: 1e-11)
+DEPSABS = 1e-11

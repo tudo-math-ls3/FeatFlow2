@@ -13,8 +13,13 @@ program elemdbg
   use elemdbg1d_test1
   use elemdbg2d_test1
   use elemdbg3d_test1
+  use paramlist
   
   implicit none
+  
+  type(t_parlist) :: rparam
+  character(LEN=64) :: sConfigSection
+  integer :: itest
   
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
@@ -28,15 +33,40 @@ program elemdbg
   ! The very second thing in every program: 
   ! Initialise the FEAT 2.0 storage management: 
   call storage_init(999, 100)
- 
-  ! 1D Element-Debugger
-  call elemdbg1d_1()
+  
+  ! Read in parameter list
+  call parlst_init(rparam)
+  call parlst_readfromfile(rparam, './data/elemdbg.dat')
+  
+  ! Get config section name
+  call parlst_getvalue_string(rparam, '', 'SCONFIGSECTION', sConfigSection, '')
+  
+  ! Get dimension
+  call parlst_getvalue_int(rparam, sConfigSection, 'ITEST', itest, -1)
 
-  ! 2D Element-Debugger
-  call elemdbg2d_1()
+  ! Call the corresponding debugger
+  select case(itest)
+  case(101,102)
+    ! 1D Element-Debugger, test 1
+    call elemdbg1d_1(rparam,sConfigSection,itest)
 
-  ! 3D Element-Debugger
-  call elemdbg3d_1()
+  case(201,202)
+    ! 2D Element-Debugger, test 1
+    call elemdbg2d_1(rparam,sConfigSection,itest)
+
+  case(301,302)
+    ! 3D Element-Debugger, test 1
+    call elemdbg3d_1(rparam,sConfigSection,itest)
+  
+  case default
+    ! Error
+    call output_line('Invalid ITEST parameter or config section name',&
+                     OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg')
+    
+  end select
+  
+  ! Release parameter list
+  call parlst_done (rparam)
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
