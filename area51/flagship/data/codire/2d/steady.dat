@@ -4,14 +4,30 @@
 #                                                                              #
 #                         Stationary convection-diffusion                      #
 #                                                                              #
+#  Benchmark no.1 and no.2                                                     #
+#                                                                              #
 #  From:   D. Kuzmin, M. Möller, S. Turek. Algebraic Flux Correction I.        #
 #          Scalar Conservation Laws, in: D. Kuzmin, R. Löhner, S. Turek (eds.) #
 #          Flux-Corrected Transport, Principles, Algorithms, and Applications  #
 #          Springer, Germany (2005); pages 155-206.                            #
 #                                                                              #
+#                                                                              #
+# Benchmark no.3                                                               #
+#                                                                              #
+# From:    R. Hartmann. Adaptive FE Methods for Conservation Laws.             #
+#          In Heinrich Freistühler and Gerald Warnecke, eds.                   #
+#          Hyperbolic problems: theory, numerics, applications:                #
+#          Eighth international conference in Magdeburg, 2000.                 #
+#          International series of numerical mathematics 141: 495-503.         #
+#          Birkhäuser, Basel 2001.                                             #
+#                                                                              #
 # Benchmark no.1 : velocity v = (cos 10deg, sin 10deg), diffusion d=1e-3       #
 #                                                                              #
 # Benchmark no.2 : velocity v = (cos 60deg, sin 60deg), diffusion d=1e-8       #
+#                                                                              #
+# Benchmark no.3 : velocity v = v(x,y)/|v(x,y)|,        diffusion d=0          #
+#                               v(x,y) = (y,1-x)   for x<1  and                #
+#                               v(x,y) = (2-y,x-1) otherwise                   #
 #                                                                              #
 ################################################################################
 
@@ -27,7 +43,7 @@ application = codire
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/codire/2d/steady_NW2.indat
+indatfile = data/codire/2d/steady_NW3.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = boundary_conditions_primal
@@ -61,7 +77,7 @@ imassantidiffusion = 0
 # 3 = Burgers equation in space-time
 # 4 = Buckley Leverett in space-time
 # 6 = Burgers' equation in 2D
-ivelocitytype = 2
+ivelocitytype = 1
 
 # section name of velocity field
 svelocityname = velocityfield
@@ -71,7 +87,7 @@ svelocityname = velocityfield
 # 1 = isotropic diffusion
 # 2 = anisotropic diffusion
 # 3 = variable diffusion
-idiffusiontype = 2
+idiffusiontype = 0
 
 # section name of diffusion tensor
 sdiffusionname = diffusiontensor
@@ -87,7 +103,7 @@ sreactionname = reactionterm
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 2
+irhstype = 0
 
 # section name of right-hand side vector
 srhsname = rhs
@@ -114,7 +130,7 @@ sexactsolutionname = exact_solution
 # 0 = no target variable
 # 1 = volume integral
 # 2 = surface integral
-itargetfunctype = 0
+itargetfunctype = 1
 
 # section name of target functional
 stargetfuncname = targetfunctional
@@ -122,10 +138,12 @@ stargetfuncname = targetfunctional
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/square_01x01_quads.prm
+prmfile = grids/2d/rect_2x1.prm
+#prmfile = grids/2d/square_01x01_quads.prm
 
 # file which contains the triangulation
-trifile = grids/2d/square_01x01_quads.tri
+trifile = grids/2d/rect_2x1.tri
+#trifile = grids/2d/square_01x01_quads.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -134,7 +152,7 @@ trifile = grids/2d/square_01x01_quads.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-ieltype = 11
+ieltype = -1
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -256,7 +274,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime =
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 1.0
@@ -304,10 +322,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 5
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -444,7 +462,7 @@ nmaxIterations = 2000
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 2
+iprecond = 3
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -589,7 +607,7 @@ depsStag = 0.0
 isolver = 4
 
 # dimension of the Krylov subspace for FGMRES method
-nkrylov = 15
+nkrylov = 10
 
 # tolerance of (M)ILU-preconditioner
 depsILU = 1e-12
@@ -641,7 +659,7 @@ nmaxIterations = 100
 isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
-nkrylov = 10
+nkrylov = 100
 
 # linear relaxation parameter
 domega = 1.0
@@ -650,7 +668,7 @@ domega = 1.0
 depsAbs = 1e-14
 
 # relative tolerance for residual
-depsRel = 1e-1
+depsRel = 1e-3
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -689,7 +707,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 0
+nadapt = 3
 
 # time for grid adaptivity
 dtimeadapt = 0.0
@@ -704,10 +722,10 @@ nsubdividemax = 5
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.05
+drefinementTolerance = 1e-1
 
 # coarsening tolerance
-dcoarseningTolerance = 0.01
+dcoarseningTolerance = 1e-2
 
 
 ################################################################################
@@ -721,25 +739,19 @@ dcoarseningTolerance = 0.01
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-ierrorestimator = 3
+ierrorestimator = 1
 
 # type or grid indicator
 # 0 = as is
 # 1 = equidistribution
 # 2 = logarithmic equidistribution
-igridindicator = 1
+igridindicator = 2
 
 # noise filter
 dnoisefilter = 0.01
 
 # absolute filter
 dabsfilter = 0.001
-
-# refinement tolerance
-drefinementTolerance = 0.05
-
-# coarsening tolerance
-dcoarseningTolerance = 0.01
 
 # number of protection layers
 nprotectLayers = 0

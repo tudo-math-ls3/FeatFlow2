@@ -64,7 +64,7 @@ svelocityname = velocityfield
 # 1 = isotropic diffusion
 # 2 = anisotropic diffusion
 # 3 = variable diffusion
-idiffusiontype = 2
+idiffusiontype = 0
 
 # section name of diffusion tensor
 sdiffusionname = diffusiontensor
@@ -80,7 +80,7 @@ sreactionname = reactionterm
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 2
+irhstype = 0
 
 # section name of right-hand side vector
 srhsname = rhs
@@ -249,7 +249,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime =
+dfinalTime = 0.05
 
 # initial time step size
 dinitialStep = 0.001
@@ -297,10 +297,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 5
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -437,7 +437,7 @@ nmaxIterations = 100
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 2
+iprecond = 3
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -727,12 +727,6 @@ dnoisefilter = 0.2
 
 # absolute filter
 dabsfilter = 0.001
-
-# refinement tolerance
-drefinementTolerance = 0.01
-
-# coarsening tolerance
-dcoarseningTolerance = 0.001
 
 # number of protection layers
 nprotectLayers = 2

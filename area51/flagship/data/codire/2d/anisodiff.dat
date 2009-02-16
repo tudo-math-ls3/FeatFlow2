@@ -144,7 +144,7 @@ imatrixformat = 9
 # type of Jacobian matrix
 # 0 = standard sparsity pattern
 # 1 = extended sparsity pattern
-ijacobianformat = 1
+ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -731,12 +731,6 @@ dnoisefilter = 0.2
 
 # absolute filter
 dabsfilter = 0.001
-
-# refinement tolerance
-drefinementTolerance = 1e-2
-
-# coarsening tolerance
-dcoarseningTolerance = 1e-3
 
 # number of protection layers
 nprotectLayers = 2

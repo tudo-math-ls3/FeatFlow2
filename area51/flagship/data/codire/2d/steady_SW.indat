@@ -1,35 +1,44 @@
 # -*- mode: sh; -*-
-#
-# Input data for Convection of a step function benchmark
-#
 
-# Specify the initial solution by logical expressions and solution values
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                         Stationary convection-diffusion                      #
+#                                                                              #
+#  From:   D. Kuzmin, M. Möller, S. Turek. Algebraic Flux Correction I.        #
+#          Scalar Conservation Laws, in: D. Kuzmin, R. Löhner, S. Turek (eds.) #
+#          Flux-Corrected Transport, Principles, Algorithms, and Applications  #
+#          Springer, Germany (2005); pages 155-206.                            #
+#                                                                              #
+# Benchmark no.1 : velocity v = (cos 10deg, sin 10deg), diffusion d=1e-3       #
+#                                                                              #
+################################################################################
+
+defconst: ang = 10
+
+# Specify the initial solution
 [initial_solution]
 NCOMP
 1
 if(y>=0.5,1-x,0)
 
-[exact_solution]
-NCOMP
-1
-if(y>=0.5,1-x,0)
 
-# Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
+# Specify the velocity field
+[velocityfield]
 NCOMP
 2
-0.98480775301221
-0.17364817766693
+COS(_ang*_pi/180)
+SIN(_ang*_pi/180)
+
+
+# Specify the diffusion tensor
+[diffusiontensor]
+NCOMP
+1
+1e-3
 
 
 # Specify the boundary conditions for the primal problem
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
 [boundary_conditions_primal]
 NBCT
 1
@@ -44,6 +53,7 @@ PARAMETERS
 3.0  T  0
 3.5  T  1   1.0
 4.0  T  1   0.0
+
 
 # Specify the boundary conditions for the primal problem
 [boundary_conditions_dual]
