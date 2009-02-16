@@ -6280,7 +6280,7 @@ p_InodalPropertyDest = -4711
       ! Generate boundary information
       call genRawBoundary2D (rtriaDest)
 
-      ! If we have boudary information, we can extract the parameter values
+      ! If we have boundary information, we can extract the parameter values
       ! of the vertices on the physical boundary.    
       if (present(rboundary)) then
 
@@ -6879,7 +6879,7 @@ p_InodalPropertyDest = -4711
     ! Generate basic boundary information
     call genRawBoundary2D (rtriaDest)
   
-    ! If we have boudary information, we can extract the parameter values
+    ! If we have boundary information, we can extract the parameter values
     ! of the vertices on the physical boundary.    
     if (rtriangulation%h_DvertexParameterValue .ne. ST_NOHANDLE) then
 
@@ -11702,7 +11702,7 @@ p_InodalPropertyDest = -4711
     
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IelementsAtBoundary .eq. ST_NOHANDLE) then
-      ! We have as many elements on the boudary as vertices!
+      ! We have as many elements on the boundary as vertices!
       ! Initialise the array with zero to give proper values for elements on a
       ! possible 'blind' boundary component -- as we don't calculate elements
       ! adjacent to vertices on the 'blind' BC!
@@ -11824,7 +11824,7 @@ p_InodalPropertyDest = -4711
     
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IboundaryVertexPos .eq. ST_NOHANDLE) then
-      ! We have as many elements on the boudary as vertices!
+      ! We have as many elements on the boundary as vertices!
       Isize = (/2,rtriangulation%NVBD/)
       call storage_new2D ('tria_genBoundaryVertexPos1D2D', 'KVBDI', &
           Isize, ST_INT, &
@@ -12308,7 +12308,7 @@ p_InodalPropertyDest = -4711
     
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IedgesAtBoundary .eq. ST_NOHANDLE) then
-      ! We have as many elements on the boudary as vertices!
+      ! We have as many elements on the boundary as vertices!
       call storage_new ('tria_genEdgesAtBoundary2D', 'KMBD', &
           rtriangulation%NVBD, ST_INT, &
           rtriangulation%h_IedgesAtBoundary, ST_NEWBLOCK_NOINIT)
@@ -12450,7 +12450,7 @@ p_InodalPropertyDest = -4711
     
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_DedgeParameterValue .eq. ST_NOHANDLE) then
-      ! We have as many elements on the boudary as vertices!
+      ! We have as many elements on the boundary as vertices!
       call storage_new ('tria_genEdgeParameterValue2D', 'KMID', &
           rtriangulation%NVBD, ST_DOUBLE, &
           rtriangulation%h_DedgeParameterValue, ST_NEWBLOCK_NOINIT)
@@ -12604,7 +12604,7 @@ p_InodalPropertyDest = -4711
     
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IboundaryEdgePos .eq. ST_NOHANDLE) then
-      ! We have as many elements on the boudary as vertices!
+      ! We have as many elements on the boundary as vertices!
       Isize = (/2,rtriangulation%NMBD/)
       call storage_new2D ('tria_genBoundaryVertexPos2D', 'KEBDI', &
           Isize, ST_INT, &

@@ -68,7 +68,7 @@
 !#      RfilterChain(3)%itoL20component = 3
 !#
 !#    The above initialisation sets up a filter chain the implementation 
-!#    of Dirichlet boundary conditions on the real boudary and on 
+!#    of Dirichlet boundary conditions on the real boundary and on 
 !#    fictitious boundary components to a vector and filters the 3rd 
 !#    component of a block vector into the space $L^2_0$.
 !#

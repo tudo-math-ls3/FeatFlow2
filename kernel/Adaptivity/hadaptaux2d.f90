@@ -4150,7 +4150,7 @@ contains
       
       ! Get parameter values of the boundary nodes
       if (btree_searchInTree(rhadapt%rBoundary(ibct), i1, ipred) .eq. BTREE_NOT_FOUND) then
-        call output_line('Unable to find first vertex in boudary data structure!',&
+        call output_line('Unable to find first vertex in boundary data structure!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         call sys_halt()
       end if
@@ -4158,7 +4158,7 @@ contains
       dvbdp1 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
       
       if (btree_searchInTree(rhadapt%rBoundary(ibct), i2, ipred) .eq. BTREE_NOT_FOUND) then
-        call output_line('Unable to find second vertex in boudary data structure!',&
+        call output_line('Unable to find second vertex in boundary data structure!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         call sys_halt()
       end if

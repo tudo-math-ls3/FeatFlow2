@@ -1127,7 +1127,7 @@ C Structure is now standard FEAT style
 ***********************************************************************
 * Generate/release extended fictitious boundary information arrays
 *
-* This routine builds up the extended fictitious boudary information
+* This routine builds up the extended fictitious boundary information
 * arrays KFBVT/KFBMT from the array KXNPR. TRIA must be an extended
 * triangulation structure. If the arrays KFBVT/KFBMT exist, they are
 * overwritten.

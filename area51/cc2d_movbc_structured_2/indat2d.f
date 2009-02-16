@@ -361,7 +361,7 @@ C     =================================================================
 *    INPRN  - Number of the boundary component, DPAR1/DPAR2 refer to.
 *    DPAR1,DPAR2
 *           - Parameter values of the boundary segments that should be
-*             treated as Neumann boudary
+*             treated as Neumann boundary
 ************************************************************************
 
       SUBROUTINE NEUDAT(INPART,INPRN,DPARN1,DPARN2,TIMENS,

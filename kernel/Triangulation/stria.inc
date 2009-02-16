@@ -315,7 +315,7 @@
 !             distribution of vertices in corners, on edges or on 
 !             elements.
 !   NFBVT   - Number of fictitious boundary vertices; normally = 0
-!   NFBMT   - Number of fictitious boudary edges; normally = 0
+!   NFBMT   - Number of fictitious boundary edges; normally = 0
 !
 ! Optional Arrays:
 ! ----------------

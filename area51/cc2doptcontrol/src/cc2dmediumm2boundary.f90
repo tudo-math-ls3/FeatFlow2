@@ -117,7 +117,7 @@ contains
       rproblem%RlevelInfo(i)%rtempVector2%p_rdiscreteBC => p_rdiscreteBC
       rproblem%RlevelInfo(i)%rtempVector3%p_rdiscreteBC => p_rdiscreteBC
       
-      ! The same for the fictitious boudary boundary conditions.
+      ! The same for the fictitious boundary boundary conditions.
       p_rdiscreteFBC => rproblem%RlevelInfo(i)%p_rdiscreteFBC
       rproblem%RlevelInfo(i)%rtempVector1%p_rdiscreteBCfict => p_rdiscreteFBC
       rproblem%RlevelInfo(i)%rtempVector2%p_rdiscreteBCfict => p_rdiscreteFBC

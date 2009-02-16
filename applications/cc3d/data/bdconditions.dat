@@ -3,7 +3,7 @@
 ###############
 
 # At first we define a list of expressions that can be evaluated
-# on the boudary. The number in braces "(n)" specifies
+# on the boundary. The number in braces "(n)" specifies
 # how many expressions are defined here. The following n lines define
 # n constant values in the form
 #   'name' type value

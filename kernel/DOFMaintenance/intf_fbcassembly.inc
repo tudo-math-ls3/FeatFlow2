@@ -60,7 +60,7 @@
     !
     ! The number of structures in this array depend on what to evaluate:
     !
-    ! For Dirichlet boudary:
+    ! For Dirichlet boundary:
     !   revaluation contains as many entries as Icomponents; every entry in
     !   Icomponent corresponds to one entry in revaluation
     !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 

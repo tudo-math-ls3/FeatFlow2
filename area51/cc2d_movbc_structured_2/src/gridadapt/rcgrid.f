@@ -174,7 +174,7 @@ C (for nonlinear boundaries)
 * Project coarse grid boundary parameters to fine grid boundary param.
 * 
 * Recalculates the information about the parametrisation of the
-* fine grid boudary. Copies the parameter values of the coarse grid
+* fine grid boundary. Copies the parameter values of the coarse grid
 * boundary nodes to the fine grid boundary nodes. Recalculates
 * the new fine grid points by interpolation of the parameters of
 * two coarse grid boundary nodes

@@ -164,7 +164,7 @@ C           Next tracer
 * to their current velocity and the given time step. Tracers outside 
 * of the domain are not touched. Tracers inside of the domain are moved 
 * in a way to prevent leaving the domain through Dirichlet boundaries.
-* If a tracer leaves the Domain through a Neumann boudary segment, 
+* If a tracer leaves the Domain through a Neumann boundary segment, 
 * the element status of the tracer is set to -1.
 *
 * In:
@@ -318,7 +318,7 @@ C               Neumann edge - the point leaves the domain
               ELSE
               
 C               Bad luck, Dirichlet edge. 
-C               Calculate the intersection point on the boudary
+C               Calculate the intersection point on the boundary
 C               into (X0,Y0).
 
                 CALL LINSCT (X1,Y1,X2,Y2,XNEW,YNEW,X,Y,X0,Y0,IRES)

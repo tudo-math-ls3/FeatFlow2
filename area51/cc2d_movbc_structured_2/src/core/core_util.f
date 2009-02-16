@@ -51,7 +51,7 @@ C parameters
       
       INCLUDE 'sinigeometry.inc'
       
-C     Set the time of the fictitious boudary routines to the
+C     Set the time of the fictitious boundary routines to the
 C     TIMENS+TSTEP. The current simulation time is TIMENS and
 C     will be increased to TIMENS+TSTEP in the next time step.
 C     In the very first time step, there is TSTEP=0.

@@ -54,7 +54,7 @@ C Line  1: "100"            -> Version 1.0.0
 C Line  2: -------------------------------------------------------------
 C Line  3: "0"/"1"/"2"/"3"  -> 0=circle, 1=square, 
 C                              2=ellipse, 3=rectangle,
-C                              >50=complex fict. boudary geometry
+C                              >50=complex fict. boundary geometry
 C                              other values: no fict. boundary
 C Line  4: X-Position
 C Line  5: Y-Position

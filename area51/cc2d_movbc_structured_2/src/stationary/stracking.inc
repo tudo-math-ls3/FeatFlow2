@@ -63,7 +63,7 @@
 *            of user-defined points.
 *            =0, if values should not be written into a tracking file.
 *   HIPRS  : File handle for output of mean integral pressure on user
-*            defined segments of real boudary.
+*            defined segments of real boundary.
 *            =0, if values should not be written into a tracking file.
 *
 * end
