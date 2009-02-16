@@ -29,7 +29,8 @@ SRC += boundaryfilter.f90 \
 
 # common application source files
 SRC += flagship.f90 \
-       flagship_basic.f90
+       flagship_basic.f90 \
+       flagship_callback.f90
 
 # application source files for CODIRE module
 SRC += codire_application.f90 \
