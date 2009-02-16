@@ -492,11 +492,7 @@ contains
       call ppgrd_calcGradient (rvectorScalar, rgradient)
 
       ! Recover smoothed gradient vector
-      if (imethod .eq. PPGRD_INTERPOL) then
-        call ppgrd_calcGradInterpP12Q12cnf(rvectorScalar, rgradientRef)
-      else
-        call ppgrd_calcGradSuperPatchRecov(rvectorScalar, rgradientRef, isubmethod)
-      end if
+      call ppgrd_calcGradLimAvgP1Q1cnf(rvectorScalar, rgradientRef)
 
       ! Compute estimated gradient error
       call pperr_blockErrorEstimate(rgradient, rgradientRef, PPERR_L2ERROR,&
