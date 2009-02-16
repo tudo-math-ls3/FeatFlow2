@@ -38,7 +38,7 @@
 !# Auxiliary subroutines:
 !#
 !# 1.) sort_randomSeedOnce
-!#     -> Intialise the random number generator
+!#     -> Initialise the random number generator
 !#
 !# </purpose>
 !##############################################################################

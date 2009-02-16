@@ -1303,7 +1303,7 @@ contains
     print *
     print *,'Nonlinear solver statistics'
     print *,'---------------------------'
-    print *,'Intial defect: ',rnlSol%DinitialDefect(1)
+    print *,'Initial defect: ',rnlSol%DinitialDefect(1)
     print *,'Final defect:  ',rnlSol%DfinalDefect(1)
     print *,'#Iterations:   ',rnlSol%iiterations
     

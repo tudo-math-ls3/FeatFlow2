@@ -108,7 +108,7 @@ contains
     ! Set itimeOrder=1 -> structure initialised.
     rprojection%itimeOrder = 1
 
-    ! Intialise the spatial interlevel projection structure with the
+    ! Initialise the spatial interlevel projection structure with the
     ! standard method.
     call mlprj_initProjectionDiscr (rprojection%rspatialProjection,rdiscretisation)
     

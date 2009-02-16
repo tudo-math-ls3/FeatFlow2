@@ -229,7 +229,7 @@ contains
 !    CALL output_lbrk()
 !    CALL output_line ('Nonlinear solver statistics')
 !    CALL output_line ('---------------------------')
-!    CALL output_line ('Intial defect: '//TRIM(sys_sdEL(rnlSol%DinitialDefect(1),15)))
+!    CALL output_line ('Initial defect: '//TRIM(sys_sdEL(rnlSol%DinitialDefect(1),15)))
 !    CALL output_line ('Final defect:  '//TRIM(sys_sdEL(rnlSol%DfinalDefect(1),15)))
 !    CALL output_line ('#Iterations:   '//TRIM(sys_siL(rnlSol%iiterations,10)))
 !    

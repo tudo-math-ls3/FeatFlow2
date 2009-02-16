@@ -3091,7 +3091,7 @@ contains
     ! Cancel here, if we don't belong to the subgroup to be initialised
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
     
-    ! Intialisation. In our case: allocate temporary vectors for our data
+    ! Initialisation. In our case: allocate temporary vectors for our data
     ! by using the associated matrix as template.
     ! That vectors are used in the defect correction so save the intermediate
     ! 'solution' vector.
