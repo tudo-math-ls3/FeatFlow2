@@ -69,7 +69,7 @@ scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 
 
 # ========================================================================
-# The following section specifies teh parameters for the solver.
+# The following section specifies the parameters for the solver.
 
 ####################
 [CC-MULTIGRIDSOLVER]
