@@ -180,10 +180,9 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceFunction1D (cderivative,rdiscretisation, &
+  subroutine getReferenceFunction1D (icomponent,cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Dvalues,rcollection)
+                rdomainIntSubset,Dvalues,rcollection)
   
   use basicgeometry
   use triangulation
@@ -204,6 +203,9 @@ contains
 !</description>
   
 !<input>
+  ! Specifies which component of the vector field is to be evaluated
+  integer, intent(IN)                          :: icomponent
+
   ! This is a DER_xxxx derivative identifier (from derivative.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
@@ -225,10 +227,6 @@ contains
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
   ! DIMENSION(dimension,npointsPerElement,nelements)
   real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
-
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.

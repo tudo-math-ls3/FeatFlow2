@@ -52,13 +52,14 @@ contains
   type(t_blockDiscretisation) :: rdiscretisation
   type(t_linearForm) :: rlinform
   type(t_matrixBlock) :: rmatrix
-  type(t_vectorBlock) :: rvecSol, rvecRhs, rvectmp
+  type(t_vectorBlock), target :: rvecSol, rvecRhs, rvectmp
   type(t_boundaryRegion) :: rboundaryRegion
   type(t_discreteBC), target :: rdiscreteBC
   type(t_linsolNode), pointer :: p_rsolver, p_rprecond
   type(t_matrixBlock), dimension(1) :: Rmatrices
+  type(t_errorScVec) :: rerror
   integer :: NLMIN,NLMAX,ierror,ilvl
-  real(DP), dimension(:,:), allocatable :: Derror
+  real(DP), dimension(:,:), allocatable, target :: Derror
   integer, dimension(:,:), allocatable :: Istat
   integer :: isolver, ioutput, nmaxiter,ccubature
   integer(I32) :: celement
@@ -119,6 +120,7 @@ contains
     case default
       call output_line('Invalid ITEST parameter', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
+      call sys_halt()
     end select
     call output_line('NLMIN..........: ' // trim(sys_siL(NLMIN,4)))
     call output_line('NLMAX..........: ' // trim(sys_siL(NLMAX,4)))
@@ -136,6 +138,7 @@ contains
     case default
       call output_line('Invalid ISOLVER parameter', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
+      call sys_halt()
     end select
     call output_line('Output Level...: ' // trim(sys_siL(ioutput,4)))
     call output_line('Maximum Iter...: ' // trim(sys_siL(nmaxiter,12)))
@@ -255,11 +258,6 @@ contains
         call linsol_initMILUs1x1(p_rprecond,0,0.0_DP)
         call linsol_initBiCGStab(p_rsolver, p_rprecond)
       
-      case default
-        call output_line('Unknown solver',&
-             OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
-        call sys_halt()
-      
       end select
       
       p_rsolver%ioutputLevel = ioutput
@@ -274,15 +272,14 @@ contains
       call linsol_initData (p_rsolver, ierror)
       if (ierror .ne. LINSOL_ERR_NOERROR) stop
       
-      ! Solve the mass system
+      ! Solve the system
       call linsol_solveAdaptively (p_rsolver,rvecSol,rvecRhs,rvecTmp)
       
-      ! Calculate the errors to the reference function.
-      call pperr_scalar (rvecSol%RvectorBlock(1),PPERR_L2ERROR,&
-                         Derror(1,ilvl), getReferenceFunction2D)
-
-      call pperr_scalar (rvecSol%RvectorBlock(1),PPERR_H1ERROR,&
-                         Derror(2,ilvl), getReferenceFunction2D)
+      ! Calculate the errors to the reference function
+      rerror%p_RvecCoeff => rvecSol%RvectorBlock(1:1)
+      rerror%p_DerrorL2 => Derror(1:1,ilvl)
+      rerror%p_DerrorH1 => Derror(2:2,ilvl)
+      call pperr_scalarVec(rerror, getReferenceFunction2D)
 
       ! Clean up this level
       call linsol_doneData (p_rsolver)
