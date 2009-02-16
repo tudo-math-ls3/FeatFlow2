@@ -180,10 +180,6 @@ module hadaptaux
   ! Operation identifier for finalization of callback function
   integer, parameter :: HADAPT_OPR_DONECALLBACK     = -2
 
-  ! NOTE: Operation identifiers smaller than -3 are reserved for
-  !       user-defined operations !
-
-
   ! Operation identifier for adjustment of vertex dimension
   integer, parameter :: HADAPT_OPR_ADJUSTVERTEXDIM  = 1
 
