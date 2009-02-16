@@ -121,7 +121,7 @@ iElementType       = 3
 # 0=Streamline Diffusion
 # 1=upwind
 # 2=unified edge oriented jump stabilisation
-# 3=fast unified edge oriented jump stabilisation (preconputed matrix)
+# 3=fast unified edge oriented jump stabilisation (precomputed matrix)
 
 iUpwind            = 0
 
