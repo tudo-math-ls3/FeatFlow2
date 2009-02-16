@@ -353,7 +353,7 @@ contains
     ! - A solution vector (changing in every time step, missing)
     ! Allocate memory for the missing vectors. They have exactly the same shape as
     ! our RHS vector, so we can use the RHS to 'derive' the missing vectors.
-    ! Note that this will also transfer the connected boudary conditions
+    ! Note that this will also transfer the connected boundary conditions
     ! to the new vectors.
     ! Btw., the (initial) solution vector is filled with 0.
     call lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .true.)

@@ -34,7 +34,7 @@
 !#   -> Contains routines to initialise matrices and vectors.
 !#
 !# - heatcond_bounadrycondition
-!#   -> Contains routines to set up analytical and discrete boudary conditions.
+!#   -> Contains routines to set up analytical and discrete boundary conditions.
 !#
 !# - heatcond_solver
 !#   -> Configures the linear solver for the problem.
