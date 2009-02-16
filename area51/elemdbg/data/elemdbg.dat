@@ -1,4 +1,7 @@
 
+# Path of the log-file (optional)
+SLOGFILE = ./log/output.txt
+
 # Name of the configuration section that is to be loaded
 SCONFIGSECTION = EXAMPLE
 
@@ -17,28 +20,28 @@ ITEST = 202
 
 # Minimum and maximum levels (non-optional)
 NLMIN = 2
-NLMAX = 6
+NLMAX = 7
 
 # Element identifier (non-optional)
-SELEMENT = EL_EM50_2D
+SELEMENT = EL_Q1_2D
 
 # Cubature rule identifier (non-optional)
-SCUBATURE = G5_2D
+SCUBATURE = G3_2D
 
 # Mesh distortion parameter (default: 0.0)
-#DMESHDISTORT = 0.2
+DMESHDISTORT = 0.0
 
 # Solver that is to be used (default: 0)
 # 0 -> UMFPACK4 solver
 # 1 -> CG-SSOR solver
 # 2 -> BiCGStab-ILU(0) solver
-ISOLVER = 1
+ISOLVER = 0
 
 # Relaxation parameter for CG-SSOR (default: 1.2)
 DRELAX = 1.2
 
 # Output Level of solver (default: 0)
-IOUTPUT = 1
+IOUTPUT = 0
 
 # Maximum number of iterations for iterative solvers (default: 1000)
 NMAXITER = 1000

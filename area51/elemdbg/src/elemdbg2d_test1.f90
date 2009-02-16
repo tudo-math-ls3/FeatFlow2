@@ -62,7 +62,7 @@ contains
   integer, dimension(:,:), allocatable :: Istat
   integer :: isolver, ioutput, nmaxiter,ccubature
   integer(I32) :: celement
-  real(DP) :: ddist, depsRel, depsAbs, drelax
+  real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2
   character(LEN=64) :: selement,scubature
     
     ! Fetch minimum and maximum levels
@@ -303,7 +303,8 @@ contains
     
     ! Print some statistics
     call output_separator(OU_SEP_MINUS)
-    call output_line('Level         NEQ        NNZE         NVT         NMT         NEL')
+    call output_line('Level         NEQ        NNZE         NVT' // &
+                     '         NMT         NEL')
     do ilvl = NLMIN, NLMAX
       call output_line(trim(sys_si(ilvl,5)) // &
           trim(sys_si(Istat(1,ilvl),12)) // &
@@ -313,7 +314,7 @@ contains
           trim(sys_si(Istat(5,ilvl),12)))
     end do ! ilvl
 
-    ! Print out the results
+    ! Print out the L2- and H1-errors on each level
     call output_separator(OU_SEP_MINUS)
     call output_line('Level     L2-error            H1-error')
     do ilvl = NLMIN, NLMAX
@@ -322,13 +323,26 @@ contains
           trim(sys_sdEP(Derror(2,ilvl),20,12)))
     end do ! ilvl
     
-    call output_separator(OU_SEP_MINUS)
-    call output_line('Level     L2-factor           H1-factor')
-    do ilvl = NLMIN+1, NLMAX
-      call output_line(trim(sys_si(ilvl,5)) // '   ' // &
-          trim(sys_sdEP(Derror(1,ilvl-1)/Derror(1,ilvl),20,12)) // &
-          trim(sys_sdEP(Derror(2,ilvl-1)/Derror(2,ilvl),20,12)))
-    end do ! ilvl
+    ! Print out the L2- and H1- factors for each level pair
+    if(NLMAX .gt. NLMIN) then
+      call output_separator(OU_SEP_MINUS)
+      call output_line('Level     L2-factor           H1-factor')
+      do ilvl = NLMIN+1, NLMAX
+        
+        ! avoid division by zero here
+        daux1 = 0.0_DP
+        daux2 = 0.0_DP
+        if(abs(Derror(1,ilvl)) .gt. SYS_EPSREAL) &
+          daux1 = Derror(1,ilvl-1)/Derror(1,ilvl)
+        if(abs(Derror(2,ilvl)) .gt. SYS_EPSREAL) &
+          daux2 = Derror(2,ilvl-1)/Derror(2,ilvl)
+        
+        ! print out the factors
+        call output_line(trim(sys_si(ilvl,5)) // '   ' // &
+            trim(sys_sdEP(daux1,20,12)) // &
+            trim(sys_sdEP(daux2,20,12)))
+      end do ! ilvl
+    end if
 
     ! Deallocate arrays
     deallocate(Istat)

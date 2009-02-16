@@ -19,24 +19,26 @@ program elemdbg
   
   type(t_parlist) :: rparam
   character(LEN=64) :: sConfigSection
+  character(LEN=256) :: sLogFile
   integer :: itest
   
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
-  
   call system_init()
   
-  ! Initialise the output system. Write the program output to screen as
-  ! well as to the file 'log/output.txt'.
-  call output_init ('./log/output.txt')
-
   ! The very second thing in every program: 
   ! Initialise the FEAT 2.0 storage management: 
   call storage_init(999, 100)
-  
+
   ! Read in parameter list
   call parlst_init(rparam)
   call parlst_readfromfile(rparam, './data/elemdbg.dat')
+
+  ! Get log file name
+  call parlst_getvalue_string(rparam, '', 'SLOGFILE', sLogFile, '')
+
+  ! Initialise the output system.
+  call output_init (sLogFile)
   
   ! Get config section name
   call parlst_getvalue_string(rparam, '', 'SCONFIGSECTION', sConfigSection, '')
@@ -47,15 +49,15 @@ program elemdbg
   ! Call the corresponding debugger
   select case(itest)
   case(101,102)
-    ! 1D Element-Debugger, test 1
+    ! 1D Element-Debugger
     call elemdbg1d_1(rparam,sConfigSection,itest)
 
   case(201,202)
-    ! 2D Element-Debugger, test 1
+    ! 2D Element-Debugger
     call elemdbg2d_1(rparam,sConfigSection,itest)
 
   case(301,302)
-    ! 3D Element-Debugger, test 1
+    ! 3D Element-Debugger
     call elemdbg3d_1(rparam,sConfigSection,itest)
   
   case default
