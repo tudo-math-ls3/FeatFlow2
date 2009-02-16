@@ -87,7 +87,630 @@ module pprocerror
 
 !</constants>
 
+!<types>
+
+!<typeblock>
+
+  type t_errorScVec
+  
+    ! IN: An array of scalar coefficient vectors which represents a
+    ! FE function or vector field. If p_rdiscr is null, then all vectors in
+    ! the array must have the same spatial discretisation!
+    type(t_vectorScalar), dimension(:), pointer :: p_RvecCoeff => null()
+
+    ! IN, OPTIONAL: A spatial discretisation structure that is to be used
+    ! for the scalar coefficient vectors. If given, the total number of DOFs
+    ! of the spatial discretisation must be equal to the number of entries of
+    ! each scalar vector given in p_RvecCoeff. If not given, the spatial
+    ! discretisation of p_RvecCoeff is used.
+    type(t_spatialDiscretisation), pointer :: p_rdiscr => null()
+    
+    ! OUT, OPTIONAL: If given, recieves the calculated L2-errors for each
+    ! component of p_RvecCoeff.
+    real(DP), dimension(:), pointer :: p_DerrorL2 => null()
+    
+    ! OUT, OPTIONAL: If given, recieves the calculated H1-errors for each
+    ! component of p_RvecCoeff. If given, but the spatial discretisation does
+    ! not offer first derivatives, then all components of p_DerrorH1 are set
+    ! to SYS_INFINITY to indicate that the H1-error cannot be calculated.
+    real(DP), dimension(:), pointer :: p_DerrorH1 => null()
+    
+    ! OUT, OPTIONAL: If given, recieves the calculated L1-errors for each
+    ! component of p_RvecCoeff.
+    real(DP), dimension(:), pointer :: p_DerrorL1 => null()
+    
+    ! OUT, OPTIONAL: An array of scalar vectors which recieve the L2-errors
+    ! of each component per element.
+    type(t_vectorScalar), dimension(:), pointer :: p_RvecErrorL2 => null()
+    
+    ! OUT, OPTIONAL: An array of scalar vectors which recieve the H1-errors
+    ! of each component per element.
+    type(t_vectorScalar), dimension(:), pointer :: p_RvecErrorH1 => null()
+    
+    ! OUT, OPTIONAL: An array of scalar vectors which recieve the L1-errors
+    ! of each component per element.
+    type(t_vectorScalar), dimension(:), pointer :: p_RvecErrorL1 => null()
+  
+  end type
+
+!</typeblock>
+
+!</types>
+
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+  
+  subroutine pperr_scalarVec(rerror, frefFunction, rcollection)
+
+!<description>
+  ! This routine calculates the errors of a set of given FE functions given
+  ! analytical callback function frefFunction.
+  ! In contrast to pperr_scalar, this routine is able to compute multiple
+  ! errors in multiple components of a vector field at once.
+!</description>
+
+!<input>
+  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! function to which the error should be computed.
+  ! If not specified, the reference function is assumed to be zero!
+  include 'intf_refFunctionScVec.inc'
+  optional :: frefFunction
+  
+  ! OPTIONAL: A collection structure. This structure is given to the
+  ! callback function to provide additional information. 
+  type(t_collection), intent(INOUT), target, optional :: rcollection
+!</input>
+
+!<inputoutput>
+  ! A structure which defines what errors are to be calculated.
+  type(t_errorScVec), intent(INOUT), target :: rerror
+!</inputoutput>
+
+!</subroutine>
+
+  ! A pointer to the discretisation that is to be used
+  type(t_spatialDiscretisation), pointer :: p_rdiscr
+  
+  ! A pointer to an element distribution
+  type(t_elementDistribution), pointer :: p_relemDist
+  
+  ! An array holding the element list
+  integer, dimension(:), pointer :: p_IelemList, p_IcurElemList
+  
+  ! A pointer to the triangulation
+  type(t_triangulation), pointer :: p_rtria
+  
+  ! Which errors do we have to calculate?
+  logical :: bcalcL2, bcalcH1, bcalcL1
+  
+  ! The total number of components
+  integer :: ncomp,icomp
+  
+  ! Indices of first and last derivative
+  integer :: ifirstDer, ilastDer
+  
+  ! Arrays concerning the cubature formula
+  real(DP), dimension(:,:), allocatable :: DcubPts
+  real(DP), dimension(:), allocatable :: Domega
+  
+  ! An array needed for the DOF-mapping
+  integer, dimension(:,:), target, allocatable :: Idofs
+
+  ! A t_domainIntSubset structure that is used for storing information
+  ! and passing it to callback routines.
+  type(t_domainIntSubset) :: rintSubset
+  type(t_evalElementSet) :: reval
+  
+  ! Two arrays for the function values and derivatives
+  real(DP), dimension(:,:), allocatable :: DvalFunc
+  real(DP), dimension(:,:,:), allocatable :: DvalDer
+  
+  ! Two arrays for the element evaluation
+  logical, dimension(EL_MAXNDER) :: Bder
+  real(DP), dimension(:,:,:,:), allocatable :: Dbas
+  
+  ! A pointer to the data array of the currently active coefficient vector
+  real(DP), dimension(:), pointer :: p_Dcoeff
+  
+  ! Pointers to the arrays that recieve th element-wise errors
+  real(DP), dimension(:), pointer :: p_DerrL2, p_DerrH1, p_DerrL1
+  
+  ! Some other local variables
+  integer :: i,j,k,NEL,ieldist,ndofs,ncubp,ctrafo,ccubature,iel,ider
+  integer :: NELtodo,NELdone,NELbatchSize
+  integer(I32) :: cevalTag, celement
+  real(DP) :: derrL2, derrH1, derrL1, dom, daux, daux2
+  real(DP), dimension(:,:), pointer :: p_Ddetj
+
+    ! Make sure we have the coefficient vectors
+    if(.not. associated(rerror%p_RvecCoeff)) then
+      call output_line('Coefficient vectors missing!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+      call sys_halt()
+    end if
+    
+    ! Get the number of components
+    ncomp = ubound(rerror%p_RvecCoeff,1)
+    
+    ! Do we have a separate discretisation?
+    if(associated(rerror%p_rdiscr)) then
+      ! Yes, so check whether the discretisation is compatible to the
+      ! coefficient vectors.
+      p_rdiscr => rerror%p_rdiscr
+      k = dof_igetNDofGlob(p_rdiscr)
+      do i = 1, ncomp
+        if(k .ne. rerror%p_RvecCoeff(i)%NEQ) then
+          call output_line('Discretisation and coefficient vectors incompatible!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+          call sys_halt()
+        end if
+      end do
+      
+    else
+      ! No, so grab the discretisation of the first coefficient vector.
+      p_rdiscr => rerror%p_RvecCoeff(1)%p_rspatialDiscr
+      if(.not. associated(p_rdiscr)) then
+        call output_line('No discretisation assigned!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call sys_halt()
+      end if
+    end if
+    
+    ! Get the triangulation and the number of elements
+    p_rtria => p_rdiscr%p_rtriangulation
+    NEL = p_rtria%NEL
+    
+    ! Okay, now that we have the discretisation, determine the dimension
+    ! to figure out which is the first and the last derivative we need to
+    ! evaluate in the case that we want to compute H1-errors.
+    select case(p_rdiscr%ndimension)
+    case (NDIM1D)
+      ifirstDer = DER_DERIV1D_X
+      ilastDer  = DER_DERIV1D_X
+    case (NDIM2D)
+      ifirstDer = DER_DERIV2D_X
+      ilastDer  = DER_DERIV2D_Y
+    case (NDIM3D)
+      ifirstDer = DER_DERIV3D_X
+      ilastDer  = DER_DERIV3D_Z
+    case default
+      call output_line('Invalid discretisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+      call sys_halt()
+    end select
+    
+    ! Now determine which errors we are going to calculate
+    bcalcL2 = .false.
+    bcalcH1 = .false.
+    bcalcL1 = .false.
+    if(associated(rerror%p_DerrorL2)) then
+      bcalcL2 = .true.
+      if(ubound(rerror%p_DerrorL2,1) .lt. ncomp) then
+        call output_line('Dimension of p_DerrorL2 array is too small!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call sys_halt()
+      end if
+      rerror%p_DerrorL2 = 0.0_DP
+    end if
+    if(associated(rerror%p_DerrorH1)) then
+      bcalcH1 = .true.
+      if(ubound(rerror%p_DerrorH1,1) .lt. ncomp) then
+        call output_line('Dimension of p_DerrorH1 array is too small!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call sys_halt()
+      end if
+      rerror%p_DerrorH1 = 0.0_DP
+    end if
+    if(associated(rerror%p_DerrorL1)) then
+      bcalcL1 = .true.
+      if(ubound(rerror%p_DerrorL1,1) .lt. ncomp) then
+        call output_line('Dimension of p_DerrorL1 array is too small!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call sys_halt()
+      end if
+      rerror%p_DerrorL1 = 0.0_DP
+    end if
+    if(associated(rerror%p_RvecErrorL2)) then
+      bcalcL2 = .true.
+      if(ubound(rerror%p_RvecErrorL2,1) .lt. ncomp) then
+        call output_line('Dimension of p_RvecErrorL2 array is too small!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call sys_halt()
+      end if
+      do i = 1, ncomp
+        if(rerror%p_RvecErrorL2(i)%NEQ .lt. NEL) then
+          call output_line('Length of p_RvecErrorL2('//trim(sys_siL(i,4))//&
+              ') is too small!',OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+          call sys_halt()
+        end if
+        call lsyssc_clearVector(rerror%p_RvecErrorL2(i))
+      end do
+    end if
+    if(associated(rerror%p_RvecErrorH1)) then
+      bcalcH1 = .true.
+      if(ubound(rerror%p_RvecErrorH1,1) .lt. ncomp) then
+        call output_line('Dimension of p_RvecErrorH1 array is too small!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call sys_halt()
+      end if
+      do i = 1, ncomp
+        if(rerror%p_RvecErrorH1(i)%NEQ .lt. NEL) then
+          call output_line('Length of p_RvecErrorH1('//trim(sys_siL(i,4))//&
+              ') is too small!',OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+          call sys_halt()
+        end if
+        call lsyssc_clearVector(rerror%p_RvecErrorH1(i))
+      end do
+    end if
+    if(associated(rerror%p_RvecErrorL1)) then
+      bcalcL1 = .true.
+      if(ubound(rerror%p_RvecErrorL1,1) .lt. ncomp) then
+        call output_line('Dimension of p_RvecErrorL1 array is too small!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call sys_halt()
+      end if
+      do i = 1, ncomp
+        if(rerror%p_RvecErrorL1(i)%NEQ .lt. NEL) then
+          call output_line('Length of p_RvecErrorL1('//trim(sys_siL(i,4))//&
+              ') is too small!',OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+          call sys_halt()
+        end if
+        call lsyssc_clearVector(rerror%p_RvecErrorL1(i))
+      end do
+    end if
+    
+    ! Don't we have anything to do?
+    if(.not. (bcalcL2 .or. bcalcH1 .or. bcalcL1)) return
+    
+    ! Do we have to calculate H1 errors?
+    if(bcalcH1) then
+    
+      ! Okay, in this case all element distributions of the spatial
+      ! discretisation must support first derivatives.
+      do i = 1, p_rdiscr%inumFEspaces
+        
+        ! Get a pointer to the element distribution
+        p_relemDist => p_rdiscr%RelementDistr(i)
+        
+        ! If the maximum supported derivative is 1, then the element does not
+        ! support first derivatives!
+        if(elem_getMaxDerivative(p_relemDist%celement) .le. 1) then
+          bcalcH1 = .false.
+          exit
+        end if
+      end do
+      
+      ! Now if bcalcH1 is .false. now, then at least one element distribution
+      ! does not support first derivatives...
+      if(.not. bcalcH1) then
+        ! If p_DerrorH1 is given, set its entries to SYS_INFTY to indicate that
+        ! the H1-errors are not available
+        if(associated(rerror%p_DerrorH1)) &
+          rerror%p_DerrorH1 = SYS_INFINITY
+        
+      end if
+      
+    end if
+    
+    ! Set up the Bder array
+    Bder = .false.
+    Bder(DER_FUNC) = bcalcL2 .or. bcalcL1
+    if(bcalcH1) Bder(ifirstDer:ilastDer) = .true.
+    
+    ! Okay, let's loop over all element distributions
+    do ieldist = 1, p_rdiscr%inumFEspaces
+    
+      ! Get a pointer to the element distribution
+      p_relemDist => p_rdiscr%RelementDistr(ieldist)
+      if(p_relemDist%NEL .le. 0) cycle
+      
+      ! Get a pointer to the element list
+      call storage_getbase_int(p_relemDist%h_IelementList, p_IelemList)
+      
+      ! Calculate element batch size
+      NEL = p_relemDist%NEL
+      NELbatchSize = min(NEL, PPERR_NELEMSIM)
+      
+      ! Get the element
+      celement = p_relemDist%celement
+      
+      ! Get the number of dofs per element
+      ndofs = elem_igetNDofLoc(celement)
+      
+      ! Get the trafo
+      ctrafo = elem_igetTrafoType(celement)
+      
+      ! Get the evaluation tag
+      cevalTag = elem_getEvaluationTag(celement)
+      
+      ! If a reference function is given, it will surely need real points.
+      if(present(frefFunction)) &
+        cevalTag = ior(cevalTag, EL_EVLTAG_REALPOINTS)
+      
+      ! And we definately need jacobian determinants for integration.
+      cevalTag = ior(cevalTag, EL_EVLTAG_DETJ)
+      
+      ! Get the cubature rule
+      ccubature = p_relemDist%ccubTypeEval
+
+      ! Allocate the arrays for the cubature formula
+      ncubp = cub_igetNumPts(ccubature)
+      allocate(Domega(ncubp))
+      allocate(DcubPts(trafo_igetReferenceDimension(ctrafo),ncubp))
+      
+      ! Get the cubature formula
+      call cub_getCubature(ccubature,DcubPts, Domega)
+      
+      ! Allocate an array for the DOF-mapping
+      allocate(Idofs(ndofs,NELbatchSize))
+      
+      ! Allocate an array that recieves the evaluated basis functions
+      allocate(Dbas(ndofs,elem_getMaxDerivative(celement),ncubp,NELbatchsize))
+      
+      ! Allocate two arrays for the evaluation
+      if(bcalcL2 .or. bcalcL1) &
+        allocate(DvalFunc(ncubp,NELbatchSize))
+      if(bcalcH1) &
+        allocate(DvalDer(ncubp,NELbatchSize,ifirstDer:ilastDer))
+      
+      ! Initialise the element evaluation set
+      call elprep_init(reval)
+      
+      ! Okay, loop over all elements
+      NELdone = 0
+      do while(NELdone .lt. NEL)
+      
+        ! How many elements do we process this time?
+        NELtodo = min(NELbatchSize, NEL-NELdone)
+        
+        ! Get a pointer to the current element list
+        p_IcurElemList => p_IelemList(NELdone+1:NELdone+NELtodo)
+        
+        ! First, let's perform the DOF-mapping
+        call dof_locGlobMapping_mult(p_rdiscr, p_IcurElemList, Idofs)
+        
+        ! Prepare the element for evaluation
+        call elprep_prepareSetForEvaluation (reval, cevalTag, p_rtria, &
+            p_IcurElemList, ctrafo, DcubPts)
+        p_Ddetj => reval%p_Ddetj
+        
+        ! Remove the ref-points eval tag for the next loop iteration
+        cevalTag = iand(cevalTag,not(EL_EVLTAG_REFPOINTS))
+
+        ! Prepare the domain integration structure
+        call domint_initIntegrationByEvalSet(reval, rintSubset)
+        rintSubset%ielementDistribution = ielDist
+        rintSubset%ielementStartIdx = NELdone+1
+        rintSubset%p_Ielements => p_IcurElemList
+        rintSubset%p_IdofsTrial => Idofs
+        rintSubset%celement = celement
+        
+        ! Evaluate the element
+        call elem_generic_sim2(celement, reval, Bder, Dbas)
+        
+        ! Now loop over all vector components
+        do icomp = 1, ncomp
+        
+          ! Get the coefficient vector's data array
+          call lsyssc_getbase_double(rerror%p_RvecCoeff(icomp), p_Dcoeff)
+          
+          ! Get the element-wise error arrays, if given
+          if(associated(rerror%p_RvecErrorL2)) then
+            call lsyssc_getbase_double(rerror%p_RvecErrorL2(icomp), p_DerrL2)
+          else
+            nullify(p_DerrL2)
+          end if
+          if(associated(rerror%p_RvecErrorH1)) then
+            call lsyssc_getbase_double(rerror%p_RvecErrorH1(icomp), p_DerrH1)
+          else
+            nullify(p_DerrH1)
+          end if
+          if(associated(rerror%p_RvecErrorL1)) then
+            call lsyssc_getbase_double(rerror%p_RvecErrorL2(icomp), p_DerrL1)
+          else
+            nullify(p_DerrL1)
+          end if
+
+          ! Reset errors for this component
+          derrL2 = 0.0_DP
+          derrH1 = 0.0_DP
+          derrL1 = 0.0_DP
+          
+          ! Evaluate function values?
+          if(allocated(DvalFunc)) then
+          
+            ! Do we have a reference function? If yes, then evaluate it,
+            ! otherwise simply format DvalFunc to zero.
+            if(present(frefFunction)) then
+              call frefFunction(icomp, DER_FUNC, p_rdiscr, NELtodo, ncubp, &
+                  reval%p_DpointsReal, rintSubset, DvalFunc, rcollection)
+            else
+              DvalFunc = 0.0_DP
+            end if
+            
+            ! Now subtract the function values of the FE function.
+            !$omp parallel do private(i,k,daux)
+            do j = 1, NELtodo
+              do i = 1, ncubp
+                daux = 0.0_DP
+                do k = 1, ndofs
+                  daux = daux + Dbas(k,DER_FUNC,i,j)*p_Dcoeff(Idofs(k,j))
+                end do ! k
+                DvalFunc(i,j) = DvalFunc(i,j) - daux
+              end do ! i
+            end do ! j
+            !$omp end parallel do
+          
+          end if ! function values evaluation
+          
+          ! Evaluate derivatives?
+          if(allocated(DvalDer)) then
+          
+            ! Do we have a reference function? If yes, then evaluate its
+            ! derivatives.
+            if(present(frefFunction)) then
+              do ider = ifirstDer, ilastDer
+                call frefFunction(icomp, ider, p_rdiscr, NELtodo, ncubp, &
+                    reval%p_DpointsReal, rintSubset, DvalDer(:,:,ider), rcollection)
+              end do
+            else
+              DvalDer = 0.0_DP
+            end if
+            
+            ! Now subtract the derivatives of the FE function.
+            !$omp parallel do private(i,ider,k,daux)
+            do j = 1, NELtodo
+              do i = 1, ncubp
+                do ider = ifirstDer, ilastDer
+                  daux = 0.0_DP
+                  do k = 1, ndofs
+                    daux = daux + Dbas(k,ider,i,j)*p_Dcoeff(Idofs(k,j))
+                  end do ! k
+                  DvalDer(i,j,ider) = DvalDer(i,j,ider) - daux
+                end do ! ider
+              end do ! i
+            end do ! j
+            !$omp end parallel do
+          
+          end if ! derivatives evaluation
+            
+          ! Do we calculate L2-errors?
+          if(bcalcL2 .and. associated(p_DerrL2)) then
+            !$omp parallel do private(i,iel,daux,dom) reduction(+:derrL2)
+            do j = 1, NELtodo
+              iel = p_IcurElemList(j)
+              daux = 0.0_DP
+              do i = 1, ncubp
+                dom = Domega(i) * abs(p_Ddetj(i,j))
+                daux = daux + dom*DvalFunc(i,j)**2
+              end do ! i
+              p_DerrL2(iel) = sqrt(daux)
+              derrL2 = derrL2 + daux
+            end do ! j
+            !$omp end parallel do
+          else if(bcalcL2) then
+            !$omp parallel do private(i,daux,dom) reduction(+:derrL2)
+            do j = 1, NELtodo
+              daux = 0.0_DP
+              do i = 1, ncubp
+                dom = Domega(i) * abs(p_Ddetj(i,j))
+                daux = daux + dom*DvalFunc(i,j)**2
+              end do ! i
+              derrL2 = derrL2 + daux
+            end do ! j
+            !$omp end parallel do
+          end if
+          
+          ! Do we calculate H1-errors?
+          if(bcalcH1 .and. associated(p_DerrH1)) then
+            !$omp parallel do private(i,ider,iel,daux,daux2,dom) reduction(+:derrH1)
+            do j = 1, NELtodo
+              iel = p_IcurElemList(j)
+              daux = 0.0_DP
+              do i = 1, ncubp
+                dom = Domega(i) * abs(p_Ddetj(i,j))
+                daux2 = 0.0_DP
+                do ider = ifirstDer, ilastDer
+                  daux2 = daux2 + DvalDer(i,j,ider)**2
+                end do ! ider
+                daux = daux + dom*daux2
+              end do ! i
+              p_DerrH1(iel) = sqrt(daux)
+              derrH1 = derrH1 + daux
+            end do ! j
+            !$omp end parallel do
+          else if(bcalcH1) then
+            !$omp parallel do private(i,ider,daux,daux2,dom) reduction(+:derrH1)
+            do j = 1, NELtodo
+              daux = 0.0_DP
+              do i = 1, ncubp
+                dom = Domega(i) * abs(p_Ddetj(i,j))
+                daux2 = 0.0_DP
+                do ider = ifirstDer, ilastDer
+                  daux2 = daux2 + DvalDer(i,j,ider)**2
+                end do ! ider
+                daux = daux + dom*daux2
+              end do ! i
+              derrH1 = derrH1 + daux
+            end do ! j
+            !$omp end parallel do
+          end if
+
+          ! Do we calculate L1-errors?
+          if(bcalcL1 .and. associated(p_DerrL1)) then
+            !$omp parallel do private(i,iel,daux,dom) reduction(+:derrL1)
+            do j = 1, NELtodo
+              iel = p_IcurElemList(j)
+              daux = 0.0_DP
+              do i = 1, ncubp
+                dom = Domega(i) * abs(p_Ddetj(i,j))
+                daux = daux + dom*abs(DvalFunc(i,j))
+              end do ! i
+              p_DerrL1(iel) = daux
+              derrL2 = derrL2 + daux
+            end do ! j
+            !$omp end parallel do
+          else if(bcalcL1) then
+            !$omp parallel do private(i,daux,dom) reduction(+:derrL1)
+            do j = 1, NELtodo
+              daux = 0.0_DP
+              do i = 1, ncubp
+                dom = Domega(i) * abs(p_Ddetj(i,j))
+                daux = daux + dom*abs(DvalFunc(i,j))
+              end do ! i
+              derrL1 = derrL1 + daux
+            end do ! j
+            !$omp end parallel do
+          end if
+          
+          ! Incorporate errors
+          if(bcalcL2 .and. associated(rerror%p_DerrorL2)) &
+            rerror%p_DerrorL2(icomp) = rerror%p_DerrorL2(icomp) + derrL2
+          if(bcalcH1 .and. associated(rerror%p_DerrorH1)) &
+            rerror%p_DerrorH1(icomp) = rerror%p_DerrorH1(icomp) + derrH1
+          if(bcalcL1 .and. associated(rerror%p_DerrorL1)) &
+            rerror%p_DerrorL1(icomp) = rerror%p_DerrorL1(icomp) + derrL1
+        
+        end do ! icomp
+      
+        ! Release the domain integration structure
+        call domint_doneIntegration (rintSubset)
+        
+        NELdone = NELdone + NELtodo
+
+      end do ! while(NELdone .lt. NEL)
+
+      ! Release the element evaluation set
+      call elprep_releaseElementSet(reval)
+      
+      ! Deallocate all arrays
+      if(allocated(DvalDer)) deallocate(DvalDer)
+      if(allocated(DvalFunc)) deallocate(DvalFunc)
+      deallocate(Dbas)
+      deallocate(Idofs)
+      deallocate(DcubPts)
+      deallocate(Domega)
+    
+    end do ! ieldist
+    
+    ! Don't forget to take the square roots of the L2- and H1-errors
+    if(associated(rerror%p_DerrorL2) .and. bcalcL2) then
+      do icomp = 1, ncomp
+        rerror%p_DerrorL2(icomp) = sqrt(rerror%p_DerrorL2(icomp))
+      end do
+    end if
+    if(associated(rerror%p_DerrorH1) .and. bcalcH1) then
+      do icomp = 1, ncomp
+        rerror%p_DerrorH1(icomp) = sqrt(rerror%p_DerrorH1(icomp))
+      end do
+    end if
+    
+    ! That's it
+
+  end subroutine
 
   !****************************************************************************
 
