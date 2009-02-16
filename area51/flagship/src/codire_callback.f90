@@ -49,40 +49,37 @@
 !# 13.) codire_hadaptCallback3d
 !#      -> Performs application specific tasks in the adaptation algorithm in 3D
 !#
+!# 14.) codire_calcPrimalConvConst1d
+!#      -> Calculates the transport coefficients for linear convection in 1D
 !#
-!# The following auxiliary routines are available:
+!# 15.) codire_calcDualConvConst1d
+!#      -> Calculates the transport coefficients for linear convection in 1D
 !#
-!# 1.) codire_calcPrimalConvConst1d
-!#     -> Calculates the transport coefficients for linear convection in 1D
+!# 16.) codire_calcPrimalConvConst2d
+!#      -> Calculates the transport coefficients for linear convection in 2D
 !#
-!# 2.) codire_calcDualConvConst1d
-!#     -> Calculates the transport coefficients for linear convection in 1D
+!# 17.) codire_calcDualConvConst2d
+!#      -> Calculates the transport coefficients for linear convection in 2D
 !#
-!# 3.) codire_calcPrimalConvConst2d
-!#     -> Calculates the transport coefficients for linear convection in 2D
+!# 18.) codire_calcPrimalConvConst3d
+!#      -> Calculates the transport coefficients for linear convection in 3D
 !#
-!# 4.) codire_calcDualConvConst2d
-!#     -> Calculates the transport coefficients for linear convection in 2D
+!# 19.) codire_calcDualConvConst3d
+!#      -> Calculates the transport coefficients for linear convection in 3D
 !#
-!# 5.) codire_calcPrimalConvConst3d
-!#     -> Calculates the transport coefficients for linear convection in 3D
+!# 20.) codire_calcConvectionBurgersSpT2d
+!#      -> Calculates the transport coefficients for Burgers' equation in space-time
 !#
-!# 6.) codire_calcDualConvConst3d
-!#     -> Calculates the transport coefficients for linear convection in 3D
+!# 21.) codire_calcConvectionBuckLevSpT2d
+!#      -> Calculates the transport coefficients for Buckley-Leverett equation in space-time
 !#
-!# 7.) codire_calcConvectionBurgersSpT2d
-!#     -> Calculates the transport coefficients for Burgers' equation in space-time
+!# 22.) codire_calcConvectionBurgers1d
+!#      -> Calculates the transport coefficients for Burgers' equation in 1D
 !#
-!# 8.) codire_calcConvectionBuckLevSpT2d
-!#     -> Calculates the transport coefficients for Buckley-Leverett equation in space-time
-!#
-!# 9.) codire_calcConvectionBurgers1d
-!#     -> Calculates the transport coefficients for Burgers' equation in 1D
-!#
-!# 10.) codire_calcConvectionBurgers2d
+!# 23.) codire_calcConvectionBurgers2d
 !#      -> Calculates the transport coefficients for Burgers' equation in 2D
 !#
-!# 11.) codire_calcConvectionBuckLev1d
+!# 24.) codire_calcConvectionBuckLev1d
 !#      -> Calculates the transport coefficients for Buckley-Leverett equation in 1D
 !#
 !# </purpose>
@@ -95,6 +92,7 @@ module codire_callback
   use codire_basic
   use collection
   use flagship_basic
+  use flagship_callback
   use fparser
   use fsystem
   use genoutput
@@ -1275,16 +1273,13 @@ contains
     
     
     ! Check if the Jacobian operator has extended sparsity pattern
-    
-    if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(jacobianMatrix))) then
-      ijacobianFormat = collct_getvalue_int(rcollection, 'ijacobianFormat')
-      if (ijacobianFormat .eq. 0) then
-        bisExactStructure   = .true.
-        bisExtendedSparsity = .false.
-      else
-        bisExactStructure   = .false.
-        bisExtendedSparsity = .true.
-      end if
+    ijacobianFormat = collct_getvalue_int(rcollection, 'ijacobianFormat')
+    if (ijacobianFormat .eq. 0) then
+      bisExactStructure   = .true.
+      bisExtendedSparsity = .false.
+    else
+      bisExactStructure   = .false.
+      bisExtendedSparsity = .true.
     end if
         
     
@@ -2335,36 +2330,34 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_graph), save :: rgraph
-    type(t_matrixScalar), pointer :: rmatrix
     type(t_vectorBlock), pointer, save :: rsolution
     real(DP), dimension(:), pointer, save :: p_Dsolution
-
+    integer :: nsolutionVectors
 
     ! What operation should be performed?
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the template matrix
-      ! and the name of the solution vector is stored in the first and
-      ! second quick access string, respectively.
-
-      ! Retrieve template matrix from collection and build sparsity-graph.
-      rmatrix => collct_getvalue_matsca(rcollection,&
-                                        trim(rcollection%SquickAccess(1)))
-      call grph_createGraphFromMatrix(rmatrix, rgraph)
+      ! This subroutine assumes that the name of the first solution
+      ! vector is stored in the second quick access string.
 
       ! Retrieve solution vector from colletion and set pointer
       rsolution => collct_getvalue_vec(rcollection,&
-                                       trim(rcollection%SquickAccess(2)))
+                                        trim(rcollection%SquickAccess(2)))
       call lsysbl_getbase_double(rsolution, p_Dsolution)
-
-
+      
+      ! Call the general callback function
+      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+      
+      
     case(HADAPT_OPR_DONECALLBACK)
-      ! Release the sparsity graph
-      call grph_releaseGraph(rgraph)
+      ! Nullify solution vector
+      nullify(rsolution, p_Dsolution)
 
-           
+      ! Call the general callback function
+      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+      
+
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       if (rsolution%NEQ .ne. Ivertices(1)) then
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
@@ -2373,53 +2366,33 @@ contains
 
 
     case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into sparsity graph
-      call grph_insertVertex(rgraph, Ivertices(1))
-
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. Ivertices(1)) then
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       p_Dsolution(Ivertices(1)) = 0.5_DP*(p_Dsolution(Ivertices(2))+&
-                                          p_Dsolution(Ivertices(3)))
+                                           p_Dsolution(Ivertices(3)))
+
+      ! Call the general callback function
+      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from sparsity graph and solution
+      ! Remove vertex from solution
       if (Ivertices(2) .ne. 0) then
-        call grph_removeVertex(rgraph,Ivertices(1), Ivertices(2))
         p_Dsolution(Ivertices(1)) = p_Dsolution(Ivertices(2))
       else
-        call grph_removeVertex(rgraph, Ivertices(1))
         p_Dsolution(Ivertices(1)) = 0.0_DP
       end if
+      
+      ! Call the general callback function
+      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
 
-      
-    case(HADAPT_OPR_REF_LINE2LINE)
-      ! Delete broken edge (I1,I2) and add new edges (I1,I3),(I2,I3)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(2))
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(3))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
-      
-      
-    case(HADAPT_OPR_CRS_2LINE1LINE)
-      ! Delete broken edges (I1,I3) and (I2,I3) and add new edge (I1,I2)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(3))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(3))
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(2))
-      
-      
+
     case DEFAULT
-      ! Retrieve matrix from collection and generate template matrix
-      rmatrix => collct_getvalue_matsca(rcollection, &
-                                        trim(rcollection%SquickAccess(1)))
-      call grph_generateMatrix(rgraph, rmatrix)
-
-      ! Retrieve solution vector from collection and set dimensions
-      rsolution => collct_getvalue_vec(rcollection,&
-                                       trim(rcollection%SquickAccess(2)))
-      call lsysbl_resizeVectorBlock(rsolution, rmatrix%NEQ, .false.)
+      ! Call the general callback function
+      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
 
     end select
     
@@ -2455,7 +2428,6 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_graph), pointer, save :: rgraph
     type(t_vectorBlock), pointer, save :: rsolution
     real(DP), dimension(:), pointer, save :: p_Dsolution
 
@@ -2463,23 +2435,24 @@ contains
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the sparsity pattern
-      ! and the name of the solution vector is stored in the first and
-      ! second quick access string, respectively.
+      ! This subroutine assumes that the name of the solution vector
+      ! is stored in the second quick access string.
 
-      ! Retrieve sparsity pattern from collection and build sparsity-graph.
-      rgraph => collct_getvalue_graph(rcollection,&
-                                      trim(rcollection%SquickAccess(1)))
-      
       ! Retrieve solution vector from colletion and set pointer
       rsolution => collct_getvalue_vec(rcollection,&
-                                       trim(rcollection%SquickAccess(2)))
+                                        trim(rcollection%SquickAccess(2)))
       call lsysbl_getbase_double(rsolution, p_Dsolution)
+      
+      ! Call the general callback function
+      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
 
 
     case(HADAPT_OPR_DONECALLBACK)
-      ! Release the sparsity graph
-      call grph_releaseGraph(rgraph)
+      ! Nullify solution vector
+      nullify(rsolution, p_Dsolution)
+
+      ! Call the general callback function
+      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
 
       
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
@@ -2490,769 +2463,49 @@ contains
 
 
     case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into sparsity graph
-      call grph_insertVertex(rgraph, Ivertices(1))
-
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. Ivertices(1)) then
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       p_Dsolution(Ivertices(1)) = 0.5_DP*(p_Dsolution(Ivertices(2))+&    
-                                          p_Dsolution(Ivertices(3)))
+                                           p_Dsolution(Ivertices(3)))
+
+      ! Call the general callback function
+      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
 
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into sparsity graph
-      call grph_insertVertex(rgraph, Ivertices(1))
-
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. Ivertices(1)) then
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       p_Dsolution(Ivertices(1)) = 0.25_DP*(p_Dsolution(Ivertices(2))+&
-                                           p_Dsolution(Ivertices(3))+&
-                                           p_Dsolution(Ivertices(4))+&
-                                           p_Dsolution(Ivertices(5)))
+                                            p_Dsolution(Ivertices(3))+&
+                                            p_Dsolution(Ivertices(4))+&
+                                            p_Dsolution(Ivertices(5)))
+
+      ! Call the general callback function
+      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
 
       
     case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from sparsity graph and solution
+      ! Remove vertex from solution
       if (Ivertices(2) .ne. 0) then
-        call grph_removeVertex(rgraph,Ivertices(1), Ivertices(2))
         p_Dsolution(Ivertices(1)) = p_Dsolution(Ivertices(2))
       else
-        call grph_removeVertex(rgraph, Ivertices(1))
         p_Dsolution(Ivertices(1)) = 0.0_DP
       end if
 
+      ! Call the general callback function
+      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
 
-    case(HADAPT_OPR_REF_TRIA2TRIA)
-      ! Delete broken edge (I1,I2) and add three new edges 
-      ! (I1,I4), (I2,I4), and (I3,I4) if this is necessary
-      if (Ielements(1) .eq. Ielements(4)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(2))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(4))
-      end if
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(4))
-
-
-    case(HADAPT_OPR_REF_TRIA3TRIA12)
-      ! Delete broken edge (I1,I2) and add new edges (I1,I4),(I2,I4)
-      if (Ielements(1) .eq. Ielements(4)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(2))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(4))
-      end if
-
-      ! Delete broken edge (I2,I3) and add new edges (I2,I5),(I3,I5)
-      if (Ielements(2) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(3))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(5))
-      end if
-
-      ! Add new edges (I3,I4),(I4,I5)
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(4))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(5))
-
-
-    case(HADAPT_OPR_REF_TRIA3TRIA23)
-      ! Delete broken edge (I1,I2) and add new edges (I1,I4),(I2,I4
-      if (Ielements(1) .eq. Ielements(4)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(2))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(4))
-      end if
-
-      ! Delete broken edges (I2,I3) and add new edges (I2,I5),(I3,I5)
-      if (Ielements(2) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(3))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(5))
-      end if
-
-      ! Add new edges (I1,I5),(I4,I5)
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(5))
-
-
-    case(HADAPT_OPR_REF_TRIA4TRIA)
-      ! Delete broken edge (I1,I2) and add new edges (I1,I4),(I2,I4)
-      if (Ielements(1) .eq. Ielements(4)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(2))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(4))
-      end if
-
-      ! Delete broken edge (I2,I3) and add new edges (I2,I5),(I3,I5)
-      if (Ielements(2) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(3))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(5))
-      end if
-
-      ! Delete broken edge (I1,I3) and add new edges (I3,I6),(I1,I6)
-      if (Ielements(3) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(3))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(6))
-      end if
-
-      ! Add new edges I4,I5),(I4,I6), and (I5,I6)
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(6))
-
-
-    case(HADAPT_OPR_REF_QUAD2QUAD)
-      ! Delete broken edges (I1,I3),(I2,I4)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(3))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(4))
-
-      ! Delete broken edge (I1,I2) and add new edges (I1,I5),(I2,I5)
-      if (Ielements(1) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(2))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(5))
-      end if
-
-      ! Delete broken edge (I3,I4) and add new edges (I3,I6),(I4,I6)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(4), Ivertices(6))
-      end if
-
-      ! Add new edges (I1,I6),(I4,I5),(I2,I6),(I3,I5),(I5,I6)
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(6))
-
-
-    case(HADAPT_OPR_REF_QUAD3TRIA)
-      ! Delete broken edges (I1,I3),(I2,I4)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(3))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(4))
-
-      ! Delete broken edge (I1,I2) and add new edges (I1,I5),(I2,I5)
-      if (Ielements(1) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(2))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(5))
-      end if
-
-      ! Add new edges (I3,I5),(I4,I5)
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(5))
-
-
-    case(HADAPT_OPR_REF_QUAD4TRIA)
-      ! Delete broken edges (I1,I3),(I2,I4)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(3))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(4))
-
-      ! Delete broken edge (I1,I2) and add new edges (I1,I5),(I2,I5)
-      if (Ielements(1) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(2))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(5))
-      end if
-
-      ! Delete broken edge (I2,I3) and add new edges (I2,I6),(I3,I6)
-      if (Ielements(2) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(3))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(6))
-      end if
-
-      ! Add new edges (I4,I5),(I4,I6), and (I5,I6)
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(6))
-
-
-    case(HADAPT_OPR_REF_QUAD4QUAD)
-      ! Delete broken edges (I1,I3) and (I2,I4)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(3))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(4))
-
-      ! Delete broken edge (I1,I2) and add new edges (I1,I5),(I2,I5)
-      if (Ielements(1) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(2))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(5))
-      end if
-
-      ! Delete broken edge (I2,I3) and add new edges (I2,I6),(I3,I6)
-      if (Ielements(2) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(3))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(6))
-      end if
-
-      ! Delete broken edge (I3,I4) and add new edges (I3,I7),(I4,I7)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(7))
-        call grph_insertEdge(rgraph, Ivertices(4), Ivertices(7))
-      end if
-
-      ! Delete broken edge (I1,I4) and add new edges (I4,I8),(I1,I8)
-      if (Ielements(4) .eq. Ielements(8)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(4), Ivertices(8))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(8))
-      end if
-
-      ! Add new edges (I5,I9),(I6,I9),(I7,I9),(I8,I9),(I1,I9),(I5,I8),
-      ! (I2,I9),(I5,I6),(I3,I9),(I6,I7),(I4,I9), and (I7,I8)
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(6), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(7), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(8), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(8))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(6), Ivertices(7))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(7), Ivertices(8))
-
-
-    case(HADAPT_OPR_CVT_TRIA2TRIA)
-      ! Delete broken edge (I2,I3) and add new edges (I2,I5),(I3,I5)
-      if (Ielements(2) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(3))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(5))
-      end if
-
-      ! Delete broken edge (I1,I3) and add new edges (I1,I6),(I3,I6)
-      if (Ielements(3) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(3))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(6))
-      end if
-
-      ! Delete broken edge (I3,I4) and add new edges (I5,I6),(I4,I6),(I4,I5)
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(4))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(6))
-
-
-    case(HADAPT_OPR_CVT_QUAD2QUAD)
-
-      ! Delete broken edge (I2,I3) and add new edges (I2,I6),(I3,I6)
-      if (Ielements(2) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(3))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(6))
-      end if
-
-      ! Delete broken edge (I1,I4) and add new edges  (I1,I8),(I4,I8)
-      if (Ielements(4) .eq. Ielements(8)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(8))
-        call grph_insertEdge(rgraph, Ivertices(4), Ivertices(8))
-      end if
-
-      ! Delete broken edges (I5,I7),(I2,I7),(I3,I5),(I1,I7),(I4,I5) and
-      ! add new edges (I5,I9),(I6,I9),(I7,I9),(I8,I9),(I1,I9),(I2,I9),
-      ! (I3,I9),(I4,I9),(I5,I8),(I5,I6),(I6,I7),(I7,I8)
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(5))
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(6), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(7), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(8), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(8))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(6), Ivertices(7))
-      call grph_insertEdge(rgraph, Ivertices(7), Ivertices(8))
-
-
-    case(HADAPT_OPR_CVT_QUAD3TRIA)
-      ! Delete broken edge (I2,I3) and add new edges (I2,I6),(I3,I6)
-      if (Ielements(2) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(3))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(6))
-      end if
-
-      ! Delete broken edge (I3,I4) and add new edges (I3,I7),(I4,I7)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(7))
-        call grph_insertEdge(rgraph, Ivertices(4), Ivertices(7))
-      end if
-
-      ! Delete broken edge (I1,I4) and add new edges (I4,I8),(I1,I8)
-      if (Ielements(4) .eq. Ielements(8)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(4), Ivertices(8))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(8))
-      end if
-
-      ! Delete broken edges (I5,I3) and (I5,I4) and add new edges
-      ! (I5,I9),(I6,I9),(I7,I9),(I8,I9),(I1,I9),(I5,I8),(I2,I9),(I5,I6)
-      ! (I3,I9),I6,I7),(I4,I9), and (I7,I8)
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(5))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(5))
-      
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(6), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(7), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(8), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(6), Ivertices(7))
-      call grph_insertEdge(rgraph, Ivertices(7), Ivertices(8))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(8))
-
-    case(HADAPT_OPR_CVT_QUAD4TRIA)
-      ! Delete broken edge (I3,I4) and add new edges (I3,I7),(I4,I7)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(7))
-        call grph_insertEdge(rgraph, Ivertices(4), Ivertices(7))
-      end if
-
-      ! Delete broken edge (I1,I4) and add new edges (I4,I8),(I1,I8)
-      if (Ielements(4) .eq. Ielements(8)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(4), Ivertices(8))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(8))
-      end if
-
-      ! Delete broken edges (I4,I5),(I5,I6) and (I4,I6) and add new
-      ! edges (I5,I9),(I6,I9),(I7,I9),(I8,I9),(I1,I9),(I5,I8),(I2,I9),
-      ! (I5,I6),(I3,I9),I6,I7),(I4,I9), and (I7,I8)
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(6), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(7), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(8), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(8))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(6), Ivertices(7))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(9))
-      call grph_insertEdge(rgraph, Ivertices(7), Ivertices(8))   
-
-
-    case(HADAPT_OPR_CRS_2TRIA1TRIA)
-      ! Delete broken edges (I1,I4), and (I2,I4) and add new edge (I1,I2)
-      if (Ielements(1) .eq. Ielements(4)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(2))
-      end if
-      
-      ! Delete broken edge (I3,I4)
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(4))
-      
-
-    case(HADAPT_OPR_CRS_4TRIA1TRIA)
-      ! Delete broken edges (I4,I5),(I4,I6), and (I5,I6)
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(6))
-
-      ! Delete broken edges (I1,I4), and (I2,I4) and add new edge (I1,I2)
-      if (Ielements(1) .eq. Ielements(4)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(2))
-      end if
-
-      ! Delete broken edges (I2,I5), and (I3,I5) and add new edge (I2,I3)
-      if (Ielements(2) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(5))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
-      end if
-
-      ! Delete broken edges (I1,I6), and (I3,I6) and add new edge (I1,I3)
-      if (Ielements(3) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(6))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(3))
-      end if
-
-
-    case(HADAPT_OPR_CRS_4TRIA2TRIA1)
-      ! Delete broken edges (I4,I5),(I5,I6), and (I4,I6) and add new edge (I3,I4)
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(4))
-
-      ! Delete broken edges (I2,I5), and (I3,I5) and add new edge (I2,I3)
-      if (Ielements(2) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(5))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
-      end if
-
-      ! Delete broken edges (I1,I6), and (I3,I6) and add new edge (I1,I3)
-      if (Ielements(3) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(6))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(3))
-      end if
-
-
-    case(HADAPT_OPR_CRS_4TRIA2TRIA2)
-      ! Delete broken edges (I4,I5),(I5,I6), and (I4,I6) and add new edge (I1,I5)
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(5))
-
-      ! Delete broken edges (I1,I4), and (I2,I4) and add new edge (I1,I4)
-      if (Ielements(1) .eq. Ielements(4)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(2))
-      end if
-
-      ! Delete broken edges (I1,I6), and (I3,I6) and add new edge (I1,I3)
-      if (Ielements(3) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(6))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(3))
-      end if
-
-
-    case(HADAPT_OPR_CRS_4TRIA2TRIA3)
-      ! Delete broken edges (I4,I5),(I5,I6), and (I4,I6) and add new edge (I2,I6)
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(6))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(6))
-
-      ! Delete broken edges (I1,I4), and (I2,I4) and add new edge (I1,I4)
-      if (Ielements(1) .eq. Ielements(4)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(4))
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(4))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(2))
-      end if
-
-      ! Delete broken edges (I2,I5), and (I3,I5) and add new edge (I2,I3)
-      if (Ielements(2) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(5))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
-      end if
-
-
-    case(HADAPT_OPR_CRS_4QUAD1QUAD)
-      ! Delete broken edges (I1,I9),(I2,I9),(I3,I9),(I4,I9),(I5,I9),(I6,I9),
-      ! (I7,I9),(I8,I9),(I5,I6),(I6,I7),(I7,I8), and (I5,I8)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(7), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(8), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(7), Ivertices(8))
-      call grph_removeEdge(rgraph, Ivertices(8), Ivertices(5))
-     
-      ! Delete broken edges (I1,I5) and (I2,I5) and add new edge (I1,I2)
-      if (Ielements(1) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(5))
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(2))
-      end if
-
-      ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
-      if (Ielements(2) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(6))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
-      end if
-
-      ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(7))
-        call grph_removeEdge(rgraph, Ivertices(4), Ivertices(7))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(4))
-      end if
-
-      ! Delete broken edges (I4,I8) and (I1,I8) and add new edge (I4,I1)
-      if (Ielements(4) .eq. Ielements(8)) then
-        call grph_removeEdge(rgraph, Ivertices(4), Ivertices(8))
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(8))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(4))
-      end if
-      
-      ! Add new edges (I1,I3) and (I2,I4)
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(3))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(4))
- 
-      
-    case(HADAPT_OPR_CRS_4QUAD2QUAD)
-      ! Delete broken edges (I1,I9),(I2,I9),(I3,I9),(I4,I9),(I5,I9),(I6,I9),
-      ! (I7,I9),(I8,I9),(I5,I6),(I6,I7),(I7,I8), and (I5,I8)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(7), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(8), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(7), Ivertices(8))
-      call grph_removeEdge(rgraph, Ivertices(8), Ivertices(5))
-      
-      ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
-      if (Ielements(2) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(6))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
-      end if
-      
-      ! Delete broken edges (I4,I8) and (I1,I8) and add new edge (I4,I1)
-      if (Ielements(4) .eq. Ielements(8)) then
-        call grph_removeEdge(rgraph, Ivertices(4), Ivertices(8))
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(8))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(4))
-      end if
-      
-      ! Add new edges (I5,I7),(I1,I7),(I4,I5),(I2,I7) and (I3,I5)
-      call grph_insertEdge(rgraph, Ivertices(5), Ivertices(7))
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(7))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(7))
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(5))
-      
-      
-    case(HADAPT_OPR_CRS_4QUAD3TRIA)
-      ! Delete broken edges (I1,I9),(I2,I9),(I3,I9),(I4,I9),(I5,I9),(I6,I9),
-      ! (I7,I9),(I8,I9),(I5,I6),(I6,I7),(I7,I8), and (I5,I8)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(7), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(8), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(7), Ivertices(8))
-      call grph_removeEdge(rgraph, Ivertices(8), Ivertices(5))
-      
-      ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
-      if (Ielements(2) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(6))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
-      end if
-      
-      ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(7))
-        call grph_removeEdge(rgraph, Ivertices(4), Ivertices(7))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(4))
-      end if
-      
-      ! Delete broken edges (I4,I8) and (I1,I8) and add new edge (I4,I1)
-      if (Ielements(4) .eq. Ielements(8)) then
-        call grph_removeEdge(rgraph, Ivertices(4), Ivertices(8))
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(8))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(4))
-      end if
-      
-      ! Add new edges (I3,I5) and (I4,I5)
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(5))
-      
-      
-    case(HADAPT_OPR_CRS_4QUAD4TRIA)
-      ! Delete broken edges (I1,I9),(I2,I9),(I3,I9),(I4,I9),(I5,I9),(I6,I9),
-      ! (I7,I9),(I8,I9),(I5,I6),(I6,I7), and (I7,I8)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(7), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(8), Ivertices(9))
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(7), Ivertices(8))
-      
-      ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
-      if (Ielements(2) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(6))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
-      end if
-      
-      ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(7))
-        call grph_removeEdge(rgraph, Ivertices(4), Ivertices(7))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(4))
-      end if
-      
-      ! Add new edges (I3,I5) and (I3,I8)
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(8))
-      
-      
-    case(HADAPT_OPR_CRS_2QUAD1QUAD)
-      ! Delete broken edges (I5,I7), (I1,I7),(I4,I5),(I2,(I7) and (I3,I5)
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(5))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(5))
-      
-      ! Delete broken edges (I1,I5) and (I2,I5) and add new edge (I1,I2)
-      if (Ielements(1) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(5))
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(2))
-      end if
-      
-      ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(7))
-        call grph_removeEdge(rgraph, Ivertices(4), Ivertices(7))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(4))
-      end if
-      
-      ! Add new edges (I1,I3) and (I2,I4)
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(3))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(4))
-      
-      
-    case(HADAPT_OPR_CRS_2QUAD3TRIA)
-      ! Delete broken edges (I5,I7),(I1,I7),(I4,I5),(I2,(I7) and (I3,I5)
-      call grph_removeEdge(rgraph, Ivertices(5), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(2), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(5))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(5))
-      
-      ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(7))
-        call grph_removeEdge(rgraph, Ivertices(4), Ivertices(7))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(4))
-      end if
-      
-      ! Add new edges (I3,I5) and (I4,I5)
-      call grph_insertEdge(rgraph, Ivertices(3), Ivertices(5))
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(5))
-      
-      
-    case(HADAPT_OPR_CRS_3TRIA1QUAD)
-      ! Delete broken edges (I3,I5) and (I4,I5)
-      call grph_removeEdge(rgraph, Ivertices(3), Ivertices(5))
-      call grph_removeEdge(rgraph, Ivertices(4), Ivertices(5))
-      
-      ! Delete broken edges (I1,I5) and (I2,I5) and add new edge (I1,I2)
-      if (Ielements(1) .eq. Ielements(5)) then
-        call grph_removeEdge(rgraph, Ivertices(1), Ivertices(5))
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(5))
-        call grph_insertEdge(rgraph, Ivertices(1), Ivertices(2))
-      end if
-      
-      ! Add new edges (I1,I3) and (I2,I4)
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(3))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(4))
-      
-      
-    case(HADAPT_OPR_CRS_4TRIA1QUAD)
-      ! Delete broken edges (I1,I6),(I1,I7) and (I6,I7)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(7))
-      
-      ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
-      if (Ielements(2) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(6))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
-      end if
-      
-      ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(7))
-        call grph_removeEdge(rgraph, Ivertices(4), Ivertices(7))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(4))
-      end if
-      
-      ! Add new edges (I1,I3) and (I2,I4)
-      call grph_insertEdge(rgraph, Ivertices(1), Ivertices(3))
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(4))
-      
-      
-    case(HADAPT_OPR_CRS_4TRIA3TRIA2)
-      ! Delete broken edges (I1,I7) and (I6,I7)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(7))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(7))
-      
-      ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
-      if (Ielements(3) .eq. Ielements(7)) then
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(7))
-        call grph_removeEdge(rgraph, Ivertices(4), Ivertices(7))
-        call grph_insertEdge(rgraph, Ivertices(3), Ivertices(4))
-      end if
-      
-      ! Add new edge (I4,I6)
-      call grph_insertEdge(rgraph, Ivertices(4), Ivertices(6))
-      
-      
-    case(HADAPT_OPR_CRS_4TRIA3TRIA3)
-      ! Delete broken edges (I1,I6) and (I6,I7)
-      call grph_removeEdge(rgraph, Ivertices(1), Ivertices(6))
-      call grph_removeEdge(rgraph, Ivertices(6), Ivertices(7))
-      
-      ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
-      if (Ielements(2) .eq. Ielements(6)) then
-        call grph_removeEdge(rgraph, Ivertices(2), Ivertices(6))
-        call grph_removeEdge(rgraph, Ivertices(3), Ivertices(6))
-        call grph_insertEdge(rgraph, Ivertices(2), Ivertices(3))
-      end if
-      
-      ! Add new edge (I2,I7)
-      call grph_insertEdge(rgraph, Ivertices(2), Ivertices(7))
-
-      
+    
     case DEFAULT
-      
+      ! Call the general callback function
+      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
+
     end select
 
   end subroutine codire_hadaptCallback2D
@@ -3287,72 +2540,90 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_graph), save :: rgraph
-    type(t_matrixScalar), pointer :: rmatrix
     type(t_vectorBlock), pointer, save :: rsolution
     real(DP), dimension(:), pointer, save :: p_Dsolution
+
 
     ! What operation should be performed
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the template matrix
-      ! and the name of the solution vector is stored in the first and
-      ! second quick access string, respectively.
-
-      ! Retrieve template matrix from collection and build sparsity-graph.
-      rmatrix => collct_getvalue_matsca(rcollection,&
-                                        trim(rcollection%SquickAccess(1)))
-      call grph_createGraphFromMatrix(rmatrix, rgraph)
+      ! This subroutine assumes that the name of the solution vector
+      ! is stored in the second quick access string.
 
       ! Retrieve solution vector from colletion and set pointer
       rsolution => collct_getvalue_vec(rcollection,&
-                                       trim(rcollection%SquickAccess(2)))
+                                        trim(rcollection%SquickAccess(2)))
       call lsysbl_getbase_double(rsolution, p_Dsolution)
+
+      ! Call the general callback function
+      call flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
 
 
     case(HADAPT_OPR_DONECALLBACK)
-      ! Release the sparsity graph
-      call grph_releaseGraph(rgraph)
-
+      ! Nullify solution vector
+      nullify(rsolution, p_Dsolution)
+      
+      ! Call the general callback function
+      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+      
       
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       if (rsolution%NEQ .ne. Ivertices(1)) then
         call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
-    
 
+
+    case(HADAPT_OPR_INSERTVERTEXEDGE)
+      ! Insert vertex into solution vector
+      if (rsolution%NEQ .lt. Ivertices(1)) then
+        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
+        call lsysbl_getbase_double(rsolution, p_Dsolution)
+      end if
+      p_Dsolution(Ivertices(1)) = 0.5_DP*(p_Dsolution(Ivertices(2))+&    
+                                           p_Dsolution(Ivertices(3)))
+
+      ! Call the general callback function
+      call flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
+
+
+    case(HADAPT_OPR_INSERTVERTEXCENTR)
+      ! Insert vertex into solution vector
+      if (rsolution%NEQ .lt. Ivertices(1)) then
+        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
+        call lsysbl_getbase_double(rsolution, p_Dsolution)
+      end if
+      p_Dsolution(Ivertices(1)) = 0.25_DP*(p_Dsolution(Ivertices(2))+&
+                                            p_Dsolution(Ivertices(3))+&
+                                            p_Dsolution(Ivertices(4))+&
+                                            p_Dsolution(Ivertices(5)))
+
+      ! Call the general callback function
+      call flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
+
+    
     case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from sparsity graph and solution
+      ! Remove vertex from solution
       if (Ivertices(2) .ne. 0) then
-        call grph_removeVertex(rgraph,Ivertices(1), Ivertices(2))
         p_Dsolution(Ivertices(1)) = p_Dsolution(Ivertices(2))
       else
-        call grph_removeVertex(rgraph, Ivertices(1))
         p_Dsolution(Ivertices(1)) = 0.0_DP
       end if
 
-      
-    case DEFAULT
-      ! Retrieve matrix from collection and generate template matrix
-      rmatrix => collct_getvalue_matsca(rcollection, &
-                                        trim(rcollection%SquickAccess(1)))
-      call grph_generateMatrix(rgraph, rmatrix)
+      ! Call the general callback function
+      call flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
 
-      ! Retrieve solution vector from collection and set dimensions
-      rsolution => collct_getvalue_vec(rcollection,&
-                                       trim(rcollection%SquickAccess(2)))
-      call lsysbl_resizeVectorBlock(rsolution, rmatrix%NEQ, .false.)
-      
+
+    case DEFAULT
+      ! Call the general callback function
+      call flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
     end select
     
   end subroutine codire_hadaptCallback3D
 
   !*****************************************************************************
-  ! AUXILIARY SUBROUTINES
-  !*****************************************************************************
-
+  
 !<subroutine>
 
   pure subroutine codire_calcPrimalConvConst1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
