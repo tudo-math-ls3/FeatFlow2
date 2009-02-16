@@ -398,7 +398,7 @@ contains
     ! Get the domain from the problem structure
     p_rboundary => rproblem%rboundary
 
-    ! Now we have the raw problem. What is missing is the definition of the boudary
+    ! Now we have the raw problem. What is missing is the definition of the boundary
     ! conditions.
     ! For implementing boundary conditions, we use a 'filter technique with
     ! discretised boundary conditions'. This means, we first have to calculate

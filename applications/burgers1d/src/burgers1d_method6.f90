@@ -443,7 +443,7 @@ contains
       ! analytic boundary conditions.
       p_rdiscretisation => p_rmatrix%p_rblockDiscrTest
       
-      ! Now we have the raw problem. What is missing is the definition of the boudary
+      ! Now we have the raw problem. What is missing is the definition of the boundary
       ! conditions.
       ! For implementing boundary conditions, we use a 'filter technique with
       ! discretised boundary conditions'. This means, we first have to calculate
