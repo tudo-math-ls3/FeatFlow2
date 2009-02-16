@@ -93,20 +93,31 @@
 !# 13.) codire_estimateTargetFuncError
 !#      -> Estimates the error in the quantity of interest
 !#
-!# 14.) codire_adaptTriangulation
+!# 14.) codire_estimateRecoveryError
+!#      -> Estimates the solution error using recovery techniques
+!#
+!# 15.) codire_adaptTriangulation
 !#      -> Performs h-adaptation for the given triangulation
 !#
-!# 15.) codire_solveTransientPrimal
+!# 16.) codire_solveTransientPrimal
 !#      -> Solves the primal formulation of the time-dependent 
 !#         convection-diffusion-reaction equation.
 !#
-!# 16.) codire_solvePseudoTransientPrimal
-!#      -> Solves the primal formulation of the steady convection-
-!#         diffusion-reaction equation using pseudo time-stepping.
+!# 17.) codire_solvePseudoTransientPrimal
+!#      -> Solves the primal formulation of the steady 
+!#         convection-diffusion-reaction equation using pseudo time-stepping.
 !#
-!# 17.) codire_solveSteadyStatePrimal
-!#      -> Solves the primal formulation of the steady convection-
-!#         diffusion-reaction equation directly
+!# 18.) codire_solvePseudoTransientPrimalDual
+!#      -> Solves the primal and the dual formulation of the steady 
+!#         convection-diffusion-reaction equation using pseudo time-stepping.
+!#
+!# 19.) codire_solveSteadyStatePrimal
+!#      -> Solves the primal formulation of the steady 
+!#         convection-diffusion-reaction equation directly
+!#
+!# 20.) codire_solveSteadyStatePrimalDual
+!#      -> Solves the primal and the dual formulation of the steady 
+!#         convection-diffusion-reaction equation directly
 !#
 !#
 !# The following auxiliary routines are available:
@@ -308,6 +319,8 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        print *, "Feature is not implemented"
+        stop
 
 
       case ('pseudotransient_primal')
@@ -325,6 +338,8 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        print *, "Feature is not implemented"
+        stop
 
         
       case ('stationary_primal')
@@ -1234,7 +1249,7 @@ contains
         
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the parameter alpha
-        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha)
+        call stdop_assembleLaplaceMatrix(rmatrix, .true., dalpha)
         
       case DEFAULT
         call lsyssc_clearMatrix(rmatrix)
@@ -1261,7 +1276,7 @@ contains
         
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the parameter alpha
-        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha)
+        call stdop_assembleLaplaceMatrix(rmatrix, .true., dalpha)
         
       case (DIFFUSION_ANISOTROPIC)
         ! Evaluate the constant coefficient from the function parser
@@ -1273,7 +1288,7 @@ contains
         ! We have constant coefficients
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff    = .true.
-        rform%Dcoefficients     = -rform%Dcoefficients
+        rform%Dcoefficients     = rform%Dcoefficients
         
         ! Initialize the bilinear form
         rform%itermCount = 4
@@ -1317,7 +1332,7 @@ contains
         
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the parameter alpha
-        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha)
+        call stdop_assembleLaplaceMatrix(rmatrix, .true., dalpha)
         
       case (DIFFUSION_ANISOTROPIC)
         ! Evaluate the constant coefficient from the function parser
@@ -1334,7 +1349,7 @@ contains
         ! We have constant coefficients
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff    = .true.
-        rform%Dcoefficients     = -rform%Dcoefficients
+        rform%Dcoefficients     = rform%Dcoefficients
         
         ! Initialize the bilinear form
         rform%itermCount = 9
@@ -1445,10 +1460,10 @@ contains
     real(DP), intent(IN) :: dtime
 !</input>
 
-!<output>
+!<inputoutput>
     ! solution vector
-    type(t_vectorBlock), intent(OUT) :: rvector
-!</output>
+    type(t_vectorBlock), intent(INOUT) :: rvector
+!</inputoutput>
 !</subroutine>
 
     ! section names
@@ -1544,8 +1559,7 @@ contains
 
 !<subroutine>
 
-  subroutine codire_initRHS(rappDescriptor, rproblemLevel,&
-                            dtime, rvector)
+  subroutine codire_initRHS(rappDescriptor, rproblemLevel, dtime, rvector)
 
 !<description>
     ! This subroutine initializes the right-hand side vector.
@@ -1562,21 +1576,17 @@ contains
     real(DP), intent(IN) :: dtime
 !</input>
 
-!<output>
+!<intputoutput>
     ! right-hand side vector
-    type(t_vectorBlock), intent(OUT) :: rvector
-!</output>
+    type(t_vectorBlock), intent(inOUT) :: rvector
+!</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_collection) :: rcollection
     type(t_linearForm) :: rform
-
-
-    ! Create new block vector based on the spatial discretisation
-    p_rdiscretisation => rproblemLevel%rdiscretisation
-    call lsysbl_createVectorBlock(p_rdiscretisation, rvector, .false., ST_DOUBLE)
+    
     
     ! How should the target functional be initialized?
     select case(rappDescriptor%irhstype)
@@ -1788,9 +1798,8 @@ contains
     real(DP) :: dtotalTime, dfraction
 
     call output_lbrk(nlbrk=5)
-    call output_separator (OU_SEP_STAR)
-    write(*,FMT='(24X,A)') '*** TIME MEASUREMENT ***'
-    call output_separator (OU_SEP_STAR)
+    call output_line('Time measurement:')
+    call output_line('-----------------')
     
     rtimerSolution = rappDescriptor%rtimerSolution
     call stat_subTimers(rappDescriptor%rtimerAssemblyMatrix, rtimerSolution)
@@ -1799,32 +1808,32 @@ contains
     dtotalTime = max(rtimerTotal%delapsedCPU, rtimerTotal%delapsedReal)
     dfraction  = 100.0_DP/dtotalTime
 
-    call output_line('  Time for computing solution   : '//&
+    call output_line('Time for computing solution:   '//&
                      trim(sys_sdL(rtimerSolution%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rtimerSolution%delapsedCPU, 2))//' %')
-    call output_line('  Time for mesh adaptivity      : '//&
+    call output_line('Time for mesh adaptivity:      '//&
                      trim(sys_sdL(rappDescriptor%rtimerAdaptation%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerAdaptation%delapsedCPU, 2))//' %')
-    call output_line('  Time for error estimation     : '//&
+    call output_line('Time for error estimation:     '//&
                      trim(sys_sdL(rappDescriptor%rtimerErrorEstimation%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerErrorEstimation%delapsedCPU, 2))//' %')
-    call output_line('  Time for triangulation        : '//&
+    call output_line('Time for triangulation:        '//&
                      trim(sys_sdL(rappDescriptor%rtimerTriangulation%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerTriangulation%delapsedCPU, 2))//' %')
-    call output_line('  Time for coefficient assembly : '//&
+    call output_line('Time for coefficient assembly: '//&
                      trim(sys_sdL(rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 2))//' %')
-    call output_line('  Time for matrix assembly      : '//&
+    call output_line('Time for matrix assembly:      '//&
                      trim(sys_sdL(rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 2))//' %')
-    call output_line('  Time for vector assembly:       '//&
+    call output_line('Time for vector assembly:      '//&
                      trim(sys_sdL(rappDescriptor%rtimerAssemblyVector%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyVector%delapsedCPU, 2))//' %')
-    call output_line('  Time for pre-/post-processing : '//&
+    call output_line('Time for pre-/post-processing: '//&
                      trim(sys_sdL(rappDescriptor%rtimerPrePostprocess%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerPrePostprocess%delapsedCPU, 2))//' %')
-    call output_separator (OU_SEP_MINUS)
-    call output_line('  Time for total simulation     : '//&
+    call output_lbrk()
+    call output_line('Time for total simulation:     '//&
                      trim(sys_sdL(dtotalTime, 2)))
     call output_lbrk()
   end subroutine codire_outputStatistics
@@ -1872,6 +1881,7 @@ contains
 
     ! global error
     real(DP), intent(OUT) :: derror
+!</output>
 !</subroutine>
 
 
@@ -1946,6 +1956,183 @@ contains
 
 !<subroutine>
 
+  subroutine codire_estimateRecoveryError(rparlist, ssectionName, rproblemLevel,&
+                                          rsolution, rcollection, rerror, derror)
+
+!<description> This subroutine estimates the error of the discrete
+    ! solution by using recovery procedures such as the
+    ! superconvergent patch recovery technique or L2-projection.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
+
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: rsolution
+
+    ! problem level structure
+    type(t_problemLevel), intent(IN) :: rproblemLevel
+!</input>
+
+!<inputoutput>
+    ! collection
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+
+!<output>
+    ! element-wise error distribution
+    type(t_vectorScalar), intent(OUT) :: rerror
+
+    ! global error
+    real(DP), intent(OUT) :: derror
+!</output>
+!</subroutine>
+
+    ! section names
+    character(LEN=SYS_STRLEN) :: serrorestimatorName
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP) :: dnoiseFilter, dabsFilter, dsolution, dvalue
+    integer :: ierrorEstimator, igridIndicator, i
+    
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
+    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'ierrorestimator', ierrorestimator)
+    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'igridindicator', igridindicator)
+    
+    ! What type of error estimator are we?
+    select case(ierrorEstimator)
+
+    case (ERREST_L2PROJECTION)
+      call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
+      call ppgrd_calcGradientError(rsolution%RvectorBlock(1), derror,&
+                                   PPGRD_INTERPOL, rerror=rerror)
+
+    case (ERREST_SPR_VERTEX)
+      call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
+      call ppgrd_calcGradientError(rsolution%RvectorBlock(1), derror,&
+                                   PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH, rerror)
+
+    case (ERREST_SPR_ELEMENT)
+      call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
+      call ppgrd_calcGradientError(rsolution%RvectorBlock(1), derror,&
+                                   PPGRD_ZZTECHNIQUE, PPGRD_ELEMPATCH, rerror)
+
+    case (ERREST_SPR_FACE)
+      call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
+      call ppgrd_calcGradientError(rsolution%RvectorBlock(1), derror,&
+                                   PPGRD_ZZTECHNIQUE, PPGRD_FACEPATCH, rerror)
+      
+    case (ERREST_LIMAVR)
+      call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
+      call ppgrd_calcGradientError(rsolution%RvectorBlock(1), derror,&
+                                   PPGRD_LATECHNIQUE, rerror=rerror)
+      
+    case (ERREST_SECONDDIFF)
+      call parlst_getvalue_double(rparlist, trim(serrorestimatorName), 'dnoiseFilter', dnoiseFilter)
+      call parlst_getvalue_double(rparlist, trim(serrorestimatorName), 'dabsFilter', dabsFilter)
+      call ppind_secondDifference(rsolution%RvectorBlock(1), dnoiseFilter, dabsFilter, rerror)
+
+      derror = SYS_MAXREAL
+
+    case DEFAULT
+      call output_line('Invalid type of error estimator!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_estimateRecoveryError')
+      call sys_halt()
+    end select
+
+
+    ! What type of grid indicator are we?
+    select case(igridIndicator)
+
+    case (ERREST_ASIS)   
+      ! That's simple, do nothing.
+
+
+    case (ERREST_EQUIDIST)
+      ! Try to equidistribute the relative percentage error
+
+      ! We need the global norm of the scalar error variable
+      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_L2ERROR, dsolution)
+
+print *, dsolution, derror
+
+      ! Compute permissible element error
+      dvalue = sqrt(dsolution**2 + derror**2)/sqrt(real(rerror%NEQ, DP))
+
+      ! Scale element error by permissible error
+      call lsyssc_scaleVector(rerror, 1.0_DP/dvalue)
+
+
+    case (ERREST_LOGEQUIDIST)
+
+      ! Set pointer
+      call lsyssc_getbase_double(rerror, p_Ddata)
+      
+      ! Determine largest error value
+      dvalue = - SYS_MAXREAL
+      do i = 1, size(p_Ddata)
+        dvalue = max(dvalue, p_Ddata(i))
+      end do
+
+      ! Normalize error by largest value
+      call lsyssc_scaleVector(rerror, 1.0_DP/dvalue)
+            
+      ! Initialize mean value
+      dvalue = 0.0_DP
+
+      ! Loop over all contributions
+      do i = 1, size(p_Ddata)
+        p_Ddata(i) = log(max(exp(-20.0_DP), p_Ddata(i)))
+        dvalue   = dvalue + p_Ddata(i)
+      end do
+      
+      ! Calculate mean
+      dvalue = dvalue/real(size(p_Ddata), DP)
+      
+      ! Subtract mean value from grid indicator
+      do i = 1, size(p_Ddata)
+        p_Ddata(i) = p_Ddata(i)-dvalue
+      end do
+
+      
+    case (ERREST_AUTORMS)
+
+      ! Set pointer
+      call lsyssc_getbase_double(rerror, p_Ddata)
+
+      ! Initialize mean value
+      dvalue = 0.0_DP
+
+      ! Loop over all  contributions
+      do i = 1, size(p_Ddata)
+        dvalue = dvalue + p_Ddata(i)**2
+      end do
+
+      ! Calculate root mean value
+      dvalue = sqrt(dvalue/real(size(p_Ddata), DP))
+
+      ! Normalize grid indicator by RMS
+      call lsyssc_scaleVector(rerror, 1.0_DP/dvalue)
+      
+
+    case DEFAULT
+      call output_line('Invalid type of grid indicator!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_estimateRecoveryError')
+      call sys_halt()
+    end select
+  end subroutine codire_estimateRecoveryError
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine codire_adaptTriangulation(rhadapt, rtriangulationSrc, rindicator,&
                                        rcollection, rtriangulationDest)
 
@@ -2000,17 +2187,14 @@ contains
     case (NDIM1D)
       call codire_hadaptCallback1D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
       call hadapt_performAdaptation(rhadapt, rindicator, rcollection, codire_hadaptCallback1D)
-      call codire_hadaptCallback1D(rcollection, -999, Ivalue, Ivalue)
       
     case (NDIM2D)
       call codire_hadaptCallback2D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
       call hadapt_performAdaptation(rhadapt, rindicator, rcollection, codire_hadaptCallback2D)
-      call codire_hadaptCallback2D(rcollection, -999, Ivalue, Ivalue)
 
     case (NDIM3D)
       call codire_hadaptCallback3D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
       call hadapt_performAdaptation(rhadapt, rindicator, rcollection, codire_hadaptCallback3D)
-      call codire_hadaptCallback3D(rcollection, -999, Ivalue, Ivalue)
 
     end select
 
@@ -2082,7 +2266,7 @@ contains
     type(t_vectorBlock) :: rvectorBlock
 
     ! Vector for the element-wise error distribution
-    type(t_vectorScalar) :: rvectorScalar
+    type(t_vectorScalar) :: relementError
     
     ! Structure for h-adaptation
     type(t_hadapt) :: rhadapt
@@ -2097,8 +2281,11 @@ contains
     ! local variables
     real(dp) :: derror,dstepUCD,dtimeUCD,dstepAdapt,dtimeAdapt
     integer :: templateMatrix
-    integer :: nlmin
+    integer :: nlmin,ipreadapt,npreadapt
 
+
+    ! Start time measurement for pre-processing
+    call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
 
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
@@ -2110,7 +2297,7 @@ contains
 
 
     !---------------------------------------------------------------------------
-    ! Initialize the h-adaptation structure
+    ! Initialize the h-adaptation structure and perform pre-adaptation
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
@@ -2118,8 +2305,10 @@ contains
 
       call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dstepAdapt', dstepAdapt, 0.0_DP)
       call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dtimeAdapt', dtimeAdapt, 0.0_DP)
+      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'npreadapt', npreadapt, 0)
 
-      if (dstepAdapt > 0.0_DP) then
+
+      if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
 
         ! Initialize adaptation structure from parameter list
         call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
@@ -2134,17 +2323,67 @@ contains
         ! Attach the primal solution vector to the collection structure
         call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
 
+
+        ! Perform pre-adaptation?
+        if (npreadapt > 0) then
+
+          ! Set the names of the template matrix and the solution vector
+          rcollection%SquickAccess(1) = 'sparsitypattern'
+          rcollection%SquickAccess(2) = 'solutionvector'
+          
+          ! Attach the primal solution vector to the collection structure
+          call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
+
+          ! Perform number of pre-adaptation steps
+          do ipreadapt = 1, npreadapt
+
+            ! Compute the error estimator using recovery techniques
+            call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
+                                              rsolution, rcollection, relementError, derror)
+
+            ! Perform h-adaptation and update the triangulation structure
+            call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
+                                           relementError, rcollection)
+            
+            ! Update the template matrix according to the sparsity pattern
+            call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+
+            ! Release element-wise error distribution
+            call lsyssc_releaseVector(relementError)
+
+            ! Re-generate the initial solution vector
+            call lsysbl_releaseVector(rsolution)
+            call codire_initSolution(rparlist, 'codire', p_rproblemLevel,&
+                                     0.0_DP, rsolution)
+
+            ! Generate standard mesh from raw mesh
+            call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+          
+            ! Re-initialize all constant coefficient matrices
+            call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+
+          end do
+
+          ! Prepare internal data arrays of the solver structure
+          call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
+                                           1, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+          call solver_updateStructure(rsolver)
+
+        end if   ! npreadapt > 0
+
       end if   ! dstepAdapt > 0
 
     else
-
+      
       dstepAdapt = 0.0_DP
-
+      
     end if
-
-    !---------------------------------------------------------------------------
-    ! Initialize the solver for the primal problem
-    !---------------------------------------------------------------------------
+    
+    ! Initialize right-hand side vector
+    if (rappDescriptor%irhstype > 0) then
+      call lsysbl_createVectorBlock(rsolution, rvectorBlock)
+      call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rvectorBlock)
+    end if
 
     ! Calculate the velocity field
     nlmin = solver_getMinimumMultigridlevel(rsolver)
@@ -2156,6 +2395,10 @@ contains
 
     ! Set collection to primal problem mode
     call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
+
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
+
 
     !---------------------------------------------------------------------------
     ! Infinite time stepping loop
@@ -2175,10 +2418,6 @@ contains
       
       ! Check if right-hand side vector exists
       if (rappDescriptor%irhstype > 0) then
-
-        ! Initialize right-hand side vector
-        call codire_initRHS(rappDescriptor, p_rproblemLevel,&
-                            0.0_DP, rvectorBlock)
 
         ! What time-stepping scheme should be used?
         select case(rtimestep%ctimestepType)
@@ -2203,9 +2442,6 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransient')
           call sys_halt()
         end select
-
-        ! Release right-hand side vector
-        call lsysbl_releaseVector(rvectorBlock)
         
       else
 
@@ -2264,6 +2500,10 @@ contains
       end if
 
 
+      !-------------------------------------------------------------------------
+      ! Perform adaptation
+      !-------------------------------------------------------------------------
+
       if (dstepAdapt .gt. 0.0_DP .and. rtimestep%dTime .ge. dtimeAdapt) then
       
         ! Set time for next adaptation step
@@ -2276,7 +2516,9 @@ contains
         ! Start time measurement for error estimation
         call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
         
-        ! HERE WE NEED TO IMPLEMENT THE RECOVERY-BASED INDICATOR
+        ! Compute the error estimator using recovery techniques
+        call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
+                                          rsolution, rcollection, relementError, derror)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
@@ -2298,17 +2540,17 @@ contains
         
         ! Perform h-adaptation and update the triangulation structure
         call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                       rvectorScalar, rcollection)
+                                       relementError, rcollection)
         
         ! Update the template matrix according to the sparsity pattern
         call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
         
         ! Resize the solution vector accordingly
         call lsysbl_resizeVectorBlock(rsolution,&
-            p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+                                      p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
         
         ! Release element-wise error distribution
-        call lsyssc_releaseVector(rvectorScalar)
+        call lsyssc_releaseVector(relementError)
         
         ! Stop time measurement for mesh adaptation
         call stat_stopTimer(rappDescriptor%rtimerAdaptation)
@@ -2339,18 +2581,35 @@ contains
                                          1, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
         call solver_updateStructure(rsolver)
         
+        ! Re-calculate the velocity field
+        nlmin = solver_getMinimumMultigridlevel(rsolver)
+        call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+                                      rtimestep%dtime, rcollection, nlmin)
+
+        ! Re-initialize the right-hand side vector
+        if (rappDescriptor%irhstype > 0) then
+          call lsysbl_resizeVectorBlock(rvectorBlock,&
+                                        p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+          call codire_initRHS(rappDescriptor, p_rproblemLevel, rtimestep%dTime, rvectorBlock)
+        end if
+
         ! Stop time measurement for generation of constant coefficient matrices
         call stat_stopTimer(rappDescriptor%rtimerAssemblyCoeff)
-
+       
       end if
       
     end do timeloop
 
     
     ! Release adaptation structure
-    if (dstepAdapt > 0.0_DP) then
+    if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
       call hadapt_releaseAdaptation(rhadapt)
       call grph_releaseGraph(rgraph)
+    end if
+
+    ! Release right-hand side
+    if (rappDescriptor%irhstype > 0) then
+      call lsysbl_releaseVector(rvectorBlock)
     end if
 
   end subroutine codire_solveTransientPrimal
@@ -2409,7 +2668,7 @@ contains
     type(t_vectorBlock) :: rvectorBlock
 
     ! Vector for the element-wise error distribution
-    type(t_vectorScalar) :: rvectorScalar
+    type(t_vectorScalar) :: relementError
 
     ! Structure for h-adaptation
     type(t_hadapt) :: rhadapt
@@ -2492,8 +2751,8 @@ contains
       if (rappDescriptor%irhstype > 0) then
 
         ! Initialize right-hand side vector
-        call codire_initRHS(rappDescriptor, p_rproblemLevel,&
-                            0.0_DP, rvectorBlock)
+        call lsysbl_createVectorBlock(rsolution, rvectorBlock)
+        call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rvectorBlock)
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
@@ -2547,17 +2806,17 @@ contains
       
       ! Perform h-adaptation and update the triangulation structure
       call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                     rvectorScalar, rcollection)
+                                     relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
       call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
       call lsysbl_resizeVectorBlock(rsolution,&
-          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+                                    p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
       
       ! Release element-wise error distribution
-      call lsyssc_releaseVector(rvectorScalar)
+      call lsyssc_releaseVector(relementError)
 
       ! Stop time measurement for mesh adaptation
       call stat_stopTimer(rappDescriptor%rtimerAdaptation)
@@ -2653,11 +2912,11 @@ contains
     ! Pointer to the current multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
 
-    ! Vector for the linear target functional and the right-hand side
-    type(t_vectorBlock) :: rvectorBlock
+    ! Vector for the right-hand side
+    type(t_vectorBlock) :: rrhs
 
     ! Vector for the element-wise error distribution
-    type(t_vectorScalar) :: rvectorScalar
+    type(t_vectorScalar) :: relementError
     
     ! Structure for h-adaptation
     type(t_hadapt) :: rhadapt
@@ -2673,6 +2932,9 @@ contains
     integer :: templateMatrix
     integer :: nlmin, iadapt, nadapt
 
+    
+    ! Start time measurement for pre-processing
+    call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
     
     ! Adjust time stepping scheme
     rtimestep%ctimestepType = SV_THETA_SCHEME
@@ -2718,6 +2980,9 @@ contains
 
     end if
 
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
+
 
     adaptloop: do iadapt = 0, nadapt
 
@@ -2747,17 +3012,17 @@ contains
       if (rappDescriptor%irhstype > 0) then
 
         ! Initialize right-hand side vector
-        call codire_initRHS(rappDescriptor, p_rproblemLevel,&
-                            0.0_DP, rvectorBlock)
+        call lsysbl_createVectorblock(rsolution, rrhs)
+        call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
                                     rsolution, codire_calcResidual,&
                                     codire_calcJacobian, codire_applyJacobian,&
-                                    codire_setBoundary, rcollection, rvectorBlock)
+                                    codire_setBoundary, rcollection, rrhs)
         
         ! Release right-hand side vector
-        call lsysbl_releaseVector(rvectorBlock)
+        call lsysbl_releaseVector(rrhs)
 
       else
 
@@ -2782,7 +3047,9 @@ contains
       ! Start time measurement for error estimation
       call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
 
-      ! HERE WE NEED TO IMPLEMENT THE RECOVERY-BASED INDICATOR
+      ! Compute the error estimator using recovery techniques
+      call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
+                                        rsolution, rcollection, relementError, derror)
 
       ! Stop time measurement for error estimation
       call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
@@ -2804,17 +3071,17 @@ contains
       
       ! Perform h-adaptation and update the triangulation structure
       call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                     rvectorScalar, rcollection)
+                                     relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
       call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
       call lsysbl_resizeVectorBlock(rsolution,&
-          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+                                    p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
       
       ! Release element-wise error distribution
-      call lsyssc_releaseVector(rvectorScalar)
+      call lsyssc_releaseVector(relementError)
 
       ! Stop time measurement for mesh adaptation
       call stat_stopTimer(rappDescriptor%rtimerAdaptation)
@@ -2920,10 +3187,10 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! Vector for the linear target functional and the right-hand side
-    type(t_vectorBlock) :: rvectorBlock
+    type(t_vectorBlock) :: rtargetFunc,rrhs
 
     ! Vector for the element-wise error distribution
-    type(t_vectorScalar) :: rvectorScalar
+    type(t_vectorScalar) :: relementError
     
     ! Structure for h-adaptation
     type(t_hadapt) :: rhadapt
@@ -2939,6 +3206,9 @@ contains
     integer :: templateMatrix
     integer :: nlmin, iadapt, nadapt
 
+
+    ! Start time measurement for pre-processing
+    call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
 
     ! Adjust time stepping scheme
     rtimestep%ctimestepType = SV_THETA_SCHEME
@@ -2983,7 +3253,10 @@ contains
       nadapt = 0
 
     end if
-
+    
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
+    
     
     adaptloop: do iadapt = 0, nadapt
 
@@ -3013,17 +3286,17 @@ contains
       if (rappDescriptor%irhstype > 0) then
 
         ! Initialize right-hand side vector
-        call codire_initRHS(rappDescriptor, p_rproblemLevel,&
-                            0.0_DP, rvectorBlock)
+        call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
+        call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
                                     rsolutionPrimal, codire_calcResidual,&
                                     codire_calcJacobian, codire_applyJacobian,&
-                                    codire_setBoundary, rcollection, rvectorBlock)
+                                    codire_setBoundary, rcollection, rrhs)
         
         ! Release right-hand side vector
-        call lsysbl_releaseVector(rvectorBlock)
+        call lsysbl_releaseVector(rrhs)
 
       else
 
@@ -3048,7 +3321,7 @@ contains
 
       ! Initialize target functional
       call codire_initTargetFunc(rappDescriptor, p_rproblemLevel,&
-                                 1.0_DP, rvectorBlock)
+                                 1.0_DP, rtargetFunc)
       
       ! Stop time measurement for error estimation
       call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
@@ -3065,7 +3338,7 @@ contains
       nlmin = solver_getMinimumMultigridlevel(rsolver)
       call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
                                     rtimestep%dtime, rcollection, nlmin)
-      
+
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCondDual, .true.)
       
@@ -3084,10 +3357,10 @@ contains
       call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver, rsolutionDual,&
                                   codire_calcResidual, codire_calcJacobian,&
                                   codire_applyJacobian, codire_setBoundary,&
-                                  rcollection, rvectorBlock)
+                                  rcollection, rtargetFunc)
     
       ! Release discretized target functional
-      call lsysbl_releaseVector(rvectorBlock)
+      call lsysbl_releaseVector(rtargetFunc)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescriptor%rtimerSolution)
@@ -3117,24 +3390,23 @@ contains
       if (rappDescriptor%irhstype > 0) then
 
         ! Initialize right-hand side vector
-        call codire_initRHS(rappDescriptor, p_rproblemLevel,&
-                            0.0_DP, rvectorBlock)
+        call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
+        call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
 
         ! Compute the error in the quantity of interest
         call codire_estimateTargetFuncError(p_rproblemLevel, rtimestep, rsolver,&
                                             rsolutionPrimal, rsolutionDual,&
-                                            rcollection, rvectorScalar, derror,&
-                                            rvectorBlock)
+                                            rcollection, relementError, derror, rrhs)
 
         ! Release right-hand side vector
-        call lsysbl_releaseVector(rvectorBlock)
+        call lsysbl_releaseVector(rrhs)
         
       else
 
         ! Compute the error in the quantity of interest
         call codire_estimateTargetFuncError(p_rproblemLevel, rtimestep, rsolver,&
                                             rsolutionPrimal, rsolutionDual,&
-                                            rcollection, rvectorScalar, derror)
+                                            rcollection, relementError, derror)
 
       end if
 
@@ -3158,17 +3430,17 @@ contains
       
       ! Perform h-adaptation and update the triangulation structure
       call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                     rvectorScalar, rcollection)
+                                     relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
       call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
       call lsysbl_resizeVectorBlock(rsolutionPrimal,&
-          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+                                    p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
       
       ! Release element-wise error distribution
-      call lsyssc_releaseVector(rvectorScalar)
+      call lsyssc_releaseVector(relementError)
 
       ! Stop time measurement for mesh adaptation
       call stat_stopTimer(rappDescriptor%rtimerAdaptation)
@@ -3187,6 +3459,7 @@ contains
       ! Stop time measurement for generation of the triangulation
       call stat_stopTimer(rappDescriptor%rtimerTriangulation)
 
+      !-------------------------------------------------------------------
       
       ! Start time measurement for generation of constant coefficient matrices
       call stat_startTimer(rappDescriptor%rtimerAssemblyCoeff, STAT_TIMERSHORT)
