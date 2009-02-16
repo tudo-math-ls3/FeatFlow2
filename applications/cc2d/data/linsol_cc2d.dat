@@ -172,7 +172,7 @@ domega             = 1.0
 ioutputLevel       = 0
 
 # ========================================================================
-# The following section specifies teh parameters for the 
+# The following section specifies the parameters for the 
 # coarse grid solver.
 
 #####################
