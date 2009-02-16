@@ -123,7 +123,7 @@ contains
     call output_lbrk()
     call output_line ('Nonlinear solver statistics')
     call output_line ('---------------------------')
-    call output_line ('Intial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)))
+    call output_line ('Initial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)))
     call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)))
     call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)))
     
