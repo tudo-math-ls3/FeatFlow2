@@ -120,6 +120,49 @@ module codire_basic
 !</constantblock>
 
 
+!<constantblock description="Global type of recovery-based error estimation">
+
+  ! L2-projection
+  integer, parameter, public :: ERREST_L2PROJECTION  = 1
+
+  ! Superconvergent patch recovery (vertex-based)
+  integer, parameter, public :: ERREST_SPR_VERTEX    = 2
+
+  ! Superconvergent patch recovery (element-based)
+  integer, parameter, public :: ERREST_SPR_ELEMENT   = 3
+
+  ! Superconvergent patch recovery (face-based)
+  integer, parameter, public :: ERREST_SPR_FACE      = 4
+ 
+  ! Limited averaging gradient recovery
+  integer, parameter, public :: ERREST_LIMAVR        = 5
+
+  ! Second-difference indicator (by Loehner)
+  integer, parameter, public :: ERREST_SECONDDIFF    = 6
+
+!</constantblock>
+
+
+!<constantblock description="Global constants for error redistribution">
+
+  ! Use error 'as is'
+  integer, parameter, public :: ERREST_ASIS          = 0
+
+  ! Equidistribution of error
+  integer, parameter, public :: ERREST_EQUIDIST      = 1
+
+  ! Logarithmic equidistribution of error
+  integer, parameter, public :: ERREST_LOGEQUIDIST   = 2
+
+  ! Fixed-rate strategy
+  integer, parameter, public :: ERREST_FIXEDRATE     = 3
+
+  ! Automatic treshold based on RMS
+  integer, parameter, public :: ERREST_AUTORMS       = 4
+
+!</constantblock>
+
+
 !<constantblock description="Global types of perturbation parameters">
 
   ! Perturbation parameter is chosen as in the NITSOL package
