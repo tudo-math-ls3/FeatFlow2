@@ -697,7 +697,8 @@ dstepadapt = 0.0
 # maximum number of refinement levels
 nsubdividemax = 3
 
-# adaptation strategy: 1 = red-green
+# adaptation strategy
+# 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
@@ -724,6 +725,9 @@ ierrorestimator = 5
 # 0 = as is
 # 1 = equidistribution
 # 2 = logarithmic equidistribution
+# 3 = fixed-rate strategy
+# 4 = RMS automatic treshold
+# 5 = balancing strategy
 igridindicator = 1
 
 # noise filter
