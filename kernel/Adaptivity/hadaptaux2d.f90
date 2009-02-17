@@ -580,7 +580,7 @@ contains
           isubdivide = maxval(abs(rhadapt%p_IvertexAge(&
                                   IverticesAtElement(1:TRIA_NVETRI2D))))
 
-          if (isubdivide .eq. rhadapt%NSUBDIVIDEMAX) then
+          if (isubdivide .eq. rhadapt%nsubdividemax) then
 
             ! Check if triangle is an inner/outer red triangle
             do ive = 1, TRIA_NVETRI2D
@@ -677,7 +677,7 @@ contains
           isubdivide = maxval(abs(rhadapt%p_IvertexAge(&
                                   IverticesAtElement(1:TRIA_NVEQUAD2D))))
 
-          if (isubdivide .eq. rhadapt%NSUBDIVIDEMAX) then
+          if (isubdivide .eq. rhadapt%nsubdividemax) then
             
             ! Check if quadrilateral is a red quadrilateral
             do ive = 1, TRIA_NVEQUAD2D
