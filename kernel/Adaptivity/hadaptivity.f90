@@ -56,9 +56,6 @@
 !# 12.) hadapt_checkConsistency
 !#      -> Checks the internal consistency of dynamic data structures
 !#
-!# 13.) hadapt_calcProtectionLayers
-!#      -> Computes the protection layer for a given element indicator
-!#
 !# </purpose>
 !##############################################################################
 
@@ -97,7 +94,6 @@ module hadaptivity
   public :: hadapt_infoStatistics
   public :: hadapt_writeGridGMV
   public :: hadapt_checkConsistency 
-  public :: hadapt_calcProtectionLayers
 
 contains
   
@@ -154,7 +150,7 @@ contains
 !</description>
 
 !<input>
-    ! Triangulation structure
+    ! triangulation structure
     type(t_triangulation), intent(IN) :: rtriangulation
 !</input>
 
@@ -233,10 +229,10 @@ contains
 !</description>
 
 !<inputoutput>
-    ! Adaptivity structure
+    ! adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
     
-    ! Triangulation structure
+    ! triangulation structure
     type(t_triangulation), intent(INOUT) :: rtriangulation
 !</inputoutput>
 !</subroutine>
@@ -303,11 +299,11 @@ contains
 
 !<description>
     ! This subroutine releases all internal structures of the
-    ! adaptivity data structure rhadapt.
+    ! adaptivity structure rhadapt.
 !</description>
 
 !<inputoutput>
-    ! Adaptivity structure
+    ! adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
@@ -908,17 +904,17 @@ contains
 !</description>
 
 !<input>
-    ! Indicator vector for refinement
-    type(t_vectorScalar), intent(IN) :: rindicator
-
     ! callback routines
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Indicator vector for refinement
+    type(t_vectorScalar), intent(INOUT) :: rindicator
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -927,7 +923,7 @@ contains
 
     ! local variables
     integer, dimension(1) :: Ielements, Ivertices
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     integer :: nvt,nel
 
     ! Check if dynamic data structures are available
@@ -1118,17 +1114,17 @@ contains
   subroutine hadapt_infoStatistics(rhadapt)
 
 !<description>
-    ! This subroutine outputs statistical info about the adaptivity data structure
+    ! This subroutine outputs statistical info about the adaptivity structure
 !</description>
 
 !<input>
-    ! adaptivity data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(IN) :: rhadapt
 !</input>
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     integer :: ibct
     
     call output_line('Adaptivity statistics:')
@@ -1208,12 +1204,12 @@ contains
 !</description>
 
 !<input>
-    ! Output file name w/o suffix .gmv
+    ! output file name w/o suffix .gmv
     character(LEN=*), intent(IN) :: coutputFile
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
@@ -1662,140 +1658,5 @@ contains
                        merge('PASSED','FAILED',btest))
     end if
   end subroutine hadapt_checkConsistency
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hadapt_calcProtectionLayers(rtriangulation, rindicator,&
-                                         nprotectionLayers, dprotectionThreshold)
-
-!<description>
-    ! This subroutine adjusts the grid indicator to include a prescribed
-    ! number of protection layers based on the given threshold level.
-!</description>
-
-!<input>
-    ! triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
-
-    ! number of protection layers
-    integer, intent(IN) :: nprotectionLayers
-
-    ! threshold value
-    real(DP), intent(IN) :: dprotectionThreshold
-!</input>
-
-!<inputoutput>
-    ! elementwise grid indicator
-    type(t_vectorScalar), intent(INOUT) :: rindicator
-!</inputoutput>
-!</subroutine>
-
-    ! Pointer to element indicator
-    real(DP), dimension(:), pointer :: p_Dindicator
-    
-    ! Pointer to vertices at element
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-
-    ! Pointer to neighbours at element
-    integer, dimension(:,:), pointer :: p_IneighboursAtElement
-
-    ! Pointer to BisactiveElement
-    logical, dimension(:), pointer :: p_BisactiveElement
-
-    ! Handle for h_Bisactiveelement
-    integer :: h_BisactiveElement
-    
-    ! local variables
-    integer :: iprotectionLayer
-
-    
-    ! Create memory
-    h_BisactiveElement = ST_NOHANDLE
-    call storage_new('errest_calcProtectionLayers',' BisactiveElement',&
-                     rtriangulation%NEL, ST_LOGICAL,&
-                     h_BisactiveElement, ST_NEWBLOCK_NOINIT)
-    call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
-
-    ! Set pointers
-    call storage_getbase_int2D(rtriangulation%h_IneighboursAtElement,&
-                               p_IneighboursAtElement)
-    call storage_getbase_int2D(rtriangulation%h_IverticesAtElement,&
-                               p_IverticesAtElement)
-    call lsyssc_getbase_double(rindicator, p_Dindicator)
-
-    ! Compute protection layers
-    do iprotectionLayer = 1, nprotectionLayers
-
-      ! Reset activation flag
-      p_BisActiveElement = .false.
-
-      ! Compute a single-width protection layer
-      call doProtectionLayer(p_IverticesAtElement, p_IneighboursAtElement,&
-                             rtriangulation%NEL, dprotectionThreshold,&
-                             p_Dindicator, p_BisActiveElement)
-    end do
-
-    ! Release memory
-    call storage_free(h_BisactiveElement)
-
-  contains
-    
-    ! Here, the real working routines follow.
-    
-    !**************************************************************
-    ! Compute one protection layer
-
-    subroutine doProtectionLayer(IverticesAtElement, IneighboursAtElement, NEL,&
-                                 dthreshold, Dindicator, BisactiveElement)
-
-      integer, dimension(:,:), intent(IN) :: IverticesAtElement
-      integer, dimension(:,:), intent(IN) :: IneighboursAtElement     
-      real(DP), intent(IN) :: dthreshold
-      integer, intent(IN) :: NEL
-      
-      real(DP), dimension(:), intent(INOUT) :: Dindicator
-      logical, dimension(:), intent(INOUT) :: BisactiveElement
-      
-      
-      ! local variables
-      integer :: iel,jel,ive
-
-      ! Loop over all elements in triangulation
-      do iel = 1, NEL
-        
-        ! Do nothing if element belongs to active layer
-        if (BisactiveElement(iel)) cycle
-
-        ! Do nothing if element indicator does not exceed threshold
-        if (Dindicator(iel) .lt. dthreshold) cycle
-
-        ! Loop over neighbouring elements
-        do ive = 1, tria_getNVE(IverticesAtElement, iel)
-          
-          ! Get number of neighbouring element
-          jel = IneighboursAtElement(ive, iel)
-
-          ! Do nothing at the boundary
-          if (jel .eq. 0) cycle
-
-          ! Check if element belongs to active layer
-          if (BisactiveElement(jel)) then
-            ! If yes, then just update the element indicator
-            Dindicator(jel) = max(Dindicator(jel), Dindicator(iel))
-          else
-            ! Otherwise, we have to check if the neighbouring element
-            ! exceeds the prescribed threshold level. If this is the case
-            ! it will be processed later or has already been processed
-            if (Dindicator(jel) .lt. dthreshold) then
-              Dindicator(jel) = max(Dindicator(jel), Dindicator(iel))
-              BisactiveElement(jel) = .true.
-            end if
-          end if
-        end do
-      end do
-    end subroutine doProtectionLayer
-  end subroutine hadapt_calcProtectionLayers
     
 end module hadaptivity
