@@ -180,7 +180,7 @@ contains
         isubdivide = maxval(abs(rhadapt%p_IvertexAge(&
                                 IverticesAtElement(1:TRIA_NVELINE1D))))
 
-        if (isubdivide .lt. rhadapt%NSUBDIVIDEMAX) then
+        if (isubdivide .lt. rhadapt%nsubdividemax) then
           
           ! Mark element IEL for subdivision
           p_Imarker(iel) = MARK_REF_LINE2LINE
