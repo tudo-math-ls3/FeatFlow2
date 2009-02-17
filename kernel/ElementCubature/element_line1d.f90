@@ -1607,4 +1607,137 @@ contains
   
   end subroutine
 
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_PN_1D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(IN)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(IN)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(IN)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! TODO 
+
+  ! Local variables
+  real(DP) :: ddet,dx,dx2
+  integer :: i,j,k,n
+  
+    ! Get the degree of the element
+    n = iand(ishft(celement,-16),255)+1
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC1D)) then
+      
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          
+          ! Evaluate P1 basis functions
+          Dbas(1,DER_FUNC1D,i,j) = 0.5_DP*(1.0_DP-dx)
+          Dbas(2,DER_FUNC1D,i,j) = 0.5_DP*(1.0_DP+dx)
+          
+          ! Evaluate basis functions of even degree >= 2
+          dx2 = 1.0_DP
+          do k = 3, n, 2
+            dx2 = dx2*dx*dx
+            Dbas(k,DER_FUNC1D,i,j) = 1.0_DP - dx2
+          end do
+          
+          ! Evaluate basis functions of odd degree >= 3
+          dx2 = 1.0_DP
+          do k = 4, n, 2
+            dx2 = dx2*dx*dx
+            Dbas(k,DER_FUNC1D,i,j) = (dx2 - 1.0_DP)*dx
+          end do
+        
+        end do ! i
+      
+      end do ! j
+      
+    end if
+    
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV1D_X)) then
+
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+
+          ! X-derivatives on real element of P1 basis functions
+          Dbas(1,DER_DERIV1D_X,i,j) = -0.5_DP*ddet
+          Dbas(2,DER_DERIV1D_X,i,j) =  0.5_DP*ddet
+          
+          ! X-derivatives on real element of basis functions of
+          ! even degree >= 2
+          dx2 = dx*ddet
+          do k = 3, n, 2
+            Dbas(k,DER_DERIV1D_X,i,j) = -real(k-1,DP)*dx2
+            dx2 = dx2*dx*dx
+          end do
+          
+          ! X-derivatives on real element of basis functions of
+          ! odd degree >= 3
+          dx2 = ddet
+          do k = 4, n, 2
+            dx2 = dx2*dx*dx
+            Dbas(k,DER_DERIV1D_X,i,j) = real(k-1,DP)*dx2 - ddet
+          end do
+
+        end do ! i
+
+      end do ! j
+      
+    end if
+  
+  end subroutine
+
 end module

@@ -3422,6 +3422,341 @@ contains
   !****************************************************************************
   !****************************************************************************
 
+  
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_Q2_3D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(IN)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(IN)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(IN)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+!</output>
+
+!</subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The Q2_3D element is specified by twenty-seven polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  ! { 1, x, y, z, x*y, y*z, z*x, x^2, y^2, z^2, x^2*y, y^2*z, z^2*x, x*y^2,
+  !   y*z^2, z*x^2, x^2*y^2, y^2*z^2, z^2*x^2, x^2*y^2*z, y^2*z^2*x,
+  !   z^2*x^2*y, x^2*y^2*z^2 }
+  !
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,27:
+  ! {
+  !   For all j = 1,...,8:
+  !   {
+  !     Pi(vj) = kronecker(i,j)
+  !   }
+  !   For all j = 1,...,12:
+  !   {
+  !     Pi(ej) = kronecker(i,j+8)
+  !   }
+  !   For all j = 1,...,6:
+  !   {
+  !     Pi(fj) = kronecker(i,j+20)
+  !   }
+  !   Pi(0,0,0) = kronecker(i,27)
+  ! }
+  !
+  ! With:
+  ! vj being the eight corner vertices of the hexahedron
+  ! ej being the twelve edge midpoints of the hexahedron
+  ! fj being the six face midpoints of the hexahedron
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  !
+  ! P1 (x,y,z) = 1/8*x*y*z*(-1+x*( 1-y)+y*( 1-z)+z*( 1+x*(-1+y)))
+  ! P2 (x,y,z) = 1/8*x*y*z*( 1+x*( 1-y)+y*(-1+z)+z*(-1+x*(-1+y)))
+  ! P3 (x,y,z) = 1/8*x*y*z*(-1+x*(-1-y)+y*(-1+z)+z*( 1+x*( 1+y)))
+  ! P4 (x,y,z) = 1/8*x*y*z*( 1+x*(-1-y)+y*( 1-z)+z*(-1+x*( 1+y)))
+  ! P5 (x,y,z) = 1/8*x*y*z*( 1+x*(-1+y)+y*(-1-z)+z*( 1+x*(-1+y)))
+  ! P6 (x,y,z) = 1/8*x*y*z*(-1+x*(-1+y)+y*( 1+z)+z*(-1+x*(-1+y)))
+  ! P7 (x,y,z) = 1/8*x*y*z*( 1+x*( 1+y)+y*( 1+z)+z*( 1+x*( 1+y)))
+  ! P8 (x,y,z) = 1/8*x*y*z*(-1+x*( 1+y)+y*(-1-z)+z*(-1+x*( 1+y)))
+  ! P9 (x,y,z) = 1/4*y*z*( 1+y*(-1+z)-z+x^2*(-1+y+z*( 1-y)))
+  ! P10(x,y,z) = 1/4*z*x*(-1+z*( 1+x)-x+y^2*( 1-z+x*( 1-z)))
+  ! P11(x,y,z) = 1/4*y*z*(-1+y*(-1+z)+z+x^2*( 1+y+z*(-1-y)))
+  ! P12(x,y,z) = 1/4*z*x*( 1+z*(-1+x)-x+y^2*(-1+z+x*( 1-z)))
+  ! P13(x,y,z) = 1/4*x*y*( 1+x*(-1+y)-y+z^2*(-1+x+y*( 1-x)))
+  ! P14(x,y,z) = 1/4*x*y*(-1+x*(-1+y)+y+z^2*( 1+x+y*(-1-x)))
+  ! P15(x,y,z) = 1/4*x*y*( 1+x*( 1+y)+y+z^2*(-1-x+y*(-1-x)))
+  ! P16(x,y,z) = 1/4*x*y*(-1+x*( 1+y)-y+z^2*( 1-x+y*( 1-x)))
+  ! P17(x,y,z) = 1/4*y*z*(-1+y*( 1+z)-z+x^2*( 1-y+z*( 1-y)))
+  ! P18(x,y,z) = 1/4*z*x*( 1+x*( 1+z)+z+y^2*(-1-x+z*(-1-x)))
+  ! P19(x,y,z) = 1/4*y*z*( 1+y*( 1+z)+z+x^2*(-1-y+z*(-1-y)))
+  ! P20(x,y,z) = 1/4*z*x*(-1+z*(-1+x)+x+y^2*( 1+z+x*(-1-z)))
+  ! P21(x,y,z) = 1/2*z*(-1+x^2*( 1-y^2)+y^2+z*(1-x^2*(-1+y^2)-y^2))
+  ! P22(x,y,z) = 1/2*y*(-1+z^2*( 1-x^2)+x^2+y*(1+z^2*(-1+x^2)-x^2))
+  ! P23(x,y,z) = 1/2*x*( 1+y^2*(-1+z^2)-z^2+x*(1+y^2*(-1+z^2)-z^2))
+  ! P24(x,y,z) = 1/2*y*( 1+z^2*(-1+x^2)-x^2+y*(1+z^2*(-1+x^2)-x^2))
+  ! P25(x,y,z) = 1/2*x*(-1+y^2*( 1-z^2)+z^2+x*(1+y^2*(-1+z^2)-z^2))
+  ! P26(x,y,z) = 1/2*z*( 1+x^2*( 1-y^2)-y^2+z*(1+x^2*(-1+y^2)-y^2))
+  ! P27(x,y,z) = 1+x^2*(-1+y^2)+y^2*(-1+z^2)+z^2*(-1+x^2*(1-y^2))
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 27
+
+  ! derivatives on reference element
+  real(DP), dimension(NBAS,NDIM3D) :: DrefDer
+  
+  ! Local variables
+  real(DP) :: ddet,dx,dy,dz,dx2,dy2,dz2,daux
+  integer :: i,j
+
+  real(DP), parameter :: Q1 = 1.0_DP
+  real(DP), parameter :: Q2 = 0.5_DP
+  real(DP), parameter :: Q4 = 0.25_DP
+  real(DP), parameter :: Q8 = 0.125_DP
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC3D)) then
+    
+      ! Loop through all elements
+      !$omp parallel do private(i,dx,dy,dz,dx2,dy2,dz2,daux)
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+          
+          ! Pre-calculate squares
+          dx2 = dx * dx
+          dy2 = dy * dy
+          dz2 = dz * dz
+
+          daux = Q8*dx*dy*dz
+          Dbas( 1,DER_FUNC3D,i,j) = daux*(-Q1+dx*( Q1-dy)+dy*( Q1-dz)+dz*( Q1+dx*(-Q1+dy)))
+          Dbas( 2,DER_FUNC3D,i,j) = daux*( Q1+dx*( Q1-dy)+dy*(-Q1+dz)+dz*(-Q1+dx*(-Q1+dy)))
+          Dbas( 3,DER_FUNC3D,i,j) = daux*(-Q1+dx*(-Q1-dy)+dy*(-Q1+dz)+dz*( Q1+dx*( Q1+dy)))
+          Dbas( 4,DER_FUNC3D,i,j) = daux*( Q1+dx*(-Q1-dy)+dy*( Q1-dz)+dz*(-Q1+dx*( Q1+dy)))
+          Dbas( 5,DER_FUNC3D,i,j) = daux*( Q1+dx*(-Q1+dy)+dy*(-Q1-dz)+dz*( Q1+dx*(-Q1+dy)))
+          Dbas( 6,DER_FUNC3D,i,j) = daux*(-Q1+dx*(-Q1+dy)+dy*( Q1+dz)+dz*(-Q1+dx*(-Q1+dy)))
+          Dbas( 7,DER_FUNC3D,i,j) = daux*( Q1+dx*( Q1+dy)+dy*( Q1+dz)+dz*( Q1+dx*( Q1+dy)))
+          Dbas( 8,DER_FUNC3D,i,j) = daux*(-Q1+dx*( Q1+dy)+dy*(-Q1-dz)+dz*(-Q1+dx*( Q1+dy)))
+          Dbas( 9,DER_FUNC3D,i,j) = Q4*dy*dz*( Q1+dy*(-Q1+dz)-dz+dx2*(-Q1+dy+dz*( Q1-dy)))
+          Dbas(10,DER_FUNC3D,i,j) = Q4*dz*dx*(-Q1+dz*( Q1+dx)-dx+dy2*( Q1-dz+dx*( Q1-dz)))
+          Dbas(11,DER_FUNC3D,i,j) = Q4*dy*dz*(-Q1+dy*(-Q1+dz)+dz+dx2*( Q1+dy+dz*(-Q1-dy)))
+          Dbas(12,DER_FUNC3D,i,j) = Q4*dz*dx*( Q1+dz*(-Q1+dx)-dx+dy2*(-Q1+dz+dx*( Q1-dz)))
+          Dbas(13,DER_FUNC3D,i,j) = Q4*dx*dy*( Q1+dx*(-Q1+dy)-dy+dz2*(-Q1+dx+dy*( Q1-dx)))
+          Dbas(14,DER_FUNC3D,i,j) = Q4*dx*dy*(-Q1+dx*(-Q1+dy)+dy+dz2*( Q1+dx+dy*(-Q1-dx)))
+          Dbas(15,DER_FUNC3D,i,j) = Q4*dx*dy*( Q1+dx*( Q1+dy)+dy+dz2*(-Q1-dx+dy*(-Q1-dx)))
+          Dbas(16,DER_FUNC3D,i,j) = Q4*dx*dy*(-Q1+dx*( Q1+dy)-dy+dz2*( Q1-dx+dy*( Q1-dx)))
+          Dbas(17,DER_FUNC3D,i,j) = Q4*dy*dz*(-Q1+dy*( Q1+dz)-dz+dx2*( Q1-dy+dz*( Q1-dy)))
+          Dbas(18,DER_FUNC3D,i,j) = Q4*dz*dx*( Q1+dx*( Q1+dz)+dz+dy2*(-Q1-dx+dz*(-Q1-dx)))
+          Dbas(19,DER_FUNC3D,i,j) = Q4*dy*dz*( Q1+dy*( Q1+dz)+dz+dx2*(-Q1-dy+dz*(-Q1-dy)))
+          Dbas(20,DER_FUNC3D,i,j) = Q4*dz*dx*(-Q1+dz*(-Q1+dx)+dx+dy2*( Q1+dz+dx*(-Q1-dz)))
+          Dbas(21,DER_FUNC3D,i,j) = Q2*dz*(-Q1+dx2*( Q1-dy2)+dy2+dz*(Q1+dx2*(-Q1+dy2)-dy2))
+          Dbas(22,DER_FUNC3D,i,j) = Q2*dy*(-Q1+dz2*( Q1-dx2)+dx2+dy*(Q1+dz2*(-Q1+dx2)-dx2))
+          Dbas(23,DER_FUNC3D,i,j) = Q2*dx*( Q1+dy2*(-Q1+dz2)-dz2+dx*(Q1+dy2*(-Q1+dz2)-dz2))
+          Dbas(24,DER_FUNC3D,i,j) = Q2*dy*( Q1+dz2*(-Q1+dx2)-dx2+dy*(Q1+dz2*(-Q1+dx2)-dx2))
+          Dbas(25,DER_FUNC3D,i,j) = Q2*dx*(-Q1+dy2*( Q1-dz2)+dz2+dx*(Q1+dy2*(-Q1+dz2)-dz2))
+          Dbas(26,DER_FUNC3D,i,j) = Q2*dz*( Q1+dx2*(-Q1+dy2)-dy2+dz*(Q1+dx2*(-Q1+dy2)-dy2))
+          Dbas(27,DER_FUNC3D,i,j) = Q1+dx2*(-Q1+dy2)+dy2*(-Q1+dz2)+dz2*(-Q1+dx2*(Q1-dy2))
+
+        end do ! i
+      
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
+
+      ! Loop through all elements
+      !$omp parallel do private(i,dx,dy,dz,dx2,dy2,dz2,daux,ddet,DrefDer)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+          
+          ! Pre-calculate squares
+          dx2 = dx * dx
+          dy2 = dy * dy
+          dz2 = dz * dz
+          
+          ! Calculate derivatives on reference element
+          ! X-derivatives
+          daux = Q4*dx*dy*dz
+          DrefDer( 1,1) = Q8*dy*dz*(-Q1+dy*( Q1-dz)+dz)+daux*( Q1+dy*(-Q1+dz)-dz)
+          DrefDer( 2,1) = Q8*dy*dz*( Q1+dy*(-Q1+dz)-dz)+daux*( Q1+dy*(-Q1+dz)-dz)
+          DrefDer( 3,1) = Q8*dy*dz*(-Q1+dy*(-Q1+dz)+dz)+daux*(-Q1+dy*(-Q1+dz)+dz)
+          DrefDer( 4,1) = Q8*dy*dz*( Q1+dy*( Q1-dz)-dz)+daux*(-Q1+dy*(-Q1+dz)+dz)
+          DrefDer( 5,1) = Q8*dy*dz*( Q1+dy*(-Q1-dz)+dz)+daux*(-Q1+dy*( Q1+dz)-dz)
+          DrefDer( 6,1) = Q8*dy*dz*(-Q1+dy*( Q1+dz)-dz)+daux*(-Q1+dy*( Q1+dz)-dz)
+          DrefDer( 7,1) = Q8*dy*dz*( Q1+dy*( Q1+dz)+dz)+daux*( Q1+dy*( Q1+dz)+dz)
+          DrefDer( 8,1) = Q8*dy*dz*(-Q1+dy*(-Q1-dz)-dz)+daux*( Q1+dy*( Q1+dz)+dz)
+          DrefDer( 9,1) = Q2*dx*dy*dz*(-Q1+dy*( Q1-dz)+dz)
+          DrefDer(10,1) = Q2*dz*dx*(-Q1+dy2*( Q1-dz)+dz)+Q4*dz*(-Q1+dy2*( Q1-dz)+dz)
+          DrefDer(11,1) = Q2*dx*dy*dz*( Q1+dy*( Q1-dz)-dz)
+          DrefDer(12,1) = Q2*dz*dx*(-Q1+dy2*( Q1-dz)+dz)+Q4*dz*( Q1+dy2*(-Q1+dz)-dz)
+          DrefDer(13,1) = Q2*dx*dy*(-Q1+dz2*( Q1-dy)+dy)+Q4*dy*( Q1+dz2*(-Q1+dy)-dy)
+          DrefDer(14,1) = Q2*dx*dy*(-Q1+dz2*( Q1-dy)+dy)+Q4*dy*(-Q1+dz2*( Q1-dy)+dy)
+          DrefDer(15,1) = Q2*dx*dy*( Q1+dz2*(-Q1-dy)+dy)+Q4*dy*( Q1+dz2*(-Q1-dy)+dy)
+          DrefDer(16,1) = Q2*dx*dy*( Q1+dz2*(-Q1-dy)+dy)+Q4*dy*(-Q1+dz2*( Q1+dy)-dy)
+          DrefDer(17,1) = Q2*dx*dy*dz*( Q1+dy*(-Q1-dz)+dz)
+          DrefDer(18,1) = Q2*dz*dx*( Q1+dy2*(-Q1-dz)+dz)+Q4*dz*( Q1+dy2*(-Q1-dz)+dz)
+          DrefDer(19,1) = Q2*dx*dy*dz*(-Q1+dy*(-Q1-dz)-dz)
+          DrefDer(20,1) = Q2*dz*dx*( Q1+dy2*(-Q1-dz)+dz)+Q4*dz*(-Q1+dy2*( Q1+dz)-dz)
+          DrefDer(21,1) = dz*dx*( Q1+dy2*(-Q1+dz)-dz)
+          DrefDer(22,1) = dx*dy*( Q1+dz2*(-Q1+dy)-dy)
+          DrefDer(23,1) = Q2*( Q1+dy2*(-Q1+dz2)-dz2)+dx*( Q1+dy2*(-Q1+dz2)-dz2)
+          DrefDer(24,1) = dx*dy*(-Q1+dz2*( Q1+dy)-dy)
+          DrefDer(25,1) = Q2*(-Q1+dy2*( Q1-dz2)+dz2)+dx*( Q1+dy2*(-Q1+dz2)-dz2)
+          DrefDer(26,1) = dz*dx*(-Q1+dy2*( Q1+dz)-dz)
+          DrefDer(27,1) = 2.0_DP*dx*(-Q1+dy2*( Q1-dz2)+dz2)
+
+          ! Y-derivatives
+          DrefDer( 1,2) = Q8*dz*dx*(-Q1+dz*( Q1-dx)+dx)+daux*( Q1+dz*(-Q1+dx)-dx)
+          DrefDer( 2,2) = Q8*dz*dx*( Q1+dz*(-Q1-dx)+dx)+daux*(-Q1+dz*( Q1+dx)-dx)
+          DrefDer( 3,2) = Q8*dz*dx*(-Q1+dz*( Q1+dx)-dx)+daux*(-Q1+dz*( Q1+dx)-dx)
+          DrefDer( 4,2) = Q8*dz*dx*( Q1+dz*(-Q1+dx)-dx)+daux*( Q1+dz*(-Q1+dx)-dx)
+          DrefDer( 5,2) = Q8*dz*dx*( Q1+dz*( Q1-dx)-dx)+daux*(-Q1+dz*(-Q1+dx)+dx)
+          DrefDer( 6,2) = Q8*dz*dx*(-Q1+dz*(-Q1-dx)-dx)+daux*( Q1+dz*( Q1+dx)+dx)
+          DrefDer( 7,2) = Q8*dz*dx*( Q1+dz*( Q1+dx)+dx)+daux*( Q1+dz*( Q1+dx)+dx)
+          DrefDer( 8,2) = Q8*dz*dx*(-Q1+dz*(-Q1+dx)+dx)+daux*(-Q1+dz*(-Q1+dx)+dx)
+          DrefDer( 9,2) = Q2*dy*dz*(-Q1+dx2*( Q1-dz)+dz)+Q4*dz*( Q1+dx2*(-Q1+dz)-dz)
+          DrefDer(10,2) = Q2*dx*dy*dz*( Q1+dz*(-Q1-dx)+dx)
+          DrefDer(11,2) = Q2*dy*dz*(-Q1+dx2*( Q1-dz)+dz)+Q4*dz*(-Q1+dx2*( Q1-dz)+dz)
+          DrefDer(12,2) = Q2*dx*dy*dz*(-Q1+dz*( Q1-dx)+dx)
+          DrefDer(13,2) = Q2*dx*dy*(-Q1+dz2*( Q1-dx)+dx)+Q4*dx*( Q1+dz2*(-Q1+dx)-dx)
+          DrefDer(14,2) = Q2*dx*dy*( Q1+dz2*(-Q1-dx)+dx)+Q4*dx*(-Q1+dz2*( Q1+dx)-dx)
+          DrefDer(15,2) = Q2*dx*dy*( Q1+dz2*(-Q1-dx)+dx)+Q4*dx*( Q1+dz2*(-Q1-dx)+dx)
+          DrefDer(16,2) = Q2*dx*dy*(-Q1+dz2*( Q1-dx)+dx)+Q4*dx*(-Q1+dz2*( Q1-dx)+dx)
+          DrefDer(17,2) = Q2*dy*dz*( Q1+dx2*(-Q1-dz)+dz)+Q4*dz*(-Q1+dx2*( Q1+dz)-dz)
+          DrefDer(18,2) = Q2*dx*dy*dz*(-Q1+dz*(-Q1-dx)-dx)
+          DrefDer(19,2) = Q2*dy*dz*( Q1+dx2*(-Q1-dz)+dz)+Q4*dz*( Q1+dx2*(-Q1-dz)+dz)
+          DrefDer(20,2) = Q2*dx*dy*dz*( Q1+dz*( Q1-dx)-dx)
+          DrefDer(21,2) = dy*dz*( Q1+dx2*(-Q1+dz)-dz)
+          DrefDer(22,2) = Q2*(-Q1+dz2*( Q1-dx2)+dx2)+dy*( Q1+dz2*(-Q1+dx2)-dx2)
+          DrefDer(23,2) = dx*dy*(-Q1+dz2*( Q1+dx)-dx)
+          DrefDer(24,2) = Q2*( Q1+dz2*(-Q1+dx2)-dx2)+dy*( Q1+dz2*(-Q1+dx2)-dx2)
+          DrefDer(25,2) = dx*dy*( Q1+dz2*(-Q1+dx)-dx)
+          DrefDer(26,2) = dy*dz*(-Q1+dx2*( Q1+dz)-dz)
+          DrefDer(27,2) = 2.0_DP*dy*(-Q1+dz2*( Q1-dx2)+dx2)
+          
+          ! Z-derivatives
+          DrefDer( 1,3) = Q8*dx*dy*(-Q1+dx*( Q1-dy)+dy)+daux*( Q1+dx*(-Q1+dy)-dy)
+          DrefDer( 2,3) = Q8*dx*dy*( Q1+dx*( Q1-dy)-dy)+daux*(-Q1+dx*(-Q1+dy)+dy)
+          DrefDer( 3,3) = Q8*dx*dy*(-Q1+dx*(-Q1-dy)-dy)+daux*( Q1+dx*( Q1+dy)+dy)
+          DrefDer( 4,3) = Q8*dx*dy*( Q1+dx*(-Q1-dy)+dy)+daux*(-Q1+dx*( Q1+dy)-dy)
+          DrefDer( 5,3) = Q8*dx*dy*( Q1+dx*(-Q1+dy)-dy)+daux*( Q1+dx*(-Q1+dy)-dy)
+          DrefDer( 6,3) = Q8*dx*dy*(-Q1+dx*(-Q1+dy)+dy)+daux*(-Q1+dx*(-Q1+dy)+dy)
+          DrefDer( 7,3) = Q8*dx*dy*( Q1+dx*( Q1+dy)+dy)+daux*( Q1+dx*( Q1+dy)+dy)
+          DrefDer( 8,3) = Q8*dx*dy*(-Q1+dx*( Q1+dy)-dy)+daux*(-Q1+dx*( Q1+dy)-dy)
+          DrefDer( 9,3) = Q2*dy*dz*(-Q1+dx2*( Q1-dy)+dy)+Q4*dy*( Q1+dx2*(-Q1+dy)-dy)
+          DrefDer(10,3) = Q2*dz*dx*( Q1+dy2*(-Q1-dx)+dx)+Q4*dx*(-Q1+dy2*( Q1+dx)-dx)
+          DrefDer(11,3) = Q2*dy*dz*( Q1+dx2*(-Q1-dy)+dy)+Q4*dy*(-Q1+dx2*( Q1+dy)-dy)
+          DrefDer(12,3) = Q2*dz*dx*(-Q1+dy2*( Q1-dx)+dx)+Q4*dx*( Q1+dy2*(-Q1+dx)-dx)
+          DrefDer(13,3) = Q2*dx*dy*dz*(-Q1+dx*( Q1-dy)+dy)
+          DrefDer(14,3) = Q2*dx*dy*dz*( Q1+dx*( Q1-dy)-dy)
+          DrefDer(15,3) = Q2*dx*dy*dz*(-Q1+dx*(-Q1-dy)-dy)
+          DrefDer(16,3) = Q2*dx*dy*dz*( Q1+dx*(-Q1-dy)+dy)
+          DrefDer(17,3) = Q2*dy*dz*(-Q1+dx2*( Q1-dy)+dy)+Q4*dy*(-Q1+dx2*( Q1-dy)+dy)
+          DrefDer(18,3) = Q2*dz*dx*( Q1+dy2*(-Q1-dx)+dx)+Q4*dx*( Q1+dy2*(-Q1-dx)+dx)
+          DrefDer(19,3) = Q2*dy*dz*( Q1+dx2*(-Q1-dy)+dy)+Q4*dy*( Q1+dx2*(-Q1-dy)+dy)
+          DrefDer(20,3) = Q2*dz*dx*(-Q1+dy2*( Q1-dx)+dx)+Q4*dx*(-Q1+dy2*( Q1-dx)+dx)
+          DrefDer(21,3) = Q2*(-Q1+dx2*( Q1-dy2)+dy2)+dz*( Q1+dx2*(-Q1+dy2)-dy2)
+          DrefDer(22,3) = dy*dz*( Q1+dx2*(-Q1+dy)-dy)
+          DrefDer(23,3) = dz*dx*(-Q1+dy2*( Q1+dx)-dx)
+          DrefDer(24,3) = dy*dz*(-Q1+dx2*( Q1+dy)-dy)
+          DrefDer(25,3) = dz*dx*( Q1+dy2*(-Q1+dx)-dx)
+          DrefDer(26,3) = Q2*( Q1+dx2*(-Q1+dy2)-dy2)+dz*( Q1+dx2*(-Q1+dy2)-dy2)
+          DrefDer(27,3) = 2.0_DP*dz*(-Q1+dx2*( Q1-dy2)+dy2)
+          
+          ! Remark: Please note that the following code is universal and does
+          ! not need to be modified for other parametric 3D hexahedron elements!
+          
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+          
+          ! X-derivatives on real element
+          dx = (reval%p_Djac(5,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(6,i,j)*reval%p_Djac(8,i,j))*ddet
+          dy = (reval%p_Djac(8,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(2,i,j)*reval%p_Djac(9,i,j))*ddet
+          dz = (reval%p_Djac(2,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(5,i,j)*reval%p_Djac(3,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_X,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+        
+          ! Y-derivatives on real element
+          dx = (reval%p_Djac(7,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(9,i,j))*ddet
+          dy = (reval%p_Djac(1,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(3,i,j))*ddet
+          dz = (reval%p_Djac(4,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(6,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Y,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+
+          ! Z-derivatives on real element
+          dx = (reval%p_Djac(4,i,j)*reval%p_Djac(8,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(5,i,j))*ddet
+          dy = (reval%p_Djac(7,i,j)*reval%p_Djac(2,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(8,i,j))*ddet
+          dz = (reval%p_Djac(1,i,j)*reval%p_Djac(5,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(2,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Z,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+        
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+          
+    end if
+
+  end subroutine
+
 
   !************************************************************************
   
@@ -3562,6 +3897,399 @@ contains
 
   end subroutine
 
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_EM30_3D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(IN)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(IN)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(IN)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The EM30_3D element is specified by nineteen polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  ! { 1, x, y, z, x^2 - y^2, y^2 - z^2 }
+  !
+  ! see:
+  ! J.-P. Hennart, J. Jaffre, and J. E. Roberts;
+  ! "A Constructive Method for Deriving Finite Elements of Nodal Type";
+  ! Numer. Math., 53 (1988), pp. 701–738.
+  ! (The basis monomial set above is presented in example 10, pp. 728-730)
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,6:
+  ! {
+  !   For all j = 1,...,6:
+  !   {
+  !     Int_[-1,1]^2 (|DFj(x,y)|*Pi(Fj(x,y))) d(x,y) = kronecker(i,j) * |fj|
+  !     <==>
+  !     Int_fj Pi(x,y) d(x,y) = kronecker(i,j) * |fj|
+  !   }
+  ! }
+  !
+  ! With:
+  ! fj being the j-th local face of the hexahedron
+  ! |fj| being the area of the face fj
+  ! Fj: [-1,1]^2 -> fj being the parametrisation of the face fj
+  ! |DFj(x,y)| being the determinant of the Jacobi-Matrix of Fj in the point (x,y)
+  
+  ! Parameter: Number of local basis functions
+  integer, parameter :: NBAS = 6
+  
+  ! Parameter: Number of cubature points for 1D edge integration
+  !integer, parameter :: NCUB1D = 3
+  integer, parameter :: NCUB1D = 5
+  
+  ! Parameter: Number of cubature points for 2D quad integration
+  integer, parameter :: NCUB2D = NCUB1D**2
+
+  ! 1D edge cubature rule point coordinates and weights
+  real(DP), dimension(NCUB1D) :: DcubPts1D
+  real(DP), dimension(NCUB1D) :: DcubOmega1D
+  
+  ! 2D quad cubature rule point coordinates and weights
+  real(DP), dimension(NDIM2D, NCUB2D) :: DcubPts2D
+  real(DP), dimension(NCUB2D) :: DcubOmega2D
+  
+  ! Corner vertice coordinates
+  real(DP), dimension(NDIM3D, 8) :: Dvert
+  
+  ! Local mapped 2D cubature point coordinates and integration weights
+  real(DP), dimension(NDIM3D, NCUB2D, 6) :: DfacePoints
+  real(DP), dimension(NCUB2D, 6) :: DfaceWeights
+  real(DP), dimension(6) :: DfaceArea
+  
+  ! Temporary variables for face vertice mapping
+  real(DP), dimension(4,3) :: Dft
+  
+  ! Coefficients for inverse affine transformation
+  real(DP), dimension(NDIM3D,NDIM3D) :: Ds, Dat
+  real(DP), dimension(NDIM3D) :: Dr
+
+  ! other local variables
+  integer :: i,j,l,iel, ipt
+  real(DP), dimension(NBAS,NBAS) :: Da
+  real(DP) :: dx,dy,dz,dt,derx,dery,derz,dx1,dy1,dz1
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Step 0: Set up 1D and 2D cubature rules
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ! Set up a 3-point Gauss rule for 1D
+    ! Remark: Although we don't actually need the 1D formula for integration,
+    ! it is used a few lines below to set up the 2D formula...
+!    DcubPts1D(1) = -sqrt(3.0_DP / 5.0_DP)
+!    DcubPts1D(2) = 0.0_DP
+!    DcubPts1D(3) = sqrt(3.0_DP / 5.0_DP)
+!    DcubOmega1D(1) = 5.0_DP / 9.0_DP
+!    DcubOmega1D(2) = 8.0_DP / 9.0_DP
+!    DcubOmega1D(3) = 5.0_DP / 9.0_DP
+
+    ! !!! DEBUG: 5-point Gauss rule !!!
+    dt = 2.0_DP*sqrt(10.0_DP / 7.0_DP)
+    DcubPts1D(1) = -sqrt(5.0_DP + dt) / 3.0_DP
+    DcubPts1D(2) = -sqrt(5.0_DP - dt) / 3.0_DP
+    DcubPts1D(3) = 0.0_DP
+    DcubPts1D(4) =  sqrt(5.0_DP - dt) / 3.0_DP
+    DcubPts1D(5) =  sqrt(5.0_DP + dt) / 3.0_DP
+    dt = 13.0_DP*sqrt(70.0_DP)
+    DcubOmega1D(1) = (322.0_DP - dt) / 900.0_DP
+    DcubOmega1D(2) = (322.0_DP + dt) / 900.0_DP
+    DcubOmega1D(3) = 128.0_DP / 225.0_DP
+    DcubOmega1D(4) = (322.0_DP + dt) / 900.0_DP
+    DcubOmega1D(5) = (322.0_DP - dt) / 900.0_DP
+
+    ! Set up a 3x3-point Gauss rule for 2D
+    l = 1
+    do i = 1, NCUB1D
+      do j = 1, NCUB1D
+        DcubPts2D(1,l) = DcubPts1D(i)
+        DcubPts2D(2,l) = DcubPts1D(j)
+        DcubOmega2D(l) = DcubOmega1D(i)*DcubOmega1D(j)
+        l = l+1
+      end do
+    end do
+
+    ! Loop over all elements
+    do iel = 1, reval%nelements
+    
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 1: Calculate vertice and face midpoint coordinates
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+      ! Fetch the eight corner vertices for that element
+      Dvert(1:3,1:8) = reval%p_Dcoords(1:3,1:8,iel)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 2: Calculate inverse affine transformation
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      Dr(:) = 0.125_DP * (Dvert(:,1) + Dvert(:,2) + Dvert(:,3) + Dvert(:,4) &
+                         +Dvert(:,5) + Dvert(:,6) + Dvert(:,7) + Dvert(:,8))
+      
+      ! Set up affine trafo
+      Dat(:,1) = 0.25_DP * (Dvert(:,2)+Dvert(:,3)+Dvert(:,7)+Dvert(:,6))-Dr(:)
+      Dat(:,2) = 0.25_DP * (Dvert(:,3)+Dvert(:,4)+Dvert(:,8)+Dvert(:,7))-Dr(:)
+      Dat(:,3) = 0.25_DP * (Dvert(:,5)+Dvert(:,6)+Dvert(:,7)+Dvert(:,8))-Dr(:)
+      
+      ! And invert it
+      call mprim_invert3x3MatrixDirectDble(Dat,Ds)
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 3: Map 2D cubature points onto the real faces
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Map the 2D cubature points onto the real faces and calculate the
+      ! integration weighting factors in this step.
+      do j = 1, 6
+      
+        ! Calculate trafo for this face
+        call EM30_3D_calcTafoFace(Dft,j,Dvert)
+
+        ! Loop over all cubature points
+        do i = 1, NCUB2D
+        
+          ! Get the cubature point coordinates
+          dx = DcubPts2D(1,i)
+          dy = DcubPts2D(2,i)
+          
+          ! Transform the point
+          DfacePoints(1,i,j) = Dft(1,1)+Dft(2,1)*dx+Dft(3,1)*dy+Dft(4,1)*dx*dy
+          DfacePoints(2,i,j) = Dft(1,2)+Dft(2,2)*dx+Dft(3,2)*dy+Dft(4,2)*dx*dy
+          DfacePoints(3,i,j) = Dft(1,3)+Dft(2,3)*dx+Dft(3,3)*dy+Dft(4,3)*dx*dy
+          
+          ! Calculate jacobi-determinant of mapping
+          ! TODO: Explain WTF is happening here...
+          dt = sqrt(((Dft(2,2) + Dft(4,2)*dy)*(Dft(3,3) + Dft(4,3)*dx) &
+                    -(Dft(2,3) + Dft(4,3)*dy)*(Dft(3,2) + Dft(4,2)*dx))**2 &
+                  + ((Dft(2,3) + Dft(4,3)*dy)*(Dft(3,1) + Dft(4,1)*dx) &
+                    -(Dft(2,1) + Dft(4,1)*dy)*(Dft(3,3) + Dft(4,3)*dx))**2 &
+                  + ((Dft(2,1) + Dft(4,1)*dy)*(Dft(3,2) + Dft(4,2)*dx) &
+                    -(Dft(2,2) + Dft(4,2)*dy)*(Dft(3,1) + Dft(4,1)*dx))**2)
+          
+          ! Calculate integration weight
+          DfaceWeights(i,j) = dt * DcubOmega2D(i)
+          
+        end do ! i
+        
+      end do ! j
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 4: Map 3D cubature points onto the real element
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 5: Calculate face areas and hexahedron volume
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Calculate the inverse of the face areas - we will need them for
+      ! scaling later...
+      do j = 1, 6
+        dt = 0.0_DP
+        do i = 1, NCUB2D
+          dt = dt + DfaceWeights(i,j)
+        end do
+        DfaceArea(j) = 1.0_DP / dt
+      end do
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 6: Build coefficient matrix
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Clear coefficient matrix
+      Da = 0.0_DP
+      
+      ! Loop over all faces of the hexahedron
+      do j = 1, 6
+      
+        ! Loop over all cubature points on the current face
+        do i = 1, NCUB2D
+        
+          dx1 = DfacePoints(1,i,j) - Dr(1)
+          dy1 = DfacePoints(2,i,j) - Dr(2)
+          dz1 = DfacePoints(3,i,j) - Dr(3)
+        
+          ! Apply inverse affine trafo to get (x,y,z)
+          dx = Ds(1,1)*dx1 + Ds(1,2)*dy1 + Ds(1,3)*dz1
+          dy = Ds(2,1)*dx1 + Ds(2,2)*dy1 + Ds(2,3)*dz1
+          dz = Ds(3,1)*dx1 + Ds(3,2)*dy1 + Ds(3,3)*dz1
+          
+          ! Integral-Mean over the faces
+          ! ----------------------------
+          dt = DfaceWeights(i,j) * DfaceArea(j)
+          
+          Da( 1,j) = Da( 1,j) + dt
+          Da( 2,j) = Da( 2,j) + dt*dx
+          Da( 3,j) = Da( 3,j) + dt*dy
+          Da( 4,j) = Da( 4,j) + dt*dz
+          Da( 5,j) = Da( 5,j) + dt*(dx**2 - dy**2)
+          Da( 6,j) = Da( 6,j) + dt*(dy**2 - dz**2)
+
+        end do ! i
+      
+      end do ! j
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 7: Invert coefficient matrix
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      call mprim_invertMatrixPivotDble(Da, NBAS)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 8: Evaluate function values
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      if(Bder(DER_FUNC3D)) then
+
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+        
+          dx1 = reval%p_DpointsReal(1,ipt,iel) - Dr(1)
+          dy1 = reval%p_DpointsReal(2,ipt,iel) - Dr(2)
+          dz1 = reval%p_DpointsReal(3,ipt,iel) - Dr(3)
+        
+          ! Apply inverse affine trafo to get (x,y,z)
+          dx = Ds(1,1)*dx1 + Ds(1,2)*dy1 + Ds(1,3)*dz1
+          dy = Ds(2,1)*dx1 + Ds(2,2)*dy1 + Ds(2,3)*dz1
+          dz = Ds(3,1)*dx1 + Ds(3,2)*dy1 + Ds(3,3)*dz1
+          
+          ! Evaluate basis functions
+          do i = 1, NBAS
+          
+            Dbas(i,DER_FUNC3D,ipt,iel) = Da(i,1) &
+              + dx*(Da(i,2) + dx*Da(i,5)) &
+              + dy*(Da(i,3) + dy*(Da(i,6) - Da(i,5))) &
+              + dz*(Da(i,4) + dz*Da(i,6))
+
+          end do ! i
+      
+        end do ! ipt
+        
+      end if ! function values evaluation
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 9: Evaluate derivatives
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
+
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+
+          dx1 = reval%p_DpointsReal(1,ipt,iel) - Dr(1)
+          dy1 = reval%p_DpointsReal(2,ipt,iel) - Dr(2)
+          dz1 = reval%p_DpointsReal(3,ipt,iel) - Dr(3)
+        
+          ! Apply inverse affine trafo to get (x,y,z)
+          dx = Ds(1,1)*dx1 + Ds(1,2)*dy1 + Ds(1,3)*dz1
+          dy = Ds(2,1)*dx1 + Ds(2,2)*dy1 + Ds(2,3)*dz1
+          dz = Ds(3,1)*dx1 + Ds(3,2)*dy1 + Ds(3,3)*dz1
+          
+          ! Evaluate derivatives
+          do i = 1, NBAS
+          
+            ! Calculate 'reference' derivatives
+            derx = Da(i,2) + 2.0_DP*dx*Da(i,5)
+            dery = Da(i,3) + 2.0_DP*dy*(Da(i,6) - Da(i,5))
+            derz = Da(i,4) + 2.0_DP*dz*Da(i,6)
+
+            ! Calculate 'real' derivatives
+            Dbas(i,DER_DERIV3D_X,ipt,iel) = &
+              Ds(1,1)*derx + Ds(2,1)*dery + Ds(3,1)*derz
+            Dbas(i,DER_DERIV3D_Y,ipt,iel) = &
+              Ds(1,2)*derx + Ds(2,2)*dery + Ds(3,2)*derz
+            Dbas(i,DER_DERIV3D_Z,ipt,iel) = &
+              Ds(1,3)*derx + Ds(2,3)*dery + Ds(3,3)*derz
+          
+          end do ! i
+      
+        end do ! ipt
+        
+      end if ! derivatives evaluation
+      
+    end do ! iel
+    
+  contains
+  
+    pure subroutine EM30_3D_calcTafoFace(Dt,iface,Dv)
+    real(DP), dimension(4,3), intent(OUT) :: Dt
+    integer, intent(IN) :: iface
+    real(DP), dimension(NDIM3D,8), intent(IN) :: Dv
+    
+    ! local variables
+    integer, dimension(4) :: i
+
+      ! Get face corner vertice indices
+      select case(iface)
+      case (1)
+        i = (/1,2,3,4/)
+      case (2)
+        i = (/1,5,6,2/)
+      case (3)
+        i = (/7,3,2,6/)
+      case (4)
+        i = (/7,8,4,3/)
+      case (5)
+        i = (/1,4,8,5/)
+      case (6)
+        i = (/7,6,5,8/)
+      end select
+      
+      ! Calculate trafo coefficients
+      Dt(1,1) = 0.25_DP*( Dv(1,i(1))+Dv(1,i(2))+Dv(1,i(3))+Dv(1,i(4)))
+      Dt(2,1) = 0.25_DP*(-Dv(1,i(1))+Dv(1,i(2))+Dv(1,i(3))-Dv(1,i(4)))
+      Dt(3,1) = 0.25_DP*(-Dv(1,i(1))-Dv(1,i(2))+Dv(1,i(3))+Dv(1,i(4)))
+      Dt(4,1) = 0.25_DP*( Dv(1,i(1))-Dv(1,i(2))+Dv(1,i(3))-Dv(1,i(4)))
+      Dt(1,2) = 0.25_DP*( Dv(2,i(1))+Dv(2,i(2))+Dv(2,i(3))+Dv(2,i(4)))
+      Dt(2,2) = 0.25_DP*(-Dv(2,i(1))+Dv(2,i(2))+Dv(2,i(3))-Dv(2,i(4)))
+      Dt(3,2) = 0.25_DP*(-Dv(2,i(1))-Dv(2,i(2))+Dv(2,i(3))+Dv(2,i(4)))
+      Dt(4,2) = 0.25_DP*( Dv(2,i(1))-Dv(2,i(2))+Dv(2,i(3))-Dv(2,i(4)))
+      Dt(1,3) = 0.25_DP*( Dv(3,i(1))+Dv(3,i(2))+Dv(3,i(3))+Dv(3,i(4)))
+      Dt(2,3) = 0.25_DP*(-Dv(3,i(1))+Dv(3,i(2))+Dv(3,i(3))-Dv(3,i(4)))
+      Dt(3,3) = 0.25_DP*(-Dv(3,i(1))-Dv(3,i(2))+Dv(3,i(3))+Dv(3,i(4)))
+      Dt(4,3) = 0.25_DP*( Dv(3,i(1))-Dv(3,i(2))+Dv(3,i(3))-Dv(3,i(4)))
+    
+    end subroutine EM30_3D_calcTafoFace
+    
+  end subroutine
+  
   !************************************************************************
   
 !<subroutine>  
@@ -4095,7 +4823,6 @@ contains
   ! Twist matrices
   real(DP), dimension(2,2,0:7) :: Dtwist
   real(DP), dimension(2,2,6) :: Dtm
-  real(DP), dimension(2,6) :: DL
 
   ! other local variables
   integer(I32) :: itwist
@@ -4432,7 +5159,7 @@ contains
           ! Evaluate basis functions
           do i = 1, NBAS
           
-            Dbas(i,DER_FUNC2D,ipt,iel) = Da(i,1) &
+            Dbas(i,DER_FUNC3D,ipt,iel) = Da(i,1) &
               + dx*(Da(i,2) + dy*Da(i,5) + dx*(Da(i,8) &
                   + dz*(Da(i,13) - dx*Da(i,19)) &
                   + dy*(Da(i,14) + dx*Da(i,17)))) &

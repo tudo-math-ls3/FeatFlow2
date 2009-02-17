@@ -549,7 +549,7 @@ contains
     type(t_elementDistribution), pointer        :: p_relemDist
     integer, dimension(:), pointer :: p_IelemAtVert,p_IelemAtVertIdx, &
         p_IvertAtBnd, p_IbndCpIdx
-    integer, dimension(4) :: IDOFs
+    integer, dimension(128) :: IDOFs
     integer, dimension(2) :: IbcIndex
     
     if (rdiscreteBC%inumEntriesAlloc .eq. 0) then
@@ -658,7 +658,12 @@ contains
         iDOF = IDOFs(idx)
       
       case (EL_S31_1D)
-        ! S31_1L element
+        ! S31_1D element
+        call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
+        iDOF = IDOFs(idx)
+      
+      case (EL_PN_1D)
+        ! PN_1D element
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(idx)
               
@@ -733,7 +738,12 @@ contains
         iDOF = IDOFs(idx)
 
       case (EL_S31_1D)
-        ! S31_1L element
+        ! S31_1D element
+        call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
+        iDOF = IDOFs(idx)
+      
+      case (EL_PN_1D)
+        ! PN_1D element
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(idx)
 
@@ -3609,8 +3619,8 @@ contains
             end if
           end do
 
-        ! 3D Q1 element
-        case (EL_Q1_3D)
+        ! 3D Q1/Q2 element
+        case (EL_Q1_3D,EL_Q2_3D)
           do j = 1, 8
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
@@ -3838,8 +3848,85 @@ contains
       
       end do ! imt
     
-    ! Currently we don't have any 3D elements which have DOFs in the edges,
-    ! so there is no ELSE IF-case for 3D.
+    else if (p_rtria%ndim .eq. NDIM3D) then
+      
+      ! Go through all edges in the mesh region
+      do i=1, iregionNMT
+      
+        ! Get the index of the edge
+        imt = p_IedgeIdx(i)
+        
+        ! Store the edge number
+        Iwhere(2) = imt
+        
+        ! And go through all elements which are adjacent to this edge
+        do idx = p_IelemAtEdgeIdx(imt), p_IelemAtEdgeIdx(imt+1)-1
+        
+          ! Get the index of the element
+          iel = p_IelemAtEdge(idx)
+          
+          ! Store the element number
+          Iwhere(4) = iel
+        
+          ! Get all global dofs on this element
+          call dof_locGlobMapping(p_rspatDisc, iel, IdofGlob)
+          
+          ! Now get the element type for this element (if the discretisation
+          ! is not uniform)
+          if (.not. buniform) ielemType = &
+            p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
+          
+          ! Now we need to find which global DOF the currently processed
+          ! edge belongs to.
+          idof = 0
+          select case(elem_getPrimaryElement(ielemType))
+          ! 3D Q2 element
+          case (EL_Q2_3D)
+            do j=1,12
+              if ((p_IedgesAtElem(j,iel)) .eq. imt) then
+                ! The first 8 DOFs belong to the vertices
+                idof = IdofGlob(8+j)
+                exit
+              end if
+            end do
+          
+          end select
+
+          ! If we come out here and idof is 0, then either the element
+          ! does not have DOFs in the edges or something unforseen has
+          ! happened...
+          if (idof .eq. 0) cycle
+          
+          ! Let's check if we have already processed this dof
+          idofHigh = ishft(idof-1,-5) + 1
+          idofMask = int(ishft(1,iand(idof-1,31)),I32)
+          if (iand(p_IdofBitmap(idofHigh),idofMask) .ne. 0) cycle
+          
+          ! Calculate the coordinates of the edge midpoint
+          Dcoord3D(1:3) = Q12 * (p_DvertexCoords(1:3, p_IvertsAtEdge(1,imt)) +&
+            p_DvertexCoords(1:3, p_IvertsAtEdge(2,imt)))
+            
+          ! Dwhere is always 0
+          Dwhere = 0.0_DP
+
+          ! This is a new DOF for the list - so call the boundary values callback
+          ! routine to calculate the value
+          call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+              cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord3D, Dvalues, rcollection)
+          
+          ! Okay, finally add the DOF into the list
+          call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+          
+          ! And mark the DOF as 'processed' in the bitmap
+          p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+          
+          ! Let's go for the next element adjacent to the edge
+                
+        end do ! idx
+      
+        ! Go for the next edge in the mesh region
+      
+      end do ! imt
     
     end if
     
@@ -3877,6 +3964,15 @@ contains
         ! face belongs to.
         idof = 0
         select case(elem_getPrimaryElement(ielemType))
+        ! 3D Q2 element
+        case (EL_Q2_3D)
+          do j=1,6
+            if ((p_IfacesAtElem(j,iel)) .eq. iat) then
+              idof = IdofGlob(j+20)
+              exit
+            end if
+          end do
+
         ! 3D Q1~ element
         case (EL_Q1T_3D)
           do j=1,6
@@ -3980,8 +4076,6 @@ contains
 
           ! Set idof to 0 to avoid that the code below is executed
           idof = 0
-        
-        ! Currently there are no other 3D elements with DOFs on the faces
         
         end select
 
@@ -4249,6 +4343,31 @@ contains
       case (EL_Q0_3D)
         ! The hexa-midpoint DOF has number 1
         idof = IdofGlob(1)
+        
+        ! Calculate hexa-midpoint
+        Dcoord3D(1:2) = Q18 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(5,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(6,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(7,iel)) +&
+          p_DvertexCoords(1:2,p_IvertsAtElem(8,iel)))
+        
+        ! Dwhere is (0,0,0)
+        Dwhere = 0.0_DP
+        
+        ! Call the boundary condition callback routine
+        call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
+            cinfoNeeded, Iwhere, Dwhere, Dcoord3D, Dvalues, rcollection)
+
+        ! Add the DOF into the list
+        call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
+
+      ! 3D Q2 element
+      case (EL_Q2_3D)
+        ! The quad-midpoint DOF has number 27
+        idof = IdofGlob(27)
         
         ! Calculate hexa-midpoint
         Dcoord3D(1:2) = Q18 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&

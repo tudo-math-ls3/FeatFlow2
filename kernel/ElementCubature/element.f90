@@ -316,7 +316,10 @@ module element
   integer(I32), parameter, public :: EL_E002_1D = EL_P2_1D
   
   ! ID of cubic conforming line FE, 3,1-Spline
-  integer(I32), parameter, public :: EL_S31_1D = EL_1D + 17
+  integer(I32), parameter, public :: EL_S31_1D  = EL_1D + 17
+  
+  ! ID of conforming line FE, Pn, 1 <= n <= 256
+  integer(I32), parameter, public :: EL_PN_1D   = EL_1D + 128
   
 !</constantblock>
   
@@ -423,7 +426,7 @@ module element
   integer(I32), parameter, public :: EL_P1_3D   = EL_3D + 1
   integer(I32), parameter, public :: EL_E001_3D = EL_P1_3D
 
-  ! ID of linear conforming tetrahedral FE, P2
+  ! ID of quadratic conforming tetrahedral FE, P2
   integer(I32), parameter, public :: EL_P2_3D   = EL_3D + 2
   integer(I32), parameter, public :: EL_E002_3D = EL_P2_3D
 
@@ -435,7 +438,7 @@ module element
   integer(I32), parameter, public :: EL_Q1_3D   = EL_3D + 11
   integer(I32), parameter, public :: EL_E011_3D = EL_Q1_3D
   
-  ! ID of trilinear conforming hexahedral FE, Q2
+  ! ID of triquadratic conforming hexahedral FE, Q2
   integer(I32), parameter, public :: EL_Q2_3D   = EL_3D + 13
   integer(I32), parameter, public :: EL_E013_3D = EL_Q2_3D
 
@@ -561,7 +564,7 @@ module element
   ! local DOF's per element.
   ! Do not use this constant anymore - determine the number of local basis
   ! functions dynamically using the 'elem_igetNDofLoc' routine!
-  integer, parameter, public :: EL_MAXNBAS = 21
+  integer, parameter, public :: EL_MAXNBAS = 27
   
   ! Maximum number of derivatives. Corresponds to DER_MAXNDER.
   integer, parameter, public :: EL_MAXNDER = DER_MAXNDER
@@ -698,16 +701,20 @@ contains
       elem_igetID = EL_Q0_3D
     case("EL_Q1_3D","EL_E011_3D")
       elem_igetID = EL_Q1_3D
+    case("EL_Q2_3D","EL_E013_3D")
+      elem_igetID = EL_Q2_3D
     case("EL_QP1_3D")
       elem_igetID = EL_QP1_3D
     case("EL_Q1T_3D","EL_E031_3D")
       elem_igetID = EL_E031_3D
     case("EL_E030_3D")
       elem_igetID = EL_E030_3D
-    case("EL_EM31_3D")
+    case("EL_EM30_3D")
       elem_igetID = EL_EM30_3D
     case("EL_Q2T_3D","EL_E050_3D")
       elem_igetID = EL_E050_3D
+    case("EL_EM50_3D")
+      elem_igetID = EL_EM50_3D
     
     ! -= 3D Pyramid Elements =-
     case("EL_Y0_3D")
@@ -770,7 +777,9 @@ contains
     case (EL_S31_1D)
       ! local DOFs for 1D S31
       elem_igetNDofLoc = 4
-    
+    case (EL_PN_1D)
+      ! local DOFs for 1D Pn
+      elem_igetNDofLoc = 1 + iand(ishft(ieltype,-16),255)
     ! -= 2D element types =-
     case (EL_P0, EL_Q0)
       ! local DOFs for Q0
@@ -824,6 +833,9 @@ contains
     case (EL_Q1_3D)
       ! local DOFs for 3D Q1
       elem_igetNDofLoc = 8
+    case (EL_Q2_3D)
+      ! local DOFs for 3D Q2
+      elem_igetNDofLoc = 27
     case (EL_QP1_3d)
       ! local DOFs for 3D QP1
       elem_igetNDofLoc = 4
@@ -905,7 +917,10 @@ contains
     case (EL_S31_1D)
       ! local DOFs for S31
       ndofAtVertices = 4
-      
+    case (EL_PN_1D)
+      ! local DOFs for Pn
+      ndofAtVertices = 2
+      ndofAtElement = iand(ishft(ieltype,-16),255)-1
     ! -= 2D element types =-
     case (EL_P0, EL_Q0)
       ! local DOFs for Q0
@@ -966,6 +981,12 @@ contains
     case (EL_Q1_3D)
       ! local DOFs for Q1
       ndofAtVertices = 8
+    case (EL_Q2_3D)
+      ! local DOFs for Q2
+      ndofAtVertices = 8
+      ndofAtEdges = 12
+      ndofAtFaces = 6
+      ndofAtElement = 1
     case (EL_QP1_3D)
       ! local DOFs for QP1
       ndofAtElement  = 4
@@ -1049,7 +1070,7 @@ contains
 
     select case (iand(ieltype,EL_ELNRMASK+EL_NONPARAMETRIC))
     ! 1D Element types
-    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D)
+    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D)
       ! Line elements
       elem_igetCoordSystem = TRAFO_CS_REF1D
     
@@ -1069,7 +1090,8 @@ contains
     case (EL_P0_3D, EL_P1_3D)
       ! Tetrahedral elements work in barycentric coordinates
       elem_igetCoordSystem = TRAFO_CS_BARY3DTETRA
-    case (EL_Q0_3D, EL_Q1_3D, EL_QP1_3D, EL_Q1T_3D, EL_Q2T_3D)
+    case (EL_Q0_3D, EL_Q1_3D, EL_Q2_3D, EL_QP1_3D, &
+          EL_Q1T_3D, EL_Q2T_3D)
       ! These work on the reference hexahedron
       elem_igetCoordSystem = TRAFO_CS_REF3DHEXA
     case (EL_Y0_3D, EL_Y1_3D)
@@ -1113,7 +1135,7 @@ contains
 
     select case (elem_getPrimaryElement(ieltype))
     
-    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D)
+    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D)
       ! Linear line transformation, 1D
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_1D
     
@@ -1130,7 +1152,8 @@ contains
       ! Linear tetrahedral transrormation, 3D
       elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_3D
     
-    case (EL_Q0_3D, EL_Q1_3D, EL_QP1_3D, EL_Q1T_3D, EL_Q2T_3D)
+    case (EL_Q0_3D, EL_Q1_3D, EL_Q2_3D, EL_QP1_3D, &
+          EL_Q1T_3D, EL_Q2T_3D)
       ! Trilinear hexahedral transformation, 3D
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_3D
     
@@ -1218,6 +1241,9 @@ contains
     case (EL_S31_1D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 2
+    case (EL_PN_1D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 2
     
     ! -= 2D elements =-
     case (EL_P0, EL_Q0)
@@ -1262,6 +1288,9 @@ contains
       ! Function + 1st derivative
       elem_getMaxDerivative = 4
     case (EL_Q1_3D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 4
+    case (EL_Q2_3D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 4
     case (EL_QP1_3D)
@@ -1442,7 +1471,7 @@ contains
 !</function>
 
     select case (elem_getPrimaryElement(ielType))
-    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D)
+    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D)
       ! 1D Line
       ishp = BGEOM_SHAPE_LINE
     
@@ -1455,11 +1484,12 @@ contains
       ! 2D Quadrilateral
       ishp = BGEOM_SHAPE_QUAD
     
-    case (EL_P0_3D, EL_P1_3D)
+    case (EL_P0_3D, EL_P1_3D, EL_P2_3D)
       ! 3D Tetrahedron
       ishp = BGEOM_SHAPE_TETRA
     
-    case (EL_Q0_3D, EL_Q1_3D, EL_QP1_3D, EL_Q1T_3D, EL_Q2T_3D)
+    case (EL_Q0_3D, EL_Q1_3D, EL_Q2_3D, EL_QP1_3D, &
+          EL_Q1T_3D, EL_Q2T_3D)
       ! 3D Hexahedron
       ishp = BGEOM_SHAPE_HEXA
     
@@ -1486,7 +1516,7 @@ contains
  
 !<subroutine>  
 
-  pure subroutine elem_generic1 (ieltyp, Dcoords, Djac, ddetj, Bder, &
+  subroutine elem_generic1 (ieltyp, Dcoords, Djac, ddetj, Bder, &
                                 Dpoint, Dbas, ItwistIndex)
 
 !<description>
@@ -1561,82 +1591,146 @@ contains
 !</output>
 
 ! </subroutine>
+  
+  ! local variables for the sim2-wrapper
+  logical :: bwrapSim2
+  real(DP), dimension(size(Dcoords,1),size(Dcoords,2),1), target :: Dcoords2
+  real(DP), dimension(size(Djac,1),1,1), target :: Djac2
+  real(DP), dimension(1,1), target :: Ddetj2
+  real(DP), dimension(size(Dpoint,1),1,1), target :: Dpoints2
+  integer(I32), dimension(1), target :: ItwistIndex2
+  real(DP), dimension(size(Dbas,1),size(Dbas,2),1,1) :: Dbas2
+  type(t_evalElementSet) :: reval
 
-    ! Choose the right element subroutine to call.
-    select case (ieltyp)
-    ! 1D elements
-    case (EL_P0_1D)
-      call elem_P0_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_P1_1D)
-      call elem_P1_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_P2_1D)
-      call elem_P2_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_S31_1D)
-      call elem_S31_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-
-    ! 2D elements
-    case (EL_P0)
-      call elem_P0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_P1)
-      call elem_P1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_P2)
-      call elem_P2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_P1T)
-      call elem_P1T (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_Q0)
-      call elem_Q0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_Q1)
-      call elem_Q1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_Q2)
-      call elem_Q2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_QP1)
-      call elem_QP1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
-      call elem_EM30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_E030)
-      call elem_E030 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_EB30)
-      call elem_EB30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_EM31)
-      call elem_EM31 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_E031)
-      call elem_E031 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_E050)
-      call elem_E050 (ieltyp, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_EB50)
-      call elem_EB50 (ieltyp, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
-
-    ! 3D elements
-    case (EL_P0_3D)
-      call elem_P0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_P1_3D)
-      call elem_P1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_Q0_3D)
-      call elem_Q0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_Q1_3D)
-      call elem_Q1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_Y0_3D)
-      call elem_Y0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_Y1_3D)
-      call elem_Y1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_R0_3D)
-      call elem_R0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_R1_3D)
-      call elem_R1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_EM30_3D)
-      call elem_EM30_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_E030_3D)
-      call elem_E030_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-    case (EL_E031_3D)
-      call elem_E031_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-
-    case default
-      ! Element not implemened!
-      ! Throw a floating point exception so that the program stops here!
-      ! We cannot use "PRINT" here as the routine is PURE!
-      call sys_throwFPE()
+    ! Take care of the 1D PN element
+    if(elem_getPrimaryElement(ieltyp) .eq. EL_PN_1D) then
       
-    end select
+      bwrapSim2 = .true.
+    
+    else
+    
+      ! Choose the right element subroutine to call.
+      bwrapSim2 = .false.
+      select case (ieltyp)
+      ! 1D elements
+      case (EL_P0_1D)
+        call elem_P0_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_P1_1D)
+        call elem_P1_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_P2_1D)
+        call elem_P2_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_S31_1D)
+        call elem_S31_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+
+      ! 2D elements
+      case (EL_P0)
+        call elem_P0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_P1)
+        call elem_P1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_P2)
+        call elem_P2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_P1T)
+        call elem_P1T (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_Q0)
+        call elem_Q0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_Q1)
+        call elem_Q1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_Q2)
+        call elem_Q2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_Q2H_2D)
+        bwrapSim2 = .true.
+      case (EL_QP1)
+        call elem_QP1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
+        call elem_EM30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_E030)
+        call elem_E030 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EB30)
+        call elem_EB30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EM31)
+        call elem_EM31 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_E031)
+        call elem_E031 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_E050)
+        call elem_E050 (ieltyp, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EB50)
+        call elem_EB50 (ieltyp, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EM50)
+        bwrapSim2 = .true.
+
+      ! 3D elements
+      case (EL_P0_3D)
+        call elem_P0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_P1_3D)
+        call elem_P1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_Q0_3D)
+        call elem_Q0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_Q1_3D)
+        call elem_Q1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_Q2_3D)
+        bwrapSim2 = .true.
+      case (EL_QP1_3D)
+        bwrapSim2 = .true.
+      case (EL_Y0_3D)
+        call elem_Y0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_Y1_3D)
+        call elem_Y1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_R0_3D)
+        call elem_R0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_R1_3D)
+        call elem_R1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EM30_3D)
+        call elem_EM30_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_E030_3D)
+        call elem_E030_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_E031_3D)
+        call elem_E031_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EM50_3D)
+        bwrapSim2 = .true.
+      case (EL_E050_3D)
+        bwrapSim2 = .true.
+
+      case default
+        ! Element not implemened!
+        ! Throw a floating point exception so that the program stops here!
+        ! We cannot use "PRINT" here as the routine is PURE!
+        call sys_throwFPE()
+        
+      end select
+    
+    end if
+    
+    if(.not. bwrapSim2) return
+    
+    ! Prepare the variables for the sim2-wrapper
+    Dcoords2(:,:,1) = Dcoords(:,:)
+    Djac2(:,1,1) = Djac(:)
+    Ddetj2(1,1) = ddetj
+    Dpoints2(:,1,1) = Dpoint
+    if(present(itwistIndex)) then
+      ItwistIndex2(1) = itwistIndex
+    else
+      ItwistIndex2(1) = 0_I32
+    end if
+    
+    ! Set up the structure
+    reval%npointsPerElement = 1
+    reval%nelements = 1
+    reval%p_Dcoords => Dcoords2
+    reval%p_Djac => Djac2
+    reval%p_Ddetj => Ddetj2
+    if(iand(ieltyp,EL_NONPARAMETRIC) .ne. 0) then
+      reval%p_DpointsReal => Dpoints2
+    else
+      reval%p_DpointsRef => Dpoints2
+    end if
+    reval%p_ItwistIndex => ItwistIndex2
+    
+    ! Call sim2-wrapper
+    call elem_generic_sim2(ieltyp, reval, Bder, Dbas2)
+    
+    ! Copy results to Dbas
+    Dbas(:,:) = Dbas2(:,:,1,1)
 
   end subroutine 
   
@@ -1647,7 +1741,7 @@ contains
  
 !<subroutine>  
 
-  pure subroutine elem_generic2 (ieltyp, revalElement, Bder, Dbas)
+  subroutine elem_generic2 (ieltyp, revalElement, Bder, Dbas)
 
 !<description>
   ! This subroutine calculates the values of the basic functions of the
@@ -1800,7 +1894,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_generic_mult (ieltyp, Dcoords, Djac, Ddetj, &
+  subroutine elem_generic_mult (ieltyp, Dcoords, Djac, Ddetj, &
                                      Bder, Dbas, npoints, Dpoints, itwistIndex)
 
 !<description>
@@ -2202,6 +2296,12 @@ contains
 ! </subroutine>
 
   integer :: i
+  
+    ! Take care of the 1D PN element
+    if(elem_getPrimaryElement(ieltyp) .eq. EL_PN_1D) then
+      call elem_eval_PN_1D(ieltyp, revalElementSet, Bder, Dbas)
+      return
+    end if
 
     ! Choose the right element subroutine to call.
     select case (ieltyp)
@@ -2323,7 +2423,7 @@ contains
     
     case (EL_EB50)
       !call elem_EB50_sim (ieltyp, revalElementSet%p_Dcoords,&
-      !  revalElementSet%p_ItwistIndexEdge, &
+      !  revalElementSet%p_ItwistIndex, &
       !  revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
       !  Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
       !  revalElementSet%p_DpointsRef)
@@ -2361,6 +2461,9 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
+
+    case (EL_Q2_3D)
+      call elem_eval_Q2_3D(ieltyp, revalElementSet, Bder, Dbas)
     
     case (EL_QP1_3D)
       call elem_eval_QP1_3D(ieltyp, revalElementSet, Bder, Dbas)
@@ -2370,6 +2473,8 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal)
+
+      !call elem_eval_EM30_3D(ieltyp, revalElementSet, Bder, Dbas)
     
     case (EL_E030_3D)
       call elem_E030_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
