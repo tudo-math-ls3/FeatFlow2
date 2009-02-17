@@ -86,7 +86,7 @@ module hadaptaux
 
 !<constants>
 
-!<constantblock description="Global flags for grid refinement/coarsening">
+!<constantblock description="Global flags for mesh refinement/coarsening">
 
   ! No refinement and coarsening
   integer, parameter :: HADAPT_NOADAPTATION = 0
@@ -98,6 +98,7 @@ module hadaptaux
   integer, parameter :: HADAPT_LONGESTEDGE  = 2
 
 !</constantblock>
+
 
 !<constantblock description="Bitfield identifiers for state of adaptation">
 
@@ -329,9 +330,9 @@ module hadaptaux
 
     ! Tag: Specifies the strategy for grid refinement and coarsening
     integer :: iadaptationStrategy = HADAPT_NOADAPTATION
-
+    
     ! Maximum number of subdivisions from the original mesh
-    integer :: NSUBDIVIDEMAX = 0
+    integer :: nsubdividemax = 0
 
     ! Total number of grid refinement steps
     integer :: nRefinementSteps = 0
