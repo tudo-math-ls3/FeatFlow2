@@ -726,4 +726,7 @@ drefinementTolerance = 0.01
 dcoarseningTolerance = 0.001
 
 # number of protection layers
-nprotectLayers = 2
+nprotectLayers = 0
+
+# tolerance for protection layers
+dprotectLayerTolerance = 0.0
