@@ -99,7 +99,7 @@ ssolutionname = initial_solution
 
 # type of exact solution profile
 # 0 = no exact solution available
-# 1 = analytical initial solution
+# 1 = analytical exact solution
 # 2 = PGM image
 iexactsolutiontype = 1
 
@@ -114,6 +114,17 @@ itargetfunctype = 1
 
 # section name of target functional
 stargetfuncname = targetfunctional
+
+# type of exact target functional type
+# 0 = no exact target functional available
+# 1 = volume integral
+# 2 = surface integral
+# 3 = analytical target functional
+iexacttargetfunctype = 1
+
+# section name of exact target functional
+sexacttargetfuncname = exacttargetfunctional
+
 
 #-------------------------------------------------------------------------------
 
@@ -300,10 +311,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 3
+nlmin = 5
 
 # maximum multigrid level number
-nlmax = 3
+nlmax = 5
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -685,7 +696,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 10
+nadapt = 1
 
 # time for grid adaptivity
 dtimeadapt = 0.0
@@ -701,10 +712,10 @@ nsubdividemax = 5
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementtolerance = 1e-6
+drefinementTolerance = 1e-6
 
 # coarsening tolerance
-dcoarseningtolerance = 1e-8
+dcoarseningTolerance = 1e-8
 
 
 ################################################################################
@@ -718,8 +729,7 @@ dcoarseningtolerance = 1e-8
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-# 7 = goal-oriented estimator
-ierrorestimator = 3
+ierrorestimator = 1
 
 # type or grid indicator
 # 0 = as is
@@ -728,7 +738,7 @@ ierrorestimator = 3
 # 3 = fixed-rate strategy
 # 4 = RMS automatic treshold
 # 5 = balancing strategy
-igridindicator = 1
+igridindicator = 0
 
 # noise filter used as weight for the mean value
 dnoisefilter = 0.01
@@ -738,3 +748,6 @@ dabsfilter = 0.001
 
 # number of protection layers
 nprotectLayers = 0
+
+# tolerance for protection layers
+dprotectLayerTolerance = 0.0

@@ -730,4 +730,7 @@ dnoisefilter = 1e-3
 dabsfilter = 1e-4
 
 # number of protection layers
-nprotectLayers = 2
+nprotectLayers = 0
+
+# tolerance for protection layers
+dprotectLayerTolerance = 0.0

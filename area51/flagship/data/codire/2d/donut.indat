@@ -12,8 +12,8 @@
 ################################################################################
 
 defconst: eps = 0.1
-defconst: x0  = 0.5
-defconst: y0  = 0.25
+defconst: x0  = 1.0
+defconst: y0  = 0.5
 defconst: C   = 1
 
 defexpr:  sqr1 = SQRT((x-1)^2+y^2)
@@ -30,8 +30,10 @@ if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0)
 # Specify the exact solution
 [exact_solution]
 NCOMP
-1
+3
 if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0)
+0
+0
 
 
 # Specify the velocity field
@@ -46,9 +48,17 @@ y
 [targetfunctional]
 NCOMP
 1
-if(@sqr2 < _eps, _C/exp(@abs/_eps/_eps-1),0)
 if(x >= 0.9 & x <= 1.1, 1, 0)
+#if(@sqr2 < _eps, _C/exp(@abs/_eps/_eps-1),0)
 
+
+# Specify the exact quantity of interest
+[exacttargetfunctional]
+NCOMP
+2
+if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0)
+if(x >= 0.9 & x <= 1.1, 1, 0)
+#if(@sqr2 < _eps, _C/exp(@abs/_eps/_eps-1),0)
 
 # Specify the boundary conditions for the primal problem
 [boundary_conditions_primal]
