@@ -19,7 +19,6 @@ SRC = $(KERNELSRC)
 
 # application kernel source files
 SRC += boundaryfilter.f90 \
-       errorestimation.f90 \
        problem.f90 \
        solver.f90 \
        solverlinear.f90 \
