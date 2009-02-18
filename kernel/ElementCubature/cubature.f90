@@ -857,7 +857,7 @@ contains
       ! transpose the point array
       do i = 1, min(4,size(Dpoints,1))
         do j = 1, min(ncubp,size(Dpoints,2))
-          Dpoints(i,j) = Dxi(i,j)
+          Dpoints(i,j) = Dxi(j,i)
         end do
       end do
       
