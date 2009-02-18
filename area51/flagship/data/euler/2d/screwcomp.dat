@@ -6,60 +6,171 @@
 #                             Screw-type compressor                            #
 ################################################################################
 
+simportdatafiles(1) =
+  'data/euler/default.dat'
 
 ################################################################################
-[Benchmark]
-################################################################################
 
-# 1 = steady-state, 0 = time-dependent flow
-isteadyflow = 0
-
-# treatment of coupling: 0 = segregated, 1 = coupled approach
-icoupled = 0
-
-# type of dissipation: 0 = scalar dissipation, 1 = tensorial dissipation
-idissipation = 0
-
-# diffusion coefficient
-nu = 0.0
-
+application = euler
 
 ################################################################################
-[InputOutput]
+[Euler]
 ################################################################################
 
-# grid parametrization
-prmfile = grids/2d/screw_tria.prm
-
-# grid triangulation
-trifile = grids/2d/screw_tria.tri
-
-# indat file
+# file which contains the application specific data
 indatfile = data/euler/2d/screwcomp.indat
 
-# GMV output file
-gmvfile = gmv/screwcomp
+# section name of boundary condition for primal problem
+sprimalbdrcondname = boundary_conditions_primal
 
-# GMV output level
-ilevgmv = 99
+# section name of boundary condition for dual problem
+sdualbdrcondname = boundary_conditions_dual
 
-# GMV output interval
-tstepgmv = 0.0
+# number of spatial dimensions
+ndimension = 2
 
-# AVS output file
-avsfile = avs/screwcomp
+# solution algorithm
+algorithm = transient_primal
 
-# AVS output level
-ilevavs = 0
+#-------------------------------------------------------------------------------
 
-# AVS output interval
-tstepavs = 0.0
+# type of mass matrix
+# 0 = no mass matrix
+# 1 = consistent mass matrix
+# 2 = lumped mass matrix
+imasstype = 2
 
-# HDF5 output file
-hdffile = hdf/screwcomp
+# type of mass antidiffusion
+# 0 = no mass antidiffusion
+# 1 = consistent mass antidiffusion
+imassantidiffusion = 0
 
-# HDF5 output interval
-tstephdf = 0.0
+# type of dissipation
+# 0 = no dissipation
+# 1 = scalar dissipation
+# 2 = tensorial dissipation
+idissipation = 2
+
+# type of system coupling
+# 0 = segregated approach
+# 1 = fully-coupled approach
+icoupled = 2
+
+# type of preconditioner
+# 0 = Galerkin scheme
+# 1 = Low-order scheme with scalar dissipation
+# 2 = Low-order scheme with tensorial dissipation
+iprecond = 2
+
+# type of right-hand side vector
+# 0 = zero right-hand side
+# 1 = analytical right-hand side
+irhstype = 0
+
+# section name of right-hand side vector
+srhsname = rhs
+
+# type of initial solution profile
+# 0 = zero initial solution
+# 1 = analytical initial solution
+isolutiontype = 1
+
+# section name of initial solution
+ssolutionname = initial_solution
+
+# type of exact solution profile
+# 0 = no exact solution available
+# 1 = analytical initial solution
+iexactsolutiontype = 0
+
+# section name of exact solution
+sexactsolutionname = exact_solution
+
+#-------------------------------------------------------------------------------
+
+# file which contains the boundary parametrisation
+prmfile = grids/2d/screw_tria.prm
+
+# file which contains the triangulation
+trifile = grids/2d/screw_tria.tri
+
+# type of finite element space
+#  1 = P1 finite elements
+#  2 = P2 finite elements
+# 11 = Q1 finite elements
+# 12 = Q2 finite elements
+# -1 = mixed P1/Q1 finite elements
+# -2 = mixed P2/Q2 finite elements
+ieltype = 1
+
+# convert mesh to triangular mesh?
+iconvToTria = 0
+
+# type of matrix format
+# 7 = matrix format 7
+# 9 = matrix format 9
+imatrixformat = 9
+
+# type of system format
+# 0 = interleave scalar format
+# 1 = block system
+isystemformat = 0
+
+#-------------------------------------------------------------------------------
+
+# section name of the inviscid stabilization
+inviscid = Inviscid
+
+# section name of the time-stepping algorithm
+timestep = Timestepping
+
+# section name of the top-level solver
+solver = FullMultigridSolver
+
+# section name of the output configuration
+output = Output
+
+# section name of the adaptation configuration
+adaptivity = Adaptivity
+
+# section name of the error estimation configuration
+errorestimator = ErrorEstimator
+
+
+################################################################################
+[Inviscid]
+################################################################################
+
+# type of spatial stabilization:
+#  0 = no stabilization (Galerkin)
+#  1 = discrete upwinding
+# 10 = semi-impl. FEM-FCT
+# 11 = semi-expl. FEM-FCT
+# 12 = linearized FEM-FCT
+# 20 = FEM-TVD
+# 21 = FEM-GP
+istabilisation = 1
+
+
+################################################################################
+[Output]
+################################################################################
+
+# type of UCD output format
+# 0 = no output
+# 1 = GMV
+# 2 = AVS
+# 3 = VTK
+iformatUCD = 1
+
+# time interval for UCD output
+dstepUCD = 1.0
+
+# file for UCD output of solution
+ucdsolution = out/screwcomp
+
+# file for UCD output of error
+ucderror = out/screwcomp_error
 
 
 ################################################################################
@@ -67,21 +178,38 @@ tstephdf = 0.0
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, critical information; =2, all information
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 99
 
 # type of time-stepping algorithm
-# =5, time accurate calculation; =6, pseudo time-stepping; =7, full MG
+# 5 = two-level theta-scheme
+# 6 = explicit Runge-Kutta scheme
+# 7 = full MG
 ctimestepType = 5
 
-# implicitness parameter: Valid values of THETA are in the range [0,1].
+# norm to use for solution variation checking
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
+isolNorm = 0
+
+# implicitness parameter: Valid values of THETA are in the range [0,1]
 theta = 1.0
 
-# initial time for the simulation.
+# number of steps for multisteps scheme
+multisteps = 2
+
+# initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = -1.0
+dfinalTime =
 
 # initial time step size
 dinitialStep = 0.001
@@ -95,35 +223,23 @@ dmaxStep = 0.1
 # adaptive time stepping algorithm
 iadaptTimestep = 0
 
-# tolerance for relative changes
-epsRel = 2e-2
-
 # minimum factor by which time step may change
-dDecreaseFactor = 0.1
+ddecreaseFactor = 0.1
 
 # maximum factor by which time step may change
-dIncreaseFactor = 2.0
+dincreaseFactor = 2.0
 
+# reduction factor by which time step is reduced if simulation fails
+dstepReductionFactor = 0.8
 
-################################################################################
-[Discretization]
-################################################################################
+# target tolerace for relative changes
+depsRel =
 
-# type of dissipation
-# =1, scalar dissipation; =2, tensorial dissipation
-idissipation = 1
+# absolute tolerance for relative changes
+depsAbs = 0.0
 
-# type of spatial stabilization: 
-# =0, no stabilization (Galerkin); =1, discrete upwinding; =2, FEM-FCT;
-# =3, FEM-GP; =4, FEM-TVD
-istabilization = 1
-
-# mass matrix: 
-# =0, use row-sum lumped mass matrix; =1, use consistent mass matrix
-imass = 0
-
-# extend Jacobian matrix
-iextendedJacobian = 0
+# tolerance for steady state convergence
+depsSteady = 0.0
 
 
 ################################################################################
@@ -132,7 +248,12 @@ iextendedJacobian = 0
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, critical information; =2, all information
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 2
 
 # minimum multigrid level number
@@ -142,7 +263,10 @@ nlmin = 5
 nlmax = 5
 
 # type of multigrid cycle
-# =0, F-cylce; =1, V-cycle; =2, W-cycle, =3,=4,=5, corresponding saw tooth variants
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 = corresponding saw tooth variants
 icycle = 0
 
 # minimum number of multigrid steps
@@ -152,7 +276,8 @@ ilmin = 1
 ilmax = 1
 
 # nonlinear subsolver
-# =1 nonlinear single-grid solver, =3 nonlinear multigrid solver
+# 1 = nonlinear single-grid solver
+# 3 = nonlinear multigrid solver
 isolver = 1
 
 # name of the subsolver
@@ -165,11 +290,19 @@ ssolvername = NonlinearSolver
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, critical information; =2, all information
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 2
 
 # norm to use for defect checking
-# =0, Euclidian norm; =1, L1-norm; =2, L2-norm; =3, MAX-norm
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 iresNorm = 0
 
 # minimum multigrid level number
@@ -186,11 +319,15 @@ ilmin = 1
 ilmax = 1
 
 # type of multigrid cycle
-# =0, F-cylce; =1, V-cycle; =2, W-cycle, =3,=4,=5, corresponding saw tooth variants
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 =  corresponding saw tooth variants
 icycle = 1
 
 # nonlinear coarse grid solver
-# =1, nonlinear single-grid solver, =3, nonlinear multigrid solver
+# 1 = nonlinear single-grid solver
+# 3 = nonlinear multigrid solver
 isolver = 1
 
 # name of nonlinear coarse grid solver
@@ -219,20 +356,14 @@ nsfac = 1
 # nonlinear relaxation parameter
 domega = 1.0
 
-# tolerance for the multigrid solver. If TOL > 0 then the absolute value of
-# the residual is required to satisfy the prescribed tolerance. If TOL < 0
-# then a residual drop of ABS(TOL) is required.
-tol = 1e-12
+# absolute tolerance for residual
+depsAbs = 0.0
 
-# if the initial defect and/or right-hand side are checked, then this is
-# adopted tolerance value
-epsAbs = 1e-20
+# relative tolerance for residual
+depsRel = 0.0
 
-# flag: check initial right-hand side vector?
-icheckRHS = 0
-
-# flag: check initial defect vector?
-icheckDEF = 0
+# relative tolerance for stagnation
+depsStag = 0.0
 
 
 ################################################################################
@@ -241,11 +372,19 @@ icheckDEF = 0
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, critical information; =2, all information
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 99
 
 # norm to use for defect checking
-# =0, Euclidian norm; =1, L1-norm; =2, L2-norm; =3, MAX-norm
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 iresNorm = 0
 
 # minimum number of nonlinear steps
@@ -255,58 +394,56 @@ nminIterations = 1
 nmaxIterations = 100
 
 # preconditioner for the nonlinear solver
-# =1, block-diagonal; =2, defect-correction; =3, algebraic Newton
+# 1 = block-diagonal preconditioner
+# 2 = defect-correction algorithm
+# 3 = algebraic Newton algorithm
 iprecond = 2
 
 # nonlinear solver
-# =101, fixed-point iteration
-# =102, predictor-corrector fixed-point iteration
+# 101 = fixed-point iteration
+# 102 = predictor-corrector fixed-point iteration
 isolver = 101
 
 # strategy for choosing the perturbation parameter in Newton's method
-# =1, NITSOL; =2, SQRT(EPS); otherwise, user-defined value
-dperturbStrategy = 0
+# 1 = NITSOL
+# 2 = SQRT(EPS)
+# otherwise, user-defined value
+dperturbationStrategy = 1
 
 # strategy for choosing the forcing term in Newton's method
-# =1, choice 1 by Eisenstat/Walker; =2, choice 2 by Eisenstat/Walker;
-# =3, choice by Brown/Saad; =4, choice by Dembo/Steihaug; 
+# 1 = choice 1 by Eisenstat/Walker
+# 2 = choice 2 by Eisenstat/Walker
+# 3 = choice by Brown/Saad
+# 4 = choice by Dembo/Steihaug
 # otherwise, user-defined fixed value
-dforcingstrategy = 1e-4
+dforcingStrategy = 1e-4
 
 # check sufficient decrease condition in globalization
-# =0, apply Newton increment without globalization;
-# =1, check sufficient decrease condition and perform backtracking if required
+# 0 = apply Newton increment without globalization
+# 1 = check sufficient decrease condition and perform backtracking if required
 icheckSufficientDecrease = 1
 
 # maximum number of backtracking steps
 nmaxBacktrackingSteps = 5
 
+# update frequency of Jacobian
+iupdateFrequency = 0
+
 # nonlinear relaxation parameter
 domega = 1.0
 
-# tolerance for the nonlinear solver. If TOL > 0 then the absolute value of
-# the residual is required to satisfy the prescribed tolerance. If TOL < 0
-# then a residual drop of ABS(TOL) is required.
-tol = -1e-5
+# absolute tolerance for residual
+depsAbs = 0.0
 
-# if the initial defect and/or right-hand side are checked, then this is
-# adopted tolerance value
-epsAbs = 1e-14
+# relative tolerance for residual
+depsRel = 0.0
 
-# stagnation tolerance
-tolstag = 1e-3
-
-# flag: check initial right-hand side vector?
-icheckRHS = 1
-
-# flag: check initial defect vector?
-icheckDEF = 1
-
-# flag: check stagnation of defect vector?
-icheckStagnation = 0
+# relative tolerance for stagnation
+depsStag = 0.0
 
 # name of linear sub-solver
 ssolvername = LinearMultigridSolver
+
 
 ################################################################################
 [LinearMultigridSolver]
@@ -314,11 +451,19 @@ ssolvername = LinearMultigridSolver
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, critical information; =2, all information
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
-# =0, Euclidian norm; =1, L1-norm; =2, L2-norm; =3, MAX-norm
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 iresNorm = 0
 
 # minimum multigrid level number
@@ -335,18 +480,22 @@ ilmin = 1
 ilmax = 100
 
 # type of multigrid cycle
-# =0, F-cylce; =1, V-cycle; =2, W-cycle, =3,=4,=5, corresponding saw tooth variants
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 =  corresponding saw tooth variants
 icycle = 1
 
 # linear coarse grid solver
-# =2 linear single-grid solver
+# 2 = linear single-grid solver
 isolver = 2
 
 # name of linear coarse grid solver
 ssolvername = LinearSolver
 
 # smoother for the linear multigrid solver
-# =2, linear single-grid solver, =4, linear multigrid solver
+# 2 = linear single-grid solver
+# 4 = linear multigrid solver
 ismoother = 2
 
 # name of smoother
@@ -368,20 +517,14 @@ nsmoothfactor = 1
 # linear relaxation parameter
 domega = 1.0
 
-# tolerance for the multigrid solver. If TOL > 0 then the absolute value of
-# the residual is required to satisfy the prescribed tolerance. If TOL < 0
-# then a residual drop of ABS(TOL) is required.
-tol = 1e-12
+# absolute tolerance for residual
+depsAbs = 0.0
 
-# if the initial defect and/or right-hand side are checked, then this is
-# adopted tolerance value
-epsAbs = 1e-20
+# relative tolerance for residual
+depsRel = 0.0
 
-# flag: check initial right-hand side vector?
-icheckRHS = 0
-
-# flag: check initial defect vector?
-icheckDEF = 0
+# relative tolerance for stagnation
+depsStag = 0.0
 
 
 ################################################################################
@@ -390,11 +533,13 @@ icheckDEF = 0
 ################################################################################
 
 # smoother for the linear multigrid solver
-# =2, Jacobi; =4, SOR; =5, SSOR; =7, BiCGSTAB; =8, FGMRES; =50, ILU
+#  2 = Jacobi
+#  4 = SOR
+#  5 = SSOR
+#  7 = BiCGSTAB
+#  8 = FGMRES
+# 50 = ILU
 isolver = 4
-
-# tolerance for the smoother
-tol = 1e-12
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 15
@@ -418,11 +563,19 @@ sprecondName = LinearPrecond
 ################################################################################
 
 # level of output information:
-# =0, no output; =1, critical information; =2, all information
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
-# =0, Euclidian norm; =1, L1-norm; =2, L2-norm; =3, MAX-norm
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 iresNorm = 0
 
 # minimum number of linear steps
@@ -432,7 +585,12 @@ nminIterations = 1
 nmaxIterations = 100
 
 # type of linear solver
-# =2, Jacobi; =4, SOR; =5, SSOR; =7, BiCGSTAB; =8, FGMRES; =11, UMFPACK4
+#  2 = Jacobi
+#  4 = SOR
+#  5 = SSOR
+#  7 = BiCGSTAB
+#  8 = FGMRES
+# 11 = UMFPACK4
 isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
@@ -441,20 +599,14 @@ nkrylov = 15
 # linear relaxation parameter
 domega = 1.0
 
-# tolerance for the linear solver. If TOL > 0 then the absolute value of
-# the residual is required to satisfy the prescribed tolerance. If TOL < 0
-# then a residual drop of ABS(TOL) is required.
-tol = -1e-4
+# absolute tolerance for residual
+depsAbs = 0.0
 
-# if the initial defect and/or right-hand side are checked, then this is
-# adopted tolerance value
-epsAbs = 1e-14
+# relative tolerance for residual
+depsRel = 0.0
 
-# flag: check initial right-hand side vector?
-icheckRHS = 1
-
-# flag: check initial defect vector?
-icheckDEF = 1
+# relative tolerance for stagnation
+depsStag = 0.0
 
 # name of preconditioner
 sprecondName = LinearPrecond
@@ -466,7 +618,10 @@ sprecondName = LinearPrecond
 ################################################################################
 
 # preconditioner for the linear single-grid solver
-# =2, Jacobi; =4, SOR; 5=, SSOR; =50, ILU
+#  2 = Jacobi
+#  4 = SOR
+#  5 = SSOR
+# 50 = ILU
 isolver = 50
 
 # tolerance of (M)ILU-preconditioner
@@ -482,6 +637,13 @@ domega = 1.0
 ################################################################################
 [Adaptivity]
 ################################################################################
+
+# number of pre-adaptation steps
+npreadapt = 0
+
+# number of adaptation steps
+nadapt = 0
+
 # time for grid adaptivity
 dtimeadapt = 0.0
 
@@ -491,18 +653,49 @@ dstepadapt = 0.0
 # maximum number of refinement levels
 nsubdividemax = 2
 
-# refinement strategy: 1 = red-green, 2 = longest-edge
-irefinementStrategy = 1
-
-# coarsening strategy
-icoarseningStrategy = 0
+# adaptation strategy: 1 = red-green
+iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementtolerance = 0.1
+drefinementTolerance = 0.1
 
 # coarsening tolerance
-dcoarseningtolerance = 1.0
+dcoarseningTolerance = 1.0
 
-# error estimator/indicator: 1= L2-projection, 2=L2-projection + correction
-# 3=ZZ recovery, 4=ZZ recovery + correction, 5=edgewise limited averaging
-ierrorStrategy = 0
+
+################################################################################
+[ErrorEstimator]
+################################################################################
+
+# type of error estimator
+# 1 = L2-projection
+# 2 = node-based SPR
+# 3 = element-based SPR
+# 4 = face-based SPR
+# 5 = limited gradient averaging
+# 6 = second-difference indicator
+ierrorestimator = 7
+
+# type or grid indicator
+# 0 = as is
+# 1 = equidistribution
+# 2 = logarithmic equidistribution
+igridindicator = 0
+
+# noise filter
+dnoisefilter = 0.005
+
+# absolute filter
+dabsfilter = 1e-6
+
+# refinement tolerance
+drefinementTolerance = 0.3
+
+# coarsening tolerance
+dcoarseningTolerance = 0.1
+
+# number of protection layers
+nprotectLayers = 2
+
+# tolerance for protection layers
+dprotectLayerTolerance = 0.0
