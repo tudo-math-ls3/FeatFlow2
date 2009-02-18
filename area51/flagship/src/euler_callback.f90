@@ -96,7 +96,7 @@ contains
     type(t_timer), pointer :: rtimer
     integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
-    integer :: icoupled, iprecond, isystemFormat, imasstype, ivar, jvar
+    integer :: isystemCoupling, iprecond, isystemFormat, imasstype, ivar, jvar
 
     ! Start time measurement for matrix evaluation
     rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyMatrix')
@@ -179,11 +179,11 @@ contains
     !         primaldual which has to be extracted from the collection.
     !---------------------------------------------------------------------------
 
-    icoupled = collct_getvalue_int(rcollection, 'icoupled')
+    isystemCoupling = collct_getvalue_int(rcollection, 'isystemCoupling')
     iprecond = collct_getvalue_int(rcollection, 'iprecond')
 
     ! What kind of coupling is applied?
-    select case(icoupled)
+    select case(isystemCoupling)
       
     case (FLOW_SEGREGATED)
       
@@ -440,7 +440,7 @@ contains
                                            rtimestep%theta*rtimestep%dStep,&
                                            rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                                            .false., .false., .true., .true.)
-            elseif (icoupled .eq. FLOW_ALLCOUPLED) then
+            elseif (isystemCoupling .eq. FLOW_ALLCOUPLED) then
               call lsyssc_scaleMatrix(rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
                                       rtimestep%theta*rtimestep%dStep)
             end if
@@ -465,7 +465,7 @@ contains
                                            rtimestep%theta*rtimestep%dStep,&
                                            rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                                            .false., .false., .true., .true.)
-            elseif (icoupled .eq. FLOW_ALLCOUPLED) then
+            elseif (isystemCoupling .eq. FLOW_ALLCOUPLED) then
               call lsyssc_scaleMatrix(rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
                                       rtimestep%theta*rtimestep%dStep)
             end if

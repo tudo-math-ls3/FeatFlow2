@@ -155,7 +155,7 @@ module euler_basic
     integer :: idissipationtype
 
     ! Type of coupling
-    integer :: icoupled
+    integer :: isystemCoupling
 
     ! Type of preconditioner
     integer :: iprecond

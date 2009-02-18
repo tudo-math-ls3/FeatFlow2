@@ -162,7 +162,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! What kind of coupling is applied?
-      select case(icoupled)
+      select case(isystemCoupling)
         
       ! Assemble block-diagonal divergence operator
       case (FLOW_SEGREGATED)
@@ -384,7 +384,7 @@ contains
           end do
 
           ! Scale the off-diagonal blocks by "-theta*dt" if required
-          if (icoupled .eq. FLOW_ALLCOUPLED) then
+          if (isystemCoupling .eq. FLOW_ALLCOUPLED) then
             do iblock = 1, euler_getNVAR(rproblemLevelTmp)
               do jblock = 1, euler_getNVAR(rproblemLevelTmp)
                 if (iblock .eq. jblock) cycle
@@ -400,7 +400,7 @@ contains
           !
           !     A = -L
           !
-          select case(icoupled)
+          select case(isystemCoupling)
 
           case (FLOW_SEGREGATED)
             do iblock = 1, euler_getNVAR(rproblemLevelTmp)
@@ -1437,7 +1437,7 @@ contains
     !---------------------------------------------------------------------------
     
     ! What kind of coupling is applied?
-    select case(icoupled)
+    select case(isystemCoupling)
       
     ! Assemble block-diagonal divergence operator
     case (FLOW_SEGREGATED)
@@ -1661,7 +1661,7 @@ contains
         end do
         
         ! Scale the off-diagonal blocks by "-theta*dt" if required
-        if (icoupled .eq. FLOW_ALLCOUPLED) then
+        if (isystemCoupling .eq. FLOW_ALLCOUPLED) then
           do iblock = 1, euler_getNVAR(rproblemLevel)
             do jblock = 1, euler_getNVAR(rproblemLevel)
               if (iblock .eq. jblock) cycle
@@ -1677,7 +1677,7 @@ contains
         !
         !     A = -J
         !
-        select case(icoupled)
+        select case(isystemCoupling)
           
         case (FLOW_SEGREGATED)
           do iblock = 1, euler_getNVAR(rproblemLevel)

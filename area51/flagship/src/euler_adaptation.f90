@@ -279,7 +279,7 @@ contains
     case (SYSTEM_BLOCKFORMAT)
       
       ! What kind of global operator should be adopted?
-      select case(icoupled)
+      select case(isystemCoupling)
       case (FLOW_SEGREGATED)
           
         ! Resize diagonal blocks
@@ -482,7 +482,7 @@ contains
     case (SYSTEM_BLOCKFORMAT)
       
       ! What kind of global operator should be adopted?
-      select case(icoupled)
+      select case(isystemCoupling)
       case (FLOW_SEGREGATED)
           
         ! Resize diagonal blocks
@@ -691,7 +691,7 @@ contains
     case (SYSTEM_BLOCKFORMAT)
       
       ! What kind of global operator should be adopted?
-      select case(icoupled)
+      select case(isystemCoupling)
       case (FLOW_SEGREGATED)
           
         ! Resize diagonal blocks

@@ -55,7 +55,7 @@ idissipationtype = 2
 # type of system coupling
 # 0 = segregated approach
 # 1 = fully-coupled approach
-icoupled = 2
+isystemCoupling = 2
 
 # type of preconditioner
 # 0 = Galerkin scheme

@@ -360,7 +360,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName,&
                              'idissipationtype', rappDescriptor%idissipationtype)
     call parlst_getvalue_int(rparlist, ssectionName,&
-                             'icoupled', rappDescriptor%icoupled)
+                             'isystemCoupling', rappDescriptor%isystemCoupling)
     call parlst_getvalue_int(rparlist, ssectionName,&
                              'iprecond', rappDescriptor%iprecond)
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -441,8 +441,8 @@ contains
                              rappDescriptor%imassantidiffusiontype, .true.)
     call collct_setvalue_int(rcollection, 'idissipationtype',&
                              rappDescriptor%idissipationtype, .true.)
-    call collct_setvalue_int(rcollection, 'icoupled',&
-                             rappDescriptor%icoupled, .true.)
+    call collct_setvalue_int(rcollection, 'isystemCoupling',&
+                             rappDescriptor%isystemCoupling, .true.)
     call collct_setvalue_int(rcollection, 'iprecond',&
                              rappDescriptor%iprecond, .true.)
     call collct_setvalue_int(rcollection, 'irhstype',&
@@ -930,7 +930,7 @@ contains
         end select
         
         ! What kind of global operator should be adopted?
-        select case(rappDescriptor%icoupled)
+        select case(rappDescriptor%isystemCoupling)
         case (FLOW_SEGREGATED)
           rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIXD
           
@@ -960,7 +960,7 @@ contains
         rproblemLevel%RmatrixBlock(systemMatrix)%imatrixSpec = LSYSBS_MSPEC_GROUPMATRIX
         
         ! What kind of global operator should be adopted?
-        select case(rappDescriptor%icoupled)
+        select case(rappDescriptor%isystemCoupling)
         case (FLOW_SEGREGATED)
           ! Create only NVAR diagonal blocks
           do ivar = 1, euler_getNVAR(rappDescriptor)

@@ -489,7 +489,7 @@ contains
 
         
         ! What kind of global operator should be adopted?
-        select case(icoupled)
+        select case(isystemCoupling)
         case (FLOW_SEGREGATED)
           rproblemLevel%Rmatrix(CNSE_MATRIX_A)%cinterleavematrixFormat = LSYSSC_MATRIXD
           
@@ -522,7 +522,7 @@ contains
         rproblemLevel%RmatrixBlock(CNSE_MATRIX_A)%imatrixSpec = LSYSBS_MSPEC_GROUPMATRIX
 
         ! What kind of global operator should be adopted?
-        select case(icoupled)
+        select case(isystemCoupling)
         case (FLOW_SEGREGATED)
           
           ! Create diagonal blocks
@@ -802,7 +802,7 @@ contains
 
         
         ! What kind of global operator should be adopted?
-        select case(icoupled)
+        select case(isystemCoupling)
         case (FLOW_SEGREGATED)
           rproblemLevel%Rmatrix(CNSE_MATRIX_A)%cinterleavematrixFormat = LSYSSC_MATRIXD
           
@@ -835,7 +835,7 @@ contains
         rproblemLevel%RmatrixBlock(CNSE_MATRIX_A)%imatrixSpec = LSYSBS_MSPEC_GROUPMATRIX
 
         ! What kind of global operator should be adopted?
-        select case(icoupled)
+        select case(isystemCoupling)
         case (FLOW_SEGREGATED)
           
           ! Create diagonal blocks
@@ -1121,7 +1121,7 @@ contains
 
         
         ! What kind of global operator should be adopted?
-        select case(icoupled)
+        select case(isystemCoupling)
         case (FLOW_SEGREGATED)
           rproblemLevel%Rmatrix(CNSE_MATRIX_A)%cinterleavematrixFormat = LSYSSC_MATRIXD
           
@@ -1152,7 +1152,7 @@ contains
         rproblemLevel%RmatrixBlock(CNSE_MATRIX_A)%imatrixSpec = LSYSBS_MSPEC_GROUPMATRIX
 
         ! What kind of global operator should be adopted?
-        select case(icoupled)
+        select case(isystemCoupling)
         case (FLOW_SEGREGATED)
           
           ! Create diagonal blocks
