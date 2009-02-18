@@ -9,12 +9,13 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) codire_coeffRHS
-!#     -> Callback routine for the evaluation of the right-hand side
+!# 1.) codire_coeffVectorAnalytic
+!#     -> Callback routine for the evaluation of linear forms
+!#        using an analytic expression for the load-vector
 !#
-!# 2.) codire_coeffTargetFuncVolInt
-!#     -> Callback function for the evaluation of target functionals 
-!#        defined in terms of volume integrals of the solution vector
+!# 2.) codire_refFuncAnalytic
+!#     -> Callback routine for the evaluation of the reference
+!#        function for error estimation using an analytic expression
 !#
 !# 3.) codire_setBoundary
 !#     -> Imposes boundary conditions for nonlinear solver
@@ -109,8 +110,8 @@ module codire_callback
   implicit none
 
   private
-  public :: codire_coeffRHS
-  public :: codire_coeffTargetFuncVolInt
+  public :: codire_coeffVectorAnalytic
+  public :: codire_refFuncAnalytic
   public :: codire_setBoundary
   public :: codire_calcPreconditioner
   public :: codire_calcJacobian
@@ -144,9 +145,9 @@ contains
 
 !<subroutine>
 
-  subroutine codire_coeffRHS(rdiscretisation, rform, nelements,&
-                             npointsPerElement, Dpoints, IdofsTest,&
-                             rdomainIntSubset, Dcoefficients, rcollection)
+  subroutine codire_coeffVectorAnalytic(rdiscretisation, rform, nelements,&
+                                        npointsPerElement, Dpoints, IdofsTest,&
+                                        rdomainIntSubset, Dcoefficients, rcollection)
     
     use basicgeometry
     use collection
@@ -259,42 +260,44 @@ contains
 
     end if
     
-  end subroutine codire_coeffRHS
-
-  ! ***************************************************************************
+  end subroutine codire_coeffVectorAnalytic
+  
+  !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_coeffTargetFuncVolInt(rdiscretisation, rform, nelements,&
-                                          npointsPerElement, Dpoints, IdofsTest,&
-                                          rdomainIntSubset, Dcoefficients, rcollection)
+  subroutine codire_refFuncAnalytic(cderivative,rdiscretisation, nelements,&
+                                    npointsPerElement, Dpoints, IdofsTest,&
+                                    rdomainIntSubset, Dvalues, rcollection)
     
     use basicgeometry
     use collection
     use domainintegration
-    use fparser
     use scalarpde
     use triangulation
     
 !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form.
+    ! This subroutine is called during the calculation of errors. It has to compute
+    ! the (analytical) values of a function in a couple of points on a couple
+    ! of elements. These values are compared to those of a computed FE function
+    ! and used to calculate an error.
     !
     ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
+    ! elements (cubature points) in in real coordinates.
     ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
+    ! simultaneously for all these points.
 !</description>
     
 !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(IN) :: cderivative
+  
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN) :: rform
     
     ! Number of elements, where the coefficients must be computed.
     integer, intent(IN) :: nelements
@@ -304,69 +307,57 @@ contains
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(IN) :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
+    ! DIMENSION(\#local DOF's in trial space,Number of elements)
     integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
-!</input>
 
-!<inputoutput>
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional :: rcollection
-!</inputoutput>
+    type(t_collection), intent(INOUT), optional :: rcollection   
+!</input>
   
 !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(OUT) :: Dvalues
 !</output>
-    
 !</subroutine>
 
     ! local variables
     type(t_fparser), pointer :: rfparser
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dtime
     integer :: ipoint, ielement, ndim
-    
 
+
+    ! Initialize values
+    Dvalue = 0.0_DP
+    
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     rfparser => collct_getvalue_pars(rcollection,&
                                      trim(rcollection%SquickAccess(1)))
-
+   
     ! This subroutine also assumes that the first quick access double
     ! value holds the simulation time
-    dtime = rcollection%DquickAccess(1)
+    Dvalue(NDIM3D+1) = rcollection%DquickAccess(1)
+    
+    ! Set number of spatial dimensions
+    ndim = size(Dpoints, 1)
 
-    if (dtime < 0.0) then
 
-      ! Evaluate all coefficients using the function parser
-      do ielement = 1, nelements
-        call fparser_evalFunction(rfparser, 1, 2, Dpoints(:,:,ielement),&
-                                  Dcoefficients(1,:,ielement))
-      end do
-
-    else
-      
-      ! Initialize values
-      Dvalue = 0.0_DP
-      Dvalue(NDIM3D+1) = dtime
-      
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-      
+    select case (cderivative)
+    case (DER_FUNC)
       do ielement = 1, nelements
         do ipoint = 1, npointsPerElement
           
@@ -374,14 +365,52 @@ contains
           Dvalue(1:ndim)   = Dpoints(:, ipoint, ielement)
           
           ! Evaluate function parser
-          call fparser_evalFunction(rfparser, 1, Dvalue, Dcoefficients(1,ipoint,ielement))
+          call fparser_evalFunction(rfparser, 1, Dvalue, Dvalues(ipoint,ielement))
+        end do
+      end do
+      
+    case (0, DER_DERIV3D_X)
+      do ielement = 1, nelements
+        do ipoint = 1, npointsPerElement
+          
+          ! Set values for function parser
+          Dvalue(1:ndim)   = Dpoints(:, ipoint, ielement)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(rfparser, 2, Dvalue, Dvalues(ipoint,ielement))
+        end do
+      end do
+      
+    case (DER_DERIV3D_Y)
+      do ielement = 1, nelements
+        do ipoint = 1, npointsPerElement
+          
+          ! Set values for function parser
+          Dvalue(1:ndim)   = Dpoints(:, ipoint, ielement)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(rfparser, 3, Dvalue, Dvalues(ipoint,ielement))
         end do
       end do
 
-    end if
-    
-  end subroutine codire_coeffTargetFuncVolInt
+    case (DER_DERIV3D_Z)
+      do ielement = 1, nelements
+        do ipoint = 1, npointsPerElement
+          
+          ! Set values for function parser
+          Dvalue(1:ndim)   = Dpoints(:, ipoint, ielement)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(rfparser, 4, Dvalue, Dvalues(ipoint,ielement))
+        end do
+      end do
+
+    case DEFAULT
+      Dvalues = 0.0_DP
+    end select
   
+  end subroutine codire_refFuncAnalytic
+
   !*****************************************************************************
 
 !<subroutine>
