@@ -154,11 +154,8 @@ module codire_basic
   ! Logarithmic equidistribution of error
   integer, parameter, public :: ERREST_LOGEQUIDIST   = 2
 
-  ! Fixed-rate strategy
-  integer, parameter, public :: ERREST_FIXEDRATE     = 3
-
   ! Automatic treshold based on RMS
-  integer, parameter, public :: ERREST_AUTORMS       = 4
+  integer, parameter, public :: ERREST_AUTORMS       = 3
 
 !</constantblock>
 
