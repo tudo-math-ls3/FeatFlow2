@@ -32,31 +32,35 @@
 !#     -> Outputs information about the problem structure
 !#
 !# 8.) problem_createLevel
-!#     -> Creates a new multigrid level structure
+!#     -> Creates a new problem level structure
 !#
 !# 9.) problem_releaseLevel
-!#     -> Releases an existing multigrid level structure
+!#     -> Releases an existing problem level structure
 !#
 !# 10.) problem_appendLevel
-!#     -> Appends a multigrid level structure into the linked list of multigrid
+!#     -> Appends a problem level structure into the linked list of problem
 !#        level structures
 !#
 !# 11.) problem_prependLevel
-!#     -> Prepends a multigrid level structure into the linked list of multigrid
+!#     -> Prepends a problem level structure into the linked list of problem
 !#        level structures
 !#
 !# 12.) problem_removeLevel
-!#      -> Removes an existing multigrid level structure from the linked list of
-!#         multigrid level structures
+!#      -> Removes an existing problem level structure from the linked list of
+!#         problem level structures
 !#
 !# 13.) problem_infoLevel
-!#      -> Outputs information about the multigrid level structure
+!#      -> Outputs information about the problem level structure
 !#
 !# 14.) problem_createProfile
 !#      -> Initializes vector profile from parameter file
 !#
 !# 15.) problem_info
 !#      -> Outputs information about all problem structures in the linked list
+!#
+!# 16.) problem_getLevel
+!#      -> Returns a pointer to the problem level specified by the level number
+!#
 !# </purpose>
 !##############################################################################
 
@@ -93,6 +97,7 @@ module problem
   public :: problem_removeLevel
   public :: problem_infoLevel
   public :: problem_createProfile
+  public :: problem_getLevel
   
   !*****************************************************************************
   
@@ -147,10 +152,10 @@ module problem
     ! Spatial dimension
     integer :: ndimension
 
-    ! Maximum multigrid level
+    ! Maximum problem level
     integer :: nlmax
 
-    ! Minimum multigrid level
+    ! Minimum problem level
     integer :: nlmin
 
     ! Number of AFC stabilisations
@@ -213,10 +218,10 @@ module problem
     ! Pointer to the next problem instance
     type(t_problem), pointer :: p_rproblemNext => null()
 
-    ! Pointers to the minimum multigrid level
+    ! Pointers to the minimum problem level
     type(t_problemLevel), pointer :: p_rproblemLevelMin => null()
 
-    ! Pointers to the maximum multigrid level
+    ! Pointers to the maximum problem level
     type(t_problemLevel), pointer :: p_rproblemLevelMax => null()
   end type t_problem
 
@@ -242,7 +247,7 @@ module problem
     ! level taht needs no special handling.
     integer(I32) :: iproblemSpec = PROBLEV_MSPEC_STANDARD
 
-    ! Number of the multigrid level
+    ! Number of the problem level
     integer :: ilev
 
     ! Triangulation structure
@@ -269,10 +274,10 @@ module problem
     ! Pointer to the global problem structure
     type(t_problem), pointer :: p_rproblem => null()
 
-    ! Pointer to next coarse multigrid level
+    ! Pointer to next coarse problem level
     type(t_problemLevel), pointer :: p_rproblemLevelCoarse => null()
 
-    ! Pointer to next finer multigrid level
+    ! Pointer to next finer problem level
     type(t_problemLevel), pointer :: p_rproblemLevelFine => null()
     
   end type t_problemLevel
@@ -354,7 +359,7 @@ contains
       call sys_halt()
     end select
 
-    ! Refine coarse mesh to minimum multigrid level
+    ! Refine coarse mesh to minimum problem level
     call tria_quickRefine2LevelOrdering(rproblemDescriptor%nlmin-1,&
                                         rproblemLevel%rtriangulation,&
                                         rproblem%rboundary)
@@ -467,7 +472,7 @@ contains
     ! Initialization
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     
-    ! Loop over all multigrid levels and destroy them
+    ! Loop over all problem levels and destroy them
     do while(associated(p_rproblemLevel))
       call problem_removeLevel(rproblem, p_rproblemLevel)
       call problem_releaseLevel(p_rproblemLevel)
@@ -781,7 +786,7 @@ contains
       ! Initialization
       p_rproblemLevel => rproblem%p_rproblemLevelMax
       
-      ! Loop over all multigrid levels
+      ! Loop over all problem levels
       do while(associated(p_rproblemLevel))
         call problem_infoLevel(p_rproblemLevel)
         p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
@@ -798,7 +803,7 @@ contains
   subroutine problem_createLevel(rproblemLevel, ilev)
     
 !<description>
-    ! This subroutine creates a new multigrid level structure
+    ! This subroutine creates a new problem level structure
 !</description>
 
 !<input>
@@ -807,12 +812,12 @@ contains
 !</input>
 
 !<output>
-    ! multigrid level structure
+    ! problem level structure
     type(t_problemLevel), intent(OUT) :: rproblemLevel
 !</output>
 !</subroutine>    
     
-    ! Set multigrid level
+    ! Set problem level
     rproblemLevel%ilev = ilev
     
   end subroutine problem_createLevel
@@ -824,11 +829,11 @@ contains
   subroutine problem_releaseLevel(rproblemLevel)
 
 !<description>
-    ! This subroutine releases an existing multigrid level structure
+    ! This subroutine releases an existing problem level structure
 !</description>
  
 !<inputoutput>  
-    ! multigrid level structure
+    ! problem level structure
     type(t_problemLevel), intent(INOUT) :: rproblemLevel
 !</inputoutput>
 !</subroutine>
@@ -895,10 +900,10 @@ contains
   subroutine problem_appendLevel(rproblem, rproblemLevel, rproblemLevelRef)
 
 !<description>
-    ! This subroutine appends a multigrid level structure to the
-    ! linked list of multigrid level structures. If the optional
-    ! reference level rproblemLevelRef is given, the multigrid level structure
-    ! is appended to rproblemLevelRef. Otherwise, the maximum multigrid level
+    ! This subroutine appends a problem level structure to the
+    ! linked list of problem level structures. If the optional
+    ! reference level rproblemLevelRef is given, the problem level structure
+    ! is appended to rproblemLevelRef. Otherwise, the maximum problem level
     ! is used as reference structure.
 !</description>
   
@@ -906,10 +911,10 @@ contains
     ! global problem structure
     type(t_problem), intent(INOUT), target :: rproblem
 
-    ! multigrid level structure
+    ! problem level structure
     type(t_problemLevel), intent(INOUT), target :: rproblemLevel
 
-    ! OPTIONAL: reference multigrid structure
+    ! OPTIONAL: reference problem structure
     type(t_problemLevel), intent(INOUT), target, optional :: rproblemLevelRef
 !</inputoutput>
 !</subroutine>
@@ -936,7 +941,7 @@ contains
 
       else
 
-        ! Set pointer to maximum multigrid level
+        ! Set pointer to maximum problem level
         rproblemLevel%p_rproblemLevelCoarse => rproblem%p_rproblemLevelMax
         nullify(rproblemLevel%p_rproblemLevelFine)
 
@@ -963,10 +968,10 @@ contains
   subroutine problem_prependLevel(rproblem, rproblemLevel, rproblemLevelRef)
 
 !<description>
-    ! This subroutine prepends a multigrid level structure to the
-    ! linked list of multigrid level structures. If the optional
-    ! reference level rproblemLevelRef is given, the multigrid level structure
-    ! is prepended to rproblemLevelRef. Otherwise, the minimum multigrid level
+    ! This subroutine prepends a problem level structure to the
+    ! linked list of problem level structures. If the optional
+    ! reference level rproblemLevelRef is given, the problem level structure
+    ! is prepended to rproblemLevelRef. Otherwise, the minimum problem level
     ! is used as reference structure.
 !</description>
   
@@ -974,10 +979,10 @@ contains
     ! global problem structure
     type(t_problem), intent(INOUT), target :: rproblem
 
-    ! multigrid level structure
+    ! problem level structure
     type(t_problemLevel), intent(INOUT), target :: rproblemLevel
 
-    ! OPTIONAL: reference multigrid structure
+    ! OPTIONAL: reference problem structure
     type(t_problemLevel), intent(INOUT), target, optional :: rproblemLevelRef
 !</inputoutput>
 !</subroutine>
@@ -1004,7 +1009,7 @@ contains
 
       else
 
-        ! Set pointer to minimum multigrid level
+        ! Set pointer to minimum problem level
         rproblemLevel%p_rproblemLevelFine => rproblem%p_rproblemLevelMin
         nullify(rproblemLevel%p_rproblemLevelCoarse)
 
@@ -1032,7 +1037,7 @@ contains
   subroutine problem_removeLevel(rproblem, rproblemLevel)
 
 !<description>
-    ! This subroutine removes an existing multigrid level structure
+    ! This subroutine removes an existing problem level structure
     ! from an existing problem structure
 !</description>
 
@@ -1040,13 +1045,13 @@ contains
     ! global problem structure
     type(t_problem), intent(INOUT), target :: rproblem
 
-    ! multigrid level structure
+    ! problem level structure
     type(t_problemLevel), intent(INOUT) :: rproblemLevel
 !</inputoutput>
 !</subroutine>
     
     if (.not.associated(rproblemLevel%p_rproblem, rproblem)) then
-      call output_line('Multigrid level structure does not belong to problem structure!',&
+      call output_line('Problem level structure does not belong to problem structure!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'problem_removeLevel')
       call sys_halt()
     end if
@@ -1072,11 +1077,11 @@ contains
   subroutine problem_infoLevel(rproblemLevel)
 
 !<description>
-    ! This subroutine outputs information about the multigrid level structure
+    ! This subroutine outputs information about the problem level structure
 !</description>
 
 !<input>
-    ! multigrid level structure
+    ! problem level structure
     type(t_problemLevel), intent(IN) :: rproblemLevel
 !</input>
 !</subroutine>
@@ -1353,4 +1358,68 @@ contains
 
     end if
   end subroutine problem_createProfile
+
+  !*****************************************************************************
+  
+!<function>
+
+  function problem_getLevel(rproblem, ilev, btopdown) result(p_rproblemLevel)
+
+!<description>
+    ! This subroutine returns a pointer to the problem level structure
+    ! with specified level number ilve. If such problem level does not
+    ! exist p_rproblemLevel points to null().
+!</description>
+    
+!<input>
+    ! global problem structure
+    type(t_problem), intent(IN) :: rproblem
+
+    ! level number
+    integer, intent(IN) :: ilev
+
+    ! OPTIONAL: search direction
+    ! If this parameter is .false., the loop starts at the minimum
+    ! problem level and proceeds to the next finer problem
+    ! level. Otherwise, the loop starts at the maximum problem level
+    ! and continues with the next coarser level. The default value is
+    ! .true., that is, top-down search is performed
+    logical, intent(IN), optional :: btopdown
+!</input>
+
+!<result
+    ! problem level structure
+    type(t_problemLevel), pointer :: p_rproblemLevel
+!</result>
+!</function>
+
+    ! local variable
+    logical :: bisTopdown
+
+    bisTopdown = .true.
+    if (present(btopdown)) bisTopdown=btopdown
+
+    if (bisTopdown) then
+      
+      ! Top-down search
+      p_rproblemLevel => rproblem%p_rproblemLevelMax
+      do while (associated(p_rproblemLevel))
+        if(p_rproblemLevel%ilev .eq. ilev) return
+        p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
+      end do
+
+    else
+
+      ! Bottom-up search
+      p_rproblemLevel => rproblem%p_rproblemLevelMin
+      do while (associated(p_rproblemLevel))
+        if(p_rproblemLevel%ilev .eq. ilev) return
+        p_rproblemLevel => p_rproblemLevel%p_rproblemLevelFine
+      end do
+
+    end if
+
+    nullify(p_rproblemLevel)
+
+  end function problem_getLevel
 end module problem
