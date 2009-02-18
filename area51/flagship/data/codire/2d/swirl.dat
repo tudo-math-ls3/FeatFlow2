@@ -49,7 +49,7 @@ imasstype = 2
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusion = 1
+imassantidiffusiontype = 1
 
 # type of flow velocity
 # 0 = zero velocity v=0
@@ -84,7 +84,7 @@ sreactionname = reactionterm
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 2
+irhstype = 1
 
 # section name of right-hand side vector
 srhsname = rhs

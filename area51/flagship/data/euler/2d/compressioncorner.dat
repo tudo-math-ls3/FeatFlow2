@@ -50,7 +50,7 @@ imassantidiffusion = 0
 # 0 = no dissipation
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
-idissipation = 2
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach

@@ -68,7 +68,7 @@ imasstype = 0
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusion = 0
+imassantidiffusiontype = 0
 
 # type of flow velocity
 # 0 = zero velocity v=0
