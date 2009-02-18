@@ -141,7 +141,7 @@ module euler_basic
     integer :: imasstype
 
     ! Type of mass antidiffusion
-    integer :: imassantidiffusion
+    integer :: imassantidiffusiontype
 
     ! Type of dissipation
     integer :: idissipationtype

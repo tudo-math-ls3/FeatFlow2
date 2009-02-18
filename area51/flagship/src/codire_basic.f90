@@ -189,7 +189,7 @@ module codire_basic
     integer :: imasstype
 
     ! Type of mass antidiffusion
-    integer :: imassantidiffusion
+    integer :: imassantidiffusiontype
 
     ! Type of the velocity
     integer :: ivelocitytype

@@ -84,11 +84,11 @@ program gendatfile
   call parlst_getvalue_int(rparlist, 'Convection', 'istabilisation', idata)
   select case(idata)
   case(0)
-    call output_line("imassantidiffusion = 1", OU_CLASS_MSG)
+    call output_line("imassantidiffusiontype = 1", OU_CLASS_MSG)
   case(1,20)
-    call output_line("imassantidiffusion = 0", OU_CLASS_MSG)
+    call output_line("imassantidiffusiontype = 0", OU_CLASS_MSG)
   case(10,11,12,21)
-    call output_line("imassantidiffusion = 2", OU_CLASS_MSG)
+    call output_line("imassantidiffusiontype = 2", OU_CLASS_MSG)
   case default
     stop
   end select

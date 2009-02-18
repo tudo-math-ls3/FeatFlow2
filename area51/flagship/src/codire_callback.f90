@@ -1078,7 +1078,7 @@ contains
     integer :: consistentMassMatrix, lumpedMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
     integer :: convectionAFC, diffusionAFC, ijacobianFormat
-    integer :: imasstype, imassantidiffusion, ivelocitytype, idiffusiontype
+    integer :: imasstype, imassantidiffusiontype, ivelocitytype, idiffusiontype
     integer :: primaldual, velocityfield
     logical :: bStabilize, bisExactStructure, bisExtendedSparsity
 
@@ -1398,10 +1398,10 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
         
-        imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
 
         ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusion .eq. MASS_CONSISTENT) then
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rsol, rtimestep%theta, rtimestep%dStep, hstep,&
                                      .false., rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1433,10 +1433,10 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
 
         ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusion .eq. MASS_CONSISTENT) then
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                                      rsol, codire_calcConvectionBurgersSpT2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1476,10 +1476,10 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
 
         ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusion .eq. MASS_CONSISTENT) then
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                                      rsol, codire_calcConvectionBuckLevSpT2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1519,10 +1519,10 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
 
         ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusion .eq. MASS_CONSISTENT) then
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                                      rsol, codire_calcConvectionBurgers1d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1562,10 +1562,10 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
 
         ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusion .eq. MASS_CONSISTENT) then
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                                      rsol, codire_calcConvectionBurgers2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1605,10 +1605,10 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
 
         ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusion .eq. MASS_CONSISTENT) then
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                                      rsol, codire_calcConvectionBuckLev1d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1780,7 +1780,7 @@ contains
     integer :: transportMatrix
     integer :: consistentMassMatrix, lumpedMassMatrix
     integer :: convectionAFC, diffusionAFC
-    integer :: imasstype,imassantidiffusion
+    integer :: imasstype,imassantidiffusiontype
 
     
     ! For nonlinear conservation laws, the global system operator
@@ -1887,10 +1887,10 @@ contains
         case (AFCSTAB_FEMFCT,&
               AFCSTAB_FEMFCT_CLASSICAL)
 
-          imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+          imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
           
           ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusion .eq. MASS_CONSISTENT) then
+          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                        rsol, rtimestep%theta, rtimestep%dStep, .true.,&
                                        rres, rproblemLevel%Rafcstab(convectionAFC),&
@@ -1997,10 +1997,10 @@ contains
         case (AFCSTAB_FEMFCT,&
               AFCSTAB_FEMFCT_CLASSICAL)
         
-          imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+          imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
           
           ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusion .eq. MASS_CONSISTENT) then
+          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                        rsol, rtimestep%theta, rtimestep%dStep, .false.,&
                                        rres, rproblemLevel%Rafcstab(convectionAFC),&
@@ -2095,7 +2095,7 @@ contains
     integer :: transportMatrix
     integer :: consistentMassMatrix, lumpedMassMatrix
     integer :: convectionAFC, diffusionAFC
-    integer :: imasstype,imassantidiffusion
+    integer :: imasstype,imassantidiffusiontype
 
 
     ! Start time measurement for residual/rhs evaluation
@@ -2139,10 +2139,10 @@ contains
           AFCSTAB_FEMFCT_CLASSICAL)
 
       dweight = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
-      imassantidiffusion = collct_getvalue_int(rcollection, 'imassantidiffusion')
+      imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
 
       ! Should we apply consistent mass antidiffusion?
-      if (imassantidiffusion .eq. MASS_CONSISTENT) then
+      if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
         call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                    rsol, rtimestep%theta, dweight, .true., rrhs,&
                                    rproblemLevel%Rafcstab(convectionAFC),&

@@ -354,7 +354,7 @@ contains
     call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
                              "imasstype", rappDescriptor%imasstype)
     call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "imassantidiffusion", rappDescriptor%imassantidiffusion)
+                             "imassantidiffusiontype", rappDescriptor%imassantidiffusiontype)
     call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
                              "idissipationtype", rappDescriptor%idissipationtype)
     call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
@@ -397,8 +397,8 @@ contains
                              rappDescriptor%ndimension, .true.)
     call collct_setvalue_int(rcollection, 'imasstype',&
                              rappDescriptor%imasstype, .true.)
-    call collct_setvalue_int(rcollection, 'imassantidiffusion',&
-                             rappDescriptor%imassantidiffusion, .true.)
+    call collct_setvalue_int(rcollection, 'imassantidiffusiontype',&
+                             rappDescriptor%imassantidiffusiontype, .true.)
     call collct_setvalue_int(rcollection, 'idissipationtype',&
                              rappDescriptor%idissipationtype, .true.)
     call collct_setvalue_int(rcollection, 'icoupled',&
@@ -439,7 +439,7 @@ contains
     call collct_setvalue_int(rcollection, 'templatematrix',  3, .true.)
 
     if ((rappDescriptor%imasstype .ne. MASS_ZERO) .or.&
-        (rappDescriptor%imassantidiffusion .ne. MASS_ZERO)) then
+        (rappDescriptor%imassantidiffusiontype .ne. MASS_ZERO)) then
       call collct_setvalue_int(rcollection, 'consistentmassmatrix', 4, .true.)
       call collct_setvalue_int(rcollection, 'lumpedmassmatrix',     5, .true.)
     else

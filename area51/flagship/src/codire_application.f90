@@ -472,7 +472,7 @@ contains
     ! Get application specifig parameters from the parameterlist
     call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rappDescriptor%ndimension)
     call parlst_getvalue_int(rparlist, ssectionName, 'imasstype', rappDescriptor%imasstype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'imassantidiffusion', rappDescriptor%imassantidiffusion)
+    call parlst_getvalue_int(rparlist, ssectionName, 'imassantidiffusiontype', rappDescriptor%imassantidiffusiontype)
     call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', rappDescriptor%ivelocitytype)
     call parlst_getvalue_int(rparlist, ssectionName, 'idiffusiontype', rappDescriptor%idiffusiontype)
     call parlst_getvalue_int(rparlist, ssectionName, 'ireactiontype', rappDescriptor%ireactiontype)
@@ -592,8 +592,8 @@ contains
                              rappDescriptor%ndimension, .true.)
     call collct_setvalue_int(rcollection, 'imasstype',&
                              rappDescriptor%imasstype, .true.)
-    call collct_setvalue_int(rcollection, 'imassantidiffusion',&
-                             rappDescriptor%imassantidiffusion, .true.)
+    call collct_setvalue_int(rcollection, 'imassantidiffusiontype',&
+                             rappDescriptor%imassantidiffusiontype, .true.)
     call collct_setvalue_int(rcollection, 'ivelocitytype',&
                              rappDescriptor%ivelocitytype, .true.)
     call collct_setvalue_int(rcollection, 'idiffusiontype',&
@@ -652,7 +652,7 @@ contains
     call collct_setvalue_int(rcollection,  'TransportMatrix', i, .true.)
 
     if ((rappDescriptor%imasstype .ne. MASS_ZERO) .or.&
-        (rappDescriptor%imassantidiffusion .ne. MASS_ZERO)) then
+        (rappDescriptor%imassantidiffusiontype .ne. MASS_ZERO)) then
       
       call parlst_getvalue_int(rparlist, '', 'ConsistentMassMatrix', i, 5)
       call collct_setvalue_int(rcollection,  'ConsistentMassMatrix', i, .true.)
