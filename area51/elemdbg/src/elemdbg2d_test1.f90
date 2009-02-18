@@ -62,7 +62,7 @@ contains
   real(DP), dimension(:,:), allocatable, target :: Derror
   integer, dimension(:,:), allocatable :: Istat
   integer :: isolver, ioutput, nmaxiter,ccubature
-  integer(I32) :: celement
+  integer(I32) :: celement, cshape
   real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2
   character(LEN=64) :: selement,scubature
     
@@ -103,6 +103,14 @@ contains
     celement = elem_igetID(selement)
     ccubature = cub_igetID(scubature)
     
+    ! Get the shape of the element
+    cshape = elem_igetShape(celement)
+    if(cshape .ne. cub_igetShape(ccubature)) then
+      call output_line('Element and cubature formula incompatible', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
+      call sys_halt()
+    end if
+    
     ! Allocate arrays
     allocate(Derror(2,NLMIN:NLMAX))
     allocate(Istat(5,NLMIN:NLMAX))
@@ -119,6 +127,16 @@ contains
       call output_line('System.........: Poisson')
     case default
       call output_line('Invalid ITEST parameter', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
+      call sys_halt()
+    end select
+    select case(cshape)
+    case(BGEOM_SHAPE_TRIA)
+      call output_line('Coarse Mesh....: TRIA.tri')
+    case(BGEOM_SHAPE_QUAD)
+      call output_line('Coarse Mesh....: QUAD.tri')
+    case default
+      call output_line('Element is not a valid 2D element!', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
       call sys_halt()
     end select
@@ -147,7 +165,12 @@ contains
     call output_lbrk()
     
     ! Read in parametrisation
-    call boundary_read_prm(rboundary, './pre/QUAD.prm')
+    select case(cshape)
+    case(BGEOM_SHAPE_TRIA)
+      call boundary_read_prm(rboundary, './pre/TRIA.prm')
+    case(BGEOM_SHAPE_QUAD)
+      call boundary_read_prm(rboundary, './pre/QUAD.prm')
+    end select
     
     ! Loop over all levels
     do ilvl = NLMIN, NLMAX
@@ -155,7 +178,12 @@ contains
       call output_line('Processing Level ' // trim(sys_siL(ilvl,4)) // '...')
 
       ! Now read in the basic triangulation.
-      call tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
+      select case(cshape)
+      case(BGEOM_SHAPE_TRIA)
+        call tria_readTriFile2D (rtriangulation, './pre/TRIA.tri', rboundary)
+      case(BGEOM_SHAPE_QUAD)
+        call tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
+      end select
        
       ! Refine it.
       call tria_quickRefine2LevelOrdering (ilvl-1,rtriangulation,rboundary)

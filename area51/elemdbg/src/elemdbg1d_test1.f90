@@ -58,7 +58,7 @@ contains
   type(t_errorScVec) :: rerror
   integer :: NLMIN,NLMAX,ierror,ilvl,ccubature
   integer :: isolver, ioutput, nmaxiter
-  integer(I32) :: celement
+  integer(I32) :: celement, cshape
   real(DP), dimension(:,:), allocatable, target :: Derror
   integer, dimension(:,:), allocatable :: Istat
   real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2
@@ -100,6 +100,19 @@ contains
     ! Parse element and cubature
     celement = elem_igetID(selement)
     ccubature = cub_igetID(scubature)
+    
+    ! Get the shape of the element
+    cshape = elem_igetShape(celement)
+    if(cshape .ne. BGEOM_SHAPE_LINE) then
+      call output_line('Element is not a valid 1D element!', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg1d_1')
+      call sys_halt()
+    end if
+    if(cshape .ne. cub_igetShape(ccubature)) then
+      call output_line('Element and cubature formula incompatible!', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg1d_1')
+      call sys_halt()
+    end if
     
     ! Allocate arrays
     allocate(Derror(6,NLMIN:NLMAX))

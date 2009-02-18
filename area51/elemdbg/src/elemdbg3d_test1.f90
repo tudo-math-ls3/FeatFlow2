@@ -61,7 +61,7 @@ contains
   real(DP), dimension(:,:), allocatable, target :: Derror
   integer, dimension(:,:), allocatable :: Istat
   integer :: isolver, ioutput, nmaxiter,ccubature
-  integer(I32) :: celement
+  integer(I32) :: celement, cshape
   real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2
   character(LEN=64) :: selement,scubature
 
@@ -102,6 +102,14 @@ contains
     celement = elem_igetID(selement)
     ccubature = cub_igetID(scubature)
     
+    ! Get the shape of the element
+    cshape = elem_igetShape(celement)
+    if(cshape .ne. cub_igetShape(ccubature)) then
+      call output_line('Element and cubature formula incompatible!', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+      call sys_halt()
+    end if
+    
     ! Allocate arrays
     allocate(Derror(6,NLMIN:NLMAX))
     allocate(Istat(6,NLMIN:NLMAX))
@@ -117,6 +125,24 @@ contains
       call output_line('System.........: Poisson')
     case default
       call output_line('Invalid ITEST parameter', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+      call sys_halt()
+    end select
+    select case(cshape)
+    case(BGEOM_SHAPE_HEXA)
+      call output_line('Coarse Mesh....: CUBE.tri')
+    case(BGEOM_SHAPE_PRISM)
+      call output_line('Coarse Mesh....: PRISM.tri')
+    case(BGEOM_SHAPE_TETRA)
+      call output_line('Tetrahedron elements are not yet supported!', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+      call sys_halt()
+    case(BGEOM_SHAPE_PYRA)
+      call output_line('Pyramid elements are not yet supported!', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+      call sys_halt()
+    case default
+      call output_line('Element is not a valid 3D element!', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
       call sys_halt()
     end select
@@ -150,7 +176,12 @@ contains
       call output_line('Processing Level ' // trim(sys_siL(ilvl,4)) // '...')
 
       ! Now read in the basic triangulation.
-      call tria_readTriFile3D (rtriangulation, './pre/CUBE.tri')
+      select case(cshape)
+      case(BGEOM_SHAPE_HEXA)
+        call tria_readTriFile3D (rtriangulation, './pre/CUBE.tri')
+      case(BGEOM_SHAPE_PRISM)
+        call tria_readTriFile3D (rtriangulation, './pre/PRISM.tri')
+      end select
        
       ! Refine it.
       call tria_quickRefine2LevelOrdering (ilvl-1,rtriangulation)
