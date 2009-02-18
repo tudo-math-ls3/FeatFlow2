@@ -54,12 +54,12 @@ imassantidiffusiontype = 0
 # 0 = no dissipation
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
-idissipationtype = 2
+idissipationtype = 1
 
 # type of system coupling
 # 0 = segregated approach
 # 1 = fully-coupled approach
-isystemCoupling = 2
+isystemcoupling = 0
 
 # type of preconditioner
 # 0 = Galerkin scheme
