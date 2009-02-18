@@ -26,6 +26,8 @@ program flagship
   ! local variables
   character(LEN=SYS_STRLEN) :: cbuffer, hostname, hosttype, username
   character(LEN=SYS_STRLEN) :: application, sparameterfileName
+  character(LEN=10) :: stime
+  character(LEN=8)  :: sdate
   integer, external :: signal_SIGINT, signal_SIGQUIT
 
 
@@ -34,6 +36,10 @@ program flagship
   ! Initialize Feat2 subsystem
   call system_init()
   sys_haltmode = SYS_HALT_THROWFPE
+
+  ! Initialize the output system
+  call date_and_time(sdate, stime)
+  call output_init('./log/flagship_'//sdate//'_'//stime(1:4)//'.log')
 
   ! Initialize storage subsystem
   call storage_init(500, 100)
@@ -53,7 +59,9 @@ program flagship
   ! Print welcome screen
   call output_lbrk()
   call output_separator(OU_SEP_STAR)
-  write(*,FMT='(2X,A,T10,A,T30,A,T50,A,T72,A)') '***','FLAGSHIP','Version '//VERSION,'Build '//BUILD,'***'
+  call output_line('  FLAGSHIP: Version '//VERSION//',   Build '//BUILD)
+  call output_line('            Date '//sdate(7:8)//'.'//sdate(5:6)//'.'//sdate(1:4)//&
+                   ', Time '//stime(1:2)//':'//stime(3:4)//':'//stime(5:6))
   call output_separator(OU_SEP_STAR)
   call output_line('  FlAGSHiP: Flux-corrected Aerodynamics by Galerkin')
   call output_line('            Schemes with High Performance (2004-2009)')
@@ -102,6 +110,9 @@ program flagship
   call storage_info(.true.)
   call storage_done()
   call output_lbrk()
+
+  ! Close logfile
+  call output_done()
   
 end program flagship
 
