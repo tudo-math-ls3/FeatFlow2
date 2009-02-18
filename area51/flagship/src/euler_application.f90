@@ -931,10 +931,10 @@ contains
         
         ! What kind of global operator should be adopted?
         select case(rappDescriptor%isystemCoupling)
-        case (FLOW_SEGREGATED)
+        case (SYSTEM_SEGREGATED)
           rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIXD
           
-        case (FLOW_ALLCOUPLED)
+        case (SYSTEM_ALLCOUPLED)
           rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIX1
           
         case DEFAULT
@@ -961,7 +961,7 @@ contains
         
         ! What kind of global operator should be adopted?
         select case(rappDescriptor%isystemCoupling)
-        case (FLOW_SEGREGATED)
+        case (SYSTEM_SEGREGATED)
           ! Create only NVAR diagonal blocks
           do ivar = 1, euler_getNVAR(rappDescriptor)
             call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
@@ -969,7 +969,7 @@ contains
                                         LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
           end do
           
-        case (FLOW_ALLCOUPLED)
+        case (SYSTEM_ALLCOUPLED)
           ! Create all NVAR x NVAR blocks
           do ivar = 1, euler_getNVAR(rappDescriptor)
             do jvar = 1, euler_getNVAR(rappDescriptor)

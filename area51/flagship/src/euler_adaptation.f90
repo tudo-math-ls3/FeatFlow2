@@ -280,7 +280,7 @@ contains
       
       ! What kind of global operator should be adopted?
       select case(isystemCoupling)
-      case (FLOW_SEGREGATED)
+      case (SYSTEM_SEGREGATED)
           
         ! Resize diagonal blocks
         do ivar = 1, NVAR1D
@@ -296,7 +296,7 @@ contains
         call lsysbl_resizeVecBlockIndMat(rproblemLevel%RmatrixBlock(CNSE_MATRIX_A),&
                                          rsolution, .false., .true.)
 
-      case (FLOW_ALLCOUPLED)
+      case (SYSTEM_ALLCOUPLED)
         
         ! Resize all blocks
         do ivar = 1, NVAR1D
@@ -483,7 +483,7 @@ contains
       
       ! What kind of global operator should be adopted?
       select case(isystemCoupling)
-      case (FLOW_SEGREGATED)
+      case (SYSTEM_SEGREGATED)
           
         ! Resize diagonal blocks
         do ivar = 1, NVAR2D
@@ -499,7 +499,7 @@ contains
         call lsysbl_resizeVecBlockIndMat(rproblemLevel%RmatrixBlock(CNSE_MATRIX_A),&
                                          rsolution, .false., .true.)
 
-      case (FLOW_ALLCOUPLED)
+      case (SYSTEM_ALLCOUPLED)
         
         ! Resize all blocks
         do ivar = 1, NVAR2D
@@ -692,7 +692,7 @@ contains
       
       ! What kind of global operator should be adopted?
       select case(isystemCoupling)
-      case (FLOW_SEGREGATED)
+      case (SYSTEM_SEGREGATED)
           
         ! Resize diagonal blocks
         do ivar = 1, NVAR3D
@@ -708,7 +708,7 @@ contains
         call lsysbl_resizeVecBlockIndMat(rproblemLevel%RmatrixBlock(CNSE_MATRIX_A),&
                                          rsolution, .false., .true.)
 
-      case (FLOW_ALLCOUPLED)
+      case (SYSTEM_ALLCOUPLED)
         
         ! Resize all blocks
         do ivar = 1, NVAR3D

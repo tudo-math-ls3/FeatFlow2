@@ -165,7 +165,7 @@ contains
       select case(isystemCoupling)
         
       ! Assemble block-diagonal divergence operator
-      case (FLOW_SEGREGATED)
+      case (SYSTEM_SEGREGATED)
         
         ! What kind of preconditioner is applied?
         select case(iprecond)
@@ -243,7 +243,7 @@ contains
         
         
       ! Assemble full block transport operator
-      case (FLOW_ALLCOUPLED)
+      case (SYSTEM_ALLCOUPLED)
           
         ! What kind of preconditioner is applied?
         select case(iprecond)         
@@ -335,8 +335,8 @@ contains
 
         ! What type of flow are we?
         select case(iflowtype)
-        case (FLOW_TRANSIENT,&
-              FLOW_PSEUDOTRANSIENT)
+        case (SYSTEM_TRANSIENT,&
+              SYSTEM_PSEUDOTRANSIENT)
           ! Compute the global operator for transient flows
           !
           !     A = blockdiag(M_L)-theta*dt*L
@@ -352,7 +352,7 @@ contains
                                      rproblemLevelTmp%Rmatrix(CNSE_MATRIX_A))
           end if
           
-        case (FLOW_STEADYSTATE)
+        case (SYSTEM_STEADYSTATE)
           ! Compute the global operator for steady-state flow
           !
           !     A = -L
@@ -369,7 +369,7 @@ contains
         
         ! What type of flow are we?
         select case(iflowtype)
-        case (FLOW_TRANSIENT, FLOW_PSEUDOTRANSIENT)
+        case (SYSTEM_TRANSIENT, SYSTEM_PSEUDOTRANSIENT)
           ! Compute the global operator for transient flows
           !
           !     A = diag(M_L)-theta*dt*L
@@ -384,7 +384,7 @@ contains
           end do
 
           ! Scale the off-diagonal blocks by "-theta*dt" if required
-          if (isystemCoupling .eq. FLOW_ALLCOUPLED) then
+          if (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
             do iblock = 1, euler_getNVAR(rproblemLevelTmp)
               do jblock = 1, euler_getNVAR(rproblemLevelTmp)
                 if (iblock .eq. jblock) cycle
@@ -395,21 +395,21 @@ contains
             end do
           end if
           
-        case (FLOW_STEADYSTATE)
+        case (SYSTEM_STEADYSTATE)
           ! Compute the global operator for steady-state flow
           !
           !     A = -L
           !
           select case(isystemCoupling)
 
-          case (FLOW_SEGREGATED)
+          case (SYSTEM_SEGREGATED)
             do iblock = 1, euler_getNVAR(rproblemLevelTmp)
               call lsyssc_scaleMatrix(&
                   rproblemLevelTmp%RmatrixBlock(CNSE_MATRIX_A)%RmatrixBlock(iblock,iblock),&
                   -1.0_DP)
             end do
 
-          case (FLOW_ALLCOUPLED)
+          case (SYSTEM_ALLCOUPLED)
             do iblock = 1, euler_getNVAR(rproblemLevelTmp)
               do jblock = 1, euler_getNVAR(rproblemLevelTmp)
                 call lsyssc_scaleMatrix(&
@@ -524,15 +524,15 @@ contains
 
     ! Initialize the right-hand side vector
     select case (iflowtype)
-    case (FLOW_TRANSIENT,&
-          FLOW_PSEUDOTRANSIENT)
+    case (SYSTEM_TRANSIENT,&
+          SYSTEM_PSEUDOTRANSIENT)
       do iblock = 1, ru%nblocks
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(CNSE_MATRIX_ML),&
                                  ru%RvectorBlock(iblock),&
                                  rrhs%RvectorBlock(iblock), 1._DP, 0._DP)
       end do
 
-    case (FLOW_STEADYSTATE)
+    case (SYSTEM_STEADYSTATE)
       call lsysbl_clearVector(rrhs)
 
     case DEFAULT
@@ -1054,8 +1054,8 @@ contains
       !   rhs = M_L*U^n + (1-theta)*res
       !
       select case(iflowtype)
-      case (FLOW_TRANSIENT,&
-            FLOW_PSEUDOTRANSIENT)
+      case (SYSTEM_TRANSIENT,&
+            SYSTEM_PSEUDOTRANSIENT)
         
         do iblock = 1, ru%nblocks
           call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(CNSE_MATRIX_ML),&
@@ -1076,8 +1076,8 @@ contains
       ! What type of flow are we?
       select case(iflowtype)
         
-      case (FLOW_TRANSIENT,&
-            FLOW_PSEUDOTRANSIENT)
+      case (SYSTEM_TRANSIENT,&
+            SYSTEM_PSEUDOTRANSIENT)
         ! Adopt constant right-hand
         !
         !   res = rhs-ML*u
@@ -1089,7 +1089,7 @@ contains
                                    rres%RvectorBlock(iblock), -1._DP, 1._DP)
         end do
         
-      case (FLOW_STEADYSTATE)
+      case (SYSTEM_STEADYSTATE)
         
         ! Clear residual vector
         !
@@ -1345,12 +1345,12 @@ contains
 
         ! What type of flow are we?
         select case(iflowtype)
-        case (FLOW_TRANSIENT,&
-              FLOW_PSEUDOTRANSIENT)
+        case (SYSTEM_TRANSIENT,&
+              SYSTEM_PSEUDOTRANSIENT)
           call euler_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_A,&
                                      UPDMAT_JAC_TRANSIENT, rproblemLevel%ilev, rproblemLevel%ilev)
           
-        case (FLOW_STEADYSTATE)
+        case (SYSTEM_STEADYSTATE)
           call euler_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_A,&
                                      UPDMAT_JAC_STEADY, rproblemLevel%ilev, rproblemLevel%ilev)
 
@@ -1440,7 +1440,7 @@ contains
     select case(isystemCoupling)
       
     ! Assemble block-diagonal divergence operator
-    case (FLOW_SEGREGATED)
+    case (SYSTEM_SEGREGATED)
       
       ! What kind of preconditioner is applied?
       select case(iprecond)
@@ -1519,7 +1519,7 @@ contains
 
         
     ! Assemble full block transport operator
-    case (FLOW_ALLCOUPLED)
+    case (SYSTEM_ALLCOUPLED)
       
       ! What kind of preconditioner is applied?
       select case(iprecond)         
@@ -1611,8 +1611,8 @@ contains
       
       ! What type of flow are we?
       select case(iflowtype)
-      case (FLOW_TRANSIENT,&
-            FLOW_PSEUDOTRANSIENT)
+      case (SYSTEM_TRANSIENT,&
+            SYSTEM_PSEUDOTRANSIENT)
         ! Compute the global operator for transient flows
         !
         !     A = blockdiag(M_L)-theta*dt*J
@@ -1628,7 +1628,7 @@ contains
                                    rproblemLevel%Rmatrix(CNSE_MATRIX_A))
         end if
         
-      case (FLOW_STEADYSTATE)
+      case (SYSTEM_STEADYSTATE)
         ! Compute the global operator for steady-state flow
         !
         !     A = -J
@@ -1645,8 +1645,8 @@ contains
       
       ! What type of flow are we?
       select case(iflowtype)
-      case (FLOW_TRANSIENT,&
-            FLOW_PSEUDOTRANSIENT)
+      case (SYSTEM_TRANSIENT,&
+            SYSTEM_PSEUDOTRANSIENT)
         ! Compute the global operator for transient flows
         !
         !     A = diag(M_L)-theta*dt*J
@@ -1661,7 +1661,7 @@ contains
         end do
         
         ! Scale the off-diagonal blocks by "-theta*dt" if required
-        if (isystemCoupling .eq. FLOW_ALLCOUPLED) then
+        if (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
           do iblock = 1, euler_getNVAR(rproblemLevel)
             do jblock = 1, euler_getNVAR(rproblemLevel)
               if (iblock .eq. jblock) cycle
@@ -1672,20 +1672,20 @@ contains
           end do
         end if
         
-      case (FLOW_STEADYSTATE)
+      case (SYSTEM_STEADYSTATE)
         ! Compute the global operator for steady-state flow
         !
         !     A = -J
         !
         select case(isystemCoupling)
           
-        case (FLOW_SEGREGATED)
+        case (SYSTEM_SEGREGATED)
           do iblock = 1, euler_getNVAR(rproblemLevel)
             call lsyssc_scaleMatrix(&
                 rproblemLevel%RmatrixBlock(CNSE_MATRIX_A)%RmatrixBlock(iblock,iblock), -1.0_DP)
           end do
           
-        case (FLOW_ALLCOUPLED)
+        case (SYSTEM_ALLCOUPLED)
           do iblock = 1, euler_getNVAR(rproblemLevel)
             do jblock = 1, euler_getNVAR(rproblemLevel)
               call lsyssc_scaleMatrix(&
@@ -1727,12 +1727,12 @@ contains
 
     ! What type of flow are we?
     select case(iflowtype)
-    case (FLOW_TRANSIENT,&
-          FLOW_PSEUDOTRANSIENT)
+    case (SYSTEM_TRANSIENT,&
+          SYSTEM_PSEUDOTRANSIENT)
       call euler_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_J,&
                                  UPDMAT_JAC_TRANSIENT, rproblemLevel%ilev, rproblemLevel%ilev)
 
-    case (FLOW_STEADYSTATE)
+    case (SYSTEM_STEADYSTATE)
       call euler_updateSolverMatrix(rproblemLevel, rsolver, CNSE_MATRIX_J, &
                                  UPDMAT_JAC_STEADY, rproblemLevel%ilev, rproblemLevel%ilev)
 

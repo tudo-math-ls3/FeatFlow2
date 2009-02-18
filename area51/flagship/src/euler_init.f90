@@ -490,10 +490,10 @@ contains
         
         ! What kind of global operator should be adopted?
         select case(isystemCoupling)
-        case (FLOW_SEGREGATED)
+        case (SYSTEM_SEGREGATED)
           rproblemLevel%Rmatrix(CNSE_MATRIX_A)%cinterleavematrixFormat = LSYSSC_MATRIXD
           
-        case (FLOW_ALLCOUPLED)
+        case (SYSTEM_ALLCOUPLED)
           rproblemLevel%Rmatrix(CNSE_MATRIX_A)%cinterleavematrixFormat = LSYSSC_MATRIX1
           
         case DEFAULT
@@ -523,7 +523,7 @@ contains
 
         ! What kind of global operator should be adopted?
         select case(isystemCoupling)
-        case (FLOW_SEGREGATED)
+        case (SYSTEM_SEGREGATED)
           
           ! Create diagonal blocks
           do ivar = 1, NVAR1D
@@ -534,7 +534,7 @@ contains
 
           end do
 
-        case (FLOW_ALLCOUPLED)
+        case (SYSTEM_ALLCOUPLED)
 
           ! Create all blocks
           do ivar = 1, NVAR1D
@@ -803,10 +803,10 @@ contains
         
         ! What kind of global operator should be adopted?
         select case(isystemCoupling)
-        case (FLOW_SEGREGATED)
+        case (SYSTEM_SEGREGATED)
           rproblemLevel%Rmatrix(CNSE_MATRIX_A)%cinterleavematrixFormat = LSYSSC_MATRIXD
           
-        case (FLOW_ALLCOUPLED)
+        case (SYSTEM_ALLCOUPLED)
           rproblemLevel%Rmatrix(CNSE_MATRIX_A)%cinterleavematrixFormat = LSYSSC_MATRIX1
           
         case DEFAULT
@@ -836,7 +836,7 @@ contains
 
         ! What kind of global operator should be adopted?
         select case(isystemCoupling)
-        case (FLOW_SEGREGATED)
+        case (SYSTEM_SEGREGATED)
           
           ! Create diagonal blocks
           do ivar = 1, NVAR2D
@@ -847,7 +847,7 @@ contains
 
           end do
 
-        case (FLOW_ALLCOUPLED)
+        case (SYSTEM_ALLCOUPLED)
 
           ! Create all blocks
           do ivar = 1, NVAR2D
@@ -1122,10 +1122,10 @@ contains
         
         ! What kind of global operator should be adopted?
         select case(isystemCoupling)
-        case (FLOW_SEGREGATED)
+        case (SYSTEM_SEGREGATED)
           rproblemLevel%Rmatrix(CNSE_MATRIX_A)%cinterleavematrixFormat = LSYSSC_MATRIXD
           
-        case (FLOW_ALLCOUPLED)
+        case (SYSTEM_ALLCOUPLED)
           rproblemLevel%Rmatrix(CNSE_MATRIX_A)%cinterleavematrixFormat = LSYSSC_MATRIX1
           
         case DEFAULT
@@ -1153,7 +1153,7 @@ contains
 
         ! What kind of global operator should be adopted?
         select case(isystemCoupling)
-        case (FLOW_SEGREGATED)
+        case (SYSTEM_SEGREGATED)
           
           ! Create diagonal blocks
           do ivar = 1, NVAR3D
@@ -1166,7 +1166,7 @@ contains
                 LSYSSC_SETM_UNDEFINED)
           end do
 
-        case (FLOW_ALLCOUPLED)
+        case (SYSTEM_ALLCOUPLED)
 
           ! Create all blocks
           do ivar = 1, NVAR3D

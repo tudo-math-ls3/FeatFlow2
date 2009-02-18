@@ -185,7 +185,7 @@ contains
     ! What kind of coupling is applied?
     select case(isystemCoupling)
       
-    case (FLOW_SEGREGATED)
+    case (SYSTEM_SEGREGATED)
       
       !-------------------------------------------------------------------------
       ! Assemble block-diagonal divergence operator
@@ -272,7 +272,7 @@ contains
       end select
       
       
-    case (FLOW_ALLCOUPLED)
+    case (SYSTEM_ALLCOUPLED)
 
       !-------------------------------------------------------------------------
       ! Assemble full block transport operator
@@ -440,7 +440,7 @@ contains
                                            rtimestep%theta*rtimestep%dStep,&
                                            rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                                            .false., .false., .true., .true.)
-            elseif (isystemCoupling .eq. FLOW_ALLCOUPLED) then
+            elseif (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
               call lsyssc_scaleMatrix(rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
                                       rtimestep%theta*rtimestep%dStep)
             end if
@@ -465,7 +465,7 @@ contains
                                            rtimestep%theta*rtimestep%dStep,&
                                            rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                                            .false., .false., .true., .true.)
-            elseif (isystemCoupling .eq. FLOW_ALLCOUPLED) then
+            elseif (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
               call lsyssc_scaleMatrix(rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
                                       rtimestep%theta*rtimestep%dStep)
             end if
