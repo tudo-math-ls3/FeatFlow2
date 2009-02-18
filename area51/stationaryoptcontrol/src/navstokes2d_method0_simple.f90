@@ -345,8 +345,8 @@ contains
       call conv_strdiffOptC2dgetDefect (rlevel%rmatrixMass,roptcoperator,rvectorBlock,&
           1.0_DP,rvectorBlock,rdefectBlock)
       
-      call vecio_writeBlockVectorHR (rdefectblock, 'vector', .false.,&
-                                     0, 'vector.txt', '(E12.5)')
+      !call vecio_writeBlockVectorHR (rdefectblock, 'vector', .false.,&
+      !                               0, 'vector.txt', '(E12.5)')
       
     else    
       ! DEBUG!!!
@@ -501,8 +501,8 @@ contains
       
       end if
       
-      call vecio_writeBlockVectorHR (rdefectblock, 'vector', .false.,&
-                                     0, 'vector1.txt', '(E12.5)')
+      !call vecio_writeBlockVectorHR (rdefectblock, 'vector', .false.,&
+      !                               0, 'vector1.txt', '(E12.5)')
       
     end if
   
@@ -788,8 +788,8 @@ contains
         rmatrixBlock%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
       end if
 
-      call matio_writeBlockMatrixHR (rmatrixBlock, 'matrix',&
-          .true., 0, 'matrix.txt', '(E12.5)', 1E-10_DP)
+      !call matio_writeBlockMatrixHR (rmatrixBlock, 'matrix',&
+      !    .true., 0, 'matrix.txt', '(E12.5)', 1E-10_DP)
     
     else
 
@@ -1063,8 +1063,8 @@ contains
       
       end if    
       
-      call matio_writeBlockMatrixHR (rmatrixBlock, 'matrix',&
-          .true., 0, 'matrix1.txt', '(E12.5)', 1E-10_DP)
+      !call matio_writeBlockMatrixHR (rmatrixBlock, 'matrix',&
+      !    .true., 0, 'matrix1.txt', '(E12.5)', 1E-10_DP)
     
     end if
   

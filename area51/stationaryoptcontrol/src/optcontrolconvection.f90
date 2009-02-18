@@ -193,7 +193,7 @@ module optcontrolconvection
     integer(I32), dimension(:), pointer :: p_IelementList
 
     ! Pointer to the primal/dual velocity field in the cubature points.
-    real(DP), dimension(:,:,:), pointer :: Dpvel,Ddvel,Dcontrol
+    real(DP), dimension(:,:,:), pointer :: Dpvel,Ddvel
     
     ! Pointer to the velocity X- and Y-derivative of the primal velocity
     ! in the cubature points
@@ -931,11 +931,10 @@ contains
   ! Matrix structure arrays
   integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
   integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-  real(DP), dimension(:), pointer :: p_Da11,p_Da22,p_Da44,p_Da55
-
+  real(DP), dimension(:), pointer :: p_Da11,p_Da22
   integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol12
   integer(PREC_MATIDX), dimension(:), pointer :: p_Kld12
-  real(DP), dimension(:), pointer :: p_Da12,p_Da21,p_Da45,p_Da54
+  real(DP), dimension(:), pointer :: p_Da12,p_Da21
   
   real(DP), dimension(:), pointer :: p_DpvelocityX, p_DpvelocityY
   
@@ -2399,8 +2398,8 @@ contains
   !<subroutine>
 
   subroutine computeLocalOptCMatrices (Dbas,Domega,Ddetj,ndof,ncubp,NEL,&
-      Dpvel,DpvelXderiv,DpvelYderiv,Ddvel,DdvelXderiv,DdvelYderiv,&
       DpvelDofs,DdvelDofs,&
+      Dpvel,DpvelXderiv,DpvelYderiv,Ddvel,DdvelXderiv,DdvelYderiv,&
       DentryA11,DentryA22,DentryA44,DentryA55,&
       DentryA12,DentryA21,DentryA45,DentryA54,&
       DentryA41,DentryA52,DentryA42,DentryA51,&
@@ -2432,18 +2431,19 @@ contains
     ! Number of elements
     integer, intent(in)                       :: NEL
     
-    ! Primal velocity vector and its derivatives in the cubature points
-    real(DP), dimension(:,:,:), intent(in)    :: Dpvel
-    real(DP), dimension(:,:,:), intent(in)    :: DpvelXderiv
-    real(DP), dimension(:,:,:), intent(in)    :: DpvelYderiv
-
-    real(DP), dimension(:,:,:), intent(in)    :: Ddvel
-    real(DP), dimension(:,:,:), intent(in)    :: DdvelXderiv
-    real(DP), dimension(:,:,:), intent(in)    :: DdvelYderiv
-    
     ! DOF's in the primal/dual velocity
     real(DP), dimension(:,:,:), intent(in)    :: DpvelDofs
     real(DP), dimension(:,:,:), intent(in)    :: DdvelDofs
+
+    ! Temporary arrays for the primal and dual velocity and their
+    ! derivatives in the cubature points.
+    real(DP), dimension(:,:,:), intent(inout)    :: Dpvel
+    real(DP), dimension(:,:,:), intent(inout)    :: DpvelXderiv
+    real(DP), dimension(:,:,:), intent(inout)    :: DpvelYderiv
+
+    real(DP), dimension(:,:,:), intent(inout)    :: Ddvel
+    real(DP), dimension(:,:,:), intent(inout)    :: DdvelXderiv
+    real(DP), dimension(:,:,:), intent(inout)    :: DdvelYderiv
     
     ! Local delta of the SD method
     real(DP), dimension(:), intent(in)        :: DlocalDelta
@@ -2487,14 +2487,101 @@ contains
     ! local variables
     integer :: iel, icubp, idofe, jdofe
     real(DP) :: OM,dtemp,dsumI,dsumJ
-    real(DP) :: du1p,du2p
+    real(DP) :: du1p,du2p,du1d,du2d, db,dbx,dby
     real(DP) :: du1locxp,du1locyp,du2locxp,du2locyp
-    real(DP) :: du1d,du2d,du1locxd,du1locyd,du2locxd,du2locyd
+    real(DP) :: du1locxd,du1locyd,du2locxd,du2locyd
     real(DP) :: dbasI,dbasIX,dbasIY,dbasJ,dbasJX,dbasJY
     real(DP) :: AH11,AH22,AH44,AH55,AH12,AH21,AH45,AH54
     real(DP) :: AH41,AH52,AH42,AH51,AH14,AH25,AH24,AH15
     real(dp) :: dtemp1,dtemp2
     
+    ! ===========================================
+    ! Solution evaluation phase
+    !
+    ! Evaluate the solutions for the nonlinearity
+    ! ===========================================
+
+    ! Loop over all elements in the current set
+    do iel=1,NEL
+    
+      ! Loop over all cubature points on the current element
+      do icubp = 1, ncubp
+      
+        ! Primal/dual velocity
+        du1p = 0.0_DP
+        du2p = 0.0_DP
+        du1d = 0.0_DP
+        du2d = 0.0_DP
+        
+        ! X/Y-derivative of the primal/dual velocity
+        du1locxp = 0.0_DP
+        du1locyp = 0.0_DP
+        du2locxp = 0.0_DP
+        du2locyp = 0.0_DP
+
+        du1locxd = 0.0_DP
+        du1locyd = 0.0_DP
+        du2locxd = 0.0_DP
+        du2locyd = 0.0_DP
+      
+        ! Perform a loop through the trial DOF's.
+        do jdofe=1,ndof
+
+          ! Get the value of the (test) basis function 
+          ! phi_i (our "O") in the cubature point:
+          
+          db =  Dbas(jdofe,1,icubp,iel)
+          dbx = Dbas(jdofe,DER_DERIV2D_X,icubp,iel)
+          dby = Dbas(jdofe,DER_DERIV2D_Y,icubp,iel)
+          
+          ! Sum up to the value in the cubature point
+          
+          du1p = du1p + DpvelDofs(jdofe,iel,1)*db
+          du2p = du2p + DpvelDofs(jdofe,iel,2)*db
+          
+          du1d = du1d + DdvelDofs(jdofe,iel,1)*db
+          du2d = du2d + DdvelDofs(jdofe,iel,2)*db
+          
+          du1locxp = du1locxp + DpvelDofs(jdofe,iel,1)*dbx
+          du1locyp = du1locyp + DpvelDofs(jdofe,iel,1)*dby
+          du2locxp = du2locxp + DpvelDofs(jdofe,iel,2)*dbx
+          du2locyp = du2locyp + DpvelDofs(jdofe,iel,2)*dby
+                                                    
+          du1locxd = du1locxd + DdvelDofs(jdofe,iel,1)*dbx
+          du1locyd = du1locyd + DdvelDofs(jdofe,iel,1)*dby
+          du2locxd = du2locxd + DdvelDofs(jdofe,iel,2)*dbx
+          du2locyd = du2locyd + DdvelDofs(jdofe,iel,2)*dby
+
+        end do ! jdofe
+        
+        ! Save the computed velocities and derivatives
+        Dpvel(1,icubp,iel) = du1p
+        Dpvel(2,icubp,iel) = du2p
+
+        Ddvel(1,icubp,iel) = du1d
+        Ddvel(2,icubp,iel) = du2d
+
+        DpvelXderiv(1,icubp,iel) = du1locxp
+        DpvelXderiv(2,icubp,iel) = du1locyp
+        DpvelYderiv(1,icubp,iel) = du2locxp
+        DpvelYderiv(2,icubp,iel) = du2locyp
+      
+        DdvelXderiv(1,icubp,iel) = du1locxd
+        DdvelXderiv(2,icubp,iel) = du1locyd
+        DdvelYderiv(1,icubp,iel) = du2locxd
+        DdvelYderiv(2,icubp,iel) = du2locyd
+
+      end do ! icubp
+      
+    end do ! iel
+    
+    ! ===========================================
+    ! Matrix evaluation phase
+    !
+    ! Evaluate the matrices using the solutions
+    ! from above.
+    ! ===========================================
+      
     AH11 = 0.0_DP
     AH22 = 0.0_DP
     AH44 = 0.0_DP
@@ -3331,8 +3418,6 @@ contains
         roptcassemblyinfo%nelementsPerBlock))
     allocate(roptcassemblyinfo%Ddvel(NDIM2D,roptcassemblyinfo%ncubp,&
         roptcassemblyinfo%nelementsPerBlock))
-    allocate(roptcassemblyinfo%Dcontrol(NDIM2D,roptcassemblyinfo%ncubp,&
-        roptcassemblyinfo%nelementsPerBlock))
     allocate(roptcassemblyinfo%DpvelXderiv(NDIM2D,roptcassemblyinfo%ncubp,&
         roptcassemblyinfo%nelementsPerBlock))
     allocate(roptcassemblyinfo%DpvelYderiv(NDIM2D,roptcassemblyinfo%ncubp,&
@@ -3411,9 +3496,6 @@ contains
 
     ! local variables
     integer :: iel, idofe, jdofe, jcol0, jcol, icubp, jdfg
-    real(DP) :: du1locp,du2locp,du1locd,du2locd,dc1loc,dc2loc,dcx,dcy
-    real(DP) :: du1locxp,du2locxp,du1locyp,du2locyp,dbx,dby,db
-    real(DP) :: du1locxd,du2locxd,du1locyd,du2locyd
     real(DP) :: dumaxr,dre
     integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
     integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
@@ -3711,207 +3793,6 @@ contains
       end do ! iel
     end if
     
-    ! Loop over all elements in the current set
-    do iel=1,iendelement-istartElement+1
-    
-      ! Loop over all cubature points on the current element
-      do icubp = 1, roptcassemblyinfo%ncubp
-      
-        ! Primal/dual velocity
-        du1locp = 0.0_DP
-        du2locp = 0.0_DP
-        du1locd = 0.0_DP
-        du2locd = 0.0_DP
-        
-        ! X/Y-derivative of the primal/dual velocity
-        du1locxp = 0.0_DP
-        du1locyp = 0.0_DP
-        du2locxp = 0.0_DP
-        du2locyp = 0.0_DP
-
-        du1locxd = 0.0_DP
-        du1locyd = 0.0_DP
-        du2locxd = 0.0_DP
-        du2locyd = 0.0_DP
-      
-        ! Perform a loop through the trial DOF's.
-        do jdofe=1,roptcassemblyinfo%indof
-
-          ! Get the value of the (test) basis function 
-          ! phi_i (our "O") in the cubature point:
-          
-          db = roptcassemblyinfo%Dbas(jdofe,1,icubp,iel)
-          dbx = roptcassemblyinfo%Dbas(jdofe,DER_DERIV2D_X,icubp,iel)
-          dby = roptcassemblyinfo%Dbas(jdofe,DER_DERIV2D_Y,icubp,iel)
-          
-          ! Sum up to the value in the cubature point
-          
-          jdfg = roptcassemblyinfo%Idofs(jdofe,iel)
-          du1locp = du1locp + p_DpvelocityX(jdfg)*db
-          du2locp = du2locp + p_DpvelocityY(jdfg)*db
-          
-          du1locd = du1locd + p_DdvelocityX(jdfg)*db
-          du2locd = du2locd + p_DdvelocityY(jdfg)*db
-          
-          du1locxp = du1locxp + p_DpvelocityX(jdfg)*dbx
-          du1locyp = du1locyp + p_DpvelocityX(jdfg)*dby
-          du2locxp = du2locxp + p_DpvelocityY(jdfg)*dbx
-          du2locyp = du2locyp + p_DpvelocityY(jdfg)*dby
-
-          du1locxd = du1locxd + p_DdvelocityX(jdfg)*dbx
-          du1locyd = du1locyd + p_DdvelocityX(jdfg)*dby
-          du2locxd = du2locxd + p_DdvelocityY(jdfg)*dbx
-          du2locyd = du2locyd + p_DdvelocityY(jdfg)*dby
-
-        end do ! jdofe
-        
-        ! Save the computed velocities and derivatives
-        roptcassemblyinfo%Dpvel(1,icubp,iel) = du1locp
-        roptcassemblyinfo%Dpvel(2,icubp,iel) = du2locp
-
-        roptcassemblyinfo%Ddvel(1,icubp,iel) = du1locd
-        roptcassemblyinfo%Ddvel(2,icubp,iel) = du2locd
-
-        roptcassemblyinfo%DpvelXderiv(1,icubp,iel) = du1locxp
-        roptcassemblyinfo%DpvelXderiv(2,icubp,iel) = du1locyp
-        roptcassemblyinfo%DpvelYderiv(1,icubp,iel) = du2locxp
-        roptcassemblyinfo%DpvelYderiv(2,icubp,iel) = du2locyp
-      
-        roptcassemblyinfo%DdvelXderiv(1,icubp,iel) = du1locxd
-        roptcassemblyinfo%DdvelXderiv(2,icubp,iel) = du1locyd
-        roptcassemblyinfo%DdvelYderiv(1,icubp,iel) = du2locxd
-        roptcassemblyinfo%DdvelYderiv(2,icubp,iel) = du2locyd
-
-      end do ! icubp
-      
-    end do ! iel
-    
-    ! Compute the control in the cubature points.
-    ! This is a little bit more tricky as it may involve a
-    ! projection.
-    select case (roptcoperator%ccontrolProjection)
-    case (0)
-      ! No projection
-      !
-      ! Loop over all elements in the current set
-      do iel=1,iendelement-istartElement+1
-      
-        ! Loop over all cubature points on the current element
-        do icubp = 1, roptcassemblyinfo%ncubp
-        
-          ! Control
-          dc1loc = 0.0_DP
-          dc2loc = 0.0_DP
-        
-          ! Perform a loop through the trial DOF's.
-          do jdofe=1,roptcassemblyinfo%indof
-
-            ! Get the value of the (test) basis function 
-            ! phi_i (our "O") in the cubature point:
-            
-            db = roptcassemblyinfo%Dbas(jdofe,1,icubp,iel)
-
-            ! Convert the dual velocity to the control
-            dcx = roptcoperator%dcontrolMultiplier * p_DdvelocityX(jdfg)
-            dcy = roptcoperator%dcontrolMultiplier * p_DdvelocityY(jdfg)
-            
-            ! Sum up to the value in the cubature point
-            dc1loc = dc1loc + dcx*db
-            dc2loc = dc2loc + dcy*db
-
-          end do ! jdofe
-          
-          ! Save the computed control
-          roptcassemblyinfo%Dcontrol(1,icubp,iel) = dc1loc
-          roptcassemblyinfo%Dcontrol(2,icubp,iel) = dc2loc
-
-        end do ! icubp
-        
-      end do ! iel    
-
-    case (1)
-      ! DOF-based projection
-      !
-      ! Loop over all elements in the current set
-      do iel=1,iendelement-istartElement+1
-      
-        ! Loop over all cubature points on the current element
-        do icubp = 1, roptcassemblyinfo%ncubp
-        
-          ! Control
-          dc1loc = 0.0_DP
-          dc2loc = 0.0_DP
-        
-          ! Perform a loop through the trial DOF's.
-          do jdofe=1,roptcassemblyinfo%indof
-
-            ! Get the value of the (test) basis function 
-            ! phi_i (our "O") in the cubature point:
-            
-            db = roptcassemblyinfo%Dbas(jdofe,1,icubp,iel)
-            
-            ! Convert the dual velocity to the control
-            dcx = min(max(roptcoperator%dcontrolMultiplier * p_DdvelocityX(jdfg),&
-                roptcoperator%dmin1),roptcoperator%dmax1)
-            dcy = min(max(roptcoperator%dcontrolMultiplier * p_DdvelocityY(jdfg),&
-                roptcoperator%dmin1),roptcoperator%dmax1)
-            
-            ! Sum up to the value in the cubature point
-            dc1loc = dc1loc + dcx*db
-            dc2loc = dc2loc + dcy*db
-
-          end do ! jdofe
-          
-          ! Save the computed control
-          roptcassemblyinfo%Dcontrol(1,icubp,iel) = dc1loc
-          roptcassemblyinfo%Dcontrol(2,icubp,iel) = dc2loc
-
-        end do ! icubp
-        
-      end do ! iel    
-      
-    case (2)
-      ! Cubature-point-based projection
-      !
-      ! Loop over all elements in the current set
-      do iel=1,iendelement-istartElement+1
-      
-        ! Loop over all cubature points on the current element
-        do icubp = 1, roptcassemblyinfo%ncubp
-        
-          ! Control
-          dc1loc = 0.0_DP
-          dc2loc = 0.0_DP
-        
-          ! Perform a loop through the trial DOF's.
-          do jdofe=1,roptcassemblyinfo%indof
-
-            ! Get the value of the (test) basis function 
-            ! phi_i (our "O") in the cubature point:
-            
-            db = roptcassemblyinfo%Dbas(jdofe,1,icubp,iel)
-            
-            ! Convert the dual velocity to the control
-            dcx = roptcoperator%dcontrolMultiplier * p_DdvelocityX(jdfg)
-            dcy = roptcoperator%dcontrolMultiplier * p_DdvelocityY(jdfg)
-            
-            ! Sum up to the value in the cubature point
-            dc1loc = dc1loc + dcx*db
-            dc2loc = dc2loc + dcy*db
-
-          end do ! jdofe
-          
-          ! Save the computed control
-          roptcassemblyinfo%Dcontrol(1,icubp,iel) = &
-            min(max(dc1loc,roptcoperator%dmin1),roptcoperator%dmax1)
-          roptcassemblyinfo%Dcontrol(2,icubp,iel) = &
-            min(max(dc2loc,roptcoperator%dmin2),roptcoperator%dmax2)
-
-        end do ! icubp
-        
-      end do ! iel    
-    end select      
-      
   end subroutine
   
   ! ***************************************************************************
@@ -3940,7 +3821,6 @@ contains
     ! Allocate memory for the velocites in the cubature points.
     deallocate(roptcassemblyinfo%Dpvel)
     deallocate(roptcassemblyinfo%Ddvel)
-    deallocate(roptcassemblyinfo%Dcontrol)
     deallocate(roptcassemblyinfo%DpvelXderiv)
     deallocate(roptcassemblyinfo%DpvelYderiv)
     deallocate(roptcassemblyinfo%DdvelXderiv)
@@ -4157,10 +4037,10 @@ contains
       call computeLocalOptCMatrices (roptcassemblyinfo%Dbas,&
           roptcassemblyinfo%Domega,roptcassemblyinfo%revalElementSet%p_Ddetj,&
           roptcassemblyinfo%indof,roptcassemblyinfo%ncubp,ielmax-ielset+1,&
+          roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
           roptcassemblyinfo%Dpvel,roptcassemblyinfo%DpvelXderiv,&
           roptcassemblyinfo%DpvelYderiv,roptcassemblyinfo%Ddvel,&
           roptcassemblyinfo%DdvelXderiv,roptcassemblyinfo%DdvelYderiv,&
-          roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
           DentryA11,DentryA22,DentryA44,DentryA55,&
           DentryA12,DentryA21,DentryA45,DentryA54,&
           DentryA41,DentryA52,DentryA42,DentryA51,&
@@ -4451,10 +4331,10 @@ contains
       call computeLocalOptCMatrices (roptcassemblyinfo%Dbas,&
           roptcassemblyinfo%Domega,roptcassemblyinfo%revalElementSet%p_Ddetj,&
           roptcassemblyinfo%indof,roptcassemblyinfo%ncubp,ielmax-ielset+1,&
+          roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
           roptcassemblyinfo%Dpvel,roptcassemblyinfo%DpvelXderiv,&
           roptcassemblyinfo%DpvelYderiv,roptcassemblyinfo%Ddvel,&
           roptcassemblyinfo%DdvelXderiv,roptcassemblyinfo%DdvelYderiv,&
-          roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
           DentryA11,DentryA22,DentryA44,DentryA55,&
           DentryA12,DentryA21,DentryA45,DentryA54,&
           DentryA41,DentryA52,DentryA42,DentryA51,&
