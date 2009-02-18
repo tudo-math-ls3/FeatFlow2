@@ -229,6 +229,9 @@ contains
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
     character(LEN=SYS_STRLEN) :: algorithm
+
+    ! local variables
+    integer :: systemMatrix
     
 
     ! Start total time measurement
@@ -267,14 +270,15 @@ contains
     ! Initialize the individual problem levels
     call codire_initAllProblemLevels(rappDescriptor, rproblem, rcollection)
 
-    ! Initialize the primal solution vector
-    call codire_initSolution(rparlist, 'codire', rproblem%p_rproblemLevelMax,&
-                             0.0_DP, rsolutionPrimal)
+!!$    ! Initialize the primal solution vector
+!!$    call codire_initSolution(rparlist, 'codire', rproblem%p_rproblemLevelMax,&
+!!$                             0.0_DP, rsolutionPrimal)
         
 
     ! Prepare internal data arrays of the solver structure
+    systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix') 
     call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax, rsolver,&
-                                     1, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+                                     systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
     call solver_updateStructure(rsolver)
 
     ! Stop time measurement for pre-processing
@@ -297,9 +301,9 @@ contains
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
 
-      ! Impose primal boundary conditions explicitely
-      call bdrf_filterVectorExplicit(rbdrCondPrimal,&
-          rproblem%p_rproblemLevelMax%rtriangulation, rsolutionPrimal, 0.0_DP)
+!!$      ! Impose primal boundary conditions explicitly
+!!$      call bdrf_filterVectorExplicit(rbdrCondPrimal,&
+!!$          rproblem%p_rproblemLevelMax%rtriangulation, rsolutionPrimal, 0.0_DP)
 
       
       ! What solution algorithm should be applied?
@@ -1583,7 +1587,6 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_collection) :: rcollection
     type(t_linearForm) :: rform
     
@@ -1609,7 +1612,7 @@ contains
       ! Build the discretized target functional
       call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
                                   rform, .true., rvector%RvectorBlock(1),&
-                                  codire_coeffRHS, rcollection)
+                                  codire_coeffVectorAnalytic, rcollection)
 
       ! Release collection structure
       call collct_done(rcollection)
@@ -1684,7 +1687,7 @@ contains
       ! Build the discretized target functional
       call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
                                   rform, .true., rvector%RvectorBlock(1),&
-                                  codire_coeffTargetFuncVolInt, rcollection)
+                                  codire_coeffVectorAnalytic, rcollection)
 
       ! Release collection structure
       call collct_done(rcollection)
@@ -1842,15 +1845,22 @@ contains
 
 !<subroutine>
 
-  subroutine codire_estimateTargetFuncError(rproblemLevel, rtimestep, rsolver,&
-                                            rsolutionPrimal, rsolutionDual,&
-                                            rcollection, rerror, derror, rrhs)
+  subroutine codire_estimateTargetFuncError(rparlist, ssectionName, rproblemLevel,&
+                                            rtimestep, rsolver, rsolutionPrimal,&
+                                            rsolutionDual, rcollection, rerror,&
+                                            derror, rrhs)
 
 !<description>
     ! This subroutine estimates the error in the quantity of interest
 !</description>
 
 !<input>
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
+
     ! time-stepping algorithm
     type(t_timestep), intent(IN) :: rtimestep
 
@@ -1883,16 +1893,39 @@ contains
     real(DP), intent(OUT) :: derror
 !</output>
 !</subroutine>
-
+    
+    ! section names
+    character(LEN=SYS_STRLEN) :: sindatfileName
+    character(LEN=SYS_STRLEN) :: serrorestimatorName
+    character(LEN=SYS_STRLEN) :: stargetfuncName
+    character(LEN=SYS_STRLEN) :: sexacttargetfuncName
 
     ! local variables
-    type(t_matrixScalar) :: rmatrix
+    type(t_fparser) :: rfparser
+    type(t_collection) :: rcollectionTmp
     type(t_vectorBlock) :: rvector
-    real(DP), dimension(:), pointer :: p_DsolutionDual, p_DnodalError, p_DlumpedMassMatrix
-    integer :: i,convectionAFC,diffusionAFC
-    integer :: lumpedMassMatrix,templateMatrix
+    type(t_matrixScalar) :: rmatrix
+    real(DP), dimension(:), pointer :: p_DsolutionDual, p_DnodalError
+    real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_Ddata
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement
+    logical, dimension(:), pointer :: p_BisactiveElement
+    real(DP) :: dexacterror, dexacttargetfunc, dprotectLayerTolerance
+    integer :: i, convectionAFC, diffusionAFC
+    integer :: lumpedMassMatrix, templateMatrix
+    integer :: itargetfunctype, iexacttargetfunctype, igridindicator
+    integer :: iprotectLayer, nprotectLayers
+    integer :: h_BisactiveElement
 
-    
+    ! symbolic variable names
+    character(LEN=*), dimension(4), parameter ::&
+                      cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
+
+
+    !---------------------------------------------------------------------------
+    ! Perform goal-orianted error estimation
+    !---------------------------------------------------------------------------
+
     ! Create vector for nodal errors
     call lsysbl_createVectorBlock(rsolutionPrimal, rvector)
 
@@ -1920,35 +1953,236 @@ contains
     call lsysbl_getbase_double(rsolutionDual, p_DsolutionDual)
     call lsysbl_getbase_double(rvector, p_DnodalError)
 
-    ! Compute/set pointer to the lumped mass matrix
+    ! We need the lumped mass matrix
     lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
     if (lumpedMassMatrix > 0) then
+
+      ! Set pointer to the lumped mass matrix
       call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                  p_DlumpedMassMatrix)
+
     else
+
+      ! Compute the lumped mass matrix explicitly
       templateMatrix = collct_getvalue_int(rcollection, 'templatematrix')
       call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
                                   rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       call stdop_assembleSimpleMatrix(rmatrix, DER_FUNC, DER_FUNC) 
       call lsyssc_lumpMatrixScalar(rmatrix, LSYSSC_LUMP_DIAG)
       call lsyssc_getbase_double(rmatrix, p_DlumpedMassMatrix)
-    end if
+
+    end if   ! lumpedMassMatrix > 0
+
     
     ! Now we compute the nodal error contributions
     do i = 1, size(p_DsolutionDual,1)
       p_DnodalError(i) = abs(p_DnodalError(i)*p_DsolutionDual(i))/p_DlumpedMassMatrix(i)
     end do
 
-    ! Compute the element-wise and the global error
+    ! Compute the element-wise and the global error.  We create a
+    ! scalar vector and compute the global and local L1-norms of nodal
+    ! error vector which yields the global and local values of the a
+    ! posteriori error estimator.
     call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
     call pperr_scalar(rvector%RvectorBlock(1), PPERR_L1ERROR,&
                       derror, relementError=rerror)
  
-    ! Release the nodal error
+    ! Release the vector of nodal error values
     call lsysbl_releaseVector(rvector)
 
     ! Clean temporal matrix if required
     if (lumpedMassMatrix .le. 0) call lsyssc_releaseMatrix(rmatrix)
+
+
+    !---------------------------------------------------------------------------
+    ! Compute the effectivity index
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncName, '')
+    call parlst_getvalue_string(rparlist, ssectionName, 'sexacttargetfuncname', sexacttargetfuncName, '')
+    call parlst_getvalue_int(rparlist, ssectionName, 'itargetfunctype', itargetfunctype, 0)
+    call parlst_getvalue_int(rparlist, ssectionName, 'iexacttargetfunctype', iexacttargetfunctype, 0)
+
+    select case(iexacttargetfunctype)
+    
+    case(TFUNC_VOLINTG)
+      ! Initialize exact target functionals from analytic profile
+      call flagship_readParserFromFile(sindatfileName, '['//trim(sexacttargetfuncName)//']',&
+                                       cvariables, rfparser)
+
+      ! Create a collection and attach the function parser
+      call collct_init(rcollectionTmp)
+      call collct_setvalue_pars(rcollectionTmp, 'refTargetFuncParser', rfparser, .true.)
+      rcollectionTmp%SquickAccess(1) = 'refTargetFuncParser'
+      rcollectionTmp%DquickAccess(1) = rtimestep%dTime
+
+      ! Compute the error of the quantity of interest
+      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dexacterror,&
+                                  codire_refFuncAnalytic, rcollectionTmp)
+
+      ! Compute the value of the quantity of interest. Create an empty
+      ! vector which is initialized by zeros and compute the "error"
+      ! between this vector and the analytic quantity of interest.
+      call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
+      call pperr_scalarTargetFunc(rvector%RvectorBlock(1), dexacttargetfunc,&
+                                  codire_refFuncAnalytic, rcollectionTmp)
+      call lsysbl_releaseVector(rvector)
+
+      ! Inverse the sign of the exact target functional since we computed $J(0-u)$
+      dexacttargetfunc = -dexacttargetfunc
+
+      ! Release collection structure
+      call collct_done(rcollectionTmp)
+
+      ! Release function parsers
+      call fparser_release(rfparser)
+
+      call output_lbrk()
+      call output_line('Error Analysis')
+      call output_line('--------------')
+      call output_line('exact target functional value:           '//trim(sys_sdEP(dexacttargetfunc,15,6)))
+      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(derror,15,6)))
+      call output_line('exact error in quantity of interest:     '//trim(sys_sdEP(abs(dexacterror),15,6)))
+      call output_line('effectivity index:                       '//trim(sys_sdEP(derror/abs(dexacterror),15,6)))
+      call output_line('relative effectivity index:              '//trim(sys_sdEP(abs((derror-abs(dexacterror))/&
+                                                                                  dexacttargetfunc),15,6)))
+      call output_lbrk()
+
+
+    case (TFUNC_SURFINTG)
+      call output_line('Target functionals in terms of surface integrals are not implemented',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_estimateTargetFuncError')
+      call sys_halt()
+      
+
+    case DEFAULT
+      call output_lbrk()
+      call output_line('Error Analysis')
+      call output_line('--------------')
+      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(derror,15,6)))
+      call output_lbrk()
+    end select
+
+
+    !---------------------------------------------------------------------------
+    ! Apply the adaptation strategy
+    !---------------------------------------------------------------------------
+    
+    call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
+    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'igridindicator', igridindicator)
+    
+    ! What type of grid indicator are we?
+    select case(igridIndicator)
+      
+    case (ERREST_ASIS)   
+      ! That's simple, do nothing.
+
+      case DEFAULT
+      call output_line('Invalid type of grid indicator!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_estimateTargetFuncError')
+      call sys_halt()
+    end select
+
+
+    !---------------------------------------------------------------------------
+    ! Calculate protection layers
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
+    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'nprotectLayers', nprotectLayers, 0)
+    call parlst_getvalue_double(rparlist, trim(serrorestimatorName),&
+                                'dprotectLayerTolerance', dprotectLayerTolerance, 0.0_DP)
+
+    if (nprotectLayers > 0) then
+
+      ! Create auxiliary memory
+      h_BisactiveElement = ST_NOHANDLE
+      call storage_new('codire_estimateRecoveryError',' BisactiveElement',&
+                       rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
+                       h_BisactiveElement, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
+      
+      ! Set pointers
+      call storage_getbase_int2D(&
+          rproblemLevel%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+      call storage_getbase_int2D(&
+          rproblemLevel%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+      call lsyssc_getbase_double(rerror, p_Ddata)
+
+      ! Compute protection layers
+      do iprotectLayer = 1, nprotectLayers
+        
+        ! Reset activation flag
+        p_BisActiveElement = .false.
+        
+        ! Compute a single-width protection layer
+        call doProtectionLayerUniform(p_IverticesAtElement, p_IneighboursAtElement,&
+                                      rproblemLevel%rtriangulation%NEL,&
+                                      dprotectLayerTolerance, p_Ddata, p_BisActiveElement)
+      end do
+
+      ! Release memory
+      call storage_free(h_BisactiveElement)
+
+    end if
+
+  contains
+    
+    ! Here, the real working routines follow.
+    
+    !**************************************************************
+    ! Compute one uniformly distributed protection layer
+
+    subroutine doProtectionLayerUniform(IverticesAtElement, IneighboursAtElement, NEL,&
+                                        dthreshold, Ddata, BisactiveElement)
+
+      integer, dimension(:,:), intent(IN) :: IverticesAtElement
+      integer, dimension(:,:), intent(IN) :: IneighboursAtElement     
+      real(DP), intent(IN) :: dthreshold
+      integer, intent(IN) :: NEL
+      
+      real(DP), dimension(:), intent(INOUT) :: Ddata
+      logical, dimension(:), intent(INOUT) :: BisactiveElement
+      
+      
+      ! local variables
+      integer :: iel,jel,ive
+
+      ! Loop over all elements in triangulation
+      do iel = 1, NEL
+        
+        ! Do nothing if element belongs to active layer
+        if (BisactiveElement(iel)) cycle
+
+        ! Do nothing if element indicator does not exceed threshold
+        if (Ddata(iel) .le. dthreshold) cycle
+
+        ! Loop over neighbouring elements
+        do ive = 1, tria_getNVE(IverticesAtElement, iel)
+          
+          ! Get number of neighbouring element
+          jel = IneighboursAtElement(ive, iel)
+
+          ! Do nothing at the boundary
+          if (jel .eq. 0) cycle
+
+          ! Check if element belongs to active layer
+          if (BisactiveElement(jel)) then
+            ! If yes, then just update the element indicator
+            Ddata(jel) = max(Ddata(jel), Ddata(iel))
+          else
+            ! Otherwise, we have to check if the neighbouring element
+            ! exceeds the prescribed threshold level. If this is the case
+            ! it will be processed later or has already been processed
+            if (Ddata(jel) .lt. dthreshold) then
+              Ddata(jel) = max(Ddata(jel), Ddata(iel))
+              BisactiveElement(jel) = .true.
+            end if
+          end if
+        end do
+      end do
+    end subroutine doProtectionLayerUniform
 
   end subroutine codire_estimateTargetFuncError
 
@@ -1957,11 +2191,15 @@ contains
 !<subroutine>
 
   subroutine codire_estimateRecoveryError(rparlist, ssectionName, rproblemLevel,&
-                                          rsolution, rcollection, rerror, derror)
+                                          rsolution, dtime, rerror, derror)
 
-!<description> This subroutine estimates the error of the discrete
-    ! solution by using recovery procedures such as the
-    ! superconvergent patch recovery technique or L2-projection.
+!<description>
+    ! This subroutine estimates the error of the discrete solution by
+    ! using recovery procedures such as the superconvergent patch
+    ! recovery technique or L2-projection. If an exact solution value
+    ! is avaialable, it computes the effectivity index of the error
+    ! estimator. Moreover it applies the specified strategy to convert
+    ! the error estimator into a grid indicator for mesh adaptation.
 !</description>
 
 !<input>
@@ -1976,12 +2214,10 @@ contains
 
     ! problem level structure
     type(t_problemLevel), intent(IN) :: rproblemLevel
-!</input>
 
-!<inputoutput>
-    ! collection
-    type(t_collection), intent(INOUT) :: rcollection
-!</inputoutput>
+    ! simulation time
+    real(DP), intent(IN) :: dtime
+!</input>
 
 !<output>
     ! element-wise error distribution
@@ -1993,18 +2229,44 @@ contains
 !</subroutine>
 
     ! section names
+    character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: serrorestimatorName
+    character(LEN=SYS_STRLEN) :: sexactsolutionName
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Ddata
-    real(DP) :: dnoiseFilter, dabsFilter, dsolution, dvalue
-    integer :: ierrorEstimator, igridIndicator, i
+    type(t_fparser) :: rfparser
+    type(t_collection) :: rcollection
+    type(t_vectorScalar) :: rvectorScalar
+    real(DP), dimension(:), pointer :: p_Ddata, p_Derror
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement
+    logical, dimension(:), pointer :: p_BisactiveElement
+    real(DP) :: dnoiseFilter, dabsFilter, dsolution, dvalue,&
+                dexacterror, dprotectLayerTolerance
+    integer :: i, ierrorEstimator, igridindicator, iexactsolutiontype
+    integer :: iprotectLayer, nprotectLayers
+    integer :: h_BisactiveElement
     
+    ! symbolic variable names
+    character(LEN=*), dimension(4), parameter ::&
+                      cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
+
 
     ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
     call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'sexactsolutionname', sexactsolutionName, '')
+    call parlst_getvalue_int(rparlist, ssectionName, 'iexactsolutiontype', iexactsolutiontype, 0)
     call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'ierrorestimator', ierrorestimator)
     call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'igridindicator', igridindicator)
+    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'nprotectLayers', nprotectLayers, 0)
+    call parlst_getvalue_double(rparlist, trim(serrorestimatorName),&
+                                'dprotectLayerTolerance', dprotectLayerTolerance, 0.0_DP)
+
+    
+    !---------------------------------------------------------------------------
+    ! Perform recovery-based error estimation
+    !---------------------------------------------------------------------------
     
     ! What type of error estimator are we?
     select case(ierrorEstimator)
@@ -2048,38 +2310,122 @@ contains
     end select
 
 
+    !---------------------------------------------------------------------------
+    ! Compute the effectivity index
+    !---------------------------------------------------------------------------
+
+    select case(iexactsolutiontype)
+    case (1)
+      ! Initialize exact solution from analytic profile
+      call flagship_readParserFromFile(sindatfileName, '['//trim(sexactsolutionName)//']',&
+                                       cvariables, rfparser)
+      
+      ! Create a collection and attach the function parser
+      call collct_init(rcollection)
+      call collct_setvalue_pars(rcollection, 'refSolParser', rfparser, .true.)
+      rcollection%SquickAccess(1) = 'refSolParser'
+      rcollection%DquickAccess(1) = dtime
+      
+      ! Calculate the H1-error of the reference solution
+      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dexacterror,&
+                        codire_refFuncAnalytic, rcollection)
+
+      ! Release collection structure
+      call collct_done(rcollection)
+
+      ! Release function parser
+      call fparser_release(rfparser)
+
+      call output_lbrk()
+      call output_line('Error Analysis')
+      call output_line('--------------')
+      call output_line('estimated H1-error: '//trim(sys_sdEP(derror,15,6)))
+      call output_line('exact H1-error:     '//trim(sys_sdEP(dexacterror,15,6)))
+      call output_line('effectivity index:  '//trim(sys_sdEP(derror/dexacterror,15,6)))
+      call output_lbrk()
+
+    case DEFAULT
+      call output_lbrk()
+      call output_line('Error Analysis')
+      call output_line('--------------')
+      call output_line('estimated H1-error: '//trim(sys_sdEP(derror,15,6)))
+      call output_lbrk()
+
+    end select
+    
+
+    !---------------------------------------------------------------------------
+    ! Apply the adaptation strategy
+    !---------------------------------------------------------------------------
+
     ! What type of grid indicator are we?
     select case(igridIndicator)
-
+      
     case (ERREST_ASIS)   
       ! That's simple, do nothing.
-
-
+      
+      
     case (ERREST_EQUIDIST)
-      ! Try to equidistribute the relative percentage error
+      ! Equidistribute the relative percentage error
+      call output_lbrk()
+      call output_line('Equidistribution strategy')
+      call output_line('-------------------------')
 
       ! We need the global norm of the scalar error variable
-      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_L2ERROR, dsolution)
+      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dsolution)
 
-print *, dsolution, derror
-
-      ! Compute permissible element error
+      call output_line('Total percentage error:       '//trim(sys_sdEP(derror/dsolution,15,6)))
+      
+      ! Compute global permissible element error
       dvalue = sqrt(dsolution**2 + derror**2)/sqrt(real(rerror%NEQ, DP))
 
-      ! Scale element error by permissible error
+      call output_line('Permissible percentage error: '//trim(sys_sdEP(dvalue,15,6))//' x TOL')
+      call output_lbrk()
+      
+      ! Scale element error by global permissible error
       call lsyssc_scaleVector(rerror, 1.0_DP/dvalue)
 
 
+    case (-ERREST_EQUIDIST)
+      ! Equidistribute the relative percentage error
+      call output_lbrk()
+      call output_line('Equidistribution strategy')
+      call output_line('-------------------------')
+
+      ! We need the global norm of the scalar error variable
+      call lsyssc_createVector(rvectorScalar, rerror%NEQ, .true.)
+      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dsolution,&
+                        relementError=rvectorScalar)
+
+      call output_line('Total percentage error: '//trim(sys_sdEP(derror/dsolution,15,6)))
+      call output_lbrk()
+
+      ! Compute local permissible element error for each elements
+      call lsyssc_getbase_double(rerror, p_Derror)
+      call lsyssc_getbase_double(rvectorScalar, p_Ddata)
+      dvalue = dsolution/sqrt(real(rerror%NEQ, DP))
+
+      do i = 1, size(p_Derror)
+        p_Derror(i) = p_Derror(i)/(0.5*(sqrt(p_Ddata(i)) + dvalue))
+      end do
+
+
     case (ERREST_LOGEQUIDIST)
+      ! Equidistribute the logarithmic error
+      call output_lbrk()
+      call output_line('Logarithmic equidistribution strategy')
+      call output_line('-------------------------------------')
 
       ! Set pointer
       call lsyssc_getbase_double(rerror, p_Ddata)
       
       ! Determine largest error value
-      dvalue = - SYS_MAXREAL
+      dvalue = -SYS_MAXREAL
       do i = 1, size(p_Ddata)
         dvalue = max(dvalue, p_Ddata(i))
       end do
+      
+      call output_line('Maximum error: '//trim(sys_sdEP(derror/dvalue,15,6)))
 
       ! Normalize error by largest value
       call lsyssc_scaleVector(rerror, 1.0_DP/dvalue)
@@ -2095,14 +2441,21 @@ print *, dsolution, derror
       
       ! Calculate mean
       dvalue = dvalue/real(size(p_Ddata), DP)
-      
+
+      call output_line('Mean value:    '//trim(sys_sdEP(derror/dvalue,15,6)))
+      call output_lbrk()
+
       ! Subtract mean value from grid indicator
       do i = 1, size(p_Ddata)
         p_Ddata(i) = p_Ddata(i)-dvalue
       end do
+    
 
-      
     case (ERREST_AUTORMS)
+      ! Automatic treshold for RMS
+      call output_lbrk()
+      call output_line('Automatic treshold for RMS')
+      call output_line('--------------------------')
 
       ! Set pointer
       call lsyssc_getbase_double(rerror, p_Ddata)
@@ -2118,15 +2471,114 @@ print *, dsolution, derror
       ! Calculate root mean value
       dvalue = sqrt(dvalue/real(size(p_Ddata), DP))
 
+      call output_line('RMS value: '//trim(sys_sdEP(derror/dvalue,15,6)))
+      call output_lbrk()
+
       ! Normalize grid indicator by RMS
       call lsyssc_scaleVector(rerror, 1.0_DP/dvalue)
-      
+
 
     case DEFAULT
       call output_line('Invalid type of grid indicator!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'codire_estimateRecoveryError')
       call sys_halt()
     end select
+
+
+    !---------------------------------------------------------------------------
+    ! Calculate protection layers
+    !---------------------------------------------------------------------------
+
+    if (nprotectLayers > 0) then
+
+      ! Create auxiliary memory
+      h_BisactiveElement = ST_NOHANDLE
+      call storage_new('codire_estimateRecoveryError',' BisactiveElement',&
+                       rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
+                       h_BisactiveElement, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
+      
+      ! Set pointers
+      call storage_getbase_int2D(&
+          rproblemLevel%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+      call storage_getbase_int2D(&
+          rproblemLevel%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+      call lsyssc_getbase_double(rerror, p_Ddata)
+
+      ! Compute protection layers
+      do iprotectLayer = 1, nprotectLayers
+        
+        ! Reset activation flag
+        p_BisActiveElement = .false.
+        
+        ! Compute a single-width protection layer
+        call doProtectionLayerUniform(p_IverticesAtElement, p_IneighboursAtElement,&
+                                      rproblemLevel%rtriangulation%NEL,&
+                                      dprotectLayerTolerance, p_Ddata, p_BisActiveElement)
+      end do
+
+      ! Release memory
+      call storage_free(h_BisactiveElement)
+
+    end if
+
+  contains
+    
+    ! Here, the real working routines follow.
+    
+    !**************************************************************
+    ! Compute one uniformly distributed protection layer
+
+    subroutine doProtectionLayerUniform(IverticesAtElement, IneighboursAtElement, NEL,&
+                                        dthreshold, Ddata, BisactiveElement)
+
+      integer, dimension(:,:), intent(IN) :: IverticesAtElement
+      integer, dimension(:,:), intent(IN) :: IneighboursAtElement     
+      real(DP), intent(IN) :: dthreshold
+      integer, intent(IN) :: NEL
+      
+      real(DP), dimension(:), intent(INOUT) :: Ddata
+      logical, dimension(:), intent(INOUT) :: BisactiveElement
+      
+      
+      ! local variables
+      integer :: iel,jel,ive
+
+      ! Loop over all elements in triangulation
+      do iel = 1, NEL
+        
+        ! Do nothing if element belongs to active layer
+        if (BisactiveElement(iel)) cycle
+
+        ! Do nothing if element indicator does not exceed threshold
+        if (Ddata(iel) .le. dthreshold) cycle
+
+        ! Loop over neighbouring elements
+        do ive = 1, tria_getNVE(IverticesAtElement, iel)
+          
+          ! Get number of neighbouring element
+          jel = IneighboursAtElement(ive, iel)
+
+          ! Do nothing at the boundary
+          if (jel .eq. 0) cycle
+
+          ! Check if element belongs to active layer
+          if (BisactiveElement(jel)) then
+            ! If yes, then just update the element indicator
+            Ddata(jel) = max(Ddata(jel), Ddata(iel))
+          else
+            ! Otherwise, we have to check if the neighbouring element
+            ! exceeds the prescribed threshold level. If this is the case
+            ! it will be processed later or has already been processed
+            if (Ddata(jel) .lt. dthreshold) then
+              Ddata(jel) = max(Ddata(jel), Ddata(iel))
+              BisactiveElement(jel) = .true.
+            end if
+          end if
+        end do
+      end do
+    end subroutine doProtectionLayerUniform
+   
   end subroutine codire_estimateRecoveryError
 
   !*****************************************************************************
@@ -2140,17 +2592,15 @@ print *, dsolution, derror
     ! This subroutine performs h-adaptation for the given triangulation
 !</description>
 
-!<input>
-    ! element-wise indicator
-    type(t_vectorScalar), intent(IN) :: rindicator
-!</input>
-
 !<inputoutput>
-    ! source triangulation structure
-    type(t_triangulation), intent(INOUT), target :: rtriangulationSrc
-
     ! adaptation structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! source triangulation structure
+    type(t_triangulation), intent(INOUT), target :: rtriangulationSrc
+    
+    ! element-wise indicator
+    type(t_vectorScalar), intent(INOUT) :: rindicator
 
     ! collection
     type(t_collection), intent(INOUT) :: rcollection
@@ -2220,11 +2670,13 @@ print *, dsolution, derror
                                            rsolution, rcollection)
 
 !<description>
-    ! This subroutine solves the transient primal flow problem
-    !
-    !  $$\frac{\partial u}{\partial t}+\nabla\cdot{\bf f}(u)=s(u)$$
-    !
-    ! for a scalar quantity $u$ in the domain $\Omega$.
+      ! This subroutine solves the transient primal flow problem
+      !
+      !  $$ \frac{\partial u}{\partial t}+\nabla\cdot{\bf f}(u)+r(u)=b $$
+      !
+      ! for the scalar quantity $u$ in the domain $\Omega$. Here,
+      ! ${\bf f}(u)$ denotes the flux term and r(u) and b are the
+      ! reacitve term ans the right-hand side vector, respectively.
 !</description>
 
 !<input>
@@ -2262,8 +2714,8 @@ print *, dsolution, derror
     ! Pointer to the current multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
 
-    ! Vector for the linear target functional and the right-hand side
-    type(t_vectorBlock) :: rvectorBlock
+    ! Vector for the right-hand side
+    type(t_vectorBlock) :: rrhs
 
     ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
@@ -2280,7 +2732,7 @@ print *, dsolution, derror
 
     ! local variables
     real(dp) :: derror,dstepUCD,dtimeUCD,dstepAdapt,dtimeAdapt
-    integer :: templateMatrix
+    integer :: templateMatrix, systemMatrix
     integer :: nlmin,ipreadapt,npreadapt
 
 
@@ -2289,6 +2741,10 @@ print *, dsolution, derror
 
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
+
+    ! Initialize the solution vector and impose boundary conditions explicitly
+    call codire_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
+    call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
 
     ! Initialize timer for intermediate UCD exporter
     dtimeUCD = rtimestep%dinitialTime
@@ -2339,22 +2795,23 @@ print *, dsolution, derror
 
             ! Compute the error estimator using recovery techniques
             call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                              rsolution, rcollection, relementError, derror)
+                                              rsolution, 0.0_DP, relementError, derror)
 
             ! Perform h-adaptation and update the triangulation structure
             call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
                                            relementError, rcollection)
             
-            ! Update the template matrix according to the sparsity pattern
-            call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
-
             ! Release element-wise error distribution
             call lsyssc_releaseVector(relementError)
 
-            ! Re-generate the initial solution vector
+            ! Update the template matrix according to the sparsity pattern
+            templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
+            call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+
+            ! Re-generate the initial solution vector and impose boundary conditions explicitly
             call lsysbl_releaseVector(rsolution)
-            call codire_initSolution(rparlist, 'codire', p_rproblemLevel,&
-                                     0.0_DP, rsolution)
+            call codire_initSolution(rparlist, ssectionname, p_rproblemLevel, 0.0_DP, rsolution)
+            call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
 
             ! Generate standard mesh from raw mesh
             call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
@@ -2365,8 +2822,9 @@ print *, dsolution, derror
           end do
 
           ! Prepare internal data arrays of the solver structure
-          call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
-                                           1, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+          systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+          call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
+                                           SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
           call solver_updateStructure(rsolver)
 
         end if   ! npreadapt > 0
@@ -2381,8 +2839,8 @@ print *, dsolution, derror
     
     ! Initialize right-hand side vector
     if (rappDescriptor%irhstype > 0) then
-      call lsysbl_createVectorBlock(rsolution, rvectorBlock)
-      call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rvectorBlock)
+      call lsysbl_createVectorBlock(rsolution, rrhs)
+      call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
     end if
 
     ! Calculate the velocity field
@@ -2427,7 +2885,7 @@ print *, dsolution, derror
           ! Adopt explicit Runge-Kutta scheme
           call tstep_performRKStep(p_rproblemLevel, rtimestep,&
                                    rsolver, rsolution, codire_calcRHS,&
-                                   codire_setBoundary, rcollection, rvectorBlock)
+                                   codire_setBoundary, rcollection, rrhs)
           
         case (SV_THETA_SCHEME)
           
@@ -2435,7 +2893,7 @@ print *, dsolution, derror
           call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
                                       rsolver, rsolution, codire_calcResidual,&
                                       codire_calcJacobian, codire_applyJacobian,&
-                                      codire_setBoundary, rcollection, rvectorBlock)
+                                      codire_setBoundary, rcollection, rrhs)
           
         case DEFAULT
           call output_line('Unsupported time-stepping algorithm!',&
@@ -2443,7 +2901,7 @@ print *, dsolution, derror
           call sys_halt()
         end select
         
-      else
+      else   ! zero right-hand side
 
         ! What time-stepping scheme should be used?
         select case(rtimestep%ctimestepType)
@@ -2482,7 +2940,7 @@ print *, dsolution, derror
       ! Post-process intermediate solution
       !-------------------------------------------------------------------------
       
-      if (dstepUCD .gt. 0._DP .and. rtimestep%dTime .ge. dtimeUCD) then
+      if ((dstepUCD .gt. 0.0_DP) .and. (rtimestep%dTime .ge. dtimeUCD)) then
 
         ! Set time for next intermediate solution export
         dtimeUCD = dtimeUCD + dstepUCD
@@ -2504,7 +2962,7 @@ print *, dsolution, derror
       ! Perform adaptation
       !-------------------------------------------------------------------------
 
-      if (dstepAdapt .gt. 0.0_DP .and. rtimestep%dTime .ge. dtimeAdapt) then
+      if ((dstepAdapt .gt. 0.0_DP) .and. (rtimestep%dTime .ge. dtimeAdapt)) then
       
         ! Set time for next adaptation step
         dtimeAdapt = dtimeAdapt + dstepAdapt
@@ -2518,7 +2976,7 @@ print *, dsolution, derror
         
         ! Compute the error estimator using recovery techniques
         call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                          rsolution, rcollection, relementError, derror)
+                                          rsolution, rtimestep%dTime, relementError, derror)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
@@ -2542,15 +3000,15 @@ print *, dsolution, derror
         call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
                                        relementError, rcollection)
         
+        ! Release element-wise error distribution
+        call lsyssc_releaseVector(relementError)
+
         ! Update the template matrix according to the sparsity pattern
         call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
         
         ! Resize the solution vector accordingly
-        call lsysbl_resizeVectorBlock(rsolution,&
-                                      p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
-        
-        ! Release element-wise error distribution
-        call lsyssc_releaseVector(relementError)
+        call lsysbl_resizeVectorBlock(&
+            rsolution, p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
         
         ! Stop time measurement for mesh adaptation
         call stat_stopTimer(rappDescriptor%rtimerAdaptation)
@@ -2577,8 +3035,9 @@ print *, dsolution, derror
         call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
         
         ! Prepare internal data arrays of the solver structure
-        call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
-                                         1, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+        systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+        call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
+                                         SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
         call solver_updateStructure(rsolver)
         
         ! Re-calculate the velocity field
@@ -2588,9 +3047,9 @@ print *, dsolution, derror
 
         ! Re-initialize the right-hand side vector
         if (rappDescriptor%irhstype > 0) then
-          call lsysbl_resizeVectorBlock(rvectorBlock,&
-                                        p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
-          call codire_initRHS(rappDescriptor, p_rproblemLevel, rtimestep%dTime, rvectorBlock)
+          call lsysbl_resizeVectorBlock(&
+              rrhs, p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+          call codire_initRHS(rappDescriptor, p_rproblemLevel, rtimestep%dTime, rrhs)
         end if
 
         ! Stop time measurement for generation of constant coefficient matrices
@@ -2609,7 +3068,7 @@ print *, dsolution, derror
 
     ! Release right-hand side
     if (rappDescriptor%irhstype > 0) then
-      call lsysbl_releaseVector(rvectorBlock)
+      call lsysbl_releaseVector(rrhs)
     end if
 
   end subroutine codire_solveTransientPrimal
@@ -2680,13 +3139,16 @@ print *, dsolution, derror
     character(LEN=SYS_STRLEN) :: sadaptivityName
 
     ! local variables
-    real(dp) :: derror
-    integer :: templateMatrix
+    integer :: templateMatrix, systemMatrix
     integer :: nlmin, iadapt, nadapt
 
 
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
+
+    ! Initialize the solution vector and impose boundary conditions explicitly
+    call codire_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
+    call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
 
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure
@@ -2843,8 +3305,9 @@ print *, dsolution, derror
       call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
-      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
-                                       1, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+      systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
+                                       SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
       
       ! Stop time measurement for generation of constant coefficient matrices
@@ -2929,7 +3392,7 @@ print *, dsolution, derror
 
     ! local variables
     real(dp) :: derror
-    integer :: templateMatrix
+    integer :: templateMatrix, systemMatrix
     integer :: nlmin, iadapt, nadapt
 
     
@@ -2946,7 +3409,10 @@ print *, dsolution, derror
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
 
-    
+    ! Initialize the solution vector and impose boundary conditions explicitly
+    call codire_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
+    call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)    
+
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure
     !---------------------------------------------------------------------------
@@ -3049,7 +3515,7 @@ print *, dsolution, derror
 
       ! Compute the error estimator using recovery techniques
       call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                        rsolution, rcollection, relementError, derror)
+                                        rsolution, 1.0_DP, relementError, derror)
 
       ! Stop time measurement for error estimation
       call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
@@ -3108,8 +3574,9 @@ print *, dsolution, derror
       call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
-      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
-                                       1, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+      systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
+                                       SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
       
       ! Stop time measurement for generation of constant coefficient matrices
@@ -3203,7 +3670,7 @@ print *, dsolution, derror
 
     ! local variables
     real(dp) :: derror
-    integer :: templateMatrix
+    integer :: templateMatrix, systemMatrix
     integer :: nlmin, iadapt, nadapt
 
 
@@ -3220,6 +3687,9 @@ print *, dsolution, derror
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
 
+    ! Initialize the solution vector and impose boundary conditions explicitly
+    call codire_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolutionPrimal)
+    call bdrf_filterVectorExplicit(rbdrCondPrimal, p_rproblemLevel%rtriangulation, rsolutionPrimal, 0.0_DP)
 
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure
@@ -3394,8 +3864,8 @@ print *, dsolution, derror
         call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
 
         ! Compute the error in the quantity of interest
-        call codire_estimateTargetFuncError(p_rproblemLevel, rtimestep, rsolver,&
-                                            rsolutionPrimal, rsolutionDual,&
+        call codire_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
+                                            rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
                                             rcollection, relementError, derror, rrhs)
 
         ! Release right-hand side vector
@@ -3404,8 +3874,8 @@ print *, dsolution, derror
       else
 
         ! Compute the error in the quantity of interest
-        call codire_estimateTargetFuncError(p_rproblemLevel, rtimestep, rsolver,&
-                                            rsolutionPrimal, rsolutionDual,&
+        call codire_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
+                                            rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
                                             rcollection, relementError, derror)
 
       end if
@@ -3468,8 +3938,9 @@ print *, dsolution, derror
       call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
-      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
-                                       1, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+      systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
+                                       SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
       
       ! Stop time measurement for generation of constant coefficient matrices
