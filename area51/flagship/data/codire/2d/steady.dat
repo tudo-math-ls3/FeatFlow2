@@ -298,7 +298,7 @@ dincreaseFactor = 2.0
 dstepReductionFactor = 0.8
 
 # target tolerace for relative changes
-depsRel =
+depsRel = 0.0
 
 # absolute tolerance for relative changes
 depsAbs = 0.0

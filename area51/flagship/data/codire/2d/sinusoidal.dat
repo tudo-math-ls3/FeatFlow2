@@ -249,7 +249,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime =
+dfinalTime = 0.0
 
 # initial time step size
 dinitialStep = 0.001
@@ -273,7 +273,7 @@ dincreaseFactor = 2.0
 dstepReductionFactor = 0.8
 
 # target tolerace for relative changes
-depsRel =
+depsRel = 0.0
 
 # absolute tolerance for relative changes
 depsAbs = 0.0

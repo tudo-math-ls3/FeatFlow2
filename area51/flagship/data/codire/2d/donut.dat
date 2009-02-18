@@ -86,7 +86,7 @@ sreactionname =
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname =
+srhsname = rhs
 
 # type of initial solution profile
 # 0 = zero initial solution
