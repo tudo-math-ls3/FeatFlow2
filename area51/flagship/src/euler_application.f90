@@ -165,12 +165,13 @@ contains
     type(t_timer) :: rtimerTotal
 
     ! Parameter file and section names
-    character(LEN=SYS_STRLEN) :: sinputoutputName
-    character(LEN=SYS_STRLEN) :: sbenchmarkName
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
     character(LEN=SYS_STRLEN) :: algorithm
 
+    ! local variables
+    integer :: systemMatrix
+    
 
     ! Start total time measurement
     call stat_clearTimer(rtimerTotal)
@@ -194,7 +195,7 @@ contains
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
 
     ! Initialize the global collection
-    call euler_initCollection(rappDescriptor, rcollection)
+    call euler_initCollection(rappDescriptor, rparlist, rcollection)
 
     ! Initialize the solver structures
     call euler_initSolvers(rparlist, 'euler', rtimestep, rsolver)
@@ -206,15 +207,12 @@ contains
                            rproblem, rcollection)
 
     ! Initialize the individual problem levels
-    call euler_initProblemLevels(rappDescriptor, rproblem, rcollection)
-
-    ! Initialize the primal solution vector
-    call euler_initSolution(rparlist, 'euler', rproblem%p_rproblemLevelMax,&
-                            0.0_DP, rsolutionPrimal)
+    call euler_initAllProblemLevels(rappDescriptor, rproblem, rcollection)
 
     ! Prepare internal data arrays of the solver structure
+    systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix') 
     call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax, rsolver,&
-                                     1, rappDescriptor%isystemFormat, UPDMAT_ALL)
+                                     systemMatrix, rappDescriptor%isystemFormat, UPDMAT_ALL)
     call solver_updateStructure(rsolver)
 
     ! Stop time measurement for pre-processing
@@ -228,36 +226,33 @@ contains
     if (rtimestep%dfinalTime > 0) then
       
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, 'euler', "benchmark", sbenchmarkName)
-      call parlst_getvalue_string(rparlist, trim(sbenchmarkName), "algorithm", algorithm)
-      call parlst_getvalue_string(rparlist, 'euler', "inputoutput", sinputoutputName)
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName), "indatfile", sindatfileName)
+      call parlst_getvalue_string(rparlist, 'euler', 'algorithm', algorithm)
+      call parlst_getvalue_string(rparlist, 'euler', 'indatfile', sindatfileName)
       
       ! The boundary condition for the primal problem is required for all 
       ! solution strategies so initialize it from the parameter file
-      call parlst_getvalue_string(rparlist, trim(sinputoutputName),&
-                                  "sprimalbdrcondname", sbdrcondName)
+      call parlst_getvalue_string(rparlist, 'codire', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
 
-      ! Impose primal boundary conditions explicitely
-      select case(rappDescriptor%ndimension)
-      case (NDIM1D)
-        call bdrf_filterVectorExplicit(rbdrCondPrimal,&
-                                       rproblem%p_rproblemLevelMax%rtriangulation,&
-                                       rsolutionPrimal, 0.0_DP, rproblem%rboundary,&
-                                       euler_calcBoundaryvalues1d)
-      case (NDIM2D)
-        call bdrf_filterVectorExplicit(rbdrCondPrimal,&
-                                       rproblem%p_rproblemLevelMax%rtriangulation,&
-                                       rsolutionPrimal, 0.0_DP, rproblem%rboundary,&
-                                       euler_calcBoundaryvalues2d)
-      case (NDIM3D)
-        call bdrf_filterVectorExplicit(rbdrCondPrimal,&
-                                       rproblem%p_rproblemLevelMax%rtriangulation,&
-                                       rsolutionPrimal, 0.0_DP, rproblem%rboundary,&
-                                       euler_calcBoundaryvalues3d)
-      end select
+!!$      ! Impose primal boundary conditions explicitely
+!!$      select case(rappDescriptor%ndimension)
+!!$      case (NDIM1D)
+!!$        call bdrf_filterVectorExplicit(rbdrCondPrimal,&
+!!$                                       rproblem%p_rproblemLevelMax%rtriangulation,&
+!!$                                       rsolutionPrimal, 0.0_DP, rproblem%rboundary,&
+!!$                                       euler_calcBoundaryvalues1d)
+!!$      case (NDIM2D)
+!!$        call bdrf_filterVectorExplicit(rbdrCondPrimal,&
+!!$                                       rproblem%p_rproblemLevelMax%rtriangulation,&
+!!$                                       rsolutionPrimal, 0.0_DP, rproblem%rboundary,&
+!!$                                       euler_calcBoundaryvalues2d)
+!!$      case (NDIM3D)
+!!$        call bdrf_filterVectorExplicit(rbdrCondPrimal,&
+!!$                                       rproblem%p_rproblemLevelMax%rtriangulation,&
+!!$                                       rsolutionPrimal, 0.0_DP, rproblem%rboundary,&
+!!$                                       euler_calcBoundaryvalues3d)
+!!$      end select
 
       
       ! What solution algorithm should be applied?
@@ -284,6 +279,9 @@ contains
     
     ! Release problem structure
     call problem_releaseProblem(rproblem)
+
+    ! Release application descriptor
+    call euler_doneApplication(rappDescriptor)
     
     ! Release boundary conditions
     call bdrf_release(rbdrCondPrimal)
@@ -292,6 +290,9 @@ contains
     ! Release vectors
     call lsysbl_releaseVector(rsolutionPrimal)
     call lsysbl_releaseVector(rsolutionDual)
+
+    ! Release collection
+    call collct_done(rcollection)
 
     ! Release function parser
     call fparser_done()
@@ -333,15 +334,16 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sbenchmarkName
-    character(LEN=SYS_STRLEN) :: sinputoutputName
     character(LEN=SYS_STRLEN) :: sindatfileName
+    character(LEN=SYS_STRLEN) :: srhsName
+
+    ! symbolic variable names
+    character(LEN=*), dimension(4), parameter ::&
+                      cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
 
     
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "benchmark",   sbenchmarkName)
-    call parlst_getvalue_string(rparlist, ssectionName, "inputoutput", sinputoutputName)
-    call parlst_getvalue_string(rparlist, trim(sinputoutputName), "indatfile", sindatfileName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
 
     ! Initialize function parser
     call fparser_init()
@@ -349,24 +351,33 @@ contains
     call fparser_parseFileForKeyword(sindatfileName, 'defexpr',  FPAR_EXPRESSION)
 
     ! Get application specifig parameters from the parameterlist
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "ndimension", rappDescriptor%ndimension)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "imasstype", rappDescriptor%imasstype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "imassantidiffusiontype", rappDescriptor%imassantidiffusiontype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "idissipationtype", rappDescriptor%idissipationtype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "icoupled", rappDescriptor%icoupled)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "iprecond", rappDescriptor%iprecond)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "ieltype", rappDescriptor%ieltype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "imatrixformat", rappDescriptor%imatrixFormat)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName),&
-                             "isystemformat", rappDescriptor%isystemFormat)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'ndimension', rappDescriptor%ndimension)
+    call parlst_getvalue_int(rparlist, ssectionName,& 
+                             'imasstype', rappDescriptor%imasstype)
+    call parlst_getvalue_int(rparlist, ssectionName,& 
+                             'imassantidiffusiontype', rappDescriptor%imassantidiffusiontype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'idissipationtype', rappDescriptor%idissipationtype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'icoupled', rappDescriptor%icoupled)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'iprecond', rappDescriptor%iprecond)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'irhstype', rappDescriptor%irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'ieltype', rappDescriptor%ieltype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'imatrixformat', rappDescriptor%imatrixFormat)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'isystemformat', rappDescriptor%isystemFormat)
+
+    ! Initialize the function parser for the right-hand side if required
+    if (rappDescriptor%irhstype .ne. RHS_ZERO) then
+      call parlst_getvalue_string(rparlist, ssectionName, 'srhsname', srhsName)
+      call flagship_readParserFromFile(sindatfileName, '['//trim(srhsName)//']',&
+                                       cvariables, rappDescriptor%rfparserRHS)
+    end if
 
   end subroutine euler_initApplication
 
@@ -374,7 +385,29 @@ contains
 
 !<subroutine>
 
-  subroutine euler_initCollection(rappDescriptor, rcollection)
+  subroutine euler_doneApplication(rappDescriptor)
+
+!<description>
+    ! This subroutine finalizes the application descriptor
+!</description>
+
+!<inputoutput>
+    ! application descriptor
+    type(t_euler), intent(INOUT) :: rappDescriptor
+!</inputoutput>
+!</subroutine>
+
+    if (rappDescriptor%irhstype .ne. RHS_ZERO) then
+      call fparser_release(rappDescriptor%rfparserRHS)
+    end if
+
+  end subroutine euler_doneApplication
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_initCollection(rappDescriptor, rparlist, rcollection)
 
 !<description>
     ! This subroutine initializes the collection based on
@@ -384,6 +417,9 @@ contains
 !<input>
     ! application descriptor
     type(t_euler), intent(IN) :: rappDescriptor
+    
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
 !</input>
 
 !<inputoutput>
@@ -391,6 +427,10 @@ contains
     type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
 !</subroutine>
+
+    ! local variables
+    integer :: i
+
 
     ! Add parameter settings from application descriptor
     call collct_setvalue_int(rcollection, 'ndimension',&
@@ -405,6 +445,8 @@ contains
                              rappDescriptor%icoupled, .true.)
     call collct_setvalue_int(rcollection, 'iprecond',&
                              rappDescriptor%iprecond, .true.)
+    call collct_setvalue_int(rcollection, 'irhstype',&
+                             rappDescriptor%irhstype, .true.)
     call collct_setvalue_int(rcollection, 'ieltype',&
                              rappDescriptor%ieltype, .true.)
     call collct_setvalue_int(rcollection, 'imatrixformat',&
@@ -432,38 +474,57 @@ contains
 
     ! Add internal information about the position of 
     ! constant coefficient matrices and auxiliary vectors
-    call collct_setvalue_int(rcollection, 'inviscidAFC', 1, .true.)
+    call parlst_getvalue_int(rparlist, '', 'InviscidAFC', i, 1)
+    call collct_setvalue_int(rcollection,  'InviscidAFC', i, .true.)
 
-    call collct_setvalue_int(rcollection, 'systemmatrix',    1, .true.)
-    call collct_setvalue_int(rcollection, 'jacobianmatrix',  2, .true.)
-    call collct_setvalue_int(rcollection, 'templatematrix',  3, .true.)
+    call parlst_getvalue_int(rparlist, '', 'SystemMatrix', i, 1)
+    call collct_setvalue_int(rcollection,  'SystemMatrix', i, .true.)
+
+    call parlst_getvalue_int(rparlist, '', 'JacobianMatrix', i, 2)
+    call collct_setvalue_int(rcollection,  'JacobianMatrix', i, .true.)
+
+    call parlst_getvalue_int(rparlist, '', 'TemplateMatrix', i, 3)
+    call collct_setvalue_int(rcollection,  'TemplateMatrix', i, .true.)
 
     if ((rappDescriptor%imasstype .ne. MASS_ZERO) .or.&
         (rappDescriptor%imassantidiffusiontype .ne. MASS_ZERO)) then
-      call collct_setvalue_int(rcollection, 'consistentmassmatrix', 4, .true.)
-      call collct_setvalue_int(rcollection, 'lumpedmassmatrix',     5, .true.)
+
+      call parlst_getvalue_int(rparlist, '', 'ConsistentMassMatrix', i, 4)
+      call collct_setvalue_int(rcollection,  'ConsistentMassMatrix', i, .true.)
+
+      call parlst_getvalue_int(rparlist, '', 'LumpedMassMatrix', i, 5)
+      call collct_setvalue_int(rcollection,  'LumpedMassMatrix', i, .true.)
+
     else
-      call collct_setvalue_int(rcollection, 'consistentmassmatrix', 0, .true.)
-      call collct_setvalue_int(rcollection, 'lumpedmassmatrix',     0, .true.)
+
+      call collct_setvalue_int(rcollection, 'ConsistentMassMatrix', 0, .true.)
+      call collct_setvalue_int(rcollection, 'LumpedMassMatrix',     0, .true.)
+
     end if
 
     select case(rappDescriptor%ndimension)
     case (NDIM1D)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cx', 6, .true.)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cy', 0, .true.)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cz', 0, .true.)
+      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CX', i, 6)
+      call collct_setvalue_int(rcollection,  'CoeffMatrix_CX', i, .true.)
+      call collct_setvalue_int(rcollection,  'CoeffMatrix_CY', 0, .true.)
+      call collct_setvalue_int(rcollection,  'CoeffMatrix_CZ', 0, .true.)
     case (NDIM2D)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cx', 6, .true.)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cy', 7, .true.)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cz', 0, .true.)
+      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CX', i, 6)
+      call collct_setvalue_int(rcollection,  'CoeffMatrix_CX', i, .true.)
+      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CY', i, 7)
+      call collct_setvalue_int(rcollection,  'CoeffMatrix_CY', i, .true.)
+      call collct_setvalue_int(rcollection,  'CoeffMatrix_CZ', 0, .true.)
     case (NDIM3D)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cx', 6, .true.)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cy', 7, .true.)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cz', 8, .true.)
+      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CX', i, 6)
+      call collct_setvalue_int(rcollection,  'CoeffMatrix_CX', i, .true.)
+      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CY', i, 7)
+      call collct_setvalue_int(rcollection,  'CoeffMatrix_CY', i, .true.)
+      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CZ', i, 8)
+      call collct_setvalue_int(rcollection,  'CoeffMatrix_CZ', i, .true.)
     case DEFAULT
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cx', 0, .true.)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cy', 0, .true.)
-      call collct_setvalue_int(rcollection, 'coeffmatrix_cz', 0, .true.)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CX',  0, .true.)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CY',  0, .true.)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ',  0, .true.)
     end select
   
   end subroutine euler_initCollection
@@ -561,8 +622,6 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sbenchmarkName
-    character(LEN=SYS_STRLEN) :: sinputoutputName
     character(LEN=SYS_STRLEN) :: sinviscidName
 
     ! abstract problem descriptor
@@ -577,30 +636,23 @@ contains
     
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "benchmark", sbenchmarkName)
-    call parlst_getvalue_string(rparlist, ssectionName, "inputoutput", sinputoutputName)
-    call parlst_getvalue_string(rparlist, ssectionName, "primalinviscid",  sinviscidName)
-    
-    call parlst_getvalue_int(rparlist, trim(adjustl(sbenchmarkName)),&
-                             "ndimension", rproblemDescriptor%ndimension)
-    call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "trifile", rproblemDescriptor%trifile, '')
-    call parlst_getvalue_string(rparlist, trim(adjustl(sinputoutputName)),&
-                                "prmfile", rproblemDescriptor%prmfile, '')
+    call parlst_getvalue_string(rparlist, ssectionName, 'inviscid',sinviscidName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'trifile', rproblemDescriptor%trifile)
+    call parlst_getvalue_string(rparlist, ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
+    call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     
     ! Set additional problem descriptor
     rproblemDescriptor%nafcstab      = 1   ! for inviscid fluxes
     rproblemDescriptor%nlmin         = nlmin
     rproblemDescriptor%nlmax         = nlmax
     rproblemDescriptor%nmatrixScalar = rproblemDescriptor%ndimension + 5
-    rproblemDescriptor%nmatrixBlock  = 2
+    rproblemDescriptor%nmatrixBlock  = 2   ! for system matrix and Jacobian
     rproblemDescriptor%nvectorScalar = 0
     rproblemDescriptor%nvectorBlock  = 0
 
     ! Check if quadrilaterals should be converted to triangles
-    call parlst_getvalue_int(rparlist, trim(adjustl(sbenchmarkName)),&
-                             "iconvtotria", iconvToTria, 0)
-    if (iconvToTria .eq. 1)&
+    call parlst_getvalue_int(rparlist, ssectionName, 'iconvtotria', iconvToTria, 0)
+    if (iconvToTria .ne. 0)&
         rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
                                         + PROBDESC_MSPEC_CONVTRIANGLES   
 
@@ -630,12 +682,332 @@ contains
 
 !<subroutine>
 
-  subroutine euler_initProblemLevels(rappDescriptor, rproblem, rcollection)
+  subroutine euler_initProblemLevel(rappDescriptor, rproblemLevel, rcollection)
 
 !<description>
-    ! This subroutine initielizes the individual problem levels, that is,
-    ! it generates the discretization, the template matrix and the required
+    ! This subroutine initielizes the individual problem level. It
+    ! generates the discretization, the template matrix and the
     ! coefficient matrices as duplicates of the template matrix.
+!</description>
+
+!<input>
+    ! application descriptor
+    type(t_euler), intent(IN) :: rappDescriptor
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: templateMatrix
+    integer :: systemMatrix
+    integer :: jacobianMatrix
+    integer :: consistentMassMatrix
+    integer :: lumpedMassMatrix
+    integer :: coeffMatrix_CX
+    integer :: coeffMatrix_CY
+    integer :: coeffMatrix_CZ
+    integer :: inviscidAFC
+    integer :: ivar,jvar
+    
+
+    ! retrieve application specific parameters from the collection
+    templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
+    systemMatrix         = collct_getvalue_int(rcollection, 'systemmatrix')
+    jacobianMatrix       = collct_getvalue_int(rcollection, 'jacobianmatrix')
+    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+    coeffMatrix_CX       = collct_getvalue_int(rcollection, 'coeffmatrix_cx')
+    coeffMatrix_CY       = collct_getvalue_int(rcollection, 'coeffmatrix_cy')
+    coeffMatrix_CZ       = collct_getvalue_int(rcollection, 'coeffmatrix_cz')
+    inviscidAFC          = collct_getvalue_int(rcollection, 'inviscidAFC')
+
+    
+    ! Initialize the discretization structure
+    select case(rappDescriptor%isystemformat)
+    case (SYSTEM_INTERLEAVEFORMAT)
+      call spdiscr_initBlockDiscr(rproblemLevel%rdiscretisation, 1,&
+                                  rproblemLevel%rtriangulation)
+    case (SYSTEM_BLOCKFORMAT)
+      call spdiscr_initBlockDiscr(rproblemLevel%rdiscretisation,&
+                                  euler_getNVAR(rappDescriptor),&
+                                  rproblemLevel%rtriangulation)
+    case DEFAULT
+      call output_line('Unsupported system format!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+      call sys_halt()
+    end select
+
+    ! Get spatial dimension
+    select case(rproblemLevel%rtriangulation%ndim)
+    case (NDIM1D)
+      select case(rappDescriptor%ieltype)
+      case (-1,1,11)
+        ! P1=Q1 finite elements
+        call spdiscr_initDiscr_simple(rproblemLevel%rdiscretisation%RspatialDiscr(1), &
+                                      EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
+                                      rproblemLevel%rtriangulation,&
+                                      rproblemLevel%p_rproblem%rboundary)
+        ! P2=Q2 finite elements
+        call spdiscr_initDiscr_simple(rproblemLevel%rdiscretisation%RspatialDiscr(1), &
+                                      EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
+                                      rproblemLevel%rtriangulation,&
+                                      rproblemLevel%p_rproblem%rboundary)
+      case DEFAULT
+        call output_line('Unsupproted element type!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+        call sys_halt()
+      end select
+      
+    case (NDIM2D)
+      select case(rappDescriptor%ieltype)
+      case (1)
+        ! P1 finite elements
+        call spdiscr_initDiscr_simple(rproblemLevel%rdiscretisation%RspatialDiscr(1), &
+                                      EL_E001, SPDISC_CUB_AUTOMATIC,&
+                                      rproblemLevel%rtriangulation,&
+                                      rproblemLevel%p_rproblem%rboundary)
+      case (2)
+        ! P2 finite elements
+        call spdiscr_initDiscr_simple(rproblemLevel%rdiscretisation%RspatialDiscr(1), &
+                                      EL_E002, SPDISC_CUB_AUTOMATIC,&
+                                      rproblemLevel%rtriangulation,&
+                                      rproblemLevel%p_rproblem%rboundary)
+      case (11)
+        ! Q1 finite elements
+        call spdiscr_initDiscr_simple(rproblemLevel%rdiscretisation%RspatialDiscr(1), &
+                                      EL_E011, SPDISC_CUB_AUTOMATIC,&
+                                      rproblemLevel%rtriangulation,&
+                                      rproblemLevel%p_rproblem%rboundary)
+      case (12)
+        ! Q2 finite elements
+        call spdiscr_initDiscr_simple(rproblemLevel%rdiscretisation%RspatialDiscr(1), &
+                                      EL_E013, SPDISC_CUB_AUTOMATIC,&
+                                      rproblemLevel%rtriangulation,&
+                                      rproblemLevel%p_rproblem%rboundary)
+      case (-1)
+        ! mixed P1/Q1 finite elements
+        call spdiscr_initDiscr_triquad(rproblemLevel%rdiscretisation%RspatialDiscr(1), &
+                                       EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC,&
+                                       SPDISC_CUB_AUTOMATIC,&
+                                       rproblemLevel%rtriangulation,&
+                                       rproblemLevel%p_rproblem%rboundary)
+      case (-2)
+        ! mixed P2/Q2 finite elements
+        call spdiscr_initDiscr_triquad(rproblemLevel%rdiscretisation%RspatialDiscr(1), &
+                                       EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC,&
+                                       SPDISC_CUB_AUTOMATIC,&
+                                       rproblemLevel%rtriangulation,&
+                                       rproblemLevel%p_rproblem%rboundary)
+      case DEFAULT
+        call output_line('Unsupproted element type!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+        call sys_halt()
+      end select
+      
+    case (NDIM3D)
+      select case(rappDescriptor%ieltype)
+      case (1)
+        ! P1 finite elements
+        call spdiscr_initDiscr_simple(rproblemLevel%rdiscretisation%RspatialDiscr(1), &
+                                      EL_E001_3D, SPDISC_CUB_AUTOMATIC,&
+                                      rproblemLevel%rtriangulation,&
+                                      rproblemLevel%p_rproblem%rboundary)
+      case (11)
+        ! Q1 finite elements
+        call spdiscr_initDiscr_simple(rproblemLevel%rdiscretisation%RspatialDiscr(1), &
+                                      EL_E010_3D, SPDISC_CUB_AUTOMATIC,&
+                                      rproblemLevel%rtriangulation,&
+                                      rproblemLevel%p_rproblem%rboundary)
+      case DEFAULT
+        call output_line('Unsupproted element type!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+        call sys_halt()
+      end select
+      
+    case DEFAULT
+      call output_line('Invalid number of spatial dimensions',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+      call sys_halt()
+    end select
+    
+    ! Duplicate scalar discretisation structure for block matrix format
+    if (rappDescriptor%isystemFormat .eq. SYSTEM_BLOCKFORMAT) then
+      do ivar = 2, euler_getNVAR(rappDescriptor)
+        call spdiscr_duplicateDiscrSc(&
+            rproblemLevel%rdiscretisation%RspatialDiscr(1),&
+            rproblemLevel%rdiscretisation%RspatialDiscr(ivar), .true.)
+      end do
+    end if
+    
+    ! Generate the finite element matrix sparsity structure based on the
+    ! spatial descretization and store it as the template matrix
+    call bilf_createMatrixStructure(rproblemLevel%rdiscretisation%RspatialDiscr(1),&
+                                    rappDescriptor%imatrixFormat,&
+                                    rproblemLevel%Rmatrix(templateMatrix))
+
+    ! Create consistent (and lumped) mass matrix as duplicate of the template matrix
+    if (consistentMassMatrix > 0) then
+      call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
+                                  rproblemLevel%Rmatrix(consistentMassMatrix),&
+                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(consistentMassMatrix),&
+                                      DER_FUNC, DER_FUNC) 
+      if (lumpedMassMatrix > 0) then
+        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(consistentMassMatrix),&
+                                    rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
+        call lsyssc_lumpMatrixScalar(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                     LSYSSC_LUMP_DIAG)
+      end if
+    elseif (lumpedMassMatrix > 0) then
+      call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
+                                  rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                      DER_FUNC, DER_FUNC) 
+      call lsyssc_lumpMatrixScalar(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                   LSYSSC_LUMP_DIAG)
+    end if
+    
+    ! Create coefficient matrix (phi, dphi/dx) duplicate of the template matrix
+    if (coeffMatrix_CX > 0) then
+      call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
+                                  rproblemLevel%Rmatrix(coeffMatrix_CX),&
+                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
+                                      DER_DERIV3D_X, DER_FUNC)
+    end if
+    
+    ! Create coefficient matrix (phi, dphi/dy) duplicate of the template matrix
+    if (coeffMatrix_CY > 0) then
+      call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
+                                  rproblemLevel%Rmatrix(coeffMatrix_CY),&
+                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
+                                      DER_DERIV3D_Y, DER_FUNC)
+    end if
+
+    ! Create coefficient matrix (phi, dphi/dz) duplicate of the template matrix
+    if (coeffMatrix_CZ > 0) then
+      call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
+                                  rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+                                      DER_DERIV3D_Z, DER_FUNC)
+    end if
+    
+    ! Create system matrix
+    if (systemMatrix > 0) then
+      select case(rappDescriptor%isystemFormat)
+      case (SYSTEM_INTERLEAVEFORMAT)
+        ! The global operator is stored as an interleave matrix with
+        ! NVAR components. However, the row and column structure of
+        ! the template matrix can be adopted
+        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
+                                    rproblemLevel%Rmatrix(systemMatrix),&
+                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
+        rproblemLevel%Rmatrix(systemMatrix)%NVAR = euler_getNVAR(rappDescriptor)
+        
+        ! What matrix format should be used?
+        select case(rappDescriptor%imatrixFormat)
+        case (LSYSSC_MATRIX7)
+          rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX7INTL
+          
+        case (LSYSSC_MATRIX9)
+          rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX9INTL
+          
+        case DEFAULT
+          call output_line('Unsupported matrix format!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+          call sys_halt()
+        end select
+        
+        ! What kind of global operator should be adopted?
+        select case(rappDescriptor%icoupled)
+        case (FLOW_SEGREGATED)
+          rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIXD
+          
+        case (FLOW_ALLCOUPLED)
+          rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIX1
+          
+        case DEFAULT
+          call output_line('Unsupported interleave matrix format!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+          call sys_halt()
+        end select
+        
+        ! Create global operator physically
+        call lsyssc_allocEmptyMatrix(rproblemLevel%Rmatrix(systemMatrix),&
+                                     LSYSSC_SETM_UNDEFINED)
+        
+        ! Create pseudo block matrix from global operator
+        call lsysbl_createMatFromScalar(rproblemLevel%Rmatrix(systemMatrix),&
+                                        rproblemLevel%RmatrixBlock(systemMatrix),&
+                                        rproblemLevel%rdiscretisation)
+
+      case (SYSTEM_BLOCKFORMAT)
+        ! The global operator is stored as a block matrix with NVARxNVAR
+        ! blocks. Thus, create empty NVARxNVAR block matrix directly
+        call lsysbl_createEmptyMatrix(rproblemLevel%RmatrixBlock(systemMatrix),&
+                                      euler_getNVAR(rappDescriptor))
+        rproblemLevel%RmatrixBlock(systemMatrix)%imatrixSpec = LSYSBS_MSPEC_GROUPMATRIX
+        
+        ! What kind of global operator should be adopted?
+        select case(rappDescriptor%icoupled)
+        case (FLOW_SEGREGATED)
+          ! Create only NVAR diagonal blocks
+          do ivar = 1, euler_getNVAR(rappDescriptor)
+            call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
+                                        rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
+                                        LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+          end do
+          
+        case (FLOW_ALLCOUPLED)
+          ! Create all NVAR x NVAR blocks
+          do ivar = 1, euler_getNVAR(rappDescriptor)
+            do jvar = 1, euler_getNVAR(rappDescriptor)
+              call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
+                                          rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
+                                          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+            end do
+          end do
+          
+        case DEFAULT
+          call output_line('Unsupported block matrix format!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+          call sys_halt()
+        end select
+        
+        ! Update internal structure of block matrix
+        call lsysbl_updateMatStrucInfo(rproblemLevel%RmatrixBlock(systemMatrix))
+        
+      case DEFAULT
+        call output_line('Unsupported system format!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+        call sys_halt()
+      end select
+    end if
+    
+  end subroutine euler_initProblemLevel
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_initAllProblemLevels(rappDescriptor, rproblem, rcollection)
+
+!<description>
+    ! This subroutine initializes the all problem levels attached to
+    ! the global problem structure. It generates the discretization,
+    ! the template matrix and the coefficient matrices as duplicates
+    ! of the template matrix.
 !</description>
 
 !<input>
@@ -649,309 +1021,25 @@ contains
 
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection
-!</output>
+!</intputoutput>
 !</subroutine>
 
     ! pointer to the problem level
     type(t_problemLevel), pointer :: p_rproblemLevel
 
-    ! local variables
-    integer :: templateMatrix
-    integer :: systemMatrix
-    integer :: jacobianMatrix
-    integer :: consistentMassMatrix
-    integer :: lumpedMassMatrix
-    integer :: coeffMatrix_CX
-    integer :: coeffMatrix_CY
-    integer :: coeffMatrix_CZ
-    integer :: ivar,jvar
     
-
-    ! retrieve application specific parameters from the collection
-    templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
-    systemMatrix         = collct_getvalue_int(rcollection, 'systemmatrix')
-    jacobianMatrix       = collct_getvalue_int(rcollection, 'jacobianmatrix')
-    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
-    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
-    coeffMatrix_CX       = collct_getvalue_int(rcollection, 'coeffmatrix_cx')
-    coeffMatrix_CY       = collct_getvalue_int(rcollection, 'coeffmatrix_cy')
-    coeffMatrix_CZ       = collct_getvalue_int(rcollection, 'coeffmatrix_cz')
-
     ! loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
-
-      ! Initialize the discretization structure
-      select case(rappDescriptor%isystemformat)
-      case (SYSTEM_INTERLEAVEFORMAT)
-        call spdiscr_initBlockDiscr(p_rproblemLevel%rdiscretisation, 1,&
-                                    p_rproblemLevel%rtriangulation)
-      case (SYSTEM_BLOCKFORMAT)
-        call spdiscr_initBlockDiscr(p_rproblemLevel%rdiscretisation,&
-                                    euler_getNVAR(rappDescriptor),&
-                                    p_rproblemLevel%rtriangulation)
-      case DEFAULT
-        call output_line('Unsupported system format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevels')
-        call sys_halt()
-      end select
-
-      ! Get spatial dimension
-      select case(p_rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        select case(rappDescriptor%ieltype)
-        case (-1,1,11)
-          ! P1=Q1 finite elements
-          call spdiscr_initDiscr_simple(p_rproblemLevel%rdiscretisation%RspatialDiscr(1), &
-                                        EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
-                                        p_rproblemLevel%rtriangulation,&
-                                        p_rproblemLevel%p_rproblem%rboundary)
-          ! P2=Q2 finite elements
-          call spdiscr_initDiscr_simple(p_rproblemLevel%rdiscretisation%RspatialDiscr(1), &
-                                        EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
-                                        p_rproblemLevel%rtriangulation,&
-                                        p_rproblemLevel%p_rproblem%rboundary)
-        case DEFAULT
-          call output_line('Unsupproted element type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevels')
-          call sys_halt()
-        end select
-
-      case (NDIM2D)
-        select case(rappDescriptor%ieltype)
-        case (1)
-          ! P1 finite elements
-          call spdiscr_initDiscr_simple(p_rproblemLevel%rdiscretisation%RspatialDiscr(1), &
-                                        EL_E001, SPDISC_CUB_AUTOMATIC,&
-                                        p_rproblemLevel%rtriangulation,&
-                                        p_rproblemLevel%p_rproblem%rboundary)
-        case (2)
-          ! P2 finite elements
-          call spdiscr_initDiscr_simple(p_rproblemLevel%rdiscretisation%RspatialDiscr(1), &
-                                        EL_E002, SPDISC_CUB_AUTOMATIC,&
-                                        p_rproblemLevel%rtriangulation,&
-                                        p_rproblemLevel%p_rproblem%rboundary)
-        case (11)
-          ! Q1 finite elements
-          call spdiscr_initDiscr_simple(p_rproblemLevel%rdiscretisation%RspatialDiscr(1), &
-                                        EL_E011, SPDISC_CUB_AUTOMATIC,&
-                                        p_rproblemLevel%rtriangulation,&
-                                        p_rproblemLevel%p_rproblem%rboundary)
-        case (12)
-          ! Q2 finite elements
-          call spdiscr_initDiscr_simple(p_rproblemLevel%rdiscretisation%RspatialDiscr(1), &
-                                        EL_E013, SPDISC_CUB_AUTOMATIC,&
-                                        p_rproblemLevel%rtriangulation,&
-                                        p_rproblemLevel%p_rproblem%rboundary)
-        case (-1)
-          ! mixed P1/Q1 finite elements
-          call spdiscr_initDiscr_triquad(p_rproblemLevel%rdiscretisation%RspatialDiscr(1), &
-                                         EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC,&
-                                         SPDISC_CUB_AUTOMATIC,&
-                                         p_rproblemLevel%rtriangulation,&
-                                         p_rproblemLevel%p_rproblem%rboundary)
-        case (-2)
-          ! mixed P2/Q2 finite elements
-          call spdiscr_initDiscr_triquad(p_rproblemLevel%rdiscretisation%RspatialDiscr(1), &
-                                         EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC,&
-                                         SPDISC_CUB_AUTOMATIC,&
-                                         p_rproblemLevel%rtriangulation,&
-                                         p_rproblemLevel%p_rproblem%rboundary)
-        case DEFAULT
-          call output_line('Unsupproted element type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevels')
-          call sys_halt()
-        end select
-
-      case (NDIM3D)
-        select case(rappDescriptor%ieltype)
-        case (1)
-          ! P1 finite elements
-          call spdiscr_initDiscr_simple(p_rproblemLevel%rdiscretisation%RspatialDiscr(1), &
-                                        EL_E001_3D, SPDISC_CUB_AUTOMATIC,&
-                                        p_rproblemLevel%rtriangulation,&
-                                        p_rproblemLevel%p_rproblem%rboundary)
-        case (11)
-          ! Q1 finite elements
-          call spdiscr_initDiscr_simple(p_rproblemLevel%rdiscretisation%RspatialDiscr(1), &
-                                        EL_E010_3D, SPDISC_CUB_AUTOMATIC,&
-                                        p_rproblemLevel%rtriangulation,&
-                                        p_rproblemLevel%p_rproblem%rboundary)
-        case DEFAULT
-          call output_line('Unsupproted element type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevels')
-          call sys_halt()
-        end select
-        
-      case DEFAULT
-        call output_line('Invalid number of spatial dimensions',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevels')
-        call sys_halt()
-      end select
-
-      ! Duplicate scalar discretisation structure for block matrix format
-      if (rappDescriptor%isystemFormat .eq. SYSTEM_BLOCKFORMAT) then
-        do ivar = 2, euler_getNVAR(rappDescriptor)
-          call spdiscr_duplicateDiscrSc(&
-              p_rproblemLevel%rdiscretisation%RspatialDiscr(1),&
-              p_rproblemLevel%rdiscretisation%RspatialDiscr(ivar), .true.)
-        end do
-      end if
       
-      ! Generate the finite element matrix sparsity structure based on the
-      ! spatial descretization and store it as the template matrix
-      call bilf_createMatrixStructure(p_rproblemLevel%rdiscretisation%RspatialDiscr(1),&
-                                      rappDescriptor%imatrixFormat,&
-                                      p_rproblemLevel%Rmatrix(templateMatrix))
-
-      ! Create consistent (and lumped) mass matrix as duplicate of the template matrix
-      if (consistentMassMatrix > 0) then
-        call lsyssc_duplicateMatrix(p_rproblemLevel%Rmatrix(templateMatrix),&
-                                    p_rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-        call stdop_assembleSimpleMatrix(p_rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                        DER_FUNC, DER_FUNC) 
-        if (lumpedMassMatrix > 0) then
-          call lsyssc_duplicateMatrix(p_rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                      p_rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-          call lsyssc_lumpMatrixScalar(p_rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                       LSYSSC_LUMP_DIAG)
-        end if
-      elseif (lumpedMassMatrix > 0) then
-        call lsyssc_duplicateMatrix(p_rproblemLevel%Rmatrix(templateMatrix),&
-                                    p_rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-        call stdop_assembleSimpleMatrix(p_rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                        DER_FUNC, DER_FUNC) 
-        call lsyssc_lumpMatrixScalar(p_rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                     LSYSSC_LUMP_DIAG)
-      end if
-
-      ! Create coefficient matrix (phi, dphi/dx) duplicate of the template matrix
-      if (coeffMatrix_CX > 0) then
-        call lsyssc_duplicateMatrix(p_rproblemLevel%Rmatrix(templateMatrix),&
-                                    p_rproblemLevel%Rmatrix(coeffMatrix_CX),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-        call stdop_assembleSimpleMatrix(p_rproblemLevel%Rmatrix(coeffMatrix_CX),&
-                                        DER_DERIV3D_X, DER_FUNC)
-      end if
-
-      ! Create coefficient matrix (phi, dphi/dy) duplicate of the template matrix
-      if (coeffMatrix_CY > 0) then
-        call lsyssc_duplicateMatrix(p_rproblemLevel%Rmatrix(templateMatrix),&
-                                    p_rproblemLevel%Rmatrix(coeffMatrix_CY),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-        call stdop_assembleSimpleMatrix(p_rproblemLevel%Rmatrix(coeffMatrix_CY),&
-                                        DER_DERIV3D_Y, DER_FUNC)
-      end if
-
-      ! Create coefficient matrix (phi, dphi/dz) duplicate of the template matrix
-      if (coeffMatrix_CZ > 0) then
-        call lsyssc_duplicateMatrix(p_rproblemLevel%Rmatrix(templateMatrix),&
-                                    p_rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-        call stdop_assembleSimpleMatrix(p_rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-                                        DER_DERIV3D_Z, DER_FUNC)
-      end if      
-
-      ! Create system matrix
-      if (systemMatrix > 0) then
-        select case(rappDescriptor%isystemFormat)
-        case (SYSTEM_INTERLEAVEFORMAT)
-          ! The global operator is stored as an interleave matrix with
-          ! NVAR components. However, the row and column structure of
-          ! the template matrix can be adopted
-          call lsyssc_duplicateMatrix(p_rproblemLevel%Rmatrix(templateMatrix),&
-                                      p_rproblemLevel%Rmatrix(systemMatrix),&
-                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
-          p_rproblemLevel%Rmatrix(systemMatrix)%NVAR = euler_getNVAR(rappDescriptor)
-
-          ! What matrix format should be used?
-          select case(rappDescriptor%imatrixFormat)
-          case (LSYSSC_MATRIX7)
-            p_rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX7INTL
-            
-          case (LSYSSC_MATRIX9)
-            p_rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX9INTL
-            
-          case DEFAULT
-            call output_line('Unsupported matrix format!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevels')
-            call sys_halt()
-          end select
-
-          ! What kind of global operator should be adopted?
-          select case(rappDescriptor%icoupled)
-          case (FLOW_SEGREGATED)
-            p_rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIXD
-            
-          case (FLOW_ALLCOUPLED)
-            p_rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIX1
-            
-          case DEFAULT
-            call output_line('Unsupported interleave matrix format!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevels')
-            call sys_halt()
-          end select
-          
-          ! Create global operator physically
-          call lsyssc_allocEmptyMatrix(p_rproblemLevel%Rmatrix(systemMatrix),&
-                                       LSYSSC_SETM_UNDEFINED)
-          
-          ! Create pseudo block matrix from global operator
-          call lsysbl_createMatFromScalar(p_rproblemLevel%Rmatrix(systemMatrix),&
-                                          p_rproblemLevel%RmatrixBlock(systemMatrix),&
-                                          p_rproblemLevel%rdiscretisation)
-
-        case (SYSTEM_BLOCKFORMAT)
-          ! The global operator is stored as a block matrix with NVARxNVAR
-          ! blocks. Thus, create empty NVARxNVAR block matrix directly
-          call lsysbl_createEmptyMatrix(p_rproblemLevel%RmatrixBlock(systemMatrix),&
-                                        euler_getNVAR(rappDescriptor))
-          p_rproblemLevel%RmatrixBlock(systemMatrix)%imatrixSpec = LSYSBS_MSPEC_GROUPMATRIX
-
-          ! What kind of global operator should be adopted?
-          select case(rappDescriptor%icoupled)
-          case (FLOW_SEGREGATED)
-            ! Create only NVAR diagonal blocks
-            do ivar = 1, euler_getNVAR(rappDescriptor)
-              call lsyssc_duplicateMatrix(p_rproblemLevel%Rmatrix(templateMatrix),&
-                                          p_rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                                          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-            end do
-
-          case (FLOW_ALLCOUPLED)
-            ! Create all NVAR x NVAR blocks
-            do ivar = 1, euler_getNVAR(rappDescriptor)
-              do jvar = 1, euler_getNVAR(rappDescriptor)
-                call lsyssc_duplicateMatrix(p_rproblemLevel%Rmatrix(templateMatrix),&
-                                            p_rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
-                                            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-              end do
-            end do
-          
-          case DEFAULT
-            call output_line('Unsupported block matrix format!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevels')
-            call sys_halt()
-          end select
-
-          ! Update internal structure of block matrix
-          call lsysbl_updateMatStrucInfo(p_rproblemLevel%RmatrixBlock(systemMatrix))
-
-        case DEFAULT
-          call output_line('Unsupported system format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevels')
-          call sys_halt()
-        end select
-      end if     
-
+      ! Initialize individual problem level
+      call euler_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+      
       ! Switch to next coarser level
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
 
-  end subroutine euler_initProblemLevels
+  end subroutine euler_initAllProblemLevels
 
   !*****************************************************************************
 
@@ -984,8 +1072,6 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sbenchmarkName
-    character(LEN=SYS_STRLEN) :: sinputoutputName
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: ssolutionName
 
@@ -1004,13 +1090,11 @@ contains
 
     
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "benchmark",   sbenchmarkName)
-    call parlst_getvalue_string(rparlist, ssectionName, "inputoutput", sinputoutputName)
-    call parlst_getvalue_string(rparlist, trim(sinputoutputName), "indatfile", sindatfileName)
-    call parlst_getvalue_string(rparlist, trim(sinputoutputName), "ssolutionname", ssolutionName)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName), "isolutiontype", isolutiontype)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName), "isystemformat", isystemformat)
-    
+    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'ssolutionname', ssolutionName)
+    call parlst_getvalue_int(rparlist, ssectionName, 'isolutiontype', isolutiontype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'isystemformat', isystemformat)
+
     ! Create new solution vector based on the spatial discretisation
     p_rdiscretisation => rproblemLevel%rdiscretisation
     
@@ -1133,8 +1217,7 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sbenchmarkName
-    character(LEN=SYS_STRLEN) :: sinputoutputName
+    character(LEN=SYS_STRLEN) :: soutputName
     character(LEN=SYS_STRLEN) :: ucdsolution
 
     ! persistent variable
@@ -1142,17 +1225,16 @@ contains
     
     ! local variables
     type(t_ucdExport) :: rexport
-    type(t_vectorScalar) :: rvector1,rvector2,rvector3
-    real(DP), dimension(:), pointer :: p_Dsolution,p_Ddata1,p_Ddata2,p_Ddata3
-    integer :: iformatUCD,isystemFormat,isize,ndim
+    type(t_vectorScalar) :: rvector1, rvector2, rvector3
+    real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3
+    integer :: iformatUCD, isystemFormat, isize, ndim
 
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "inputoutput", sinputoutputName)
-    call parlst_getvalue_string(rparlist, ssectionName, "benchmark", sbenchmarkName)
-    call parlst_getvalue_string(rparlist, trim(sinputoutputName), "ucdsolution", ucdsolution)
-    call parlst_getvalue_int(rparlist, trim(sinputoutputName), "iformatucd", iformatUCD)
-    call parlst_getvalue_int(rparlist, trim(sbenchmarkName), "isystemformat", isystemformat)
+    call parlst_getvalue_string(rparlist, ssectionName, "output", soutputName)
+    call parlst_getvalue_string(rparlist, trim(soutputName), "ucdsolution", ucdsolution)
+    call parlst_getvalue_int(rparlist, trim(soutputName), "iformatucd", iformatUCD)
+    call parlst_getvalue_int(rparlist, ssectionName, "isystemformat", isystemformat)
 
     ! Initialize the UCD exporter
     call flagship_initUCDexport(rproblem%p_rproblemLevelMax, ucdsolution,&
@@ -1579,9 +1661,8 @@ contains
     real(DP) :: dtotalTime, dfraction
 
     call output_lbrk(nlbrk=5)
-    call output_separator (OU_SEP_STAR)
-    write(*,FMT='(24X,A)') '*** TIME MEASUREMENT ***'
-    call output_separator (OU_SEP_STAR)
+    call output_line('Time measurement:')
+    call output_line('-----------------')
     
     rtimerSolution = rappDescriptor%rtimerSolution
     call stat_subTimers(rappDescriptor%rtimerAssemblyMatrix, rtimerSolution)
@@ -1590,34 +1671,35 @@ contains
     dtotalTime = max(rtimerTotal%delapsedCPU, rtimerTotal%delapsedReal)
     dfraction  = 100.0_DP/dtotalTime
 
-    call output_line('  Time for computing solution   : '//&
+    call output_line('Time for computing solution   : '//&
                      trim(sys_sdL(rtimerSolution%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rtimerSolution%delapsedCPU, 2))//' %')
-    call output_line('  Time for mesh adaptivity      : '//&
+    call output_line('Time for mesh adaptivity      : '//&
                      trim(sys_sdL(rappDescriptor%rtimerAdaptation%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerAdaptation%delapsedCPU, 2))//' %')
-    call output_line('  Time for error estimation     : '//&
+    call output_line('Time for error estimation     : '//&
                      trim(sys_sdL(rappDescriptor%rtimerErrorEstimation%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerErrorEstimation%delapsedCPU, 2))//' %')
-    call output_line('  Time for triangulation        : '//&
+    call output_line('Time for triangulation        : '//&
                      trim(sys_sdL(rappDescriptor%rtimerTriangulation%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerTriangulation%delapsedCPU, 2))//' %')
-    call output_line('  Time for coefficient assembly : '//&
+    call output_line('Time for coefficient assembly : '//&
                      trim(sys_sdL(rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 2))//' %')
-    call output_line('  Time for matrix assembly      : '//&
+    call output_line('Time for matrix assembly      : '//&
                      trim(sys_sdL(rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 2))//' %')
-    call output_line('  Time for vector assembly:       '//&
+    call output_line('Time for vector assembly:       '//&
                      trim(sys_sdL(rappDescriptor%rtimerAssemblyVector%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyVector%delapsedCPU, 2))//' %')
-    call output_line('  Time for pre-/post-processing : '//&
+    call output_line('Time for pre-/post-processing : '//&
                      trim(sys_sdL(rappDescriptor%rtimerPrePostprocess%delapsedCPU, 2))//'  '//&
                      trim(sys_sdL(dfraction*rappDescriptor%rtimerPrePostprocess%delapsedCPU, 2))//' %')
-    call output_separator (OU_SEP_MINUS)
-    call output_line('  Time for total simulation     : '//&
+    call output_lbrk()
+    call output_line('Time for total simulation     : '//&
                      trim(sys_sdL(dtotalTime, 2)))
     call output_lbrk()
+
   end subroutine euler_outputStatistics
 
   !*****************************************************************************
