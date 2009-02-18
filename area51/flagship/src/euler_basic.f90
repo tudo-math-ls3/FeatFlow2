@@ -17,15 +17,12 @@
 
 module euler_basic
 
-  use afcstabilisation
+  use fparser
   use fsystem
-  use linearsystemscalar
-  use paramlist
+  use problem
   use statistics
   use thermodynamics
   use triangulation
-  use problem
-
 
   implicit none
 
@@ -54,13 +51,13 @@ module euler_basic
 !</constantblock>
 
 
-!<constantblock description="Global type of coupling approach">
+!<constantblock description="Global type of system coupling approach">
 
   ! time-dependent flow
-  integer, parameter, public :: FLOW_SEGREGATED = 0
+  integer, parameter, public :: SYSTEM_SEGREGATED = 0
 
   ! steady-state flow
-  integer, parameter, public :: FLOW_ALLCOUPLED = 1
+  integer, parameter, public :: SYSTEM_ALLCOUPLED = 1
 
 !</constantblock>
 
@@ -71,6 +68,17 @@ module euler_basic
 
   ! Employ tensorial dissipation
   integer, parameter, public :: DISSIPATION_TENSOR = 2
+
+!</constantblock>
+
+
+!<constantblock description="Global type of right-hand side">
+
+  ! zero right-hand side
+  integer, parameter, public :: RHS_ZERO     = 0
+
+  ! analytical right-hand side
+  integer, parameter, public :: RHS_ANALYTIC = 1
 
 !</constantblock>
 
@@ -152,6 +160,9 @@ module euler_basic
     ! Type of preconditioner
     integer :: iprecond
 
+    ! Type of the right-hand side
+    integer :: irhstype
+
     ! Type of the element(s)
     integer :: ieltype
 
@@ -161,6 +172,9 @@ module euler_basic
     ! System format
     integer :: isystemFormat
     
+    ! Function parser for the right-hand side vector
+    type(t_fparser) :: rfparserRHS
+
     ! Timer for the solution process
     type(t_timer) :: rtimerSolution
 
@@ -242,280 +256,4 @@ contains
     NVAR = rappDescriptor%ndimension + 2
     
   end function euler_getNvarDescriptor
-
-!!$  !*****************************************************************************
-!!$
-!!$!<subroutine>
-!!$  
-!!$  subroutine euler_getVariableNodewise(NEQ, NVAR, Dsolution, ivariable, Dvalue)
-!!$
-!!$!<description>
-!!$    ! This subroutine extracts an individual variable from the
-!!$    ! global solution vector store in interleave format.
-!!$!</description>
-!!$
-!!$!<input>
-!!$    ! Number of equations
-!!$    integer, intent(IN) :: NEQ
-!!$
-!!$    ! Number of variables
-!!$    integer, intent(IN) :: NVAR
-!!$    
-!!$    ! Solution vector
-!!$    real(DP), dimension(NVAR,NEQ), intent(IN) :: Dsolution
-!!$
-!!$    ! Variable to extract
-!!$    integer, intent(IN) :: ivariable
-!!$!</input>
-!!$
-!!$!<output>
-!!$    ! Value of the extracted variable
-!!$    real(DP), dimension(:), intent(OUT) :: Dvalue
-!!$!</output>
-!!$!</subroutine>
-!!$
-!!$    ! local variables
-!!$    real(DP) :: p
-!!$    integer :: ieq
-!!$    
-!!$    
-!!$    ! Which variable should be extracted?
-!!$    if (ivariable .eq. VAR_DENSITY) then
-!!$      ! density
-!!$      do ieq = 1, NEQ
-!!$        Dvalue(ieq) = Dsolution(VAR_DENSITY, ieq)
-!!$      end do
-!!$      
-!!$    elseif ((ivariable .ge. VAR_MOMENTUM_X) .and.&
-!!$            (ivariable .le. NVAR)) then
-!!$      ! velocities and energy (located at NVAR)
-!!$      do ieq = 1, NEQ
-!!$        Dvalue(ieq) = Dsolution(ivariable, ieq)/&
-!!$                      Dsolution(VAR_DENSITY, ieq)
-!!$      end do
-!!$      
-!!$    elseif (ivariable .eq. NVAR+1) then
-!!$      ! pressure ...
-!!$      select case(NVAR)
-!!$      case (NVAR1D)
-!!$        ! ... in 1D
-!!$        do ieq = 1, NEQ
-!!$          Dvalue(ieq) = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(NVAR1D, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_X, ieq)/Dsolution(VAR_DENSITY, ieq))
-!!$        end do
-!!$
-!!$      case (NVAR2D)
-!!$        ! ... in 2D
-!!$        do ieq = 1, NEQ
-!!$          Dvalue(ieq) = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(NVAR2D, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_X, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_Y, ieq)/Dsolution(VAR_DENSITY, ieq))
-!!$        end do
-!!$      
-!!$      case (NVAR3D)
-!!$        ! ... in 3D
-!!$        do ieq = 1, NEQ
-!!$          Dvalue(ieq) = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(NVAR2D, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_X, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_Y, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_Z, ieq)/Dsolution(VAR_DENSITY, ieq))
-!!$        end do
-!!$      end select
-!!$
-!!$    elseif(ivariable .eq. NVAR+2) then
-!!$      ! Mach number ...
-!!$      select case(NVAR)
-!!$      case (NVAR1D)
-!!$        ! ... in 1D
-!!$        do ieq = 1, NEQ
-!!$          p = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(NVAR1D, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_X, ieq)/Dsolution(VAR_DENSITY, ieq))
-!!$          Dvalue(ieq) = thdyn_Machnumber(GAMMA_AIR, p,&
-!!$              Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_X, ieq)/Dsolution(VAR_DENSITY, ieq))
-!!$        end do
-!!$
-!!$      case (NVAR2D)
-!!$        ! ... in 2D
-!!$        do ieq = 1, NEQ
-!!$          p = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(NVAR2D, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_X, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_Y, ieq)/Dsolution(VAR_DENSITY, ieq))
-!!$          Dvalue(ieq) = thdyn_Machnumber(GAMMA_AIR, p,&
-!!$              Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_X, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_Y, ieq)/Dsolution(VAR_DENSITY, ieq))
-!!$        end do
-!!$        
-!!$      case (NVAR3D)
-!!$        ! ... in 3D
-!!$        do ieq = 1, NEQ
-!!$          p = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(NVAR3D, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_X, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_Y, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_Z, ieq)/Dsolution(VAR_DENSITY, ieq))
-!!$          Dvalue(ieq) = thdyn_Machnumber(GAMMA_AIR, p,&
-!!$              Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_X, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_Y, ieq)/Dsolution(VAR_DENSITY, ieq),&
-!!$              Dsolution(VAR_MOMENTUM_Z, ieq)/Dsolution(VAR_DENSITY, ieq))
-!!$        end do
-!!$      end select
-!!$      
-!!$    else
-!!$      call output_line('Unsupported variable!',&
-!!$                        OU_CLASS_ERROR,OU_MODE_STD,'euler_getVariableNodewise')
-!!$      call sys_halt()
-!!$    end if
-!!$  end subroutine euler_getVariableNodewise
-!!$  
-!!$  !*****************************************************************************
-!!$  
-!!$!<subroutine>
-!!$  
-!!$  subroutine euler_getVariableBlockwise(NEQ, NVAR, Dsolution, ivariable, Dvalue)
-!!$
-!!$!<description>
-!!$    ! This subroutine extracts an individual variable from the
-!!$    ! global solution vector store in block format.
-!!$!</description>
-!!$
-!!$!<input>
-!!$    ! Number of equations
-!!$    integer, intent(IN) :: NEQ
-!!$
-!!$    ! Number of variables
-!!$    integer, intent(IN) :: NVAR
-!!$    
-!!$    ! Solution vector
-!!$    real(DP), dimension(NEQ,NVAR), intent(IN) :: Dsolution
-!!$
-!!$    ! Variable to extract
-!!$    integer, intent(IN) :: ivariable
-!!$!</input>
-!!$
-!!$!<output>
-!!$    ! Value of the extracted variable
-!!$    real(DP), dimension(NEQ), intent(OUT) :: Dvalue
-!!$!</output>
-!!$!</subroutine>     
-!!$    
-!!$    ! local variables
-!!$    real(DP) :: p
-!!$    integer :: ieq
-!!$    
-!!$    ! Which variable should be extracted?
-!!$    if (ivariable .eq. VAR_DENSITY) then
-!!$      ! density
-!!$      do ieq = 1, NEQ
-!!$        Dvalue(ieq) = Dsolution(ieq, VAR_DENSITY)
-!!$      end do
-!!$      
-!!$    elseif ((ivariable .ge. VAR_MOMENTUM_X) .and.&
-!!$            (ivariable .le. NVAR)) then
-!!$      ! velocities and energy (located at NVAR)
-!!$      do ieq = 1, NEQ
-!!$        Dvalue(ieq) = Dsolution(ieq,ivariable)/&
-!!$                      Dsolution(ieq, VAR_DENSITY)
-!!$      end do
-!!$      
-!!$    elseif(ivariable .eq. NVAR+1) then
-!!$      ! pressure ...
-!!$      select case(NVAR)
-!!$      case (NVAR1D)
-!!$        ! ... in 1D
-!!$        do ieq = 1, NEQ
-!!$          Dvalue(ieq) = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(ieq, NVAR1D)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_X)/Dsolution(ieq, VAR_DENSITY))
-!!$        end do
-!!$
-!!$      case (NVAR2D)
-!!$        ! ... in 2D
-!!$        do ieq = 1, NEQ
-!!$          Dvalue(ieq) = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(ieq, NVAR2D)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_X)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_Y)/Dsolution(ieq, VAR_DENSITY))
-!!$        end do
-!!$        
-!!$      case (NVAR3D)
-!!$        ! ... in 3D
-!!$        do ieq = 1, NEQ
-!!$          Dvalue(ieq) = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(ieq, NVAR3D)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_X)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_Y)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_Z)/Dsolution(ieq, VAR_DENSITY))
-!!$        end do
-!!$      end select
-!!$      
-!!$    elseif (ivariable .eq. NVAR+2) then
-!!$      ! Mach number ...
-!!$      select case(NVAR)
-!!$      case (NVAR1D)
-!!$        ! ... in 1D
-!!$        do ieq = 1, NEQ
-!!$          p = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(ieq, NVAR1D)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_X)/Dsolution(ieq, VAR_DENSITY))
-!!$          Dvalue(ieq) = thdyn_Machnumber(GAMMA_AIR, p,&
-!!$              Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_X)/Dsolution(ieq, VAR_DENSITY))
-!!$        end do
-!!$
-!!$      case (NVAR2D)
-!!$        ! ... in 2D
-!!$        do ieq = 1, NEQ
-!!$          p = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(ieq, NVAR2D)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_X)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_Y)/Dsolution(ieq, VAR_DENSITY))
-!!$          Dvalue(ieq) = thdyn_Machnumber(GAMMA_AIR, p,&
-!!$              Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_X)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_Y)/Dsolution(ieq, VAR_DENSITY))
-!!$        end do
-!!$
-!!$      case (NVAR3D)
-!!$        ! ... in 3D
-!!$        do ieq = 1, NEQ
-!!$          p = thdyn_pressure(GAMMA_AIR,&
-!!$              Dsolution(ieq, NVAR3D)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_X)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_Y)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_Z)/Dsolution(ieq, VAR_DENSITY))
-!!$          Dvalue(ieq) = thdyn_Machnumber(GAMMA_AIR, p,&
-!!$              Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_X)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_Y)/Dsolution(ieq, VAR_DENSITY),&
-!!$              Dsolution(ieq, VAR_MOMENTUM_Z)/Dsolution(ieq, VAR_DENSITY))
-!!$        end do
-!!$      end select
-!!$      
-!!$    else
-!!$      call output_line('Unsupported variable!',&
-!!$                        OU_CLASS_ERROR,OU_MODE_STD,'euler_getVariableBlockwise')
-!!$      call sys_halt()
-!!$    end if
-!!$  end subroutine euler_getVariableBlockwise
-
 end module euler_basic
