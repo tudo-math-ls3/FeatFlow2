@@ -270,11 +270,6 @@ contains
     ! Initialize the individual problem levels
     call codire_initAllProblemLevels(rappDescriptor, rproblem, rcollection)
 
-!!$    ! Initialize the primal solution vector
-!!$    call codire_initSolution(rparlist, 'codire', rproblem%p_rproblemLevelMax,&
-!!$                             0.0_DP, rsolutionPrimal)
-        
-
     ! Prepare internal data arrays of the solver structure
     systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix') 
     call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax, rsolver,&
@@ -300,11 +295,6 @@ contains
       call parlst_getvalue_string(rparlist, 'codire', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
-
-!!$      ! Impose primal boundary conditions explicitly
-!!$      call bdrf_filterVectorExplicit(rbdrCondPrimal,&
-!!$          rproblem%p_rproblemLevelMax%rtriangulation, rsolutionPrimal, 0.0_DP)
-
       
       ! What solution algorithm should be applied?
       select case(trim(algorithm))
@@ -470,17 +460,28 @@ contains
     call fparser_parseFileForKeyword(sindatfileName, 'defexpr',  FPAR_EXPRESSION)
 
     ! Get application specifig parameters from the parameterlist
-    call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rappDescriptor%ndimension)
-    call parlst_getvalue_int(rparlist, ssectionName, 'imasstype', rappDescriptor%imasstype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'imassantidiffusiontype', rappDescriptor%imassantidiffusiontype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', rappDescriptor%ivelocitytype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'idiffusiontype', rappDescriptor%idiffusiontype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'ireactiontype', rappDescriptor%ireactiontype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', rappDescriptor%irhstype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'itargetfunctype', rappDescriptor%itargetfunctype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'ieltype', rappDescriptor%ieltype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'imatrixformat', rappDescriptor%imatrixformat)
-    call parlst_getvalue_int(rparlist, ssectionName, 'ijacobianformat', rappDescriptor%ijacobianformat)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'ndimension', rappDescriptor%ndimension)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'imasstype', rappDescriptor%imasstype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'imassantidiffusiontype', rappDescriptor%imassantidiffusiontype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'ivelocitytype', rappDescriptor%ivelocitytype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'idiffusiontype', rappDescriptor%idiffusiontype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'ireactiontype', rappDescriptor%ireactiontype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'irhstype', rappDescriptor%irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'itargetfunctype', rappDescriptor%itargetfunctype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'ieltype', rappDescriptor%ieltype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'imatrixformat', rappDescriptor%imatrixformat)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'ijacobianformat', rappDescriptor%ijacobianformat)
 
     
     ! Initialize the function parser for the velocity field if required
@@ -548,7 +549,7 @@ contains
       call fparser_release(rappDescriptor%rfparserReaction)
     end if
 
-    if (rappDescriptor%ireactiontype .ne. RHS_ZERO) then
+    if (rappDescriptor%irhstype .ne. RHS_ZERO) then
       call fparser_release(rappDescriptor%rfparserRHS)
     end if
 
@@ -818,11 +819,9 @@ contains
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName, 'diffusion', sdiffusionName)
     call parlst_getvalue_string(rparlist, ssectionName, 'convection', sconvectionName)
-    
-
-    call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     call parlst_getvalue_string(rparlist, ssectionName, 'trifile', rproblemDescriptor%trifile)
-    call parlst_getvalue_string(rparlist, ssectionName, 'prmfile', rproblemDescriptor%prmfile)
+    call parlst_getvalue_string(rparlist, ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
+    call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     
     ! Set additional problem descriptor
     rproblemDescriptor%nafcstab      = 2   ! for convective and diffusive stabilization
@@ -835,7 +834,7 @@ contains
 
     ! Check if quadrilaterals should be converted to triangles
     call parlst_getvalue_int(rparlist, ssectionName, 'iconvtotria', iconvToTria, 0)
-    if (iconvToTria .eq. 1)&
+    if (iconvToTria .ne. 0)&
         rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
                                         + PROBDESC_MSPEC_CONVTRIANGLES   
 
@@ -1503,6 +1502,7 @@ contains
       ! Initialize solution by zeros
       call lsysbl_clearVector(rvector)
 
+
     case (1)
       ! Initialize solution from analytic profile
       call flagship_readParserFromFile(sindatfileName, '['//trim(ssolutionName)//']',&
@@ -1839,6 +1839,7 @@ contains
     call output_line('Time for total simulation:     '//&
                      trim(sys_sdL(dtotalTime, 2)))
     call output_lbrk()
+
   end subroutine codire_outputStatistics
 
   !*****************************************************************************
