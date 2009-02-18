@@ -3,7 +3,7 @@
 ###############
 
 # At first we define a list of expressions that can be evaluated
-# on the boudary. The number in braces "(n)" specifies
+# on the boundary. The number in braces "(n)" specifies
 # how many expressions are defined here. The following n lines define
 # n constant values in the form
 #   'name' type value
@@ -120,12 +120,12 @@ bdComponent1(4)=
    3.0  3  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
    4.0  3  1  'ParProfile'  'Dirichlet0'   # [3.0,4.0] : parabolic profile in X, 0.0 in Y
 
-# Driven cavity would be:
-# bdComponent1(4)=
-#    1.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
-#    2.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-1/0 boundary
-#    3.0  3  1  'Dirichlet1'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
-#    4.0  3  1  'Dirichlet0'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
+# Driven cavity would be (for grid cavity.{prm,tri}):
+#bdComponent1(4)=
+#   1.0  2  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
+#   2.0  2  1  'Dirichlet0'  'Dirichlet0'   # [1.0,2.0] : Dirichlet-0 boundary
+#   3.0  0  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-1/0 boundary
+#   4.0  3  1  'Dirichlet1'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
 
 bdComponent2(1)=
-   4.0  3  1  'Dirichlet0'  'Dirichlet0'   # Complete boundary component Dirichlet-0 boudary
+   4.0  3  1  'Dirichlet0'  'Dirichlet0'   # Complete boundary component Dirichlet-0 boundary
