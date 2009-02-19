@@ -81,41 +81,45 @@
 !#     -> Initializes the solution vector based on the parameter
 !#        settings given by the parameter list
 !#
-!# 10.) codire_initTargetFunc
+!# 10.) codire_initRHS
+!#      -> Initializes the right-hand side vector based on the
+!#         parameter settings given by the application descriptor
+!#
+!# 11.) codire_initTargetFunc
 !#      -> Initializes the target functional for the dual problem
 !#
-!# 11.) codire_outputSolution
+!# 12.) codire_outputSolution
 !#      -> Outputs the solution vector to file in UCD format
 !#
-!# 12.) codire_outputStatistics
+!# 13.) codire_outputStatistics
 !#      -> Outputs the application statitics
 !#
-!# 13.) codire_estimateTargetFuncError
+!# 14.) codire_estimateTargetFuncError
 !#      -> Estimates the error in the quantity of interest
 !#
-!# 14.) codire_estimateRecoveryError
+!# 15.) codire_estimateRecoveryError
 !#      -> Estimates the solution error using recovery techniques
 !#
-!# 15.) codire_adaptTriangulation
+!# 16.) codire_adaptTriangulation
 !#      -> Performs h-adaptation for the given triangulation
 !#
-!# 16.) codire_solveTransientPrimal
+!# 17.) codire_solveTransientPrimal
 !#      -> Solves the primal formulation of the time-dependent 
 !#         convection-diffusion-reaction equation.
 !#
-!# 17.) codire_solvePseudoTransientPrimal
+!# 18.) codire_solvePseudoTransientPrimal
 !#      -> Solves the primal formulation of the steady 
 !#         convection-diffusion-reaction equation using pseudo time-stepping.
 !#
-!# 18.) codire_solvePseudoTransientPrimalDual
+!# 19.) codire_solvePseudoTransientPrimalDual
 !#      -> Solves the primal and the dual formulation of the steady 
 !#         convection-diffusion-reaction equation using pseudo time-stepping.
 !#
-!# 19.) codire_solveSteadyStatePrimal
+!# 20.) codire_solveSteadyStatePrimal
 !#      -> Solves the primal formulation of the steady 
 !#         convection-diffusion-reaction equation directly
 !#
-!# 20.) codire_solveSteadyStatePrimalDual
+!# 21.) codire_solveSteadyStatePrimalDual
 !#      -> Solves the primal and the dual formulation of the steady 
 !#         convection-diffusion-reaction equation directly
 !#
@@ -142,6 +146,7 @@ module codire_application
   use fsystem
   use genoutput
   use graph
+  use groupfemscalar
   use hadaptaux1d
   use hadaptaux2d
   use hadaptaux3d
@@ -1206,7 +1211,10 @@ contains
     ! indicator for the subdiagonal edge structure. If they are
     ! needed, then they are re-generated on-the-fly.
     if (convectionAFC > 0) then
-      if (rproblemLevel%Rafcstab(convectionAFC)%iSpec .ne. AFCSTAB_UNDEFINED) then
+      if (rproblemLevel%Rafcstab(convectionAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
+        call gfsc_initStabilisation(rproblemLevel%Rmatrix(templateMatrix),&
+                                    rproblemLevel%Rafcstab(convectionAFC))
+      else
         call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(convectionAFC),&
                                          rproblemLevel%Rmatrix(templateMatrix))
         rproblemLevel%Rafcstab(convectionAFC)%iSpec =&
@@ -1216,7 +1224,10 @@ contains
     end if
 
     if (diffusionAFC > 0) then
-      if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .ne. AFCSTAB_UNDEFINED) then
+      if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
+        call gfsc_initStabilisation(rproblemLevel%Rmatrix(templateMatrix),&
+                                    rproblemLevel%Rafcstab(diffusionAFC))
+      else
         call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(diffusionAFC),&
                                          rproblemLevel%Rmatrix(templateMatrix))
         rproblemLevel%Rafcstab(diffusionAFC)%iSpec =&
@@ -1609,7 +1620,7 @@ contains
       rform%itermCount      = 1
       rform%Idescriptors(1) = DER_FUNC
 
-      ! Build the discretized target functional
+      ! Build the discretized right-hand side vector
       call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
                                   rform, .true., rvector%RvectorBlock(1),&
                                   codire_coeffVectorAnalytic, rcollection)
@@ -2275,7 +2286,7 @@ contains
     case (ERREST_L2PROJECTION)
       call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
       call ppgrd_calcGradientError(rsolution%RvectorBlock(1), derror,&
-                                   PPGRD_INTERPOL, rerror=rerror)
+                                   PPGRD_INTERPOL, 0, rerror)
 
     case (ERREST_SPR_VERTEX)
       call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
@@ -2295,7 +2306,7 @@ contains
     case (ERREST_LIMAVR)
       call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
       call ppgrd_calcGradientError(rsolution%RvectorBlock(1), derror,&
-                                   PPGRD_LATECHNIQUE, rerror=rerror)
+                                   PPGRD_LATECHNIQUE, 0, rerror)
       
     case (ERREST_SECONDDIFF)
       call parlst_getvalue_double(rparlist, trim(serrorestimatorName), 'dnoiseFilter', dnoiseFilter)
@@ -2646,7 +2657,6 @@ contains
     case (NDIM3D)
       call codire_hadaptCallback3D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
       call hadapt_performAdaptation(rhadapt, rindicator, rcollection, codire_hadaptCallback3D)
-
     end select
 
     ! Do we have a destination triangulation or should the source
@@ -2732,9 +2742,9 @@ contains
     character(LEN=SYS_STRLEN) :: soutputName
 
     ! local variables
-    real(dp) :: derror,dstepUCD,dtimeUCD,dstepAdapt,dtimeAdapt
+    real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix
-    integer :: nlmin,ipreadapt,npreadapt
+    integer :: nlmin, ipreadapt, npreadapt
 
 
     ! Start time measurement for pre-processing
@@ -2771,8 +2781,8 @@ contains
         call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
 
         ! Generate a dynamic graph for the sparsity pattern and attach
-        ! it to the collection structure which is used to pass this type
-        ! to the callback function for h-adaptation
+        ! it to the collection structure which is used to pass this
+        ! type to the callback function for h-adaptation
         templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
         call grph_createGraphFromMatrix(p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
@@ -2805,23 +2815,23 @@ contains
             ! Release element-wise error distribution
             call lsyssc_releaseVector(relementError)
 
-            ! Update the template matrix according to the sparsity pattern
-            templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
-            call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
-
             ! Re-generate the initial solution vector and impose boundary conditions explicitly
             call lsysbl_releaseVector(rsolution)
             call codire_initSolution(rparlist, ssectionname, p_rproblemLevel, 0.0_DP, rsolution)
             call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
-
-            ! Generate standard mesh from raw mesh
-            call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
-          
-            ! Re-initialize all constant coefficient matrices
-            call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
-
+            
           end do
 
+          ! Generate standard mesh from raw mesh
+          call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+
+          ! Update the template matrix according to the sparsity pattern
+          templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
+          call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+
+          ! Re-initialize all constant coefficient matrices
+          call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+          
           ! Prepare internal data arrays of the solver structure
           systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
           call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
