@@ -60,7 +60,7 @@ isystemcoupling = 0
 # 0 = Galerkin scheme
 # 1 = Low-order scheme with scalar dissipation
 # 2 = Low-order scheme with tensorial dissipation
-iprecond = 2
+isystemPrecond = 2
 
 # type of right-hand side vector
 # 0 = zero right-hand side
