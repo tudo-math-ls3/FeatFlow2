@@ -864,7 +864,11 @@ contains
   call parlst_fetchparameter(rsection, paramname, idx)
   
   ! Return number of substrings
-  iresult = rsection%p_Rvalues(idx)%nsize
+  if (idx .eq. 0) then
+    iresult = 0
+  else
+    iresult = rsection%p_Rvalues(idx)%nsize
+  end if
   
   end function
   
@@ -923,7 +927,11 @@ contains
   idx = parlst_queryvalue_indir (p_rsection, sparameter)
 
   ! Return number of substrings
-  iresult = p_rsection%p_Rvalues(idx)%nsize
+  if (idx .eq. 0) then
+    iresult = 0
+  else
+    iresult = p_rsection%p_Rvalues(idx)%nsize
+  end if
 
   end function
 
