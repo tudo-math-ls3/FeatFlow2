@@ -247,6 +247,8 @@ contains
         (rmatrixBlockTemplate%nblocksPerRow .eq. 1)) then
       call gfsys_initStabilisationScalar(&
           rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
+
+      ! That's it
       return
     end if
     
@@ -264,21 +266,12 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsys_initStabilisationBlock')
       call sys_halt()
     end if
-
-    ! Check that all matrices are compatible
-    do j = 1, rmatrixBlockTemplate%nblocksPerRow
-      do i = 1, rmatrixBlockTemplate%nblocksPerCol
-        call lsyssc_isMatrixCompatible(rmatrixBlockTemplate%RmatrixBlock(1,1),&
-                                       rmatrixBlockTemplate%RmatrixBlock(i,j))
-      end do
-    end do
-    
     
     ! Set atomic data from first block
     rafcstab%NVAR  = rmatrixBlockTemplate%nblocksPerCol
     rafcstab%NEQ   = rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ
     rafcstab%NEDGE = int(0.5*(rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
-                              rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ), I32)
+                              rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ))
 
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
@@ -357,7 +350,7 @@ contains
     ! Set atomic data
     rafcstab%NVAR  = rmatrixTemplate%NVAR
     rafcstab%NEQ   = rmatrixTemplate%NEQ
-    rafcstab%NEDGE = int(0.5*(rmatrixTemplate%NA-rmatrixTemplate%NEQ), I32)
+    rafcstab%NEDGE = int(0.5*(rmatrixTemplate%NA-rmatrixTemplate%NEQ))
 
     
     ! What kind of stabilisation are we?
@@ -472,7 +465,7 @@ contains
     if (rafcstab%NVAR  .ne. rmatrixBlock%nblocksPerCol .or.&
         rafcstab%NEQ   .ne. rmatrixBlock%RmatrixBlock(1,1)%NEQ  .or.&
         rafcstab%NEDGE .ne. int(0.5*(rmatrixBlock%RmatrixBlock(1,1)%NA-&
-                                     rmatrixBlock%RmatrixBlock(1,1)%NEQ),I32)) then
+                                     rmatrixBlock%RmatrixBlock(1,1)%NEQ))) then
       if (present(bcompatible)) then
         bcompatible = .false.
         return
@@ -519,7 +512,7 @@ contains
     ! Matrix/operator must have the same size
     if (rafcstab%NEQ   .ne. rmatrix%NEQ  .or.&
         rafcstab%NVAR  .ne. rmatrix%NVAR .or.&
-        rafcstab%NEDGE .ne. int(0.5*(rmatrix%NA-rmatrix%NEQ),I32)) then
+        rafcstab%NEDGE .ne. int(0.5*(rmatrix%NA-rmatrix%NEQ))) then
       if (present(bcompatible)) then
         bcompatible = .false.
         return
