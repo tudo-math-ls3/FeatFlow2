@@ -127,7 +127,7 @@ contains
     end if
 
     ! Create scalar vector for element indicator
-    call lsyssc_createVector(rindicator, p_rtriangulation%NEL, .true.)
+    call lsyssc_createVector(rindicator, p_rtriangulation%NEL, .false.)
 
     ! Create temporal memory
     h_DnodalIndicator = ST_NOHANDLE
@@ -562,7 +562,7 @@ contains
         if (ncontributions .ne. 0) then
           Dindicator(iel) = Dindicator(iel) / real(ncontributions, DP)
         else
-          Dindicator(iel) = 0._DP
+          Dindicator(iel) = 0.0_DP
         end if
       end do
       
