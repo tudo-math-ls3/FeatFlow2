@@ -17,7 +17,8 @@
 !#     -> release a stabilisation structure
 !#
 !# 3.) afcstab_resizeStabilisation = afcstab_resizeStabDirect /
-!#                                   afcstab_resizeStabIndirect
+!#                                   afcstab_resizeStabIndScalar
+!#                                   afcstab_resizeStabIndBlock
 !#     -> resize a stabilisation structure
 !#
 !# 4.) afcstab_getbase_IsupdiagEdgeIdx
@@ -247,7 +248,8 @@ module afcstabilisation
 
   interface afcstab_resizeStabilisation
     module procedure afcstab_resizeStabDirect
-    module procedure afcstab_resizeStabIndirect
+    module procedure afcstab_resizeStabIndScalar
+    module procedure afcstab_resizeStabIndBlock
   end interface
 
   interface afcstab_limit
@@ -497,7 +499,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_resizeStabIndirect(rafcstab, rmatrixTemplate)
+  subroutine afcstab_resizeStabIndScalar(rafcstab, rmatrixTemplate)
 
 !<description>
     ! This subroutine resizes all vectors of the stabilisation
@@ -528,7 +530,56 @@ contains
     ! Call resize routine directly
     call afcstab_resizeStabDirect(rafcstab, neq, nedge)
 
-  end subroutine afcstab_resizeStabIndirect
+  end subroutine afcstab_resizeStabIndScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_resizeStabIndBlock(rafcstab, rmatrixBlockTemplate)
+
+!<description>
+    ! This subroutine resizes all vectors of the stabilisation
+    ! structure so that they are compatible to the template matrix.
+    !
+    ! NOTE: Only those vectors are resized which are actually present.
+!</description>
+
+!<input>
+    ! template matrix
+    type(t_matrixBlock), intent(IN) :: rmatrixBlockTemplate
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(INOUT)   :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: neq, nedge
+
+    
+    ! Check if block matrix has only one block
+    if ((rmatrixBlockTemplate%nblocksPerCol .eq. 1) .and. &
+        (rmatrixBlockTemplate%nblocksPerRow .eq. 1)) then
+      call afcstab_resizeStabIndScalar(rafcstab,&
+          rmatrixBlockTemplate%RmatrixBlock(1,1))
+
+      ! That's it
+      return
+    end if
+    
+
+    ! Determine number of equations and edges
+    neq   = rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ
+    nedge = int(0.5*(rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
+                     rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ))
+
+    ! Call resize routine directly
+    call afcstab_resizeStabDirect(rafcstab, neq, nedge)
+
+  end subroutine afcstab_resizeStabIndBlock
 
   !*****************************************************************************
 
