@@ -51,8 +51,13 @@
 !# 12.) euler_calcBoundaryvalues2d
 !#      -> compute the boundary values for a given node
 !#
-!# 13.) euler_setBoundary2d
-!#      -> impose boundary conditions for nonlinear solver
+!# 13.) euler_hadaptCallbackScalar2d
+!#      -> Performs application specific tasks in the adaptation
+!#         algorithm in 2D, whereby the vector is stored in interleave format
+!#
+!# 14.) euler_hadaptCallbackBlock2d
+!#      -> Performs application specific tasks in the adaptation
+!#         algorithm in 2D, whereby the vector is stored in block format
 !#
 !# </purpose>
 !##############################################################################
@@ -62,9 +67,12 @@ module euler_callback2d
   use boundaryfilter
   use collection
   use euler_basic
+  use flagship_callback
   use fsystem
   use genoutput
+  use graph
   use groupfemsystem
+  use hadaptaux
   use linearsystemblock
   use linearsystemscalar
   use problem
@@ -88,7 +96,8 @@ module euler_callback2d
   public :: euler_calcMatrixTensorDiss2d
   public :: euler_calcCharacteristics2d
   public :: euler_calcBoundaryvalues2d
-  public :: euler_setBoundary2d
+  public :: euler_hadaptCallbackScalar2d
+  public :: euler_hadaptCallbackBlock2d
 
 contains
   
@@ -2148,85 +2157,274 @@ contains
 
 !<subroutine>
 
-  subroutine euler_setBoundary2d(rproblemLevel, rtimestep, rsolver,&
-                                rsol, rres, rsol0, rcollection)
+  subroutine euler_hadaptCallbackScalar2d(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
-    ! This subroutine imposes the nonlinear boundary conditions.
+    ! This callback function is used to perform postprocessing tasks
+    ! such as insertion/removal of elements and or vertices in the
+    ! grid adaptivity procedure in 2D. The solution vector is assumed
+    ! to be store in scalar interleave format.
 !</description>
 
 !<input>
-    ! time-stepping algorithm
-    type(t_timestep), intent(IN) :: rtimestep
+    ! Identifier for the grid modification operation
+    integer, intent(IN) :: iOperation
 
-    ! nonlinear solver structure
-    type(t_solver), intent(IN) :: rsolver
+    ! Array of vertices involved in the adaptivity step
+    integer, dimension(:), intent(IN) :: Ivertices
 
-    ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsol0
+    ! Array of elements involved in the adaptivity step
+    integer, dimension(:), intent(IN) :: Ielements
 !</input>
 
 !<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
-
-    ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsol
-
-    ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
-
-    ! collection structure to provide additional
-    ! information to the boundary setting routine
-    type(t_collection), intent(InOUT) :: rcollection
+    ! Collection
+    type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    integer :: imatrix, istatus
-    
+    type(t_vectorBlock), pointer, save :: rsolution
+    real(DP), dimension(:), pointer, save :: p_Dsolution
+    integer :: ivar
 
-    select case(rsolver%iprecond)
-    case (NLSOL_PRECOND_BLOCKD,&
-          NLSOL_PRECOND_DEFCOR,&
-          NLSOL_PRECOND_NEWTON_FAILED)
+
+    ! What operation should be performed?
+    select case(iOperation)
+
+    case(HADAPT_OPR_INITCALLBACK)
+      ! This subroutine assumes that the name of the first solution
+      ! vector is stored in the second quick access string.
+
+      ! Retrieve solution vector from colletion and set pointer
+      rsolution => collct_getvalue_vec(rcollection,&
+                                        trim(rcollection%SquickAccess(2)))
+
+      ! Check if solution is stored in interleave format
+      if (rsolution%nblocks .ne. 1) then
+        call output_line('Vector is not in interleave format!',&
+                         OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackScalar2d')
+        call sys_halt()
+      end if
+
+      ! Set pointer
+      call lsysbl_getbase_double(rsolution, p_Dsolution)
       
-      ! Impose boundary conditions for the solution vector and impose
-      ! zeros in the residual vector and the off-diagonal positions 
-      ! of the system matrix which is obtained from the collection
-      imatrix = collct_getvalue_int(rcollection, 'SystemMatrix')
-
-      call bdrf_filterSolution(rsolver%rboundaryCondition,&
-                               rproblemLevel%rtriangulation,&
-                               rproblemLevel%RmatrixBlock(imatrix),&
-                               rsol, rres, rsol0, rtimestep%dTime,&
-                               rproblemLevel%p_rproblem%rboundary,&
-                               euler_calcBoundaryvalues2d, istatus)
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
       
-      rcollection%IquickAccess(1) = istatus
+      
+    case(HADAPT_OPR_DONECALLBACK)
+      ! Nullify solution vector
+      nullify(rsolution, p_Dsolution)
 
-    case (NLSOL_PRECOND_NEWTON)
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      
 
-      ! Impose boundary conditions for the solution vector and impose
-      ! zeros in the residual vector and the off-diagonal positions 
-      ! of the system matrix which is obtained from the collection
-      imatrix = collct_getvalue_int(rcollection, 'JacobianMatrix')
+    case(HADAPT_OPR_ADJUSTVERTEXDIM)
+      if (rsolution%NEQ .ne. NVAR2D*Ivertices(1)) then
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false., .true.)
+        call lsysbl_getbase_double(rsolution, p_Dsolution)
+      end if
 
-      ! Impose nonlinear boundary conditions for solution
-      call bdrf_filterSolution(rsolver%rboundaryCondition,&
-                               rproblemLevel%rtriangulation,&
-                               rproblemLevel%RmatrixBlock(imatrix),&
-                               rsol, rres, rsol0, rtimestep%dTime,&
-                               rproblemLevel%p_rproblem%rboundary,&
-                               euler_calcBoundaryvalues2d, istatus)
 
-      rcollection%IquickAccess(1) = istatus
+    case(HADAPT_OPR_INSERTVERTEXEDGE)
+      ! Insert vertex into solution vector
+      if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false.)
+        call lsysbl_getbase_double(rsolution, p_Dsolution)
+      end if
+      do ivar = 1, NVAR2D
+        p_Dsolution((Ivertices(1)-1)*NVAR2D+ivar) = &
+            0.5_DP*(p_Dsolution((Ivertices(2)-1)*NVAR2D+ivar)+&
+                    p_Dsolution((Ivertices(3)-1)*NVAR2D+ivar))
+      end do
+
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+
+
+    case(HADAPT_OPR_INSERTVERTEXCENTR)
+      ! Insert vertex into solution vector
+      if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false.)
+        call lsysbl_getbase_double(rsolution, p_Dsolution)
+      end if
+      do ivar = 1, NVAR2D
+        p_Dsolution((Ivertices(1)-1)*NVAR2D+ivar) = &
+            0.25_DP*(p_Dsolution((Ivertices(2)-1)*NVAR2D+ivar)+&
+                     p_Dsolution((Ivertices(3)-1)*NVAR2D+ivar)+&
+                     p_Dsolution((Ivertices(4)-1)*NVAR2D+ivar)+&
+                     p_Dsolution((Ivertices(5)-1)*NVAR2D+ivar))
+      end do
+
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+
+
+    case(HADAPT_OPR_REMOVEVERTEX)
+      ! Remove vertex from solution
+      if (Ivertices(2) .ne. 0) then
+        do ivar = 1, NVAR2D
+          p_Dsolution((Ivertices(1)-1)*NVAR2D+ivar) = &
+              p_Dsolution((Ivertices(2)-1)*NVAR2D+ivar)
+        end do
+      else
+        do ivar = 1, NVAR2D
+          p_Dsolution((Ivertices(1)-1)*NVAR2D+ivar) = 0.0_DP
+        end do
+      end if
+      
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+
 
     case DEFAULT
-      call output_line('Invalid nonlinear preconditioner!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundary2d')
-      call sys_halt()
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+
     end select
-  end subroutine euler_setBoundary2d
+    
+  end subroutine euler_hadaptCallbackScalar2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_hadaptCallbackBlock2d(rcollection, iOperation, Ivertices, Ielements)
+
+!<description>
+    ! This callback function is used to perform postprocessing tasks
+    ! such as insertion/removal of elements and or vertices in the
+    ! grid adaptivity procedure in 2D. The solution vector is assumed
+    ! to be store in block format.
+!</description>
+
+!<input>
+    ! Identifier for the grid modification operation
+    integer, intent(IN) :: iOperation
+
+    ! Array of vertices involved in the adaptivity step
+    integer, dimension(:), intent(IN) :: Ivertices
+
+    ! Array of elements involved in the adaptivity step
+    integer, dimension(:), intent(IN) :: Ielements
+!</input>
+
+!<inputoutput>
+    ! Collection
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer, save :: rsolution
+    real(DP), dimension(:), pointer, save :: p_Dsolution
+    integer :: ivar,neq
+
+
+    ! What operation should be performed?
+    select case(iOperation)
+
+    case(HADAPT_OPR_INITCALLBACK)
+      ! This subroutine assumes that the name of the first solution
+      ! vector is stored in the second quick access string.
+
+      ! Retrieve solution vector from colletion and set pointer
+      rsolution => collct_getvalue_vec(rcollection,&
+                                        trim(rcollection%SquickAccess(2)))
+
+      ! Check if solution is stored in interleave format
+      if (rsolution%nblocks .ne. NVAR2D) then
+        call output_line('Vector is not in block format!',&
+                         OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackBlock2d')
+        call sys_halt()
+      end if
+
+      ! Set pointer
+      call lsysbl_getbase_double(rsolution, p_Dsolution)
+      
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      
+      
+    case(HADAPT_OPR_DONECALLBACK)
+      ! Nullify solution vector
+      nullify(rsolution, p_Dsolution)
+
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      
+
+    case(HADAPT_OPR_ADJUSTVERTEXDIM)
+      if (rsolution%NEQ .ne. NVAR2D*Ivertices(1)) then
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false., .true.)
+        call lsysbl_getbase_double(rsolution, p_Dsolution)
+      end if
+
+
+    case(HADAPT_OPR_INSERTVERTEXEDGE)
+      ! Insert vertex into solution vector
+      if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false.)
+        call lsysbl_getbase_double(rsolution, p_Dsolution)
+      end if
+      neq = rsolution%NEQ/NVAR2D
+      do ivar = 1, NVAR2D
+        p_Dsolution((ivar-1)*neq+Ivertices(1)) = &
+            0.5_DP*(p_Dsolution((ivar-1)*neq+Ivertices(2))+&
+                    p_Dsolution((ivar-1)*neq+Ivertices(3)) )
+      end do
+
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+
+      
+    case(HADAPT_OPR_INSERTVERTEXCENTR)
+      ! Insert vertex into solution vector
+      if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false.)
+        call lsysbl_getbase_double(rsolution, p_Dsolution)
+      end if
+      neq = rsolution%NEQ/NVAR2D
+      do ivar = 1, NVAR2D
+        p_Dsolution((ivar-1)*neq+Ivertices(1)) =&
+            0.25_DP*(p_Dsolution((ivar-1)*neq+Ivertices(2))+&
+                     p_Dsolution((ivar-1)*neq+Ivertices(3))+&
+                     p_Dsolution((ivar-1)*neq+Ivertices(4))+&
+                     p_Dsolution((ivar-1)*neq+Ivertices(5)) )
+      end do
+
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+
+
+    case(HADAPT_OPR_REMOVEVERTEX)
+      ! Remove vertex from solution
+      if (Ivertices(2) .ne. 0) then
+        neq = rsolution%NEQ/NVAR2D
+        do ivar = 1, NVAR2D
+          p_Dsolution((ivar-1)*neq+Ivertices(1)) = &
+              p_Dsolution((ivar-1)*neq+Ivertices(2))
+        end do
+      else
+        neq = rsolution%NEQ/NVAR2D
+        do ivar = 1, NVAR2D
+          p_Dsolution((ivar-1)*neq+Ivertices(1)) = 0.0_DP
+        end do
+      end if
+      
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+
+
+    case DEFAULT
+      ! Call the general callback function
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+
+    end select
+    
+  end subroutine euler_hadaptCallbackBlock2d
  
 end module euler_callback2d

@@ -9,8 +9,21 @@
 !#
 !# The following routines are available:
 !#
-!#  1.) euler_getNVAR
+!#  1.) euler_getNVAR = euler_getNVARProblemLevel /
+!#                      euler_getNVARDescriptor
 !#      Returns the number of variables depending on the spatial dimension
+!#
+!# 2.) euler_getVariable
+!#     -> Extracts a single variable from the vector of conservative
+!#        variables stored in interleave or block format
+!#
+!# 3.) euler_getVarInterleaveFormat
+!#     -> Extracts a single variable from the scalar vector of 
+!#        conservative variables stored in interleave format
+!#
+!# 4.) euler_getVarBlockFormat
+!#     -> Extracts a single variable from the vector of conservative
+!#        variables stored in block format
 !#
 !# </purpose>
 !##############################################################################
@@ -19,6 +32,8 @@ module euler_basic
 
   use fparser
   use fsystem
+  use linearsystemblock
+  use linearsystemscalar
   use problem
   use statistics
   use thermodynamics
@@ -29,10 +44,13 @@ module euler_basic
   private
   public :: t_euler
   public :: euler_getNVAR
+  public :: euler_getVariable
+  public :: euler_getVarInterleaveFormat
+  public :: euler_getVarBlockFormat
 
   interface euler_getNVAR
-    module procedure euler_getNvarProblemLevel
-    module procedure euler_getNvarDescriptor
+    module procedure euler_getNVARProblemLevel
+    module procedure euler_getNVARDescriptor
   end interface
 
 !<constants>
@@ -83,6 +101,29 @@ module euler_basic
 !</constantblock>
 
 
+!<constantblock description="Global type of recovery-based error estimation">
+
+  ! L2-projection
+  integer, parameter, public :: ERREST_L2PROJECTION  = 1
+
+  ! Superconvergent patch recovery (vertex-based)
+  integer, parameter, public :: ERREST_SPR_VERTEX    = 2
+
+  ! Superconvergent patch recovery (element-based)
+  integer, parameter, public :: ERREST_SPR_ELEMENT   = 3
+
+  ! Superconvergent patch recovery (face-based)
+  integer, parameter, public :: ERREST_SPR_FACE      = 4
+ 
+  ! Limited averaging gradient recovery
+  integer, parameter, public :: ERREST_LIMAVR        = 5
+
+  ! Second-difference indicator (by Loehner)
+  integer, parameter, public :: ERREST_SECONDDIFF    = 6
+
+!</constantblock>
+
+
 !<constantblock description="Global types of perturbation parameters">
 
   ! Perturbation parameter is chosen as in the NITSOL package
@@ -98,7 +139,9 @@ module euler_basic
 
   ! ratio of specific heats
   real(DP), parameter, public :: GAMMA = GAMMA_AIR
-  real(DP), parameter, public :: RGAS  = R_AIR
+
+  ! universal gas constant
+  real(DP), parameter, public :: RGAS  = RGAS_AIR
 
   ! auxiliary parameters related to gamma
   real(DP), parameter, public :: G1  = GAMMA-1.0
@@ -158,10 +201,7 @@ module euler_basic
     integer :: isystemCoupling
 
     ! Type of preconditioner
-    integer :: iprecond
-
-    ! Type of the right-hand side
-    integer :: irhstype
+    integer :: isystemPrecond
 
     ! Type of the element(s)
     integer :: ieltype
@@ -172,11 +212,14 @@ module euler_basic
     ! System format
     integer :: isystemFormat
     
-    ! Function parser for the right-hand side vector
-    type(t_fparser) :: rfparserRHS
-
     ! Timer for the solution process
     type(t_timer) :: rtimerSolution
+
+    ! Timer for the nonlinear solver
+    type(t_timer) :: rtimerNonlinearSolver
+
+    ! Timer for the linear solver
+    type(t_timer) :: rtimerLinearSolver
 
     ! Timer for the adaptation process
     type(t_timer) :: rtimerAdaptation
@@ -209,7 +252,7 @@ contains
 
 !<function>
 
-  pure function euler_getNvarProblemLevel(rproblemLevel) result(NVAR)
+  pure function euler_getNVARProblemLevel(rproblemLevel) result(NVAR)
 
 !<description>
     ! This function returns the number of flow variables
@@ -229,13 +272,13 @@ contains
 
     NVAR = rproblemLevel%rtriangulation%ndim + 2
     
-  end function euler_getNvarProblemLevel
+  end function euler_getNVARProblemLevel
 
   !*****************************************************************************
 
 !<function>
 
-  pure function euler_getNvarDescriptor(rappDescriptor) result(NVAR)
+  pure function euler_getNVARDescriptor(rappDescriptor) result(NVAR)
 
 !<description>
     ! This function returns the number of flow variables
@@ -255,5 +298,356 @@ contains
 
     NVAR = rappDescriptor%ndimension + 2
     
-  end function euler_getNvarDescriptor
+  end function euler_getNVARDescriptor
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_getVariable(rvectorBlock, cvariable, rvectorScalar)
+
+!<description>
+    ! This subtouein extracts a single variable from the vector of
+    ! conservative variables which is stored in interleave of block format
+!</description>
+
+!<input>
+    ! Vector of conservative variables
+    type(t_vectorBlock), intent(IN) :: rvectorBlock
+
+    ! Identifier for the variable
+    character(LEN=*), intent(IN) :: cvariable
+!</input>
+
+!<output>
+    ! Extracted single variable
+    type(t_vectorScalar), intent(OUT) :: rvectorScalar
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata, p_Dvalue
+    integer :: neq, nvar
+
+    
+    ! Check if we are in interleave of block format
+    if (rvectorBlock%nblocks .eq. 1) then
+
+      ! Set dimensions
+      neq  = rvectorBlock%RvectorBlock(1)%NEQ
+      nvar = rvectorBlock%RvectorBlock(1)%NVAR
+      
+      ! Create scalar vector
+      call lsyssc_createVector(rvectorScalar, neq, .false.)
+
+      ! Set pointers
+      call lsysbl_getbase_double(rvectorBlock, p_Ddata)
+      call lsyssc_getbase_double(rvectorScalar, p_Dvalue)
+
+      ! Fill the scalar vector with data from the variable
+      call euler_getVarInterleaveFormat(neq, nvar, cvariable, p_Ddata, p_Dvalue)
+
+    else
+
+      ! Set dimensions
+      neq  = int(rvectorBlock%NEQ/rvectorBlock%nblocks)
+      nvar = rvectorBlock%nblocks
+      
+      ! Create scalar vector
+      call lsyssc_createVector(rvectorScalar, neq, .false.)
+
+      ! Set pointers
+      call lsysbl_getbase_double(rvectorBlock, p_Ddata)
+      call lsyssc_getbase_double(rvectorScalar, p_Dvalue)
+
+      ! Fill the scalar vector with data from the variable
+      call euler_getVarBlockFormat(neq, nvar, cvariable, p_Ddata, p_Dvalue)
+
+    end if
+    
+    ! Attach spatial discretization from first subvector
+    rvectorScalar%p_rspatialDiscr => rvectorBlock%RvectorBlock(1)%p_rspatialDiscr
+    
+  end subroutine euler_getVariable
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine euler_getVarInterleaveFormat(neq, nvar, cvariable, Ddata, Dvalue)
+
+!<description>
+    ! This subroutine extracs a single variable from the vector of
+    ! conservative variabels which is stored in interleave format
+!</description>
+
+!<input>
+    ! Number of equations
+    integer, intent(IN) :: neq
+
+    ! Number of variables
+    integer, intent(IN) :: nvar
+    
+    ! Identifier for the variable
+    character(LEN=*), intent(IN) :: cvariable
+    
+    ! Vector of conservative variables
+    real(DP), dimension(nvar,neq), intent(IN) :: Ddata
+!</input>
+
+!<output>
+    ! Extracted single variable
+    real(DP), dimension(:), intent(OUT) :: Dvalue
+!</output>    
+!</subroutine>
+    
+    ! local variables
+    real(DP) :: p
+    integer :: ieq,ivar
+    
+    
+    select case (trim(adjustl(sys_upcase(cvariable))))
+    case ('DENSITY')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(1, ieq)
+      end do
+      
+    case ('VELOCITY_X')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(2, ieq)/Ddata(1, ieq)
+      end do
+      
+    case ('VELOCITY_Y')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(3, ieq)/Ddata(1, ieq)
+      end do
+      
+    case ('VELOCITY_Z')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(4, ieq)/Ddata(1, ieq)
+      end do
+      
+    case ('ENERGY')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)
+      end do
+      
+    case ('PRESSURE')
+      select case (nvar)
+      case (NVAR1D)
+        do ieq = 1, neq
+          Dvalue(ieq) = thdyn_pressure(GAMMA,&
+              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq))
+        end do
+        
+      case (NVAR2D)
+        do ieq = 1, neq
+          Dvalue(ieq) = thdyn_pressure(GAMMA,&
+              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq),&
+              Ddata(3, ieq)/Ddata(1, ieq))
+        end do
+        
+      case (NVAR3D)
+        do ieq = 1, neq
+          Dvalue(ieq) = thdyn_pressure(GAMMA,&
+              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq),&
+              Ddata(3, ieq)/Ddata(1, ieq),&
+              Ddata(4, ieq)/Ddata(1, ieq))
+        end do
+      end select
+      
+    case ('MACHNUMBER')
+      select case (nvar)
+      case (NVAR1D)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq))
+          
+          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
+              p, Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq))
+        end do
+        
+      case (NVAR2D)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq),&
+              Ddata(3, ieq)/Ddata(1, ieq))
+          
+          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
+              p, Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq),&
+              Ddata(3, ieq)/Ddata(1, ieq))
+        end do
+        
+      case (NVAR3D)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq),&
+              Ddata(3, ieq)/Ddata(1, ieq),&
+              Ddata(4, ieq)/Ddata(1, ieq))
+          
+          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
+              p, Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq),&
+              Ddata(3, ieq)/Ddata(1, ieq),&
+              Ddata(4, ieq)/Ddata(1, ieq))
+        end do
+      end select
+
+    case DEFAULT
+      do ieq = 1, neq
+        Dvalue(ieq) = 0.0_DP
+      end do
+      
+    end select
+    
+  end subroutine euler_getVarInterleaveFormat
+  
+  !*****************************************************************************
+
+!<subroutine>
+  
+   pure subroutine euler_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
+
+!<description>
+    ! This subroutine extracs a single variable from the vector of
+    ! conservative variabels which is stored in block format
+!</description>
+
+!<input>
+    ! Number of equations
+    integer, intent(IN) :: neq
+
+    ! Number of variables
+    integer, intent(IN) :: nvar
+    
+    ! Identifier for the variable
+    character(LEN=*), intent(IN) :: cvariable
+    
+    ! Vector of conservative variables
+    real(DP), dimension(neq,nvar), intent(IN) :: Ddata
+!</input>
+
+!<output>
+    ! Extracted single variable
+    real(DP), dimension(:), intent(OUT) :: Dvalue
+!</output>    
+!</subroutine>
+      
+    ! local variables
+    real(DP) :: p
+    integer :: ieq,ivar
+    
+    
+    select case (trim(adjustl(sys_upcase(cvariable))))
+    case ('DENSITY')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(ieq, 1)
+      end do
+      
+    case ('VELOCITY_X')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(ieq, 2)/Ddata(ieq, 1)
+      end do
+      
+    case ('VELOCITY_Y')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(ieq, 3)/Ddata(ieq, 1)
+      end do
+      
+    case ('VELOCITY_Z')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(ieq, 4)/Ddata(ieq, 1)
+      end do
+      
+    case ('ENERGY')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)
+      end do
+      
+    case ('PRESSURE')
+      select case (nvar)
+      case (NVAR1D)
+        do ieq = 1, neq
+          Dvalue(ieq) = thdyn_pressure(GAMMA,&
+              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1))
+        end do
+        
+      case (NVAR2D)
+        do ieq = 1, neq
+          Dvalue(ieq) = thdyn_pressure(GAMMA,&
+              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1),&
+              Ddata(ieq, 3)/Ddata(ieq, 1))
+        end do
+        
+      case (NVAR3D)
+        do ieq = 1, neq
+          Dvalue(ieq) = thdyn_pressure(GAMMA,&
+              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1),&
+              Ddata(ieq, 3)/Ddata(ieq, 1),&
+              Ddata(ieq, 4)/Ddata(ieq, 1))
+        end do
+      end select
+      
+    case ('MACHNUMBER')
+      select case (nvar)
+      case (NVAR1D)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1))
+          
+          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
+              p, Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1))
+        end do
+        
+      case (NVAR2D)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1),&
+              Ddata(ieq, 3)/Ddata(ieq, 1))
+          
+          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
+              p, Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1),&
+              Ddata(ieq, 3)/Ddata(ieq, 1))
+        end do
+        
+      case (NVAR3D)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1),&
+              Ddata(ieq, 3)/Ddata(ieq, 1),&
+              Ddata(ieq, 4)/Ddata(ieq, 1))
+          
+          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
+              p, Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1),&
+              Ddata(ieq, 3)/Ddata(ieq, 1),&
+              Ddata(ieq, 4)/Ddata(ieq, 1))
+        end do
+      end select
+
+    case DEFAULT
+      do ieq = 1, neq
+        Dvalue(ieq) = 0.0_DP
+      end do
+
+    end select
+    
+  end subroutine euler_getVarBlockformat
+
 end module euler_basic

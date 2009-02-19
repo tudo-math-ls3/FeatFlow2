@@ -24,6 +24,9 @@
 !# 5.) euler_calcRHS
 !#     -> Calculates the right-hand side vector
 !#
+!# 6.) euler_setBoundary
+!#     -> Imposes boundary conditions for nonlinear solver
+!#
 !# </purpose>
 !##############################################################################
 
@@ -55,6 +58,7 @@ module euler_callback
   public :: euler_applyJacobian
   public :: euler_calcResidual
   public :: euler_calcRHS
+  public :: euler_setBoundary
 
 contains
 
@@ -96,7 +100,7 @@ contains
     type(t_timer), pointer :: rtimer
     integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
-    integer :: isystemCoupling, iprecond, isystemFormat, imasstype, ivar, jvar
+    integer :: isystemCoupling, isystemPrecond, isystemFormat, imasstype, ivar, jvar
 
     ! Start time measurement for matrix evaluation
     rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyMatrix')
@@ -180,7 +184,7 @@ contains
     !---------------------------------------------------------------------------
 
     isystemCoupling = collct_getvalue_int(rcollection, 'isystemCoupling')
-    iprecond = collct_getvalue_int(rcollection, 'iprecond')
+    isystemPrecond = collct_getvalue_int(rcollection, 'isystemPrecond')
 
     ! What kind of coupling is applied?
     select case(isystemCoupling)
@@ -192,7 +196,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! What kind of preconditioner is applied?
-      select case(iprecond)
+      select case(isystemPrecond)
 
       case (AFCSTAB_GALERKIN)
 
@@ -279,7 +283,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! What kind of preconditioner is applied?
-      select case(iprecond)
+      select case(isystemPrecond)
         
       case (AFCSTAB_GALERKIN)
         
@@ -391,7 +395,7 @@ contains
         lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
 
         call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
-                                     rproblemLevel%Rmatrix(systemMatrix),&
+            rproblemLevel%Rmatrix(systemMatrix),&
                                      rtimestep%theta*rtimestep%dStep,&
                                      rproblemLevel%Rmatrix(systemMatrix),&
                                      .false., .false., .true., .true.)
@@ -1207,5 +1211,102 @@ contains
     call stat_stopTimer(rtimer)
     
   end subroutine euler_calcRHS
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_setBoundary(rproblemLevel, rtimestep, rsolver,&
+                               rsol, rres, rsol0, rcollection)
+
+!<description>
+    ! This subroutine imposes the nonlinear boundary conditions.
+!</description>
+
+!<input>
+    ! time-stepping algorithm
+    type(t_timestep), intent(IN) :: rtimestep
+
+    ! nonlinear solver structure
+    type(t_solver), intent(IN) :: rsolver
+
+    ! initial solution vector
+    type(t_vectorBlock), intent(IN) :: rsol0
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+
+    ! solution vector
+    type(t_vectorBlock), intent(INOUT) :: rsol
+
+    ! residual vector
+    type(t_vectorBlock), intent(INOUT) :: rres
+
+    ! collection structure to provide additional
+    ! information to the boundary setting routine
+    type(t_collection), intent(InOUT) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: imatrix, istatus
+    
+
+    ! What type of nonlinear preconditioner are we?
+    select case(rsolver%iprecond)
+    case (NLSOL_PRECOND_BLOCKD,&
+          NLSOL_PRECOND_DEFCOR,&
+          NLSOL_PRECOND_NEWTON_FAILED)
+      
+      imatrix = collct_getvalue_int(rcollection, 'SystemMatrix')
+      
+    case (NLSOL_PRECOND_NEWTON)
+      
+      imatrix = collct_getvalue_int(rcollection, 'JacobianMatrix')
+
+    case DEFAULT
+      call output_line('Invalid nonlinear preconditioner!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundary')
+      call sys_halt()
+    end select
+      
+
+    ! Impose boundary conditions for the solution vector and impose
+    ! zeros in the residual vector and the off-diagonal positions 
+    ! of the system matrix which is obtained from the collection
+    
+    select case(rproblemLevel%rtriangulation%ndim)
+    case (NDIM1D)
+      call bdrf_filterSolution(rsolver%rboundaryCondition,&
+                               rproblemLevel%rtriangulation,&
+                               rproblemLevel%RmatrixBlock(imatrix),&
+                               rsol, rres, rsol0, rtimestep%dTime,&
+                               rproblemLevel%p_rproblem%rboundary,&
+                               euler_calcBoundaryvalues1d, istatus)
+    case (NDIM2D)
+      call bdrf_filterSolution(rsolver%rboundaryCondition,&
+                               rproblemLevel%rtriangulation,&
+                               rproblemLevel%RmatrixBlock(imatrix),&
+                               rsol, rres, rsol0, rtimestep%dTime,&
+                               rproblemLevel%p_rproblem%rboundary,&
+                               euler_calcBoundaryvalues2d, istatus)
+    case (NDIM3D)
+      call bdrf_filterSolution(rsolver%rboundaryCondition,&
+                               rproblemLevel%rtriangulation,&
+                               rproblemLevel%RmatrixBlock(imatrix),&
+                               rsol, rres, rsol0, rtimestep%dTime,&
+                               rproblemLevel%p_rproblem%rboundary,&
+                               euler_calcBoundaryvalues3d, istatus)
+    case DEFAULT
+      call output_line('Invalid spatial dimension!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundary')
+      call sys_halt()
+    end select
+      
+    rcollection%IquickAccess(1) = istatus
+    
+  end subroutine euler_setBoundary
 
 end module euler_callback
