@@ -37,8 +37,6 @@ module thermodynamics
   public :: thdyn_pressure
 
   ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
 
   interface thdyn_Machnumber
     module procedure thdyn_Machnumber1D
@@ -59,24 +57,28 @@ module thermodynamics
   end interface
 
   ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
 
 !<constants>
 
-  !<constantblock description="Thermodynamic constants">
+!<constantblock description="Ratio of specific heats">
   
-  ! Ratio of specific heats for air
   real(DP), parameter, public :: GAMMA_AIR        = 1.4_DP
 
-  ! Specific heat at constant volume for air
-  real(DP), parameter, public :: CV_AIR           = 717_DP
+!</constantblock>
 
-  ! Specific heat at constant pressure for air
+
+!<constantblock description="Specific heats at constant pressure and volume">
+  
+  real(DP), parameter, public :: CV_AIR           = 717_DP
   real(DP), parameter, public :: CP_AIR           = 1004_DP
 
-  ! Universal gas constant for air
-  real(DP), parameter, public :: R_AIR            = 287_DP
+!</constantblock>
+
+
+!<constantblock description="Universal gas constants">
+
+  real(DP), parameter, public :: RGAS_AIR         = 287_DP
+
 !</constantblock>
 !</constants>
 

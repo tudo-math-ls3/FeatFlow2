@@ -363,12 +363,12 @@ contains
 
     ! Find section with boundary condition
     do
-      read(iunit, *, END=8888, ERR=9999) keyword
+      read(iunit, *, end=8888, ERR=9999) keyword
       if (trim(adjustl(keyword)) .eq. trim(adjustl(ssectionname))) exit
     end do
     
     ! Read number of boundary components
-    read(iunit, *, END=8888, ERR=9999) keyword
+    read(iunit, *, end=8888, ERR=9999) keyword
     call sys_tolower(keyword)
     
     if (trim(adjustl(keyword)) .ne. 'nbct') then
@@ -376,10 +376,10 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'bdrf_readBoundaryCondition')
       call sys_halt()
     end if
-    read(iunit, *, END=8888, ERR=9999) rboundaryCondition%iboundarycount
+    read(iunit, *, end=8888, ERR=9999) rboundaryCondition%iboundarycount
     
     ! Read maximum number of boundary expressions
-    read(iunit, *, END=8888, ERR=9999) keyword
+    read(iunit, *, end=8888, ERR=9999) keyword
     call sys_tolower(keyword)
 
     if (trim(adjustl(keyword)) .ne. 'nexpr') then
@@ -387,7 +387,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'bdrf_readBoundaryCondition')
       call sys_halt()
     end if
-    read(iunit, *, END=8888, ERR=9999) rboundaryCondition%nmaxExpressions
+    read(iunit, *, end=8888, ERR=9999) rboundaryCondition%nmaxExpressions
 
     ! Allocate an array containing pointers
     call storage_new('bdrf_readBoundaryCondition',&
@@ -403,7 +403,7 @@ contains
       p_IbdrCondCpIdx(ibct) = nncomp+1
 
       ! Read 'IBCT'
-      read(iunit, *, END=8888, ERR=9999) keyword
+      read(iunit, *, end=8888, ERR=9999) keyword
       call sys_tolower(keyword)
       
       if (trim(adjustl(keyword)) .ne. 'ibct') then
@@ -413,7 +413,7 @@ contains
       end if
       
       ! Read IBCT and check with current IBCT
-      read(iunit, *, END=8888, ERR=9999) ibct1
+      read(iunit, *, end=8888, ERR=9999) ibct1
       if (ibct .ne. ibct1) then
         call output_line('Conflict with IBCT while reading boundary conditions!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_readBoundaryCondition')
@@ -421,7 +421,7 @@ contains
       end if
       
       ! Read 'NCOMP'
-      read(iunit, *, END=8888, ERR=9999) keyword
+      read(iunit, *, end=8888, ERR=9999) keyword
       call sys_tolower(keyword)
       
       if (trim(adjustl(keyword)) .ne. 'ncomp') then
@@ -431,7 +431,7 @@ contains
       end if
       
       ! Read NCOMP and increment component counter
-      read(iunit, *, END=8888, ERR=9999) ncomp
+      read(iunit, *, end=8888, ERR=9999) ncomp
       nncomp = nncomp+ncomp
     end do
     p_IbdrCondCpIdx(rboundaryCondition%iboundarycount+1) = nncomp+1
@@ -469,7 +469,7 @@ contains
 
     ! Read boundary parameter intervals, type of boundary 
     ! and boundary expression from parameter file
-    read(iunit, *, END=8888, ERR=9999) keyword
+    read(iunit, *, end=8888, ERR=9999) keyword
     call sys_tolower(keyword)
     
     if (trim(adjustl(keyword)) .ne. 'parameters') then
@@ -485,7 +485,7 @@ contains
       cMathExpression = '0'
 
       ! Read parameters from file
-      read(iunit, *, END=8888, ERR=9999) p_DmaxParam(icomp), p_BisSegClosed(icomp),&
+      read(iunit, *, end=8888, ERR=9999) p_DmaxParam(icomp), p_BisSegClosed(icomp),&
                                          p_IbdrCondType(icomp)
 
       ! What kind of boundary condition are we?
@@ -506,7 +506,7 @@ contains
             BDR_RLXEULERWALL)
         ! Reread parameters from file to obtain mathematical expressions
         backspace iunit
-        read(iunit, *, END=8888, ERR=9999)  p_DmaxParam(icomp), p_BisSegClosed(icomp),&
+        read(iunit, *, end=8888, ERR=9999)  p_DmaxParam(icomp), p_BisSegClosed(icomp),&
                                             p_IbdrCondType(icomp), cMathExpression
 
       case (BDR_PERIODIC,&
@@ -514,7 +514,7 @@ contains
         rboundaryCondition%bPeriodic = .true.
         ! Reread parameters from file and obtain number of periodic boundary segment
         backspace iunit
-        read(iunit, *, END=8888, ERR=9999)  p_DmaxParam(icomp), p_BisSegClosed(icomp),&
+        read(iunit, *, end=8888, ERR=9999)  p_DmaxParam(icomp), p_BisSegClosed(icomp),&
                                             p_IbdrCondType(icomp), p_IbdrCompPeriodic(icomp),&
                                             p_IbdrCondPeriodic(icomp)
 
@@ -564,12 +564,12 @@ contains
     ! Deallocate temporal memory
     deallocate(cMathExpression)
     
-    if (present(berror)) berror = .FALSE.
+    if (present(berror)) berror = .false.
     return
 
     ! Error handling
 8888 if (present(berror)) then
-      berror = .TRUE.
+      berror = .true.
       
       ! Deallocate auxiliary memory
       if (allocated(cMathExpression)) deallocate(cMathExpression)
@@ -587,7 +587,7 @@ contains
     end if
 
 9999 if (present(berror)) then
-      berror = .TRUE.
+      berror = .true.
 
       ! Deallocate auxiliary memory
       if (allocated(cMathExpression)) deallocate(cMathExpression)
@@ -3385,7 +3385,8 @@ contains
       ! Impose boundary conditions explicitly in 1D
       call filtervector_1D(rboundaryCondition%rfparser, p_IbdrCondType, p_IbdrCondCpIdx,&
                            rboundaryCondition%iboundarycount, p_IverticesAtBoundary,&
-                           p_IboundaryCpIdx, p_DvertexCoords, nvt, rvector%nblocks, p_Dx)
+                           p_IboundaryCpIdx, p_DvertexCoords, nvt, rvector%nblocks, p_Dx,&
+                           fcb_calcBoundaryvalues, istatus)
       
     case (NDIM2D)
       ! Set pointers for triangulation
@@ -3404,7 +3405,8 @@ contains
       call filtervector_2D(rboundaryCondition%rfparser, p_IbdrCondType, p_IbdrCondCpIdx,&
                            p_DmaxParam, p_BisSegClosed, rboundaryCondition%iboundarycount,&
                            p_IverticesAtBoundary, p_IboundaryCpIdx, p_DvertexParameterValue,&
-                           p_DvertexCoords, nvt, rvector%nblocks, p_Dx)
+                           p_DvertexCoords, nvt, rvector%nblocks, p_Dx, rboundary,&
+                           fcb_calcBoundaryvalues, istatus)
       
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -3827,8 +3829,8 @@ contains
     integer, dimension(:), pointer :: p_IbdrCondCpIdx
     integer, dimension(:), pointer :: p_IbdrCondType
     logical, dimension(:), pointer :: p_BisSegClosed
-    
     logical :: bisSorted
+
 
     ! Check if vector and boundary description are compatible
     if (rvector%NVAR .ne. rboundaryCondition%nmaxExpressions) then
