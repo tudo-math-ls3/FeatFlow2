@@ -458,35 +458,28 @@ contains
           NLSOL_PRECOND_DEFCOR, &
           NLSOL_PRECOND_NEWTON_FAILED)
 
-      ! Impose boundary conditions for the solution vector and impose
-      ! zeros in the residual vector and the off-diagonal positions 
-      ! of the system matrix which is obtained from the collection
-      imatrix = collct_getvalue_int(rcollection, 'SystemMatrix')
-      
-      call bdrf_filterSolution(rsolver%rboundaryCondition,&
-                               rproblemLevel%rtriangulation,&
-                               rproblemLevel%Rmatrix(imatrix),&
-                               rsol, rres, rsol0, rtimestep%dTime)
-
+      imatrix = collct_getvalue_int(rcollection, 'SystemMatrix')      
       
     case (NLSOL_PRECOND_NEWTON)
 
-      ! Impose boundary conditions for the solution vector and impose
-      ! zeros in the residual vector and the off-diagonal positions 
-      ! of the system matrix which is obtained from the collection
       imatrix = collct_getvalue_int(rcollection, 'JacobianMatrix')
-
-      call bdrf_filterSolution(rsolver%rboundaryCondition,&
-                               rproblemLevel%rtriangulation,&
-                               rproblemLevel%Rmatrix(imatrix),&
-                               rsol, rres, rsol0, rtimestep%dTime)
-
-
+      
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
                        OU_CLASS_ERROR, OU_MODE_STD,'codire_setBoundary')
       call sys_halt()
     end select
+    
+    ! Impose boundary conditions for the solution vector and impose
+    ! zeros in the residual vector and the off-diagonal positions of
+    ! the system matrix which is obtained from the collection
+
+    
+    call bdrf_filterSolution(rsolver%rboundaryCondition,&
+                             rproblemLevel%rtriangulation,&
+                             rproblemLevel%Rmatrix(imatrix),&
+                             rsol, rres, rsol0, rtimestep%dTime)
+
   end subroutine codire_setBoundary
 
   !*****************************************************************************
@@ -591,11 +584,6 @@ contains
                                            rproblemLevel%Rmatrix(transportMatrix))
           
         case (AFCSTAB_SYMMETRIC)
-          ! Check if stabilisation structure is initialised
-          if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .eq. AFCSTAB_UNDEFINED)&
-              call gfsc_initStabilisation(rproblemLevel%Rmatrix(coeffMatrix_S),&
-                                          rproblemLevel%Rafcstab(diffusionAFC))
-
           ! Satisfy discrete maximum principle and assemble stabilization structure
           call gfsc_buildDiffusionOperator(rproblemLevel%Rmatrix(coeffMatrix_S),&
                                            .true., .true.,&
@@ -656,11 +644,6 @@ contains
       bbuildAFC = bStabilize .and. AFCSTAB_UPWIND .ne.&
                   rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
       
-      ! Check if stabilisation structure is initialised
-      if (rproblemLevel%Rafcstab(convectionAFC)%iSpec .eq. AFCSTAB_UNDEFINED)&
-          call gfsc_initStabilisation(rproblemLevel%Rmatrix(transportMatrix),&
-                                      rproblemLevel%Rafcstab(convectionAFC))
-
     else   ! convectionAFC > 0
 
       bStabilize = .false.
@@ -2255,7 +2238,7 @@ contains
       end if
 
       ! Get vertex coordinates of the current problem level
-      call storage_getbase_double2D(&
+      call storage_getbase_double2d(&
           p_rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
 
 
@@ -2333,7 +2316,7 @@ contains
 
 !<subroutine>
 
-  subroutine codire_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+  subroutine codire_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2361,7 +2344,7 @@ contains
     ! local variables
     type(t_vectorBlock), pointer, save :: rsolution
     real(DP), dimension(:), pointer, save :: p_Dsolution
-    integer :: nsolutionVectors
+
 
     ! What operation should be performed?
     select case(iOperation)
@@ -2376,7 +2359,7 @@ contains
       call lsysbl_getbase_double(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
       
       
     case(HADAPT_OPR_DONECALLBACK)
@@ -2384,7 +2367,7 @@ contains
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
       
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
@@ -2404,7 +2387,7 @@ contains
                                            p_Dsolution(Ivertices(3)))
 
       ! Call the general callback function
-      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
@@ -2416,22 +2399,22 @@ contains
       end if
       
       ! Call the general callback function
-      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
 
 
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
 
     end select
     
-  end subroutine codire_hadaptCallback1D
+  end subroutine codire_hadaptCallback1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
+  subroutine codire_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2460,6 +2443,7 @@ contains
     type(t_vectorBlock), pointer, save :: rsolution
     real(DP), dimension(:), pointer, save :: p_Dsolution
 
+
     ! What operation should be performed
     select case(iOperation)
 
@@ -2473,7 +2457,7 @@ contains
       call lsysbl_getbase_double(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
 
 
     case(HADAPT_OPR_DONECALLBACK)
@@ -2481,7 +2465,7 @@ contains
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
 
       
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
@@ -2501,7 +2485,7 @@ contains
                                            p_Dsolution(Ivertices(3)))
 
       ! Call the general callback function
-      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
 
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
@@ -2516,7 +2500,7 @@ contains
                                             p_Dsolution(Ivertices(5)))
 
       ! Call the general callback function
-      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
 
       
     case(HADAPT_OPR_REMOVEVERTEX)
@@ -2528,22 +2512,22 @@ contains
       end if
 
       ! Call the general callback function
-      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
 
     
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
 
     end select
 
-  end subroutine codire_hadaptCallback2D
+  end subroutine codire_hadaptCallback2d
 
    !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
+  subroutine codire_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2586,7 +2570,7 @@ contains
       call lsysbl_getbase_double(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
 
 
     case(HADAPT_OPR_DONECALLBACK)
@@ -2594,7 +2578,7 @@ contains
       nullify(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
       
       
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
@@ -2614,7 +2598,7 @@ contains
                                            p_Dsolution(Ivertices(3)))
 
       ! Call the general callback function
-      call flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
 
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
@@ -2629,7 +2613,7 @@ contains
                                             p_Dsolution(Ivertices(5)))
 
       ! Call the general callback function
-      call flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
 
     
     case(HADAPT_OPR_REMOVEVERTEX)
@@ -2641,15 +2625,15 @@ contains
       end if
 
       ! Call the general callback function
-      call flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
 
 
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
     end select
     
-  end subroutine codire_hadaptCallback3D
+  end subroutine codire_hadaptCallback3d
 
   !*****************************************************************************
   
