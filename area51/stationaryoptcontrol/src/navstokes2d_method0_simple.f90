@@ -1868,7 +1868,7 @@ contains
     integer :: imaxre,icurrentre,icurrentalpha
     !integer, dimension(8), parameter :: ire = (/500,250,100,50,25,10,5,1/)
     !real(dp), dimension(3), parameter :: Dalpha = (/0.1_DP,0.01_DP,0.001_DP/)
-    integer, dimension(1), parameter :: ire = (/100/)
+    integer, dimension(1), parameter :: ire = (/50/)
     real(dp), dimension(1), parameter :: Dalpha = (/0.01_DP/)
 
     ! Ok, let's start. 
@@ -1890,7 +1890,7 @@ contains
     rparams%bdualcoupledtoprimal = .true.
     
     ! Bounds on the control
-    rparams%bboundsActive = .false.
+    rparams%bboundsActive = .true.
     rparams%dmin1 = -0.05
     rparams%dmax1 = 0.05
     rparams%dmin2 = -0.05
@@ -1918,7 +1918,7 @@ contains
     ! TRUE: Use exact derivative of the semismooth operator
     ! (mass matrix set up with an appropriate coefficient) instead
     ! of zero rows in the mass matrix.
-    rparams%bexactderiv = .true.
+    rparams%bexactderiv = .false.
     
     ! Activate inflow BC's
     ! =0: no inflow
@@ -1950,8 +1950,8 @@ contains
 
     ! Create the target flow.
     call initTargetFlow (rtargetFlow,itargetFlow,rboundary,&
-        './pre/QUAD.tri',6,'./ns/navstdc6re1000')
-    imaxre = 1000
+        './pre/QUAD.tri',6,'./ns/navstdc6re100')
+    imaxre = 100
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (Rlevel(1)%rtriangulation, './pre/QUAD.tri', rboundary)

@@ -3406,16 +3406,30 @@ contains
           call incorporateLocalMatVecCol (DentryA11,p_Da11,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
         if (associated(p_Da21)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da21,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
 
@@ -3506,16 +3520,30 @@ contains
           call incorporateLocalMatVecCol (DentryA11,p_Da11,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
         if (associated(p_Da21)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da21,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
 
@@ -3608,16 +3636,30 @@ contains
           call incorporateLocalMatVecCol (DentryA11,p_Da12,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
         if (associated(p_Da22)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da22,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          else                                            
+            call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
 
@@ -3708,16 +3750,30 @@ contains
           call incorporateLocalMatVecCol (DentryA11,p_Da12,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
         if (associated(p_Da22)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da22,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
 
@@ -3810,16 +3866,30 @@ contains
           call incorporateLocalMatVecCol (DentryA11,p_Da14,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
         if (associated(p_Da24)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da24,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
 
@@ -3910,16 +3980,30 @@ contains
           call incorporateLocalMatVecCol (DentryA11,p_Da14,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
         if (associated(p_Da24)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da24,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
 
@@ -4013,16 +4097,30 @@ contains
           call incorporateLocalMatVecCol (DentryA11,p_Da15,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
         if (associated(p_Da25)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da25,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
 
@@ -4113,16 +4211,32 @@ contains
           call incorporateLocalMatVecCol (DentryA11,p_Da15,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+          else
+            ! Note that dcontrolMultiplier is negative, so we have to switch
+            ! the min and the max!!!
+            call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
         if (associated(p_Da25)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da25,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
 
-          call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          if (roptcoperator%ccontrolProjection .eq. 0) then
+            call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+          else
+            call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
+                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+          end if
         end if
 
 
@@ -4179,7 +4293,8 @@ contains
                
   contains
   
-    subroutine incorporateLocalMatVecCol (DaLocal,Da,Kentry,Dvelocity,ivelcomp,idof,dweight,Dtemp)
+    subroutine incorporateLocalMatVecCol (DaLocal,Da,Kentry,Dvelocity,ivelcomp,idof,dweight,Dtemp,&
+        dmin,dmax)
     
     ! Incorporate a local matrix into a global one.
     
@@ -4207,25 +4322,53 @@ contains
     ! Temporary vector
     real(dp), dimension(:), intent(inout) :: Dtemp
 
+    ! Min/Max value for the velocity. If present, the velocity will be
+    ! projected to this range.
+    real(dp), intent(in), optional :: dmin,dmax
+
       ! local variables
       integer :: iel,idofe,jdofe
     
-      do iel=1,ubound(DaLocal,3)
-        ! Apply a local matrix-vector multiplication to get the column
-        ! which is to be incorporated into the matrix.
-        Dtemp(:) = 0.0_DP
-        do idofe = 1,ubound(DaLocal,2)
-          do jdofe = 1,ubound(DaLocal,1)
-            Dtemp(idofe) = Dtemp(idofe) + DaLocal(jdofe,idofe,iel)*Dvelocity(jdofe,iel,ivelcomp)
+      if (.not. present(dmin)) then
+      
+        do iel=1,ubound(DaLocal,3)
+          ! Apply a local matrix-vector multiplication to get the column
+          ! which is to be incorporated into the matrix.
+          Dtemp(:) = 0.0_DP
+          do idofe = 1,ubound(DaLocal,2)
+            do jdofe = 1,ubound(DaLocal,1)
+              Dtemp(idofe) = Dtemp(idofe) + DaLocal(jdofe,idofe,iel)*Dvelocity(jdofe,iel,ivelcomp)
+            end do
+          end do
+        
+          ! Incorporate the vector to the global matrix.
+          do idofe=1,ubound(DaLocal,2)
+            Da(Kentry(idof,idofe,iel)) = Da(Kentry(idof,idofe,iel)) + &
+                dweight * Dtemp(idofe)
+          end do
+        end do
+        
+      else
+      
+        do iel=1,ubound(DaLocal,3)
+          ! Apply a local matrix-vector multiplication to get the column
+          ! which is to be incorporated into the matrix.
+          Dtemp(:) = 0.0_DP
+          do idofe = 1,ubound(DaLocal,2)
+            do jdofe = 1,ubound(DaLocal,1)
+              Dtemp(idofe) = Dtemp(idofe) + &
+                  DaLocal(jdofe,idofe,iel)*min(max(Dvelocity(jdofe,iel,ivelcomp),dmin),dmax)
+            end do
+          end do
+        
+          ! Incorporate the vector to the global matrix.
+          do idofe=1,ubound(DaLocal,2)
+            Da(Kentry(idof,idofe,iel)) = Da(Kentry(idof,idofe,iel)) + &
+                dweight * Dtemp(idofe)
           end do
         end do
       
-        ! Incorporate the vector to the global matrix.
-        do idofe=1,ubound(DaLocal,2)
-          Da(Kentry(idof,idofe,iel)) = Da(Kentry(idof,idofe,iel)) + &
-              dweight * Dtemp(idofe)
-        end do
-      end do
+      end if
     
     end subroutine
     
@@ -4420,18 +4563,36 @@ contains
       call calcDefect (DentryA12,roptcassemblyinfo%Idofs,p_Dx2,p_Dd1,dweight)
       call calcDefect (DentryA21,roptcassemblyinfo%Idofs,p_Dx1,p_Dd2,dweight)
       call calcDefect (DentryA22,roptcassemblyinfo%Idofs,p_Dx2,p_Dd2,dweight)
-      call calcDefect (DentryA44,roptcassemblyinfo%Idofs,p_Dx4,p_Dd4,dweight)
-      call calcDefect (DentryA45,roptcassemblyinfo%Idofs,p_Dx5,p_Dd4,dweight)
-      call calcDefect (DentryA54,roptcassemblyinfo%Idofs,p_Dx4,p_Dd5,dweight)
-      call calcDefect (DentryA55,roptcassemblyinfo%Idofs,p_Dx5,p_Dd5,dweight)
+      
       call calcDefect (DentryA41,roptcassemblyinfo%Idofs,p_Dx1,p_Dd4,dweight)
       call calcDefect (DentryA42,roptcassemblyinfo%Idofs,p_Dx2,p_Dd4,dweight)
       call calcDefect (DentryA51,roptcassemblyinfo%Idofs,p_Dx1,p_Dd5,dweight)
       call calcDefect (DentryA52,roptcassemblyinfo%Idofs,p_Dx2,p_Dd5,dweight)
-      call calcDefect (DentryA14,roptcassemblyinfo%Idofs,p_Dx4,p_Dd1,dweight)
-      call calcDefect (DentryA24,roptcassemblyinfo%Idofs,p_Dx4,p_Dd2,dweight)
-      call calcDefect (DentryA15,roptcassemblyinfo%Idofs,p_Dx5,p_Dd1,dweight)
-      call calcDefect (DentryA25,roptcassemblyinfo%Idofs,p_Dx5,p_Dd2,dweight)
+
+      call calcDefect (DentryA44,roptcassemblyinfo%Idofs,p_Dx4,p_Dd4,dweight)
+      call calcDefect (DentryA45,roptcassemblyinfo%Idofs,p_Dx5,p_Dd4,dweight)
+      call calcDefect (DentryA54,roptcassemblyinfo%Idofs,p_Dx4,p_Dd5,dweight)
+      call calcDefect (DentryA55,roptcassemblyinfo%Idofs,p_Dx5,p_Dd5,dweight)
+
+      if (roptcoperator%ccontrolProjection .eq. 0) then
+        call calcDefect (DentryA14,roptcassemblyinfo%Idofs,p_Dx4,p_Dd1,dweight)
+        call calcDefect (DentryA24,roptcassemblyinfo%Idofs,p_Dx4,p_Dd2,dweight)
+        call calcDefect (DentryA15,roptcassemblyinfo%Idofs,p_Dx5,p_Dd1,dweight)
+        call calcDefect (DentryA25,roptcassemblyinfo%Idofs,p_Dx5,p_Dd2,dweight)
+      else
+        call calcDefect (DentryA14,roptcassemblyinfo%Idofs,p_Dx4,p_Dd1,dweight,&
+            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
+            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+        call calcDefect (DentryA24,roptcassemblyinfo%Idofs,p_Dx4,p_Dd2,dweight,&
+            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
+            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+        call calcDefect (DentryA15,roptcassemblyinfo%Idofs,p_Dx5,p_Dd1,dweight,&
+            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
+            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+        call calcDefect (DentryA25,roptcassemblyinfo%Idofs,p_Dx5,p_Dd2,dweight,&
+            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
+            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+      end if
       
     end do ! ielset
     !%OMP end do 
@@ -4459,7 +4620,7 @@ contains
                
   contains
     
-    subroutine calcDefect (DaLocal,KcolLocal,Dx,Dd,dweight)
+    subroutine calcDefect (DaLocal,KcolLocal,Dx,Dd,dweight,dmin,dmax)
     
     ! Calculate the local defect:
     !   Dd = Dd - DaLocal*Dx
@@ -4479,21 +4640,40 @@ contains
     ! Weight for the solution vectot
     real(dp), intent(in) :: dweight
     
+    ! Min/Max value for the velocity. If present, the velocity will be
+    ! projected to this range.
+    real(dp), intent(in), optional :: dmin,dmax
+    
       ! local variables
       integer :: iel,idofe,jdofe
       real(dp) :: dval
     
-      do iel=1,ubound(DaLocal,3)
-        do idofe=1,ubound(DaLocal,1)
-          dval = 0.0_DP
-          ! DaLocal*Dx. Note that DaLocal is saved transposed for quicker access,
-          ! so jdofe in the first index describes the column!
-          do jdofe=1,ubound(DaLocal,2)
-            dval = dval + DaLocal(jdofe,idofe,iel) * Dx(KcolLocal(jdofe,iel))
+      if (.not. present(dmin)) then
+        do iel=1,ubound(DaLocal,3)
+          do idofe=1,ubound(DaLocal,1)
+            dval = 0.0_DP
+            ! DaLocal*Dx. Note that DaLocal is saved transposed for quicker access,
+            ! so jdofe in the first index describes the column!
+            do jdofe=1,ubound(DaLocal,2)
+              dval = dval + DaLocal(jdofe,idofe,iel) * Dx(KcolLocal(jdofe,iel))
+            end do
+            Dd(KcolLocal(idofe,iel)) = Dd(KcolLocal(idofe,iel)) - dweight*dval
           end do
-          Dd(KcolLocal(idofe,iel)) = Dd(KcolLocal(idofe,iel)) - dweight*dval
         end do
-      end do
+      else
+        do iel=1,ubound(DaLocal,3)
+          do idofe=1,ubound(DaLocal,1)
+            dval = 0.0_DP
+            ! DaLocal*Dx. Note that DaLocal is saved transposed for quicker access,
+            ! so jdofe in the first index describes the column!
+            do jdofe=1,ubound(DaLocal,2)
+              dval = dval + DaLocal(jdofe,idofe,iel) * &
+                  min(max(Dx(KcolLocal(jdofe,iel)),dmin),dmax)
+            end do
+            Dd(KcolLocal(idofe,iel)) = Dd(KcolLocal(idofe,iel)) - dweight*dval
+          end do
+        end do
+      end if
     
     end subroutine
     
