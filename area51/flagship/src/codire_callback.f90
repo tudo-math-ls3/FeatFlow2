@@ -2195,6 +2195,7 @@ contains
     ! collection
     type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
+!</subroutine>
 
     ! local variables
     type(t_problemLevel), pointer :: p_rproblemLevel
@@ -2289,6 +2290,7 @@ contains
     ! velocity field
     type(t_vectorBlock), intent(IN) :: rvector
 !</input>
+!</subroutine>
 
     ! What spatial dimension are we?
     select case(rvector%nblocks)
