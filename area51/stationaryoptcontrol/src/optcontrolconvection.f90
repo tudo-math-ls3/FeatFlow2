@@ -3331,13 +3331,16 @@ contains
       ! as A41/A52 are linear.
       !
       ! We calculate the matrix column-wise and element based:
-      ! Let Bij := 1/2h * (Aij(u+h*e_k) - Aij(u-h*e_k)), then
+      ! Let Bij := 1/2h * (Aij(u+h*e_k)) and
+      !     Cij := 1/2h * (Aij(u-h*e_k)), then we have with
+      ! (pdofp1,pdofp2,ddofp1,ddofp2) = u+h*e_k
+      ! (pdofn1,pdofn2,ddofn1,ddofn2) = u-h*e_k
       !
-      !   (B11     B41    ) (pdof1)  ->  (    X          )
-      !   (    B22     B52) (pdof2)      (    X          )
-      !   (B41     B44 B45) (ddof1)      (    X          )
-      !   (    B52 B54 B55) (ddof2)      (    X          )
-      !                                       ^k
+      !   (B11     B41    ) (pdofp1) - (C11     C41    ) (pdofn1)  ->  (    X          )
+      !   (    B22     B52) (pdofp2)   (    C22     C52) (pdofn2)      (    X          )
+      !   (B41     B44 B45) (ddofp1)   (C41     C44 C45) (ddofn1)      (    X          )
+      !   (    B52 B54 B55) (ddofp2)   (    C52 C54 C55) (ddofn2)      (    X          )
+      !                                                                     ^k
     
       ! Loop through the DOF's. All DOF's must be once increased and once decreased
       ! by h.
