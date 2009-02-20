@@ -49,47 +49,40 @@
 !#     -> Initializes the application descriptor by the parameter
 !#        settings given by the parameter list
 !#
-!# 3.) euler_doneApplication
-!#     -> Finalizes the application descriptor
-!#
-!# 4.) euler_initCollection
+!# 3.) euler_initCollection
 !#     -> Initializes the collection structure based on the parameter
 !#        settings given by the application descriptor
 !#
-!# 5.) euler_initSolvers
+!# 4.) euler_initSolvers
 !#     -> Initializes the solve structures from the parameter list
 !#
-!# 6.) euler_initProblem
+!# 5.) euler_initProblem
 !#     -> Initializes the global problem structure based on the
 !#        parameter settings given by the parameter list
 !#
-!# 7.) euler_initProblemLevel
+!# 6.) euler_initProblemLevel
 !#     -> Initializes the individual problem levels based in the
 !#        parameter settings given by the application descriptor
 !#
-!# 8.) euler_initAllProblemLevels
+!# 7.) euler_initAllProblemLevels
 !#     -> Initializes all problem levels attached to the global
 !#        problem structure based on the parameter settings
 !#        given by the parameter list
 !#
-!# 9.) euler_initSolution
+!# 8.) euler_initSolution
 !#     -> Initializes the solution vector based on the parameter
 !#        settings given by the parameter list
 !#
-!# 10.) euler_initRHS
-!#      -> Initializes the right-hand side vector based on the
-!#         parameter settings given by the application descriptor
+!# 9.) euler_outputSolution
+!#     -> Outputs the solution vector to file in UCD format
 !#
-!# 11.) euler_outputSolution
-!#      -> Outputs the solution vector to file in UCD format
-!#
-!# 12.) euler_outputStatistics
+!# 10.) euler_outputStatistics
 !#      -> Outputs the application statitics
 !#
-!# 13.) euler_estimateRecoveryError
+!# 11.) euler_estimateRecoveryError
 !#      -> Estimates the solution error using recovery techniques
 !#
-!# 14.) euler_adaptTriangulation
+!# 12.) euler_adaptTriangulation
 !#      -> Performs h-adaptation for the given triangulation
 !#
 !# 
@@ -139,6 +132,19 @@ module euler_application
 
   private
   public :: euler
+  public :: euler_initApplication
+  public :: euler_initCollection
+  public :: euler_initSolvers
+  public :: euler_initProblem
+  public :: euler_initProblemLevel
+  public :: euler_initAllProblemLevels
+  public :: euler_initSolution
+  public :: euler_outputSolution
+  public :: euler_outputStatistics
+  public :: euler_estimateRecoveryError
+  public :: euler_adaptTriangulation
+  public :: euler_solveTransientPrimal
+  
 
 contains
 
@@ -177,15 +183,12 @@ contains
     type(t_boundaryCondition) :: rbdrCondDual
 
     ! Problem structure which holds all internal data (vectors/matrices)
-    ! for the convection-diffusion-reaction application
     type(t_problem) :: rproblem
     
-    ! Time-stepping structure for the convection-
-    ! diffusion-reaction application
+    ! Time-stepping structure
     type(t_timestep) :: rtimestep
     
-    ! Global solver structure for the convection-
-    ! diffusion-reaction application
+    ! Global solver structure
     type(t_solver) :: rsolver
 
     ! Solution vector for the primal problem
@@ -228,7 +231,7 @@ contains
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
 
     ! Initialize the global collection
-    call euler_initCollection(rappDescriptor, rparlist, rcollection)
+    call euler_initCollection(rappDescriptor, rparlist, 'euler', rcollection)
 
     ! Initialize the solver structures
     call euler_initSolvers(rparlist, 'euler', rtimestep, rsolver)
@@ -276,15 +279,15 @@ contains
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call euler_solveTransientPrimal(rappDescriptor, rparlist, 'euler',&
-                                         rbdrCondPrimal, rproblem, rtimestep,&
-                                         rsolver, rsolutionPrimal, rcollection)
+                                        rbdrCondPrimal, rproblem, rtimestep,&
+                                        rsolver, rsolutionPrimal, rcollection)
         call euler_outputSolution(rparlist, 'euler', rproblem%p_rproblemLevelMax,&
                                   rsolutionPrimal, dtime=rtimestep%dTime)
 
         
       case DEFAULT
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler_start')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler')
         call sys_halt()
       end select
     end if
@@ -303,9 +306,6 @@ contains
     ! Release problem structure
     call problem_releaseProblem(rproblem)
 
-    ! Release application descriptor
-    call euler_doneApplication(rappDescriptor)
-    
     ! Release boundary conditions
     call bdrf_release(rbdrCondPrimal)
     call bdrf_release(rbdrCondDual)
@@ -394,26 +394,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_doneApplication(rappDescriptor)
-
-!<description>
-    ! This subroutine finalizes the application descriptor
-!</description>
-
-!<inputoutput>
-    ! application descriptor
-    type(t_euler), intent(INOUT) :: rappDescriptor
-!</inputoutput>
-!</subroutine>
-
-    
-  end subroutine euler_doneApplication
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine euler_initCollection(rappDescriptor, rparlist, rcollection)
+  subroutine euler_initCollection(rappDescriptor, rparlist, ssectionName, rcollection)
 
 !<description>
     ! This subroutine initializes the collection based on
@@ -426,6 +407,9 @@ contains
     
     ! parameter list
     type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -482,26 +466,26 @@ contains
 
     ! Add internal information about the position of 
     ! constant coefficient matrices and auxiliary vectors
-    call parlst_getvalue_int(rparlist, '', 'InviscidAFC', i, 1)
-    call collct_setvalue_int(rcollection,  'InviscidAFC', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'InviscidAFC', i, 1)
+    call collct_setvalue_int(rcollection, 'InviscidAFC', i, .true.)
 
-    call parlst_getvalue_int(rparlist, '', 'SystemMatrix', i, 1)
-    call collct_setvalue_int(rcollection,  'SystemMatrix', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'SystemMatrix', i, 1)
+    call collct_setvalue_int(rcollection, 'SystemMatrix', i, .true.)
 
-    call parlst_getvalue_int(rparlist, '', 'JacobianMatrix', i, 2)
-    call collct_setvalue_int(rcollection,  'JacobianMatrix', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'JacobianMatrix', i, 2)
+    call collct_setvalue_int(rcollection, 'JacobianMatrix', i, .true.)
 
-    call parlst_getvalue_int(rparlist, '', 'TemplateMatrix', i, 3)
-    call collct_setvalue_int(rcollection,  'TemplateMatrix', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'TemplateMatrix', i, 3)
+    call collct_setvalue_int(rcollection, 'TemplateMatrix', i, .true.)
 
     if ((rappDescriptor%imasstype .ne. MASS_ZERO) .or.&
         (rappDescriptor%imassantidiffusiontype .ne. MASS_ZERO)) then
 
-      call parlst_getvalue_int(rparlist, '', 'ConsistentMassMatrix', i, 4)
-      call collct_setvalue_int(rcollection,  'ConsistentMassMatrix', i, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'ConsistentMassMatrix', i, 4)
+      call collct_setvalue_int(rcollection, 'ConsistentMassMatrix', i, .true.)
 
-      call parlst_getvalue_int(rparlist, '', 'LumpedMassMatrix', i, 5)
-      call collct_setvalue_int(rcollection,  'LumpedMassMatrix', i, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'LumpedMassMatrix', i, 5)
+      call collct_setvalue_int(rcollection, 'LumpedMassMatrix', i, .true.)
 
     else
 
@@ -512,23 +496,23 @@ contains
 
     select case(rappDescriptor%ndimension)
     case (NDIM1D)
-      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CX', i, 6)
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_CX', i, .true.)
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_CY', 0, .true.)
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_CZ', 0, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 6)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', 0, .true.)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', 0, .true.)
     case (NDIM2D)
-      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CX', i, 6)
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_CX', i, .true.)
-      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CY', i, 7)
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_CY', i, .true.)
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_CZ', 0, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 6)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i, 7)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', i, .true.)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', 0, .true.)
     case (NDIM3D)
-      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CX', i, 6)
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_CX', i, .true.)
-      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CY', i, 7)
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_CY', i, .true.)
-      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CZ', i, 8)
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_CZ', i, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 6)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i, 7)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', i, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CZ', i, 8)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', i, .true.)
     case DEFAULT
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CX',  0, .true.)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CY',  0, .true.)
@@ -576,8 +560,8 @@ contains
  
     
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "timestep", stimestepName)
-    call parlst_getvalue_string(rparlist, ssectionName, "solver",   ssolverName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'timestep', stimestepName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'solver',   ssolverName)
 
     ! Initialize time-stepping
     call solver_createTimestep(rparlist, stimestepName, rtimestep)
@@ -644,7 +628,7 @@ contains
     
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'inviscid',sinviscidName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'inviscid', sinviscidName)
     call parlst_getvalue_string(rparlist, ssectionName, 'trifile', rproblemDescriptor%trifile)
     call parlst_getvalue_string(rparlist, ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
     call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rproblemDescriptor%ndimension)
@@ -1351,10 +1335,10 @@ contains
 
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, "output", soutputName)
-    call parlst_getvalue_string(rparlist, trim(soutputName), "ucdsolution", ucdsolution)
-    call parlst_getvalue_int(rparlist, trim(soutputName), "iformatucd", iformatUCD)
-    call parlst_getvalue_int(rparlist, ssectionName, "isystemformat", isystemformat)
+    call parlst_getvalue_string(rparlist, ssectionName, 'output', soutputName)
+    call parlst_getvalue_string(rparlist, trim(soutputName), 'ucdsolution', ucdsolution)
+    call parlst_getvalue_int(rparlist, trim(soutputName), 'iformatucd', iformatUCD)
+    call parlst_getvalue_int(rparlist, ssectionName, 'isystemformat', isystemformat)
 
     ! Initialize the UCD exporter
     call flagship_initUCDexport(rproblemLevel, ucdsolution,&
@@ -1550,7 +1534,7 @@ contains
     type(t_timer) :: rtimerSolution
     real(DP) :: dtotalTime, dfraction
 
-    call output_lbrk(nlbrk=5)
+    call output_lbrk()
     call output_line('Time measurement:')
     call output_line('-----------------')
     
@@ -1640,17 +1624,15 @@ contains
     character(LEN=SYS_STRLEN) :: sexactsolutionName
 
     ! local variables
-    type(t_fparser) :: rfparser
-    type(t_collection) :: rcollection
     type(t_vectorScalar) :: rvectorScalar, rvectorTmp
-    real(DP), dimension(:), pointer :: p_Ddata, p_Derror
+    real(DP), dimension(:), pointer :: p_Ddata
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
     logical, dimension(:), pointer :: p_BisactiveElement
     character(LEN=SYS_STRLEN) :: serrorvariable
-    real(DP) :: dnoiseFilter, dabsFilter, dsolution, dvalue,&
-                dexacterror, dprotectLayerTolerance, derrorTmp
-    integer :: i, ierrorEstimator, igridindicator, iexactsolutiontype
+    real(DP) :: dnoiseFilter, dabsFilter, dvalue,&
+                dprotectLayerTolerance, derrorTmp
+    integer :: ierrorEstimator, igridindicator, iexactsolutiontype
     integer :: iprotectLayer, nprotectLayers, ierrorVariable, nerrorVariables
     integer :: h_BisactiveElement
     
@@ -2044,9 +2026,6 @@ contains
     ! Pointer to the current multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
 
-    ! Vector for the right-hand side
-    type(t_vectorBlock) :: rrhs
-
     ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
     
@@ -2064,6 +2043,7 @@ contains
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix
     integer :: ipreadapt, npreadapt
+    integer, external :: signal_SIGINT
 
 
     ! Start time measurement for pre-processing
@@ -2210,7 +2190,9 @@ contains
     timeloop: do
       
       ! Check for user interaction
-      call euler_UserInterface
+      if (signal_SIGINT(-1) > 0 )&
+      call euler_outputSolution(rparlist, ssectionName, p_rproblemLevel,&
+                                rsolution, dtime=rtimestep%dTime)
       
       !-------------------------------------------------------------------------
       ! Advance solution in time
@@ -2404,52 +2386,52 @@ contains
       case ('-A','--adaptivity')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "adaptivity", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'adaptivity', trim(adjustl(cbuffer)))
 
       case ('-B','--benchmark')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "benchmark", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'benchmark', trim(adjustl(cbuffer)))
        
       case ('-DC','--dualconv')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "dualconv", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'dualconv', trim(adjustl(cbuffer)))
         
       case ('-DD','--dualdiff')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "dualdiff", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'dualdiff', trim(adjustl(cbuffer)))
 
       case ('-E','--errorest')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "errorest", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'errorest', trim(adjustl(cbuffer)))
         
       case ('-I','--io')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "inputoutput", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'inputoutput', trim(adjustl(cbuffer)))
         
       case ('-PC','--primalconv')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "primalconv", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'primalconv', trim(adjustl(cbuffer)))
         
       case ('-PD','--primaldiff')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "primaldiff", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'primaldiff', trim(adjustl(cbuffer)))
 
       case ('-S','--solver')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "solver", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
         
       case ('-T','--timestep')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "timestep", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
         
       case DEFAULT
         iarg = iarg+1
@@ -2458,25 +2440,5 @@ contains
     end do cmdarg
 
   end subroutine euler_parseCmdlArguments
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine euler_UserInterface()
-
-!<description>
-    ! This subroutine enables the user to interact with the simulation.
-!</description>
-
-!</subroutine>
-    
-!!$    ! local variables
-!!$    integer, external :: signal_SIGINT
-!!$    
-!!$    ! Perform intermediate output
-!!$    if (signal_SIGINT(-1) > 0 ) call euler_postprocess(rsolution)
-    
-  end subroutine euler_UserInterface
 
 end module euler_application
