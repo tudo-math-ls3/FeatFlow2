@@ -1158,14 +1158,6 @@ contains
   end subroutine
 
 !  es fehlt: 
-!  * Ordentliche Behandlung des R-Terms beim Newton in der dualen Gleichung.
-!  Zur Zeit ist die Behandlung noch falsch, das übergebene DWeight-array enthält
-!  wahrscheinlich noch die falschen Gewichte! Die Behandlung muss hier und in der
-!  Konvektion geschenen.
-!  
-!  * Bei der neuen SD-Methode: Implementation der berechneten Größen in Defekt/Matrix,
-!  ist zur Zeit noch auskommentiert.
-!  
 !  * Umsetzung des diskreten Newtons
   
   ! ***************************************************************************
@@ -3120,6 +3112,1108 @@ contains
             Da(Kentry(jdofe,idofe,iel)) = Da(Kentry(jdofe,idofe,iel)) + &
                 dweight * DaLocal(jdofe,idofe,iel) 
           end do
+        end do
+      end do
+    
+    end subroutine
+    
+  end subroutine
+     
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine conv_strdiffOptC2dgetDerMatrix (rmatrix,roptcoperator,dweight,&
+      rvelocityVector,dh)
+!<description>
+  ! Calculate the derivative matrix of the nonlinear operator:
+  !   dweight*A(rvelocityVector)
+!</description>
+
+!<input>
+
+  ! Structure defining the operator to set up.
+  type(t_optcoperator), intent(in) :: roptcoperator
+  
+  ! Weight of the operator. Standard = 1.0
+  real(dp), intent(in) :: dweight
+      
+  ! Velocity vector for the nonlinearity.
+  ! The first blocks 1/2 and 4/5 in this vector define the evaluation
+  ! point (primal/dual velocity).
+  type(t_vectorBlock), intent(in) :: rvelocityVector
+  
+  ! Step length for the discrete derivative.
+  real(dp), intent(in) :: dh
+  
+!</input>
+
+!<inputoutput>
+  ! The system matrix. The submatrices for the velocity must be in block
+  ! A11, A12, A21 and A22 and must be in matrix format 7 or 9.
+  ! A11 and A22 must have the same structure. A12 and A21 must have
+  ! the same structure.
+  type(t_matrixBlock), intent(inout), target :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  integer(PREC_ELEMENTIDX) :: ielset,ielmax,idof,iel
+  real(dp) :: dweight2
+  
+  ! Matrix structure arrays
+  real(DP), dimension(:), pointer :: p_Da11,p_Da22,p_Da44,p_Da55
+  real(DP), dimension(:), pointer :: p_Da12,p_Da21,p_Da45,p_Da54
+  real(DP), dimension(:), pointer :: p_Da41,p_Da51,p_Da42,p_Da52
+  real(DP), dimension(:), pointer :: p_Da14,p_Da15,p_Da24,p_Da25
+  
+  ! Local matrices
+  real(DP), dimension(:,:,:), allocatable :: DentryA11
+  real(DP), dimension(:,:,:), allocatable :: DentryA12
+  real(DP), dimension(:,:,:), allocatable :: DentryA21
+  real(DP), dimension(:,:,:), allocatable :: DentryA22
+                                                      
+  real(DP), dimension(:,:,:), allocatable :: DentryA44
+  real(DP), dimension(:,:,:), allocatable :: DentryA45
+  real(DP), dimension(:,:,:), allocatable :: DentryA54
+  real(DP), dimension(:,:,:), allocatable :: DentryA55
+                                                      
+  real(DP), dimension(:,:,:), allocatable :: DentryA41
+  real(DP), dimension(:,:,:), allocatable :: DentryA52
+  real(DP), dimension(:,:,:), allocatable :: DentryA42
+  real(DP), dimension(:,:,:), allocatable :: DentryA51
+                                                      
+  real(DP), dimension(:,:,:), allocatable :: DentryA14
+  real(DP), dimension(:,:,:), allocatable :: DentryA25
+  real(DP), dimension(:,:,:), allocatable :: DentryA24
+  real(DP), dimension(:,:,:), allocatable :: DentryA15
+  real(DP), dimension(:), allocatable :: Dtemp
+  
+  ! Temp vector
+  type(t_vectorBlock) :: rvectorBlock
+  
+  ! Assembly status structure
+  type(t_optcassemblyinfo) :: roptcassemblyinfo
+
+    if (roptcoperator%dnu .eq. 0.0_DP) then
+      print *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
+              ' from being build!'
+      call sys_halt()
+    end if
+    
+    ! Get pointers to the matrix content 
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Da11)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
+
+    nullify(p_Da12,p_Da21)
+    if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,2),p_Da12)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,1),p_Da21)
+    end if
+
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,4),p_Da44)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,5),p_Da55)
+
+    nullify(p_Da45,p_Da54)
+    if (lsysbl_isSubmatrixPresent(rmatrix,4,5)) then
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,5),p_Da45)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,4),p_Da54)
+    end if
+
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,1),p_Da41)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,2),p_Da52)
+    
+    nullify(p_Da42,p_Da51)
+    if (lsysbl_isSubmatrixPresent(rmatrix,4,2)) then
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,2),p_Da42)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,1),p_Da51)
+    end if
+
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,4),p_Da14)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,5),p_Da25)
+
+    nullify(p_Da24,p_Da15)
+    if (lsysbl_isSubmatrixPresent(rmatrix,2,4)) then
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,4),p_Da24)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,5),p_Da15)
+    end if
+    
+    ! Initialise the asembly of the local matrices.
+    call conv_strdiffOptC2dinitasm (rvelocityVector%p_rblockDiscr%RspatialDiscr(1),&
+        1,roptcassemblyinfo)
+
+    ! Calculate the maximum norm of the actual velocity field
+    ! Round up the norm to 1D-8 if it's too small...
+    call lsysbl_deriveSubvector(rvelocityVector,rvectorBlock,1,2,.true.)
+    call lsysbl_getVectorMagnitude (rvectorBlock,dumax=roptcassemblyinfo%dumax)
+    call lsysbl_releaseVector (rvectorBlock)
+  
+    if (roptcassemblyinfo%dumax .lt. 1E-8_DP) roptcassemblyinfo%dumax=1E-8_DP
+
+    ! Allocate memory for the local matrices
+    allocate(DentryA11(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA12(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA21(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA22(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+
+    allocate(DentryA44(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA45(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA54(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA55(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+
+    allocate(DentryA41(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA52(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA42(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA51(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+
+    allocate(DentryA14(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA25(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA24(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+    allocate(DentryA15(roptcassemblyinfo%indof,roptcassemblyinfo%indof,&
+        roptcassemblyinfo%nelementsPerBlock))
+        
+    ! Temp array
+    allocate(Dtemp(roptcassemblyinfo%indof))
+
+    ! Initialise the array with the local Delta values for the stabilisation
+    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDelta)
+
+    ! Loop over the elements - blockwise.
+    !
+    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
+    ! inner loop(s).
+    ! The blocks have all the same size, so we can use static scheduling.
+    !%OMP do SCHEDULE(dynamic,1)
+    do ielset = 1, size(roptcassemblyinfo%p_IelementList), BILF_NELEMSIM
+
+      ! We always handle BILF_NELEMSIM elements simultaneously.
+      ! How many elements have we actually here?
+      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! elements simultaneously.
+      
+      ielmax = min(size(roptcassemblyinfo%p_IelementList),ielset-1+BILF_NELEMSIM)
+    
+      ! To assemble the discrete Newton matrix, we have to
+      ! * Assemble the matrix when modifying each DOF on an element
+      ! * Multiplication with the corresponding solution vector gives one
+      !   column of the Newton matrix
+      !
+      ! The global matrix structure of the main matrix looks like:
+      !
+      !   (A11     A41    )
+      !   (    A22     A52)
+      !   (A41     A44 A45)
+      !   (    A52 A54 A55)
+      !
+      ! The corresponding Newton matrix has the shape
+      !
+      !   (A11 A12 A41    )
+      !   (A21 A22     A52)
+      !   (A41 A42 A44 A45)
+      !   (A51 A52 A54 A55)
+      !
+      ! as A41/A52 are linear.
+      !
+      ! We calculate the matrix column-wise and element based.
+    
+      ! Loop through the DOF's. All DOF's must be once increased and once decreased
+      ! by h.
+      dweight2 = dweight*0.5_DP/dh
+      do idof = 1,roptcassemblyinfo%indof
+    
+        ! Initialise the element set, compute the basis functions in the
+        ! cubature points.
+        if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        else
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        end if
+        
+        ! Increase the idof'th entry in the velocity evaluation point by h.
+        do iel = 1,ielmax
+          roptcassemblyinfo%DpvelDofs(idof,iel,1) = roptcassemblyinfo%DpvelDofs(idof,iel,1) + dh
+        end do
+
+        ! Clear the local matrices. If the Newton part is to be calculated,
+        ! we must clear everything, otherwise only Dentry.
+        DentryA11 = 0.0_DP
+        DentryA12 = 0.0_DP
+        DentryA21 = 0.0_DP
+        DentryA22 = 0.0_DP
+        
+        DentryA44 = 0.0_DP
+        DentryA45 = 0.0_DP
+        DentryA54 = 0.0_DP
+        DentryA55 = 0.0_DP
+        
+        DentryA41 = 0.0_DP
+        DentryA52 = 0.0_DP
+        DentryA42 = 0.0_DP
+        DentryA51 = 0.0_DP
+        
+        DentryA14 = 0.0_DP
+        DentryA25 = 0.0_DP
+        DentryA24 = 0.0_DP
+        DentryA15 = 0.0_DP
+        
+        ! Now calculate the local matrices on all the elements.
+        call computeLocalOptCMatrices (roptcassemblyinfo%Dbas,&
+            roptcassemblyinfo%Domega,roptcassemblyinfo%revalElementSet%p_Ddetj,&
+            roptcassemblyinfo%indof,roptcassemblyinfo%ncubp,&
+            roptcassemblyinfo%p_IelementList(ielset:ielmax),&
+            roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
+            roptcassemblyinfo%Dpvel,roptcassemblyinfo%DpvelXderiv,&
+            roptcassemblyinfo%DpvelYderiv,roptcassemblyinfo%Ddvel,&
+            roptcassemblyinfo%DdvelXderiv,roptcassemblyinfo%DdvelYderiv,&
+            DentryA11,DentryA22,DentryA44,DentryA55,&
+            DentryA12,DentryA21,DentryA45,DentryA54,&
+            DentryA41,DentryA52,DentryA42,DentryA51,&
+            DentryA14,DentryA25,DentryA24,DentryA15,&
+            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+        
+        ! Incorporate the computed local matrices into the global matrix.
+        if (associated(p_Da11)) then
+          call incorporateLocalMatVecCol (DentryA11,p_Da11,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+        end if
+
+        if (associated(p_Da21)) then
+          call incorporateLocalMatVecCol (DentryA22,p_Da21,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+
+
+        if (associated(p_Da41)) then
+          call incorporateLocalMatVecCol (DentryA41,p_Da41,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA44,p_Da41,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA45,p_Da41,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if                                            
+
+
+        if (associated(p_Da51)) then
+          call incorporateLocalMatVecCol (DentryA52,p_Da51,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                                      
+          call incorporateLocalMatVecCol (DentryA54,p_Da51,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA55,p_Da51,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+            
+      end do
+      
+      dweight2 = -dweight*0.5_DP/dh
+      do idof = 1,roptcassemblyinfo%indof
+    
+        ! Initialise the element set, compute the basis functions in the
+        ! cubature points.
+        if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        else
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        end if
+        
+        ! Increase the idof'th entry in the velocity evaluation point by h.
+        do iel = 1,ielmax
+          roptcassemblyinfo%DpvelDofs(idof,iel,1) = roptcassemblyinfo%DpvelDofs(idof,iel,1) - dh
+        end do
+
+        ! Clear the local matrices. If the Newton part is to be calculated,
+        ! we must clear everything, otherwise only Dentry.
+        DentryA11 = 0.0_DP
+        DentryA12 = 0.0_DP
+        DentryA21 = 0.0_DP
+        DentryA22 = 0.0_DP
+        
+        DentryA44 = 0.0_DP
+        DentryA45 = 0.0_DP
+        DentryA54 = 0.0_DP
+        DentryA55 = 0.0_DP
+        
+        DentryA41 = 0.0_DP
+        DentryA52 = 0.0_DP
+        DentryA42 = 0.0_DP
+        DentryA51 = 0.0_DP
+        
+        DentryA14 = 0.0_DP
+        DentryA25 = 0.0_DP
+        DentryA24 = 0.0_DP
+        DentryA15 = 0.0_DP
+        
+        ! Now calculate the local matrices on all the elements.
+        call computeLocalOptCMatrices (roptcassemblyinfo%Dbas,&
+            roptcassemblyinfo%Domega,roptcassemblyinfo%revalElementSet%p_Ddetj,&
+            roptcassemblyinfo%indof,roptcassemblyinfo%ncubp,&
+            roptcassemblyinfo%p_IelementList(ielset:ielmax),&
+            roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
+            roptcassemblyinfo%Dpvel,roptcassemblyinfo%DpvelXderiv,&
+            roptcassemblyinfo%DpvelYderiv,roptcassemblyinfo%Ddvel,&
+            roptcassemblyinfo%DdvelXderiv,roptcassemblyinfo%DdvelYderiv,&
+            DentryA11,DentryA22,DentryA44,DentryA55,&
+            DentryA12,DentryA21,DentryA45,DentryA54,&
+            DentryA41,DentryA52,DentryA42,DentryA51,&
+            DentryA14,DentryA25,DentryA24,DentryA15,&
+            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+        
+        ! Incorporate the computed local matrices into the global matrix.
+        if (associated(p_Da11)) then
+          call incorporateLocalMatVecCol (DentryA11,p_Da11,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+        end if
+
+        if (associated(p_Da21)) then
+          call incorporateLocalMatVecCol (DentryA22,p_Da21,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+
+
+        if (associated(p_Da41)) then
+          call incorporateLocalMatVecCol (DentryA41,p_Da41,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA44,p_Da41,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA45,p_Da41,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if                                            
+
+
+        if (associated(p_Da51)) then
+          call incorporateLocalMatVecCol (DentryA52,p_Da51,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                                      
+          call incorporateLocalMatVecCol (DentryA54,p_Da51,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA55,p_Da51,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+
+      end do
+      
+      ! Loop through the DOF's. All DOF's must be once increased and once decreased
+      ! by h.
+      dweight2 = dweight*0.5_DP/dh
+      do idof = 1,roptcassemblyinfo%indof
+    
+        ! Initialise the element set, compute the basis functions in the
+        ! cubature points.
+        if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        else
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        end if
+        
+        ! Increase the idof'th entry in the velocity evaluation point by h.
+        do iel = 1,ielmax
+          roptcassemblyinfo%DpvelDofs(idof,iel,2) = roptcassemblyinfo%DpvelDofs(idof,iel,2) + dh
+        end do
+
+        ! Clear the local matrices. If the Newton part is to be calculated,
+        ! we must clear everything, otherwise only Dentry.
+        DentryA11 = 0.0_DP
+        DentryA12 = 0.0_DP
+        DentryA21 = 0.0_DP
+        DentryA22 = 0.0_DP
+        
+        DentryA44 = 0.0_DP
+        DentryA45 = 0.0_DP
+        DentryA54 = 0.0_DP
+        DentryA55 = 0.0_DP
+        
+        DentryA41 = 0.0_DP
+        DentryA52 = 0.0_DP
+        DentryA42 = 0.0_DP
+        DentryA51 = 0.0_DP
+        
+        DentryA14 = 0.0_DP
+        DentryA25 = 0.0_DP
+        DentryA24 = 0.0_DP
+        DentryA15 = 0.0_DP
+        
+        ! Now calculate the local matrices on all the elements.
+        call computeLocalOptCMatrices (roptcassemblyinfo%Dbas,&
+            roptcassemblyinfo%Domega,roptcassemblyinfo%revalElementSet%p_Ddetj,&
+            roptcassemblyinfo%indof,roptcassemblyinfo%ncubp,&
+            roptcassemblyinfo%p_IelementList(ielset:ielmax),&
+            roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
+            roptcassemblyinfo%Dpvel,roptcassemblyinfo%DpvelXderiv,&
+            roptcassemblyinfo%DpvelYderiv,roptcassemblyinfo%Ddvel,&
+            roptcassemblyinfo%DdvelXderiv,roptcassemblyinfo%DdvelYderiv,&
+            DentryA11,DentryA22,DentryA44,DentryA55,&
+            DentryA12,DentryA21,DentryA45,DentryA54,&
+            DentryA41,DentryA52,DentryA42,DentryA51,&
+            DentryA14,DentryA25,DentryA24,DentryA15,&
+            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+        
+        ! Incorporate the computed local matrices into the global matrix.
+        if (associated(p_Da12)) then
+          call incorporateLocalMatVecCol (DentryA11,p_Da12,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+        end if
+
+        if (associated(p_Da22)) then
+          call incorporateLocalMatVecCol (DentryA22,p_Da22,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+
+
+        if (associated(p_Da42)) then
+          call incorporateLocalMatVecCol (DentryA41,p_Da42,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA44,p_Da42,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA45,p_Da42,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if                                            
+
+
+        if (associated(p_Da52)) then
+          call incorporateLocalMatVecCol (DentryA52,p_Da52,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                                      
+          call incorporateLocalMatVecCol (DentryA54,p_Da52,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA55,p_Da52,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+            
+      end do
+
+      dweight2 = -dweight*0.5_DP/dh
+      do idof = 1,roptcassemblyinfo%indof
+    
+        ! Initialise the element set, compute the basis functions in the
+        ! cubature points.
+        if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        else
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        end if
+        
+        ! Increase the idof'th entry in the velocity evaluation point by h.
+        do iel = 1,ielmax
+          roptcassemblyinfo%DpvelDofs(idof,iel,2) = roptcassemblyinfo%DpvelDofs(idof,iel,2) - dh
+        end do
+
+        ! Clear the local matrices. If the Newton part is to be calculated,
+        ! we must clear everything, otherwise only Dentry.
+        DentryA11 = 0.0_DP
+        DentryA12 = 0.0_DP
+        DentryA21 = 0.0_DP
+        DentryA22 = 0.0_DP
+        
+        DentryA44 = 0.0_DP
+        DentryA45 = 0.0_DP
+        DentryA54 = 0.0_DP
+        DentryA55 = 0.0_DP
+        
+        DentryA41 = 0.0_DP
+        DentryA52 = 0.0_DP
+        DentryA42 = 0.0_DP
+        DentryA51 = 0.0_DP
+        
+        DentryA14 = 0.0_DP
+        DentryA25 = 0.0_DP
+        DentryA24 = 0.0_DP
+        DentryA15 = 0.0_DP
+        
+        ! Now calculate the local matrices on all the elements.
+        call computeLocalOptCMatrices (roptcassemblyinfo%Dbas,&
+            roptcassemblyinfo%Domega,roptcassemblyinfo%revalElementSet%p_Ddetj,&
+            roptcassemblyinfo%indof,roptcassemblyinfo%ncubp,&
+            roptcassemblyinfo%p_IelementList(ielset:ielmax),&
+            roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
+            roptcassemblyinfo%Dpvel,roptcassemblyinfo%DpvelXderiv,&
+            roptcassemblyinfo%DpvelYderiv,roptcassemblyinfo%Ddvel,&
+            roptcassemblyinfo%DdvelXderiv,roptcassemblyinfo%DdvelYderiv,&
+            DentryA11,DentryA22,DentryA44,DentryA55,&
+            DentryA12,DentryA21,DentryA45,DentryA54,&
+            DentryA41,DentryA52,DentryA42,DentryA51,&
+            DentryA14,DentryA25,DentryA24,DentryA15,&
+            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+        
+        ! Incorporate the computed local matrices into the global matrix.
+        if (associated(p_Da12)) then
+          call incorporateLocalMatVecCol (DentryA11,p_Da12,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+        end if
+
+        if (associated(p_Da22)) then
+          call incorporateLocalMatVecCol (DentryA22,p_Da22,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+
+
+        if (associated(p_Da42)) then
+          call incorporateLocalMatVecCol (DentryA41,p_Da42,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA44,p_Da42,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA45,p_Da42,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if                                            
+
+
+        if (associated(p_Da52)) then
+          call incorporateLocalMatVecCol (DentryA52,p_Da52,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                                      
+          call incorporateLocalMatVecCol (DentryA54,p_Da52,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA55,p_Da52,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+            
+      end do
+     
+      ! Loop through the DOF's. All DOF's must be once increased and once decreased
+      ! by h.
+      dweight2 = dweight*0.5_DP/dh
+      do idof = 1,roptcassemblyinfo%indof
+    
+        ! Initialise the element set, compute the basis functions in the
+        ! cubature points.
+        if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        else
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        end if
+        
+        ! Increase the idof'th entry in the velocity evaluation point by h.
+        do iel = 1,ielmax
+          roptcassemblyinfo%DdvelDofs(idof,iel,1) = roptcassemblyinfo%DdvelDofs(idof,iel,1) + dh
+        end do
+
+        ! Clear the local matrices. If the Newton part is to be calculated,
+        ! we must clear everything, otherwise only Dentry.
+        DentryA11 = 0.0_DP
+        DentryA12 = 0.0_DP
+        DentryA21 = 0.0_DP
+        DentryA22 = 0.0_DP
+        
+        DentryA44 = 0.0_DP
+        DentryA45 = 0.0_DP
+        DentryA54 = 0.0_DP
+        DentryA55 = 0.0_DP
+        
+        DentryA41 = 0.0_DP
+        DentryA52 = 0.0_DP
+        DentryA42 = 0.0_DP
+        DentryA51 = 0.0_DP
+        
+        DentryA14 = 0.0_DP
+        DentryA25 = 0.0_DP
+        DentryA24 = 0.0_DP
+        DentryA15 = 0.0_DP
+        
+        ! Now calculate the local matrices on all the elements.
+        call computeLocalOptCMatrices (roptcassemblyinfo%Dbas,&
+            roptcassemblyinfo%Domega,roptcassemblyinfo%revalElementSet%p_Ddetj,&
+            roptcassemblyinfo%indof,roptcassemblyinfo%ncubp,&
+            roptcassemblyinfo%p_IelementList(ielset:ielmax),&
+            roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
+            roptcassemblyinfo%Dpvel,roptcassemblyinfo%DpvelXderiv,&
+            roptcassemblyinfo%DpvelYderiv,roptcassemblyinfo%Ddvel,&
+            roptcassemblyinfo%DdvelXderiv,roptcassemblyinfo%DdvelYderiv,&
+            DentryA11,DentryA22,DentryA44,DentryA55,&
+            DentryA12,DentryA21,DentryA45,DentryA54,&
+            DentryA41,DentryA52,DentryA42,DentryA51,&
+            DentryA14,DentryA25,DentryA24,DentryA15,&
+            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+        
+        ! Incorporate the computed local matrices into the global matrix.
+        if (associated(p_Da14)) then
+          call incorporateLocalMatVecCol (DentryA11,p_Da14,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+        end if
+
+        if (associated(p_Da24)) then
+          call incorporateLocalMatVecCol (DentryA22,p_Da24,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+
+
+        if (associated(p_Da44)) then
+          call incorporateLocalMatVecCol (DentryA41,p_Da44,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA44,p_Da44,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA45,p_Da44,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if                                            
+
+
+        if (associated(p_Da54)) then
+          call incorporateLocalMatVecCol (DentryA52,p_Da54,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                                      
+          call incorporateLocalMatVecCol (DentryA54,p_Da54,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA55,p_Da54,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+            
+      end do
+      
+      dweight2 = -dweight*0.5_DP/dh
+      do idof = 1,roptcassemblyinfo%indof
+    
+        ! Initialise the element set, compute the basis functions in the
+        ! cubature points.
+        if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        else
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        end if
+        
+        ! Increase the idof'th entry in the velocity evaluation point by h.
+        do iel = 1,ielmax
+          roptcassemblyinfo%DdvelDofs(idof,iel,1) = roptcassemblyinfo%DdvelDofs(idof,iel,1) - dh
+        end do
+
+        ! Clear the local matrices. If the Newton part is to be calculated,
+        ! we must clear everything, otherwise only Dentry.
+        DentryA11 = 0.0_DP
+        DentryA12 = 0.0_DP
+        DentryA21 = 0.0_DP
+        DentryA22 = 0.0_DP
+        
+        DentryA44 = 0.0_DP
+        DentryA45 = 0.0_DP
+        DentryA54 = 0.0_DP
+        DentryA55 = 0.0_DP
+        
+        DentryA41 = 0.0_DP
+        DentryA52 = 0.0_DP
+        DentryA42 = 0.0_DP
+        DentryA51 = 0.0_DP
+        
+        DentryA14 = 0.0_DP
+        DentryA25 = 0.0_DP
+        DentryA24 = 0.0_DP
+        DentryA15 = 0.0_DP
+        
+        ! Now calculate the local matrices on all the elements.
+        call computeLocalOptCMatrices (roptcassemblyinfo%Dbas,&
+            roptcassemblyinfo%Domega,roptcassemblyinfo%revalElementSet%p_Ddetj,&
+            roptcassemblyinfo%indof,roptcassemblyinfo%ncubp,&
+            roptcassemblyinfo%p_IelementList(ielset:ielmax),&
+            roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
+            roptcassemblyinfo%Dpvel,roptcassemblyinfo%DpvelXderiv,&
+            roptcassemblyinfo%DpvelYderiv,roptcassemblyinfo%Ddvel,&
+            roptcassemblyinfo%DdvelXderiv,roptcassemblyinfo%DdvelYderiv,&
+            DentryA11,DentryA22,DentryA44,DentryA55,&
+            DentryA12,DentryA21,DentryA45,DentryA54,&
+            DentryA41,DentryA52,DentryA42,DentryA51,&
+            DentryA14,DentryA25,DentryA24,DentryA15,&
+            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+        
+        ! Incorporate the computed local matrices into the global matrix.
+        if (associated(p_Da14)) then
+          call incorporateLocalMatVecCol (DentryA11,p_Da14,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+        end if
+
+        if (associated(p_Da24)) then
+          call incorporateLocalMatVecCol (DentryA22,p_Da24,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+
+
+        if (associated(p_Da44)) then
+          call incorporateLocalMatVecCol (DentryA41,p_Da44,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA44,p_Da44,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA45,p_Da44,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if                                            
+
+
+        if (associated(p_Da54)) then
+          call incorporateLocalMatVecCol (DentryA52,p_Da54,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                                      
+          call incorporateLocalMatVecCol (DentryA54,p_Da54,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA55,p_Da54,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+            
+      end do
+      
+
+      ! Loop through the DOF's. All DOF's must be once increased and once decreased
+      ! by h.
+      dweight2 = dweight*0.5_DP/dh
+      do idof = 1,roptcassemblyinfo%indof
+    
+        ! Initialise the element set, compute the basis functions in the
+        ! cubature points.
+        if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        else
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        end if
+        
+        ! Increase the idof'th entry in the velocity evaluation point by h.
+        do iel = 1,ielmax
+          roptcassemblyinfo%DdvelDofs(idof,iel,2) = roptcassemblyinfo%DdvelDofs(idof,iel,2) + dh
+        end do
+
+        ! Clear the local matrices. If the Newton part is to be calculated,
+        ! we must clear everything, otherwise only Dentry.
+        DentryA11 = 0.0_DP
+        DentryA12 = 0.0_DP
+        DentryA21 = 0.0_DP
+        DentryA22 = 0.0_DP
+        
+        DentryA44 = 0.0_DP
+        DentryA45 = 0.0_DP
+        DentryA54 = 0.0_DP
+        DentryA55 = 0.0_DP
+        
+        DentryA41 = 0.0_DP
+        DentryA52 = 0.0_DP
+        DentryA42 = 0.0_DP
+        DentryA51 = 0.0_DP
+        
+        DentryA14 = 0.0_DP
+        DentryA25 = 0.0_DP
+        DentryA24 = 0.0_DP
+        DentryA15 = 0.0_DP
+        
+        ! Now calculate the local matrices on all the elements.
+        call computeLocalOptCMatrices (roptcassemblyinfo%Dbas,&
+            roptcassemblyinfo%Domega,roptcassemblyinfo%revalElementSet%p_Ddetj,&
+            roptcassemblyinfo%indof,roptcassemblyinfo%ncubp,&
+            roptcassemblyinfo%p_IelementList(ielset:ielmax),&
+            roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
+            roptcassemblyinfo%Dpvel,roptcassemblyinfo%DpvelXderiv,&
+            roptcassemblyinfo%DpvelYderiv,roptcassemblyinfo%Ddvel,&
+            roptcassemblyinfo%DdvelXderiv,roptcassemblyinfo%DdvelYderiv,&
+            DentryA11,DentryA22,DentryA44,DentryA55,&
+            DentryA12,DentryA21,DentryA45,DentryA54,&
+            DentryA41,DentryA52,DentryA42,DentryA51,&
+            DentryA14,DentryA25,DentryA24,DentryA15,&
+            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+        
+        ! Incorporate the computed local matrices into the global matrix.
+        if (associated(p_Da15)) then
+          call incorporateLocalMatVecCol (DentryA11,p_Da15,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+        end if
+
+        if (associated(p_Da25)) then
+          call incorporateLocalMatVecCol (DentryA22,p_Da25,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+
+
+        if (associated(p_Da45)) then
+          call incorporateLocalMatVecCol (DentryA41,p_Da45,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA44,p_Da45,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA45,p_Da45,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if                                            
+
+
+        if (associated(p_Da55)) then
+          call incorporateLocalMatVecCol (DentryA52,p_Da55,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                                      
+          call incorporateLocalMatVecCol (DentryA54,p_Da55,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA55,p_Da55,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+            
+      end do
+
+      dweight2 = -dweight*0.5_DP/dh
+      do idof = 1,roptcassemblyinfo%indof
+    
+        ! Initialise the element set, compute the basis functions in the
+        ! cubature points.
+        if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        else
+          call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+        end if
+        
+        ! Increase the idof'th entry in the velocity evaluation point by h.
+        do iel = 1,ielmax
+          roptcassemblyinfo%DdvelDofs(idof,iel,2) = roptcassemblyinfo%DdvelDofs(idof,iel,2) - dh
+        end do
+
+        ! Clear the local matrices. If the Newton part is to be calculated,
+        ! we must clear everything, otherwise only Dentry.
+        DentryA11 = 0.0_DP
+        DentryA12 = 0.0_DP
+        DentryA21 = 0.0_DP
+        DentryA22 = 0.0_DP
+        
+        DentryA44 = 0.0_DP
+        DentryA45 = 0.0_DP
+        DentryA54 = 0.0_DP
+        DentryA55 = 0.0_DP
+        
+        DentryA41 = 0.0_DP
+        DentryA52 = 0.0_DP
+        DentryA42 = 0.0_DP
+        DentryA51 = 0.0_DP
+        
+        DentryA14 = 0.0_DP
+        DentryA25 = 0.0_DP
+        DentryA24 = 0.0_DP
+        DentryA15 = 0.0_DP
+        
+        ! Now calculate the local matrices on all the elements.
+        call computeLocalOptCMatrices (roptcassemblyinfo%Dbas,&
+            roptcassemblyinfo%Domega,roptcassemblyinfo%revalElementSet%p_Ddetj,&
+            roptcassemblyinfo%indof,roptcassemblyinfo%ncubp,&
+            roptcassemblyinfo%p_IelementList(ielset:ielmax),&
+            roptcassemblyinfo%DpvelDofs,roptcassemblyinfo%DdvelDofs,&
+            roptcassemblyinfo%Dpvel,roptcassemblyinfo%DpvelXderiv,&
+            roptcassemblyinfo%DpvelYderiv,roptcassemblyinfo%Ddvel,&
+            roptcassemblyinfo%DdvelXderiv,roptcassemblyinfo%DdvelYderiv,&
+            DentryA11,DentryA22,DentryA44,DentryA55,&
+            DentryA12,DentryA21,DentryA45,DentryA54,&
+            DentryA41,DentryA52,DentryA42,DentryA51,&
+            DentryA14,DentryA25,DentryA24,DentryA15,&
+            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+        
+        ! Incorporate the computed local matrices into the global matrix.
+        if (associated(p_Da15)) then
+          call incorporateLocalMatVecCol (DentryA11,p_Da15,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+        end if
+
+        if (associated(p_Da25)) then
+          call incorporateLocalMatVecCol (DentryA22,p_Da25,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+
+
+        if (associated(p_Da45)) then
+          call incorporateLocalMatVecCol (DentryA41,p_Da45,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA44,p_Da45,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA45,p_Da45,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if                                            
+
+
+        if (associated(p_Da55)) then
+          call incorporateLocalMatVecCol (DentryA52,p_Da55,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                                      
+          call incorporateLocalMatVecCol (DentryA54,p_Da55,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+
+          call incorporateLocalMatVecCol (DentryA55,p_Da55,roptcassemblyinfo%Kentry,&
+                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+        end if
+            
+      end do
+
+    end do ! ielset
+    !%OMP end do 
+    
+    deallocate(Dtemp)
+    
+    ! Release memory
+    deallocate(DentryA11)
+    deallocate(DentryA22)
+    if (allocated(DentryA12)) deallocate(DentryA12)
+    if (allocated(DentryA21)) deallocate(DentryA21)
+               
+    deallocate(DentryA44)
+    deallocate(DentryA55)
+    if (allocated(DentryA45)) deallocate(DentryA45)
+    if (allocated(DentryA54)) deallocate(DentryA54)
+               
+    deallocate(DentryA41)
+    deallocate(DentryA52)
+    if (allocated(DentryA42)) deallocate(DentryA42)
+    if (allocated(DentryA51)) deallocate(DentryA51)
+               
+    deallocate(DentryA14)
+    deallocate(DentryA25)
+    if (allocated(DentryA24)) deallocate(DentryA24)
+    if (allocated(DentryA15)) deallocate(DentryA15)
+               
+  contains
+  
+    subroutine incorporateLocalMatVecCol (DaLocal,Da,Kentry,Dvelocity,ivelcomp,idof,dweight,Dtemp)
+    
+    ! Incorporate a local matrix into a global one.
+    
+    ! The local matrix to incorporate.
+    real(dp), dimension(:,:,:), intent(in) :: DaLocal
+    
+    ! The global matrix
+    real(dp), dimension(:), intent(inout) :: Da
+    
+    ! Positions of the local matrix in the global one.
+    integer, dimension(:,:,:), intent(in) :: Kentry
+    
+    ! Velocity vector on the elements
+    real(dp), dimension(:,:,:), intent(inout) :: Dvelocity
+    
+    ! Current velocity component
+    integer, intent(in) :: ivelcomp
+    
+    ! Current DOF. Specifies the target column where to write data to.
+    integer, intent(in) :: idof
+    
+    ! Weight of the local matrix
+    real(dp) :: dweight
+    
+    ! Temporary vector
+    real(dp), dimension(:), intent(inout) :: Dtemp
+
+      ! local variables
+      integer :: iel,idofe,jdofe
+    
+      do iel=1,ubound(DaLocal,3)
+        ! Apply a local matrix-vector multiplication to get the column
+        ! which is to be incorporated into the matrix.
+        Dtemp(:) = 0.0_DP
+        do idofe = 1,ubound(DaLocal,2)
+          do jdofe = 1,ubound(DaLocal,1)
+            Dtemp(idofe) = Dtemp(idofe) + DaLocal(jdofe,idofe,iel)*Dvelocity(jdofe,iel,ivelcomp)
+          end do
+        end do
+      
+        ! Incorporate the vector to the global matrix.
+        do idofe=1,ubound(DaLocal,2)
+          Da(Kentry(idof,idofe,iel)) = Da(Kentry(idof,idofe,iel)) + &
+              dweight * Dtemp(idofe)
         end do
       end do
     
