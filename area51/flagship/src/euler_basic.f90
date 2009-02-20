@@ -79,6 +79,7 @@ module euler_basic
 
 !</constantblock>
 
+
 !<constantblock description="Global type of dissipation">
 
   ! Employ scalar dissipation (default)
@@ -86,17 +87,6 @@ module euler_basic
 
   ! Employ tensorial dissipation
   integer, parameter, public :: DISSIPATION_TENSOR = 2
-
-!</constantblock>
-
-
-!<constantblock description="Global type of right-hand side">
-
-  ! zero right-hand side
-  integer, parameter, public :: RHS_ZERO     = 0
-
-  ! analytical right-hand side
-  integer, parameter, public :: RHS_ANALYTIC = 1
 
 !</constantblock>
 
@@ -245,6 +235,8 @@ module euler_basic
   end type t_euler
 
 !</typeblock>
+
+!</types>
 
 contains
 
