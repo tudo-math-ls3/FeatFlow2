@@ -45,7 +45,9 @@ SRC += euler_application.f90 \
        euler_callback3d.f90
 
 # application source files for MHD module
-SRC += mhd_application.f90
+SRC += mhd_application.f90 \
+       mhd_basic.f90 \
+       mhd_callback.f90
 
 # path for the make where to look for application source files
 vpath %.f src src/kernel
