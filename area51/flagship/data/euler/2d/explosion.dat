@@ -65,14 +65,6 @@ isystemcoupling = 0
 # 2 = Low-order scheme with tensorial dissipation
 isystemPrecond = 2
 
-# type of right-hand side vector
-# 0 = zero right-hand side
-# 1 = analytical right-hand side
-irhstype = 0
-
-# section name of right-hand side vector
-srhsname = rhs
-
 # type of initial solution profile
 # 0 = zero initial solution
 # 1 = analytical initial solution

@@ -8,45 +8,33 @@
 
 
 ################################################################################
-[Codire]
+[Euler]
 ################################################################################
 
-# Position of the velocity field data in the block vector structure
-VelocityField = 1
-
-# Position of the stabilization for the convective term
-ConvectionAFC = 1
-
-# Position of the stabilization for the diffusive term
-DiffusionAFC = 2
+# Position of the stabilization for the inviscid term
+InviscidAFC = 1
 
 # Position of the template matrix in the scalar matrix structure
-TemplateMatrix = 1
+TemplateMatrix = 3
 
 # Position of the system matrix in the scalar matrix structure
-SystemMatrix = 2
+SystemMatrix = 1
 
 # Position of the Jacobian matrix in the scalar matrix structure
-JacobianMatrix = 3
-
-# Position of the transport matrix in the scalar matrix structure
-TransportMatrix = 4
+JacobianMatrix = 2
 
 # Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 5
+ConsistentMassMatrix = 4
 
 # Position of the lumped mass matrix in the scalar matrix structure
-LumpedMassMatrix = 6
+LumpedMassMatrix = 5
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_S = 7
+CoeffMatrix_CX = 6
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CX = 8
+CoeffMatrix_CY = 7
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CY = 9
-
-# Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CZ = 10
+CoeffMatrix_CZ = 8
 

@@ -311,7 +311,7 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 2
 
 # maximum multigrid level number
 nlmax = 5

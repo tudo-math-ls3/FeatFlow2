@@ -3,34 +3,63 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                         Steady flow past a cylinder                          #
+#                           Z-pinch implosion problem                          #
 ################################################################################
 
 simportdatafiles(1) =
-  'data/euler/default.dat'
+  'data/mhd/default.dat'
 
 ################################################################################
 
-application = euler
+application = mhdsimple
+
 
 ################################################################################
-[Euler]
+[MHDsimple]
 ################################################################################
 
-# file which contains the application specific data
-indatfile = data/euler/2d/pastcylinder.indat
+# compressible Euler model
+application_euler = euler
 
-# section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
-
-# section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+# scalar transport model
+application_transport = transport
 
 # number of spatial dimensions
 ndimension = 2
 
 # solution algorithm
 algorithm = transient_primal
+
+#-------------------------------------------------------------------------------
+
+# file which contains the boundary parametrisation
+prmfile = grids/2d/z-pinch_tria.prm
+
+# file which contains the triangulation
+trifile = grids/2d/z-pinch_tria.tri
+
+# convert mesh to triangular mesh?
+iconvToTria = 0
+
+# section name of the output configuration
+output = Output
+
+
+################################################################################
+[Euler]
+################################################################################
+
+# file which contains the application specific data
+indatfile = data/mhd/2d/z-pinch.indat
+
+# section name of boundary condition for primal problem
+sprimalbdrcondname = bdrcond_euler_primal
+
+# section name of boundary condition for dual problem
+sdualbdrcondname = bdrcond_euler_dual
+
+# number of spatial dimensions
+ndimension = 2
 
 #-------------------------------------------------------------------------------
 
@@ -60,7 +89,7 @@ isystemcoupling = 0
 # 0 = Galerkin scheme
 # 1 = Low-order scheme with scalar dissipation
 # 2 = Low-order scheme with tensorial dissipation
-isystemPrecond = 2
+isystemPrecond = 1
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -68,7 +97,7 @@ isystemPrecond = 2
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = initial_solution
+ssolutionname = initial_solution_euler
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -76,15 +105,9 @@ ssolutionname = initial_solution
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = exact_solution
+sexactsolutionname = 
 
 #-------------------------------------------------------------------------------
-
-# file which contains the boundary parametrisation
-prmfile = grids/2d/rect_with_circle.prm
-
-# file which contains the triangulation
-trifile = grids/2d/rect_with_circle.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -93,10 +116,7 @@ trifile = grids/2d/rect_with_circle.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-ieltype = 11
-
-# convert mesh to triangular mesh?
-iconvToTria = 0
+ieltype = 1
 
 # type of matrix format
 # 7 = matrix format 7
@@ -119,9 +139,6 @@ timestep = Timestepping
 # section name of the top-level solver
 solver = FullMultigridSolver
 
-# section name of the output configuration
-output = Output
-
 # section name of the adaptation configuration
 adaptivity = Adaptivity
 
@@ -141,7 +158,168 @@ errorestimator = ErrorEstimator
 # 12 = linearized FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 20
+
+
+################################################################################
+[Transport]
+################################################################################
+
+# file which contains the application specific data
+indatfile = data/mhd/2d/z-pinch.indat
+
+# section name of boundary condition for primal problem
+sprimalbdrcondname = bdrcond_transport_primal
+
+# section name of boundary condition for dual problem
+sdualbdrcondname = bdrcond_transport_dual
+
+# number of spatial dimensions
+ndimension = 2
+
+#-------------------------------------------------------------------------------
+
+# type of mass matrix
+# 0 = no mass matrix
+# 1 = consistent mass matrix
+# 2 = lumped mass matrix
+imasstype = 2
+
+# type of mass antidiffusion
+# 0 = no mass antidiffusion
+# 1 = consistent mass antidiffusion
+imassantidiffusiontype = 1
+
+# type of flow velocity
+# 0 = zero velocity v=0
+# 1 = linear constant velocity v=v(x)
+# 2 = linear time-dependent velocity v=v(x,t)
+# 3 = Burgers equation in space-time (x,t)
+# 4 = Buckley Leverett in space-time (x,t)
+# 6 = Burgers' equation in 2D
+ivelocitytype = 0
+
+# section name of velocity field
+svelocityname = 
+
+# type of flow diffusion
+# 0 = zero diffusion
+# 1 = isotropic diffusion
+# 2 = anisotropic diffusion
+# 3 = variable diffusion
+idiffusiontype = 0
+
+# section name of diffusion tensor
+sdiffusionname = 
+
+# type of flow reaction
+# 0 = zero reactive term
+# 1 = analytical initial solution
+ireactiontype = 0
+
+# section name of reactive term
+sreactionname = 
+
+# type of right-hand side vector
+# 0 = zero right-hand side
+# 1 = analytical right-hand side
+irhstype = 0
+
+# section name of right-hand side vector
+srhsname = 
+
+# type of initial solution profile
+# 0 = zero initial solution
+# 1 = analytical initial solution
+# 2 = PGM image
+isolutiontype = 1
+
+# section name of initial solution
+ssolutionname = initial_solution_transport
+
+# type of exact solution profile
+# 0 = no exact solution available
+# 1 = analytical exact solution
+# 2 = PGM image
+iexactsolutiontype = 0
+
+# section name of exact solution
+sexactsolutionname = 
+
+# type of target functional
+# 0 = no target variable
+# 1 = volume integral
+# 2 = surface integral
+itargetfunctype = 0
+
+# section name of target functional
+stargetfuncname = 
+
+# type of exact target functional type
+# 0 = no exact target functional available
+# 1 = volume integral
+# 2 = surface integral
+# 3 = analytical target functional
+iexacttargetfunctype = 0
+
+# section name of exact target functional
+sexacttargetfuncname = 
+
+#-------------------------------------------------------------------------------
+
+# type of finite element space
+#  1 = P1 finite elements
+#  2 = P2 finite elements
+# 11 = Q1 finite elements
+# 12 = Q2 finite elements
+# -1 = mixed P1/Q1 finite elements
+# -2 = mixed P2/Q2 finite elements
+ieltype = 1
+
+# type of matrix format
+# 7 = matrix format 7
+# 9 = matrix format 9
+imatrixformat = 9
+
+# type of Jacobian matrix
+# 0 = standard sparsity pattern
+# 1 = extended sparsity pattern
+ijacobianformat = 0
+
+#-------------------------------------------------------------------------------
+
+# section name of the convection stabilization
+convection = Convection
+
+# section name of the diffusion stabilization
+diffusion = Diffusion
+
+# section name of the time-stepping algorithm
+timestep = Timestepping
+
+# section name of the top-level solver
+solver = FullMultigridSolver
+
+# section name of the adaptation configuration
+adaptivity = Adaptivity
+
+# section name of the error estimation configuration
+errorestimator = ErrorEstimator
+
+
+################################################################################
+[Convection]
+################################################################################
+
+# type of spatial stabilization: 
+#  0 = no stabilization (Galerkin)
+#  1 = discrete upwinding
+# 10 = semi-impl. FEM-FCT
+# 11 = semi-expl. FEM-FCT
+# 12 = linearized FEM-FCT
+# 20 = FEM-TVD
+# 21 = FEM-GP
+istabilisation = 20
 
 
 ################################################################################
@@ -156,13 +334,13 @@ istabilisation = 1
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.0
+dstepUCD = 1.0
 
 # file for UCD output of solution
-ucdsolution = out/pastcylinder
+ucdsolution = out/z-pinch
 
 # file for UCD output of error
-ucderror = out/pastcylinder_error
+ucderror = out/z-pinch_error
 
 
 ################################################################################
@@ -176,7 +354,7 @@ ucderror = out/pastcylinder_error
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 3
+ioutputlevel = 2
 
 # type of time-stepping algorithm
 # 5 = two-level theta-scheme
@@ -192,25 +370,25 @@ ctimestepType = 5
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 0.01
 
 # initial time step size
-dinitialStep = 0.1
+dinitialStep = 0.001
 
 # lower bound for the admissible time step
-dminStep = 0.0001
+dminStep = 0.001
 
 # upper bound for the admissible time step
-dmaxStep = 0.01
+dmaxStep = 0.001
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -219,7 +397,7 @@ iadaptTimestep = 0
 ddecreaseFactor = 0.1
 
 # maximum factor by which time step may change
-dincreaseFactor = 2.0
+dincreaseFactor = 1.5
 
 # reduction factor by which time step is reduced if simulation fails
 dstepReductionFactor = 0.8
@@ -228,7 +406,7 @@ dstepReductionFactor = 0.8
 depsRel = 0.0
 
 # absolute tolerance for relative changes
-depsAbs = 0.0
+depsAbs = 1e-12
 
 # tolerance for steady state convergence
 depsSteady = 0.0
@@ -246,7 +424,7 @@ depsSteady = 0.0
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 0
+ioutputlevel = 2
 
 # minimum multigrid level number
 nlmin = 3
@@ -349,7 +527,7 @@ nsfac = 1
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 0.0
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -370,7 +548,7 @@ depsStag = 0.0
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 3
+ioutputlevel = 4
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -383,7 +561,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 30
+nmaxIterations = 20
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -413,7 +591,7 @@ dforcingStrategy = 1
 # check sufficient decrease condition in globalization
 # 0 = apply Newton increment without globalization
 # 1 = check sufficient decrease condition and perform backtracking if required
-icheckSufficientDecrease = 1
+icheckSufficientDecrease = 0
 
 # maximum number of backtracking steps
 nmaxBacktrackingSteps = 5
@@ -425,7 +603,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 0.0
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -510,7 +688,7 @@ nsmoothfactor = 1
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 0.0
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -592,7 +770,7 @@ nkrylov = 25
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 0.0
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -637,22 +815,22 @@ npreadapt = 0
 nadapt = 0
 
 # time for grid adaptivity
-dtimeadapt = 10.0
+dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.0
+dstepadapt = 0.001
 
 # maximum number of refinement levels
-nsubdividemax = 3
+nsubdividemax = 0
 
 # adaptation strategy: 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 1e-2
+drefinementTolerance = 0.15
 
 # coarsening tolerance
-dcoarseningTolerance = 1e-3
+dcoarseningTolerance = 0.05
 
 
 ################################################################################
@@ -666,7 +844,7 @@ dcoarseningTolerance = 1e-3
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-ierrorestimator = 7
+ierrorestimator = 6
 
 # type or grid indicator
 # 0 = as is
@@ -678,16 +856,28 @@ igridindicator = 0
 dnoisefilter = 0.05
 
 # absolute filter
-dabsfilter = 0.001
+dabsfilter = 0.01
 
 # refinement tolerance
-drefinementTolerance = 0.05
+drefinementTolerance = 0.3
 
 # coarsening tolerance
-dcoarseningTolerance = 0.01
+dcoarseningTolerance = 0.1
 
 # number of protection layers
-nprotectLayers = 0
+nprotectLayers = 2
 
 # tolerance for protection layers
 dprotectLayerTolerance = 0.0
+
+# type of error variables
+#   density
+#   velocity_x
+#   velocity_y
+#   velocity_z
+#   energy
+#   pressure
+#   machnumber
+serrorvariable(2) =
+  density
+  pressure
