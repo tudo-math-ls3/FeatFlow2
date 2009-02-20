@@ -3333,7 +3333,7 @@ contains
       ! We calculate the matrix column-wise and element based:
       ! Let Bij := 1/2h * (Aij(u+h*e_k) - Aij(u-h*e_k)), then
       !
-      !   (B11 B12 B41    ) (pdof1)  ->  (    X          )
+      !   (B11     B41    ) (pdof1)  ->  (    X          )
       !   (    B22     B52) (pdof2)      (    X          )
       !   (B41     B44 B45) (ddof1)      (    X          )
       !   (    B52 B54 B55) (ddof2)      (    X          )
