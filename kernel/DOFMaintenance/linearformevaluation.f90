@@ -178,7 +178,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,i1,k,icurrentElementDistr, ICUBP, IALBET, IA
+  integer :: i,i1,icurrentElementDistr, ICUBP, IALBET, IA
   integer :: IEL, IELmax, IELset, IDOFE
   real(DP) :: OM,AUX
   
