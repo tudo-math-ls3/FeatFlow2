@@ -616,7 +616,7 @@ contains
   
 !<subroutine>
 
-  subroutine fparser_init (iStackSize)
+  subroutine fparser_init (istacksize)
 
 !<description>
     ! Initialize function parser
@@ -624,26 +624,40 @@ contains
 
 !<input>
     ! OPTIONAL: initial size of the stack memory
-    integer, intent(IN), optional :: iStackSize
+    integer, intent(IN), optional :: istacksize
 !</input>
 !</subroutine>
 
-    integer :: iSize,iConst
+    integer :: isize,isize1,iconst
 
-    if (present(iStackSize)) then
-      iSize=min(iStackSize,FPAR_MAXSTACKSIZE)
+    if (present(istacksize)) then
+      isize=min(istacksize,FPAR_MAXSTACKSIZE)
     else
-      iSize=FPAR_MAXSTACKSIZE
+      isize=FPAR_MAXSTACKSIZE
     end if
     
-    ! Allocate memory for global stack and set pointer
-    call storage_new('fparser_init','p_Stack',iSize,ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
-    call storage_getbase_double(h_Stack,p_Stack)
+    if (h_Stack .eq. ST_NOHANDLE) then
+      
+      ! Allocate memory for global stack and set pointer
+      call storage_new('fparser_init','p_Stack',isize,ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
+      call storage_getbase_double(h_Stack,p_Stack)
+
+      ! Initialize predefined constants
+      do iconst=lbound(PredefinedConsts,1),ubound(PredefinedConsts,1)
+        call fparser_defineConstant(PredefinedConsts(iconst),PredefinedConstvals(iconst))
+      end do
+
+    else
+      
+      ! Realloc memory for global stack if required
+      call storage_getsize(h_Stack,iSize1)
+      if (isize1 .lt. isize) then
+        call storage_realloc('fparser_init',isize,h_Stack,ST_NEWBLOCK_NOINIT,.true.)
+        call storage_getbase_double(h_Stack,p_Stack)
+      end if
+
+    end if   
     
-    ! Initialize predefined constants
-    do iConst=lbound(PredefinedConsts,1),ubound(PredefinedConsts,1)
-      call fparser_defineConstant(PredefinedConsts(iConst),PredefinedConstvals(iConst))
-    end do
   end subroutine fparser_init
 
   ! *****************************************************************************
