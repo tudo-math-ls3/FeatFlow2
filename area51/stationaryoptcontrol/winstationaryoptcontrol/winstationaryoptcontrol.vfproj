@@ -44,6 +44,7 @@
 		<Filter Name="2D">
 		<File RelativePath="..\src\navstokes2d_callback.f90"/>
 		<File RelativePath="..\src\navstokes2d_method0_simple.f90"/>
+		<File RelativePath="..\src\optcontrolconvection.f90"/>
 		<File RelativePath="..\src\poisson2d_callback.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" Preprocess="preprocessYes"/></FileConfiguration></File>
