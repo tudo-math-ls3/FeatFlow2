@@ -30,14 +30,50 @@
 !# 1.) mhd_parseCmdlArguments
 !#     -> Parses the list of commandline arguments and overwrites
 !#        parameter values from the parameter files
-!# 
+!#
+!# 2.) mhd_initProblem
+!#     -> Initializes the global problem structure based on the
+!#        parameter settings given by the parameter list
+!#
+!# 3.) mhd_initSourceTerm
+!#     -> Initializes the source term for the Euler equations
+!#
+!# 4.) mhd_outputSolution
+!#     -> Outputs the solution vector to file in UCD format
+!#
+!# 5.) mhd_solveTransientPrimal
+!#     -> Solves the primal formulation of the time-dependent 
+!#        simplified MHD equations
 !# </purpose>
 !##############################################################################
 
 module mhd_application
 
+  use afcstabilisation
+  use boundaryfilter
+  use codire_application
+  use codire_basic
+  use codire_callback
+  use collection
+  use euler_application
+  use euler_basic
+  use euler_callback
+  use euler_callback1d
+  use euler_callback2d
+  use euler_callback3d
+  use flagship_basic
+  use fparser
+  use genoutput
+  use linearsystemblock
+  use linearsystemscalar
+  use mhd_basic
   use paramlist
+  use problem
+  use solver
+  use statistics
   use storage
+  use timestep
+  use ucd
 
   implicit none
 
@@ -64,8 +100,807 @@ contains
 !</inputoutput>
 !</subroutine>
 
-  end subroutine mhd_simple
+    !****************************************************************************
+    ! Structures required for this application
+    
+    ! Global collection which is used to pass arguments to callback routines
+    type(t_collection) :: rcollectionEuler, rcollectionTransport
 
+    ! Application descriptors which hold all internal information
+    ! for the compressible Euler model and the scalar transport model
+    type(t_euler) :: rappDescrEuler
+    type(t_codire) :: rappDescrTransport
+
+    ! Boundary condition structure for the primal problem
+    type(t_boundaryCondition) :: rbdrCondEuler, rbdrCondTransport
+
+    ! Problem structure which holds all internal data (vectors/matrices)
+    type(t_problem) :: rproblem
+
+    ! Time-stepping structures
+    type(t_timestep) :: rtimestepEuler, rtimestepTransport
+    
+    ! Global solver structure
+    type(t_solver) :: rsolverEuler, rsolverTransport
+
+    ! Solution vectors for the primal problem
+    type(t_vectorBlock) :: rsolutionEuler, rsolutionTransport
+
+    ! Timer for the total solution process
+    type(t_timer) :: rtimerTotal
+
+    ! Parameter file and section names
+    character(LEN=SYS_STRLEN) :: sindatfileName
+    character(LEN=SYS_STRLEN) :: sbdrcondName
+    character(LEN=SYS_STRLEN) :: algorithm
+    character(LEN=SYS_STRLEN) :: ssectionNameEuler
+    character(LEN=SYS_STRLEN) :: ssectionNameTransport
+
+    ! local variables
+    integer :: systemMatrix
+    integer :: nlmin, nlmax
+
+
+    ! Start total time measurement
+    call stat_clearTimer(rtimerTotal)
+    call stat_startTimer(rtimerTotal)
+    
+    !---------------------------------------------------------------------------
+    ! Pre-processing
+    !---------------------------------------------------------------------------
+    
+    ! Overwrite global configuration from command line arguments. After
+    ! this subroutine has been called, the parameter list remains unchanged.
+    call mhd_parseCmdlArguments(rparlist)
+    
+    call parlst_getvalue_string(rparlist, 'MHDsimple', 'application_euler', ssectionNameEuler)
+    call parlst_getvalue_string(rparlist, 'MHDsimple', 'application_transport', ssectionNameTransport)
+
+    ! Initialize global collection structures
+    call collct_init(rcollectionEuler)
+    call collct_init(rcollectionTransport)
+
+    ! Initialize the application descriptors
+    call euler_initApplication(rparlist, ssectionNameEuler, rappDescrEuler)
+    call codire_initApplication(rparlist, ssectionNameTransport, rappDescrTransport)
+
+    ! Start time measurement for pre-processing
+    call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
+    call stat_startTimer(rappDescrTransport%rtimerPrepostProcess, STAT_TIMERSHORT)
+    
+    ! Initialize the global collections
+    call euler_initCollection(rappDescrEuler, rparlist, ssectionNameEuler, rcollectionEuler)
+    call codire_initCollection(rappDescrTransport, rparlist, ssectionNameTransport, rcollectionTransport)
+
+    ! Initialize the solver structures
+    call euler_initSolvers(rparlist, ssectionNameEuler, rtimestepEuler, rsolverEuler)
+    call codire_initSolvers(rparlist, ssectionNameTransport, rtimestepTransport, rsolverTransport)
+
+    ! Initialize the abstract problem structure
+    nlmin = min(solver_getMinimumMultigridlevel(rsolverEuler),&
+                solver_getMinimumMultigridlevel(rsolverTransport))
+    nlmax = max(solver_getMaximumMultigridlevel(rsolverEuler),&
+                solver_getMaximumMultigridlevel(rsolverTransport))
+
+    call mhd_initProblem(rparlist, 'MHDsimple', nlmin, nlmax,&
+                         rproblem, rcollectionEuler, rcollectionTransport)
+
+    ! Initialize the individual problem levels
+    call euler_initAllProblemLevels(rappDescrEuler, rproblem, rcollectionEuler)
+    call codire_initAllProblemLevels(rappDescrTransport, rproblem, rcollectionTransport)
+
+    ! Prepare internal data arrays of the solver structure for Euler model
+    systemMatrix = collct_getvalue_int(rcollectionEuler, 'systemMatrix') 
+    call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax, rsolverEuler,&
+                                     systemMatrix, rappDescrEuler%isystemFormat, UPDMAT_ALL)
+    call solver_updateStructure(rsolverEuler)
+
+    ! Prepare internal data arrays of the solver structure for transport model
+    systemMatrix = collct_getvalue_int(rcollectionTransport, 'systemMatrix') 
+    call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax, rsolverTransport,&
+                                     systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+    call solver_updateStructure(rsolverTransport)
+    
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(rappDescrEuler%rtimerPrePostprocess)
+    call stat_stopTimer(rappDescrTransport%rtimerPrePostprocess)
+
+
+    !---------------------------------------------------------------------------
+    ! Solution algorithm
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_string(rparlist, 'MHDsimple', 'algorithm', algorithm)
+    
+    ! Initialize the boundary condition for the Euler model
+    call parlst_getvalue_string(rparlist, ssectionNameEuler, 'sprimalbdrcondname', sbdrcondName)
+    call parlst_getvalue_string(rparlist, ssectionNameEuler, 'indatfile', sindatfileName)
+    call bdrf_readBoundaryCondition(rbdrCondEuler, sindatfileName,&
+                                    '['//trim(sbdrcondName)//']', rappDescrEuler%ndimension)
+
+    ! Initialize the boundary condition for the scalar transport model
+    call parlst_getvalue_string(rparlist, ssectionNameTransport, 'sprimalbdrcondname', sbdrcondName)
+    call parlst_getvalue_string(rparlist, ssectionNameTransport, 'indatfile', sindatfileName)
+    call bdrf_readBoundaryCondition(rbdrCondTransport, sindatfileName,&
+                                    '['//trim(sbdrcondName)//']', rappDescrTransport%ndimension)
+
+    
+    ! What solution algorithm should be applied?
+    select case(trim(algorithm))
+
+    case ('transient_primal')
+      !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      ! Solve the primal formulation for the time-dependent problem
+      !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      call mhd_solveTransientPrimal(rappDescrEuler, rappDescrTransport, rparlist,&
+                                    ssectionNameEuler, ssectionNameTransport,&
+                                    rbdrCondEuler, rbdrCondTransport, rproblem,&
+                                    rtimestepEuler, rsolverEuler,&
+                                    rtimestepTransport, rsolverTransport,&
+                                    rsolutionEuler, rsolutionTransport,&
+                                    rcollectionEuler, rcollectionTransport)
+
+      call mhd_outputSolution(rparlist, 'MHDsimple', rproblem%p_rproblemLevelMax,&
+                              rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
+      
+      
+    case DEFAULT
+      call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler')
+      call sys_halt()
+    end select
+
+
+    !---------------------------------------------------------------------------
+    ! Post-processing
+    !---------------------------------------------------------------------------
+    
+    ! Start time measurement for pre-processing
+    call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
+    
+    ! Release solvers
+    call solver_releaseTimestep(rtimestepEuler)
+    call solver_releaseSolver(rsolverEuler)
+    
+    ! Release boundary conditions
+    call bdrf_release(rbdrCondEuler)
+
+    ! Release vectors
+    call lsysbl_releaseVector(rsolutionEuler)
+
+    ! Release collection
+    call collct_done(rcollectionEuler)
+    
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(rappDescrEuler%rtimerPrePostprocess)
+
+    !---------------------------------------------------------------------------
+
+    ! Start time measurement for pre-processing
+    call stat_startTimer(rappDescrTransport%rtimerPrepostProcess, STAT_TIMERSHORT)
+    
+    ! Release solvers
+    call solver_releaseTimestep(rtimestepTransport)
+    call solver_releaseSolver(rsolverTransport)
+    
+    ! Release application descriptor
+    call codire_doneApplication(rappDescrTransport)
+
+    ! Release boundary conditions
+    call bdrf_release(rbdrCondTransport)
+
+    ! Release vectors
+    call lsysbl_releaseVector(rsolutionTransport)
+
+    ! Release collection
+    call collct_done(rcollectionTransport)
+    
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(rappDescrTransport%rtimerPrePostprocess)
+
+    !---------------------------------------------------------------------------
+
+    ! Release function parser
+    call fparser_done()
+    
+    ! Release problem structure
+    call problem_releaseProblem(rproblem)
+    
+    ! Stop time measurement for total time measurement
+    call stat_stopTimer(rtimerTotal)
+
+    ! Output statistics
+    call output_lbrk()
+    call output_separator(OU_SEP_MINUS)
+    call output_line('Compressible Euler model')
+    call euler_outputStatistics(rappDescrEuler, rtimerTotal)
+    call output_lbrk()
+    call output_separator(OU_SEP_MINUS)
+    call output_line('Scalar transport model')       
+    call codire_outputStatistics(rappDescrTransport, rtimerTotal)
+
+  end subroutine mhd_simple
+  
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mhd_initProblem(rparlist, ssectionName, nlmin, nlmax, rproblem,&
+                             rcollectionEuler, rcollectionTransport)
+
+!<description>
+    ! This subroutine initializes the abstract problem structure 
+    ! based on the parameters settings given by the parameter list
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
+
+    ! minimum/maximum problem level
+    integer, intent(IN) :: nlmin, nlmax
+!</input>
+
+!<inputoutput>
+    ! collection for the Euler model
+    type(t_collection), intent(INOUT) :: rcollectionEuler
+
+    ! collection for the scalar transport model
+    type(t_collection), intent(INOUT) :: rcollectionTransport
+!</intputoutput>
+
+!<output>
+    ! problem structure
+    type(t_problem), intent(OUT) :: rproblem
+!</output>
+!</subroutine>
+
+    ! section names
+    character(LEN=SYS_STRLEN) :: ssectionNameEuler
+    character(LEN=SYS_STRLEN) :: ssectionNameTransport
+    character(LEN=SYS_STRLEN) :: sconvectionName
+    character(LEN=SYS_STRLEN) :: sinviscidName
+
+    ! abstract problem descriptor
+    type(t_problemDescriptor) :: rproblemDescriptor
+
+    ! pointer to the problem level
+    type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! local variables
+    integer :: convectionAFC
+    integer :: inviscidAFC
+    integer :: iconvToTria
+    
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist, ssectionName, 'application_euler', ssectionNameEuler)
+    call parlst_getvalue_string(rparlist, ssectionName, 'application_transport', ssectionNameTransport)
+
+    call parlst_getvalue_string(rparlist, ssectionName, 'trifile', rproblemDescriptor%trifile)
+    call parlst_getvalue_string(rparlist, ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
+    call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rproblemDescriptor%ndimension)
+
+    call parlst_getvalue_string(rparlist, ssectionNameTransport, 'convection', sconvectionName)
+    call parlst_getvalue_string(rparlist, ssectionNameEuler, 'inviscid', sinviscidName)
+    
+    ! Set additional problem descriptor
+    rproblemDescriptor%nafcstab      = 2   ! for inviscid and convective stabilization
+    rproblemDescriptor%nlmin         = nlmin
+    rproblemDescriptor%nlmax         = nlmax
+    rproblemDescriptor%nmatrixScalar = rproblemDescriptor%ndimension + 7
+    rproblemDescriptor%nmatrixBlock  = 2
+    rproblemDescriptor%nvectorScalar = 0
+    rproblemDescriptor%nvectorBlock  = 1   ! external velocity field
+
+    ! Check if quadrilaterals should be converted to triangles
+    call parlst_getvalue_int(rparlist, ssectionName, 'iconvtotria', iconvToTria, 0)
+    if (iconvToTria .ne. 0)&
+        rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
+                                        + PROBDESC_MSPEC_CONVTRIANGLES   
+
+    ! Initialize problem structure
+    call problem_initProblem(rproblemDescriptor, rproblem)
+
+    
+    ! Initialize the stabilisation structure
+    convectionAFC = collct_getvalue_int(rcollectionTransport, 'convectionAFC')
+    inviscidAFC   = collct_getvalue_int(rcollectionEuler, 'inviscidAFC')
+        
+    ! loop over all problem levels
+    p_rproblemLevel => rproblem%p_rproblemLevelMax
+    do while(associated(p_rproblemLevel))
+
+      if (convectionAFC > 0) then
+        call afcstab_initFromParameterlist(rparlist, sconvectionName,&
+                                           p_rproblemLevel%Rafcstab(convectionAFC))
+      end if
+      
+      if (inviscidAFC > 0) then
+        call afcstab_initFromParameterlist(rparlist, sinviscidName,&
+                                           p_rproblemLevel%Rafcstab(inviscidAFC))
+      end if
+
+      ! Switch to next coarser level
+      p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
+    end do
+
+  end subroutine mhd_initProblem
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mhd_initSourceTerm(rappDescriptor, rsolutionTransport, dtime, rvectorSource)
+
+!<description>
+    ! This subroutine initializes the source term for the compressible
+    ! Euler model using a thin-shell analysis for the Lorentz force
+!</description>
+
+!<input>
+    ! application descriptor for the Euler model
+    type(t_euler), intent(IN) :: rappDescriptor
+
+    ! solution of the scalar transport model
+    type(t_vectorBlock), intent(IN), target :: rsolutionTransport
+
+    ! simulation time
+    real(DP), intent(IN) :: dtime
+!</input>
+
+!<inputoutput>
+    ! source term for the Euler model
+    type(t_vectorBlock), intent(INOUT) :: rvectorSource
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    type(t_linearForm) :: rform
+
+    
+    ! What system format are we?
+    select case(rappDescriptor%isystemFormat)
+
+    case(SYSTEM_INTERLEAVEFORMAT)
+
+    case(SYSTEM_BLOCKFORMAT)
+
+      ! Fill the first component with zero
+      call lsyssc_clearVector(rvectorSource%RvectorBlock(1))
+
+      ! Create a collection and attach the solution of the scalar
+      ! transport model to the first quick access block vector
+      call collct_init(rcollection)
+      rcollection%DquickAccess(1) = dtime
+      rcollection%p_rvectorQuickAccess1 = rsolutionTransport
+
+      ! Set up the corresponding linear form
+      rform%itermCount      = 1
+      rform%Idescriptors(1) = DER_FUNC
+
+      ! Build the discretized source term for the x-momentum equation
+      call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
+                                  rform, .true., rvector%RvectorBlock(1),&
+                                  codire_coeffVectorAnalytic, rcollection)
+
+    end select
+
+  end subroutine mhd_initSourceTerm
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mhd_outputSolution(rparlist, ssectionName, rproblemLevel,&
+                                rsolutionEuler, rsolutionTransport, dtime)
+
+!<description>
+    ! This subroutine exports the solution vector to file in UCD format
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
+
+    ! problem level structure
+    type(t_problemLevel), intent(IN) :: rproblemLevel
+
+    ! solution vector for compressible Euler model
+    type(t_vectorBlock), intent(IN) :: rsolutionEuler
+
+    ! solution vector for scalar transport model
+    type(t_vectorBlock), intent(IN) :: rsolutionTransport
+
+    ! OPTIONAL: simulation time
+    real(DP), intent(IN), optional :: dtime
+!</input>
+!</subroutine>
+
+    ! section names
+    character(LEN=SYS_STRLEN) :: soutputName
+    character(LEN=SYS_STRLEN) :: ssectionNameEuler
+    character(LEN=SYS_STRLEN) :: ucdsolution
+
+    ! persistent variable
+    integer, save :: ifilenumber = 1
+    
+    ! local variables
+    type(t_ucdExport) :: rexport
+    type(t_vectorScalar) :: rvector1, rvector2, rvector3
+    real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3
+    integer :: iformatUCD, isystemFormat, isize, ndim
+
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist, ssectionName, 'output', soutputName)
+    call parlst_getvalue_string(rparlist, trim(soutputName), 'ucdsolution', ucdsolution)
+    call parlst_getvalue_int(rparlist, trim(soutputName), 'iformatucd', iformatUCD)
+
+    call parlst_getvalue_string(rparlist, ssectionName, 'application_euler', ssectionNameEuler)
+    call parlst_getvalue_int(rparlist, ssectionNameEuler, 'isystemformat', isystemformat)
+
+    ! Initialize the UCD exporter
+    call flagship_initUCDexport(rproblemLevel, ucdsolution,&
+                                iformatUCD, rexport, ifilenumber)
+
+    ! Increase filenumber by one
+    ifilenumber = ifilenumber+1
+
+    ! Set simulation time
+    if (present(dtime)) call ucd_setSimulationTime(rexport, dtime)
+
+    ! Set pointers
+    call lsysbl_getbase_double(rsolutionEuler, p_Dsolution)
+    isize = size(p_Dsolution)/euler_getNVAR(rproblemLevel)
+    ndim  = rproblemLevel%rdiscretisation%ndimension
+
+    ! Create auxiliary vectors
+    select case(ndim)
+    case (NDIM1D)
+      call lsyssc_createVector(rvector1, isize, .false.)
+      call lsyssc_getbase_double(rvector1, p_Ddata1)
+      
+    case (NDIM2D)
+      call lsyssc_createVector(rvector1, isize, .false.)
+      call lsyssc_createVector(rvector2, isize, .false.)
+      call lsyssc_getbase_double(rvector1, p_Ddata1)
+      call lsyssc_getbase_double(rvector2, p_Ddata2)
+
+    case (NDIM3D)
+      call lsyssc_createVector(rvector1, isize, .false.)
+      call lsyssc_createVector(rvector2, isize, .false.)
+      call lsyssc_createVector(rvector3, isize, .false.)
+      call lsyssc_getbase_double(rvector1, p_Ddata1)
+      call lsyssc_getbase_double(rvector2, p_Ddata2)
+      call lsyssc_getbase_double(rvector3, p_Ddata3)
+
+    case DEFAULT
+      call output_line('Invalid number of spatial dimensions',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
+      call sys_halt()
+    end select
+
+
+    select case(isystemFormat)
+    case(SYSTEM_INTERLEAVEFORMAT)
+      
+      select case(ndim)
+      case (NDIM1D)
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D, 'velocity_x', p_Dsolution, p_Ddata1)
+        call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
+
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D, 'density', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D, 'energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
+        
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D, 'pressure', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D, 'machnumber', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'machnumber', UCD_VAR_STANDARD, p_Ddata1)
+        
+        
+      case (NDIM2D)
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D, 'velocity_x', p_Dsolution, p_Ddata1)
+        call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR2D, 'velocity_y', p_Dsolution, p_Ddata2)
+        call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1, p_Ddata2)
+
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D, 'density', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D, 'energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
+        
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D, 'pressure', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D, 'machnumber', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'machnumber', UCD_VAR_STANDARD, p_Ddata1)
+
+      case (NDIM3D)
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D, 'velocity_x', p_Dsolution, p_Ddata1)
+        call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR3D, 'velocity_y', p_Dsolution, p_Ddata2)
+        call euler_getVarInterleaveFormat(rvector3%NEQ, NVAR3D, 'velocity_z', p_Dsolution, p_Ddata3)
+        call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1, p_Ddata2, p_Ddata3)
+        
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D, 'density', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D, 'energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
+        
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D, 'pressure', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D, 'machnumber', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'machnumber', UCD_VAR_STANDARD, p_Ddata1)
+
+      end select
+      
+      
+    case (SYSTEM_BLOCKFORMAT)
+
+      select case(ndim)
+      case (NDIM1D)
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D, 'velocity_x', p_Dsolution, p_Ddata1)
+        call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
+
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D, 'density', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D, 'energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
+        
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D, 'pressure', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D, 'machnumber', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'machnumber', UCD_VAR_STANDARD, p_Ddata1)
+        
+        
+      case (NDIM2D)
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D, 'velocity_x', p_Dsolution, p_Ddata1)
+        call euler_getVarBlockFormat(rvector2%NEQ, NVAR2D, 'velocity_y', p_Dsolution, p_Ddata2)
+        call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1, p_Ddata2)
+
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D, 'density', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D, 'energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
+        
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D, 'pressure', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D, 'machnumber', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'machnumber', UCD_VAR_STANDARD, p_Ddata1)
+
+      case (NDIM3D)
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'velocity_x', p_Dsolution, p_Ddata1)
+        call euler_getVarBlockFormat(rvector2%NEQ, NVAR3D, 'velocity_y', p_Dsolution, p_Ddata2)
+        call euler_getVarBlockFormat(rvector3%NEQ, NVAR3D, 'velocity_z', p_Dsolution, p_Ddata3)
+        call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1, p_Ddata2, p_Ddata3)
+        
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'density', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'density', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
+        
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'pressure', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'machnumber', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'machnumber', UCD_VAR_STANDARD, p_Ddata1)
+
+      end select
+      
+    end select
+
+    ! Release temporal memory
+    call lsyssc_releaseVector(rvector1)
+    call lsyssc_releaseVector(rvector2)
+    call lsyssc_releaseVector(rvector3)
+
+    ! Add solution for scalar transport model
+    call lsysbl_getbase_double(rsolutionTransport, p_Ddata1)
+    call ucd_addVariableVertexBased (rexport, 'advect', UCD_VAR_STANDARD, p_Ddata1)
+    
+    ! Write UCD file
+    call ucd_write  (rexport)
+    call ucd_release(rexport)
+
+  end subroutine mhd_outputSolution
+
+  !*****************************************************************************
+
+!<subroutine>
+
+    subroutine mhd_solveTransientPrimal(rappDescrEuler, rappDescrTransport, rparlist,&
+                                        ssectionNameEuler, ssectionNameTransport,&
+                                        rbdrCondEuler, rbdrCondTransport, rproblem,&
+                                        rtimestepEuler, rsolverEuler,&
+                                        rtimestepTransport, rsolverTransport,&
+                                        rsolutionEuler, rsolutionTransport,&
+                                        rcollectionEuler, rcollectionTransport)
+
+!<description>
+      ! This subroutine solves the transient primal simplified MHD problem
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+    
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionNameEuler
+    character(LEN=*), intent(IN) :: ssectionNameTransport
+
+    ! boundary condition structure
+    type(t_boundaryCondition), intent(IN) :: rbdrCondEuler
+    type(t_boundaryCondition), intent(IN) :: rbdrCondTransport
+!</input>
+
+!<inputoutput>
+    ! application descriptor
+    type(t_euler), intent(INOUT) ::  rappDescrEuler
+    type(t_codire), intent(INOUT) :: rappDescrTransport
+
+    ! problem structure
+    type(t_problem), intent(INOUT) :: rproblem
+
+    ! time-stepping structure
+    type(t_timestep), intent(INOUT) :: rtimestepEuler
+    type(t_timestep), intent(INOUT) :: rtimestepTransport
+
+    ! solver struchture
+    type(t_solver), intent(INOUT), target :: rsolverEuler
+    type(t_solver), intent(INOUT), target :: rsolverTransport
+
+    ! primal solution vector
+    type(t_vectorBlock), intent(INOUT) :: rsolutionEuler
+    type(t_vectorBlock), intent(INOUT) :: rsolutionTransport
+
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollectionEuler
+    type(t_collection), intent(INOUT) :: rcollectionTransport
+!</inputoutput>
+!</subroutine>
+
+    ! Pointer to the current multigrid level
+    type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! Vector for the source term
+    type(t_vectorBlock) :: rvectorSource
+
+    ! section names
+    character(LEN=SYS_STRLEN) :: soutputName
+
+    ! local variables
+    real(dp) :: dstepUCD, dtimeUCD
+    integer :: templateMatrix, systemMatrix
+    integer, external :: signal_SIGINT
+    
+    
+    ! Set pointer to maximum problem level
+    p_rproblemLevel => rproblem%p_rproblemLevelMax
+
+    !---------------------------------------------------------------------------
+
+    ! Start time measurement for pre-processing
+    call stat_startTimer(rappDescrEuler%rtimerPrePostprocess, STAT_TIMERSHORT)
+
+    ! Initialize the solution vector and impose boundary conditions explicitly
+    call euler_initSolution(rparlist, ssectionNameEuler, p_rproblemLevel, 0.0_DP, rsolutionEuler)
+    select case(rappDescrEuler%ndimension)
+    case (NDIM1D)
+      call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
+                                     rsolutionEuler, 0.0_DP, rproblem%rboundary,&
+                                     euler_calcBoundaryvalues1d)
+    case (NDIM2D)
+      call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
+                                     rsolutionEuler, 0.0_DP, rproblem%rboundary,&
+                                     euler_calcBoundaryvalues2d)
+    case (NDIM3D)
+      call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
+                                     rsolutionEuler, 0.0_DP, rproblem%rboundary,&
+                                     euler_calcBoundaryvalues3d)
+    end select
+
+    ! Initialize the source term
+    call lsysbl_createVectorBlock(rsolutionEuler, rvectorSource)
+
+!!$    ! Initialize timer for intermediate UCD exporter
+!!$    dtimeUCD = rtimestepEuler%dinitialTime
+!!$    call parlst_getvalue_string(rparlist, ssectionNameEuler, 'output', soutputName)
+!!$    call parlst_getvalue_double(rparlist, trim(soutputName), 'dstepUCD', dstepUCD, 0.0_DP)
+
+    ! Attach the boundary condition to the solver structure
+    call solver_setBoundaryCondition(rsolverEuler, rbdrCondEuler, .true.)
+
+    ! Set collection to primal problem mode
+    call collct_setvalue_int(rcollectionEuler, 'primaldual', 1, .true.)
+    
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(rappDescrEuler%rtimerPrePostprocess)
+    
+    !---------------------------------------------------------------------------
+
+    ! Start time measurement for pre-processing
+    call stat_startTimer(rappDescrTransport%rtimerPrePostprocess, STAT_TIMERSHORT)
+
+    ! Initialize the solution vector and impose boundary conditions explicitly
+    call codire_initSolution(rparlist, ssectionNameTransport, p_rproblemLevel, 0.0_DP, rsolutionTransport)
+    call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation, rsolutionTransport, 0.0_DP)
+    
+    ! Attach the boundary condition to the solver structure
+    call solver_setBoundaryCondition(rsolverTransport, rbdrCondTransport, .true.)
+
+    ! Set collection to primal problem mode
+    call collct_setvalue_int(rcollectionTransport, 'primaldual', 1, .true.)
+    
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(rappDescrTransport%rtimerPrePostprocess)
+
+    
+    !---------------------------------------------------------------------------
+    ! Infinite time stepping loop
+    !---------------------------------------------------------------------------
+    
+    timeloop: do
+      
+      !-------------------------------------------------------------------------
+      ! Compute 'half' time-step for the compressible Euler model
+      !-------------------------------------------------------------------------
+
+!      call mhd_initSourceTerm
+
+      ! Start time measurement for solution procedure
+      call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
+      
+      ! What time-stepping scheme should be used?
+      select case(rtimestepEuler%ctimestepType)
+        
+      case (SV_RK_SCHEME)
+        
+        ! Adopt explicit Runge-Kutta scheme
+        call tstep_performRKStep(p_rproblemLevel, rtimestepEuler,&
+                                 rsolverEuler, rsolutionEuler, euler_calcRHS,&
+                                 euler_setBoundary, rcollectionEuler)
+        
+      case (SV_THETA_SCHEME)
+        
+        ! Adopt two-level theta-scheme
+        call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler,&
+                                    rsolverEuler, rsolutionEuler, euler_calcResidual,&
+                                    euler_calcJacobian, euler_applyJacobian,&
+                                    euler_setBoundary, rcollectionEuler)
+        
+      case DEFAULT
+        call output_line('Unsupported time-stepping algorithm!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransient')
+        call sys_halt()
+      end select
+      
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(rappDescrEuler%rtimerSolution)
+      
+      ! Reached final time, then exit the infinite time loop?
+      if (rtimestepEuler%dTime .ge. rtimestepEuler%dfinalTime) exit timeloop
+
+    end do timeloop
+
+  end subroutine mhd_solveTransientPrimal
 
   !*****************************************************************************
   ! AUXILIARY ROUTINES
@@ -100,52 +935,52 @@ contains
       case ('-A','--adaptivity')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "adaptivity", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'adaptivity', trim(adjustl(cbuffer)))
 
       case ('-B','--benchmark')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "benchmark", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'benchmark', trim(adjustl(cbuffer)))
        
       case ('-DC','--dualconv')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "dualconv", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'dualconv', trim(adjustl(cbuffer)))
         
       case ('-DD','--dualdiff')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "dualdiff", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'dualdiff', trim(adjustl(cbuffer)))
 
       case ('-E','--errorest')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "errorest", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'errorest', trim(adjustl(cbuffer)))
         
       case ('-I','--io')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "inputoutput", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'inputoutput', trim(adjustl(cbuffer)))
         
       case ('-PC','--primalconv')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "primalconv", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'primalconv', trim(adjustl(cbuffer)))
         
       case ('-PD','--primaldiff')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "primaldiff", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'primaldiff', trim(adjustl(cbuffer)))
 
       case ('-S','--solver')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "solver", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
         
       case ('-T','--timestep')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', "timestep", trim(adjustl(cbuffer)))
+        call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
         
       case DEFAULT
         iarg = iarg+1
@@ -154,5 +989,5 @@ contains
     end do cmdarg
 
   end subroutine mhd_parseCmdlArguments
-
+  
 end module mhd_application
