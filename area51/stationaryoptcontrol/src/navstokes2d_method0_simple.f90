@@ -608,9 +608,190 @@ contains
     type(t_bilinearForm) :: rbilinearForm
     type(t_optcoperator) :: roptcoperator
     
-    logical, parameter :: bnewmethod = .true.
+    integer, parameter :: inewmethod = 2
     
-    if (bnewmethod) then
+    if ((inewmethod .eq. 2) .and. rparams%bnewton) then
+      if (.not. lsysbl_isSubmatrixPresent(rmatrixBlock,1,1)) then
+        ! First call, initialise empty submatrices.
+        call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(1,1),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(2,2),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+            
+        if (rparams%bnewton) then
+          call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(1,2),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(2,1),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        end if
+        
+        call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(4,4),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(5,5),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        
+        if (rparams%bnavierStokes) then
+          call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(4,5),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(5,4),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        end if
+
+        if (rparams%bnavierStokes .and. rparams%bnewton) then
+          call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(4,2),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          call lsyssc_duplicateMatrix (rlevel%rmatrixLaplace,rmatrixBlock%RmatrixBlock(5,1),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        end if
+
+        if (rparams%bdualcoupledtoprimal) then
+          call lsyssc_duplicateMatrix (rlevel%rmatrixMass,rmatrixBlock%RmatrixBlock(4,1),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          call lsyssc_duplicateMatrix (rlevel%rmatrixMass,rmatrixBlock%RmatrixBlock(5,2),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        end if
+
+        if (rparams%bcontrolactive) then
+          call lsyssc_duplicateMatrix (rlevel%rmatrixMass,rmatrixBlock%RmatrixBlock(1,4),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          call lsyssc_duplicateMatrix (rlevel%rmatrixMass,rmatrixBlock%RmatrixBlock(2,5),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        end if
+      
+      else
+        
+        ! Remove the B-matrices, attach them later.
+        call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(3,1))
+        call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(3,2))
+        call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(6,4))
+        call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(6,5))
+        
+      end if
+      
+      ! Clear the matrix
+      call lsysbl_clearMatrix (rmatrixBlock)
+    
+      ! Initialise the operator structure for what we need.
+      roptcoperator%dupsam = 0.0_DP
+      
+      ! Timestep-weights
+      if (rparams%bemulateTimestep) then
+        roptcoperator%dprimalAlpha = 1.0_DP/rparams%dt
+        roptcoperator%ddualAlpha   = 1.0_DP/rparams%dt
+      end if
+
+      ! Stokes operator
+      roptcoperator%dnu = rparams%dnu
+      roptcoperator%dprimalBeta = 1.0_DP
+      roptcoperator%ddualBeta   = 1.0_DP
+      
+      ! Nonlinearity
+      if (rparams%bnavierStokes) then
+        roptcoperator%dprimalDelta =  1.0_DP
+        roptcoperator%ddualDelta   = -1.0_DP
+        roptcoperator%ddualNewtonTrans = 1.0_DP
+        
+        ! Whether or not Newton is active has no influence to the
+        ! defect, so the following lines are commented out.
+        ! if (rparams%bnewton) then
+        !   roptcoperator%dprimalNewton    = 1.0_DP
+        !   roptcoperator%ddualRDeltaTrans = 1.0_DP
+        !   roptcoperator%ddualRNewton     = -1.0_DP
+        ! end if
+        
+      end if
+      
+      ! Coupling matrices
+      if (rparams%bdualcoupledtoprimal) then
+        roptcoperator%ddualRAlpha = -1.0_DP
+      end if
+
+      if (rparams%bcontrolactive) then
+        roptcoperator%dcontrolWeight = -1.0_DP
+        roptcoperator%dcontrolMultiplier = -1.0_DP/rparams%dalpha
+      end if
+      
+      if (rparams%bboundsactive) then
+        if (.not. rparams%bexactderiv) then
+          roptcoperator%ccontrolProjection = 2
+        else
+          roptcoperator%ccontrolProjection = 1
+        end if
+        roptcoperator%dmin1 = rparams%dmin1
+        roptcoperator%dmax1 = rparams%dmax1
+        roptcoperator%dmin2 = rparams%dmin2
+        roptcoperator%dmax2 = rparams%dmax2
+      end if
+      
+      ! Calculate the velocity-dependent part of the system matrix.
+      call conv_strdiffOptC2dgetDerMatrix (rmatrixBlock,roptcoperator,1.0_DP,rvectorBlock,0.001_DP)
+      
+      ! Finally, attach the B-matrices.
+      call lsyssc_duplicateMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(1,3),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      call lsyssc_duplicateMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(2,3),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+
+      if (.not. bsimple) then
+        call lsyssc_transposeMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(3,1))
+        call lsyssc_transposeMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(3,2))
+      else
+        call lsyssc_transposeMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(3,1),LSYSSC_TR_VIRTUAL)
+        call lsyssc_transposeMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
+      end if
+      
+      call lsyssc_duplicateMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(4,6),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      call lsyssc_duplicateMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(5,6),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+
+      if (.not. bsimple) then
+        call lsyssc_transposeMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(6,4))
+        call lsyssc_transposeMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(6,5))
+      else
+        call lsyssc_transposeMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(6,4),LSYSSC_TR_VIRTUAL)
+        call lsyssc_transposeMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(6,5),LSYSSC_TR_VIRTUAL)
+        call lsyssc_duplicateMatrix (rmatrixBlock%RmatrixBlock(1,3),rmatrixBlock%RmatrixBlock(4,6),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsyssc_duplicateMatrix (rmatrixBlock%RmatrixBlock(2,3),rmatrixBlock%RmatrixBlock(5,6),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      end if
+      
+      if (rparams%bpureDirichlet .and. bdirectSolver) then
+        if (bsimple) then
+          ! We cannot use virtually transposed matrices here as we have to overwrite
+          ! some data...
+          call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(3,1))
+          call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(3,2))
+          call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(6,4))
+          call lsyssc_releaseMatrix(rmatrixBlock%RmatrixBlock(6,5))
+          call lsyssc_transposeMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(3,1))
+          call lsyssc_transposeMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(3,2))
+          call lsyssc_transposeMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(6,4))
+          call lsyssc_transposeMatrix (rlevel%rmatrixB2,rmatrixBlock%RmatrixBlock(6,5))
+        end if
+
+        ! Fixed pressure; create zero diag matrix and fix first DOF.
+        call lsyssc_releaseMatrix (rmatrixBlock%RmatrixBlock(3,3))
+        call lsyssc_duplicateMatrix (rlevel%rmatrixDiagP,rmatrixBlock%RmatrixBlock(3,3),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        call lsyssc_clearMatrix(rmatrixBlock%RmatrixBlock(3,3))
+        call mmod_replaceLinesByUnitBlk (rmatrixBlock,3,(/1/))
+
+        call lsyssc_releaseMatrix (rmatrixBlock%RmatrixBlock(6,6))
+        call lsyssc_duplicateMatrix (rlevel%rmatrixDiagP,rmatrixBlock%RmatrixBlock(6,6),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        call lsyssc_clearMatrix(rmatrixBlock%RmatrixBlock(6,6))
+        call mmod_replaceLinesByUnitBlk (rmatrixBlock,6,(/1/))
+      else
+        rmatrixBlock%RmatrixBlock(6,6)%dscaleFactor = 0.0_DP
+        rmatrixBlock%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
+      end if
+
+      !call matio_writeBlockMatrixHR (rmatrixBlock, 'matrix',&
+      !    .true., 0, 'matrix2.txt', '(E12.5)', 1E-10_DP)
+      
+    else if (inewmethod .gt. 0) then
     
       if (.not. lsysbl_isSubmatrixPresent(rmatrixBlock,1,1)) then
         ! First call, initialise empty submatrices.
@@ -1687,19 +1868,19 @@ contains
     integer :: imaxre,icurrentre,icurrentalpha
     !integer, dimension(8), parameter :: ire = (/500,250,100,50,25,10,5,1/)
     !real(dp), dimension(3), parameter :: Dalpha = (/0.1_DP,0.01_DP,0.001_DP/)
-    integer, dimension(1), parameter :: ire = (/50/)
+    integer, dimension(1), parameter :: ire = (/100/)
     real(dp), dimension(1), parameter :: Dalpha = (/0.01_DP/)
 
     ! Ok, let's start. 
     !
     ! We want to solve our Poisson problem on level... 
-    NLMAX = 2
+    NLMAX = 5
     
     ! Minimum level in the MG solver
-    NLMIN = 2
+    NLMIN = 5
     
     ! Newton iteration counter
-    nmaxiterations = 1 !200
+    nmaxiterations = 20 !200
     
     ! Relaxation parameter
     !rparams%dalpha = 0.1_DP
@@ -1709,7 +1890,7 @@ contains
     rparams%bdualcoupledtoprimal = .true.
     
     ! Bounds on the control
-    rparams%bboundsActive = .true.
+    rparams%bboundsActive = .false.
     rparams%dmin1 = -0.05
     rparams%dmax1 = 0.05
     rparams%dmin2 = -0.05
@@ -1757,7 +1938,7 @@ contains
     ilinearsolver = 1
     
     ! Output level
-    ioutputlevel = 1
+    ioutputlevel = 2
     
     ! Allocate level information
     allocate(Rlevel(NLMAX))
@@ -1769,8 +1950,8 @@ contains
 
     ! Create the target flow.
     call initTargetFlow (rtargetFlow,itargetFlow,rboundary,&
-        './pre/QUAD.tri',6,'./ns/navstdc6re100')
-    imaxre = 100
+        './pre/QUAD.tri',6,'./ns/navstdc6re1000')
+    imaxre = 1000
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (Rlevel(1)%rtriangulation, './pre/QUAD.tri', rboundary)
