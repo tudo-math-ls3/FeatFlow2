@@ -136,6 +136,9 @@ module navstokes2d_method0_simple
     ! Length of the timestep
     real(dp) :: dt
     
+    ! Stabilisation parameter
+    real(dp) :: dupsam
+    
     ! Pure Dirichlet problem
     logical :: bpureDirichlet
 
@@ -290,7 +293,7 @@ contains
           .true.)
 
       ! Initialise the operator structure for what we need.
-      roptcoperator%dupsam = 0.0_DP
+      roptcoperator%dupsam = rparams%dupsam
       
       ! Timestep-weights
       if (rparams%bemulateTimestep) then
@@ -358,13 +361,13 @@ contains
       ! nonlinearities.
       !
       ! Primal Defect
-      rstreamlineDiffPrimalDef%dupsam = 0.0_DP
+      rstreamlineDiffPrimalDef%dupsam = rparams%dupsam
       rstreamlineDiffPrimalDef%dnu = rparams%dnu
       rstreamlineDiffPrimalDef%ddelta = 1.0_DP
       rstreamlineDiffPrimalDef%dnewton = 0.0_DP
 
       ! Dual Defect
-      rstreamlineDiffDualDef%dupsam = 0.0_DP
+      rstreamlineDiffDualDef%dupsam = rparams%dupsam
       rstreamlineDiffDualDef%dnu = rparams%dnu
       rstreamlineDiffDualDef%ddelta = -1.0_DP
       rstreamlineDiffDualDef%dnewtonTransposed = 1.0_DP
@@ -672,7 +675,7 @@ contains
       call lsysbl_clearMatrix (rmatrixBlock)
     
       ! Initialise the operator structure for what we need.
-      roptcoperator%dupsam = 0.0_DP
+      roptcoperator%dupsam = rparams%dupsam
       
       ! Timestep-weights
       if (rparams%bemulateTimestep) then
@@ -854,7 +857,7 @@ contains
       call lsysbl_clearMatrix (rmatrixBlock)
     
       ! Initialise the operator structure for what we need.
-      roptcoperator%dupsam = 0.0_DP
+      roptcoperator%dupsam = rparams%dupsam
       
       ! Timestep-weights
       if (rparams%bemulateTimestep) then
@@ -975,21 +978,21 @@ contains
     else
 
       ! Primal preconditioner
-      rstreamlineDiffPrimal%dupsam = 0.0_DP
+      rstreamlineDiffPrimal%dupsam = rparams%dupsam
       rstreamlineDiffPrimal%dnu = rparams%dnu
       rstreamlineDiffPrimal%ddelta = 1.0_DP
       rstreamlineDiffPrimal%dnewton = 0.0_DP
       if (rparams%bnewton) rstreamlineDiffPrimal%dnewton = 1.0_DP
 
       ! Dual preconditioner, velocity block
-      rstreamlineDiffDual%dupsam = 0.0_DP
+      rstreamlineDiffDual%dupsam = rparams%dupsam
       rstreamlineDiffDual%dnu = rparams%dnu
       rstreamlineDiffDual%ddelta = -1.0_DP
       !if (rparams%bnewton) 
       rstreamlineDiffDual%dnewtonTransposed = 1.0_DP
 
       ! Dual preconditioner, reactive mass matrix block
-      rstreamlineDiffDualR%dupsam = 0.0_DP
+      rstreamlineDiffDualR%dupsam = rparams%dupsam
       rstreamlineDiffDualR%dnu = rparams%dnu
       rstreamlineDiffDualR%ddelta = 0.0_DP
       if (rparams%bnewton) then
@@ -1890,7 +1893,7 @@ contains
     rparams%bdualcoupledtoprimal = .true.
     
     ! Bounds on the control
-    rparams%bboundsActive = .true.
+    rparams%bboundsActive = .false.
     rparams%dmin1 = -0.05
     rparams%dmax1 = 0.05
     rparams%dmin2 = -0.05
@@ -1908,6 +1911,9 @@ contains
     
     ! Timestep length
     rparams%dt = 1.0_DP
+    
+    ! Stabilisation parameter
+    rparams%dupsam = 0.0_DP
     
     ! TRUE: Use Newton iteration
     rparams%bnewton = .true.
@@ -1950,8 +1956,8 @@ contains
 
     ! Create the target flow.
     call initTargetFlow (rtargetFlow,itargetFlow,rboundary,&
-        './pre/QUAD.tri',6,'./ns/navstdc6re100')
-    imaxre = 100
+        './pre/QUAD.tri',6,'./ns/navstdc6re1000')
+    imaxre = 1000
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (Rlevel(1)%rtriangulation, './pre/QUAD.tri', rboundary)
