@@ -172,6 +172,26 @@ module codire_application
   
   private
   public :: codire
+  public :: codire_initApplication
+  public :: codire_doneApplication
+  public :: codire_initCollection
+  public :: codire_initSolvers
+  public :: codire_initProblem
+  public :: codire_initProblemLevel
+  public :: codire_initAllProblemLevels
+  public :: codire_initSolution
+  public :: codire_initRHS
+  public :: codire_initTargetFunc
+  public :: codire_outputSolution
+  public :: codire_outputStatistics
+  public :: codire_estimateTargetFuncError
+  public :: codire_estimateRecoveryError
+  public :: codire_adaptTriangulation
+  public :: codire_solveTransientPrimal
+  public :: codire_solvePseudoTransientPrimal
+  public :: codire_solveSteadyStatePrimal
+  public :: codire_solveSteadyStatePrimalDual
+
 
 contains
 
@@ -213,12 +233,10 @@ contains
     ! for the convection-diffusion-reaction application
     type(t_problem) :: rproblem
     
-    ! Time-stepping structure for the convection-
-    ! diffusion-reaction application
+    ! Time-stepping structure
     type(t_timestep) :: rtimestep
     
-    ! Global solver structure for the convection-
-    ! diffusion-reaction application
+    ! Global solver structure
     type(t_solver) :: rsolver
 
     ! Solution vector for the primal problem
@@ -261,7 +279,7 @@ contains
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
     
     ! Initialize the global collection
-    call codire_initCollection(rappDescriptor, rparlist, rcollection)
+    call codire_initCollection(rappDescriptor, rparlist, 'codire', rcollection)
 
     ! Initialize the solver structures
     call codire_initSolvers(rparlist, 'codire', rtimestep, rsolver)
@@ -318,7 +336,7 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        print *, "Feature is not implemented"
+        print *, 'Feature is not implemented'
         stop
 
 
@@ -337,7 +355,7 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        print *, "Feature is not implemented"
+        print *, 'Feature is not implemented'
         stop
 
         
@@ -370,7 +388,7 @@ contains
 
       case DEFAULT
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire_start')
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire')
         call sys_halt()
       end select
     end if
@@ -568,7 +586,7 @@ contains
 
 !<subroutine>
 
-  subroutine codire_initCollection(rappDescriptor, rparlist, rcollection)
+  subroutine codire_initCollection(rappDescriptor, rparlist, ssectionName, rcollection)
 
 !<description>
     ! This subroutine initializes the collection based on
@@ -581,6 +599,9 @@ contains
 
     ! parameter list
     type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -636,35 +657,35 @@ contains
 
     ! Add internal information about the position of 
     ! constant coefficient matrices and auxiliary vectors
-    call parlst_getvalue_int(rparlist, '', 'VelocityField', i, 1)
-    call collct_setvalue_int(rcollection,  'VelocityField', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'VelocityField', i, 1)
+    call collct_setvalue_int(rcollection, 'VelocityField', i, .true.)
     
-    call parlst_getvalue_int(rparlist, '', 'ConvectionAFC', i, 1)
-    call collct_setvalue_int(rcollection,  'ConvectionAFC', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ConvectionAFC', i, 1)
+    call collct_setvalue_int(rcollection, 'ConvectionAFC', i, .true.)
 
-    call parlst_getvalue_int(rparlist, '', 'DiffusionAFC', i, 2)
-    call collct_setvalue_int(rcollection,  'DiffusionAFC', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'DiffusionAFC', i, 2)
+    call collct_setvalue_int(rcollection, 'DiffusionAFC', i, .true.)
 
-    call parlst_getvalue_int(rparlist, '', 'TemplateMatrix', i, 1)
-    call collct_setvalue_int(rcollection,  'TemplateMatrix', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'TemplateMatrix', i, 1)
+    call collct_setvalue_int(rcollection, 'TemplateMatrix', i, .true.)
 
-    call parlst_getvalue_int(rparlist, '', 'SystemMatrix', i, 2)
-    call collct_setvalue_int(rcollection,  'SystemMatrix', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'SystemMatrix', i, 2)
+    call collct_setvalue_int(rcollection, 'SystemMatrix', i, .true.)
     
-    call parlst_getvalue_int(rparlist, '', 'JacobianMatrix', i, 3)
-    call collct_setvalue_int(rcollection,  'JacobianMatrix', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'JacobianMatrix', i, 3)
+    call collct_setvalue_int(rcollection, 'JacobianMatrix', i, .true.)
 
-    call parlst_getvalue_int(rparlist, '', 'TransportMatrix', i, 4)
-    call collct_setvalue_int(rcollection,  'TransportMatrix', i, .true.)
+    call parlst_getvalue_int(rparlist, ssectionName, 'TransportMatrix', i, 4)
+    call collct_setvalue_int(rcollection, 'TransportMatrix', i, .true.)
 
     if ((rappDescriptor%imasstype .ne. MASS_ZERO) .or.&
         (rappDescriptor%imassantidiffusiontype .ne. MASS_ZERO)) then
       
-      call parlst_getvalue_int(rparlist, '', 'ConsistentMassMatrix', i, 5)
-      call collct_setvalue_int(rcollection,  'ConsistentMassMatrix', i, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'ConsistentMassMatrix', i, 5)
+      call collct_setvalue_int(rcollection, 'ConsistentMassMatrix', i, .true.)
 
-      call parlst_getvalue_int(rparlist, '', 'LumpedMassMatrix', i, 6)
-      call collct_setvalue_int(rcollection,  'LumpedMassMatrix', i, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'LumpedMassMatrix', i, 6)
+      call collct_setvalue_int(rcollection, 'LumpedMassMatrix', i, .true.)
       
     else
       
@@ -674,32 +695,32 @@ contains
     end if
 
     if (rappDescriptor%idiffusiontype .ne. 0)then
-      call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_S', i, 7)
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_S', i, .true.)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_S', i, 7)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_S', i, .true.)
     else
-      call collct_setvalue_int(rcollection,  'CoeffMatrix_S', 0, .true.)
+      call collct_setvalue_int(rcollection, 'CoeffMatrix_S', 0, .true.)
     end if
 
     if (rappDescriptor%ivelocitytype .ne. 0)then
       select case(rappDescriptor%ndimension)
       case (NDIM1D)
-        call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CX', i, 8)
-        call collct_setvalue_int(rcollection,  'CoeffMatrix_CX', i, .true.)
-        call collct_setvalue_int(rcollection,  'CoeffMatrix_CY', 0, .true.)
-        call collct_setvalue_int(rcollection,  'CoeffMatrix_CZ', 0, .true.)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 8)
+        call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
+        call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', 0, .true.)
+        call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', 0, .true.)
       case (NDIM2D)
-        call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CX', i, 8)
-        call collct_setvalue_int(rcollection,  'CoeffMatrix_CX', i, .true.)
-        call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CY', i, 9)
-        call collct_setvalue_int(rcollection,  'CoeffMatrix_CY', i, .true.)
-        call collct_setvalue_int(rcollection,  'CoeffMatrix_CZ', 0, .true.)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 8)
+        call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i, 9)
+        call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', i, .true.)
+        call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', 0, .true.)
       case (NDIM3D)
-        call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CX', i, 8)
-        call collct_setvalue_int(rcollection,  'CoeffMatrix_CX', i, .true.)
-        call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CY', i, 9)
-        call collct_setvalue_int(rcollection,  'CoeffMatrix_CY', i, .true.)
-        call parlst_getvalue_int(rparlist, '', 'CoeffMatrix_CZ', i, 10)
-        call collct_setvalue_int(rcollection,  'CoeffMatrix_CZ', i, .true.)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 8)
+        call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i, 9)
+        call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', i, .true.)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CZ', i, 10)
+        call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', i, .true.)
       case DEFAULT
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CX',  0, .true.)
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CY',  0, .true.)
@@ -1811,7 +1832,7 @@ contains
     type(t_timer) :: rtimerSolution
     real(DP) :: dtotalTime, dfraction
 
-    call output_lbrk(nlbrk=5)
+    call output_lbrk()
     call output_line('Time measurement:')
     call output_line('-----------------')
     
@@ -2034,7 +2055,7 @@ contains
                                   codire_refFuncAnalytic, rcollectionTmp)
 
       ! Compute the value of the quantity of interest. Create an empty
-      ! vector which is initialized by zeros and compute the "error"
+      ! vector which is initialized by zeros and compute the 'error'
       ! between this vector and the analytic quantity of interest.
       call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
       call pperr_scalarTargetFunc(rvector%RvectorBlock(1), dexacttargetfunc,&
@@ -2745,6 +2766,7 @@ contains
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix
     integer :: nlmin, ipreadapt, npreadapt
+    integer, external :: signal_SIGINT
 
 
     ! Start time measurement for pre-processing
@@ -2876,7 +2898,9 @@ contains
     timeloop: do
       
       ! Check for user interaction
-      call codire_UserInterface
+      if (signal_SIGINT(-1) > 0 )&
+      call codire_outputSolution(rparlist, ssectionName, p_rproblemLevel,&
+                                 rsolution, dtime=rtimestep%dTime)
       
       !-------------------------------------------------------------------------
       ! Advance solution in time
@@ -4055,25 +4079,5 @@ contains
     end do cmdarg
 
   end subroutine codire_parseCmdlArguments
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine codire_UserInterface()
-
-!<description>
-    ! This subroutine enables the user to interact with the simulation.
-!</description>
-
-!</subroutine>
-    
-!!$    ! local variables
-!!$    integer, external :: signal_SIGINT
-!!$    
-!!$    ! Perform intermediate output
-!!$    if (signal_SIGINT(-1) > 0 ) call codire_postprocess(rsolution)
-    
-  end subroutine codire_UserInterface
 
 end module codire_application
