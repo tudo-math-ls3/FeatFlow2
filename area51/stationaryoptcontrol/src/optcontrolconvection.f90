@@ -3330,7 +3330,14 @@ contains
       !
       ! as A41/A52 are linear.
       !
-      ! We calculate the matrix column-wise and element based.
+      ! We calculate the matrix column-wise and element based:
+      ! Let Bij := 1/2h * (Aij(u+h*e_k) - Aij(u-h*e_k)), then
+      !
+      !   (B11 B12 B41    ) (pdof1)  ->  (    X          )
+      !   (B21 B22     B52) (ddof2)      (    X          )
+      !   (B41 B42 B44 B45) (pdof1)      (    X          )
+      !   (B51 B52 B54 B55) (ddof2)      (    X          )
+      !                                       ^k
     
       ! Loop through the DOF's. All DOF's must be once increased and once decreased
       ! by h.
