@@ -17,6 +17,7 @@
 module globalsystem
 
   use fsystem
+  use genoutput
   use linearsystemscalar
   use linearsystemblock
   
@@ -32,7 +33,7 @@ contains
 
 !<subroutine>
 
-  subroutine glsys_assembleGlobal (rsourceMatrix,rdestMatrix, &
+  subroutine glsys_assembleGlobal (rsourceMatrix, rdestMatrix, &
                                    bstructure, bcontent, &
                                    cmatrixFormat, cdataType)
   
@@ -105,12 +106,14 @@ contains
         (rsourceMatrix%nblocksPerRow .eq. 0)) return
     
     if (cdataTypeLocal .ne. ST_DOUBLE) then
-      print *,'glsys_assembleGlobal: Only double precision dest. matrix supported!'
+      call output_line('Only double precision destination matrix supported!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobal')
       call sys_halt()
     end if
 
     if (cmatrixFormatLocal .ne. LSYSSC_MATRIX9) then
-      print *,'glsys_assembleGlobal: Only format 9 dest. matrix supported!'
+      call output_line('Only format 9 destination matrix supported!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobal')
       call sys_halt()
     end if
     
@@ -120,13 +123,14 @@ contains
         if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
         
           if (rsourceMatrix%RmatrixBlock(i,j)%cdataType .ne. ST_DOUBLE) then
-            print *,'glsys_assembleGlobal: Only double precision source matrices &
-                    &supported!'
+            call output_line('Only double precision source matrices supported!',&
+                             OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobal')
             call sys_halt()
           end if
 
           if (rsourceMatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX9) then
-            print *,'glsys_assembleGlobal: Only format 9 source matrices supported!'
+            call output_line('Only format 9 source matrices supported!',&
+                             OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobal')
             call sys_halt()
           end if
           
@@ -144,7 +148,7 @@ contains
   ! So at first, we create an un-transposed global matrix.
   
   call lsysbl_duplicateMatrix (rsourceMatrix,rlocalMatrix, &
-      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+                               LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
       
   do j=1,rlocalMatrix%nblocksPerRow
     do i=1,rlocalMatrix%nblocksPerCol
@@ -152,7 +156,7 @@ contains
       if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) then
         ! Transpose the submatrix if necessary
         if (iand(rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec, &
-                LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+                 LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
           ! Untranspose the source-submatrix to a local matrix
           call lsyssc_transposeMatrix (rsourceMatrix%RmatrixBlock(i,j),&
                       rlocalMatrixScalar,LSYSSC_TR_VIRTUAL)
@@ -375,7 +379,7 @@ contains
       ! Get the basic row/column indices of the destination matrix.
       call glmatasm_getOffsets (rlocalMatrix,Icolumns,Irows)
 
-      ! KCol/Kld are assumed to be ok.
+      ! Kcol/Kld are assumed to be ok.
       !
       ! Allocate the data array if we don't have a previous
       ! array in the correct size.
@@ -420,9 +424,9 @@ contains
   ! created by transposing them above!
   call lsysbl_releaseMatrix(rlocalMatrix)
   
-  end subroutine
+  end subroutine glsys_assembleGlobal
 
-! Auxiliary subroutines
+  ! Auxiliary subroutines
   
   !------------------------------------------------------------------
   ! Set up general data of the destination matrix
@@ -472,7 +476,7 @@ contains
     rdestMatrix%RmatrixBlock(1,1)%h_IsortPermutation = ST_NOHANDLE
     rdestMatrix%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
 
-  end subroutine
+  end subroutine glmatasm_initDestination
 
   !------------------------------------------------------------------
   ! Calculates the row-block offsets in the destination matrix
@@ -524,7 +528,7 @@ contains
       Irows(i) = Irows(i) + Irows(i-1)
     end do
     
-  end subroutine
+  end subroutine glmatasm_getOffsets
 
   !------------------------------------------------------------------
   ! Calculates NA and the KLD row structure of the global matrix
@@ -596,7 +600,7 @@ contains
     ! and so we have NA. 
     rdestMatrix%NA = p_KldDest(rsourceMatrix%NEQ+1)-1
   
-  end subroutine
+  end subroutine glmatasm_KLD
 
   !------------------------------------------------------------------
   ! Calculates the KCOL column structure of the global matrix
@@ -688,7 +692,7 @@ contains
     ! Release the temp array
     call storage_free (h_KldTmp)
                       
-  end subroutine
+  end subroutine glmatasm_Kcol99dble
 
   !------------------------------------------------------------------
   ! Transfers the entries of the local matrices into the
@@ -781,7 +785,7 @@ contains
     ! Release the temp array
     call storage_free (h_KldTmp)
                       
-  end subroutine
+  end subroutine glmatasm_Da99dble
 
   !------------------------------------------------------------------
   ! Calculates the KCOL column structure of the global matrix
@@ -885,6 +889,6 @@ contains
     ! Release the temp array
     call storage_free (h_KldTmp)
                       
-  end subroutine
+  end subroutine glmatasm_KcolDa99dble
 
-end module
+end module globalsystem
