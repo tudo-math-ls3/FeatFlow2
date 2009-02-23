@@ -2083,6 +2083,7 @@ contains
             call output_line ('---')
             call output_line ('re     = '//sys_siL(Ire(icurrentre),10))
             call output_line ('alpha  = '//sys_sdL(rparams%dalpha,10))
+            call output_line ('dupsam = '//sys_sdL(rparams%dupsam,10))
            
           end if
 
