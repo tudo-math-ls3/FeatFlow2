@@ -354,10 +354,14 @@ contains
       ieltypeP = EL_Q0
 
     case (7)
+      ieltypeUV = EL_EM30_NEW
+      ieltypeP = EL_Q0
+
+    case (10)
       ieltypeUV = EL_EB50
       ieltypeP = EL_QP1
 
-    case (8)
+    case (11)
       ieltypeUV = EL_EM50
       ieltypeP = EL_QP1
 
@@ -482,10 +486,14 @@ contains
       ieltypeP = EL_Q0
 
     case (7)
+      ieltypeUV = EL_EM30_NEW
+      ieltypeP = EL_Q0
+
+    case (10)
       ieltypeUV = EL_EB50
       ieltypeP = EL_QP1
 
-    case (8)
+    case (11)
       ieltypeUV = EL_EM50
       ieltypeP = EL_QP1
 
