@@ -132,6 +132,30 @@ module basicgeometry
   end type
 
   !</typeblock>
+  
+  !<typeblock>
+  
+  ! The point structure for regular 3D coordinate systems, consisting of
+  ! a rotated X-, Y-axes and Z-axes
+  type t_coordinateSystem3D
+  
+    ! Coordinates of the origin
+    real(DP), dimension(3) :: Dorigin = (/0.0_dp,0.0_dp,0.0_dp/)
+    
+    ! Rotation angle; 0..2*PI
+    real(DP) :: drotationX = 0.0_dp
+    
+    real(DP) :: drotationY = 0.0_dp
+    
+    real(DP) :: drotationZ = 0.0_dp
+    
+    ! scaling factor of the coordinate system; usually = 1.0
+    real(DP) :: dscalingFactor = 1.0_dp
+    
+  end type
+
+  !</typeblock>
+  
   !</types>
 
 contains
@@ -334,5 +358,85 @@ contains
     ! That's it
 
   end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  pure subroutine bgeom_initCoordSys3D(rcoordSys, Dorigin, drotationX, drotationY,&
+                                       drotationZ, dscalingFactor)
+
+!<description>
+  ! Creates a 3D coordinate system from an optionally given origin, rotation angles
+  ! and scaling factor.
+!</description>
+
+!<input>
+  ! OPTIONAL: The origin of the coordinate system.
+  ! Set to (/ 0.0_dp, 0.0_dp, 0.0_dp /) if not given.
+  real(DP), dimension(:), optional,    intent(IN)  :: Dorigin
+  
+  ! OPTIONAL: The rotation angles of the coordinate system.
+  ! Angle range: 0..2*PI
+  ! Set to 0.0_DP if not given.
+  real(DP), optional,                  intent(IN)  :: drotationX
+  real(DP), optional,                  intent(IN)  :: drotationY
+  real(DP), optional,                  intent(IN)  :: drotationZ
+  
+  ! The scaling factor. Should be != 0.0_DP
+  ! Set to 1.0_DP if not given.
+  real(DP), optional,                  intent(IN)  :: dscalingFactor
+
+!</input>
+
+!<output>
+  ! A t_coordinateSystem3D structure to be written.
+  type(t_coordinateSystem3D),          intent(OUT) :: rcoordSys
+
+!</output>
+
+!</subroutine>
+
+    ! Set the origin, if given.
+    if (present(Dorigin)) then
+      rcoordSys%Dorigin = (/ Dorigin(1), Dorigin(2), Dorigin(3) /)
+    else
+      rcoordSys%Dorigin = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
+    end if
+      
+    ! Set the rotation, if given.
+    if (present(drotationX)) then
+      rcoordSys%drotationX = drotationX
+    else
+      rcoordSys%drotationX = 0.0_DP
+    end if
+
+    ! Set the rotation, if given.
+    if (present(drotationY)) then
+      rcoordSys%drotationY = drotationY
+    else
+      rcoordSys%drotationY = 0.0_DP
+    end if
+
+    ! Set the rotation, if given.
+    if (present(drotationZ)) then
+      rcoordSys%drotationZ = drotationZ
+    else
+      rcoordSys%drotationZ = 0.0_DP
+    end if
+      
+    ! Set the scaling factor, if given.
+    if (present(dscalingFactor)) then
+      rcoordSys%dscalingFactor = dscalingFactor
+    else
+      rcoordSys%dscalingFactor = 1.0_DP
+    endif
+  
+    ! That's it
+  
+  end subroutine
+
+  ! ***************************************************************************
+  
 
 end module

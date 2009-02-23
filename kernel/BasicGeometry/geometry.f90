@@ -260,6 +260,10 @@ module geometry
 
   ! Polygon object
   integer, parameter :: GEOM_POLYGON   = 10
+  
+  ! Sphere object
+  integer, parameter :: GEOM_SPHERE    = 11
+  
 
 !</constantblock>
 
@@ -338,7 +342,7 @@ module geometry
     type(t_boundaryApprox), pointer :: p_rboundaryApprox => null()
     
   end type
-  
+
 !</typeblock>
   
 ! *****************************************************************************
@@ -350,6 +354,22 @@ module geometry
     
     ! Radius of the circle. Must be positive.
     real(DP) :: dradius = 0.0_DP
+    
+  end type
+  
+!</typeblock>
+  
+! *****************************************************************************
+
+!<typeblock>
+
+  ! This structure realises the subnode for the Sphere object.
+  type t_geometrySphere
+    
+    ! Radius of the Sphere. Must be positive.
+    real(DP) :: dradius = 0.0_DP
+    
+    integer :: ipoly = 20
     
   end type
   
@@ -436,7 +456,7 @@ module geometry
     
     ! The 3D coordinate system for this geometry object.
     ! Used for 3D geometry objects - undefined for 2D geometry objects.
-    !TYPE(t_coordinateSystem3D) :: rcoord3D
+    TYPE(t_coordinateSystem3D) :: rcoord3D
     
     ! A boolean which tells us whether the geometry object is inverted or not.
     logical                    :: binverted = .false.
@@ -465,7 +485,9 @@ module geometry
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! = 3D object subnodes -
     ! -=-=-=-=-=-=-=-=-=-=-=
-    ! Todo...
+
+    ! Structure for the sphere object
+    type(t_geometrySphere)     :: rsphere
     
   end type
   
@@ -496,6 +518,12 @@ module geometry
     module procedure geom_init_polygon_indirect
     module procedure geom_init_polygon_direct
   end interface
+
+  interface geom_init_sphere
+    module procedure geom_init_sphere_indirect
+    module procedure geom_init_sphere_direct
+  end interface
+
   
 contains
 
@@ -4933,5 +4961,447 @@ end subroutine
     end select
     
   end subroutine
+  
+  ! ***************************************************************************
+  ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
+  ! *= 3D Sphere Routines                                                    =*
+  ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine geom_init_sphere_indirect(rgeomObject, rcoordSys, dradius, &
+                                       binverted)
+
+!<description>
+  ! Creates a t_geometryObject representing a 3D sphere.
+!</description>
+
+!<input>
+  ! A 3D coordinate system for the sphere.
+  type(t_coordinateSystem3D),  intent(IN)  :: rcoordSys
+  
+  ! A radius for the sphere.
+  real(DP),                    intent(IN)  :: dradius
+  
+  ! OPTIONAL: A boolean telling us whether the object is inverted.
+  ! Is set to .FALSE. if not given.
+  logical, optional,           intent(IN)  :: binverted
+
+!</input>
+
+!<output>
+  ! A t_geometryObject structure to be written.
+  type(t_geometryObject),      intent(OUT) :: rgeomObject
+
+!</output>
+
+!</subroutine>
+
+    ! The dimension is 3D.
+    rgeomObject%ndimension = NDIM3D
+    
+    ! We want a circle.
+    rgeomObject%ctype = GEOM_SPHERE 
+    
+    ! Store the coordinate system.
+    rgeomObject%rcoord3D = rcoordSys
+    
+    ! Is our object inverted?
+    if (present(binverted)) then
+      rgeomObject%binverted = binverted
+    else
+      rgeomObject%binverted = .false.
+    end if
+    
+    ! Store the radius of the sphere
+    rgeomObject%rsphere%dradius = dradius
+    
+    ! That's it!
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine geom_init_sphere_direct(rgeomObject, dradius, Dorigin, &
+                                     drotation, dscalingFactor, binverted)
+
+!<description>
+  ! Creates a t_geometryObject representing a 3D sphere.
+!</description>
+
+!<input>
+  ! A radius for the sphere.
+  real(DP),                          intent(IN)  :: dradius
+  
+  ! OPTIONAL: The origin of the sphere.
+  ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
+  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
+  
+  ! OPTIONAL: The rotation of the sphere.
+  ! Is set to 0.0_DP if not given.
+  real(DP), optional,                intent(IN)  :: drotation
+  
+  ! OPTIONAL: The scaling factor of the sphere.
+  ! Is set to 1.0_DP if not given.
+  real(DP), optional,                intent(IN)  :: dscalingFactor
+  
+  ! OPTIONAL: A boolean telling us whether the object is inverted.
+  ! Is set to .FALSE. if not given.
+  logical, optional,                 intent(IN)  :: binverted
+
+!</input>
+
+!<output>
+  ! A t_geometryObject structure to be written.
+  type(t_geometryObject),            intent(OUT) :: rgeomObject
+
+!</output>
+
+!</subroutine>
+
+    ! The dimension is 3D.
+    rgeomObject%ndimension = NDIM3D
+    
+    ! We want a sphere.
+    rgeomObject%ctype = GEOM_SPHERE
+    
+    ! Now we need to create the coordinate system.
+    call bgeom_initCoordSys3D (rgeomObject%rcoord3D, Dorigin, 0.0_dp,0.0_dp,&
+                               0.0_dp,dscalingFactor)
+    
+    ! Is our object inverted?
+    if (present(binverted)) then
+      rgeomObject%binverted = binverted
+    else
+      rgeomObject%binverted = .false.
+    end if
+    
+    ! Store the radius of the sphere
+    rgeomObject%rsphere%dradius = dradius
+    
+    ! That's it!
+  
+  end subroutine
+
+  ! ***************************************************************************
+      
+!<subroutine>
+
+  subroutine geom_sphere_isInGeometry (rgeomObject, Dcoords, iisInObject)
+
+!<description>
+  ! This routine checks whether a given point is inside the sphere or not.
+  !
+  ! iisInObject is set to 0 if the point is outside the sphere, it is set
+  ! to 1 if it is inside the sphere and is set to -1 if the point is inside
+  ! the sphere and the sphere is inverted.
+!</description>
+
+!<input>
+  ! The circle against that the point is to be tested.
+  type(t_geometryObject), intent(IN)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  real(DP), dimension(:), intent(IN)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! An integer for the return value.
+  integer(I32),           intent(OUT) :: iisInObject
+!</output>
+
+!</subroutine>
+
+  ! We need one local variable for distance calculation
+  real(DP) :: ddistance
+
+    ! Checking if a point is inside a sphere is quite easy.
+    ! We can also improve the performance a bit by not calling the
+    ! bgeom_transformBackPoint2D routine for the input point, but take care of
+    ! the translation and scaling by hand ( and therefore saving the rotation
+    ! of a point around a circle ^_^ ).
+    
+    ! First we need to calculate the (squared) distance of the coordinate
+    ! system's origin and the given point.
+    ddistance = ((Dcoords(1) - rgeomObject%rcoord2D%Dorigin(1))**2) &
+              + ((Dcoords(2) - rgeomObject%rcoord2D%Dorigin(2))**2)
+    
+    
+    ! Now we check if the squared distance is <= than the scaled radius
+    ! squared.
+    if (ddistance .le. ((rgeomObject%rcoord2D%dscalingFactor * &
+                         rgeomObject%rsphere%dradius)**2)) then
+      ! We are inside the sphere
+      iisInObject = 1
+    else
+      ! We are not inside the sphere
+      iisInObject = 0
+    end if
+
+    ! Maybe the circle is inverted?    
+    if (rgeomObject%binverted) then
+      iisInObject = 1 - iisInObject
+    end if
+        
+    ! That's it
+    
+  end subroutine
+
+  ! ***************************************************************************
+ 
+!<subroutine>
+  
+  subroutine geom_sphere_polygonise (rgeomObject, hpolyHandle,ihandle1)
+  
+!<description>
+  ! This routine converts a sphere to a polygon, so that it can
+  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
+  ! details).
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  type(t_geometryObject), intent(IN)  :: rgeomObject
+  
+!</input>
+
+!<output>
+  ! Handle to a 2D array holding the vertices of the polygon.
+  integer, intent(OUT) :: hpolyHandle
+  integer, intent(OUT) :: ihandle1
+!</output>
+
+!</subroutine>
+
+  integer :: i,ipoly,iloop
+  
+  real(DP), dimension(:,:), pointer :: p_Dvertices
+  integer, dimension(:,:), pointer :: p_Ivertices1
+  real(DP) :: dstep, dangle, dradius,s,t
+  
+  integer(I32), dimension(2) :: Isize1,Isize2
+  
+    ! Calculate angle step
+    ! dstep = (SYS_PI * 2.0_DP) / real(ndesiredVerticeCount, DP)
+    
+    ! Get radius
+    dradius = rgeomObject%rsphere%dradius
+    
+    ipoly = rgeomObject%rsphere%ipoly
+  
+    ! Allocate desired number of vertices
+    Isize1 = (/ 3, 12 /)
+    call storage_new2D('geom_sphere_polygonise', 'ihandle1', Isize1, &
+                       ST_DOUBLE, ihandle1, ST_NEWBLOCK_NOINIT)
+
+    Isize2 = (/ 3, 20 /)
+    call storage_new2D('geom_sphere_polygonise', 'hpolyHandle', Isize2, &
+                       ST_INT, hpolyHandle, ST_NEWBLOCK_NOINIT)
+
+
+    ! Get vertice array
+    call storage_getbase_double2D(ihandle1, p_Dvertices)
+    
+    t = (1.0_dp + sqrt(5.0_dp))/2.0_dp
+    s = sqrt(1 + t**2)
+    
+    ! Set vertices
+    p_DVertices(1, 1) = t/s
+    p_DVertices(2, 1) = 1.0_dp/s
+    p_DVertices(3, 1) = 0.0_dp
+
+    p_DVertices(1, 2) = -t
+    p_DVertices(2, 2) = 1.0_dp/s
+    p_DVertices(3, 2) = 0.0_dp
+
+    p_DVertices(1, 3) = t/s
+    p_DVertices(2, 3) = -1.0_dp/s
+    p_DVertices(3, 3) = 0.0_dp
+
+    p_DVertices(1, 4) = -t/s
+    p_DVertices(2, 4) = -1.0_dp/s
+    p_DVertices(3, 4) = 0.0_dp
+
+    p_DVertices(1, 5) = 1.0_dp/s
+    p_DVertices(2, 5) = 0.0_dp
+    p_DVertices(3, 5) = t/s
+
+    p_DVertices(1, 6) = 1.0_dp/s
+    p_DVertices(2, 6) = 0.0_dp
+    p_DVertices(3, 6) = -t/s
+
+    p_DVertices(1, 7) = -1.0_dp/s
+    p_DVertices(2, 7) = 0.0_dp
+    p_DVertices(3, 7) = t/s
+
+    p_DVertices(1, 8) = -1.0_dp/s
+    p_DVertices(2, 8) = 0.0_dp
+    p_DVertices(3, 8) = -t/s
+
+    p_DVertices(1, 9) = 0.0_dp
+    p_DVertices(2, 9) = t/s
+    p_DVertices(3, 9) = 1.0_dp/s
+
+    p_DVertices(1, 10) = 0.0_dp
+    p_DVertices(2, 10) = -t/s
+    p_DVertices(3, 10) = 1.0_dp/s
+
+    p_DVertices(1, 11) = 0.0_dp
+    p_DVertices(2, 11) = t/s
+    p_DVertices(3, 11) = -1.0_dp/s
+
+    p_DVertices(1, 12) = 0.0_dp
+    p_DVertices(2, 12) = -t/s
+    p_DVertices(3, 12) = -1.0_dp/s
+
+
+    ! get the handles of the octa
+    call storage_getbase_int2D(hpolyHandle, p_Ivertices1)
+    
+    p_IVertices1(1, 1) = 1
+    p_IVertices1(2, 1) = 9
+    p_IVertices1(3, 1) = 5
+                        
+    p_IVertices1(1, 2) = 2
+    p_IVertices1(2, 2) = 11
+    p_IVertices1(3, 2) = 8
+                        
+    p_IVertices1(1, 3) = 3
+    p_IVertices1(2, 3) = 10
+    p_IVertices1(3, 3) = 12
+                        
+    p_IVertices1(1, 4) = 8
+    p_IVertices1(2, 4) = 4
+    p_IVertices1(3, 4) = 2
+                        
+    p_IVertices1(1, 5) = 1
+    p_IVertices1(2, 5) = 6
+    p_IVertices1(3, 5) = 11
+                        
+    p_IVertices1(1, 6) = 4
+    p_IVertices1(2, 6) = 10
+    p_IVertices1(3, 6) = 7
+                        
+    p_IVertices1(1, 7) = 4
+    p_IVertices1(2, 7) = 12
+    p_IVertices1(3, 7) = 10
+                        
+    p_IVertices1(1, 8) = 9
+    p_IVertices1(2, 8) = 7
+    p_IVertices1(3, 8) = 5
+
+    p_IVertices1(1, 9) = 3
+    p_IVertices1(2, 9) = 5
+    p_IVertices1(3, 9) = 10
+                        
+    p_IVertices1(1, 10) = 4
+    p_IVertices1(2, 10) = 8
+    p_IVertices1(3, 10) = 12
+                        
+    p_IVertices1(1, 11) = 5
+    p_IVertices1(2, 11) = 3
+    p_IVertices1(3, 11) = 1
+                        
+    p_IVertices1(1, 12) = 10
+    p_IVertices1(2, 12) = 5
+    p_IVertices1(3, 12) = 7
+                        
+    p_IVertices1(1, 13) = 3
+    p_IVertices1(2, 13) = 12
+    p_IVertices1(3, 13) = 6
+                        
+    p_IVertices1(1, 14) = 1
+    p_IVertices1(2, 14) = 11
+    p_IVertices1(3, 14) = 9
+                        
+    p_IVertices1(1, 15) = 6
+    p_IVertices1(2, 15) = 1
+    p_IVertices1(3, 15) = 3
+                        
+    p_IVertices1(1, 16) = 11
+    p_IVertices1(2, 16) = 6
+    p_IVertices1(3, 16) = 8
+
+    p_IVertices1(1, 17) = 2
+    p_IVertices1(2, 17) = 7
+    p_IVertices1(3, 17) = 9
+                        
+    p_IVertices1(1, 18) = 2
+    p_IVertices1(2, 18) = 9
+    p_IVertices1(3, 18) = 11
+                        
+    p_IVertices1(1, 19) = 7
+    p_IVertices1(2, 19) = 2
+    p_IVertices1(3, 19) = 4
+                        
+    p_IVertices1(1, 20) = 12
+    p_IVertices1(2, 20) = 8
+    p_IVertices1(3, 20) = 6
+                        
+
+    
+
+    !call storage_free (ihandle1)
+!    ! write the basic
+!    do iloop=0,ipoly-1
+! !     call geom_trimesh_getPolygon(p_rgeometryObject, iloop, hpolyHandle)
+!      call storage_getbase_double2D(hpolyHandle, p_Dvertices)        
+!    end do            
+
+  end subroutine
+  
+  ! ***************************************************************************
+ 
+!<subroutine>
+  
+  subroutine geom_sphere_getPolygon(rgeomObject,ipoly,hpolyHandle,hpolyHandle1,DVertices)
+  
+!<description>
+  ! This routine converts a sphere to a polygon, so that it can
+  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
+  ! details).
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  type(t_geometryObject), intent(IN)  :: rgeomObject
+  
+  ! Handle to a 2D array holding the vertices of the polygon.
+  integer, intent(IN) :: hpolyHandle
+  integer, intent(IN) :: hpolyHandle1
+  integer, intent(IN) :: ipoly
+  
+!</input>
+
+!<inputoutput>
+  real(dp),dimension(:,:), intent(INOUT) :: DVertices
+!</inputoutput>
+
+!</subroutine>
+
+  integer :: i,iloop,ihandle1
+  
+  real(DP), dimension(:,:), pointer :: p_Dvertices
+  integer, dimension(:,:), pointer :: p_Ivertices1
+  
+  integer(I32), dimension(2) :: Isize1,Isize2
+  
+  
+  ! get the handles of the octa
+  call storage_getbase_int2D(hpolyHandle, p_Ivertices1)
+  
+  ! Get vertice array
+  call storage_getbase_double2D(hpolyHandle1, p_Dvertices)
+  
+  do i=1,3
+    DVertices(:,i) = p_Dvertices(:,p_Ivertices1(i,ipoly))
+  end do
+  
+  end subroutine  
+  
     
 end module
