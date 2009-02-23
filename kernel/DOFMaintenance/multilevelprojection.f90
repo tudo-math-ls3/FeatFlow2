@@ -8312,9 +8312,9 @@ contains
         
         ! Calculate the twist factors for the Edge-Legendre-Int-Mean DOFs
         ! on the fine mesh
-        Dtf(4,i) = real(2*iand(      ItwistFine(Ielf(i))    ,1)-1,DP)
-        Dtf(5,i) = real(2*iand(ishft(ItwistFine(Ielf(i)),-1),1)-1,DP)
-        Dtf(6,i) = real(2*iand(ishft(ItwistFine(Ielf(i)),-3),1)-1,DP)
+        Dtf(4,i) = real(1-2*iand(      ItwistFine(Ielf(i))    ,1),DP)
+        Dtf(5,i) = real(1-2*iand(ishft(ItwistFine(Ielf(i)),-1),1),DP)
+        Dtf(6,i) = real(1-2*iand(ishft(ItwistFine(Ielf(i)),-3),1),DP)
         
         ! If there is a neighbour at the coarse mesh edge, then we
         ! set the corresponding factor to 1/2
@@ -8325,13 +8325,13 @@ contains
       ! Get the values of the corresponding coarse mesh DOFs
       Dv(1:4) = DuCoarse(Imc(1:4))
       Dv(  5) = DuCoarse(Imc(1) + NMTcoarse) &
-              * real(2*iand(      ItwistCoarse(iel)    ,1)-1,DP)
+              * real(1-2*iand(      ItwistCoarse(iel)    ,1),DP)
       Dv(  6) = DuCoarse(Imc(2) + NMTcoarse) &
-              * real(2*iand(ishft(ItwistCoarse(iel),-1),1)-1,DP)
+              * real(1-2*iand(ishft(ItwistCoarse(iel),-1),1),DP)
       Dv(  7) = DuCoarse(Imc(3) + NMTcoarse) &
-              * real(2*iand(ishft(ItwistCoarse(iel),-2),1)-1,DP)
+              * real(1-2*iand(ishft(ItwistCoarse(iel),-2),1),DP)
       Dv(  8) = DuCoarse(Imc(4) + NMTcoarse) &
-              * real(2*iand(ishft(ItwistCoarse(iel),-3),1)-1,DP)
+              * real(1-2*iand(ishft(ItwistCoarse(iel),-3),1),DP)
       Dv(  9) = DuCoarse(2*NMTcoarse + iel)
 
       DuFine(Idf(1,1)) = DuFine(Idf(1,1)) + (Dv(1)-R12*Dv(5)+&
@@ -8504,7 +8504,7 @@ contains
       do i = 1, 4
         
         ! Twist index factor
-        Dtf(i) = real(2*iand(ishft(ItwistCoarse(iel),1-i),1)-1,DP)
+        Dtf(i) = real(1-2*iand(ishft(ItwistCoarse(iel),1-i),1),DP)
         
         ! Neighbour factor
         if (IneighboursAtElementCoarse(i,iel) .ne. 0) Dtn(i) = 0.5_DP
@@ -8525,29 +8525,29 @@ contains
       Dv(11) = DuFine(IedgesAtElementFine(2,Ielf(3)))
       Dv(12) = DuFine(IedgesAtElementFine(2,Ielf(4)))
       Dv(13) = DuFine(IedgesAtElementFine(1,Ielf(1))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(1))    ,1)-1,DP)*Dtn(1)
+             * real(1-2*iand(      ItwistFine(Ielf(1))    ,1),DP)*Dtn(1)
       Dv(14) = DuFine(IedgesAtElementFine(4,Ielf(2))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(2)),-3),1)-1,DP)*Dtn(1)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(2)),-3),1),DP)*Dtn(1)
       Dv(15) = DuFine(IedgesAtElementFine(1,Ielf(2))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(2))    ,1)-1,DP)*Dtn(2)
+             * real(1-2*iand(      ItwistFine(Ielf(2))    ,1),DP)*Dtn(2)
       Dv(16) = DuFine(IedgesAtElementFine(4,Ielf(3))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(3)),-3),1)-1,DP)*Dtn(2)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(3)),-3),1),DP)*Dtn(2)
       Dv(17) = DuFine(IedgesAtElementFine(1,Ielf(3))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(3))    ,1)-1,DP)*Dtn(3)
+             * real(1-2*iand(      ItwistFine(Ielf(3))    ,1),DP)*Dtn(3)
       Dv(18) = DuFine(IedgesAtElementFine(4,Ielf(4))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(4)),-3),1)-1,DP)*Dtn(3)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(4)),-3),1),DP)*Dtn(3)
       Dv(19) = DuFine(IedgesAtElementFine(1,Ielf(4))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(4))    ,1)-1,DP)*Dtn(4)
+             * real(1-2*iand(      ItwistFine(Ielf(4))    ,1),DP)*Dtn(4)
       Dv(20) = DuFine(IedgesAtElementFine(4,Ielf(1))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(1)),-3),1)-1,DP)*Dtn(4)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(1)),-3),1),DP)*Dtn(4)
       Dv(21) = DuFine(IedgesAtElementFine(2,Ielf(1))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(1)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(1)),-1),1),DP)
       Dv(22) = DuFine(IedgesAtElementFine(2,Ielf(2))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(2)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(2)),-1),1),DP)
       Dv(23) = DuFine(IedgesAtElementFine(2,Ielf(3))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(3)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(3)),-1),1),DP)
       Dv(24) = DuFine(IedgesAtElementFine(2,Ielf(4))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(4)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(4)),-1),1),DP)
       Dv(25) = DuFine(2*NMTfine + Ielf(1))
       Dv(26) = DuFine(2*NMTfine + Ielf(2))
       Dv(27) = DuFine(2*NMTfine + Ielf(3))
@@ -8709,7 +8709,7 @@ contains
       do i = 1, 4
         
         ! Twist index factor
-        Dtf(i) = real(2*iand(ishft(ItwistCoarse(iel),1-i),1)-1,DP)
+        Dtf(i) = real(1-2*iand(ishft(ItwistCoarse(iel),1-i),1),DP)
         
         ! Neighbour factor
         if (IneighboursAtElementCoarse(i,iel) .ne. 0) Dtn(i) = 0.5_DP
@@ -8730,29 +8730,29 @@ contains
       Dv(11) = DuFine(IedgesAtElementFine(2,Ielf(3)))
       Dv(12) = DuFine(IedgesAtElementFine(2,Ielf(4)))
       Dv(13) = DuFine(IedgesAtElementFine(1,Ielf(1))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(1))    ,1)-1,DP)
+             * real(1-2*iand(      ItwistFine(Ielf(1))    ,1),DP)
       Dv(14) = DuFine(IedgesAtElementFine(4,Ielf(2))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(2)),-3),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(2)),-3),1),DP)
       Dv(15) = DuFine(IedgesAtElementFine(1,Ielf(2))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(2))    ,1)-1,DP)
+             * real(1-2*iand(      ItwistFine(Ielf(2))    ,1),DP)
       Dv(16) = DuFine(IedgesAtElementFine(4,Ielf(3))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(3)),-3),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(3)),-3),1),DP)
       Dv(17) = DuFine(IedgesAtElementFine(1,Ielf(3))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(3))    ,1)-1,DP)
+             * real(1-2*iand(      ItwistFine(Ielf(3))    ,1),DP)
       Dv(18) = DuFine(IedgesAtElementFine(4,Ielf(4))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(4)),-3),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(4)),-3),1),DP)
       Dv(19) = DuFine(IedgesAtElementFine(1,Ielf(4))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(4))    ,1)-1,DP)
+             * real(1-2*iand(      ItwistFine(Ielf(4))    ,1),DP)
       Dv(20) = DuFine(IedgesAtElementFine(4,Ielf(1))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(1)),-3),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(1)),-3),1),DP)
       Dv(21) = DuFine(IedgesAtElementFine(2,Ielf(1))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(1)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(1)),-1),1),DP)
       Dv(22) = DuFine(IedgesAtElementFine(2,Ielf(2))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(2)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(2)),-1),1),DP)
       Dv(23) = DuFine(IedgesAtElementFine(2,Ielf(3))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(3)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(3)),-1),1),DP)
       Dv(24) = DuFine(IedgesAtElementFine(2,Ielf(4))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(4)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(4)),-1),1),DP)
       Dv(25) = DuFine(2*NMTfine + Ielf(1))
       Dv(26) = DuFine(2*NMTfine + Ielf(2))
       Dv(27) = DuFine(2*NMTfine + Ielf(3))
@@ -8932,9 +8932,9 @@ contains
         
         ! Calculate the twist factors for the Edge-Legendre-Int-Mean DOFs
         ! on the fine mesh
-        Dtf(4,i) = real(2*iand(      ItwistFine(Ielf(i))    ,1)-1,DP)
-        Dtf(5,i) = real(2*iand(ishft(ItwistFine(Ielf(i)),-1),1)-1,DP)
-        Dtf(6,i) = real(2*iand(ishft(ItwistFine(Ielf(i)),-3),1)-1,DP)
+        Dtf(4,i) = real(1-2*iand(      ItwistFine(Ielf(i))    ,1),DP)
+        Dtf(5,i) = real(1-2*iand(ishft(ItwistFine(Ielf(i)),-1),1),DP)
+        Dtf(6,i) = real(1-2*iand(ishft(ItwistFine(Ielf(i)),-3),1),DP)
         
         ! If there is a neighbour at the coarse mesh edge, then we
         ! set the corresponding factor to 1/2
@@ -8945,13 +8945,13 @@ contains
       ! Get the values of the corresponding coarse mesh DOFs
       Dv(1:4) = DuCoarse(Imc(1:4))
       Dv(  5) = DuCoarse(Imc(1) + NMTcoarse) &
-              * real(2*iand(      ItwistCoarse(iel)    ,1)-1,DP)
+              * real(1-2*iand(      ItwistCoarse(iel)    ,1),DP)
       Dv(  6) = DuCoarse(Imc(2) + NMTcoarse) &
-              * real(2*iand(ishft(ItwistCoarse(iel),-1),1)-1,DP)
+              * real(1-2*iand(ishft(ItwistCoarse(iel),-1),1),DP)
       Dv(  7) = DuCoarse(Imc(3) + NMTcoarse) &
-              * real(2*iand(ishft(ItwistCoarse(iel),-2),1)-1,DP)
+              * real(1-2*iand(ishft(ItwistCoarse(iel),-2),1),DP)
       Dv(  8) = DuCoarse(Imc(4) + NMTcoarse) &
-              * real(2*iand(ishft(ItwistCoarse(iel),-3),1)-1,DP)
+              * real(1-2*iand(ishft(ItwistCoarse(iel),-3),1),DP)
       Dv(  9) = DuCoarse(2*NMTcoarse + iel)
       Dv( 10) = DuCoarse(2*NMTcoarse + NELcoarse + iel)
 
@@ -9157,7 +9157,7 @@ contains
       do i = 1, 4
         
         ! Twist index factor
-        Dtf(i) = real(2*iand(ishft(ItwistCoarse(iel),1-i),1)-1,DP)
+        Dtf(i) = real(1-2*iand(ishft(ItwistCoarse(iel),1-i),1),DP)
         
         ! Neighbour factor
         if (IneighboursAtElementCoarse(i,iel) .ne. 0) Dtn(i) = 0.5_DP
@@ -9178,29 +9178,29 @@ contains
       Dv(11) = DuFine(IedgesAtElementFine(2,Ielf(3)))
       Dv(12) = DuFine(IedgesAtElementFine(2,Ielf(4)))
       Dv(13) = DuFine(IedgesAtElementFine(1,Ielf(1))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(1))    ,1)-1,DP)*Dtn(1)
+             * real(1-2*iand(      ItwistFine(Ielf(1))    ,1),DP)*Dtn(1)
       Dv(14) = DuFine(IedgesAtElementFine(4,Ielf(2))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(2)),-3),1)-1,DP)*Dtn(1)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(2)),-3),1),DP)*Dtn(1)
       Dv(15) = DuFine(IedgesAtElementFine(1,Ielf(2))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(2))    ,1)-1,DP)*Dtn(2)
+             * real(1-2*iand(      ItwistFine(Ielf(2))    ,1),DP)*Dtn(2)
       Dv(16) = DuFine(IedgesAtElementFine(4,Ielf(3))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(3)),-3),1)-1,DP)*Dtn(2)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(3)),-3),1),DP)*Dtn(2)
       Dv(17) = DuFine(IedgesAtElementFine(1,Ielf(3))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(3))    ,1)-1,DP)*Dtn(3)
+             * real(1-2*iand(      ItwistFine(Ielf(3))    ,1),DP)*Dtn(3)
       Dv(18) = DuFine(IedgesAtElementFine(4,Ielf(4))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(4)),-3),1)-1,DP)*Dtn(3)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(4)),-3),1),DP)*Dtn(3)
       Dv(19) = DuFine(IedgesAtElementFine(1,Ielf(4))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(4))    ,1)-1,DP)*Dtn(4)
+             * real(1-2*iand(      ItwistFine(Ielf(4))    ,1),DP)*Dtn(4)
       Dv(20) = DuFine(IedgesAtElementFine(4,Ielf(1))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(1)),-3),1)-1,DP)*Dtn(4)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(1)),-3),1),DP)*Dtn(4)
       Dv(21) = DuFine(IedgesAtElementFine(2,Ielf(1))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(1)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(1)),-1),1),DP)
       Dv(22) = DuFine(IedgesAtElementFine(2,Ielf(2))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(2)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(2)),-1),1),DP)
       Dv(23) = DuFine(IedgesAtElementFine(2,Ielf(3))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(3)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(3)),-1),1),DP)
       Dv(24) = DuFine(IedgesAtElementFine(2,Ielf(4))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(4)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(4)),-1),1),DP)
       Dv(25) = DuFine(2*NMTfine + Ielf(1))
       Dv(26) = DuFine(2*NMTfine + Ielf(2))
       Dv(27) = DuFine(2*NMTfine + Ielf(3))
@@ -9386,7 +9386,7 @@ contains
       do i = 1, 4
         
         ! Twist index factor
-        Dtf(i) = real(2*iand(ishft(ItwistCoarse(iel),1-i),1)-1,DP)
+        Dtf(i) = real(1-2*iand(ishft(ItwistCoarse(iel),1-i),1),DP)
         
         ! Neighbour factor
         if (IneighboursAtElementCoarse(i,iel) .ne. 0) Dtn(i) = 0.5_DP
@@ -9407,29 +9407,29 @@ contains
       Dv(11) = DuFine(IedgesAtElementFine(2,Ielf(3)))
       Dv(12) = DuFine(IedgesAtElementFine(2,Ielf(4)))
       Dv(13) = DuFine(IedgesAtElementFine(1,Ielf(1))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(1))    ,1)-1,DP)
+             * real(1-2*iand(      ItwistFine(Ielf(1))    ,1),DP)
       Dv(14) = DuFine(IedgesAtElementFine(4,Ielf(2))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(2)),-3),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(2)),-3),1),DP)
       Dv(15) = DuFine(IedgesAtElementFine(1,Ielf(2))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(2))    ,1)-1,DP)
+             * real(1-2*iand(      ItwistFine(Ielf(2))    ,1),DP)
       Dv(16) = DuFine(IedgesAtElementFine(4,Ielf(3))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(3)),-3),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(3)),-3),1),DP)
       Dv(17) = DuFine(IedgesAtElementFine(1,Ielf(3))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(3))    ,1)-1,DP)
+             * real(1-2*iand(      ItwistFine(Ielf(3))    ,1),DP)
       Dv(18) = DuFine(IedgesAtElementFine(4,Ielf(4))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(4)),-3),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(4)),-3),1),DP)
       Dv(19) = DuFine(IedgesAtElementFine(1,Ielf(4))+NMTfine)&
-             * real(2*iand(      ItwistFine(Ielf(4))    ,1)-1,DP)
+             * real(1-2*iand(      ItwistFine(Ielf(4))    ,1),DP)
       Dv(20) = DuFine(IedgesAtElementFine(4,Ielf(1))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(1)),-3),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(1)),-3),1),DP)
       Dv(21) = DuFine(IedgesAtElementFine(2,Ielf(1))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(1)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(1)),-1),1),DP)
       Dv(22) = DuFine(IedgesAtElementFine(2,Ielf(2))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(2)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(2)),-1),1),DP)
       Dv(23) = DuFine(IedgesAtElementFine(2,Ielf(3))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(3)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(3)),-1),1),DP)
       Dv(24) = DuFine(IedgesAtElementFine(2,Ielf(4))+NMTfine)&
-             * real(2*iand(ishft(ItwistFine(Ielf(4)),-1),1)-1,DP)
+             * real(1-2*iand(ishft(ItwistFine(Ielf(4)),-1),1),DP)
       Dv(25) = DuFine(2*NMTfine + Ielf(1))
       Dv(26) = DuFine(2*NMTfine + Ielf(2))
       Dv(27) = DuFine(2*NMTfine + Ielf(3))
