@@ -529,13 +529,13 @@ contains
     integer :: velocityfield
     integer :: primaldual
 
+
+    ! Check if the preconditioner has to be updated
+    if (iand(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE) .eq. 0) return
     
     ! Start time measurement for matrix evaluation
     rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyMatrix')
     call stat_startTimer(rtimer, STAT_TIMERSHORT)
-
-    ! Check if the preconditioner has to be updated
-    if (iand(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE) .eq. 0) return
     
     ! Remove update notifier for further calls. Depending on the
     ! velocity, diffusion type it will be re-activited below.
