@@ -2477,7 +2477,8 @@ contains
 
 !<subroutine>
 
-  subroutine conv_strdiffOptC2dinitelemset (rvelmatrix,rvelmatrixoffdiag,rvelocityVector,&
+  subroutine conv_strdiffOptC2dinitelemset (rvelmatrix,rvelmatrixoffdiag,&
+      rvelocityVectorPrimal,rvelocityVectorDual,&
       roptcoperator,roptcassemblyinfo,istartElement,iendElement)
   
 !<description>
@@ -2495,8 +2496,11 @@ contains
   ! velocity space for offdiagonal blocks.
   type(t_matrixScalar), intent(in) :: rvelmatrixoffdiag
   
-  ! Velocity vector
-  type(t_vectorBlock), intent(in) :: rvelocityVector
+  ! Velocity vector, primal equation (Block 1/2)
+  type(t_vectorBlock), intent(in) :: rvelocityVectorPrimal
+
+  ! Velocity vector, dual equation (Blcok 4/5)
+  type(t_vectorBlock), intent(in) :: rvelocityVectorDual
 
   ! Structure defining the operator to set up.
   type(t_optcoperator), intent(in) :: roptcoperator
@@ -2763,10 +2767,10 @@ contains
     ! The calculation routine might need them.
     
     ! Get pointers to the velocity to be evaluated.
-    call lsyssc_getbase_double (rvelocityVector%RvectorBlock(1),p_DpvelocityX)
-    call lsyssc_getbase_double (rvelocityVector%RvectorBlock(2),p_DpvelocityY)
-    call lsyssc_getbase_double (rvelocityVector%RvectorBlock(4),p_DdvelocityX)
-    call lsyssc_getbase_double (rvelocityVector%RvectorBlock(5),p_DdvelocityY)
+    call lsyssc_getbase_double (rvelocityVectorPrimal%RvectorBlock(1),p_DpvelocityX)
+    call lsyssc_getbase_double (rvelocityVectorPrimal%RvectorBlock(2),p_DpvelocityY)
+    call lsyssc_getbase_double (rvelocityVectorDual%RvectorBlock(4),p_DdvelocityX)
+    call lsyssc_getbase_double (rvelocityVectorDual%RvectorBlock(5),p_DdvelocityY)
     
     ! Extract the velocity DOF's omn the elements.
     do iel=1,iendelement-istartElement+1
@@ -2824,7 +2828,7 @@ contains
 
 !<subroutine>
   subroutine conv_strdiffOptC2dgetMatrix (rmatrix,roptcoperator,dweight,&
-      rvelocityVector)
+      rvelocityVectorPrimal,rvelocityVectorDual)
 !<description>
   ! Calculate the matrix of the nonlinear operator:
   !   dweight*A(rvelocityVector)
@@ -2839,9 +2843,14 @@ contains
   real(dp), intent(in) :: dweight
       
   ! Velocity vector for the nonlinearity.
-  ! The first blocks 1/2 and 4/5 in this vector define the evaluation
-  ! point (primal/dual velocity).
-  type(t_vectorBlock), intent(in) :: rvelocityVector
+  ! The first blocks 1/2 in this vector define the evaluation
+  ! point (primal velocity).
+  type(t_vectorBlock), intent(in) :: rvelocityVectorPrimal
+
+  ! Velocity vector for the nonlinearity.
+  ! The first blocks 4/5 in this vector define the evaluation
+  ! point (dual velocity).
+  type(t_vectorBlock), intent(in) :: rvelocityVectorDual
   
 !</input>
 
@@ -2935,12 +2944,12 @@ contains
     end if
     
     ! Initialise the asembly of the local matrices.
-    call conv_strdiffOptC2dinitasm (rvelocityVector%p_rblockDiscr%RspatialDiscr(1),&
+    call conv_strdiffOptC2dinitasm (rvelocityVectorPrimal%p_rblockDiscr%RspatialDiscr(1),&
         1,roptcassemblyinfo)
 
     ! Calculate the maximum norm of the actual velocity field
     ! Round up the norm to 1D-8 if it's too small...
-    call lsysbl_deriveSubvector(rvelocityVector,rvectorBlock,1,2,.true.)
+    call lsysbl_deriveSubvector(rvelocityVectorPrimal,rvectorBlock,1,2,.true.)
     call lsysbl_getVectorMagnitude (rvectorBlock,dumax=roptcassemblyinfo%dumax)
     call lsysbl_releaseVector (rvectorBlock)
   
@@ -2991,11 +3000,11 @@ contains
       ! cubature points.
       if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
         call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-            rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+            rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
             roptcoperator,roptcassemblyinfo,ielset,ielmax)
       else
         call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-            rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+            rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
             roptcoperator,roptcassemblyinfo,ielset,ielmax)
       end if
 
@@ -3153,7 +3162,7 @@ contains
 
 !<subroutine>
   subroutine conv_strdiffOptC2dgetDerMatrix (rmatrix,roptcoperator,dweight,&
-      rvelocityVector,dh)
+      rvelocityVectorPrimal,rvelocityVectorDual,dh)
 !<description>
   ! Calculate the derivative matrix of the nonlinear operator:
   !   dweight*A(rvelocityVector)
@@ -3168,9 +3177,14 @@ contains
   real(dp), intent(in) :: dweight
       
   ! Velocity vector for the nonlinearity.
-  ! The first blocks 1/2 and 4/5 in this vector define the evaluation
-  ! point (primal/dual velocity).
-  type(t_vectorBlock), intent(in) :: rvelocityVector
+  ! The first blocks 1/2 in this vector define the evaluation
+  ! point (primal velocity).
+  type(t_vectorBlock), intent(in) :: rvelocityVectorPrimal
+
+  ! Velocity vector for the nonlinearity.
+  ! The first blocks 4/5 in this vector define the evaluation
+  ! point (dual velocity).
+  type(t_vectorBlock), intent(in) :: rvelocityVectorDual
   
   ! Step length for the discrete derivative.
   real(dp), intent(in) :: dh
@@ -3269,12 +3283,12 @@ contains
     end if
     
     ! Initialise the asembly of the local matrices.
-    call conv_strdiffOptC2dinitasm (rvelocityVector%p_rblockDiscr%RspatialDiscr(1),&
+    call conv_strdiffOptC2dinitasm (rvelocityVectorPrimal%p_rblockDiscr%RspatialDiscr(1),&
         1,roptcassemblyinfo)
 
     ! Calculate the maximum norm of the actual velocity field
     ! Round up the norm to 1D-8 if it's too small...
-    call lsysbl_deriveSubvector(rvelocityVector,rvectorBlock,1,2,.true.)
+    call lsysbl_deriveSubvector(rvelocityVectorPrimal,rvectorBlock,1,2,.true.)
     call lsysbl_getVectorMagnitude (rvectorBlock,dumax=roptcassemblyinfo%dumax)
     call lsysbl_releaseVector (rvectorBlock)
   
@@ -3382,11 +3396,11 @@ contains
         ! cubature points.
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         end if
         
@@ -3497,11 +3511,11 @@ contains
         ! cubature points.
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         end if
         
@@ -3614,11 +3628,11 @@ contains
         ! cubature points.
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         end if
         
@@ -3729,11 +3743,11 @@ contains
         ! cubature points.
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         end if
         
@@ -3846,11 +3860,11 @@ contains
         ! cubature points.
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         end if
         
@@ -3961,11 +3975,11 @@ contains
         ! cubature points.
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         end if
         
@@ -4079,11 +4093,11 @@ contains
         ! cubature points.
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         end if
         
@@ -4194,11 +4208,11 @@ contains
         ! cubature points.
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,2),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
-              rmatrix%RmatrixBlock(1,1),rvelocityVector,&
+              rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
               roptcoperator,roptcassemblyinfo,ielset,ielmax)
         end if
         
@@ -4416,8 +4430,8 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine conv_strdiffOptC2dgetDefect (rvelMatrix,roptcoperator,rvelocityVector,&
-      dweight,rx,rd)
+  subroutine conv_strdiffOptC2dgetDefect (rvelMatrix,roptcoperator,&
+      rvelocityVectorPrimal,rvelocityVectorDual,dweight,rx,rd)
       
 !<description>
   ! Calculate the defect of the nonlinear operator:
@@ -4433,9 +4447,14 @@ contains
   type(t_optcoperator), intent(in) :: roptcoperator
   
   ! Velocity vector for the nonlinearity.
-  ! The first blocks 1/2 and 4/5 in this vector define the evaluation
-  ! point (primal/dual velocity).
-  type(t_vectorBlock), intent(in) :: rvelocityVector
+  ! The first blocks 1/2 in this vector define the evaluation
+  ! point (primal velocity).
+  type(t_vectorBlock), intent(in) :: rvelocityVectorPrimal
+
+  ! Velocity vector for the nonlinearity.
+  ! The first blocks 4/5 in this vector define the evaluation
+  ! point (dual velocity).
+  type(t_vectorBlock), intent(in) :: rvelocityVectorDual
   
   ! Solution vector, to be multiplied with the matrix.
   type(t_vectorBlock), intent(in) :: rx
@@ -4492,12 +4511,12 @@ contains
     end if
     
     ! Initialise the asembly of the local matrices.
-    call conv_strdiffOptC2dinitasm (rvelocityVector%p_rblockDiscr%RspatialDiscr(1),&
+    call conv_strdiffOptC2dinitasm (rvelocityVectorPrimal%p_rblockDiscr%RspatialDiscr(1),&
         1,roptcassemblyinfo)
 
     ! Calculate the maximum norm of the actual velocity field
     ! Round up the norm to 1D-8 if it's too small...
-    call lsysbl_deriveSubvector(rvelocityVector,rvectorBlock,1,2,.true.)
+    call lsysbl_deriveSubvector(rvelocityVectorPrimal,rvectorBlock,1,2,.true.)
     call lsysbl_getVectorMagnitude (rvectorBlock,dumax=roptcassemblyinfo%dumax)
     call lsysbl_releaseVector (rvectorBlock)
   
@@ -4558,7 +4577,7 @@ contains
       ! Initialise the element set, compute the basis functions in the
       ! cubature points.
       call conv_strdiffOptC2dinitelemset (rvelMatrix,rvelMatrix,&
-          rvelocityVector,roptcoperator,roptcassemblyinfo,ielset,ielmax)
+          rvelocityVectorPrimal,rvelocityVectorDual,roptcoperator,roptcassemblyinfo,ielset,ielmax)
 
       ! Clear the local matrices. If the Newton part is to be calculated,
       ! we must clear everything, otherwise only Dentry.
