@@ -345,7 +345,8 @@ contains
       end if
       
       ! Calculate the velocity-dependent part of the system matrix.
-      call conv_strdiffOptC2dgetDefect (rlevel%rmatrixMass,roptcoperator,rvectorBlock,&
+      call conv_strdiffOptC2dgetDefect (rlevel%rmatrixMass,roptcoperator,&
+          rvectorBlock,rvectorBlock,&
           1.0_DP,rvectorBlock,rdefectBlock)
       
       !call vecio_writeBlockVectorHR (rdefectblock, 'vector', .false.,&
@@ -727,7 +728,8 @@ contains
       end if
       
       ! Calculate the velocity-dependent part of the system matrix.
-      call conv_strdiffOptC2dgetDerMatrix (rmatrixBlock,roptcoperator,1.0_DP,rvectorBlock,0.001_DP)
+      call conv_strdiffOptC2dgetDerMatrix (rmatrixBlock,roptcoperator,1.0_DP,&
+          rvectorBlock,rvectorBlock,0.001_DP)
       
       ! Finally, attach the B-matrices.
       call lsyssc_duplicateMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(1,3),&
@@ -908,7 +910,7 @@ contains
       end if
       
       ! Calculate the velocity-dependent part of the system matrix.
-      call conv_strdiffOptC2dgetMatrix (rmatrixBlock,roptcoperator,1.0_DP,rvectorBlock)
+      call conv_strdiffOptC2dgetMatrix (rmatrixBlock,roptcoperator,1.0_DP,rvectorBlock,rvectorBlock)
       
       ! Finally, attach the B-matrices.
       call lsyssc_duplicateMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(1,3),&
@@ -2445,6 +2447,7 @@ contains
       call lsyssc_releaseMatrix (Rlevel(ilevel)%rmatrixB1)
       call lsyssc_releaseMatrix (Rlevel(ilevel)%rmatrixMass)
       call lsyssc_releaseMatrix (Rlevel(ilevel)%rmatrixLaplace)
+      call lsyssc_releaseMatrix (Rlevel(ilevel)%rmatrixDiagP)
       call spdiscr_releaseBlockDiscr(Rlevel(ilevel)%rdiscretisation)
     
       ! Release the triangulation. 
