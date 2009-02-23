@@ -1548,7 +1548,7 @@ contains
   !
 
   ! Local variables
-  real(DP) :: ddet,dx
+  real(DP) :: ddet,dx,dlen
   integer :: i,j
 
     ! Calculate function values?
@@ -1556,6 +1556,9 @@ contains
       
       ! Loop through all elements
       do j = 1, reval%nelements
+      
+        ! Calculate length of element
+        dlen = 0.125_DP / (reval%p_Dcoords(1,2,j) - reval%p_Dcoords(1,1,j))
       
         ! Loop through all points on the current element
         do i = 1, reval%npointsPerElement
@@ -1569,8 +1572,8 @@ contains
           ! Evaluate basis functions
           Dbas(1,DER_FUNC1D,i,j) =  0.25_DP*dx*(dx*dx - 3.0_DP) + 0.5_DP
           Dbas(2,DER_FUNC1D,i,j) = -0.25_DP*dx*(dx*dx - 3.0_DP) + 0.5_DP
-          Dbas(3,DER_FUNC1D,i,j) = ddet*0.25_DP*(dx + 1.0_DP)*(dx - 1.0_DP)**2
-          Dbas(4,DER_FUNC1D,i,j) = ddet*0.25_DP*(dx - 1.0_DP)*(dx + 1.0_DP)**2
+          Dbas(3,DER_FUNC1D,i,j) = dlen*(dx + 1.0_DP)*(dx - 1.0_DP)**2
+          Dbas(4,DER_FUNC1D,i,j) = dlen*(dx - 1.0_DP)*(dx + 1.0_DP)**2
         
         end do ! i
       
@@ -1584,6 +1587,9 @@ contains
       ! Loop through all elements
       do j = 1, reval%nelements
       
+        ! Calculate length of element
+        dlen = 0.5_DP / (reval%p_Dcoords(1,2,j) - reval%p_Dcoords(1,1,j))
+
         ! Loop through all points on the current element
         do i = 1, reval%npointsPerElement
         
@@ -1596,8 +1602,8 @@ contains
           ! X-derivatives on real element
           Dbas(1,DER_DERIV1D_X,i,j) =  0.75_DP*(dx*dx - 1.0_DP)*ddet
           Dbas(2,DER_DERIV1D_X,i,j) = -0.75_DP*(dx*dx - 1.0_DP)*ddet
-          Dbas(3,DER_DERIV1D_X,i,j) = 0.25_DP*(dx*(3.0_DP*dx - 1.0_DP) - 1.0_DP)
-          Dbas(4,DER_DERIV1D_X,i,j) = 0.25_DP*(dx*(3.0_DP*dx + 1.0_DP) - 1.0_DP)
+          Dbas(3,DER_DERIV1D_X,i,j) = dlen*(dx*(3.0_DP*dx - 1.0_DP) - 1.0_DP)*ddet
+          Dbas(4,DER_DERIV1D_X,i,j) = dlen*(dx*(3.0_DP*dx + 1.0_DP) - 1.0_DP)*ddet
 
         end do ! i
 
