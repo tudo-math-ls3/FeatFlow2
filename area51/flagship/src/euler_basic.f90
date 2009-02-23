@@ -299,7 +299,7 @@ contains
   subroutine euler_getVariable(rvectorBlock, cvariable, rvectorScalar)
 
 !<description>
-    ! This subtouein extracts a single variable from the vector of
+    ! This subroutine extracts a single variable from the vector of
     ! conservative variables which is stored in interleave of block format
 !</description>
 
@@ -311,10 +311,10 @@ contains
     character(LEN=*), intent(IN) :: cvariable
 !</input>
 
-!<output>
+!<inputoutput>
     ! Extracted single variable
-    type(t_vectorScalar), intent(OUT) :: rvectorScalar
-!</output>
+    type(t_vectorScalar), intent(INOUT) :: rvectorScalar
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -329,8 +329,12 @@ contains
       neq  = rvectorBlock%RvectorBlock(1)%NEQ
       nvar = rvectorBlock%RvectorBlock(1)%NVAR
       
-      ! Create scalar vector
-      call lsyssc_createVector(rvectorScalar, neq, .false.)
+      ! Check if vector is compatible
+      if (rvectorScalar%NEQ .eq. 0) then
+        call lsyssc_createVector(rvectorScalar, neq, .false.)
+      elseif (rvectorScalar%NEQ .lt. neq) then
+        call lsyssc_resizeVector(rvectorScalar, neq, .false., .false.)
+      end if
 
       ! Set pointers
       call lsysbl_getbase_double(rvectorBlock, p_Ddata)
@@ -345,8 +349,12 @@ contains
       neq  = int(rvectorBlock%NEQ/rvectorBlock%nblocks)
       nvar = rvectorBlock%nblocks
       
-      ! Create scalar vector
-      call lsyssc_createVector(rvectorScalar, neq, .false.)
+      ! Check if vector is compatible
+      if (rvectorScalar%NEQ .eq. 0) then
+        call lsyssc_createVector(rvectorScalar, neq, .false.)
+      elseif (rvectorScalar%NEQ .lt. neq) then
+        call lsyssc_resizeVector(rvectorScalar, neq, .false., .false.)
+      end if
 
       ! Set pointers
       call lsysbl_getbase_double(rvectorBlock, p_Ddata)
