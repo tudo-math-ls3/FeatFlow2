@@ -729,8 +729,7 @@ contains
   ! On exit, the vector containing the solution of the linear system.
   type(t_vectorScalar), intent(INOUT) :: rvec
   
-  ! Work array. Its length must be at least 2*n if drelax is not 1, otherwise
-  ! n is sufficient.
+  ! Work array. Its length must be at least n.
   real(DP), dimension(:), intent(INOUT) :: Dwork
   
   ! On entry, the maximum number of allowed iterations. Must be > 0.
@@ -822,8 +821,7 @@ contains
   ! On exit, the vector containing the solution of the linear system.
   real(DP), dimension(*), intent(INOUT) :: Dx
   
-  ! Work array. Its length must be at least 2*n if drelax is not 1, otherwise
-  ! n is sufficient.
+  ! Work array. Its length must be at least n.
   real(DP), dimension(*), intent(INOUT) :: Dwork
   
   ! On entry, the maximum number of allowed iterations. Must be > 0.
@@ -842,8 +840,8 @@ contains
 !</suboutine>
 
   ! local variables
-  integer :: ite,i,j,k,l
-  real(DP) :: drlx,daux,daux2,ddef,dtol2
+  integer :: ite,i,j
+  real(DP) :: drlx,daux,ddef,dtol2
   
     ! Choose relaxation parameter
     if(present(drelax)) then
