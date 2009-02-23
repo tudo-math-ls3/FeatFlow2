@@ -509,9 +509,11 @@ contains
     
     ! Initialize the function parser for the velocity field if required
     if (rappDescriptor%ivelocitytype .ne. VELOCITY_ZERO) then
-      call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname', svelocityName)
-      call flagship_readParserFromFile(sindatfileName, '['//trim(svelocityName)//']',&
-                                       cvariables, rappDescriptor%rfparserVelocityField)
+      call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname', svelocityName, '')
+      if (trim(svelocityName) .ne. '') then
+        call flagship_readParserFromFile(sindatfileName, '['//trim(svelocityName)//']',&
+                                         cvariables, rappDescriptor%rfparserVelocityField)
+      end if
     end if
 
     ! Initialize the function parser for the diffusion tensor if required
@@ -1844,32 +1846,32 @@ contains
     dfraction  = 100.0_DP/dtotalTime
 
     call output_line('Time for computing solution:   '//&
-                     trim(sys_sdL(rtimerSolution%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rtimerSolution%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rtimerSolution%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rtimerSolution%delapsedCPU, 5)))//' %')
     call output_line('Time for mesh adaptivity:      '//&
-                     trim(sys_sdL(rappDescriptor%rtimerAdaptation%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAdaptation%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAdaptation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAdaptation%delapsedCPU, 5)))//' %')
     call output_line('Time for error estimation:     '//&
-                     trim(sys_sdL(rappDescriptor%rtimerErrorEstimation%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerErrorEstimation%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerErrorEstimation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerErrorEstimation%delapsedCPU, 5)))//' %')
     call output_line('Time for triangulation:        '//&
-                     trim(sys_sdL(rappDescriptor%rtimerTriangulation%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerTriangulation%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerTriangulation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerTriangulation%delapsedCPU, 5)))//' %')
     call output_line('Time for coefficient assembly: '//&
-                     trim(sys_sdL(rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 5)))//' %')
     call output_line('Time for matrix assembly:      '//&
-                     trim(sys_sdL(rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 5)))//' %')
     call output_line('Time for vector assembly:      '//&
-                     trim(sys_sdL(rappDescriptor%rtimerAssemblyVector%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyVector%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAssemblyVector%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAssemblyVector%delapsedCPU, 5)))//' %')
     call output_line('Time for pre-/post-processing: '//&
-                     trim(sys_sdL(rappDescriptor%rtimerPrePostprocess%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerPrePostprocess%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerPrePostprocess%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerPrePostprocess%delapsedCPU, 5)))//' %')
     call output_lbrk()
     call output_line('Time for total simulation:     '//&
-                     trim(sys_sdL(dtotalTime, 2)))
+                     trim(adjustl(sys_sdE(dtotalTime, 5))))
     call output_lbrk()
 
   end subroutine codire_outputStatistics
@@ -2932,7 +2934,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported time-stepping algorithm!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransient')
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransientPrimal')
           call sys_halt()
         end select
         
@@ -2958,7 +2960,7 @@ contains
           
         case DEFAULT
           call output_line('Unsupported time-stepping algorithm!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransient')
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransientPrimal')
           call sys_halt()
         end select
 
