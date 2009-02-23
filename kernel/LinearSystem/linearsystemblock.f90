@@ -209,6 +209,9 @@
 !#      -> Reintegrates a submatrix into a larger block matrix which was
 !#         extracted from that matrix by lsysbl_deriveSubmatrix.
 !#
+!# 62.) lsysbl_getVectorMagnitude
+!#      -> Compute the vector magnitude.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -6683,6 +6686,162 @@ contains
             
       end do
     end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_getVectorMagnitude (rvectorBlock,rvectorVecMag,dumax)
+  
+!<description>
+  ! Compute the vector magnitude. rvectorBlock identifies a vector field. The routine
+  ! will calculate the length of each vector in the vector field and store it to
+  ! rvectorVecMag (if present). The maximum vector length is returned in the parameter
+  ! dunorm (if present). All subvectors must have the same length.
+!</description>
+  
+!<input>
+  ! Block vector defining the vector field.
+  type(t_vectorBlock), intent(in) :: rvectorBlock
+!</input>
+  
+!<output>
+  ! OPTIONAL: Scalar vector receiving the vector magnitude.
+  type(t_vectorScalar), intent(inout), optional :: rvectorVecMag
+
+  ! OPTIONAL: Returns the maximum vector magnitude.
+  real(dp), intent(out), optional :: dumax
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    real(dp), dimension(:), pointer :: p_Dx,p_Dy,p_Dx1,p_Dx2,p_Dx3
+    type(t_vectorScalar) :: rvectorVecMagTemp
+    integer :: icomp,ieq
+
+    ! Probably nothing to do...
+    if (.not. present(rvectorVecMag) .and. .not. present(dumax)) return
+    
+    do icomp = 2,rvectorBlock%nblocks
+      if (rvectorBlock%RvectorBlock(icomp)%NEQ .ne. rvectorBlock%RvectorBlock(1)%NEQ) then
+        call output_line ('Component '//trim(sys_siL(icomp,10))//' has invalid length!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_getVectorMagnitude')
+        call sys_halt()
+      end if
+    end do
+    
+    ! Simple case: Compute the maximum vector magnitude.
+    select case (rvectorBlock%nblocks)
+    case (NDIM1D)
+      if (present(dumax)) then
+        dumax = lsyssc_vectorNorm(rvectorBlock%RvectorBlock(1),LINALG_NORMMAX)
+      end if
+      
+      if (present(rvectorVecMag)) then
+        call lsyssc_copyVector (rvectorBlock%RvectorBlock(1),rvectorVecMag)
+      end if
+      
+      return
+      
+    case (NDIM2D)
+      call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Dx1)
+      call lsyssc_getbase_double (rvectorBlock%RvectorBlock(2),p_Dx2)
+      if (present(rvectorVecMag)) then
+        call lsyssc_getbase_double (rvectorVecMag,p_Dy)
+        if (present(dumax)) then
+          dumax = 0.0_DP
+          do ieq = 1,size(p_Dy)
+            p_Dy(ieq) = sqrt(p_Dx1(ieq)**2+p_Dx2(ieq)**2)
+            dumax = max(dumax,p_Dy(ieq))
+          end do
+        else
+          do ieq = 1,size(p_Dy)
+            p_Dy(ieq) = sqrt(p_Dx1(ieq)**2+p_Dx2(ieq)**2)
+          end do
+        end if
+      else
+        ! dunorm must be present here because of the above IF clause...
+        dumax = 0.0_DP
+        do ieq = 1,size(p_Dx1)
+          dumax = max(dumax,sqrt(p_Dx1(ieq)**2+p_Dx2(ieq)**2))
+        end do
+      end if
+      
+      return
+      
+    case (NDIM3D)
+      call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Dx1)
+      call lsyssc_getbase_double (rvectorBlock%RvectorBlock(2),p_Dx2)
+      call lsyssc_getbase_double (rvectorBlock%RvectorBlock(3),p_Dx3)
+      if (present(rvectorVecMag)) then
+        call lsyssc_getbase_double (rvectorVecMag,p_Dy)
+        if (present(dumax)) then
+          dumax = 0.0_DP
+          do ieq = 1,size(p_Dy)
+            p_Dy(ieq) = sqrt(p_Dx1(ieq)**2+p_Dx2(ieq)**2+p_Dx3(ieq)**2)
+            dumax = max(dumax,p_Dy(ieq))
+          end do
+        else
+          do ieq = 1,size(p_Dy)
+            p_Dy(ieq) = sqrt(p_Dx1(ieq)**2+p_Dx2(ieq)**2+p_Dx3(ieq)**2)
+          end do
+        end if
+      else
+        ! dunorm must be present here because of the above IF clause...
+        dumax = 0.0_DP
+        do ieq = 1,size(p_Dx1)
+          dumax = max(dumax,sqrt(p_Dx1(ieq)**2+p_Dx2(ieq)**2+p_Dx3(ieq)**2))
+        end do
+      end if
+      
+      return
+      
+    end select
+    
+    ! General case: Loop over the components and calculate...
+    !
+    ! We need a temporary vector for this operation
+    if (.not. present(rvectorVecMag)) then
+      call lsyssc_duplicateVector (rvectorBlock%RvectorBlock(1),rvectorVecMagTemp,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    else
+      call lsyssc_duplicateVector (rvectorVecMag,rvectorVecMagTemp,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    end if
+    
+    ! Clear the output
+    call lsyssc_clearVector (rvectorVecMagTemp)
+    call lsyssc_getbase_double (rvectorVecMagTemp,p_Dy)
+    
+    ! Sum up the contributions
+    do icomp = 1,rvectorBlock%nblocks
+    
+      call lsyssc_getbase_double (rvectorBlock%RvectorBlock(icomp),p_Dx)
+      
+      ! For each component compute sqrt(Dx1^2 + Dx2^2 + ...)
+      do ieq = 1,size(p_Dy)
+        p_Dy(ieq) = p_Dy(ieq) + p_Dx(ieq)**2
+      end do
+
+    end do
+
+    dumax = 0.0_DP
+    if (present(dumax)) then
+      do ieq = 1,size(p_Dy)
+        p_Dy(ieq) = sqrt(p_Dy(ieq))
+        dumax = max(dumax,p_Dy(ieq))
+      end do
+    else
+      do ieq = 1,size(p_Dy)
+        p_Dy(ieq) = sqrt(p_Dy(ieq))
+      end do
+    end if
+    
+    ! Release the temp vector
+    call lsyssc_releaseVector(rvectorVecMagTemp)
 
   end subroutine
 

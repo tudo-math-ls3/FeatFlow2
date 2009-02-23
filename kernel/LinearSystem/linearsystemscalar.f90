@@ -2373,7 +2373,7 @@ contains
       ! there is no actual matrix structure.
       
       ! Are we copy or not?
-      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) == 1) then
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0) then
 
         ! Check if handle coincides with matrix dimensions
         call storage_getsize(rmatrix%h_DA,isize)
@@ -2431,7 +2431,7 @@ contains
       ! and non-transposed ones.
       
       ! Are we copy or not?
-      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) == 1) then
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
         
         ! Check if handle coincides with matrix dimensions
         call storage_getsize(rmatrix%h_Kld,isize)
@@ -2577,7 +2577,7 @@ contains
       ! Now, let us resize the data array of the matrix.
       
       ! Are we copy or not?
-      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) == 1) then
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0) then
 
         ! Check if handle coincides with matrix dimensions
         call storage_getsize(rmatrix%h_DA,isize)
@@ -2911,7 +2911,7 @@ contains
       rmatrix%NA = rmatrixTemplate%NA
 
       ! Are we copy or not?
-      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) == 1) then
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0) then
 
         ! Check if handle coincides with matrix dimensions
         call storage_getsize(rmatrix%h_DA,isize)
@@ -2948,12 +2948,12 @@ contains
       rmatrix%NCOLS = rmatrixTemplate%NCOLS
 
       ! Are we copy or not?
-      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) == 1) then
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
         
         ! Check if handle coincides with matrix simensions
         if (rmatrix%h_Kld /= ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kld,isize)
-          if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1 .and.&
+          if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .and.&
               rmatrix%NCOLS+1 > isize .or. rmatrix%NEQ+1 > isize) then
             print *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
             call sys_halt()
@@ -2972,7 +2972,7 @@ contains
         ! Check if handle coincides with matrix simensions
         if (rmatrix%h_Kdiagonal /= ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kdiagonal, isize)
-          if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1 .and.&
+          if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .and.&
               rmatrix%NCOLS > isize .or. rmatrix%NEQ > isize) then
             print *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
             call sys_halt()
@@ -2985,7 +2985,7 @@ contains
         if (rmatrix%h_Kld /= ST_NOHANDLE) then
           
           ! Do we process a virtually transposed matrix?
-          if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1) then
+          if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
             call storage_getsize(rmatrix%h_Kld, isize)
             if (rmatrix%NCOLS+1 > isize) then
               
@@ -3046,7 +3046,7 @@ contains
         if (rmatrix%h_Kdiagonal /= ST_NOHANDLE) then
 
           ! Do we process a virtually transposed matrix?
-          if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1) then
+          if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
             call storage_getsize(rmatrix%h_Kdiagonal, isize)
             if (rmatrix%NCOLS > isize) then
               

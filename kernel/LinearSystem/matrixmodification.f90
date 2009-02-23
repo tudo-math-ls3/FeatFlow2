@@ -63,6 +63,12 @@ contains
 
 !</subroutine>
 
+    if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+      call output_line('Virtually transposed matrices not supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mmod_replaceLinesByUnit')
+      call sys_halt()
+    end if
+
     ! At first we must take care of the matrix type.
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX9)
@@ -235,6 +241,12 @@ contains
 
 !</subroutine>
 
+    if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+      call output_line('Virtually transposed matrices not supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mmod_clearOffdiags')
+      call sys_halt()
+    end if
+
     ! At first we must take care of the matrix type.
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX9)
@@ -386,6 +398,12 @@ contains
 
 !</subroutine>
 
+    if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+      call output_line('Virtually transposed matrices not supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mmod_replaceLinesByZero')
+      call sys_halt()
+    end if
+
     ! At first we must take care of the matrix type.
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
@@ -483,6 +501,12 @@ contains
       call output_line('A copied matrix cannot be modified!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
         call sys_halt()
+    end if
+    
+    if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+      call output_line('Virtually transposed matrices not supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
+      call sys_halt()
     end if
     
     ! Allocate temporal memory
