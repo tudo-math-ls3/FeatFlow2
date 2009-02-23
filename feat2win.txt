@@ -19,6 +19,9 @@ III. Compiling Win32 binaries
 
 IV.  Compiling Win64 binaries
 
+V.   Downgrading Solution/Project files
+
+VI.  Troubleshooting
 
 -------------------------------------------------------------------------------
 I.   Prologue
@@ -142,6 +145,8 @@ will need the following:
 1. Microsoft Visual Studio .NET 2008 or newer
 2. Intel Visual Fortran 10.1 or newer
 
+Please note that you will of course need 64-bit versions of the compilers.
+
 Before you can compile the FEAT2 kernel or one of the example applications, you
 will first need to compile the libraries.
 
@@ -157,11 +162,211 @@ and compile the complete solution in "Release" mode.
 Now you should have 3 new files in your "libraries" directory:
 1. winblaslapack_x64.lib
 2. winlibamd_x64.lib
-3. winliumfpack4_x64.lib
+3. winlibumfpack4_x64.lib
 
 Once these files exist, you can open a project file of an application (e.g.
 "poisson_x64.sln" in the "applications/poisson/winpoisson" directory) and
 compile it - that's it.
+
+
+-------------------------------------------------------------------------------
+V.   Downgrading Solution/Project files
+-------------------------------------------------------------------------------
+WARNING:
+There is no guarantee that the methods described in this section work!
+Try at your own risk and try only if you know what you are doing!
+
+
+This section contains some informations about what needs to be done if you want
+to downgrade the Visual Studio / Visual Fortran project files to an older
+version.
+
+The default project files for Win32 are designed to work with Microsoft Visual
+Studio .NET 2003 and Intel Visual Fortran 9.1.
+
+The default project files for Win64 are designed to work with Microsoft Visual
+Studio .NET 2008 and Intel Visual Fortran 10.1.
+
+Remark:
+For the Win64 projects you will need at least Visual Studio .NET 2005, as the
+previous versions do not have x64 compilers!
+
+
+Downgrading Intel Visual Fortran Project Files
+----------------------------------------------
+Please note that the oldest supported version of Intel Visual Fortran is 9.1.
+If you want to downgrade a version 10.0 or 10.1 file to version 9.1, there
+shouldn't be anything to do, as the project files are mainly backward
+compatible - you will just need to additionally specify the "/c" command
+line parameter (see Troubleshooting).
+
+
+Downgrading Microsoft Visual Studio Solution Files
+--------------------------------------------------
+If you want to downgrade a solution file (extension: .sln), then you will need
+to open the solution file in a text editor (notepad will do the job).
+
+At the very beginning of the solution file you will see the following line:
+
+Microsoft Visual Studio Solution File, Format Version ***
+
+where *** is the version of the solution file. Here's a list of the versions:
+
+*** =  7.00 => Microsoft Visual Studio .NET (2002)
+*** =  8.00 => Microsoft Visual Studio .NET 2003
+*** =  9.00 => Microsoft Visual Studio .NET 2005
+*** = 10.00 => Microsoft Visual Studio .NET 2008
+
+Replace the *** with the corresponding version number of your Visual Studio
+and save the file.
+
+
+Downgrading Microsoft Visual C++ Project Files
+----------------------------------------------
+If you want to downgrade a C++ project file (extension: .vcproj), e.g. 
+'winlibumfpack.vcproj', open the project file in a text editor.
+
+In one of the first lines, you will see the following:
+
+    Version="***"
+
+where *** is the version of the project file. Here's a list of the versions:
+
+*** =  7.00 => Microsoft Visual C++ .NET (2002)
+*** =  7.10 => Microsoft Visual C++ .NET 2003
+*** =  8.00 => Microsoft Visual C++ .NET 2005
+*** =  9.00 => Microsoft Visual C++ .NET 2008
+
+Replace the *** with the corresponding version number of your Visual C++
+compiler and save the file.
+
+
+-------------------------------------------------------------------------------
+VI.  Troubleshooting
+-------------------------------------------------------------------------------
+This section provides help with some problems which appear frequently on an FAQ
+basis.
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Problem:
+--------
+When I try to run an application under Visual Studio, I get an "Error while 
+opening file" error printed onto the screen.
+
+
+Solution:
+---------
+This problem may have several reasons and therefore several solutions. Except
+for the obvious reasons that a file does not exist (when trying to read it) or
+is read-only (when trying to write it), it might also happen that the working 
+directory is set wrong.
+
+To check whether the working directory is set up correctly, perform the
+following steps:
+
+1. Right-click the project of the application (e.g. 'winpoisson') in the
+   solution explorer in Visual Studio.
+
+2. In the menu, click on 'Properties' (at the bottom of the menu).
+   A dialog window will pop up.
+
+3. In the dialog, select 'Debugging' under 'Configuration Properties'.
+
+4. In the list there is an entry named 'Working Directory'.
+   Make sure that 'Working Directory' is set to '$(ProjectDir)\..\'.
+
+5. Click on 'OK' and re-start the application.
+
+
+If the working directory was already set correctly, then you should check the
+more obvious reasons:
+
+When trying to read a file:
+Does the file exist?
+
+When trying to write a file:
+Does the file already exist, and if yes, is it maybe opened by another
+application or is it read-only?
+Does the directory, where the file should be created, exist?
+
+
+Details:
+--------
+The problem with the working directory arises from a somewhat stupid habit of
+Intel Visual Fortran: Most of the properties of a project are stored directly
+in the project file (e.g. 'winpoisson.vfproj') - except for the properties
+which belong to the 'Debugging' section, these are stored in an external file
+(e.g. 'winpoisson.vfproj.USERNAME.user', where USERNAME is your Windows logon
+name). So if a developer updates a project file, Intel Visual Fortran removes
+the working directory entry from the project file and saves it in the .user
+file of the developer - which is not uploaded - and therefore the working
+directory entry simply gets lost...
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Problem:
+--------
+When I try to compile an application under Visual Studio, I get dozens of
+"error LNK2019: unresolved external symbol '***' referenced in function '***'"
+errors.
+
+
+Solution:
+---------
+There are mainly two reasons why this may happen:
+1. The project file has the wrong version.
+2. The project file is out-of-date.
+
+
+Point 1 may only apply if two conditions are fulfilled:
+a. You are using Intel Visual Fortran 9.1 (not 10.0 or newer!).
+b. At least one of the error messages says:
+   "error LNK2019: unresolved external symbol '_MAIN__' referenced in function
+    '_main'"
+
+In this case perform the following steps:
+1. Right-click the project of the application (e.g. 'winpoisson') in the
+   solution explorer in Visual Studio.
+
+2. In the menu, click on 'Properties' (at the bottom of the menu).
+   A dialog window will pop up.
+
+3. In the dialog, select 'Fortran' under 'Configuration Properties'.
+
+4. Select 'Command Line' under 'Fortran'
+
+5. Under 'Additional Options', enter "/c" (without the quotation marks)
+   Please make sure that you enter a lowercase "/c" and not an UPPERCASE "/C",
+   as "/c" and "/C" have different meanings!
+
+6. Click on 'OK' 
+
+7. Eventually repeat steps 1 - 6 for the 'winlibkernel' project.
+
+8. Re-compile the application.
+
+
+If this did not work, then it is likely that point 2 applies, i.e. the project
+file is out-of-date. This happens if a new module was added but it is not added
+into the project file. Contact a FEAT2 developer in this case (or try to find
+out which module is missing in your project files on your own).
+
+
+Details:
+--------
+Some of the FEAT2 developers use Intel Visual Fortran 10.0 or newer, and
+sometimes a developer accidentially uploads a version 10.0 (or newer) project
+file. The project files of version 10.0 (and 10.1) are mainly backward
+compatible to the version 9.1 project files with a few exceptions. Usually,
+Intel Visual Fortran 9.1 will load a version 10 project file without
+complaining, however, there are some differences between version 9.1 and 10.0.
+The "/c" parameter specifies that each source file is to be compiled, but is
+not to be linked. Now Intel Visual Fortran 10.0 (and newer) implicitly sets the
+"/c" parameter, so it does not need to be specified explicitly - in contrast to
+Intel Visual Fortran 9.1, which tries to compile an executable from each source
+file if the "/c" parameter is not set, in which it miserably fails and spits
+out dozens of LNK2019 errors.
 
 -------------------------------------------------------------------------------
 *End-Of-File*
