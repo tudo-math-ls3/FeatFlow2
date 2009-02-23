@@ -543,13 +543,14 @@ contains
     
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
     integer :: ioutputUCD,ieltype,ilevelUCD,ii,iloop,hpolyHandle
-    integer :: ipoly
+    integer :: ipoly,hpolyHandle1
     
     type(t_geometryObject) :: rgeometryObject 
     
     character(SYS_STRLEN) :: sfile,sfilename
     
-    real(dp), dimension(:,:), pointer :: p_Dvertices     
+    !real(dp), dimension(:,:), pointer :: Dvertices     
+    real(dp), dimension(3,3) :: Dvertices     
     
     call geom_init_sphere(rgeometryObject,0.05_dp,(/0.0_dp,0.0_dp,0.0_dp/))
     
@@ -698,14 +699,18 @@ contains
     case (1)
       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
       
-      call geom_sphere_polygonise(rgeometryObject, hpolyHandle)
-      call storage_getbase_double2D(hpolyHandle, p_Dvertices)
+      call geom_sphere_polygonise(rgeometryObject, hpolyHandle,hpolyHandle1)
+
       
       ipoly = rgeometryObject%rsphere%ipoly
-      do iloop=0,7
-        call ucd_addPolygon(rexport,p_Dvertices(:,(3*iloop)+1:(3*iloop+3)),4)
+      do iloop=1,ipoly
+        ! mach das p_DVertices array
+        call geom_sphere_getPolygon(rgeometryObject,iloop,hpolyHandle,&
+        hpolyHandle1,Dvertices)
+        call ucd_addPolygon(rexport,Dvertices,4)
       end do
         call storage_free(hpolyHandle)
+        call storage_free(hpolyHandle1)
 
     case (2)
       call ucd_startAVS (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
