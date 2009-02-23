@@ -513,6 +513,10 @@ module element
   ! mean value based; 'unscaled' variant, which does not scale the local
   ! coordinate system on every element. Faster but less stable.
   integer(I32), parameter, public :: EL_EM30_UNSCALED = EL_Q1T + EL_NONPARAMETRIC + 2**18 + 2**16
+  
+  ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
+  ! mean value based; new interface implementations
+  integer(I32), parameter, public :: EL_EM30_NEW = EL_Q1T + EL_NONPARAMETRIC + 2**19 + 2**16
 
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
   integer(I32), parameter, public :: EL_EM31    = EL_Q1T + EL_NONPARAMETRIC
@@ -681,6 +685,8 @@ contains
       elem_igetID = EL_EM30_UNPIVOTED
     case("EL_EM30_UNSCALED")
       elem_igetID = EL_EM30_UNSCALED
+    case("EL_EM30_NEW")
+      elem_igetID = EL_EM30_NEW
     case("EL_Q1TB","EL_Q1TB_2D","EL_EB30","EL_EB30_2D")
       elem_igetID = EL_Q1TB_2D
     case("EL_Q2T","EL_Q2T_2D","EL_E050","EL_E050_2D")
@@ -1643,6 +1649,8 @@ contains
         call elem_QP1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
         call elem_EM30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EM30_NEW)
+        bwrapSim2 = .true.
       case (EL_E030)
         call elem_E030 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EB30)
@@ -2389,6 +2397,10 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal)
+    
+    case (EL_EM30_NEW)
+      ! new implementation of 2D EM30
+      call elem_eval_EM30_2D(ieltyp, revalElementSet, Bder, Dbas)
     
     case (EL_E030)
       call elem_E030_sim (ieltyp, revalElementSet%p_Dcoords, &
