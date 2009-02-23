@@ -18,6 +18,8 @@ module element_hexa3d
 
 implicit none
 
+  private :: elh3d_calcFaceTrafo_Q1
+
 contains
 
 !**************************************************************************
@@ -3427,6 +3429,218 @@ contains
   
 !<subroutine>  
 
+  pure subroutine elem_eval_Q1_3D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(IN)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(IN)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(IN)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+!</output>
+
+!</subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The Q1_3D element is specified by eight polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  ! { 1, x, y, z, x*y, y*z, z*x, x*y*z }
+  !
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,8:
+  ! {
+  !   For all j = 1,...,8:
+  !   {
+  !     Pi(vj) = kronecker(i,j)
+  !   }
+  ! }
+  !
+  ! With:
+  ! vj being the eight corner vertices of the hexahedron
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  !
+  !  P1(x,y,z) = 1/8 * (1-x) * (1-y) * (1-z)
+  !  P2(x,y,z) = 1/8 * (1+x) * (1-y) * (1-z)
+  !  P3(x,y,z) = 1/8 * (1+x) * (1+y) * (1-z)
+  !  P4(x,y,z) = 1/8 * (1-x) * (1+y) * (1-z)
+  !  P5(x,y,z) = 1/8 * (1-x) * (1-y) * (1+z)
+  !  P6(x,y,z) = 1/8 * (1+x) * (1-y) * (1+z)
+  !  P7(x,y,z) = 1/8 * (1+x) * (1+y) * (1+z)
+  !  P8(x,y,z) = 1/8 * (1-x) * (1+y) * (1+z)
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 8
+
+  ! derivatives on reference element
+  real(DP), dimension(NBAS,NDIM3D) :: DrefDer
+  
+  ! Local variables
+  real(DP) :: ddet,dx,dy,dz
+  integer :: i,j
+
+  real(DP), parameter :: Q1 = 1.0_DP
+  real(DP), parameter :: Q8 = 0.125_DP
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC3D)) then
+    
+      ! Loop through all elements
+      !$omp parallel do private(i,dx,dy,dz)
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+          
+          Dbas(1,DER_FUNC3D,i,j) = Q8*(Q1-dx)*(Q1-dy)*(Q1-dz)
+          Dbas(2,DER_FUNC3D,i,j) = Q8*(Q1+dx)*(Q1-dy)*(Q1-dz)
+          Dbas(3,DER_FUNC3D,i,j) = Q8*(Q1+dx)*(Q1+dy)*(Q1-dz)
+          Dbas(4,DER_FUNC3D,i,j) = Q8*(Q1-dx)*(Q1+dy)*(Q1-dz)
+          Dbas(5,DER_FUNC3D,i,j) = Q8*(Q1-dx)*(Q1-dy)*(Q1+dz)
+          Dbas(6,DER_FUNC3D,i,j) = Q8*(Q1+dx)*(Q1-dy)*(Q1+dz)
+          Dbas(7,DER_FUNC3D,i,j) = Q8*(Q1+dx)*(Q1+dy)*(Q1+dz)
+          Dbas(8,DER_FUNC3D,i,j) = Q8*(Q1-dx)*(Q1+dy)*(Q1+dz)
+
+        end do ! i
+      
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
+
+      ! Loop through all elements
+      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+          
+          ! Calculate derivatives on reference element
+          ! X-derivatives
+          DrefDer( 1,1) = -Q8*(Q1-dy)*(Q1-dz)
+          DrefDer( 2,1) =  Q8*(Q1-dy)*(Q1-dz)
+          DrefDer( 3,1) =  Q8*(Q1+dy)*(Q1-dz)
+          DrefDer( 4,1) = -Q8*(Q1+dy)*(Q1-dz)
+          DrefDer( 5,1) = -Q8*(Q1-dy)*(Q1+dz)
+          DrefDer( 6,1) =  Q8*(Q1-dy)*(Q1+dz)
+          DrefDer( 7,1) =  Q8*(Q1+dy)*(Q1+dz)
+          DrefDer( 8,1) = -Q8*(Q1+dy)*(Q1+dz)
+
+          ! Y-derivatives
+          DrefDer( 1,2) = -Q8*(Q1-dx)*(Q1-dz)
+          DrefDer( 2,2) = -Q8*(Q1+dx)*(Q1-dz)
+          DrefDer( 3,2) =  Q8*(Q1+dx)*(Q1-dz)
+          DrefDer( 4,2) =  Q8*(Q1-dx)*(Q1-dz)
+          DrefDer( 5,2) = -Q8*(Q1-dx)*(Q1+dz)
+          DrefDer( 6,2) = -Q8*(Q1+dx)*(Q1+dz)
+          DrefDer( 7,2) =  Q8*(Q1+dx)*(Q1+dz)
+          DrefDer( 8,2) =  Q8*(Q1-dx)*(Q1+dz)
+          
+          ! Z-derivatives
+          DrefDer( 1,3) = -Q8*(Q1-dx)*(Q1-dy)
+          DrefDer( 2,3) = -Q8*(Q1+dx)*(Q1-dy)
+          DrefDer( 3,3) = -Q8*(Q1+dx)*(Q1+dy)
+          DrefDer( 4,3) = -Q8*(Q1-dx)*(Q1+dy)
+          DrefDer( 5,3) =  Q8*(Q1-dx)*(Q1-dy)
+          DrefDer( 6,3) =  Q8*(Q1+dx)*(Q1-dy)
+          DrefDer( 7,3) =  Q8*(Q1+dx)*(Q1+dy)
+          DrefDer( 8,3) =  Q8*(Q1-dx)*(Q1+dy)
+          
+          ! Remark: Please note that the following code is universal and does
+          ! not need to be modified for other parametric 3D hexahedron elements!
+          
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+          
+          ! X-derivatives on real element
+          dx = (reval%p_Djac(5,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(6,i,j)*reval%p_Djac(8,i,j))*ddet
+          dy = (reval%p_Djac(8,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(2,i,j)*reval%p_Djac(9,i,j))*ddet
+          dz = (reval%p_Djac(2,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(5,i,j)*reval%p_Djac(3,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_X,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+        
+          ! Y-derivatives on real element
+          dx = (reval%p_Djac(7,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(9,i,j))*ddet
+          dy = (reval%p_Djac(1,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(3,i,j))*ddet
+          dz = (reval%p_Djac(4,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(6,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Y,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+
+          ! Z-derivatives on real element
+          dx = (reval%p_Djac(4,i,j)*reval%p_Djac(8,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(5,i,j))*ddet
+          dy = (reval%p_Djac(7,i,j)*reval%p_Djac(2,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(8,i,j))*ddet
+          dz = (reval%p_Djac(1,i,j)*reval%p_Djac(5,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(2,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Z,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+        
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+          
+    end if
+
+  end subroutine
+  
+  !************************************************************************
+  
+!<subroutine>  
+
   pure subroutine elem_eval_Q2_3D (celement, reval, Bder, Dbas)
 
 !<description>
@@ -3757,7 +3971,6 @@ contains
 
   end subroutine
 
-
   !************************************************************************
   
 !<subroutine>  
@@ -3892,6 +4105,425 @@ contains
         end do ! i
 
       end do ! j
+          
+    end if
+
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_E030_3D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(IN)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(IN)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(IN)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+!</output>
+
+!</subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The E030_3D element is specified by six polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  ! { 1, x, y, z, x^2 - y^2, y^2 - z^2 }
+  !
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,6:
+  ! {
+  !   For all j = 1,...,6:
+  !   {
+  !     Int_[-1,1]^2 (|DFj(x,y)|*Pi(Fj(x,y))) d(x,y) = kronecker(i,j) * |fj|
+  !     <==>
+  !     Int_fj Pi(x,y) d(x,y) = kronecker(i,j) * |fj|
+  !   }
+  ! }
+  !
+  ! With:
+  ! fj being the j-th local face of the hexahedron
+  ! |fj| being the area of the face fj
+  ! Fj: [-1,1]^2 -> fj being the parametrisation of the face fj
+  ! |DFj(x,y)| being the determinant of the Jacobi-Matrix of Fj in the point (x,y)
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  !
+  !  P1(x,y,z) = 1/6 - 1/2*z - 1/4*(x^2 - y^2) - 1/2*(y^2 - z^2)
+  !  P2(x,y,z) = 1/6 - 1/2*y - 1/4*(x^2 - y^2) + 1/4*(y^2 - z^2)
+  !  P3(x,y,z) = 1/6 + 1/2*x + 1/2*(x^2 - y^2) + 1/4*(y^2 - z^2)
+  !  P4(x,y,z) = 1/6 + 1/2*y - 1/4*(x^2 - y^2) + 1/4*(y^2 - z^2)
+  !  P5(x,y,z) = 1/6 - 1/2*x + 1/2*(x^2 - y^2) + 1/4*(y^2 - z^2)
+  !  P6(x,y,z) = 1/6 + 1/2*z - 1/4*(x^2 - y^2) - 1/2*(y^2 - z^2)
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 6
+
+  ! derivatives on reference element
+  real(DP), dimension(NBAS,NDIM3D) :: DrefDer
+  
+  ! Local variables
+  real(DP) :: ddet,dx,dy,dz,dxy,dyz
+  integer :: i,j
+
+  real(DP), parameter :: Q2 = 0.5_DP
+  real(DP), parameter :: Q4 = 0.25_DP
+  real(DP), parameter :: Q6 = 1.0_DP / 6.0_DP
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC3D)) then
+    
+      ! Loop through all elements
+      !$omp parallel do private(i,dx,dy,dz,dxy,dyz)
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+          
+          ! Pre-calculate (x^2-y^2) and (y^2-z^2)
+          dxy = dx*dx - dy*dy
+          dyz = dy*dy - dz*dz
+          
+          Dbas(1,DER_FUNC3D,i,j) = Q6 - Q4*dxy - Q2*(dz + dyz)
+          Dbas(2,DER_FUNC3D,i,j) = Q6 - Q4*(dxy - dyz) - Q2*dy
+          Dbas(3,DER_FUNC3D,i,j) = Q6 + Q4*dyz + Q2*(dx + dxy)
+          Dbas(4,DER_FUNC3D,i,j) = Q6 + Q4*(dxy - dyz) + Q2*dy
+          Dbas(5,DER_FUNC3D,i,j) = Q6 - Q4*dyz - Q2*(dx - dxy)
+          Dbas(6,DER_FUNC3D,i,j) = Q6 + Q4*dxy + Q2*(dz - dyz)
+
+        end do ! i
+      
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
+
+      ! Loop through all elements
+      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+          
+          ! Calculate derivatives on reference element
+          ! X-derivatives
+          DrefDer( 1,1) = -Q2*dx
+          DrefDer( 2,1) = -Q2*dx
+          DrefDer( 3,1) = dx + Q2
+          DrefDer( 4,1) = -Q2*dx
+          DrefDer( 5,1) = dx - Q2
+          DrefDer( 6,1) = -Q2*dx
+
+          ! Y-derivatives
+          DrefDer( 1,2) = -Q2*dy
+          DrefDer( 2,2) = dy - Q2
+          DrefDer( 3,2) = -Q2*dy
+          DrefDer( 4,2) = dy + Q2
+          DrefDer( 5,2) = -Q2*dy
+          DrefDer( 6,2) = -Q2*dy
+          
+          ! Z-derivatives
+          DrefDer( 1,3) = dz - Q2
+          DrefDer( 2,3) = -Q2*dz
+          DrefDer( 3,3) = -Q2*dz
+          DrefDer( 4,3) = -Q2*dz
+          DrefDer( 5,3) = -Q2*dz
+          DrefDer( 6,3) = dz + Q2
+          
+          ! Remark: Please note that the following code is universal and does
+          ! not need to be modified for other parametric 3D hexahedron elements!
+          
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+          
+          ! X-derivatives on real element
+          dx = (reval%p_Djac(5,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(6,i,j)*reval%p_Djac(8,i,j))*ddet
+          dy = (reval%p_Djac(8,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(2,i,j)*reval%p_Djac(9,i,j))*ddet
+          dz = (reval%p_Djac(2,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(5,i,j)*reval%p_Djac(3,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_X,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+        
+          ! Y-derivatives on real element
+          dx = (reval%p_Djac(7,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(9,i,j))*ddet
+          dy = (reval%p_Djac(1,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(3,i,j))*ddet
+          dz = (reval%p_Djac(4,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(6,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Y,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+
+          ! Z-derivatives on real element
+          dx = (reval%p_Djac(4,i,j)*reval%p_Djac(8,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(5,i,j))*ddet
+          dy = (reval%p_Djac(7,i,j)*reval%p_Djac(2,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(8,i,j))*ddet
+          dz = (reval%p_Djac(1,i,j)*reval%p_Djac(5,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(2,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Z,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+        
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+          
+    end if
+
+  end subroutine
+  
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_E031_3D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(IN)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(IN)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(IN)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+!</output>
+
+!</subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The E031_3D element is specified by six polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  ! { 1, x, y, z, x^2 - y^2, y^2 - z^2 }
+  !
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,6:
+  ! {
+  !   For all j = 1,...,6:
+  !   {
+  !     Pi(fj) = kronecker(i,j)
+  !   }
+  ! }
+  !
+  ! With:
+  ! fj being the midpoint of the j-th local face of the hexahedron
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  !
+  !  P1(x,y,z) = 1/6 - 1/2*z - 1/6*(x^2 - y^2) - 1/3*(y^2 - z^2)
+  !  P2(x,y,z) = 1/6 - 1/2*y - 1/6*(x^2 - y^2) + 1/6*(y^2 - z^2)
+  !  P3(x,y,z) = 1/6 + 1/2*x + 1/3*(x^2 - y^2) + 1/6*(y^2 - z^2)
+  !  P4(x,y,z) = 1/6 + 1/2*y - 1/6*(x^2 - y^2) + 1/6*(y^2 - z^2)
+  !  P5(x,y,z) = 1/6 - 1/2*x + 1/3*(x^2 - y^2) + 1/6*(y^2 - z^2)
+  !  P6(x,y,z) = 1/6 + 1/2*z - 1/6*(x^2 - y^2) - 1/3*(y^2 - z^2)
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 6
+
+  ! derivatives on reference element
+  real(DP), dimension(NBAS,NDIM3D) :: DrefDer
+  
+  ! Local variables
+  real(DP) :: ddet,dx,dy,dz,dxy,dyz
+  integer :: i,j
+
+  real(DP), parameter :: Q2 = 0.5_DP
+  real(DP), parameter :: Q3 = 1.0_DP / 3.0_DP
+  real(DP), parameter :: Q6 = 1.0_DP / 6.0_DP
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC3D)) then
+    
+      ! Loop through all elements
+      !$omp parallel do private(i,dx,dy,dz,dxy,dyz)
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+          
+          ! Pre-calculate (x^2-y^2) and (y^2-z^2)
+          dxy = dx*dx - dy*dy
+          dyz = dy*dy - dz*dz
+          
+          Dbas(1,DER_FUNC3D,i,j) = Q6 - Q2*dz - Q6*dxy - Q3*dyz
+          Dbas(2,DER_FUNC3D,i,j) = Q6 - Q2*dy - Q6*dxy + Q6*dyz
+          Dbas(3,DER_FUNC3D,i,j) = Q6 + Q2*dx + Q3*dxy + Q6*dyz
+          Dbas(4,DER_FUNC3D,i,j) = Q6 + Q2*dy - Q6*dxy + Q6*dyz
+          Dbas(5,DER_FUNC3D,i,j) = Q6 - Q2*dx + Q3*dxy + Q6*dyz
+          Dbas(6,DER_FUNC3D,i,j) = Q6 + Q2*dz - Q6*dxy - Q3*dyz
+
+        end do ! i
+      
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
+
+      ! Loop through all elements
+      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+          
+          ! Calculate derivatives on reference element
+          ! X-derivatives
+          DrefDer( 1,1) = -Q3*dx
+          DrefDer( 2,1) = -Q3*dx
+          DrefDer( 3,1) = Q6*(4.0_DP*dx + 3.0_DP)
+          DrefDer( 4,1) = -Q3*dx
+          DrefDer( 5,1) = Q6*(4.0_DP*dx - 3.0_DP)
+          DrefDer( 6,1) = -Q3*dx
+
+          ! Y-derivatives
+          DrefDer( 1,2) = -Q3*dy
+          DrefDer( 2,2) = Q6*(4.0_DP*dy - 3.0_DP)
+          DrefDer( 3,2) = -Q3*dy
+          DrefDer( 4,2) = Q6*(4.0_DP*dy + 3.0_DP)
+          DrefDer( 5,2) = -Q3*dy
+          DrefDer( 6,2) = -Q3*dy
+          
+          ! Z-derivatives
+          DrefDer( 1,3) = Q6*(4.0_DP*dz - 3.0_DP)
+          DrefDer( 2,3) = -Q3*dz
+          DrefDer( 3,3) = -Q3*dz
+          DrefDer( 4,3) = -Q3*dz
+          DrefDer( 5,3) = -Q3*dz
+          DrefDer( 6,3) = Q6*(4.0_DP*dz + 3.0_DP)
+          
+          ! Remark: Please note that the following code is universal and does
+          ! not need to be modified for other parametric 3D hexahedron elements!
+          
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+          
+          ! X-derivatives on real element
+          dx = (reval%p_Djac(5,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(6,i,j)*reval%p_Djac(8,i,j))*ddet
+          dy = (reval%p_Djac(8,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(2,i,j)*reval%p_Djac(9,i,j))*ddet
+          dz = (reval%p_Djac(2,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(5,i,j)*reval%p_Djac(3,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_X,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+        
+          ! Y-derivatives on real element
+          dx = (reval%p_Djac(7,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(9,i,j))*ddet
+          dy = (reval%p_Djac(1,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(3,i,j))*ddet
+          dz = (reval%p_Djac(4,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(6,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Y,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+
+          ! Z-derivatives on real element
+          dx = (reval%p_Djac(4,i,j)*reval%p_Djac(8,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(5,i,j))*ddet
+          dy = (reval%p_Djac(7,i,j)*reval%p_Djac(2,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(8,i,j))*ddet
+          dz = (reval%p_Djac(1,i,j)*reval%p_Djac(5,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(2,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Z,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+        
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
           
     end if
 
@@ -4082,7 +4714,7 @@ contains
       do j = 1, 6
       
         ! Calculate trafo for this face
-        call EM30_3D_calcTafoFace(Dft,j,Dvert)
+        call elh3d_calcFaceTrafo_Q1(Dft,j,Dvert)
 
         ! Loop over all cubature points
         do i = 1, NCUB2D
@@ -4245,48 +4877,6 @@ contains
       end if ! derivatives evaluation
       
     end do ! iel
-    
-  contains
-  
-    pure subroutine EM30_3D_calcTafoFace(Dt,iface,Dv)
-    real(DP), dimension(4,3), intent(OUT) :: Dt
-    integer, intent(IN) :: iface
-    real(DP), dimension(NDIM3D,8), intent(IN) :: Dv
-    
-    ! local variables
-    integer, dimension(4) :: i
-
-      ! Get face corner vertice indices
-      select case(iface)
-      case (1)
-        i = (/1,2,3,4/)
-      case (2)
-        i = (/1,5,6,2/)
-      case (3)
-        i = (/7,3,2,6/)
-      case (4)
-        i = (/7,8,4,3/)
-      case (5)
-        i = (/1,4,8,5/)
-      case (6)
-        i = (/7,6,5,8/)
-      end select
-      
-      ! Calculate trafo coefficients
-      Dt(1,1) = 0.25_DP*( Dv(1,i(1))+Dv(1,i(2))+Dv(1,i(3))+Dv(1,i(4)))
-      Dt(2,1) = 0.25_DP*(-Dv(1,i(1))+Dv(1,i(2))+Dv(1,i(3))-Dv(1,i(4)))
-      Dt(3,1) = 0.25_DP*(-Dv(1,i(1))-Dv(1,i(2))+Dv(1,i(3))+Dv(1,i(4)))
-      Dt(4,1) = 0.25_DP*( Dv(1,i(1))-Dv(1,i(2))+Dv(1,i(3))-Dv(1,i(4)))
-      Dt(1,2) = 0.25_DP*( Dv(2,i(1))+Dv(2,i(2))+Dv(2,i(3))+Dv(2,i(4)))
-      Dt(2,2) = 0.25_DP*(-Dv(2,i(1))+Dv(2,i(2))+Dv(2,i(3))-Dv(2,i(4)))
-      Dt(3,2) = 0.25_DP*(-Dv(2,i(1))-Dv(2,i(2))+Dv(2,i(3))+Dv(2,i(4)))
-      Dt(4,2) = 0.25_DP*( Dv(2,i(1))-Dv(2,i(2))+Dv(2,i(3))-Dv(2,i(4)))
-      Dt(1,3) = 0.25_DP*( Dv(3,i(1))+Dv(3,i(2))+Dv(3,i(3))+Dv(3,i(4)))
-      Dt(2,3) = 0.25_DP*(-Dv(3,i(1))+Dv(3,i(2))+Dv(3,i(3))-Dv(3,i(4)))
-      Dt(3,3) = 0.25_DP*(-Dv(3,i(1))-Dv(3,i(2))+Dv(3,i(3))+Dv(3,i(4)))
-      Dt(4,3) = 0.25_DP*( Dv(3,i(1))-Dv(3,i(2))+Dv(3,i(3))-Dv(3,i(4)))
-    
-    end subroutine EM30_3D_calcTafoFace
     
   end subroutine
   
@@ -4921,7 +5511,7 @@ contains
       do j = 1, 6
       
         ! Calculate trafo for this face
-        call EM50_3D_calcTafoFace(Dft,j,Dvert)
+        call elh3d_calcFaceTrafo_Q1(Dft,j,Dvert)
 
         ! Loop over all cubature points
         do i = 1, NCUB2D
@@ -5229,49 +5819,70 @@ contains
       end if ! derivatives evaluation
       
     end do ! iel
-    
-  contains
-  
-    pure subroutine EM50_3D_calcTafoFace(Dt,iface,Dv)
-    real(DP), dimension(4,3), intent(OUT) :: Dt
-    integer, intent(IN) :: iface
-    real(DP), dimension(NDIM3D,8), intent(IN) :: Dv
-    
-    ! local variables
-    integer, dimension(4) :: i
 
-      ! Get face corner vertice indices
-      select case(iface)
-      case (1)
-        i = (/1,2,3,4/)
-      case (2)
-        i = (/1,5,6,2/)
-      case (3)
-        i = (/7,3,2,6/)
-      case (4)
-        i = (/7,8,4,3/)
-      case (5)
-        i = (/1,4,8,5/)
-      case (6)
-        i = (/7,6,5,8/)
-      end select
-      
-      ! Calculate trafo coefficients
-      Dt(1,1) = 0.25_DP*( Dv(1,i(1))+Dv(1,i(2))+Dv(1,i(3))+Dv(1,i(4)))
-      Dt(2,1) = 0.25_DP*(-Dv(1,i(1))+Dv(1,i(2))+Dv(1,i(3))-Dv(1,i(4)))
-      Dt(3,1) = 0.25_DP*(-Dv(1,i(1))-Dv(1,i(2))+Dv(1,i(3))+Dv(1,i(4)))
-      Dt(4,1) = 0.25_DP*( Dv(1,i(1))-Dv(1,i(2))+Dv(1,i(3))-Dv(1,i(4)))
-      Dt(1,2) = 0.25_DP*( Dv(2,i(1))+Dv(2,i(2))+Dv(2,i(3))+Dv(2,i(4)))
-      Dt(2,2) = 0.25_DP*(-Dv(2,i(1))+Dv(2,i(2))+Dv(2,i(3))-Dv(2,i(4)))
-      Dt(3,2) = 0.25_DP*(-Dv(2,i(1))-Dv(2,i(2))+Dv(2,i(3))+Dv(2,i(4)))
-      Dt(4,2) = 0.25_DP*( Dv(2,i(1))-Dv(2,i(2))+Dv(2,i(3))-Dv(2,i(4)))
-      Dt(1,3) = 0.25_DP*( Dv(3,i(1))+Dv(3,i(2))+Dv(3,i(3))+Dv(3,i(4)))
-      Dt(2,3) = 0.25_DP*(-Dv(3,i(1))+Dv(3,i(2))+Dv(3,i(3))-Dv(3,i(4)))
-      Dt(3,3) = 0.25_DP*(-Dv(3,i(1))-Dv(3,i(2))+Dv(3,i(3))+Dv(3,i(4)))
-      Dt(4,3) = 0.25_DP*( Dv(3,i(1))-Dv(3,i(2))+Dv(3,i(3))-Dv(3,i(4)))
-    
-    end subroutine EM50_3D_calcTafoFace
-    
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine elh3d_calcFaceTrafo_Q1(Dt,iface,Dv)
+
+!<description>
+  ! PRIVATE AUXILIARY ROUTINE:
+  ! This auxiliary subroutine calculates the transformation coefficients for
+  ! a bilinear transformation from [-1,1]x[-1,1] onto one of the hexahedron's
+  ! local faces.
+!</description>
+
+!<input>
+  ! The index of the local face for which the trafo is to be calculated.
+  ! Is assumed to be 1 <= iface <= 6.
+  integer, intent(IN) :: iface
+  
+  ! The coordinates of the corner vertices of the hexahedron.
+  real(DP), dimension(NDIM3D,8), intent(IN) :: Dv
+
+!<output>
+  ! The transformation coefficients for the bilinear face trafo.
+  real(DP), dimension(4,3), intent(OUT) :: Dt
+!</output>
+
+!</subroutine>
+  
+  ! corner vertice indices of the face
+  integer, dimension(4) :: i
+
+    ! Get face corner vertice indices
+    select case(iface)
+    case (1)
+      i = (/1,2,3,4/)
+    case (2)
+      i = (/1,5,6,2/)
+    case (3)
+      i = (/7,3,2,6/)
+    case (4)
+      i = (/7,8,4,3/)
+    case (5)
+      i = (/1,4,8,5/)
+    case (6)
+      i = (/7,6,5,8/)
+    end select
+    
+    ! Calculate trafo coefficients
+    Dt(1,1) = 0.25_DP*( Dv(1,i(1))+Dv(1,i(2))+Dv(1,i(3))+Dv(1,i(4)))
+    Dt(2,1) = 0.25_DP*(-Dv(1,i(1))+Dv(1,i(2))+Dv(1,i(3))-Dv(1,i(4)))
+    Dt(3,1) = 0.25_DP*(-Dv(1,i(1))-Dv(1,i(2))+Dv(1,i(3))+Dv(1,i(4)))
+    Dt(4,1) = 0.25_DP*( Dv(1,i(1))-Dv(1,i(2))+Dv(1,i(3))-Dv(1,i(4)))
+    Dt(1,2) = 0.25_DP*( Dv(2,i(1))+Dv(2,i(2))+Dv(2,i(3))+Dv(2,i(4)))
+    Dt(2,2) = 0.25_DP*(-Dv(2,i(1))+Dv(2,i(2))+Dv(2,i(3))-Dv(2,i(4)))
+    Dt(3,2) = 0.25_DP*(-Dv(2,i(1))-Dv(2,i(2))+Dv(2,i(3))+Dv(2,i(4)))
+    Dt(4,2) = 0.25_DP*( Dv(2,i(1))-Dv(2,i(2))+Dv(2,i(3))-Dv(2,i(4)))
+    Dt(1,3) = 0.25_DP*( Dv(3,i(1))+Dv(3,i(2))+Dv(3,i(3))+Dv(3,i(4)))
+    Dt(2,3) = 0.25_DP*(-Dv(3,i(1))+Dv(3,i(2))+Dv(3,i(3))-Dv(3,i(4)))
+    Dt(3,3) = 0.25_DP*(-Dv(3,i(1))-Dv(3,i(2))+Dv(3,i(3))+Dv(3,i(4)))
+    Dt(4,3) = 0.25_DP*( Dv(3,i(1))-Dv(3,i(2))+Dv(3,i(3))-Dv(3,i(4)))
+  
+  end subroutine 
   
 end module
