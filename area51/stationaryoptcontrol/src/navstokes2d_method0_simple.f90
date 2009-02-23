@@ -2232,16 +2232,6 @@ contains
             call linsol_precondDefect (p_rsolverNode,rdefectBlock)
             if (p_rsolverNode%iresult .ne. 0) then
               call output_line("Iteration canceled, solver broke down.")
-
-              if (ioutputlevel .ge. 1) then
-                call output_line("#mg    = "//sys_siL(nmg,10))
-                call output_line("#nl    = "//sys_siL(ite,10))
-              end if
-
-              if (ioutputlevel .ge. 2) then
-                call output_lbrk()
-              end if
-
               nmg = 0
               exit
             end if
@@ -2266,8 +2256,6 @@ contains
           ! Release the solver node and all subnodes attached to it (if at all):
           call linsol_releaseSolver (p_rsolverNode)
           
-          if (nmg .eq. 0) cycle
-          
           if (ioutputlevel .ge. 2) then
             call output_lbrk()
           end if
@@ -2280,6 +2268,8 @@ contains
           if (ioutputlevel .ge. 2) then
             call output_lbrk()
           end if
+          
+          if (nmg .eq. 0) cycle
           
           ! Calculate the error in y:
           rcollection%IquickAccess(1) = rtargetFlow%itype
