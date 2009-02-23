@@ -1883,7 +1883,7 @@ contains
     NLMAX = 5
     
     ! Minimum level in the MG solver
-    NLMIN = 5
+    NLMIN = 2
     
     ! Newton iteration counter
     nmaxiterations = 20 !200
@@ -2232,6 +2232,16 @@ contains
             call linsol_precondDefect (p_rsolverNode,rdefectBlock)
             if (p_rsolverNode%iresult .ne. 0) then
               call output_line("Iteration canceled, solver broke down.")
+
+              if (ioutputlevel .ge. 1) then
+                call output_line("#mg    = "//sys_siL(nmg,10))
+                call output_line("#nl    = "//sys_siL(ite,10))
+              end if
+
+              if (ioutputlevel .ge. 2) then
+                call output_lbrk()
+              end if
+
               nmg = 0
               exit
             end if
