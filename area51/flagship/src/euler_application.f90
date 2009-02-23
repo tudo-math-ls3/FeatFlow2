@@ -1546,32 +1546,32 @@ contains
     dfraction  = 100.0_DP/dtotalTime
 
     call output_line('Time for computing solution   : '//&
-                     trim(sys_sdL(rtimerSolution%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rtimerSolution%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rtimerSolution%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rtimerSolution%delapsedCPU, 5)))//' %')
     call output_line('Time for mesh adaptivity      : '//&
-                     trim(sys_sdL(rappDescriptor%rtimerAdaptation%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAdaptation%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAdaptation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAdaptation%delapsedCPU, 5)))//' %')
     call output_line('Time for error estimation     : '//&
-                     trim(sys_sdL(rappDescriptor%rtimerErrorEstimation%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerErrorEstimation%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerErrorEstimation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerErrorEstimation%delapsedCPU, 5)))//' %')
     call output_line('Time for triangulation        : '//&
-                     trim(sys_sdL(rappDescriptor%rtimerTriangulation%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerTriangulation%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerTriangulation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerTriangulation%delapsedCPU, 5)))//' %')
     call output_line('Time for coefficient assembly : '//&
-                     trim(sys_sdL(rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 5)))//' %')
     call output_line('Time for matrix assembly      : '//&
-                     trim(sys_sdL(rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 5)))//' %')
     call output_line('Time for vector assembly:       '//&
-                     trim(sys_sdL(rappDescriptor%rtimerAssemblyVector%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerAssemblyVector%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAssemblyVector%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAssemblyVector%delapsedCPU, 5)))//' %')
     call output_line('Time for pre-/post-processing : '//&
-                     trim(sys_sdL(rappDescriptor%rtimerPrePostprocess%delapsedCPU, 2))//'  '//&
-                     trim(sys_sdL(dfraction*rappDescriptor%rtimerPrePostprocess%delapsedCPU, 2))//' %')
+                     trim(adjustl(sys_sdE(rappDescriptor%rtimerPrePostprocess%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerPrePostprocess%delapsedCPU, 5)))//' %')
     call output_lbrk()
     call output_line('Time for total simulation     : '//&
-                     trim(sys_sdL(dtotalTime, 2)))
+                     trim(adjustl(sys_sdE(dtotalTime, 5))))
     call output_lbrk()
 
   end subroutine euler_outputStatistics
@@ -2371,7 +2371,7 @@ contains
     type(t_parlist), intent(INOUT) :: rparlist
 !</inputoutput>
 !</subroutine>
-
+    
     ! local variables
     character(LEN=SYS_STRLEN) :: cbuffer
     integer :: iarg, narg
