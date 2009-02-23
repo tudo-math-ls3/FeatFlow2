@@ -35,11 +35,15 @@ module optcontrolconvection
 
   type t_optcoperator
   
-    ! Stabilisation parameter.
-    ! Standard value = 1.0_DP
+    ! Stabilisation parameter for the primal equation.
     ! Note: A value of 0.0_DP sets up the convection part without
     ! any stabilisation (central-difference like discretisation).
-    real(DP) :: dupsam = 1.0_DP
+    real(DP) :: dupsamPrimal = 0.0_DP
+
+    ! Stabilisation parameter for the dual equation.
+    ! Note: A value of 0.0_DP sets up the convection part without
+    ! any stabilisation (central-difference like discretisation).
+    real(DP) :: dupsamDual = 0.0_DP
     
     ! Whether the viscosity is constant.
     logical :: bconstViscosity = .true.
@@ -195,8 +199,11 @@ module optcontrolconvection
     ! Maximum velocity magnitude
     real(DP) :: dumax
     
-    ! An array with local DELTA's, each DELTA for one element
-    real(DP), dimension(:), pointer :: DlocalDelta
+    ! An array with local DELTA's, each DELTA for one element, primal equation
+    real(DP), dimension(:), pointer :: DlocalDeltaPrimal
+
+    ! An array with local DELTA's, each DELTA for one element, dual equation
+    real(DP), dimension(:), pointer :: DlocalDeltaDual
     
     ! A pointer to an element-number list
     integer(I32), dimension(:), pointer :: p_IelementList
@@ -1386,7 +1393,7 @@ contains
       DentryA12,DentryA21,DentryA45,DentryA54,&
       DentryA41,DentryA52,DentryA42,DentryA51,&
       DentryA14,DentryA25,DentryA24,DentryA15,&
-      DlocalDelta,roptcoperator,roptcassemblyinfo)
+      DlocalDeltaPrimal,DlocalDeltaDual,roptcoperator,roptcassemblyinfo)
       
   !<description>
     ! Computes a local matrix of the optimal control operator
@@ -1427,8 +1434,11 @@ contains
     real(DP), dimension(:,:,:), intent(inout)    :: DdvelXderiv
     real(DP), dimension(:,:,:), intent(inout)    :: DdvelYderiv
     
-    ! Temporary space for local delta of the SD method
-    real(DP), dimension(:), intent(inout)        :: DlocalDelta
+    ! Temporary space for local delta of the SD method, primal equation
+    real(DP), dimension(:), intent(inout)        :: DlocalDeltaPrimal
+
+    ! Temporary space for local delta of the SD method, dual equation
+    real(DP), dimension(:), intent(inout)        :: DlocalDeltaDual
     
     ! Configuration of the operator
     type(t_optcoperator), intent(in)          :: roptcoperator
@@ -1498,10 +1508,16 @@ contains
     ! is one can see as the local stabilisation weight Delta is also = 0.0.
     ! In this case, we even switch of the calculation of the local Delta,
     ! as it is always =0.0, so we save a little bit time.
-    if (roptcoperator%dupsam .ne. 0.0_DP) then
+    if (roptcoperator%dupsamPrimal .ne. 0.0_DP) then
       call getLocalDeltaQuad (DpvelDofs,roptcassemblyinfo%p_rdiscretisation%p_rtriangulation,&
-          Ielements,roptcassemblyinfo%dumax,roptcoperator%dupsam,&
-          roptcoperator%dnu,DlocalDelta)
+          Ielements,roptcassemblyinfo%dumax,roptcoperator%dupsamPrimal,&
+          roptcoperator%dnu,DlocalDeltaPrimal)
+    end if
+
+    if (roptcoperator%dupsamDual .ne. 0.0_DP) then
+      call getLocalDeltaQuad (DpvelDofs,roptcassemblyinfo%p_rdiscretisation%p_rtriangulation,&
+          Ielements,roptcassemblyinfo%dumax,roptcoperator%dupsamDual,&
+          roptcoperator%dnu,DlocalDeltaDual)
     end if
     
     ! Loop over all elements in the current set
@@ -1821,41 +1837,42 @@ contains
 
               dsumJ = dbasJX*du1p + dbasJY*du2p
 
-              ! Delta*(U*grad(Phi_j), U*grad(Phi_i)) + (U*grad(Phi_j),Phi_i)
-              dtemp = dsumJ * (DlocalDelta(iel)*dsumI + dbasI)
-
               ! Transposed Newton in the dual equation.            
-              dtemp1 = dbasJ*dbasI
+              dtemp = dbasJ*dbasI
             
+              ! Delta*(U*grad(Phi_j), U*grad(Phi_i)) + (U*grad(Phi_j),Phi_i)
+              dtemp1 = dsumJ * (DlocalDeltaPrimal(iel)*dsumI + dbasI)
+              dtemp2 = dsumJ * (DlocalDeltaDual(iel)*dsumI + dbasI)
+
               ! Weighten the calculated value AHxy by the cubature
               ! weight OM and add it to the local matrices. After the
               ! loop over all DOF's is finished, each entry contains
               ! the calculated integral.
 
               DentryA11(jdofe,idofe,iel) = DentryA11(jdofe,idofe,iel) + &
-                  OM * roptcoperator%dprimalDelta * dtemp
+                  OM * roptcoperator%dprimalDelta * dtemp1
                   
               DentryA22(jdofe,idofe,iel) = DentryA22(jdofe,idofe,iel) + &
-                  OM * roptcoperator%dprimalDelta * dtemp
+                  OM * roptcoperator%dprimalDelta * dtemp1
                   
               DentryA44(jdofe,idofe,iel) = DentryA44(jdofe,idofe,iel) + &
-                  OM * roptcoperator%ddualDelta * dtemp
+                  OM * roptcoperator%ddualDelta * dtemp2
                   
               DentryA55(jdofe,idofe,iel) = DentryA55(jdofe,idofe,iel) + &
-                  OM * roptcoperator%ddualDelta * dtemp
+                  OM * roptcoperator%ddualDelta * dtemp2
 
 
               DentryA44(jdofe,idofe,iel) = DentryA44(jdofe,idofe,iel) + &
-                  OM * roptcoperator%ddualNewtonTrans * du1locxp * dtemp1
+                  OM * roptcoperator%ddualNewtonTrans * du1locxp * dtemp
                   
               DentryA45(jdofe,idofe,iel) = DentryA45(jdofe,idofe,iel) + &
-                  OM * roptcoperator%ddualNewtonTrans * du2locxp * dtemp1
+                  OM * roptcoperator%ddualNewtonTrans * du2locxp * dtemp
                   
               DentryA54(jdofe,idofe,iel) = DentryA54(jdofe,idofe,iel) + &
-                  OM * roptcoperator%ddualNewtonTrans * du1locyp * dtemp1
+                  OM * roptcoperator%ddualNewtonTrans * du1locyp * dtemp
                   
               DentryA55(jdofe,idofe,iel) = DentryA55(jdofe,idofe,iel) + &
-                  OM * roptcoperator%ddualNewtonTrans * du2locyp * dtemp1
+                  OM * roptcoperator%ddualNewtonTrans * du2locyp * dtemp
               
             end do ! idofe
             
@@ -2398,7 +2415,8 @@ contains
     allocate(roptcassemblyinfo%Idofs(roptcassemblyinfo%indof,roptcassemblyinfo%nelementsPerBlock))
     
     ! Allocate memory for array with local DELTA's
-    allocate(roptcassemblyinfo%DlocalDelta(roptcassemblyinfo%nelementsPerBlock))
+    allocate(roptcassemblyinfo%DlocalDeltaPrimal(roptcassemblyinfo%nelementsPerBlock))
+    allocate(roptcassemblyinfo%DlocalDeltaDual(roptcassemblyinfo%nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
@@ -2782,7 +2800,8 @@ contains
 
     deallocate(roptcassemblyinfo%Dbas)
     deallocate(roptcassemblyinfo%Idofs)
-    deallocate(roptcassemblyinfo%DlocalDelta)
+    deallocate(roptcassemblyinfo%DlocalDeltaPrimal)
+    deallocate(roptcassemblyinfo%DlocalDeltaDual)
     deallocate(roptcassemblyinfo%Kentry)
     deallocate(roptcassemblyinfo%Kentry12)
     
@@ -2949,7 +2968,8 @@ contains
     allocate(DentryA15(roptcassemblyinfo%indof,roptcassemblyinfo%indof,roptcassemblyinfo%nelementsPerBlock))
   
     ! Initialise the array with the local Delta values for the stabilisation
-    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDelta)
+    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaPrimal)
+    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaDual)
 
     ! Loop over the elements - blockwise.
     !
@@ -3014,7 +3034,8 @@ contains
           DentryA12,DentryA21,DentryA45,DentryA54,&
           DentryA41,DentryA52,DentryA42,DentryA51,&
           DentryA14,DentryA25,DentryA24,DentryA15,&
-          roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+          roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
+          roptcoperator,roptcassemblyinfo)      
       
       ! Incorporate the computed local matrices into the global matrix.
       !%OMP CRITICAL
@@ -3300,7 +3321,8 @@ contains
     allocate(Dtemp(roptcassemblyinfo%indof))
 
     ! Initialise the array with the local Delta values for the stabilisation
-    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDelta)
+    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaPrimal)
+    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaDual)
 
     ! Loop over the elements - blockwise.
     !
@@ -3408,7 +3430,8 @@ contains
             DentryA12,DentryA21,DentryA45,DentryA54,&
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
-            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+            roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
+            roptcoperator,roptcassemblyinfo)      
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da11)) then
@@ -3522,7 +3545,8 @@ contains
             DentryA12,DentryA21,DentryA45,DentryA54,&
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
-            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+            roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
+            roptcoperator,roptcassemblyinfo)      
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da11)) then
@@ -3638,7 +3662,8 @@ contains
             DentryA12,DentryA21,DentryA45,DentryA54,&
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
-            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+            roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
+            roptcoperator,roptcassemblyinfo)      
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da12)) then
@@ -3752,7 +3777,8 @@ contains
             DentryA12,DentryA21,DentryA45,DentryA54,&
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
-            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+            roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
+            roptcoperator,roptcassemblyinfo)      
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da12)) then
@@ -3868,7 +3894,8 @@ contains
             DentryA12,DentryA21,DentryA45,DentryA54,&
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
-            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+            roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
+            roptcoperator,roptcassemblyinfo)      
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da14)) then
@@ -3982,7 +4009,8 @@ contains
             DentryA12,DentryA21,DentryA45,DentryA54,&
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
-            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+            roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
+            roptcoperator,roptcassemblyinfo)      
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da14)) then
@@ -4099,7 +4127,8 @@ contains
             DentryA12,DentryA21,DentryA45,DentryA54,&
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
-            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+            roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
+            roptcoperator,roptcassemblyinfo)      
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da15)) then
@@ -4213,7 +4242,8 @@ contains
             DentryA12,DentryA21,DentryA45,DentryA54,&
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
-            roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+            roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
+            roptcoperator,roptcassemblyinfo)      
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da15)) then
@@ -4495,7 +4525,8 @@ contains
     allocate(DentryA15(roptcassemblyinfo%indof,roptcassemblyinfo%indof,roptcassemblyinfo%nelementsPerBlock))
   
     ! Initialise the array with the local Delta values for the stabilisation
-    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDelta)
+    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaPrimal)
+    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaDual)
     
     ! Get pointers to the subvectors
     call lsyssc_getbase_double (rx%RvectorBlock(1),p_Dx1)
@@ -4564,7 +4595,8 @@ contains
           DentryA12,DentryA21,DentryA45,DentryA54,&
           DentryA41,DentryA52,DentryA42,DentryA51,&
           DentryA14,DentryA25,DentryA24,DentryA15,&
-          roptcassemblyinfo%DlocalDelta,roptcoperator,roptcassemblyinfo)      
+          roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
+          roptcoperator,roptcassemblyinfo)      
       
       ! Perform a local matrix-vector multiplication with the local matrices.
       ! Incorporate the computed local matrices into the global matrix.

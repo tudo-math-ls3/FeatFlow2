@@ -293,7 +293,7 @@ contains
           .true.)
 
       ! Initialise the operator structure for what we need.
-      roptcoperator%dupsam = rparams%dupsam
+      roptcoperator%dupsamPrimal = rparams%dupsam
       
       ! Timestep-weights
       if (rparams%bemulateTimestep) then
@@ -675,7 +675,7 @@ contains
       call lsysbl_clearMatrix (rmatrixBlock)
     
       ! Initialise the operator structure for what we need.
-      roptcoperator%dupsam = rparams%dupsam
+      roptcoperator%dupsamPrimal = rparams%dupsam
       
       ! Timestep-weights
       if (rparams%bemulateTimestep) then
@@ -857,7 +857,7 @@ contains
       call lsysbl_clearMatrix (rmatrixBlock)
     
       ! Initialise the operator structure for what we need.
-      roptcoperator%dupsam = rparams%dupsam
+      roptcoperator%dupsamPrimal = rparams%dupsam
       
       ! Timestep-weights
       if (rparams%bemulateTimestep) then
@@ -1871,7 +1871,7 @@ contains
     integer :: imaxre,icurrentre,icurrentalpha
     !integer, dimension(8), parameter :: ire = (/500,250,100,50,25,10,5,1/)
     !real(dp), dimension(3), parameter :: Dalpha = (/0.1_DP,0.01_DP,0.001_DP/)
-    integer, dimension(1), parameter :: ire = (/50/)
+    integer, dimension(1), parameter :: ire = (/100/)
     real(dp), dimension(1), parameter :: Dalpha = (/0.01_DP/)
 
     ! Ok, let's start. 
@@ -1913,7 +1913,7 @@ contains
     rparams%dt = 1.0_DP
     
     ! Stabilisation parameter
-    rparams%dupsam = 0.0_DP
+    rparams%dupsam = 0.7_DP
     
     ! TRUE: Use Newton iteration
     rparams%bnewton = .true.
