@@ -18,7 +18,8 @@ SRC =   navstokes2d_callback.f90 \
         poisson2d_method0_simple.f90 \
         stationaryoptcontrol.f90 \
         stokes2d_callback.f90 \
-        stokes2d_method0_simple.f90
+        stokes2d_method0_simple.f90 \
+        optcontrolconvection.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk
