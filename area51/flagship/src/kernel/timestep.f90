@@ -249,10 +249,12 @@ contains
       rtimestep%nSteps= rtimestep%nSteps+1
       
       if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+        call output_lbrk()
         call output_separator(OU_SEP_AT)
-        call output_line('Two-level theta-scheme, Time = '//trim(sys_sdL(rtimestep%dTime,5))//&
-                         ' Stepsize = '//trim(sys_sdL(rtimestep%dStep,5)))
+        call output_line('Two-level theta-scheme, Time = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+                         ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)))
         call output_separator(OU_SEP_AT)
+        call output_lbrk()
       end if
 
 
@@ -274,9 +276,11 @@ contains
         rtimestep%dStep = rtimestep%dStep/2.0_DP
 
         if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+          call output_lbrk()
           call output_separator(OU_SEP_AT)
           call output_line('First substep in automatic time step control')
           call output_separator(OU_SEP_AT)
+          call output_lbrk()
         end if
 
 
@@ -291,9 +295,11 @@ contains
         call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
 
         if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+          call output_lbrk()
           call output_separator(OU_SEP_AT)
           call output_line('Second substep in automatic time step control')
           call output_separator(OU_SEP_AT)
+          call output_lbrk()
         end if
 
         ! Solve the nonlinear algebraic system for time step t^{n+1/2} -> t^{n+1}
@@ -321,12 +327,14 @@ contains
       end if
       
       if (rtimestep%ioutputlevel .ge. SV_IOLEVEL_VERBOSE) then
+        call output_lbrk()
         call output_separator(OU_SEP_TILDE)
-        call output_line('Time step was '//merge('!!! rejected !!!','accepted        ',breject))
-        call output_line('New stepsize:     '//trim(sys_sdL(rtimestep%dStep,5)))
-        call output_line('Last stepsize:    '//trim(sys_sdL(rtimestep%dStep1,5)))
-        call output_line('Relative changes: '//trim(sys_sdL(rtimestep%drelChange,5)))
+        call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject))
+        call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)))
+        call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)))
+        call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)))
         call output_separator(OU_SEP_TILDE)
+        call output_lbrk()
       end if
 
       ! Write time step to file?
@@ -519,10 +527,12 @@ contains
       rtimestep%nSteps= rtimestep%nSteps+1
 
       if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+        call output_lbrk()
         call output_separator(OU_SEP_AT)
-        call output_line('Explicit Runge-Kutta scheme, Time = '//trim(sys_sdL(rtimestep%dTime,5))//&
-                         ' Stepsize = '//trim(sys_sdL(rtimestep%dStep,5)))
+        call output_line('Explicit Runge-Kutta scheme, Time = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+                         ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)))
         call output_separator(OU_SEP_AT)
+        call output_lbrk()
       end if
 
       
@@ -530,9 +540,11 @@ contains
       do istep = 1, rtimestep%multisteps
          
         if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+          call output_lbrk()
           call output_separator(OU_SEP_AT)
           call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)))
           call output_separator(OU_SEP_AT)
+          call output_lbrk()
         end if
          
          ! Compute the new right-hand side
@@ -562,9 +574,11 @@ contains
         rtimestep%dStep = rtimestep%dStep/2.0_DP
 
         if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+          call output_lbrk()
           call output_separator(OU_SEP_AT)
           call output_line('First substep in automatic time step control')
           call output_separator(OU_SEP_AT)
+          call output_lbrk()
         end if
 
 
@@ -572,9 +586,11 @@ contains
         do istep = 1, rtimestep%multisteps
           
           if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+            call output_lbrk()
             call output_separator(OU_SEP_AT)
             call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)))
             call output_separator(OU_SEP_AT)
+            call output_lbrk()
           end if
           
           ! Compute the new right-hand side
@@ -601,9 +617,11 @@ contains
         call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
         
         if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+          call output_lbrk()
           call output_separator(OU_SEP_AT)
           call output_line('Second substep in automatic time step control')
           call output_separator(OU_SEP_AT)
+          call output_lbrk()
         end if
 
         
@@ -611,9 +629,11 @@ contains
         do istep = 1, rtimestep%multisteps
           
           if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+            call output_lbrk()
             call output_separator(OU_SEP_AT)
             call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)))
             call output_separator(OU_SEP_AT)
+            call output_lbrk()
           end if
 
           
@@ -654,12 +674,14 @@ contains
       end if
 
       if (rtimestep%ioutputlevel .ge. SV_IOLEVEL_VERBOSE) then
+        call output_lbrk()
         call output_separator(OU_SEP_TILDE)
-        call output_line('Time step was '//merge('!!! rejected !!!','accepted        ',breject))
-        call output_line('New stepsize:     '//trim(sys_sdL(rtimestep%dStep,5)))
-        call output_line('Last stepsize:    '//trim(sys_sdL(rtimestep%dStep1,5)))
-        call output_line('Relative changes: '//trim(sys_sdL(rtimestep%drelChange,5)))
+        call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject))
+        call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)))
+        call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)))
+        call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)))
         call output_separator(OU_SEP_TILDE)
+        call output_lbrk()
       end if
 
       ! Write time step to file?
