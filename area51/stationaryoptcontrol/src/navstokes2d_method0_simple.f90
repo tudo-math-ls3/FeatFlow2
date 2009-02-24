@@ -2321,7 +2321,8 @@ contains
             ! start the postprocessing. 
             ! Start UCD export to GMV file:
             call ucd_startGMV (rexport,UCD_FLAG_STANDARD,Rlevel(NLMAX)%rtriangulation,&
-                              'gmv/unst2d_0_simple.gmv')
+                              'gmv/unst2d_'//trim(sys_siL(imaxre(icurrentmaxre),10))//&
+                              '_'//trim(sys_siL(ire(icurrentre),10))//'.gmv')
                                
             call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(1),&
               rvectorOutputX,rdiscrOutput)
