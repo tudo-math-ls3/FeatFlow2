@@ -55,34 +55,6 @@ module timestep
   public :: tstep_performRKStep
   public :: tstep_performPseudoStepping
 
-
-  ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
-  
-  character(LEN=*), parameter :: MSG_TIME0001 = &
-      '(/2X,72("#")/5X,"Explicit Runge-Kutta scheme",T50,"TTIME = ",G12.5,&
-      &"DSTEP = ",G12.5/2X,72("#")/)'
-
-  character(LEN=*), parameter :: MSG_TIME0002 = &
-       '(/2X,72("+")/5X,"Explicit Runge-Kutta step",T50,"ISTEP = ",I6/,2X,72("+")/)'
-
-  character(LEN=*), parameter :: MSG_TIME0003 = &
-      '(/2X,72("#")/5X,"Two-level theta-scheme",T50,"TTIME = ",G12.5/,2X,72("#")/)'
-
-  character(LEN=*), parameter :: MSG_TIME0004 = &
-      '(/2X,72("~")/5X,"Time step ",A50,&
-      &/7X,"- new time step      ",G12.5,&
-      &/7X,"- last timestep      ",G12.5,&
-      &/7X,"- relative changes   ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_TIME0005 = &
-      '(/2X,72("#")/5X,"First substep in automatic time step control"/,2X,72("#")/)'
-
-  character(LEN=*), parameter :: MSG_TIME0006 = &
-      '(/2X,72("#")/5X,"Second substep in automatic time step control"/,2X,72("#")/)'
-  
-
   ! *****************************************************************************
   ! *****************************************************************************
   ! *****************************************************************************
@@ -276,8 +248,13 @@ contains
       rtimestep%dTime = rtimestep%dTime+rtimestep%dStep
       rtimestep%nSteps= rtimestep%nSteps+1
       
-      if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-          write(*,FMT=MSG_TIME0003) rtimestep%dTime
+      if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+        call output_separator(OU_SEP_AT)
+        call output_line('Two-level theta-scheme, Time = '//trim(sys_sdL(rtimestep%dTime,5))//&
+                         ' Stepsize = '//trim(sys_sdL(rtimestep%dStep,5)))
+        call output_separator(OU_SEP_AT)
+      end if
+
 
       ! Solve the nonlinear algebraic system for time step t^n -> t^{n+1}
       call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
@@ -296,8 +273,12 @@ contains
         ! Set time step to smaller value
         rtimestep%dStep = rtimestep%dStep/2.0_DP
 
-        if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-            write(*,FMT=MSG_TIME0005)
+        if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+          call output_separator(OU_SEP_AT)
+          call output_line('First substep in automatic time step control')
+          call output_separator(OU_SEP_AT)
+        end if
+
 
         ! Solve the nonlinear algebraic system for time step t^n -> t^{n+1/2}
         call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
@@ -309,8 +290,11 @@ contains
         ! Save intermediate solution
         call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
 
-        if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-            write(*,FMT=MSG_TIME0006)
+        if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+          call output_separator(OU_SEP_AT)
+          call output_line('Second substep in automatic time step control')
+          call output_separator(OU_SEP_AT)
+        end if
 
         ! Solve the nonlinear algebraic system for time step t^{n+1/2} -> t^{n+1}
         call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
@@ -336,15 +320,21 @@ contains
 
       end if
       
-      if (rtimestep%ioutputlevel .ge. SV_IOLEVEL_VERBOSE)&
-          write(*,FMT=MSG_TIME0004) merge('rejected','accepted',breject),&
-          rtimestep%dStep, rtimestep%dStep1, rtimestep%drelChange
+      if (rtimestep%ioutputlevel .ge. SV_IOLEVEL_VERBOSE) then
+        call output_separator(OU_SEP_TILDE)
+        call output_line('Time step was '//merge('!!! rejected !!!','accepted        ',breject))
+        call output_line('New stepsize:     '//trim(sys_sdL(rtimestep%dStep,5)))
+        call output_line('Last stepsize:    '//trim(sys_sdL(rtimestep%dStep1,5)))
+        call output_line('Relative changes: '//trim(sys_sdL(rtimestep%drelChange,5)))
+        call output_separator(OU_SEP_TILDE)
+      end if
 
       ! Write time step to file?
-      if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-          write(rtimestep%iunitLogfile, FMT='("(01),",F20.5,3(",",E16.8E3))')&
-          rtimestep%dTime, rtimestep%dStep, rtimestep%dStep/rtimestep%dStep1,&
-          rtimestep%drelChange
+      if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+        write(rtimestep%iunitLogfile, FMT='("(01),",F20.5,3(",",E16.8E3))')&
+            rtimestep%dTime, rtimestep%dStep, rtimestep%dStep/rtimestep%dStep1,&
+            rtimestep%drelChange
+      end if
 
       
       ! Do we have to reject to current solution?
@@ -528,15 +518,22 @@ contains
       rtimestep%dTime = rtimestep%dTime+rtimestep%dStep
       rtimestep%nSteps= rtimestep%nSteps+1
 
-      if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-          write(*,FMT=MSG_TIME0001) rtimestep%dTime, rtimestep%dStep
+      if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+        call output_separator(OU_SEP_AT)
+        call output_line('Explicit Runge-Kutta scheme, Time = '//trim(sys_sdL(rtimestep%dTime,5))//&
+                         ' Stepsize = '//trim(sys_sdL(rtimestep%dStep,5)))
+        call output_separator(OU_SEP_AT)
+      end if
 
       
       ! Perform multi-step Runge-Kutta method
       do istep = 1, rtimestep%multisteps
          
-         if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-             write(*,FMT=MSG_TIME0002) istep
+        if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+          call output_separator(OU_SEP_AT)
+          call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)))
+          call output_separator(OU_SEP_AT)
+        end if
          
          ! Compute the new right-hand side
          call fcb_calcRHS(rproblemLevel, rtimestep, p_rsolver, rsolution,&
@@ -564,15 +561,21 @@ contains
         ! Set time step to smaller value
         rtimestep%dStep = rtimestep%dStep/2.0_DP
 
-        if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-            write(*,FMT=MSG_TIME0005)
+        if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+          call output_separator(OU_SEP_AT)
+          call output_line('First substep in automatic time step control')
+          call output_separator(OU_SEP_AT)
+        end if
 
 
         ! Perform multi-step Runge-Kutta method for first step
         do istep = 1, rtimestep%multisteps
           
-          if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-              write(*,FMT=MSG_TIME0002) istep
+          if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+            call output_separator(OU_SEP_AT)
+            call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)))
+            call output_separator(OU_SEP_AT)
+          end if
           
           ! Compute the new right-hand side
           call fcb_calcRHS(rproblemLevel, rtimestep, p_rsolver, p_rsolutionRef,&
@@ -597,15 +600,22 @@ contains
         ! Save intermediate solution
         call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
         
-        if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-            write(*,FMT=MSG_TIME0006)
+        if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+          call output_separator(OU_SEP_AT)
+          call output_line('Second substep in automatic time step control')
+          call output_separator(OU_SEP_AT)
+        end if
 
         
         ! Perform multi-step Runge-Kutta method for first step
         do istep = 1, rtimestep%multisteps
           
-          if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-              write(*,FMT=MSG_TIME0002) istep
+          if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+            call output_separator(OU_SEP_AT)
+            call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)))
+            call output_separator(OU_SEP_AT)
+          end if
+
           
           ! Compute the new right-hand side
           call fcb_calcRHS(rproblemLevel, rtimestep, p_rsolver, p_rsolutionRef,&
@@ -643,16 +653,22 @@ contains
 
       end if
 
-      if (rtimestep%ioutputlevel .ge. SV_IOLEVEL_VERBOSE)&
-          write(*,FMT=MSG_TIME0004) merge('rejected','accepted',breject),&
-          rtimestep%dStep, rtimestep%dStep1, rtimestep%drelChange
+      if (rtimestep%ioutputlevel .ge. SV_IOLEVEL_VERBOSE) then
+        call output_separator(OU_SEP_TILDE)
+        call output_line('Time step was '//merge('!!! rejected !!!','accepted        ',breject))
+        call output_line('New stepsize:     '//trim(sys_sdL(rtimestep%dStep,5)))
+        call output_line('Last stepsize:    '//trim(sys_sdL(rtimestep%dStep1,5)))
+        call output_line('Relative changes: '//trim(sys_sdL(rtimestep%drelChange,5)))
+        call output_separator(OU_SEP_TILDE)
+      end if
 
       ! Write time step to file?
-      if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-          write(rtimestep%iunitLogfile, FMT='("(01),",F20.5,3(",",E16.8E3))')&
-          rtimestep%dTime, rtimestep%dStep, rtimestep%dStep/rtimestep%dStep1,&
-          rtimestep%drelChange
-      
+      if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+        write(rtimestep%iunitLogfile, FMT='("(01),",F20.5,3(",",E16.8E3))')&
+            rtimestep%dTime, rtimestep%dStep, rtimestep%dStep/rtimestep%dStep1,&
+            rtimestep%drelChange
+      end if
+
 
       ! Do we have to reject to current solution?
       if (breject) then
@@ -902,7 +918,7 @@ contains
       ! admissible time step, then the simulation is terminated.
       if (rtimestep%dStep .le. rtimestep%dminStep + SYS_EPSREAL) then
         call output_line('Time step reached smallest admissible value!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'tstep_checkTimestep')
+                         OU_CLASS_ERROR,OU_MODE_STD,'tstep_checkTimestep')
         call sys_halt()
       end if
       
