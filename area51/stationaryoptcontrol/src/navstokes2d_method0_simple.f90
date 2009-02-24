@@ -1975,7 +1975,7 @@ contains
     call boundary_read_prm(rboundary, './pre/QUAD.prm')
 
     ! Create the target flow.
-    do icurrentmaxre = 1,size(ire)
+    do icurrentmaxre = 1,size(imaxre)
       call initTargetFlow (rtargetFlow,itargetFlow,rboundary,&
           './pre/QUAD.tri',6,'./ns/navstdc6re'//sys_siL(imaxre(icurrentmaxre),10))
           
