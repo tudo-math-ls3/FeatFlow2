@@ -260,7 +260,7 @@ contains
     real(dp), dimension(:), pointer :: p_DdataX,p_DdataY,p_DdataP
     type(t_optcoperator) :: roptcoperator
     
-    logical, parameter :: bnewmethod = .true.
+    logical, parameter :: bnewmethod = .false.
     
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dx,p_Dy
@@ -618,7 +618,7 @@ contains
     type(t_bilinearForm) :: rbilinearForm
     type(t_optcoperator) :: roptcoperator
     
-    integer, parameter :: inewmethod = 2
+    integer, parameter :: inewmethod = 0
     
     if ((inewmethod .eq. 2) .and. rparams%bnewton) then
       if (.not. lsysbl_isSubmatrixPresent(rmatrixBlock,1,1)) then
@@ -1886,8 +1886,8 @@ contains
     type(t_matrixConfig) :: rparams
     
     integer :: icurrentmaxre,icurrentre,icurrentalpha,icurrentupsam
-    integer, dimension(4), parameter :: imaxre = (/1000,500,250,100/)
-    integer, dimension(9), parameter :: ire = (/1000,500,250,100,50,25,10,5,1/)
+    integer, dimension(4), parameter :: imaxre = (/1000,500,250,100/) 
+    integer, dimension(9), parameter :: ire = (/1000,500,250,100,50,25,10,5,1/) 
     real(dp), dimension(3), parameter :: Dalpha = (/0.01_DP,0.1_DP,0.001_DP/)
     real(dp), dimension(6), parameter :: Dupsam = (/0.0_DP,0.2_DP,0.4_DP,0.6_DP,0.8_DP,1.0_DP/)
     !integer, dimension(1), parameter :: ire = (/100/)
@@ -1956,7 +1956,7 @@ contains
     ! =0: Poiseuille
     ! =1: Read from file
     ! =2: Zero
-    itargetFlow = 2
+    itargetFlow = 1
     
     ! Type of linear solver.
     ! =0: UMFPACK
@@ -1977,7 +1977,8 @@ contains
     ! Create the target flow.
     do icurrentmaxre = 1,size(imaxre)
       call initTargetFlow (rtargetFlow,itargetFlow,rboundary,&
-          './pre/QUAD.tri',6,'./ns/navstdc6re'//sys_siL(imaxre(icurrentmaxre),10))
+          './pre/QUAD.tri',NLMAX,'./ns/navstdc'//trim(sys_siL(NLMAX,10))//&
+          're'//sys_siL(imaxre(icurrentmaxre),10))
           
       ! Now read in the basic triangulation.
       call tria_readTriFile2D (Rlevel(1)%rtriangulation, './pre/QUAD.tri', rboundary)

@@ -3411,7 +3411,7 @@ contains
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
-        do iel = 1,ielmax
+        do iel = 1,ielmax-ielset+1
           roptcassemblyinfo%DpvelDofs(idof,iel,1) = roptcassemblyinfo%DpvelDofs(idof,iel,1) + dh
         end do
 
@@ -3526,7 +3526,7 @@ contains
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
-        do iel = 1,ielmax
+        do iel = 1,ielmax-ielset+1
           roptcassemblyinfo%DpvelDofs(idof,iel,1) = roptcassemblyinfo%DpvelDofs(idof,iel,1) - dh
         end do
 
@@ -3643,7 +3643,7 @@ contains
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
-        do iel = 1,ielmax
+        do iel = 1,ielmax-ielset+1
           roptcassemblyinfo%DpvelDofs(idof,iel,2) = roptcassemblyinfo%DpvelDofs(idof,iel,2) + dh
         end do
 
@@ -3758,7 +3758,7 @@ contains
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
-        do iel = 1,ielmax
+        do iel = 1,ielmax-ielset+1
           roptcassemblyinfo%DpvelDofs(idof,iel,2) = roptcassemblyinfo%DpvelDofs(idof,iel,2) - dh
         end do
 
@@ -3875,7 +3875,7 @@ contains
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
-        do iel = 1,ielmax
+        do iel = 1,ielmax-ielset+1
           roptcassemblyinfo%DdvelDofs(idof,iel,1) = roptcassemblyinfo%DdvelDofs(idof,iel,1) + dh
         end do
 
@@ -3990,7 +3990,7 @@ contains
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
-        do iel = 1,ielmax
+        do iel = 1,ielmax-ielset+1
           roptcassemblyinfo%DdvelDofs(idof,iel,1) = roptcassemblyinfo%DdvelDofs(idof,iel,1) - dh
         end do
 
@@ -4108,7 +4108,7 @@ contains
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
-        do iel = 1,ielmax
+        do iel = 1,ielmax-ielset+1
           roptcassemblyinfo%DdvelDofs(idof,iel,2) = roptcassemblyinfo%DdvelDofs(idof,iel,2) + dh
         end do
 
@@ -4223,7 +4223,7 @@ contains
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
-        do iel = 1,ielmax
+        do iel = 1,ielmax-ielset+1
           roptcassemblyinfo%DdvelDofs(idof,iel,2) = roptcassemblyinfo%DdvelDofs(idof,iel,2) - dh
         end do
 
