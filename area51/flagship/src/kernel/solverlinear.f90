@@ -89,106 +89,6 @@ module solverlinear
   ! *****************************************************************************
   ! *****************************************************************************
 
-  character(LEN=*), parameter :: MSG_LIN0001 = &
-      '(/5X,"Zero linear right-hand side",2X,"!!RHS!! = ",G12.5/)'
-
-  character(LEN=*), parameter :: MSG_LIN0002 = &
-      '(/5X,"Zero initial linear defect",2X,"!!DEF!! = ",G12.5/)'
-
-  character(LEN=*), parameter :: MSG_LIN0003 = &
-      '(/2X,72("~")/5X,"Iterative solution ",A50,&
-      &/7X,"- #linear iterations ",I12/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0004 = &
-      '(/2X,72("~")/5X,"Iterative solution ",A50,&
-      &/7X,"- #linear iterations ",I12,&
-      &/7X,"- convergence rate   ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0005 = &
-      '(/2X,72("~")/5X,"Multigrid step ",I6,&
-      &/7X,"- new defect         ",G12.5,&
-      &/7X,"- last defect        ",G12.5,&
-      &/7X,"- defect variation   ",G12.5,&
-      &/7X,"- defect improvement ",G12.5,/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0006 = &
-      '(/2X,72("~")/5X,"Multigrid solution ",A50,&
-      &/7X,"- #multigrid steps   ",I12,&
-      &/7X,"- final defect       ",G12.5,&
-      &/7X,"- initial defect     ",G12.5,&
-      &/7X,"- defect improvement ",G12.5,&
-      &/7X,"- convergence rate   ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0007 = &
-      '(/5X,"Initial defect too large",2X,"!!DEF!! = ",G12.5/)'
-
-  character(LEN=*), parameter :: MSG_LIN0008 = &
-      '(/2X,72("~")/5X,"BiCGSTAB solver",T50,"ITE = ",I6,&
-      &/7X,"- new defect         ",G12.5,&
-      &/7X,"- old defect         ",G12.5,&
-      &/7X,"- defect variation   ",G12.5,&
-      &/7X,"- defect improvement ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0009 = &
-      '(/2X,72("~")/5X,"BiCGSTAB solver",&
-      &/7X,"- #linear iterations ",I12,&
-      &/7X,"- final defect       ",G12.5,&
-      &/7X,"- initial defect     ",G12.5,&
-      &/7X,"- defect improvement ",G12.5,&
-      &/7X,"- convergence rate   ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0010 = &
-      '(/2X,72("~")/5X,"FGMRES solver",T50,"ITE = ",I6,&
-      &/7X,"- new defect         ",G12.5,&
-      &/7X,"- old defect         ",G12.5,&
-      &/7X,"- defect variation   ",G12.5,&
-      &/7X,"- defect improvement ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0011 = &
-      '(/2X,72("~")/5X,"FGMRES solver",&
-      &/7X,"- #linear iterations ",I12,&
-      &/7X,"- final defect       ",G12.5,&
-      &/7X,"- initial defect     ",G12.5,&
-      &/7X,"- defect improvement ",G12.5,&
-      &/7X,"- convergence rate   ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0012 = &
-      '(/5X,"Defect increased by factor",2X,G12.5/)'
-
-  character(LEN=*), parameter :: MSG_LIN0013 = &
-      '(/2X,72("~")/5X,"Jacobi solver",&
-      &/7X,"- #linear iterations ",I12,&
-      &/7X,"- final defect       ",G12.5,&
-      &/7X,"- initial defect     ",G12.5,&
-      &/7X,"- defect improvement ",G12.5,&
-      &/7X,"- convergence rate   ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0014 = &
-      '(/2X,72("~")/5X,"(S)SOR solver",&
-      &/7X,"- #linear iterations ",I12,&
-      &/7X,"- final defect       ",G12.5,&
-      &/7X,"- initial defect     ",G12.5,&
-      &/7X,"- defect improvement ",G12.5,&
-      &/7X,"- convergence rate   ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0015 = &
-      '(/2X,72("~")/5X,"Jacobi solver",T50,"ITE = ",I6,&
-      &/7X,"- new defect         ",G12.5,&
-      &/7X,"- old defect         ",G12.5,&
-      &/7X,"- defect variation   ",G12.5,&
-      &/7X,"- defect improvement ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_LIN0016 = &
-      '(/2X,72("~")/5X,"(S)SOR solver",T50,"ITE = ",I6,&
-      &/7X,"- new defect         ",G12.5,&
-      &/7X,"- old defect         ",G12.5,&
-      &/7X,"- defect variation   ",G12.5,&
-      &/7X,"- defect improvement ",G12.5/,2X,72("~")/)'
-
-  ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
-
   interface linsol_solveMultigrid
     module procedure linsol_solveMultigridScalar
     module procedure linsol_solveMultigridBlock
@@ -290,13 +190,15 @@ contains
       rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
 
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_LIN0001) rsolver%dinitialRHS
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Zero initial right-hand side '//trim(&
+                           sys_sdEL(rsolver%dinitialRHS,5))//' !!!')
+        end if
 
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_ZERO_RHS
-        rsolver%dconvergenceRate = 0._DP
+        rsolver%dconvergenceRate = 0.0_DP
 
         ! That's it, return.
         return
@@ -365,29 +267,41 @@ contains
              LINSOL_SOLVER_SOR,&
              LINSOL_SOLVER_SSOR)
           ! Jacobi- or (S)SOR solver
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-              write(*,FMT=MSG_LIN0003) solver_getstatus(rsolver),&
-              rsolver%iiterations
+          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+            call output_lbrk()
+            call output_separator(OU_SEP_TILDE)
+            call output_line('Single-grid solution         '//solver_getstatus(rsolver))
+            call output_line('Number of linear iterations: '//trim(sys_siL(rsolver%iiterations,5)))
+            call output_separator(OU_SEP_TILDE)
+            call output_lbrk()
+          end if
           
         case (LINSOL_SOLVER_BICGSTAB,&
               LINSOL_SOLVER_GMRES,&
               LINSOL_SOLVER_UMFPACK4)
           ! BiCGSTAB or GMRES solver or direct solver
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-              write(*,FMT=MSG_LIN0004) solver_getstatus(rsolver),&
-              rsolver%iiterations, rsolver%dconvergenceRate
-
+          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+            call output_lbrk()
+            call output_separator(OU_SEP_TILDE)
+            call output_line('Single-grid solution         '//solver_getstatus(rsolver))
+            call output_line('Number of linear iterations: '//trim(sys_siL(rsolver%iiterations,5)))
+            call output_line('Convergence rate:            '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
+            call output_separator(OU_SEP_TILDE)
+            call output_lbrk()
+          end if
+          
         case DEFAULT
           call output_line('Unsupported single-grid solver!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveMultigridBlock')
+                           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveMultigridBlock')
           call sys_halt()
         end select
 
         ! Write linear convergence rate to logfile?
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-            write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-            rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+          write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
+              rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
+              rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+        end if
         
       else
         
@@ -401,7 +315,7 @@ contains
         ! Compute the initial linear residual: res=f-A*u
         call lsysbl_copyVector(rf, p_rres)
         call lsysbl_blockMatVec(p_solverMultigrid%rmatrix(rproblemLevel%ilev),&
-                                ru, p_rres, -1._DP, 1._DP)
+                                ru, p_rres, -1.0_DP, 1.0_DP)
         
         ! Compute norm of initial defect
         rsolver%dinitialDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
@@ -411,8 +325,10 @@ contains
 
         ! Check if initial residual is too large ...
         if (rsolver%dinitialDefect > rsolver%ddivAbs) then
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-              write (*,FMT=MSG_LIN0007) rsolver%dinitialDefect
+          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+            call output_line('!!! Norm of initial residual is too large '//&
+                             trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
+          end if
           
           ! Clear solution vector and adjust solver status
           call lsysbl_clearVector(ru)
@@ -423,8 +339,10 @@ contains
           
         elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
           ! ... or if it satisfies the desired tolerance already
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-              write (*,FMT=MSG_LIN0002) rsolver%dinitialDefect
+          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+            call output_line('!!! Zero initial residual '//&
+                             trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
+          end if
           
           ! Clear solution vector and adjust solver status
           call lsysbl_clearVector(ru)
@@ -445,35 +363,45 @@ contains
           ! Compute the new linear defect: res=f-A*u
           call lsysbl_copyVector(rf, p_rres)
           call lsysbl_blockMatVec(p_solverMultigrid%rmatrix(rproblemLevel%ilev),&
-                                  ru, p_rres, -1._DP, 1._DP)
+                                  ru, p_rres, -1.0_DP, 1.0_DP)
           
           ! Compute norm of new linear defect
           rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
           
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-              write(*,FMT=MSG_LIN0005) imgstep,&
-              rsolver%dfinalDefect, doldDefect,&
-              rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-              rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
-
+          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+            call output_lbrk()
+            call output_separator(OU_SEP_TILDE)
+            call output_line('Linear multigrid step:     '//trim(sys_siL(imgstep,5)))
+            call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+            call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
+            call output_line('Variation of residual:     '//trim(sys_sdEL(&
+                             rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+            call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                             rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+            call output_separator(OU_SEP_TILDE)
+            call output_lbrk()
+          end if
+          
           ! Write linear defect to file?
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-              write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
-              imgstep, rsolver%dfinalDefect,&
-              rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-              rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+            write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
+                imgstep, rsolver%dfinalDefect,&
+                rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
+                rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+          end if
 
           ! Check if residual increased too much
           if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or. &
               rsolver%dfinalDefect > rsolver%ddivAbs) then
-            if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-                write(*,FMT=MSG_LIN0012)&
-                rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+            if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+              call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
+                  rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+            end if
             
             ! Clear solution vector and adjust solver status
             call lsysbl_clearVector(ru)
             rsolver%istatus          = SV_INCR_DEF
-            rsolver%dconvergenceRate = 1._DP
+            rsolver%dconvergenceRate = 1.0_DP
 
             ! That's it, return.
             return
@@ -497,20 +425,28 @@ contains
         ! Multigrid convergence rates
         call solver_statistics(rsolver, imgstep)
         
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-            write(*,FMT=MSG_LIN0006) solver_getstatus(rsolver),&
-            rsolver%iiterations, rsolver%dfinalDefect,&
-            rsolver%dinitialDefect,&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-            rsolver%dconvergenceRate
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+          call output_lbrk()
+          call output_separator(OU_SEP_PERC)
+          call output_line('Linear multigrid solution '//solver_getstatus(rsolver))
+          call output_line('Number of multigrid steps: '//trim(sys_siL(rsolver%iiterations,5)))
+          call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+          call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+          call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+          call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
+          call output_separator(OU_SEP_PERC)
+          call output_lbrk()
+        end if
 
         ! Write nonlinear convergence rate to logfile?
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-            write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-            rsolver%iiterations, rsolver%dfinalDefect,&
-            rsolver%dinitialDefect,&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-            rsolver%dconvergenceRate
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+          write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
+              rsolver%iiterations, rsolver%dfinalDefect,&
+              rsolver%dinitialDefect,&
+              rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
+              rsolver%dconvergenceRate
+        end if
       end if
 
       
@@ -579,9 +515,9 @@ contains
       
       ! Apply increment: u:=u+omega*aux
       if (rsolver%domega < 0.0_DP) then
-        call lsysbl_vectorLinearComb(p_raux, ruf, 1._DP, 1._DP)
+        call lsysbl_vectorLinearComb(p_raux, ruf, 1.0_DP, 1.0_DP)
       else
-        call lsysbl_vectorLinearComb(p_raux, ruf, rsolver%domega, 1._DP)
+        call lsysbl_vectorLinearComb(p_raux, ruf, rsolver%domega, 1.0_DP)
       end if
       
       ! Adjust multigrid cycle
@@ -614,7 +550,7 @@ contains
       ! Compute the linear residual: r=f-A*u
       call lsysbl_copyVector(rff, p_rresf)
       call lsysbl_blockMatVec(rsolver%p_solverMultigrid%rmatrix(rproblemLevel%ilev),&
-                              ruf, p_rresf, -1._DP, 1._DP)
+                              ruf, p_rresf, -1.0_DP, 1.0_DP)
       
       ! Restrict the residual: resc=R(f-A*u)
       call solver_restrictionBlock(rproblemLevel%rtriangulation,&
@@ -651,9 +587,9 @@ contains
       
       ! Update the solution: u:=u+omega*raux
       if (rsolver%domega < 0.0_DP) then
-        call lsysbl_vectorLinearComb(p_rresf, ruf, 1._DP, 1._DP)
+        call lsysbl_vectorLinearComb(p_rresf, ruf, 1.0_DP, 1.0_DP)
       else
-        call lsysbl_vectorLinearComb(p_rresf, ruf, rsolver%domega, 1._DP)
+        call lsysbl_vectorLinearComb(p_rresf, ruf, rsolver%domega, 1.0_DP)
       end if
       
       ! Apply postsmoothing steps
@@ -795,13 +731,15 @@ contains
       rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
 
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_LIN0001) rsolver%dinitialRHS
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Zero initial right-hand side '//trim(&
+                           sys_sdEL(rsolver%dinitialRHS,5))//' !!!')
+        end if
 
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_ZERO_RHS
-        rsolver%dconvergenceRate = 0._DP
+        rsolver%dconvergenceRate = 0.0_DP
 
         ! That's it, return.
         return
@@ -843,7 +781,7 @@ contains
     
     ! Compute linear residual
     call lsysbl_copyVector(rf, p_rr)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1._DP, 1._DP)
+    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
     rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
     
     ! Compute solver statistics
@@ -886,13 +824,15 @@ contains
       rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
 
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_LIN0001) rsolver%dinitialRHS
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Zero initial right-hand side '//trim(&
+                           sys_sdEL(rsolver%dinitialRHS,5))//' !!!')
+        end if
 
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_ZERO_RHS
-        rsolver%dconvergenceRate = 0._DP
+        rsolver%dconvergenceRate = 0.0_DP
 
         ! That's it, return.
         return
@@ -910,7 +850,7 @@ contains
     
     ! Compute initial residual
     call lsysbl_copyVector(rf, p_rres)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1._DP, 1._DP)
+    call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
 
     ! Compute norm of initial defect
     rsolver%dinitialDefect   = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
@@ -920,8 +860,10 @@ contains
       
     ! Check if initial residual is too large ...
     if (rsolver%dinitialDefect > rsolver%ddivAbs) then
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-          write (*,FMT=MSG_LIN0007) rsolver%dinitialDefect
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        call output_line('!!! Norm of initial residual is too large '//&
+                         trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
+      end if
       
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
@@ -932,8 +874,10 @@ contains
       
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
       ! ... or if it satisfies the desired tolerance already
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-          write (*,FMT=MSG_LIN0002) rsolver%dinitialDefect
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        call output_line('!!! Zero initial residual '//&
+                         trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
+      end if
       
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
@@ -951,39 +895,49 @@ contains
       call linsol_precondJacobi(rsolver, p_rres)
       
       ! Update solution
-      call lsysbl_vectorLinearComb(p_rres, ru, 1._DP, 1._DP)
+      call lsysbl_vectorLinearComb(p_rres, ru, 1.0_DP, 1.0_DP)
       
       ! Compute residual
       call lsysbl_copyVector(rf, p_rres)
-      call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1._DP, 1._DP)
+      call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
       
       ! Compute norm of residual
       rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
       
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-          write(*,FMT=MSG_LIN0015) iiterations,&
-          rsolver%dfinalDefect, doldDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dInitialDefect)
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+        call output_lbrk()
+        call output_separator(OU_SEP_TILDE)
+        call output_line('Jacobi step:               '//trim(sys_siL(iiterations,5)))
+        call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+        call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
+        call output_line('Variation of residual:     '//trim(sys_sdEL(&
+                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+        call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+        call output_separator(OU_SEP_TILDE)
+        call output_lbrk()
+      end if
 
       ! Write linear defect to file?
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-          write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
-          iiterations, rsolver%dfinalDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+        write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
+            iiterations, rsolver%dfinalDefect,&
+            rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
+            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+      end if
 
       ! Check if residual increased too much
       if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or. &
           rsolver%dfinalDefect > rsolver%ddivAbs) then
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_LIN0012)&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
+                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+        end if
         
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_INCR_DEF
-        rsolver%dconvergenceRate = 1._DP
+        rsolver%dconvergenceRate = 1.0_DP
         
         ! That's it, return.
         return
@@ -1007,20 +961,29 @@ contains
     ! Compute convergence rate
     call solver_statistics(rsolver, iiterations)
     
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-        write(*,FMT=MSG_LIN0013)& 
-        rsolver%iiterations, rsolver%dfinalDefect,&
-        rsolver%dinitialDefect,&
-        rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-        rsolver%dconvergenceRate
+    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+      call output_lbrk()
+      call output_separator(OU_SEP_PERC)
+      call output_line('Jacobi solution            '//solver_getstatus(rsolver))
+      call output_line('Number of Jacobi steps:    '//trim(sys_siL(rsolver%iiterations,5)))
+      call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+      call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+      call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+      call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
+      call output_separator(OU_SEP_PERC)
+      call output_lbrk()
+    end if
 
     ! Write linear convergence rate to logfile?
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-        write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-        rsolver%iiterations, rsolver%dfinalDefect,&
-        rsolver%dinitialDefect,&
-        rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-        rsolver%dconvergenceRate
+    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+      write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
+          rsolver%iiterations, rsolver%dfinalDefect,&
+          rsolver%dinitialDefect,&
+          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
+          rsolver%dconvergenceRate
+    end if
+    
   end subroutine linsol_solveJacobi
 
   ! ***************************************************************************
@@ -1060,13 +1023,15 @@ contains
       rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
 
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_LIN0001) rsolver%dinitialRHS
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Zero initial right-hand side '//trim(&
+                           sys_sdEL(rsolver%dinitialRHS,5))//' !!!')
+        end if
 
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_ZERO_RHS
-        rsolver%dconvergenceRate = 0._DP
+        rsolver%dconvergenceRate = 0.0_DP
 
         ! That's it, return.
         return
@@ -1084,7 +1049,7 @@ contains
     
     ! Compute initial residual
     call lsysbl_copyVector(rf, p_rres)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1._DP, 1._DP)
+    call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
 
     ! Compute norm of initial defect
     rsolver%dinitialDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
@@ -1094,8 +1059,10 @@ contains
 
     ! Check if initial residual is too large ...
     if (rsolver%dinitialDefect > rsolver%ddivAbs) then
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-          write (*,FMT=MSG_LIN0007) rsolver%dinitialDefect
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        call output_line('!!! Norm of initial residual is too large '//&
+                         trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
+      end if
       
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
@@ -1106,8 +1073,10 @@ contains
       
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
       ! ... or if it satisfies the desired tolerance already
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-          write (*,FMT=MSG_LIN0002) rsolver%dinitialDefect
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        call output_line('!!! Zero initial residual '//&
+                         trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
+      end if
       
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
@@ -1125,39 +1094,49 @@ contains
       call linsol_precondSSOR(rsolver, p_rres)
       
       ! Update solution
-      call lsysbl_vectorLinearComb(p_rres, ru, 1._DP, 1._DP)
+      call lsysbl_vectorLinearComb(p_rres, ru, 1.0_DP, 1.0_DP)
       
       ! Compute residual
       call lsysbl_copyVector(rf, p_rres)
-      call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1._DP, 1._DP)
+      call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
       
       ! Compute norm of residual
       rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
       
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-          write(*,FMT=MSG_LIN0016) iiterations,&
-          rsolver%dfinalDefect, doldDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dInitialDefect)
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+        call output_lbrk()
+        call output_separator(OU_SEP_TILDE)
+        call output_line('(S)SOR step:               '//trim(sys_siL(iiterations,5)))
+        call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+        call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
+        call output_line('Variation of residual:     '//trim(sys_sdEL(&
+                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+        call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+        call output_separator(OU_SEP_TILDE)
+        call output_lbrk()
+      end if
 
       ! Write linear defect to file?
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-          write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
-          iiterations, rsolver%dfinalDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+        write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
+            iiterations, rsolver%dfinalDefect,&
+            rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
+            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+      end if
 
       ! Check if residual increased too much
       if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or. &
           rsolver%dfinalDefect > rsolver%ddivAbs) then
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_LIN0012)&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
+                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+        end if
         
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_INCR_DEF
-        rsolver%dconvergenceRate = 1._DP
+        rsolver%dconvergenceRate = 1.0_DP
         
         ! That's it, return.
         return
@@ -1181,20 +1160,29 @@ contains
     ! Compute convergence rate
     call solver_statistics(rsolver, iiterations)
     
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-        write(*,FMT=MSG_LIN0014)&
-        rsolver%iiterations, rsolver%dfinalDefect,&
-        rsolver%dinitialDefect,&
-        rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-        rsolver%dconvergenceRate
+    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+      call output_lbrk()
+      call output_separator(OU_SEP_PERC)
+      call output_line('(S)SOR solution            '//solver_getstatus(rsolver))
+      call output_line('Number of Jacobi steps:    '//trim(sys_siL(rsolver%iiterations,5)))
+      call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+      call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+      call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+      call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
+      call output_separator(OU_SEP_PERC)
+      call output_lbrk()
+    end if
     
     ! Write linear convergence rate to logfile?
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-        write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-        rsolver%iiterations, rsolver%dfinalDefect,&
-        rsolver%dinitialDefect,&
-        rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-        rsolver%dconvergenceRate
+    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+      write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
+          rsolver%iiterations, rsolver%dfinalDefect,&
+          rsolver%dinitialDefect,&
+          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
+          rsolver%dconvergenceRate
+    end if
+
   end subroutine linsol_solveSSOR
 
   ! ***************************************************************************
@@ -1243,13 +1231,15 @@ contains
       rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
 
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_LIN0001) rsolver%dinitialRHS
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Zero initial right-hand side '//trim(&
+                           sys_sdEL(rsolver%dinitialRHS,5))//' !!!')
+        end if
 
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_ZERO_RHS
-        rsolver%dconvergenceRate = 0._DP
+        rsolver%dconvergenceRate = 0.0_DP
 
         ! That's it, return.
         return
@@ -1287,7 +1277,7 @@ contains
 
     ! Compute initial residual r=C(-1)*(f-Au)
     call lsysbl_copyVector(rf, p_rr)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1._DP, 1._DP)
+    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
 
     ! Compute norm of initial defect
     rsolver%dinitialDefect   = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
@@ -1296,9 +1286,9 @@ contains
     rsolver%istatus          = 0
     
     ! Initialization
-100 rho0  = 1._DP
-    alpha = 0._DP
-    omega = 1._DP
+100 rho0  = 1.0_DP
+    alpha = 0.0_DP
+    omega = 1.0_DP
     iiterations0  = iiterations
 
     ! ... and apply preconditioner if required
@@ -1309,8 +1299,10 @@ contains
 
     ! Check if initial residual is too large ...
     if (rsolver%dinitialDefect > rsolver%ddivAbs) then
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-          write (*,FMT=MSG_LIN0007) rsolver%dinitialDefect
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        call output_line('!!! Norm of initial residual is too large '//&
+                         trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
+      end if
       
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
@@ -1321,8 +1313,10 @@ contains
       
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
       ! ... or if it satisfies the desired tolerance already
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-          write (*,FMT=MSG_LIN0002) rsolver%dinitialDefect
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        call output_line('!!! Zero initial residual '//&
+                         trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
+      end if
       
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
@@ -1350,12 +1344,12 @@ contains
         rho0 = rho1
 
         ! Compute p:=r+beta*p-beta*omega*pa        
-        call lsysbl_vectorLinearComb(p_rr, p_rp, 1._DP, beta)
-        call lsysbl_vectorLinearComb(p_rpa, p_rp, -beta*omega, 1._DP)
+        call lsysbl_vectorLinearComb(p_rr, p_rp, 1.0_DP, beta)
+        call lsysbl_vectorLinearComb(p_rpa, p_rp, -beta*omega, 1.0_DP)
       end if
 
       ! Compute pa:=C(-1)*A*p
-      call lsysbl_blockMatVec(p_rmatrix, p_rp, p_rpa, 1._DP, 0._DP)
+      call lsysbl_blockMatVec(p_rmatrix, p_rp, p_rpa, 1.0_DP, 0.0_DP)
       if (bprec) then
         call lsysbl_copyVector(p_rpa, p_rpa1)
         call linsol_precond(p_solverPrecond, p_rpa)
@@ -1369,7 +1363,7 @@ contains
           (abs(alpha) .le. lsysbl_vectorNorm(p_rpa,&
                            rsolver%iresNorm)*nrm0*EPS_RESTART)) then
         call lsysbl_copyVector(rf, p_rr)
-        call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1._DP, 1._DP)
+        call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
         rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
         goto 100
       end if
@@ -1377,11 +1371,11 @@ contains
       alpha = rho1/alpha
 
       ! Compute r:=r-alpha*pa
-      call lsysbl_vectorLinearComb(p_rpa, p_rr, -alpha, 1._DP)
-      if (bprec) call lsysbl_vectorLinearComb(p_rpa1, p_rr1, -alpha, 1._DP)
+      call lsysbl_vectorLinearComb(p_rpa, p_rr, -alpha, 1.0_DP)
+      if (bprec) call lsysbl_vectorLinearComb(p_rpa1, p_rr1, -alpha, 1.0_DP)
       
       ! Compute sa:=C(-1)*A*r
-      call lsysbl_blockMatVec(p_rmatrix, p_rr, p_rsa, 1._DP, 0._DP)
+      call lsysbl_blockMatVec(p_rmatrix, p_rr, p_rsa, 1.0_DP, 0.0_DP)
       if (bprec) then
         call lsysbl_copyVector(p_rsa, p_rsa1)
         call linsol_precond(p_solverPrecond, p_rsa)
@@ -1391,42 +1385,52 @@ contains
       omega = lsysbl_scalarProduct(p_rsa,p_rr)/lsysbl_scalarProduct(p_rsa,p_rsa)
       
       ! Compute u:=u+alpha*p+omega*r
-      call lsysbl_vectorLinearComb(p_rp, ru, alpha, 1._DP)
-      call lsysbl_vectorLinearComb(p_rr, ru, omega, 1._DP)
+      call lsysbl_vectorLinearComb(p_rp, ru, alpha, 1.0_DP)
+      call lsysbl_vectorLinearComb(p_rr, ru, omega, 1.0_DP)
       
       ! Compute r:=r-omega*sa
-      call lsysbl_vectorLinearComb(p_rsa, p_rr, -omega, 1._DP)
+      call lsysbl_vectorLinearComb(p_rsa, p_rr, -omega, 1.0_DP)
       if (bprec) then
-        call lsysbl_vectorLinearComb(p_rsa1, p_rr1, -omega, 1._DP)
+        call lsysbl_vectorLinearComb(p_rsa1, p_rr1, -omega, 1.0_DP)
         rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr1, rsolver%iresNorm)
       else
         rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
       end if
             
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-          write(*,FMT=MSG_LIN0008) iiterations,&
-          rsolver%dfinalDefect, doldDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dInitialDefect)
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+        call output_lbrk()
+        call output_separator(OU_SEP_TILDE)
+        call output_line('BiCGSTAB step:             '//trim(sys_siL(iiterations,5)))
+        call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+        call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
+        call output_line('Variation of residual:     '//trim(sys_sdEL(&
+                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+        call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+        call output_separator(OU_SEP_TILDE)
+        call output_lbrk()
+      end if
 
       ! Write linear defect to file?
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-          write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
-          iiterations, rsolver%dfinalDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+        write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
+            iiterations, rsolver%dfinalDefect,&
+            rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
+            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+      end if
       
       ! Check if residual increased too much
       if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or. &
           rsolver%dfinalDefect > rsolver%ddivAbs) then
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_LIN0012)&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
+                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+        end if
         
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_INCR_DEF
-        rsolver%dconvergenceRate = 1._DP
+        rsolver%dconvergenceRate = 1.0_DP
         
         ! That's it, return.
         return
@@ -1450,20 +1454,29 @@ contains
     ! Compute convergence rate
     call solver_statistics(rsolver, iiterations)
 
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-        write(*,FMT=MSG_LIN0009)&
-        rsolver%iiterations, rsolver%dfinalDefect,&
-        rsolver%dinitialDefect,&
-        rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-        rsolver%dconvergenceRate
+    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+      call output_lbrk()
+      call output_separator(OU_SEP_PERC)
+      call output_line('BiCGSTAB solution          '//solver_getstatus(rsolver))
+      call output_line('Number of Jacobi steps:    '//trim(sys_siL(rsolver%iiterations,5)))
+      call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+      call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+      call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+      call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
+      call output_separator(OU_SEP_PERC)
+      call output_lbrk()
+    end if
 
     ! Write linear convergence rate to logfile?
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-        write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-        rsolver%iiterations, rsolver%dfinalDefect,&
-        rsolver%dinitialDefect,&
-        rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-        rsolver%dconvergenceRate
+    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+      write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
+          rsolver%iiterations, rsolver%dfinalDefect,&
+          rsolver%dinitialDefect,&
+          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
+          rsolver%dconvergenceRate
+    end if
+
   end subroutine linsol_solveBicgstab
 
   ! ***************************************************************************
@@ -1509,13 +1522,15 @@ contains
       rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
       
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_LIN0001) rsolver%dinitialRHS
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Zero initial right-hand side '//trim(&
+                           sys_sdEL(rsolver%dinitialRHS,5))//' !!!')
+        end if
         
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_ZERO_RHS
-        rsolver%dconvergenceRate = 0._DP
+        rsolver%dconvergenceRate = 0.0_DP
         
         ! That's it, return.
         return
@@ -1549,7 +1564,7 @@ contains
             
     ! Compute initial residual v(1)=f-A*u
     call lsysbl_copyVector(rf, p_rv(1))
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rv(1), -1._DP, 1._DP)
+    call lsysbl_blockMatVec(p_rmatrix, ru, p_rv(1), -1.0_DP, 1.0_DP)
 
     ! Compute norm of initial defect
     rsolver%dinitialDefect = lsysbl_vectorNorm(p_rv(1), rsolver%iresNorm)
@@ -1559,8 +1574,10 @@ contains
 
     ! Check if initial residual is too large ...
     if (rsolver%dinitialDefect > rsolver%ddivAbs) then
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-          write (*,FMT=MSG_LIN0007) rsolver%dinitialDefect
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        call output_line('!!! Norm of initial residual is too large '//&
+                         trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
+      end if
       
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
@@ -1571,8 +1588,10 @@ contains
       
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
       ! ... or if it satisfies the desired tolerance already
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-          write (*,FMT=MSG_LIN0002) rsolver%dinitialDefect
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        call output_line('!!! Zero initial residual '//&
+                         trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
+      end if
       
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
@@ -1591,7 +1610,7 @@ contains
       p_Dq(1) = rsolver%dfinalDefect
       
       ! Compute the first column of v(1)=r/!!r!!
-      dtmp = 1._DP/p_Dq(1)
+      dtmp = 1.0_DP/p_Dq(1)
       call lsysbl_scaleVector(p_rv(1), dtmp)
 
       inner: do i = 1, l
@@ -1608,13 +1627,13 @@ contains
 
         ! Set v(i+1):=A*z(i)
         call lsysbl_copyVector(p_rv(i), p_rv(i+1))
-        call lsysbl_blockMatVec(p_rmatrix, p_rz(i), p_rv(i+1), 1._DP, 0._DP)
+        call lsysbl_blockMatVec(p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
         
         ! Construct i-th column of orthonormal basis h using 
         ! a modified Gram-Schmidt algorithm
         do k = 1, i
           p_Dh(k,i) = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
-          call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -p_Dh(k,i), 1._DP)
+          call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -p_Dh(k,i), 1.0_DP)
         end do
         P_Dh(i+1,i) = lsysbl_vectorNorm(p_rv(i+1), rsolver%iresNorm)
 
@@ -1622,12 +1641,12 @@ contains
         do k = 1, i
           dtmp = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
           p_Dh(k,i) = p_Dh(k,i)+dtmp
-          call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -dtmp, 1._DP)
+          call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -dtmp, 1.0_DP)
         end do
         p_Dh(i+1,i) = lsysbl_vectorNorm(p_rv(i+1), rsolver%iresNorm)
 
         if (abs(p_Dh(i+1,i)) > SYS_EPSREAL) then
-          dtmp = 1._DP/p_Dh(i+1,i)
+          dtmp = 1.0_DP/p_Dh(i+1,i)
           call lsysbl_scaleVector(p_rv(i+1), dtmp)
         end if
         
@@ -1662,41 +1681,51 @@ contains
       
       ! Update the solution u=u+p*z
       do k = 1, i
-        call lsysbl_vectorLinearComb(p_rz(k), ru, p_Dq(k), 1._DP)
+        call lsysbl_vectorLinearComb(p_rz(k), ru, p_Dq(k), 1.0_DP)
       end do
 
       ! Compute residual v(1)=f-A*u
       call lsysbl_copyVector(rf, p_rv(1))
-      call lsysbl_blockMatVec(p_rmatrix, ru, p_rv(1), -1._DP, 1._DP)
+      call lsysbl_blockMatVec(p_rmatrix, ru, p_rv(1), -1.0_DP, 1.0_DP)
 
       ! The norm of the residual is implicitly given by p(i+1) but
       ! may be highly inaccurate. Therefore compute norm explicitly
       rsolver%dfinalDefect = lsysbl_vectorNorm(p_rv(1), rsolver%iresNorm)
       
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-          write(*,FMT=MSG_LIN0010) iiterations,&
-          rsolver%dfinalDefect, doldDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dInitialDefect)
-      
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+        call output_lbrk()
+        call output_separator(OU_SEP_TILDE)
+        call output_line('FGMRES step:               '//trim(sys_siL(iiterations,5)))
+        call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+        call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
+        call output_line('Variation of residual:     '//trim(sys_sdEL(&
+                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+        call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+        call output_separator(OU_SEP_TILDE)
+        call output_lbrk()
+      end if
+
       ! Write linear defect to file?
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-          write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
-          iiterations, rsolver%dfinalDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+        write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
+            iiterations, rsolver%dfinalDefect,&
+            rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
+            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+      end if
       
       ! Check if residual increased too much
       if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or. &
           rsolver%dfinalDefect > rsolver%ddivAbs) then
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_LIN0012)&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
+                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+        end if
         
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_INCR_DEF
-        rsolver%dconvergenceRate = 1._DP
+        rsolver%dconvergenceRate = 1.0_DP
         
         ! That's it, return.
         return
@@ -1720,20 +1749,29 @@ contains
     ! Compute convergence rate
     call solver_statistics(rsolver, iiterations)
     
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-        write(*,FMT=MSG_LIN0011)&
-        rsolver%iiterations, rsolver%dfinalDefect,&
-        rsolver%dinitialDefect,&
-        rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-        rsolver%dconvergenceRate
+    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+      call output_lbrk()
+      call output_separator(OU_SEP_PERC)
+      call output_line('FGMRES solution            '//solver_getstatus(rsolver))
+      call output_line('Number of Jacobi steps:    '//trim(sys_siL(rsolver%iiterations,5)))
+      call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+      call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+      call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+      call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
+      call output_separator(OU_SEP_PERC)
+      call output_lbrk()
+    end if
 
     ! Write linear convergence rate to logfile?
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-        write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-        rsolver%iiterations, rsolver%dfinalDefect,&
-        rsolver%dinitialDefect,&
-        rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-        rsolver%dconvergenceRate
+    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+      write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
+          rsolver%iiterations, rsolver%dfinalDefect,&
+          rsolver%dinitialDefect,&
+          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
+          rsolver%dconvergenceRate
+    end if
+
   end subroutine linsol_solveFgmres
 
   ! *****************************************************************************
@@ -1827,7 +1865,7 @@ contains
 
     ! Set relaxation parameter
     if (rsolver%domega < 0.0_DP) then
-      domega = 1._DP
+      domega = 1.0_DP
     else
       domega = rsolver%domega
     end if
@@ -2047,7 +2085,7 @@ contains
     
     ! Set relaxation parameter
     if (rsolver%domega < 0.0_DP) then
-      domega = 1._DP
+      domega = 1.0_DP
     else
       domega = rsolver%domega
     end if
@@ -2190,7 +2228,7 @@ contains
 
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1, neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -2222,7 +2260,7 @@ contains
 
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1, neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
@@ -2259,7 +2297,7 @@ contains
 
       ! Process lower left triangular matrix
       do ieq = 1, neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up left part of row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -2274,7 +2312,7 @@ contains
 
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up right part of row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -2307,7 +2345,7 @@ contains
 
       ! Process lower left triangular matrix
       do ieq = 1, neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
@@ -2321,7 +2359,7 @@ contains
 
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up right part of row
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
@@ -2354,7 +2392,7 @@ contains
 
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1, neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -2388,7 +2426,7 @@ contains
 
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1,neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
@@ -2427,7 +2465,7 @@ contains
 
       ! Process lower left triangular matrix
       do ieq = 1, neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up left part of row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -2442,7 +2480,7 @@ contains
 
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up right part of row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -2477,7 +2515,7 @@ contains
 
       ! Process lower left triangular matrix
       do ieq = 1,neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
@@ -2491,7 +2529,7 @@ contains
 
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up right part of row
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
@@ -2524,7 +2562,7 @@ contains
 
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1, neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -2565,7 +2603,7 @@ contains
 
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1, neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
@@ -2616,7 +2654,7 @@ contains
       
       ! Process lower left triangular matrix
       do ieq = 1, neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -2650,7 +2688,7 @@ contains
 
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -2704,7 +2742,7 @@ contains
       
       ! Process lower left triangular matrix
       do ieq = 1, neq
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kld(ieq), Kdiagonal(ieq)-1
@@ -2737,7 +2775,7 @@ contains
 
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
-        daux = 0._DP
+        daux = 0.0_DP
         
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
@@ -2998,7 +3036,7 @@ contains
       ! Forward substitution: L*y = b
       forward: do ieq = 1, neq
         
-        Daux = 0._DP
+        Daux = 0.0_DP
         
         fwdin: do ia = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ia)
@@ -3018,7 +3056,7 @@ contains
       backward: do ieq = neq-1, 1, -1
         
         ild = Kld(ieq)
-        Daux = 0._DP
+        Daux = 0.0_DP
 
         bwdin: do ia = Kld(ieq+1)-1, ild+1, -1
           icol = Kcol(ia)
@@ -3053,7 +3091,7 @@ contains
       ! Forward substitution
       forward: do ieq = 1, neq
         
-        Daux = 0._DP
+        Daux = 0.0_DP
         
         fwdin: do ia = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ia)
@@ -3072,7 +3110,7 @@ contains
       backward: do ieq = neq-1, 1, -1
         
         ild = Kdiagonal(ieq)
-        Daux = 0._DP
+        Daux = 0.0_DP
         
         bwdin: do ia = Kld(ieq+1)-1, Kdiagonal(ieq)+1, -1
           icol = Kcol(ia)
@@ -3116,7 +3154,7 @@ contains
           do jvar = ii, ivar-1
             daux = daux-DaDiag(ivar,jvar,1)*Du(jvar,1)
           end do
-        elseif (daux.ne.0._DP) then
+        elseif (daux.ne.0.0_DP) then
           ii = ivar
         end if
         Du(ivar,1) = daux
@@ -3133,7 +3171,7 @@ contains
       ! Loop over rows 2,3,...,NEQ
       do ieq = 2, neq
         
-        DauxBlock = 0._DP
+        DauxBlock = 0.0_DP
         fwdin: do ia = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ia)
           if (icol .ge. ieq) exit fwdin
@@ -3150,7 +3188,7 @@ contains
             do jvar = ii, ivar-1
               daux = daux-DaDiag(ivar,jvar,ieq)*Du(jvar,ieq)
             end do
-          elseif (daux.ne.0._DP) then
+          elseif (daux.ne.0.0_DP) then
             ii = ivar
           end if
           Du(ivar,ieq) = daux
@@ -3198,7 +3236,7 @@ contains
           do jvar = ii, ivar-1
             daux = daux-DaDiag(ivar,jvar,1)*Du(jvar,1)
           end do
-        elseif (daux.ne.0._DP) then
+        elseif (daux.ne.0.0_DP) then
           ii = ivar
         end if
         Du(ivar,1) = daux
@@ -3215,7 +3253,7 @@ contains
       ! Loop over rows 2,3,...,NEQ
       do ieq = 2, neq
         
-        DauxBlock = 0._DP
+        DauxBlock = 0.0_DP
         fwdin: do ia = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ia)
           DauxBlock = DauxBlock+matmul(Da(:,:,ia),Du(:,icol))
@@ -3231,7 +3269,7 @@ contains
             do jvar = ii, ivar-1
               daux = daux-DaDiag(ivar,jvar,ieq)*Du(jvar,ieq)
             end do
-          elseif (daux.ne.0._DP) then
+          elseif (daux.ne.0.0_DP) then
             ii = ivar
           end if
           Du(ivar,ieq) = daux
@@ -3364,7 +3402,7 @@ contains
 
     ! Compute initial residual
     call lsysbl_copyVector(rf, rres)
-    call lsysbl_blockMatVec(rmatrix, ru, rres, -1._DP, 1._DP)
+    call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
     
     ! Iterative correction
     do iiterations = 1, rsolver%nmaxIterations
@@ -3373,11 +3411,11 @@ contains
       call linsol_precondJacobi(rsolver, rres)
       
       ! Update solution
-      call lsysbl_vectorLinearComb(rres, ru, 1._DP, 1._DP)
+      call lsysbl_vectorLinearComb(rres, ru, 1.0_DP, 1.0_DP)
       
       ! Compute residual
       call lsysbl_copyVector(rf, rres)
-      call lsysbl_blockMatVec(rmatrix, ru, rres, -1._DP, 1._DP)
+      call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
 
     end do
   end subroutine linsol_smoothJacobi
@@ -3419,7 +3457,7 @@ contains
 
     ! Compute initial residual
     call lsysbl_copyVector(rf, rres)
-    call lsysbl_blockMatVec(rmatrix, ru, rres, -1._DP, 1._DP)
+    call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
     
     ! Iterative correction
     do iiterations = 1, rsolver%nmaxIterations
@@ -3428,11 +3466,11 @@ contains
       call linsol_precondSSOR(rsolver, rres)
       
       ! Update solution
-      call lsysbl_vectorLinearComb(rres, ru, 1._DP, 1._DP)
+      call lsysbl_vectorLinearComb(rres, ru, 1.0_DP, 1.0_DP)
       
       ! Compute residual
       call lsysbl_copyVector(rf,rres)
-      call lsysbl_blockMatVec(rmatrix, ru, rres, -1._DP, 1._DP)
+      call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
 
     end do
   end subroutine linsol_smoothSSOR
@@ -3480,9 +3518,9 @@ contains
     do iiterations = 1, rsolver%nmaxIterations
       
       call lsysbl_copyVector (rf, raux)
-      call lsysbl_blockMatVec(rmatrix, ru, raux, -1._DP, 1._DP)
+      call lsysbl_blockMatVec(rmatrix, ru, raux, -1.0_DP, 1.0_DP)
       call linsol_precondILU (rsolver, raux)
-      call lsysbl_vectorLinearComb(raux, ru, rsolver%domega, 1._DP)
+      call lsysbl_vectorLinearComb(raux, ru, rsolver%domega, 1.0_DP)
       
     end do
   end subroutine linsol_smoothILU
