@@ -8048,7 +8048,7 @@ contains
         do i = 1, NCUB1D
           dt = dt + DedgeWeights(i,j)
         end do
-        DedgeLen(j) = 0.5_DP / dt
+        DedgeLen(j) = 1.0_DP / dt
       end do
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -8111,7 +8111,7 @@ contains
           ! Evaluate basis functions
           do i = 1, NBAS
           
-            Dbas(i,DER_FUNC2D,ipt,iel) = Da(i,1) + dx*(Dc(i,2) + dx*Dc(i,4)) &
+            Dbas(i,DER_FUNC2D,ipt,iel) = Dc(i,1) + dx*(Dc(i,2) + dx*Dc(i,4)) &
                                                  + dy*(Dc(i,3) - dy*Dc(i,4))
           end do ! i
               
@@ -8911,7 +8911,7 @@ contains
         do i = 1, NCUB1D
           dt = dt + DedgeWeights(i,j)
         end do
-        DedgeLen(j) = 0.5_DP / dt
+        DedgeLen(j) = 1.0_DP / dt
       end do
       
       ! ...and also calculate the inverse of the element's area.
@@ -8919,7 +8919,7 @@ contains
       do i = 1, NCUB2D
         dt = dt + DquadWeights(i)
       end do
-      dquadArea = 0.25_DP / dt
+      dquadArea = 1.0_DP / dt
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 6: Build coefficient matrix

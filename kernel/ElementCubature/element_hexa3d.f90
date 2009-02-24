@@ -4608,8 +4608,7 @@ contains
   integer, parameter :: NBAS = 6
   
   ! Parameter: Number of cubature points for 1D edge integration
-  !integer, parameter :: NCUB1D = 3
-  integer, parameter :: NCUB1D = 5
+  integer, parameter :: NCUB1D = 3
   
   ! Parameter: Number of cubature points for 2D quad integration
   integer, parameter :: NCUB2D = NCUB1D**2
@@ -4639,7 +4638,7 @@ contains
 
   ! other local variables
   integer :: i,j,l,iel, ipt
-  real(DP), dimension(NBAS,NBAS) :: Da
+  real(DP), dimension(NBAS,NBAS) :: Da, Dc
   real(DP) :: dx,dy,dz,dt,derx,dery,derz,dx1,dy1,dz1
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -4649,26 +4648,26 @@ contains
     ! Set up a 3-point Gauss rule for 1D
     ! Remark: Although we don't actually need the 1D formula for integration,
     ! it is used a few lines below to set up the 2D formula...
-!    DcubPts1D(1) = -sqrt(3.0_DP / 5.0_DP)
-!    DcubPts1D(2) = 0.0_DP
-!    DcubPts1D(3) = sqrt(3.0_DP / 5.0_DP)
-!    DcubOmega1D(1) = 5.0_DP / 9.0_DP
-!    DcubOmega1D(2) = 8.0_DP / 9.0_DP
-!    DcubOmega1D(3) = 5.0_DP / 9.0_DP
+    DcubPts1D(1) = -sqrt(3.0_DP / 5.0_DP)
+    DcubPts1D(2) = 0.0_DP
+    DcubPts1D(3) = sqrt(3.0_DP / 5.0_DP)
+    DcubOmega1D(1) = 5.0_DP / 9.0_DP
+    DcubOmega1D(2) = 8.0_DP / 9.0_DP
+    DcubOmega1D(3) = 5.0_DP / 9.0_DP
 
-    ! !!! DEBUG: 5-point Gauss rule !!!
-    dt = 2.0_DP*sqrt(10.0_DP / 7.0_DP)
-    DcubPts1D(1) = -sqrt(5.0_DP + dt) / 3.0_DP
-    DcubPts1D(2) = -sqrt(5.0_DP - dt) / 3.0_DP
-    DcubPts1D(3) = 0.0_DP
-    DcubPts1D(4) =  sqrt(5.0_DP - dt) / 3.0_DP
-    DcubPts1D(5) =  sqrt(5.0_DP + dt) / 3.0_DP
-    dt = 13.0_DP*sqrt(70.0_DP)
-    DcubOmega1D(1) = (322.0_DP - dt) / 900.0_DP
-    DcubOmega1D(2) = (322.0_DP + dt) / 900.0_DP
-    DcubOmega1D(3) = 128.0_DP / 225.0_DP
-    DcubOmega1D(4) = (322.0_DP + dt) / 900.0_DP
-    DcubOmega1D(5) = (322.0_DP - dt) / 900.0_DP
+!    ! !!! DEBUG: 5-point Gauss rule !!!
+!    dt = 2.0_DP*sqrt(10.0_DP / 7.0_DP)
+!    DcubPts1D(1) = -sqrt(5.0_DP + dt) / 3.0_DP
+!    DcubPts1D(2) = -sqrt(5.0_DP - dt) / 3.0_DP
+!    DcubPts1D(3) = 0.0_DP
+!    DcubPts1D(4) =  sqrt(5.0_DP - dt) / 3.0_DP
+!    DcubPts1D(5) =  sqrt(5.0_DP + dt) / 3.0_DP
+!    dt = 13.0_DP*sqrt(70.0_DP)
+!    DcubOmega1D(1) = (322.0_DP - dt) / 900.0_DP
+!    DcubOmega1D(2) = (322.0_DP + dt) / 900.0_DP
+!    DcubOmega1D(3) = 128.0_DP / 225.0_DP
+!    DcubOmega1D(4) = (322.0_DP + dt) / 900.0_DP
+!    DcubOmega1D(5) = (322.0_DP - dt) / 900.0_DP
 
     ! Set up a 3x3-point Gauss rule for 2D
     l = 1
@@ -4743,13 +4742,9 @@ contains
         end do ! i
         
       end do ! j
-
-      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-      ! Step 4: Map 3D cubature points onto the real element
-      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-      ! Step 5: Calculate face areas and hexahedron volume
+      ! Step 4: Calculate face areas and hexahedron volume
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Calculate the inverse of the face areas - we will need them for
       ! scaling later...
@@ -4758,11 +4753,11 @@ contains
         do i = 1, NCUB2D
           dt = dt + DfaceWeights(i,j)
         end do
-        DfaceArea(j) = 0.25_DP / dt
+        DfaceArea(j) = 1.0_DP / dt
       end do
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-      ! Step 6: Build coefficient matrix
+      ! Step 5: Build coefficient matrix
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       
       ! Clear coefficient matrix
@@ -4799,10 +4794,10 @@ contains
       end do ! j
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-      ! Step 7: Invert coefficient matrix
+      ! Step 6: Invert coefficient matrix
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-      call mprim_invertMatrixPivotDble(Da, NBAS)
+      ! Call the 'direct' inversion routine for 6x6 systems
+      call mprim_invert6x6MatrixDirectDble(Da, Dc)
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 8: Evaluate function values
@@ -4825,10 +4820,10 @@ contains
           ! Evaluate basis functions
           do i = 1, NBAS
           
-            Dbas(i,DER_FUNC3D,ipt,iel) = Da(i,1) &
-              + dx*(Da(i,2) + dx*Da(i,5)) &
-              + dy*(Da(i,3) + dy*(Da(i,6) - Da(i,5))) &
-              + dz*(Da(i,4) + dz*Da(i,6))
+            Dbas(i,DER_FUNC3D,ipt,iel) = Dc(i,1) &
+              + dx*(Dc(i,2) + dx*Dc(i,5)) &
+              + dy*(Dc(i,3) + dy*(Dc(i,6) - Dc(i,5))) &
+              + dz*(Dc(i,4) + dz*Dc(i,6))
 
           end do ! i
       
@@ -4858,9 +4853,9 @@ contains
           do i = 1, NBAS
           
             ! Calculate 'reference' derivatives
-            derx = Da(i,2) + 2.0_DP*dx*Da(i,5)
-            dery = Da(i,3) + 2.0_DP*dy*(Da(i,6) - Da(i,5))
-            derz = Da(i,4) + 2.0_DP*dz*Da(i,6)
+            derx = Dc(i,2) + 2.0_DP*dx*Dc(i,5)
+            dery = Dc(i,3) + 2.0_DP*dy*(Dc(i,6) - Dc(i,5))
+            derz = Dc(i,4) + 2.0_DP*dz*Dc(i,6)
 
             ! Calculate 'real' derivatives
             Dbas(i,DER_DERIV3D_X,ipt,iel) = &
@@ -5421,14 +5416,6 @@ contains
   real(DP) :: dx,dy,dz,dt,derx,dery,derz,dx1,dy1,dz1
 
     ! Set up twist matrices
-!    Dtwist(:,:,0) = reshape( (/ 1.0_DP, 0.0_DP, 0.0_DP, 1.0_DP/) , (/2,2/) )
-!    Dtwist(:,:,1) = reshape( (/ 0.0_DP,-1.0_DP, 1.0_DP, 0.0_DP/) , (/2,2/) )
-!    Dtwist(:,:,2) = reshape( (/-1.0_DP, 0.0_DP, 0.0_DP,-1.0_DP/) , (/2,2/) )
-!    Dtwist(:,:,3) = reshape( (/ 0.0_DP, 1.0_DP,-1.0_DP, 0.0_DP/) , (/2,2/) )
-!    Dtwist(:,:,4) = reshape( (/ 0.0_DP, 1.0_DP, 1.0_DP, 0.0_DP/) , (/2,2/) )
-!    Dtwist(:,:,5) = reshape( (/-1.0_DP, 0.0_DP, 0.0_DP, 1.0_DP/) , (/2,2/) )
-!    Dtwist(:,:,6) = reshape( (/ 0.0_DP,-1.0_DP,-1.0_DP, 0.0_DP/) , (/2,2/) )
-!    Dtwist(:,:,7) = reshape( (/ 1.0_DP, 0.0_DP, 0.0_DP,-1.0_DP/) , (/2,2/) )
     Dtwist(:,:,0) = reshape( (/ 1.0_DP, 0.0_DP, 0.0_DP, 1.0_DP/) , (/2,2/) )
     Dtwist(:,:,1) = reshape( (/ 0.0_DP, 1.0_DP,-1.0_DP, 0.0_DP/) , (/2,2/) )
     Dtwist(:,:,2) = reshape( (/-1.0_DP, 0.0_DP, 0.0_DP,-1.0_DP/) , (/2,2/) )
@@ -5566,7 +5553,7 @@ contains
         do i = 1, NCUB2D
           dt = dt + DfaceWeights(i,j)
         end do
-        DfaceArea(j) = 0.25_DP / dt
+        DfaceArea(j) = 1.0_DP / dt
       end do
       
       ! ...and also calculate the inverse of the element's volume.
@@ -5574,7 +5561,7 @@ contains
       do i = 1, NCUB3D
         dt = dt + DhexaWeights(i)
       end do
-      dhexaVol = 0.125_DP / dt
+      dhexaVol = 1.0_DP / dt
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 6: Build coefficient matrix
