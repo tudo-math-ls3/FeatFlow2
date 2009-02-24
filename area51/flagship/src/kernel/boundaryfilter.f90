@@ -3330,6 +3330,9 @@ contains
     integer :: nvt,iblock
 
 
+    ! Initialize status
+    if (present(istatus)) istatus = 0
+
     ! Check if block vector has only one block
     if (rvector%nblocks .eq. 1) then
       call bdrf_filterVectorScalarExplicit(rboundaryCondition, rtriangulation,&
@@ -3831,6 +3834,9 @@ contains
     logical, dimension(:), pointer :: p_BisSegClosed
     logical :: bisSorted
 
+
+    ! Initialize status
+    if (present(istatus)) istatus = 0
 
     ! Check if vector and boundary description are compatible
     if (rvector%NVAR .ne. rboundaryCondition%nmaxExpressions) then
@@ -4341,6 +4347,9 @@ contains
 
     integer :: iblock,jblock
 
+
+    ! Initialize status
+    if (present(istatus)) istatus = 0
 
     ! Check if block matrix/vector have only one block
     if ((rmatrix%nblocksPerCol .eq. 1) .and.&
@@ -5127,6 +5136,9 @@ contains
 !</inputoutput>
 !</subroutine>
 
+    ! Initialize status
+    if (present(istatus)) istatus = 0
+
     ! Check if block vectors have only one block
     if ((rsolution%nblocks .eq. 1) .and.&
         (rdefect%nblocks   .eq. 1)) then
@@ -5224,6 +5236,9 @@ contains
     logical, dimension(:), pointer :: p_BisSegClosed
     
     logical :: bisMatrixSorted,bisSolutionSorted,bisDefectSorted
+
+    ! Initialize status
+    if (present(istatus)) istatus = 0
 
     ! Check if solution and boundary description are compatible
     if (rsolution%NVAR .ne. rboundaryCondition%nmaxExpressions .or.&
