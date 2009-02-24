@@ -113,6 +113,9 @@
 !# 30.) solver_copySolver
 !#      -> Copy input/output parameters from one solver to another solver
 !#
+!# 31.) solver_getNextSolverByType
+!#      -> Returns next solver with specified type
+!#
 !# The following auxiliary routines are available:
 !#
 !# 1.) solver_initUMFPACK
@@ -169,6 +172,7 @@ module solver
   public :: solver_statistics
   public :: solver_getStatus
   public :: solver_getNextSolver
+  public :: solver_getNextSolverByType
   public :: solver_getMinimumMultigridlevel
   public :: solver_getMaximumMultigridlevel
   public :: solver_setMinimumMultigridlevel
@@ -183,7 +187,7 @@ module solver
   public :: solver_prolongationBlock
   public :: solver_restrictionScalar
   public :: solver_restrictionBlock
-
+  
   include 'solver.inc'
 
   ! *****************************************************************************
@@ -6393,6 +6397,41 @@ contains
 
   end subroutine solver_copySolver
 
+  ! ***************************************************************************
+  
+!<function>
+
+  function solver_getNextSolverByType(rsolver, csolverType) result(p_rsubsolver)
+
+!<description>
+    ! This functions sets the pointer to the next solver object in the
+    ! solver hierarchy which satisfies the specified type isolver. If
+    ! there is no subsolver which satisfies the prescribed type, then
+    ! NULL ist returned.
+!</description>
+
+!<input>
+    ! Solver that is used as base solver
+    type(t_solver), intent(IN), target :: rsolver
+
+    ! Type if solver to return
+    integer, intent(IN) :: csolverType
+!</input>
+
+!<result>
+    ! Pointer to the subsolver
+    ! If no subseolver exists, then NULL is returned
+    type(t_solver), pointer :: p_rsubsolver
+!</result>
+!</function>
+
+    p_rsubsolver => rsolver
+    do while (associated(p_rsubsolver))
+      if (p_rsubsolver%csolverType .eq. csolverType) exit
+      p_rsubsolver => solver_getNextSolver(p_rsubsolver)
+    end do
+
+  end function solver_getNextSolverByType
 
   ! ***************************************************************************
   ! ***************************************************************************
