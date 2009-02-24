@@ -4758,7 +4758,7 @@ contains
         do i = 1, NCUB2D
           dt = dt + DfaceWeights(i,j)
         end do
-        DfaceArea(j) = 1.0_DP / dt
+        DfaceArea(j) = 0.25_DP / dt
       end do
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -5566,7 +5566,7 @@ contains
         do i = 1, NCUB2D
           dt = dt + DfaceWeights(i,j)
         end do
-        DfaceArea(j) = 1.0_DP / dt
+        DfaceArea(j) = 0.25_DP / dt
       end do
       
       ! ...and also calculate the inverse of the element's volume.
@@ -5574,7 +5574,7 @@ contains
       do i = 1, NCUB3D
         dt = dt + DhexaWeights(i)
       end do
-      dhexaVol = 1.0_DP / dt
+      dhexaVol = 0.125_DP / dt
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 6: Build coefficient matrix

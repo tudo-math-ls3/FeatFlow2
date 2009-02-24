@@ -7981,7 +7981,7 @@ contains
 
   ! other local variables
   integer :: i,j,iel,ipt
-  real(DP), dimension(NBAS,NBAS) :: Da, Da2
+  real(DP), dimension(NBAS,NBAS) :: Da, Dc
   real(DP) :: dx,dy,dt,derx,dery
   
   
@@ -8048,7 +8048,7 @@ contains
         do i = 1, NCUB1D
           dt = dt + DedgeWeights(i,j)
         end do
-        DedgeLen(j) = 1.0_DP / dt
+        DedgeLen(j) = 0.5_DP / dt
       end do
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -8090,18 +8090,8 @@ contains
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 6: Invert coefficient matrix
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-      !if(iand(celement,2**18) .ne. 0) then
-        
-        ! Call the 'direct' inversion routine for 4x4 systems
-        call mprim_invert4x4MatrixDirectDble(Da, Da2)
-        Da = Da2
-        
-      !else
-      !  
-      !  ! Call the 'pivoted' inversion routine
-      !  call mprim_invertMatrixPivotDble(Da, NBAS)
-      !  
-      !end if
+      ! Call the 'direct' inversion routine for 4x4 systems
+      call mprim_invert4x4MatrixDirectDble(Da, Dc)
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 7: Evaluate function values
@@ -8121,8 +8111,8 @@ contains
           ! Evaluate basis functions
           do i = 1, NBAS
           
-            Dbas(i,DER_FUNC2D,ipt,iel) = Da(i,1) + dx*(Da(i,2) + dx*Da(i,4)) &
-                                                 + dy*(Da(i,3) - dy*Da(i,4))
+            Dbas(i,DER_FUNC2D,ipt,iel) = Da(i,1) + dx*(Dc(i,2) + dx*Dc(i,4)) &
+                                                 + dy*(Dc(i,3) - dy*Dc(i,4))
           end do ! i
               
         end do ! ipt
@@ -8148,8 +8138,8 @@ contains
           do i = 1, NBAS
           
             ! Calculate 'reference' derivatives
-            derx = Da(i,2) + 2.0_DP*dx*Da(i,4)
-            dery = Da(i,3) - 2.0_DP*dy*Da(i,4)
+            derx = Dc(i,2) + 2.0_DP*dx*Dc(i,4)
+            dery = Dc(i,3) - 2.0_DP*dy*Dc(i,4)
             
             ! Calculate 'real' derivatives
             Dbas(i,DER_DERIV2D_X,ipt,iel) = ds(1,1)*derx + ds(2,1)*dery
@@ -8921,7 +8911,7 @@ contains
         do i = 1, NCUB1D
           dt = dt + DedgeWeights(i,j)
         end do
-        DedgeLen(j) = 1.0_DP / dt
+        DedgeLen(j) = 0.5_DP / dt
       end do
       
       ! ...and also calculate the inverse of the element's area.
@@ -8929,7 +8919,7 @@ contains
       do i = 1, NCUB2D
         dt = dt + DquadWeights(i)
       end do
-      dquadArea = 1.0_DP / dt
+      dquadArea = 0.25_DP / dt
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 6: Build coefficient matrix
