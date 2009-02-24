@@ -343,7 +343,7 @@ contains
                   IdofsTest,rdomainIntSubset,Dvalues,rcollection)
       Dcoefficients (1,:,:) = -Dvalues(:,:)
       deallocate (Dvalues)
-    else
+    else if (rcollection%IquickAccess(1) .eq. 1) then
       ! Target flow read from file
       allocate (Dvalues2(Ubound(Dcoefficients,2)))
       do iel = 1,nelements
@@ -352,6 +352,8 @@ contains
         Dcoefficients (1,:,iel) = -Dvalues2(:)
       end do
       deallocate(Dvalues2)
+    else if (rcollection%IquickAccess(1) .eq. 2) then
+      Dcoefficients (1,:,:) = 0.0_DP
     end if
 
   end subroutine
@@ -447,7 +449,7 @@ contains
                   IdofsTest,rdomainIntSubset,Dvalues,rcollection)
       Dcoefficients (1,:,:) = -Dvalues(:,:)
       deallocate (Dvalues)
-    else
+    else if (rcollection%IquickAccess(1) .eq. 1) then
       ! Target flow read from file
       allocate (Dvalues2(Ubound(Dcoefficients,2)))
       do iel = 1,nelements
@@ -456,6 +458,8 @@ contains
         Dcoefficients (1,:,iel) = -Dvalues2(:)
       end do
       deallocate(Dvalues2)
+    else if (rcollection%IquickAccess(1) .eq. 2) then
+      Dcoefficients (1,:,:) = 0.0_DP
     end if
 
   end subroutine
@@ -562,13 +566,15 @@ contains
         ! Unknown. Set the result to 0.0.
         Dvalues = 0.0_DP
       end select
-    else
+    else if (rcollection%IquickAccess(1) .eq. 1) then
       ! Function given by vector
       ! Target flow read from file
       do iel = 1,nelements
         call fevl_evaluate (DER_FUNC, Dvalues(:,iel), &
             rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
       end do
+    else if (rcollection%IquickAccess(1) .eq. 2) then
+      Dvalues(:,:) = 0.0_DP
     end if
 
   end subroutine
@@ -670,15 +676,16 @@ contains
         ! Unknown. Set the result to 0.0.
         Dvalues = 0.0_DP
       end select
-    else
+    else if (rcollection%IquickAccess(1) .eq. 1) then
       ! Function given by vector
       ! Target flow read from file
       do iel = 1,nelements
         call fevl_evaluate (DER_FUNC, Dvalues(:,iel), &
             rcollection%p_rvectorQuickAccess1%RvectorBlock(2), Dpoints(:,:,iel))
       end do
+    else if (rcollection%IquickAccess(1) .eq. 2) then
+      Dvalues(:,:) = 0.0_DP
     end if
-  
 
   end subroutine
 
