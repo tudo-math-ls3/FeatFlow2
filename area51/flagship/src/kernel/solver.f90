@@ -1532,85 +1532,86 @@ contains
     ! local variables
     integer :: i
 
-    ! Output general information
-    call output_separator(OU_SEP_PLUS)
-    write(*,FMT='(2X,"SOLVER: ",A)') trim(rtimestep%sName)
-    call output_separator(OU_SEP_MINUS)
     
-    write(*,FMT='(2X,A,T52,I15)') '#time steps:',rtimestep%nSteps
-    write(*,FMT='(2X,A,T52,I15)') '#rejected time steps:',rtimestep%nrejectedSteps
-
+    ! Output general information
+    call output_line('Timestep:')
+    call output_line('---------')
+    call output_line('Name:                          '//trim(rtimestep%sName))
+    call output_line('Number of time steps:          '//trim(sys_siL(rtimestep%nSteps,15)))
+    call output_line('Number of rejected time steps: '//trim(sys_siL(rtimestep%nrejectedSteps,15)))
+    
     ! Output detailed information
     if (present(bprintInternal)) then
       if (bprintInternal) then
-        write(*,FMT='(2X,"(I) ctimestepType",T35,I3)')           rtimestep%ctimestepType
-        write(*,FMT='(2X,"(I) ioutputLevel",T35,I3)')            rtimestep%ioutputLevel
-        write(*,FMT='(2X,"(I) isolNorm",T35,I3)')                rtimestep%isolNorm
-        write(*,FMT='(2X,"(I) dinitialTime",T26,E12.5)')         rtimestep%dinitialTime
-        write(*,FMT='(2X,"(I) dfinalTime",T26,E12.5)')           rtimestep%dfinalTime
-        write(*,FMT='(2X,"(I) dminStep",T26,E12.5)')             rtimestep%dminStep
-        write(*,FMT='(2X,"(I) dmaxStep",T26,E12.5)')             rtimestep%dmaxStep
-        write(*,FMT='(2X,"(I) dinitialStep",T26,E12.5)')         rtimestep%dinitialStep
-        write(*,FMT='(2X,"(I) dstepReductionFactor",T26,E12.5)') rtimestep%dstepReductionFactor
-        write(*,FMT='(2X,"(I) theta",T26,E12.5)')                rtimestep%theta
-        write(*,FMT='(2X,"(I) iadapttimestep",T35,I3)')          rtimestep%iadapttimestep
-        write(*,FMT='(2X,"(I) drelChange",T26,E12.5)')           rtimestep%drelChange
-        write(*,FMT='(2X,"(I) depsSteady",T26,E12.5)')           rtimestep%depsSteady
-        write(*,FMT='(2X,"(I) multisteps",T35,I3)')              rtimestep%multisteps
         
+        call output_line('ctimestepType:                 '//trim(sys_siL(rtimestep%ctimestepType,3)))
+        call output_line('ioutputLevel:                  '//trim(sys_siL(rtimestep%ioutputLevel,3)))
+        call output_line('isolNorm:                      '//trim(sys_siL(rtimestep%isolNorm,3)))
+        call output_line('iadaptTimestep:                '//trim(sys_siL(rtimestep%iadaptTimestep,3)))
+        call output_line('multiSteps:                    '//trim(sys_siL(rtimestep%multiSteps,3)))
+        call output_line('theta:                         '//trim(sys_sdL(rtimestep%theta,5)))
+        call output_line('dinitialTime:                  '//trim(sys_sdL(rtimestep%dinitialTime,5)))
+        call output_line('dfinalTime:                    '//trim(sys_sdL(rtimestep%dfinalTime,5)))
+        call output_line('dminStep:                      '//trim(sys_sdL(rtimestep%dminStep,5)))
+        call output_line('dmaxStep:                      '//trim(sys_sdL(rtimestep%dmaxStep,5)))
+        call output_line('dinitialStep:                  '//trim(sys_sdL(rtimestep%dinitialStep,5)))
+        call output_line('dstepReductionFactor:          '//trim(sys_sdL(rtimestep%dstepReductionFactor,5)))
+        call output_line('drelChange:                    '//trim(sys_sdL(rtimestep%drelChange,5)))
+        call output_line('depsSteady:                    '//trim(sys_sdL(rtimestep%depsSteady,5)))
+               
         ! Output information about weights of multistep method
         if (associated(rtimestep%DmultistepWeights)) then
-          write(*,FMT='(2X,"(I) multistep weights",T26)',ADVANCE='NO')
-          do i = lbound(rtimestep%DmultistepWeights,1),&
-              ubound(rtimestep%DmultistepWeights,1)
-            write(*,FMT='(E12.5,2X)',ADVANCE='NO') rtimestep%DmultistepWeights(i)
+          do i = lbound(rtimestep%DmultistepWeights, 1),&
+                 ubound(rtimestep%DmultistepWeights, 1)
+            call output_line('multistep weight['//trim(sys_siL(i,1))//']:           '//&
+                             trim(sys_sdL(rtimestep%DmultistepWeights(i),5)))
           end do
         end if
-
-        write(*,*)
-        write(*,FMT='(2X,"(O) dTime",T26,E12.5)')     rtimestep%dTime
-        write(*,FMT='(2X,"(O) dStep",T26,E12.5)')     rtimestep%dStep
-        write(*,FMT='(2X,"(O) dStep1",T26,E12.5)')    rtimestep%dStep1
-        write(*,*)
-        write(*,FMT='(2X,"(A) iunitLogfile",T35,I3)') rtimestep%iunitLogfile
-
+        
+        call output_line('dTime:                         '//trim(sys_sdL(rtimestep%dTime,5)))
+        call output_line('dStep:                         '//trim(sys_sdL(rtimestep%dstep,5)))
+        call output_line('dStep1:                        '//trim(sys_sdL(rtimestep%dstep1,5)))
+        call output_line('iunitLogfile:                  '//trim(sys_siL(rtimestep%iunitLogfile,3)))
+        
         ! Output information about the evolutionary PID controller
         if (associated(rtimestep%p_rpidController)) then
-          write(*,*)
-          write(*,FMT='(2X,">>> Evolutionary PID controller")')
-          write(*,FMT='(2X,"(I) dProportionalExponent",T26,E12.5)')&
-                                rtimestep%p_rpidController%dProportionalExponent
-          write(*,FMT='(2X,"(I) dIntegralExponent",T26,E12.5)')&
-                                rtimestep%p_rpidController%dIntegralExponent
-          write(*,FMT='(2X,"(I) dDerivativeExponent",T26,E12.5)')&
-                                rtimestep%p_rpidController%dIntegralExponent
-          write(*,FMT='(2X,"(I) dIncreaseFactor",T26,E12.5)')&
-                                rtimestep%p_rpidController%dIncreaseFactor
-          write(*,FMT='(2X,"(I) dDecreaseFactor",T26,E12.5)')&
-                                rtimestep%p_rpidController%dDecreaseFactor
-          write(*,FMT='(2X,"(I) depsRel",T26,E12.5)')&
-                                rtimestep%p_rpidController%depsRel
-          write(*,FMT='(2X,"(I) dmaxRel",T26,E12.5)')&
-                                rtimestep%p_rpidController%dmaxRel
-          write(*,*)
-          write(*,FMT='(2X,"(O) dcontrolValue1",T26,E12.5)')&
-                                rtimestep%p_rpidController%dcontrolValue1
-          write(*,FMT='(2X,"(O) dcontrolValue2",T26,E12.5)')&
-                                rtimestep%p_rpidController%dcontrolValue2
+          call output_lbrk()
+          call output_line('Evolutionary PID controller:')
+          call output_line('----------------------------')
+          call output_line('dProportionalExponent:         '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dProportionalExponent,5)))
+          call output_line('dIntegralExponent:             '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dIntegralExponent,5)))
+          call output_line('dDerivativeExponent:           '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dDerivativeExponent,5)))
+          call output_line('dIncreaseFactor:               '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dIncreaseFactor,5)))
+          call output_line('dDecreaseFactor:               '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dDecreaseFactor,5)))
+          call output_line('depsRel:                       '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%depsRel,5)))
+          call output_line('dmaxRel:                       '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dmaxRel,5)))
+          call output_line('dcontrolValue1:                '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dcontrolValue1,5)))
+          call output_line('dcontrolValue2:                '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dcontrolValue2,5)))
         end if
 
         ! Output information about the automatic time step controller
         if (associated(rtimestep%p_rautoController)) then
-          write(*,*)
-          write(*,FMT='(2X,">>> Automatic time step controller")')
-          write(*,FMT='(2X,"(I) dDecreaseFactor",T26,E12.5)')&
-                                rtimestep%p_rautoController%dDecreaseFactor
-          write(*,FMT='(2X,"(I) depsRel",T26,E12.5)')&
-                                rtimestep%p_rautoController%depsRel
+          call output_lbrk()
+          call output_line('Automatic time step controller:')
+          call output_line('-------------------------------')
+          call output_line('dDecreaseFactor:               '//&
+                           trim(sys_sdL(rtimestep%p_rautoController%dDecreaseFactor,5)))
+          call output_line('depsRel:                       '//&
+                           trim(sys_sdL(rtimestep%p_rautoController%depsRel,5)))
 
           if (associated(rtimestep%p_rautoController%RtempVectors)) then
-            write(*,*)
-            write(*,FMT='(2X,">>> temporal vectors")')
+            call output_lbrk()
+            call output_line('Temporal vectors:')
+            call output_line('-----------------')
             do i = lbound(rtimestep%p_rautoController%RtempVectors, 1),&
                    ubound(rtimestep%p_rautoController%RtempVectors, 1)
               call lsysbl_infoVector(rtimestep%p_rautoController%RtempVectors(i))
@@ -1620,22 +1621,24 @@ contains
 
         ! Output information about the switched evolution relaxation controller
         if (associated(rtimestep%p_rserController)) then
-          write(*,*)
-          write(*,FMT='(2X,">>> Switched evolution relaxation (SER) controller")')
-          write(*,FMT='(2X,"(I) dIncreaseFactor",T26,E12.5)')&
-                                rtimestep%p_rserController%dIncreaseFactor
-          write(*,FMT='(2X,"(I) dDecreaseFactor",T26,E12.5)')&
-                                rtimestep%p_rserController%dDecreaseFactor
-          write(*,FMT='(2X,"(I) dsteadyDefect",T26,E12.5)')&
-                                rtimestep%p_rserController%dsteadyDefect
-          write(*,FMT='(2X,"(I) dsteadyDefect1",T26,E12.5)')&
-                                rtimestep%p_rserController%dsteadyDefect1
+          call output_lbrk()
+          call output_line('Switched evolution relaxation (SER) controller:')
+          call output_line('-----------------------------------------------')
+          call output_line('dIncreaseFactor:               '//&
+                           trim(sys_sdL(rtimestep%p_rserController%dIncreaseFactor,5)))
+          call output_line('dDecreaseFactor:               '//&
+                           trim(sys_sdL(rtimestep%p_rserController%dDecreaseFactor,5)))
+          call output_line('dsteadyDefect:                 '//&
+                           trim(sys_sdL(rtimestep%p_rserController%dsteadyDefect,5)))
+          call output_line('dsteadyDefect1:                '//&
+                           trim(sys_sdL(rtimestep%p_rserController%dsteadyDefect1,5)))
         end if
 
         ! Output information about auxiliary vectors
         if (associated(rtimestep%RtempVectors)) then
-          write(*,*)
-          write(*,FMT='(2X,">>> temporal vectors")')
+          call output_lbrk()
+          call output_line('Temporal vectors:')
+          call output_line('-----------------')
           do i = lbound(rtimestep%RtempVectors, 1),&
                  ubound(rtimestep%RtempVectors, 1)
             call lsysbl_infoVector(rtimestep%RtempVectors(i))
@@ -1644,7 +1647,6 @@ contains
       end if
     end if
     
-    call output_separator(OU_SEP_PLUS)
     call output_lbrk()
   end subroutine solver_infoTimestep
   
@@ -3327,170 +3329,185 @@ contains
     if (present(bprintInternal)) bprint=bprintInternal
 
     
-    call output_separator(OU_SEP_PLUS)
-    write(*,FMT='(2X,"SOLVER: ",A)') trim(rsolver%ssolverName)
-    call output_separator(OU_SEP_MINUS)
-
+    ! Output general information
+    call output_line('Solver:')
+    call output_line('-------')
+    call output_line('Name: '//trim(rsolver%ssolverName))
+    
     select case(rsolver%csolverType)
 
     case (SV_FMG)
-      write(*,FMT='(2X,A,T52,I15)') '#full multigrid steps:', rsolver%niterations
+      call output_line('Number of full multigrid steps:               '//trim(sys_siL(rsolver%niterations,15)))
       if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-        if (rsolver%niterations .ne. 0) write(*,FMT='(2X,A,T52,I15)')&
-            '#nonlinear steps per multigrid step:',&
-            int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/real(rsolver%niterations,DP))
+        if (rsolver%niterations .ne. 0)&
+            call output_line('Number of nonlinear steps per multigrid step: '//trim(sys_siL(&
+            int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/real(rsolver%niterations, DP)),15)))
       end if
 
     case (SV_NONLINEARMG)
-      write(*,FMT='(2X,A,T52,I15)') '#nonlinear multigrid steps:', rsolver%niterations
+      call output_line('Number of nonlinear multigrid steps:          '//trim(sys_siL(rsolver%niterations, 15)))
       if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-        if (rsolver%niterations .ne. 0) write(*,FMT='(2X,A,T52,I15)')&
-            '#nonlinear steps per multigrid step:',&
-            int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/real(rsolver%niterations,DP))
+        if (rsolver%niterations .ne. 0)&
+            call output_line('Number of nonlinear steps per multigrid step: '//trim(sys_siL(&
+            int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/real(rsolver%niterations,DP)),15)))
       end if
       
     case (SV_LINEARMG)
-      write(*,FMT='(2X,A,T52,I15)') '#linear multigrid steps:', rsolver%niterations
+      call output_line('Number of linear steps:                       '//trim(sys_siL(rsolver%niterations,15)))
       if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-        if (rsolver%niterations .ne. 0) write(*,FMT='(2X,A,T52,G8.2)')&
-            '#linear steps per multigrid step:',&
-            int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/real(rsolver%niterations,DP))
+        if (rsolver%niterations .ne. 0)&
+            call output_line('Number of linear steps per multigrid step:    '//trim(sys_siL(&
+            int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/real(rsolver%niterations,DP)),15)))
       end if
-
+      
     case(SV_NONLINEAR)
-      write(*,FMT='(2X,A,T52,I15)') '#nonlinear steps:', rsolver%niterations
+      call output_line('Number of nonlinear steps:                    '//trim(sys_siL(rsolver%niterations,15)))
       if (associated(rsolver%p_solverSubnode)) then
-        if (rsolver%niterations .ne. 0) write(*,FMT='(2X,A,T52,I15)')&
-            '#linear steps per nonlinear step:',&
-            int(rsolver%p_solverSubnode%niterations/real(rsolver%niterations,DP))
+        if (rsolver%niterations .ne. 0)&
+            call output_line('Number of linear steps per nonlinear step:    '//trim(sys_siL(&
+            int(rsolver%p_solverSubnode%niterations/real(rsolver%niterations,DP)),15)))
       end if
 
     case(SV_LINEAR)
-      write (*,FMT='(2X,A,T52,I15)') '#linear steps:', rsolver%niterations
+      call output_line('Number of linear steps:                       '//trim(sys_siL(rsolver%niterations,15)))
     end select
     
+    ! Output internal information
     if (bprint) then
-      write(*,FMT='(2X,"(I) csolverType",T35,I3)')          rsolver%csolverType
-      write(*,FMT='(2X,"(I) isolver",T35,I3)')              rsolver%isolver
-      write(*,FMT='(2X,"(I) iprecond",T35,I3)')             rsolver%iprecond
-      write(*,FMT='(2X,"(I) ioutputlevel",T35,I3)')         rsolver%ioutputLevel
-      write(*,FMT='(2X,"(I) iunitLogfile",T33,I5)')         rsolver%iunitLogfile
-      write(*,FMT='(2X,"(I) iresNorm",T35,I3)')             rsolver%iresNorm
-      write(*,FMT='(2X,"(I) nminIterations",T33,I5)')       rsolver%nminIterations
-      write(*,FMT='(2X,"(I) nmaxIterations",T33,I5)')       rsolver%nmaxIterations
-      write(*,FMT='(2X,"(I) domega   ",A,T26,E12.5)')       merge('[implicit]', '[explicit]',&
-                                                                  rsolver%domega<0.0_DP), abs(rsolver%domega)
-      write(*,FMT='(2X,"(I) depsRel",T26,E12.5)')           rsolver%depsRel
-      write(*,FMT='(2X,"(I) depsAbs",T26,E12.5)')           rsolver%depsAbs
-      write(*,FMT='(2X,"(I) ddivRel",T26,E12.5)')           rsolver%ddivRel
-      write(*,FMT='(2X,"(I) ddivAbs",T26,E12.5)')           rsolver%ddivAbs
-      write(*,FMT='(2X,"(I) drhsZero",T26,E12.5)')          rsolver%drhsZero
-      write(*,FMT='(2X,"(I) ddefZero",T26,E12.5)')          rsolver%ddefZero
-      write(*,FMT='(2X,"(I) depsStag",T26,E12.5)')          rsolver%depsStag
-      write(*,FMT='(2X,"(I) boundary condition",T31,A)')    merge('    set', 'missing',&
-                                                                  associated(rsolver%rboundaryCondition))
-      write(*,*)
-      write(*,FMT='(2X,"(O) istatus",T29,A)')              trim(solver_getStatus(rsolver))
-      write(*,FMT='(2X,"(O) iiterations",T33,I5)')         rsolver%iiterations
-      write(*,FMT='(2X,"(O) niterations",T33,I5)')         rsolver%niterations
-      write(*,FMT='(2X,"(O) dinitialRHS",T26,E12.5)')      rsolver%dinitialRHS
-      write(*,FMT='(2X,"(O) dinitialDefect",T26,E12.5)')   rsolver%dinitialDefect
-      write(*,FMT='(2X,"(O) dfinalDefect",T26,E12.5)')     rsolver%dfinalDefect
-      write(*,FMT='(2X,"(O) dconvergenceRate",T26,E12.5)') rsolver%dconvergenceRate
+      call output_line('csolverType:                                  '//trim(sys_siL(rsolver%csolverType,3)))
+      call output_line('isolver:                                      '//trim(sys_siL(rsolver%isolver,3)))
+      call output_line('iprecond:                                     '//trim(sys_siL(rsolver%iprecond,3)))
+      call output_line('ioutputlevel:                                 '//trim(sys_siL(rsolver%ioutputLevel,3)))
+      call output_line('iunitLogfile:                                 '//trim(sys_siL(rsolver%iunitLogfile,5)))
+      call output_line('iresNorm:                                     '//trim(sys_siL(rsolver%iresNorm,3)))
+      call output_line('nminIterations:                               '//trim(sys_siL(rsolver%nminIterations,5)))
+      call output_line('nmaxIterations:                               '//trim(sys_siL(rsolver%nmaxIterations,5)))
+      call output_line('domega:                                       '//trim(sys_sdL(abs(rsolver%domega),2))//&
+                                                                         trim(merge(' [implicit]', ' [explicit]',&
+                                                                         rsolver%domega .lt. 0.0_DP)))
+      call output_line('depsRel:                                      '//trim(sys_sdL(rsolver%depsRel,5)))
+      call output_line('depsAbs:                                      '//trim(sys_sdL(rsolver%depsAbs,5)))
+      call output_line('ddivRel:                                      '//trim(sys_sdL(rsolver%ddivRel,5)))
+      call output_line('ddivAbs:                                      '//trim(sys_sdL(rsolver%ddivAbs,5)))
+      call output_line('drhsZero:                                     '//trim(sys_sdL(rsolver%drhsZero,5)))
+      call output_line('ddefZero:                                     '//trim(sys_sdL(rsolver%ddefZero,5)))
+      call output_line('depsStag:                                     '//trim(sys_sdL(rsolver%depsStag,5)))
+      call output_line('boundary condition:                           '//merge('set    ', 'missing',&
+                                                                         associated(rsolver%rboundaryCondition)))
+
+      call output_line('istatus:                                      '//trim(solver_getStatus(rsolver)))
+      call output_line('iiterations:                                  '//trim(sys_siL(rsolver%iiterations,5)))
+      call output_line('niterations:                                  '//trim(sys_siL(rsolver%niterations,5)))
+      call output_line('dinitialRHS:                                  '//trim(sys_sdL(rsolver%dinitialRHS,5)))
+      call output_line('dinitialDefect:                               '//trim(sys_sdL(rsolver%dinitialDefect,5)))
+      call output_line('dfinalDefect:                                 '//trim(sys_sdL(rsolver%dfinalDefect,5)))
+      call output_line('dconvergenceRate:                             '//trim(sys_sdL(rsolver%dconvergenceRate,5)))
       
       ! UMFPACK4 solver
       if (associated(rsolver%p_solverUMFPACK)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> UMFPACK subnode")')
-        write(*,FMT='(2X,"(I) isymbolic",T35,I3)') rsolver%p_solverUMFPACK%isymbolic
-        write(*,FMT='(2X,"(I) inumeric",T35,I3)')  rsolver%p_solverUMFPACK%inumeric
-        write(*,FMT='(2X,"(A) >>> system matrix")')
+        call output_lbrk()
+        call output_line('>>> UMFPACK subnode:')
+        call output_line('--------------------')
+        call output_line('isymbolic: '//trim(sys_siL(rsolver%p_solverUMFPACK%isymbolic,5)))
+        call output_line('inumeric:  '//trim(sys_siL(rsolver%p_solverUMFPACK%inumeric,5)))
+        call output_line('>>> system matrix:')
+        call output_line('------------------')
         call lsysbl_infoMatrix(rsolver%p_solverUMFPACK%rmatrix)
-        write(*,FMT='(2X,"(A) >>> temporal vector")')
+        call output_line('>>> temporal vector:')
+        call output_line('--------------------')
         call lsysbl_infoVector(rsolver%p_solverUMFPACK%rtempVector)
       end if
       
       ! Jacobi solver
       if (associated(rsolver%p_solverJacobi)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> Jacobi solver")')
-        write(*,FMT='(2X,"(A) >>> system matrix")')
+        call output_lbrk()
+        call output_line('>>> Jacobi solver:')
+        call output_line('------------------')
+        call output_line('>>> System matrix:')
+        call output_line('------------------')
         call lsysbl_infoMatrix(rsolver%p_solverJacobi%rmatrix)
       end if
       
       ! (S)SOR solver
       if (associated(rsolver%p_solverSSOR)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> (S)SOR solver")')
-        write(*,FMT='(2X,"(A) >>> system matrix")')
+        call output_lbrk()
+        call output_line('>>> (S)SOR solver:')
+        call output_line('------------------')
+        call output_line('>>> System matrix:')
+        call output_line('------------------')
         call lsysbl_infoMatrix(rsolver%p_solverSSOR%rmatrix)
       end if
       
       ! BiCGSTAB solver
       if (associated(rsolver%p_solverBiCGSTAB)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> BiCGSTAB solver")')
-        write(*,FMT='(2X,"(A) #temporal vectors",T35,I3)')&
-                      size(rsolver%p_solverBiCGSTAB%RtempVectors)
-        write(*,FMT='(2X,"(A) >>> temporal vectors")')
+        call output_lbrk()
+        call output_line('>>> BiCGSTAB solver:')
+        call output_line('--------------------')
+        call output_line('>>> Temporal vectors:')
+        call output_line('---------------------')
         do i = lbound(rsolver%p_solverBiCGSTAB%RtempVectors,1),&
                ubound(rsolver%p_solverBiCGSTAB%RtempVectors,1)
           call lsysbl_infoVector(rsolver%p_solverBiCGSTAB%RtempVectors(i))
         end do
-        write(*,FMT='(2X,"(A) >>> system matrix")')
+        call output_line('>>> System matrix:')
+        call output_line('------------------')
         call lsysbl_infoMatrix(rsolver%p_solverBiCGSTAB%rmatrix)
         if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
-          write(*,FMT='(2X,">>> Preconditioner")')
+          call output_line('>>> Preconditioner:')
+          call output_line('-------------------')
           call solver_infoSolver(rsolver%p_solverBiCGSTAB%p_precond, bprint)
         end if
       end if
       
       ! GMRES solver
       if (associated(rsolver%p_solverGMRES)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> GMRES solver")')
-        write(*,FMT='(2X,"(I) h_Dh",T35,I3)') rsolver%p_solverGMRES%h_Dh
-        write(*,FMT='(2X,"(I) h_Dc",T35,I3)') rsolver%p_solverGMRES%h_Dc
-        write(*,FMT='(2X,"(I) h_Ds",T35,I3)') rsolver%p_solverGMRES%h_Ds
-        write(*,FMT='(2X,"(I) h_Dq",T35,I3)') rsolver%p_solverGMRES%h_Dq
-        write(*,FMT='(2X,"(A) #temporal vectors RV",T35,I3)')&
-                      size(rsolver%p_solverGMRES%rv)
+        call output_lbrk()
+        call output_line('>>> GMRES solver:')
+        call output_line('-----------------')
+        call output_line('h_Dh: '//trim(sys_siL(rsolver%p_solverGMRES%h_Dh,5)))
+        call output_line('h_Dc: '//trim(sys_siL(rsolver%p_solverGMRES%h_Dc,5)))
+        call output_line('h_Ds: '//trim(sys_siL(rsolver%p_solverGMRES%h_Ds,5)))
+        call output_line('h_Dq: '//trim(sys_siL(rsolver%p_solverGMRES%h_Dq,5)))
         if (associated(rsolver%p_solverGMRES%rv)) then
-          write(*,FMT='(2X,"(A) >>> temporal vector (first component and array)")')
+          call output_line('>>> Temporal vector RV (first entry):')
+          call output_line('-------------------------------------')
           call lsysbl_infoVector(rsolver%p_solverGMRES%rv(1))
         end if
-        write(*,FMT='(2X,"(A) #temporal vectors RZ",T35,I3)')&
-                      size(rsolver%p_solverGMRES%rz)
         if (associated(rsolver%p_solverGMRES%rz)) then
-          write(*,FMT='(2X,"(A) >>> temporal vector (first component and array)")')
+          call output_line('>>> Temporal vector RZ (first entry):')
+          call output_line('-------------------------------------')
           call lsysbl_infoVector(rsolver%p_solverGMRES%rz(1))
         end if
-        write(*,FMT='(2X,"(A) >>> system matrix")')
+        call output_line('>>> System matrix:')
+        call output_linE('------------------')
         call lsysbl_infoMatrix(rsolver%p_solverGMRES%rmatrix)
         if (associated(rsolver%p_solverGMRES%p_precond)) then
-          write(*,FMT='(2X,">>> Preconditioner")')
+          call output_line('>>> Preconditioner:')
+          call output_line('-------------------')
           call solver_infoSolver(rsolver%p_solverGMRES%p_precond, bprint)
         end if
       end if
       
       ! ILU solver
       if (associated(rsolver%p_solverILU)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> ILU solver")')
-        write(*,FMT='(2X,"(I) ifill",T35,I3)')      rsolver%p_solverILU%ifill
-        write(*,FMT='(2X,"(I) domega",T26,E12.5)')  rsolver%p_solverILU%domega
-        write(*,FMT='(2X,"(I) depsILU",T26,E12.5)') rsolver%p_solverILU%depsILU
-        write(*,FMT='(2X,"(A) >>> system matrix")')
+        call output_lbrk()
+        call output_line('>>> ILU solver:')
+        call output_line('---------------')
+        call output_line('ifill:   '//trim(sys_siL(rsolver%p_solverILU%ifill,3)))
+        call output_line('domega:  '//trim(sys_sdL(rsolver%p_solverILU%domega,5)))
+        call output_line('depsILU: '//trim(sys_sdL(rsolver%p_solverILU%depsILU,5)))
+        call output_line('>>> system matrix:')
+        call output_line('------------------')
         call lsysbl_infoMatrix(rsolver%p_solverILU%rmatrix)
       end if
       
       ! Defcor preconditioner
       if (associated(rsolver%p_solverDefcor)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> Defect correction preconditioner")')
-        write(*,FMT='(2X,"(A) #temporal vectors",T35,I3)')&
-                      size(rsolver%p_solverDefcor%RtempVectors)
-        write(*,FMT='(2X,"(A) >>> temporal vectors")')
+        call output_lbrk()
+        call output_line('>>> Defect correction preconditioner:')
+        call output_line('-------------------------------------')
+        call output_line('>>> Temporal vectors:')
+        call output_line('---------------------')
         do i = lbound(rsolver%p_solverDefcor%RtempVectors,1),&
                ubound(rsolver%p_solverDefcor%RtempVectors,1)
           call lsysbl_infoVector(rsolver%p_solverDefcor%RtempVectors(i))
@@ -3499,16 +3516,16 @@ contains
       
       ! Newton preconditioner
       if (associated(rsolver%p_solverNewton)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> Newton preconditioner")')
-        write(*,FMT='(2X,"(I) icheckSufficientDecrease",T35,I3)') rsolver%p_solverNewton%icheckSufficientDecrease
-        write(*,FMT='(2X,"(I) nmaxBacktrackingSteps",T35,I3)')    rsolver%p_solverNewton%nmaxBacktrackingSteps
-        write(*,FMT='(2X,"(I) iupdateFrequency",T35,I3)')         rsolver%p_solverNewton%iupdateFrequency
-        write(*,FMT='(2X,"(I) dforcingStrategy",T26,E12.5)')      rsolver%p_solverNewton%dforcingStrategy
-        write(*,FMT='(2X,"(I) dperturbationStrategy",T26,E12.5)') rsolver%p_solverNewton%dperturbationStrategy
-        write(*,FMT='(2X,"(A) #temporal vectors",T35,I3)')&
-                      size(rsolver%p_solverNewton%RtempVectors)
-        write(*,FMT='(2X,"(A) >>> temporal vectors")')
+        call output_lbrk()
+        call output_line('>>> Newton preconditioner:')
+        call output_line('--------------------------')
+        call output_line('icheckSufficientDecrease: '//trim(sys_siL(rsolver%p_solverNewton%icheckSufficientDecrease,3)))
+        call output_line('nmaxBacktrackingSteps:    '//trim(sys_siL(rsolver%p_solverNewton%nmaxBacktrackingSteps,5)))
+        call output_line('iupdateFrequency:         '//trim(sys_siL(rsolver%p_solverNewton%iupdateFrequency,5)))
+        call output_line('dforcingStrategy:         '//trim(sys_sdL(rsolver%p_solverNewton%dforcingStrategy,5)))
+        call output_line('dperturbationStrategy:    '//trim(sys_sdL(rsolver%p_solverNewton%dperturbationStrategy,5)))
+        call output_line('>>> Temporal vectors:')
+        call output_line('---------------------')
         do i = lbound(rsolver%p_solverNewton%RtempVectors,1),&
                ubound(rsolver%p_solverNewton%RtempVectors,1)
           call lsysbl_infoVector(rsolver%p_solverNewton%RtempVectors(i))
@@ -3517,42 +3534,45 @@ contains
       
       ! Solver subnode
       if (associated(rsolver%p_solverSubnode)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> Generic solver subnode")')
+        call output_lbrk()
+        call output_line('>>> Generic solver subnode:')
+        call output_line('---------------------------')
         call solver_infoSolver(rsolver%p_solverSubnode, bprint)
       end if
       
       ! Multigrid solver
       if (associated(rsolver%p_solverMultigrid)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> Multigrid solver")')
+        call output_lbrk()
+        call output_line('>>> Multigrid solver:')
         select case(rsolver%p_solverMultigrid%icycle)
         case (0)
-          write(*,FMT='(2X,"(I) cycle",T31,A)') 'F-cycle'
-        case (1)
-          write(*,FMT='(2X,"(I) cycle",T31,A)') 'V-cycle'
-        case (2)
-          write(*,FMT='(2X,"(I) cycle",T31,A)') 'W-cycle'
+          call output_line('cycle: F-cycle')
+        case (-1,1)
+          call output_line('cycle: V-cycle')
+        case (-2,2)
+          call output_line('cycle: W-cycle')
+        case DEFAULT
+          call output_line('cycle: unknown !!!')
         end select
-        write(*,FMT='(2X,"(I) nlmin (",I3,")",T35,I3)') rsolver%p_solverMultigrid%initialNlmin,&
-                                                        rsolver%p_solverMultigrid%nlmin
-        write(*,FMT='(2X,"(I) nlmax (",I3,")",T35,I3)') rsolver%p_solverMultigrid%initialNlmax,&
-                                                        rsolver%p_solverMultigrid%nlmax
-        write(*,FMT='(2X,"(I) ilmin",T35,I3)')          rsolver%p_solverMultigrid%ilmin
-        write(*,FMT='(2X,"(I) ilmax",T35,I3)')          rsolver%p_solverMultigrid%ilmax
-        write(*,FMT='(2X,"(I) csmootherType",T35,I3)')  rsolver%p_solverMultigrid%csmootherType
-        write(*,FMT='(2X,"(I) npresmooth",T35,I3)')     rsolver%p_solverMultigrid%npresmooth
-        write(*,FMT='(2X,"(I) npostmooth",T35,I3)')     rsolver%p_solverMultigrid%npostsmooth
-        write(*,FMT='(2X,"(A) #system matrices",T35,I3)')&
-                      size(rsolver%p_solverMultigrid%rmatrix)
+        call output_line('nlmin:         '//trim(sys_siL(rsolver%p_solverMultigrid%initialNlmin,5))//', '//&
+                                            trim(sys_siL(rsolver%p_solverMultigrid%nlmin,5)))
+        call output_line('nlmax          '//trim(sys_siL(rsolver%p_solverMultigrid%initialNlmax,5))//', '//&
+                                            trim(sys_siL(rsolver%p_solverMultigrid%nlmax,5)))
+        call output_line('ilmin:         '//trim(sys_siL(rsolver%p_solverMultigrid%ilmin,5)))
+        call output_line('ilmax:         '//trim(sys_siL(rsolver%p_solverMultigrid%ilmax,5)))
+        call output_line('csmootherType: '//trim(sys_siL(rsolver%p_solverMultigrid%csmootherType,5)))
+        call output_line('npresmooth:    '//trim(sys_siL(rsolver%p_solverMultigrid%npresmooth,5)))
+        call output_line('npostmooth:    '//trim(sys_siL(rsolver%p_solverMultigrid%npostsmooth,5)))
         if (associated(rsolver%p_solverMultigrid%rmatrix)) then
+          call output_line('>>> System matrices:')
+          call output_line('--------------------')
           do i = lbound(rsolver%p_solverMultigrid%rmatrix,1),&
                  ubound(rsolver%p_solverMultigrid%rmatrix,1)
             call lsysbl_infoMatrix(rsolver%p_solverMultigrid%rmatrix(i))
           end do
         end if
-        write(*,FMT='(2X,"(A) #temporal vectors",T35,I3)')&
-                      size(rsolver%p_solverMultigrid%RtempVectors)
+        call output_line('>>> Temporal vectors:')
+        call output_line('---------------------')
         if (associated(rsolver%p_solverMultigrid%RtempVectors)) then
           do i = lbound(rsolver%p_solverMultigrid%RtempVectors,1),&
                  ubound(rsolver%p_solverMultigrid%RtempVectors,1)
@@ -3564,16 +3584,17 @@ contains
         if (associated(rsolver%p_solverMultigrid%p_smoother)) then
           do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
                  ubound(rsolver%p_solverMultigrid%p_smoother,1)
-            write(*,*)
-            write(*,FMT='(2X,">>> Smoother on Level ",I3)') i
+            call output_lbrk()
+            call output_line('>>> Smoother on Level '//trim(sys_siL(i,3)))
             call solver_infoSolver(rsolver%p_solverMultigrid%p_smoother(i), bprint)
           end do
         end if
         
         ! Coarse-grid solver
         if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-          write(*,*)
-          write(*,FMT='(2X,">>> Coarsegrid solver")')
+          call output_lbrk()
+          call output_line('>>> Coarsegrid solver:')
+          call output_line('----------------------')
           call solver_infoSolver(rsolver%p_solverMultigrid%p_solverCoarsegrid, bprint)
         end if
       end if
@@ -3582,86 +3603,102 @@ contains
 
       ! UMFPACK4 solver
       if (associated(rsolver%p_solverUMFPACK)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> UMFPACK subnode")')
+        call output_lbrk()
+        call output_line('>>> UMFPACK subnode:')
+        call output_line('--------------------')
       end if
 
       ! Jacobi solver
       if (associated(rsolver%p_solverJacobi)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> Jacobi solver")')
+        call output_lbrk()
+        call output_line('>>> Jacobi solver:')
+        call output_line('------------------')
       end if
       
       ! (S)SOR solver
       if (associated(rsolver%p_solverSSOR)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> (S)SOR solver")')
+        call output_lbrk()
+        call output_line('>>> (S)SOR solver:')
+        call output_line('------------------')
       end if
 
       ! BiCGSTAB solver
       if (associated(rsolver%p_solverBiCGSTAB)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> BiCGSTAB solver")')
+        call output_lbrk()
+        call output_line('>>> BiCGSTAB solver:')
+        call output_line('--------------------')
         if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
-          write(*,FMT='(2X,">>> Preconditioner")')
+        call output_lbrk()
+          call output_line('>>> Preconditioner:')
+          call output_line('-------------------')
           call solver_infoSolver(rsolver%p_solverBiCGSTAB%p_precond)
         end if
       end if
 
       ! GMRES solver
       if (associated(rsolver%p_solverGMRES)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> GMRES solver")')
+        call output_lbrk()
+        call output_line('>>> GMRES solver:')
+        call output_line('-----------------')
         if (associated(rsolver%p_solverGMRES%p_precond)) then
-          write(*,FMT='(2X,">>> Preconditioner")')
+          call output_lbrk()
+          call output_line('>>> Preconditioner:')
+          call output_line('-------------------')
           call solver_infoSolver(rsolver%p_solverGMRES%p_precond)
         end if
       end if
 
       ! ILU solver
       if (associated(rsolver%p_solverILU)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> ILU solver")')
+        call output_lbrk()
+        call output_line('>>> ILU solver:')
+        call output_line('---------------')
       end if
       
       ! Defcor preconditioner
       if (associated(rsolver%p_solverDefcor)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> Defect correction preconditioner")')
+        call output_lbrk()
+        call output_line('>>> Defect correction preconditioner:')
+        call output_line('-------------------------------------')
       end if
 
       ! Newton preconditioner
       if (associated(rsolver%p_solverNewton)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> Newton preconditioner")')
+        call output_lbrk()
+        call output_line('>>> Newton preconditioner:')
+        call output_line('--------------------------')
       end if
 
       ! Solver subnode
       if (associated(rsolver%p_solverSubnode)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> Generic solver subnode")')
+        call output_lbrk()
+        call output_line('>>> Generic solver subnode:')
+        call output_line('---------------------------')
         call solver_infoSolver(rsolver%p_solverSubnode, bprint)
       end if
 
       ! Multigrid solver
       if (associated(rsolver%p_solverMultigrid)) then
-        write(*,*)
-        write(*,FMT='(2X,">>> Multigrid solver")')
+        call output_lbrk()
+        call output_line('>>> Multigrid solver:')
+        call output_line('---------------------')
         
         ! Smoothers
         if (associated(rsolver%p_solverMultigrid%p_smoother)) then
           do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
                  ubound(rsolver%p_solverMultigrid%p_smoother,1)
-            write(*,*)
-            write(*,FMT='(2X,">>> Smoother on Level ",I3)') i
+            call output_lbrk()
+            call output_line('>>> Smoother on Level '//trim(sys_siL(i,3)))
+            call output_line('-------------------------')
             call solver_infoSolver(rsolver%p_solverMultigrid%p_smoother(i), bprint)
           end do
         end if
         
         ! Coarse-grid solver
         if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-          write(*,*)
-          write(*,FMT='(2X,">>> Coarsegrid solver")')
+          call output_lbrk()
+          call output_line('>>> Coarsegrid solver:')
+          call output_line('----------------------')
           call solver_infoSolver(rsolver%p_solverMultigrid%p_solverCoarsegrid, bprint)
         end if
       end if
@@ -3919,10 +3956,9 @@ contains
 !</subroutine>
 
     call output_separator(OU_SEP_PLUS)
-    write(*,FMT='(2X,"SOLVER HIERARCHY FOR: ",A)') trim(rsolver%ssolverName)
+    call output_line('Solver hierarchy for top-level solver: '//trim(rsolver%ssolverName))
     call output_separator(OU_SEP_PLUS)
-
-    call showLevel(rsolver, "  ")
+    call showLevel(rsolver, '  ')
 
   contains
     
@@ -4086,7 +4122,8 @@ contains
       character(LEN=*), intent(IN) :: cindent
       character(LEN=*), intent(IN) :: cmsg
       
-      write (*, FMT='(A)') cindent//'+--'//cmsg
+      call output_line(cindent//'+--'//cmsg)
+      
     end subroutine startIndent
 
     !*************************************************************
@@ -4096,7 +4133,7 @@ contains
       character(LEN=*), intent(IN) :: cindent
       character(LEN=*), intent(IN) :: cmsg
 
-      write (*, FMT='(A)') cindent//'  |'//cmsg
+      call output_line(cindent//'  |'//cmsg)
     end subroutine continueIndent   
 
     !*************************************************************
@@ -4105,7 +4142,7 @@ contains
     subroutine stopIndent(cindent)
       character(LEN=*), intent(IN) :: cindent
       
-      write (*, FMT='(A)') cindent//'  +'
+      call output_line(cindent//'  +')
     end subroutine stopIndent
   end subroutine solver_showHierarchy
 
@@ -7249,12 +7286,12 @@ contains
     
     ! local variables
     type(t_matrixScalar) :: rmatrixScalar
-
     integer, dimension(:), pointer :: p_Kcol
     integer, dimension(:), pointer :: p_Kld
     real(DP), dimension(:), pointer :: p_Da
 
-    ! Status variables of UMFPACK4; receives the UMFPACK-specific returncode
+
+    ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
     ! of a call to the solver routines.
     real(DP), dimension(90) :: Dinfo
 
@@ -7262,17 +7299,18 @@ contains
     if ((rsolver%rmatrix%nblocksPerCol .eq. 0) .or.&
         (rsolver%rmatrix%nblocksPerRow .eq. 0)) then
       call output_line('Matrix must be associated to solver node!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
     end if   
     
-    ! Prepare matrix
-    call initPrepareMatrix(rsolver%rmatrix%RmatrixBlock(1,1), rmatrixScalar)
+    ! Prepare the system matrix for UMFPACK and convert it into a scalar matrix
+    call initPrepareMatrix(rsolver%rmatrix, rmatrixScalar)
 
-    ! Set pointers
+    ! Set pointers to row- and column indices and data array
     call lsyssc_getbase_Kld   (rmatrixScalar, p_Kld)
     call lsyssc_getbase_Kcol  (rmatrixScalar, p_Kcol)
     call lsyssc_getbase_double(rmatrixScalar, p_Da)
+
         
     ! Perform symbolical factorization
     if (rsolver%isymbolic .ne. 0) call UMF4FSYM(rsolver%isymbolic)
@@ -7288,21 +7326,22 @@ contains
     case (1)
       ! Singular matrix
       call output_line('Matrix is singular!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
 
     case (-1)
       ! Insufficient memory
       call output_line('Insufficient memory!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
 
     case DEFAULT
-      ! Unknown error
+      ! Internal error
       call output_line('Internal UMFPACK error!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
     end select
+
 
     ! Perform numerical factorization
     if (rsolver%inumeric .ne. 0) call UMF4FNUM(rsolver%inumeric)
@@ -7313,22 +7352,23 @@ contains
     select case(int(Dinfo(1)))
     case (0)
       ! ok.
+
     case (1)
       ! Singular matrix      
       call output_line('Matrix is singular!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
 
     case (-1)
       ! Insufficient memory
       call output_line('Insufficient memory!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
 
     case DEFAULT
       ! Unknown error
       call output_line('Internal UMFPACK error!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
     end select
 
@@ -7343,36 +7383,52 @@ contains
     ! Prepare the matrix for UMFACK
 
     subroutine initPrepareMatrix(rmatrixSrc, rmatrixDest)
-      type(t_matrixScalar), intent(IN) :: rmatrixSrc
+      type(t_matrixBlock), intent(IN) :: rmatrixSrc
       type(t_matrixScalar), intent(INOUT) :: rmatrixDest
       
-      ! Initialize working matrix
-      select case(rmatrixSrc%cmatrixFormat)
 
-      case (LSYSSC_MATRIX9)
-        ! Format 9 is exactly the UMFPACK matrix.
-        ! Make a copy of the matrix structure, but use the same matrix entries.
-        call lsyssc_duplicateMatrix(rmatrixSrc, rmatrixDest,&
-                                    LSYSSC_DUP_COPY, LSYSSC_DUP_SHARE)
-
-      case (LSYSSC_MATRIX7)
-        ! For format 7, we have to modify the matrix slgithly.
-        ! Make a copy of the complete matrix
-        call lsyssc_duplicateMatrix(rmatrixSrc, rmatrixDest,&
-                                    LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+      ! Check if matrix is a 1x1 block matrix
+      if ((rmatrixSrc%nblocksPerCol .eq. 1) .and.&
+          (rmatrixSrc%nblocksPerRow .eq. 1)) then
         
-        ! Convert to format 9
-        call lsyssc_convertMatrix(rmatrixDest, LSYSSC_MATRIX9, .true.)
+        ! Initialize working matrix
+        select case(rmatrixSrc%RmatrixBlock(1,1)%cmatrixFormat)
+          
+        case (LSYSSC_MATRIX9)
+          ! Format 9 is exactly the UMFPACK matrix.
+          ! Make a copy of the matrix structure, but use the same matrix entries.
+          call lsyssc_duplicateMatrix(rmatrixSrc%RmatrixBlock(1,1), rmatrixDest,&
+                                      LSYSSC_DUP_COPY, LSYSSC_DUP_SHARE)
 
-      case DEFAULT
-        call output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
+        case (LSYSSC_MATRIX7)
+          ! For format 7, we have to modify the matrix slightly.
+          ! Make a copy of the complete matrix
+          call lsyssc_duplicateMatrix(rmatrixSrc%RmatrixBlock(1,1), rmatrixDest,&
+                                      LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+        
+          ! Convert to format 9
+          call lsyssc_convertMatrix(rmatrixDest, LSYSSC_MATRIX9, .true.)
+          
+        case DEFAULT
+          call output_line('Unsupported matrix format!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
+          call sys_halt()
+        end select
+
+        ! Since UMFPACK4 is written in C, all arrays start at position 0 instead of 1
+        call lsyssc_addIndex(rmatrixDest%h_Kld,  -1_I32, ilength=rmatrixDest%NEQ+1)
+        call lsyssc_addIndex(rmatrixDest%h_Kcol, -1_I32, ilength=rmatrixDest%NA)
+
+      else
+
+        call output_line('Block matrices are not supported!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
         call sys_halt()
-      end select
 
-      ! Since UMFPACK4 is written in C, all arrays start at position 0 instead of 1
-      call lsyssc_addIndex(rmatrixDest%h_Kld, -1_I32, ilength=rmatrixDest%NEQ+1)
-      call lsyssc_addIndex(rmatrixDest%h_Kcol, -1_I32, ilength=rmatrixDest%NA)
+      end if     
+      
     end subroutine initPrepareMatrix
+
   end subroutine solver_initUMFPACK 
+
 end module solver
