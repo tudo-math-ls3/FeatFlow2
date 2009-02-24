@@ -12,7 +12,7 @@
 !#
 !# The first example (module heatcond_method5) is a very simple one-routine
 !# solver for the head condition equation without any specials. The equation
-!# is discretised with explicit Euler for a fixed number of time steps.
+!# is discretised with implicit Euler for a fixed number of time steps.
 !# Boundary conditions and RHS are constant in time.
 !#
 !# The second example (module heatcond_method5) separates the different steps

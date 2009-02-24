@@ -12,7 +12,7 @@
 !#    d/dt u  - Laplace u  =  f
 !#
 !# With the RHS f and the boundary conditions being constant in time.
-!# The equation is discretised in time by explicit Euler, prividing the
+!# The equation is discretised in time by implicit Euler, prividing the
 !# following discrete equation:
 !#
 !#    (1/dt M  +  L) u_{n+1}  =  f  +  1/dt M u_n

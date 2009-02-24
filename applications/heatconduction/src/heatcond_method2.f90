@@ -12,7 +12,7 @@
 !#    d/dt u  - Laplace u  =  f
 !#
 !# With the RHS f and the boundary conditions being constant in time.
-!# The equation is discretised in time by explicit Euler, prividing the
+!# The equation is discretised in time by implicit Euler, prividing the
 !# following discrete equation:
 !#
 !#    (1/dt M  +  L) u_{n+1}  =  f  +  1/dt M u_n
@@ -21,7 +21,7 @@
 !#
 !# The whole solution process is implemented into one routine, using a standard
 !# linear solver (not multigrid) for solving the linear subproblems in every
-!# timestep. The time domain is [0,T] and discretised by a simple explicit 
+!# timestep. The time domain is [0,T] and discretised by a simple implicit
 !# Euler.
 !#
 !# The module is an extension of the standard poisson solver.
@@ -392,7 +392,7 @@ contains
     ! Using the mass and Laplace matrix, we set up
     !      A = 1/dt M + L
     ! in rmatrix. This is the system matrix, which is valid in all time steps
-    ! as we use explicit Euler with a fixed time step!
+    ! as we use implicit Euler with a fixed time step!
     !
     ! The boolean parameters in this call say:
     ! - Sum up the entries from rmatrixMass and rmatrixLaplace.
