@@ -93,73 +93,6 @@ module solvernonlinear
   ! *****************************************************************************
   ! *****************************************************************************
 
-  character(LEN=*), parameter :: MSG_SOL0001 = &
-      '(/2X,72("#")/5X,"Nonlinear solver",T50,"TTIME = ",G12.5/2X,72("#")/)'
-  
-  character(LEN=*), parameter :: MSG_SOL0002 = &
-      '(/2X,72("+")/5X,"Nonlinear fixed-point step",T50,"ITE = ",I6/,2X,72("+")/)'
-
-  character(LEN=*), parameter :: MSG_SOL0003 = &
-       '(/2X,72("-")/5X,"Inexact Newton step",T50,"ITE = ",I6,&
-       &/7X,"- new defect         ",G12.5,&
-       &/7X,"- old defect         ",G12.5,&
-       &/7X,"- defect variation   ",G12.5,&
-       &/7X,"- defect improvement ",G12.5/2X,72("-")/)'
-
-  character(LEN=*), parameter :: MSG_SOL0004 = &
-       '(/2X,72("-")/5X,"Defect correction step",T50,"ITE = ",I6,&
-       &/7X,"- new defect         ",G12.5,&
-       &/7X,"- old defect         ",G12.5,&
-       &/7X,"- defect variation   ",G12.5,&
-       &/7X,"- defect improvement ",G12.5/2X,72("-")/)'
-
-  character(LEN=*), parameter :: MSG_SOL0005 = &
-       '(/5X,"Zero initial nonlinear defect",2X,"!!DEF!! = ",G12.5/)'
-
-  character(LEN=*), parameter :: MSG_SOL0006 = &
-       '(/2X,72("-")/5X,"Direct solution step",T50,"ITE = ",I6,&
-       &/7X,"- new defect         ",G12.5,&
-       &/7X,"- old defect         ",G12.5,&
-       &/7X,"- defect variation   ",G12.5,&
-       &/7X,"- defect improvement ",G12.5/2X,72("-")/)'
-
-  character(LEN=*), parameter :: MSG_SOL0007 = &
-       '(/2X,72("-")/5X,"Nonlinear solution ",A50,&
-       &/7X,"- #nonlinear iterations ",I12,&
-       &/7X,"- final defect          ",G12.5,&
-       &/7X,"- initial defect        ",G12.5,&
-       &/7X,"- defect improvement    ",G12.5,&
-       &/7X,"- convergence rate      ",G12.5/2X,72("-")/)'
-
-  character(LEN=*), parameter :: MSG_SOL0008 = &
-      '(/2X,72("#")/5X,"Full multigrid solver",T35,"ILEV = ",I3,T50,"TTIME = ",G12.5/2X,72("#")/)'
-
-  character(LEN=*), parameter :: MSG_SOL0009 = &
-      '(/2X,72("+")/5X,"Multigrid solver",T35,"ILEV = ",I3,T50,"TTIME = ",G12.5/2X,72("+")/)'
-
-  character(LEN=*), parameter :: MSG_SOL0010 = &
-      '(/2X,72("~")/5X,"Multigrid step ",I6,&
-      &/7X,"- new defect         ",G12.5,&
-      &/7X,"- defect improvement ",G12.5,/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_SOL0011 = &
-      '(/5X,"Defect increased by factor",2X,G12.5/)'
-
-  character(LEN=*), parameter :: MSG_SOL0012 = &
-      '(/2X,72("~")/5X,"Multigrid solution ",A50,&
-      &/7X,"- #multigrid steps   ",I12,&
-      &/7X,"- final defect       ",G12.5,&
-      &/7X,"- initial defect     ",G12.5,&
-      &/7X,"- defect improvement ",G12.5,&
-      &/7X,"- convergence rate   ",G12.5/,2X,72("~")/)'
-
-  character(LEN=*), parameter :: MSG_SOL0013 = &
-      '(/5X,"Initial defect too large",2X,"!!DEF!! = ",G12.5/)'
-
-  ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
-
   interface nlsol_solveMultigrid
     module procedure nlsol_solveMultigridScalar
     module procedure nlsol_solveMultigridBlock
@@ -178,7 +111,8 @@ contains
 
 !<subroutine>
 
-  subroutine nlsol_solveMultigridScalar(rproblemLevel, rtimestep, rsolver, ru, ru0,& 
+  subroutine nlsol_solveMultigridScalar(rproblemLevel, rtimestep, rsolver,&
+                                        rsolution, rsolutionInitial,& 
                                         fcb_calcResidual, fcb_calcJacobian,&
                                         fcb_applyJacobian, fcb_setBoundary,&
                                         rcollection, rrhs)
@@ -192,7 +126,7 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorScalar), intent(IN) :: ru0
+    type(t_vectorScalar), intent(IN) :: rsolutionInitial
 
     ! Callback routines
     include 'intf_nlsolcallback.inc'
@@ -212,7 +146,7 @@ contains
     type(t_solver), intent(INOUT) :: rsolver
     
     ! solution vector
-    type(t_vectorScalar), intent(INOUT) :: ru
+    type(t_vectorScalar), intent(INOUT) :: rsolution
 
     ! collection
     type(t_collection), intent(INOUT) :: rcollection
@@ -220,52 +154,56 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock) :: ruBlock
-    type(t_vectorBlock) :: ru0Block
+    type(t_vectorBlock) :: rsolutionBlock
+    type(t_vectorBlock) :: rsolutionInitialBlock
     type(t_vectorBlock) :: rrhsBlock
 
     if (present(rrhs)) then
 
       ! Convert scalar vectors into block vectors
-      call lsysbl_createVecFromScalar(ru,   ruBlock)
-      call lsysbl_createVecFromScalar(ru0,  ru0Block)
       call lsysbl_createVecFromScalar(rrhs, rrhsBlock)
+      call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
+      call lsysbl_createVecFromScalar(rsolutionInitial, rsolutionInitialBlock)
       
       ! Apply block-version of nonlinear multigrid
-      call nlsol_solveMultigridBlock(rproblemLevel, rtimestep, rsolver, ruBlock, ru0Block,&
+      call nlsol_solveMultigridBlock(rproblemLevel, rtimestep, rsolver,&
+                                     rsolutionBlock, rsolutionInitialBlock,&
                                      fcb_calcResidual, fcb_calcJacobian,&
                                      fcb_applyJacobian, fcb_setBoundary,&
                                      rcollection, rrhsBlock)
       
       ! Release temporal block vectors
-      call lsysbl_releaseVector(ruBlock)
-      call lsysbl_releaseVector(ru0Block)
       call lsysbl_releaseVector(rrhsBlock)
-
+      call lsysbl_releaseVector(rsolutionBlock)
+      call lsysbl_releaseVector(rsolutionInitialBlock)
+      
     else
       
       ! Convert scalar vectors into block vectors
-      call lsysbl_createVecFromScalar(ru,  ruBlock)
-      call lsysbl_createVecFromScalar(ru0, ru0Block)
+      call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
+      call lsysbl_createVecFromScalar(rsolutionInitial, rsolutionInitialBlock)
       
       ! Apply block-version of nonlinear multigrid
-      call nlsol_solveMultigridBlock(rproblemLevel, rtimestep, rsolver, ruBlock, ru0Block,&
+      call nlsol_solveMultigridBlock(rproblemLevel, rtimestep, rsolver,&
+                                     rsolutionBlock, rsolutionInitialBlock,&
                                      fcb_calcResidual, fcb_calcJacobian,&
                                      fcb_applyJacobian, fcb_setBoundary,&
                                      rcollection)
       
       ! Release temporal block vectors
-      call lsysbl_releaseVector(ruBlock)
-      call lsysbl_releaseVector(ru0Block)
+      call lsysbl_releaseVector(rsolutionBlock)
+      call lsysbl_releaseVector(rsolutionInitialBlock)
 
     end if
+    
   end subroutine nlsol_solveMultigridScalar
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine nlsol_solveMultigridBlock(rproblemLevel, rtimestep, rsolver, ru, ru0,&
+  subroutine nlsol_solveMultigridBlock(rproblemLevel, rtimestep, rsolver,&
+                                       rsolution, rsolutionInitial,&
                                        fcb_calcResidual, fcb_calcJacobian,&
                                        fcb_applyJacobian, fcb_setBoundary,&
                                        rcollection, rrhs)
@@ -278,7 +216,7 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorBlock), intent(IN) :: ru0
+    type(t_vectorBlock), intent(IN) :: rsolutionInitial
 
     ! Callback routines
     include 'intf_nlsolcallback.inc'
@@ -298,7 +236,7 @@ contains
     type(t_solver), intent(INOUT) :: rsolver
     
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(INOUT) :: rsolution
     
     ! collection
     type(t_collection), intent(INOUT) :: rcollection
@@ -308,17 +246,21 @@ contains
     ! local variables
     type(t_solverMultigrid), pointer :: p_solverMultigrid
     type(t_solver), pointer :: p_solverNonlinear
-    integer :: imgstep,mgcycle
+    integer :: imgstep, mgcycle
 
     ! What kind of solver are we?
     select case(rsolver%csolverType)
+      
     case (SV_NONLINEAR)
       !-------------------------------------------------------------------------
       ! Single grid solver: G(u)=f
+      !-------------------------------------------------------------------------
       
       select case(rsolver%isolver)
+
       case (NLSOL_SOLVER_FIXEDPOINT)
-        call nlsol_solveFixedPoint(rproblemLevel, rtimestep, rsolver, ru, ru0,&
+        call nlsol_solveFixedPoint(rproblemLevel, rtimestep, rsolver,&
+                                   rsolution, rsolutionInitial,&
                                    fcb_calcResidual, fcb_calcJacobian,&
                                    fcb_applyJacobian, fcb_setBoundary,&
                                    rcollection, rrhs)
@@ -361,8 +303,10 @@ contains
 
         ! What kind of solver are we?
         select case(p_solverNonlinear%isolver)
+
         case (NLSOL_SOLVER_FIXEDPOINT)
-          call nlsol_solveFixedPoint(rproblemLevel, rtimestep, p_solverNonlinear, ru, ru0,&
+          call nlsol_solveFixedPoint(rproblemLevel, rtimestep, p_solverNonlinear,&
+                                     rsolution, rsolutionInitial,&
                                      fcb_calcResidual, fcb_calcJacobian,&
                                      fcb_applyJacobian, fcb_setBoundary,&
                                      rcollection, rrhs)
@@ -378,39 +322,50 @@ contains
         
         !-----------------------------------------------------------------------
         ! Multigrid grid solver: G(u)=f
+        !-----------------------------------------------------------------------
         
         ! Perform prescribed number of multigrid steps
         mgstep: do imgstep = 1, p_solverMultigrid%ilmax
           
           ! Perform one nonlinear two-grid step
           mgcycle = merge(1, 2, p_solverMultigrid%icycle .eq. 1)
-          call nlsol_solveTwogrid(rproblemLevel, rtimestep, rsolver, ru, ru0,&
+          call nlsol_solveTwogrid(rproblemLevel, rtimestep, rsolver,&
+                                  rsolution, rsolutionInitial,&
                                   fcb_calcResidual, fcb_calcJacobian,&
                                   fcb_applyJacobian, fcb_setBoundary,&
                                   rcollection, rrhs)
           
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-              write(*,FMT=MSG_SOL0010) imgstep, rsolver%dfinalDefect,& 
-              rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+            call output_lbrk()
+            call output_separator(OU_SEP_TILDE)
+            call output_line('Nonlinear multigrid step: '//trim(sys_siL(imgstep,5)))
+            call output_line('Norm of residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+            call output_line('Improvement of residual:  '//trim(sys_sdEL(rsolver%dfinalDefect/&
+                                                          max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+            call output_separator(OU_SEP_TILDE)
+            call output_lbrk()
+          end if
 
           ! Write nonlinear defect to file?
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-              write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,2(",",E16.8E3))')&
-              imgstep, rsolver%dfinalDefect,&
-              rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+            write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,2(",",E16.8E3))')&
+                imgstep, rsolver%dfinalDefect,&
+                rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+          end if
           
 
           ! Check if residual increased too much
           if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or.&
               rsolver%dfinalDefect > rsolver%ddivAbs) then
-            if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-                write(*,FMT=MSG_SOL0011)&
-                rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
+            if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+              call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
+                  rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5))//' !!!')
+            end if
 
             ! Adjust solver status
             rsolver%istatus = SV_INCR_DEF
 
-            ! That's it, return.
+            ! That's it, return
             return
           end if
 
@@ -427,18 +382,27 @@ contains
         ! Multigrid convergence rates
         call solver_statistics(rsolver, imgstep)
 
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-            write(*,FMT=MSG_SOL0012) solver_getstatus(rsolver),&
-            rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-            rsolver%dconvergenceRate
-
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+          call output_lbrk()
+          call output_separator(OU_SEP_TILDE)
+          call output_line('Nonlinear multigrid solution '//solver_getstatus(rsolver))
+          call output_line('Number of multigrid steps:   '//trim(sys_siL(rsolver%iiterations,5)))
+          call output_line('Norm of final residual:      '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+          call output_line('Norm of initial residual:    '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+          call output_line('Residual improvement:        '//trim(sys_sdEL(rsolver%dfinalDefect/&
+                                                            max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+          call output_line('Convergence rate:            '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
+          call output_separator(OU_SEP_TILDE)
+          call output_lbrk()
+        end if
+        
         ! Write nonlinear convergence rate to logfile?
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-            write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-            rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-            rsolver%dconvergenceRate
+        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+          write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
+              rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
+              rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
+              rsolver%dconvergenceRate
+        end if
       end if
       
 
@@ -453,7 +417,8 @@ contains
 
 !<subroutine>
 
-  recursive subroutine nlsol_solveTwogrid(rproblemLevel, rtimestep, rsolver, ru, ru0,&
+  recursive subroutine nlsol_solveTwogrid(rproblemLevel, rtimestep, rsolver,&
+                                          rsolution, rsolutionInitial,&
                                           fcb_calcResidual, fcb_calcJacobian,&
                                           fcb_applyJacobian, fcb_setBoundary,&
                                           rcollection, rrhs)
@@ -464,7 +429,7 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorBlock), intent(IN) :: ru0
+    type(t_vectorBlock), intent(IN) :: rsolutionInitial
 
     ! Callback routines
     include 'intf_nlsolcallback.inc'
@@ -484,7 +449,7 @@ contains
     type(t_solver), intent(INOUT) :: rsolver
     
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(INOUT) :: rsolution
 
     ! collection
     type(t_collection), intent(INOUT) :: rcollection
@@ -500,7 +465,8 @@ contains
 
 !<subroutine>
 
-  subroutine nlsol_solveFixedpointScalar(rproblemLevel, rtimestep, rsolver, ru, ru0,&
+  subroutine nlsol_solveFixedpointScalar(rproblemLevel, rtimestep, rsolver,&
+                                         rsolution, rsolutionInitial,&
                                          fcb_calcResidual, fcb_calcJacobian,&
                                          fcb_applyJacobian, fcb_setBoundary,&
                                          rcollection, rrhs)
@@ -520,7 +486,7 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorScalar), intent(IN) :: ru0
+    type(t_vectorScalar), intent(IN) :: rsolutionInitial
 
     ! Callback routines
     include 'intf_nlsolcallback.inc'
@@ -540,7 +506,7 @@ contains
     type(t_solver), intent(INOUT) :: rsolver
     
     ! solution vector
-    type(t_vectorScalar), intent(INOUT) :: ru
+    type(t_vectorScalar), intent(INOUT) :: rsolution
 
     ! collection
     type(t_collection), intent(INOUT) :: rcollection
@@ -548,52 +514,56 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock) :: ru0Block
-    type(t_vectorBlock) :: ruBlock
     type(t_vectorBlock) :: rrhsBlock
+    type(t_vectorBlock) :: rsolutionBlock
+    type(t_vectorBlock) :: rsolutionInitialBlock
     
     
     if (present(rrhs)) then
 
       ! Convert scalar vectors into block vectors
-      call lsysbl_createVecFromScalar(ru,   ruBlock)
-      call lsysbl_createVecFromScalar(ru0,  ru0Block)
       call lsysbl_createVecFromScalar(rrhs, rrhsBlock)    
+      call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
+      call lsysbl_createVecFromScalar(rsolutionInitial, rsolutionInitialBlock)
       
       ! Call block version
-      call nlsol_solveFixedpointBlock(rproblemLevel, rtimestep, rsolver, ruBlock, ru0Block,&
+      call nlsol_solveFixedpointBlock(rproblemLevel, rtimestep, rsolver,&
+                                      rsolutionBlock, rsolutionInitialBlock,&
                                       fcb_calcResidual, fcb_calcJacobian,&
                                       fcb_applyJacobian, fcb_setBoundary,&
                                       rcollection, rrhsBlock)
 
       ! Release temporal block vectors
-      call lsysbl_releaseVector(ruBlock)
-      call lsysbl_releaseVector(ru0Block)
       call lsysbl_releaseVector(rrhsBlock)
+      call lsysbl_releaseVector(rsolutionBlock)
+      call lsysbl_releaseVector(rsolutionInitialBlock)
       
     else
 
       ! Convert scalar vectors into block vectors
-      call lsysbl_createVecFromScalar(ru, ruBlock)
-      call lsysbl_createVecFromScalar(ru0, ru0Block)
+      call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
+      call lsysbl_createVecFromScalar(rsolutionInitial, rsolutionInitialBlock)
       
       ! Call block version
-      call nlsol_solveFixedpointBlock(rproblemLevel, rtimestep, rsolver, ruBlock, ru0Block,&
+      call nlsol_solveFixedpointBlock(rproblemLevel, rtimestep, rsolver,&
+                                      rsolutionBlock, rsolutionInitialBlock,&
                                       fcb_calcResidual, fcb_calcJacobian,&
                                       fcb_applyJacobian, fcb_setBoundary,&
                                       rcollection)
 
       ! Release temporal block vectors
-      call lsysbl_releaseVector(ruBlock)
-      call lsysbl_releaseVector(ru0Block)
+      call lsysbl_releaseVector(rsolutionBlock)
+      call lsysbl_releaseVector(rsolutionInitialBlock)
     end if
+
   end subroutine nlsol_solveFixedpointScalar
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  subroutine nlsol_solveFixedpointBlock(rproblemLevel, rtimestep, rsolver, ru, ru0, &
+  subroutine nlsol_solveFixedpointBlock(rproblemLevel, rtimestep, rsolver,&
+                                        rsolution, rsolutionInitial, &
                                         fcb_calcResidual, fcb_calcJacobian,&
                                         fcb_applyJacobian, fcb_setBoundary,&
                                         rcollection, rrhs)
@@ -609,7 +579,7 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorBlock), intent(IN) :: ru0
+    type(t_vectorBlock), intent(IN) :: rsolutionInitial
 
     ! Callback routines
     include 'intf_nlsolcallback.inc'
@@ -629,7 +599,7 @@ contains
     type(t_solver), intent(INOUT), target :: rsolver
         
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(INOUT) :: rsolution
 
     ! collection
     type(t_collection), intent(INOUT) :: rcollection
@@ -649,15 +619,10 @@ contains
     logical :: bstagnate
     logical :: bcompatible
 
-    ! Set pointer to top-most solver
-    p_rsolver => rsolver
 
-    ! Walk down the solver structure until applicable solver is reached
-    do while (associated(p_rsolver))
-      if (p_rsolver%csolverType .eq. SV_NONLINEAR) exit
-      p_rsolver => solver_getNextSolver(p_rsolver)
-    end do
-
+    ! Set pointer to nonlinear solver
+    p_rsolver => solver_getNextSolverByType(rsolver, SV_NONLINEAR)
+    
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveFixedpointBlock')
@@ -671,7 +636,7 @@ contains
       call sys_halt()
     end if
 
-    ! Set pointer
+    ! Set pointer to linear solver
     p_rsolverLinear => p_rsolver%p_solverSubnode
     if (.not. associated(p_rsolverLinear)) then
       call output_line('No subsolver is associated!',&
@@ -687,65 +652,40 @@ contains
       call sys_halt()
     end if
 
-    select case(p_rsolver%iprecond)
-    case (NLSOL_PRECOND_BLOCKD, NLSOL_PRECOND_DEFCOR)
-      p_rrhs => p_rsolver%p_solverDefcor%rTempVectors(1)
-      p_rres => p_rsolver%p_solverDefcor%rTempVectors(2)
-      p_raux => p_rsolver%p_solverDefcor%rTempVectors(3)
-
-      ! Check if compatible vectors are available.
-      call lsysbl_isVectorCompatible(ru, p_rres, bcompatible)
-      if (.not.bcompatible) then
-        call lsysbl_resizeVectorBlock(p_rres, ru, .false.)
-        call lsysbl_resizeVectorBlock(p_rrhs, ru, .false.)
-        call lsysbl_resizeVectorBlock(p_raux, ru, .false.)
-      end if
-      
-    case (NLSOL_PRECOND_NEWTON)
-      p_rrhs   => p_rsolver%p_solverNewton%rTempVectors(1)
-      p_rres   => p_rsolver%p_solverNewton%rTempVectors(2)
-      p_raux   => p_rsolver%p_solverNewton%rTempVectors(3)
-      p_rufs   => p_rsolver%p_solverNewton%rTempVectors(4)
-      p_rresfs => p_rsolver%p_solverNewton%rTempVectors(5)
-
-      ! Check if compatible vectors are available.
-      call lsysbl_isVectorCompatible(ru, p_rres, bcompatible)
-      if (.not.bcompatible) then
-        call lsysbl_resizeVectorBlock(p_rres,   ru, .false.)
-        call lsysbl_resizeVectorBlock(p_rrhs,   ru, .false.)
-        call lsysbl_resizeVectorBlock(p_raux,   ru, .false.)
-        call lsysbl_resizeVectorBlock(p_rufs,   ru, .false.)
-        call lsysbl_resizeVectorBlock(p_rresfs, ru, .false.)
-      end if
-
-    case DEFAULT
-      call output_line('Invalid nonlinear preconditioner!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveFixedpointBlock')
-      call sys_halt()
-    end select
-
+    
     !---------------------------------------------------------------------------
     ! Initialization
-    !---------------------------------------------------------------------------
-    if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-        write(*,FMT=MSG_SOL0001) rtimestep%dTime
-
+    !---------------------------------------------------------------------------  
+    
     select case(p_rsolver%iprecond)
 
     case(NLSOL_PRECOND_BLOCKD,&
          NLSOL_PRECOND_DEFCOR,&
          NLSOL_PRECOND_NEWTON_FAILED)
 
+      ! Set pointers
+      p_rrhs => p_rsolver%p_solverDefcor%rTempVectors(1)
+      p_rres => p_rsolver%p_solverDefcor%rTempVectors(2)
+      p_raux => p_rsolver%p_solverDefcor%rTempVectors(3)
+
+      ! Check if compatible vectors are available.
+      call lsysbl_isVectorCompatible(rsolution, p_rres, bcompatible)
+      if (.not.bcompatible) then
+        call lsysbl_resizeVectorBlock(p_rres, rsolution, .false.)
+        call lsysbl_resizeVectorBlock(p_rrhs, rsolution, .false.)
+        call lsysbl_resizeVectorBlock(p_raux, rsolution, .false.)
+      end if
+
       ! Compute the initial residual and the constant right-hand side
       call fcb_calcResidual(rproblemLevel, rtimestep, p_rsolver,&
-                            ru, ru0, p_rrhs, p_rres, 0, rcollection)
+                            rsolution, rsolutionInitial, p_rrhs, p_rres, 0, rcollection)
 
       ! Apply given right-hand side vector
       if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1.0_DP, 1.0_DP)
       
       ! Impose boundary conditions
       call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
-                           ru, p_rres, ru0, rcollection)
+                           rsolution, p_rres, rsolutionInitial, rcollection)
       if (rcollection%Iquickaccess(1) < 0) then
         p_rsolver%istatus = SV_INF_DEF
         return
@@ -754,19 +694,37 @@ contains
     
     case(NLSOL_PRECOND_NEWTON)
       
+      ! Set pointers
+      p_rrhs   => p_rsolver%p_solverNewton%rTempVectors(1)
+      p_rres   => p_rsolver%p_solverNewton%rTempVectors(2)
+      p_raux   => p_rsolver%p_solverNewton%rTempVectors(3)
+      p_rufs   => p_rsolver%p_solverNewton%rTempVectors(4)
+      p_rresfs => p_rsolver%p_solverNewton%rTempVectors(5)
+
+      ! Check if compatible vectors are available.
+      call lsysbl_isVectorCompatible(rsolution, p_rres, bcompatible)
+      if (.not.bcompatible) then
+        call lsysbl_resizeVectorBlock(p_rres,   rsolution, .false.)
+        call lsysbl_resizeVectorBlock(p_rrhs,   rsolution, .false.)
+        call lsysbl_resizeVectorBlock(p_raux,   rsolution, .false.)
+        call lsysbl_resizeVectorBlock(p_rufs,   rsolution, .false.)
+        call lsysbl_resizeVectorBlock(p_rresfs, rsolution, .false.)
+      end if
+
       ! Compute the initial residual and the constant right-hand side
       call fcb_calcResidual(rproblemLevel, rtimestep, p_rsolver,&
-                            ru, ru0, p_rrhs, p_rres, 0, rcollection)
+                            rsolution, rsolutionInitial, p_rrhs, p_rres, 0, rcollection)
 
       ! Apply given right-hand side vector
       if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1.0_DP, 1.0_DP)
    
       ! Assemble Jacobian matrix
-      call fcb_calcJacobian(rproblemLevel, rtimestep, p_rsolver, ru, ru0, .false., rcollection)
+      call fcb_calcJacobian(rproblemLevel, rtimestep, p_rsolver,&
+                            rsolution, rsolutionInitial, .false., rcollection)
       
       ! Impose boundary conditions
       call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
-                           ru, p_rres, ru0, rcollection)
+                           rsolution, p_rres, rsolutionInitial, rcollection)
       if (rcollection%Iquickaccess(1) < 0) then
         p_rsolver%istatus = SV_INF_DEF
         return
@@ -784,12 +742,14 @@ contains
     p_rsolver%dinitialDefect = lsysbl_vectorNorm(p_rres, p_rsolver%iresNorm)
     p_rsolver%dfinalDefect   = p_rsolver%dinitialDefect
     doldDefect               = p_rsolver%dinitialDefect
-    p_rsolver%istatus        = 0  
+    p_rsolver%istatus        = SV_CONVERGED
     
     ! Check if initial residual is too large ...
     if (p_rsolver%dinitialDefect > p_rsolver%ddivAbs) then
-      if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-          write (*,FMT=MSG_SOL0013) p_rsolver%dinitialDefect
+      if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        call output_line('!!! Norm of initial residual is too large '//&
+                         trim(sys_sdEL(p_rsolver%dinitialDefect,5))//' !!!')
+      end if
       
       ! Adjust solver status
       p_rsolver%istatus = SV_INF_DEF
@@ -802,8 +762,10 @@ contains
       
     elseif (p_rsolver%dinitialDefect .le. p_rsolver%ddefZero) then
       ! ... or if it satisfies the desired tolerance already
-      if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-          write (*,FMT=MSG_SOL0005) p_rsolver%dinitialDefect
+      if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        call output_line('!!! Zero initial residual '//&
+                         trim(sys_sdEL(p_rsolver%dinitialDefect,5))//' !!!')
+      end if
       
       ! Adjust solver status
       p_rsolver%istatus = SV_ZERO_DEF
@@ -827,15 +789,12 @@ contains
     !----------------------------------------------------------------
     
     fixpoint: do iiterations = 1, p_rsolver%nmaxIterations
-      
-      if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-          write(*,FMT=MSG_SOL0002) iiterations
-      
+            
       ! Store old defect values
       doldDefect = p_rsolver%dfinalDefect
       
       ! Compute solution increment
-100   select case(p_rsolver%iprecond)
+1     select case(p_rsolver%iprecond)
         
       case(NLSOL_PRECOND_BLOCKD)
         
@@ -848,7 +807,7 @@ contains
         !---------------------------------------------------------------------
         
         call lsysbl_clearVector(p_raux)
-        do iblock = 1, ru%nblocks
+        do iblock = 1, rsolution%nblocks
           call linsol_solveMultigrid(rproblemLevel, p_rsolverLinear, &
                                      p_raux%RvectorBlock(iblock),&
                                      p_rres%RvectorBlock(iblock))
@@ -860,21 +819,21 @@ contains
         
         ! Add increment to solution vector
         if (p_rsolver%domega < 0.0_DP) then
-          call lsysbl_vectorLinearComb(p_raux, ru, 1.0_DP, 1.0_DP)
+          call lsysbl_vectorLinearComb(p_raux, rsolution, 1.0_DP, 1.0_DP)
         else
-          call lsysbl_vectorLinearComb(p_raux, ru, p_rsolver%domega, 1.0_DP)
+          call lsysbl_vectorLinearComb(p_raux, rsolution, p_rsolver%domega, 1.0_DP)
         end if
         
         ! Compute new defect
         call fcb_calcResidual(rproblemLevel, rtimestep, p_rsolver,&
-                              ru, ru0, p_rrhs, p_rres, iiterations, rcollection)
+                              rsolution, rsolutionInitial, p_rrhs, p_rres, iiterations, rcollection)
         
         ! Apply given right-hand side vector
         if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1.0_DP, 1.0_DP)
 
         ! Impose boundary conditions
         call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
-                             ru, p_rres, ru0, rcollection)
+                             rsolution, p_rres, rsolutionInitial, rcollection)
         if (rcollection%Iquickaccess(1) < 0) then
           p_rsolver%istatus = SV_INF_DEF
           return
@@ -883,18 +842,27 @@ contains
         ! Compute norm of new defect
         p_rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, p_rsolver%iresNorm)
 
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-            write(*,FMT=MSG_SOL0006) iiterations,&
-            p_rsolver%dfinalDefect, doldDefect,&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
+        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+          call output_lbrk()
+          call output_separator(OU_SEP_TILDE)
+          call output_line('Block-diagonal solution step '//trim(sys_siL(iiterations,5)))
+          call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
+          call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
+          call output_line('Variation of residual:       '//trim(sys_sdEL(&
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+          call output_line('Improvement of residual:     '//trim(sys_sdEL(&
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5)))
+          call output_separator(OU_SEP_TILDE)
+          call output_lbrk()
+        end if
         
         ! Write nonlinear defect to logfile?
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-            write(UNIT=p_rsolver%iunitLogfile,FMT='("(01),",I10,3(",",E16.8E3))')&
-            iiterations, p_rsolver%dfinalDefect,&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
+        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+          write(UNIT=p_rsolver%iunitLogfile,FMT='("(01),",I10,3(",",E16.8E3))')&
+              iiterations, p_rsolver%dfinalDefect,&
+              p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
+              p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
+        end if
         
 
       case(NLSOL_PRECOND_DEFCOR,&
@@ -914,21 +882,21 @@ contains
                 
         ! Add increment to solution vector
         if (p_rsolver%domega < 0.0_DP) then
-          call lsysbl_vectorLinearComb(p_raux, ru, 1.0_DP, 1.0_DP)
+          call lsysbl_vectorLinearComb(p_raux, rsolution, 1.0_DP, 1.0_DP)
         else
-          call lsysbl_vectorLinearComb(p_raux, ru, p_rsolver%domega, 1.0_DP)
+          call lsysbl_vectorLinearComb(p_raux, rsolution, p_rsolver%domega, 1.0_DP)
         end if
         
         ! Compute new defect
         call fcb_calcResidual(rproblemLevel, rtimestep, p_rsolver,&
-                              ru, ru0, p_rrhs, p_rres, iiterations, rcollection)
+                              rsolution, rsolutionInitial, p_rrhs, p_rres, iiterations, rcollection)
 
         ! Apply given right-hand side vector
         if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rres, 1.0_DP, 1.0_DP)
 
         ! Impose boundary conditions
         call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
-                             ru, p_rres, ru0, rcollection)
+                             rsolution, p_rres, rsolutionInitial, rcollection)
         if (rcollection%Iquickaccess(1) < 0) then
           p_rsolver%istatus = SV_INF_DEF
           return
@@ -937,18 +905,27 @@ contains
         ! Compute norm of new defect
         p_rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, p_rsolver%iresNorm)
 
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-            write(*,FMT=MSG_SOL0004) iiterations,&
-            p_rsolver%dfinalDefect, doldDefect,&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
+        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+          call output_lbrk()
+          call output_separator(OU_SEP_TILDE)
+          call output_line('Defect correction step       '//trim(sys_siL(iiterations,5)))
+          call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
+          call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
+          call output_line('Variation of residual:       '//trim(sys_sdEL(&
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+          call output_line('Improvement of residual:     '//trim(sys_sdEL(&
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5)))
+          call output_separator(OU_SEP_TILDE)
+          call output_lbrk()
+        end if
         
         ! Write nonlinear defect to logfile?
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-            write(UNIT=p_rsolver%iunitLogfile,FMT='("(01),",I10,3(",",E16.8E3))')&
-            iiterations, p_rsolver%dfinalDefect,&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
+        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+          write(UNIT=p_rsolver%iunitLogfile,FMT='("(01),",I10,3(",",E16.8E3))')&
+              iiterations, p_rsolver%dfinalDefect,&
+              p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
+              p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
+        end if
                     
 
       case(NLSOL_PRECOND_NEWTON)
@@ -993,37 +970,38 @@ contains
         end if
 
         ! Backtracking
-        ibacktrackingSteps = nlsol_backtracking(rproblemLevel, rtimestep, p_rsolver, ru, ru0,&
-                                                p_rufs, p_raux, p_rrhs, p_rres, p_rresfs,&
-                                                fcb_calcResidual, fcb_setBoundary, doldDefect,&
-                                                drtjs, eta, redfac, iiterations, rcollection, rrhs)
+        ibacktrackingSteps = nlsol_backtracking(rproblemLevel, rtimestep, p_rsolver,&
+                                                rsolution, rsolutionInitial, p_rufs, p_raux,&
+                                                p_rrhs, p_rres, p_rresfs, fcb_calcResidual,&
+                                                fcb_setBoundary, doldDefect, drtjs, eta,&
+                                                redfac, iiterations, rcollection, rrhs)
         
         ! Perform failsave defect correction if required
         if (ibacktrackingSteps .ne. 0) then
           
           call fcb_calcJacobian(rproblemLevel, rtimestep, p_rsolver,&
-                                ru, ru0, .true., rcollection)
+                                rsolution, rsolutionInitial, .true., rcollection)
           p_rsolver%iprecond = NLSOL_PRECOND_NEWTON_FAILED
 
           ! Impose boundary conditions
           call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
-                               ru, p_rres, ru0, rcollection)
+                               rsolution, p_rres, rsolutionInitial, rcollection)
           if (rcollection%Iquickaccess(1) < 0) then
             p_rsolver%istatus = SV_INF_DEF
             return
           end if
           
-          goto 100  ! ugly but quickest way
+          goto 1  ! ugly but quickest way
 
         else
           
           ! Assemble Jacobian matrix
           if (mod(iiterations-1, max(1, p_rsolver%p_solverNewton%iupdateFrequency)) .eq. 0)&
-              call fcb_calcJacobian(rproblemLevel, rtimestep, p_rsolver, ru, ru0, .false., rcollection)
+              call fcb_calcJacobian(rproblemLevel, rtimestep, p_rsolver, rsolution, rsolutionInitial, .false., rcollection)
           
           ! Impose boundary conditions
           call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
-                               ru, p_rres, ru0, rcollection)
+                               rsolution, p_rres, rsolutionInitial, rcollection)
           if (rcollection%Iquickaccess(1) < 0) then
             p_rsolver%istatus = SV_INF_DEF
             return
@@ -1031,18 +1009,27 @@ contains
           
         end if
 
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE)&
-            write(*,FMT=MSG_SOL0003) iiterations,&
-            p_rsolver%dfinalDefect, doldDefect,&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
+        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+          call output_lbrk()
+          call output_separator(OU_SEP_TILDE)
+          call output_line('Inexact Newton step          '//trim(sys_siL(iiterations,5)))
+          call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
+          call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
+          call output_line('Variation of residual:       '//trim(sys_sdEL(&
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+          call output_line('Improvement of residual:     '//trim(sys_sdEL(&
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5)))
+          call output_separator(OU_SEP_TILDE)
+          call output_lbrk()
+        end if
        
         ! Write nonlinear defect to logfile?
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-            write(UNIT=p_rsolver%iunitLogfile,FMT='("(01),",I10,3(",",E16.8E3))')&
-            iiterations, p_rsolver%dfinalDefect,&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
+        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+          write(UNIT=p_rsolver%iunitLogfile,FMT='("(01),",I10,3(",",E16.8E3))')&
+              iiterations, p_rsolver%dfinalDefect,&
+              p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
+              p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
+        end if
         
         
       case DEFAULT
@@ -1062,9 +1049,10 @@ contains
       ! Check if residual increased too much
       if (p_rsolver%dfinalDefect > p_rsolver%ddivRel*p_rsolver%dinitialDefect .or. &
           p_rsolver%dfinalDefect > p_rsolver%ddivAbs) then
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING)&
-            write(*,FMT=MSG_SOL0011)&
-            p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
+        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+          call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
+              p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5))//' !!!')
+        end if
         
         ! Adjust solver status
         p_rsolver%istatus = SV_INCR_DEF
@@ -1092,18 +1080,27 @@ contains
     call solver_statistics(p_rsolver, iiterations)
     call solver_copySolver(p_rsolver, rsolver, .false., .true.)
     
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO)&
-        write(*,FMT=MSG_SOL0007) solver_getstatus(rsolver),&
-        rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
-        rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-        rsolver%dconvergenceRate
+    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+      call output_lbrk()
+      call output_separator(OU_SEP_HASH)
+      call output_line('Nonlinear solution              '//solver_getstatus(rsolver))
+      call output_line('Number of nonlinear iterations: '//trim(sys_siL(rsolver%iiterations,5)))
+      call output_line('Norm of final residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+      call output_line('Norm of initial residual:       '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+      call output_line('Improvement of residual:        '//trim(sys_sdEL(&
+                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+      call output_line('Convergence rate:               '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
+      call output_separator(OU_SEP_HASH)
+      call output_lbrk()
+    end if
 
     ! Write nonlinear convergence rate to logfile?
-    if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE)&
-        write(UNIT=p_rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-        rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
-        rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-        rsolver%dconvergenceRate
+    if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
+      write(UNIT=p_rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
+          rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
+          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
+          rsolver%dconvergenceRate
+    end if
   end subroutine nlsol_solveFixedpointBlock
 
   !*****************************************************************************
