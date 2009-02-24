@@ -1842,7 +1842,13 @@ contains
             
               ! Delta*(U*grad(Phi_j), U*grad(Phi_i)) + (U*grad(Phi_j),Phi_i)
               dtemp1 = dsumJ * (DlocalDeltaPrimal(iel)*dsumI + dbasI)
-              dtemp2 = dsumJ * (DlocalDeltaDual(iel)*dsumI + dbasI)
+              
+              ! For the dual equation, the sign of the stabilisation term
+              ! must be changed.
+              ! Probably because
+              !    ( -c grad(phi_j), -c grad(phi_i) ) = + ( c grad(phi_j), c grad(phi_i) )
+              ! see the paper of Heinkenschloss!
+              dtemp2 = dsumJ * (-DlocalDeltaDual(iel)*dsumI + dbasI)
 
               ! Weighten the calculated value AHxy by the cubature
               ! weight OM and add it to the local matrices. After the
