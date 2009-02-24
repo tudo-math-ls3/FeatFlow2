@@ -2280,7 +2280,7 @@ contains
             
             if (ioutputlevel .ge. 1) then
               call output_line("#mg    = "//sys_siL(nmg,10))
-              call output_line("#nl    = "//sys_siL(ite,10))
+              call output_line("#nl    = "//sys_siL(ite-1,10))
             end if
             
             if (ioutputlevel .ge. 2) then
