@@ -76,7 +76,7 @@ module euler_callback3d
   use linearsystemblock
   use linearsystemscalar
   use problem
-  use solver
+  use solveraux
   use storage
   use thermodynamics
 
