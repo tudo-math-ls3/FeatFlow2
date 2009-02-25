@@ -1,7 +1,8 @@
-# -*- mode: sh; -*-
+# -*- mode: any-ini; -*-
 
-simportdatafiles(1) =
+simportdatafiles(2) =
   'data/codire/default.dat'
+  'data/solverdefault.dat'
 
 ################################################################################
 
@@ -254,6 +255,9 @@ dmaxStep = 1e2
 
 # adaptive time stepping algorithm
 iadaptTimestep = 3
+
+# initial time for adaptive time stepping
+dadaptTime = 0.0
 
 # minimum factor by which time step may change
 ddecreaseFactor = 0.67

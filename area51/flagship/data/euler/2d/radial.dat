@@ -1,4 +1,4 @@
-# -*- mode: sh; -*-
+# -*- mode: any-ini; -*-
 
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
@@ -6,8 +6,9 @@
 #                        Radially symmetric Riemann problem                    #
 ################################################################################
 
-simportdatafiles(1) =
+simportdatafiles(2) =
   'data/euler/default.dat'
+  'data/solverdefault.dat'
 
 ################################################################################
 
@@ -214,6 +215,9 @@ dmaxStep = 0.001
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
+
+# initial time for adaptive time stepping
+dadaptTime = 0.0
 
 # minimum factor by which time step may change
 ddecreaseFactor = 0.1

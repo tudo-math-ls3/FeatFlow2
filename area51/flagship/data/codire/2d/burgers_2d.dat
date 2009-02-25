@@ -1,12 +1,13 @@
-# -*- mode: sh; -*-
+# -*- mode: any-ini; -*-
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
 #                    Inviscid Burger's equation in 2D                          #
 ################################################################################
 
-simportdatafiles(1) =
+simportdatafiles(2) =
   'data/codire/default.dat'
+  'data/solverdefault.dat'
 
 ################################################################################
 
@@ -259,6 +260,9 @@ dmaxStep = 0.1
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
+
+# initial time for adaptive time stepping
+dadaptTime = 0.0
 
 # minimum factor by which time step may change
 ddecreaseFactor = 0.1
