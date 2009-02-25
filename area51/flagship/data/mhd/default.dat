@@ -24,19 +24,19 @@ JacobianMatrix = 2
 TemplateMatrix = 3
 
 # Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 6
+ConsistentMassMatrix = 7
 
 # Position of the lumped mass matrix in the scalar matrix structure
-LumpedMassMatrix = 7
+LumpedMassMatrix = 8
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CX = 8
+CoeffMatrix_CX = 9
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CY = 9
+CoeffMatrix_CY = 10
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CZ = 10
+CoeffMatrix_CZ = 11
 
 
 ################################################################################
@@ -47,7 +47,7 @@ CoeffMatrix_CZ = 10
 VelocityField = 1
 
 # Position of the stabilization for the convective term
-ConvectionAFC = 1
+ConvectionAFC = 2
 
 # Position of the stabilization for the diffusive term
 DiffusionAFC = 0
@@ -61,20 +61,23 @@ SystemMatrix = 4
 # Position of the Jacobian matrix in the scalar matrix structure
 JacobianMatrix = 5
 
+# Posiiton of the trnasport operator
+TransportMatrix = 6
+
 # Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 6
+ConsistentMassMatrix = 7
 
 # Position of the lumped mass matrix in the scalar matrix structure
-LumpedMassMatrix = 7
+LumpedMassMatrix = 8
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CX = 8
+CoeffMatrix_CX = 9
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CY = 9
+CoeffMatrix_CY = 10
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CZ = 10
+CoeffMatrix_CZ = 11
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
 CoeffMatrix_S = 0
