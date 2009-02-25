@@ -160,12 +160,13 @@ module codire_application
   use pprocindicator
   use pprocsolution
   use problem
-  use solver
+  use solveraux
   use spatialdiscretisation
   use statistics
   use stdoperators
   use storage
   use timestep
+  use timestepaux
   use ucd
 
   implicit none
@@ -401,8 +402,10 @@ contains
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
     
-    ! Release solvers
-    call solver_releaseTimestep(rtimestep)
+    ! Release time-stepping
+    call tstep_releaseTimestep(rtimestep)
+
+    ! Release solver
     call solver_releaseSolver(rsolver)
     
     ! Release problem structure
@@ -659,34 +662,34 @@ contains
 
     ! Add internal information about the position of 
     ! constant coefficient matrices and auxiliary vectors
-    call parlst_getvalue_int(rparlist, ssectionName, 'VelocityField', i, 1)
+    call parlst_getvalue_int(rparlist, ssectionName, 'VelocityField', i)
     call collct_setvalue_int(rcollection, 'VelocityField', i, .true.)
     
-    call parlst_getvalue_int(rparlist, ssectionName, 'ConvectionAFC', i, 1)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ConvectionAFC', i)
     call collct_setvalue_int(rcollection, 'ConvectionAFC', i, .true.)
 
-    call parlst_getvalue_int(rparlist, ssectionName, 'DiffusionAFC', i, 2)
+    call parlst_getvalue_int(rparlist, ssectionName, 'DiffusionAFC', i)
     call collct_setvalue_int(rcollection, 'DiffusionAFC', i, .true.)
 
-    call parlst_getvalue_int(rparlist, ssectionName, 'TemplateMatrix', i, 1)
+    call parlst_getvalue_int(rparlist, ssectionName, 'TemplateMatrix', i)
     call collct_setvalue_int(rcollection, 'TemplateMatrix', i, .true.)
 
-    call parlst_getvalue_int(rparlist, ssectionName, 'SystemMatrix', i, 2)
+    call parlst_getvalue_int(rparlist, ssectionName, 'SystemMatrix', i)
     call collct_setvalue_int(rcollection, 'SystemMatrix', i, .true.)
     
-    call parlst_getvalue_int(rparlist, ssectionName, 'JacobianMatrix', i, 3)
+    call parlst_getvalue_int(rparlist, ssectionName, 'JacobianMatrix', i)
     call collct_setvalue_int(rcollection, 'JacobianMatrix', i, .true.)
 
-    call parlst_getvalue_int(rparlist, ssectionName, 'TransportMatrix', i, 4)
+    call parlst_getvalue_int(rparlist, ssectionName, 'TransportMatrix', i)
     call collct_setvalue_int(rcollection, 'TransportMatrix', i, .true.)
 
     if ((rappDescriptor%imasstype .ne. MASS_ZERO) .or.&
         (rappDescriptor%imassantidiffusiontype .ne. MASS_ZERO)) then
       
-      call parlst_getvalue_int(rparlist, ssectionName, 'ConsistentMassMatrix', i, 5)
+      call parlst_getvalue_int(rparlist, ssectionName, 'ConsistentMassMatrix', i)
       call collct_setvalue_int(rcollection, 'ConsistentMassMatrix', i, .true.)
 
-      call parlst_getvalue_int(rparlist, ssectionName, 'LumpedMassMatrix', i, 6)
+      call parlst_getvalue_int(rparlist, ssectionName, 'LumpedMassMatrix', i)
       call collct_setvalue_int(rcollection, 'LumpedMassMatrix', i, .true.)
       
     else
@@ -697,7 +700,7 @@ contains
     end if
 
     if (rappDescriptor%idiffusiontype .ne. 0)then
-      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_S', i, 7)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_S', i)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_S', i, .true.)
     else
       call collct_setvalue_int(rcollection, 'CoeffMatrix_S', 0, .true.)
@@ -706,22 +709,22 @@ contains
     if (rappDescriptor%ivelocitytype .ne. 0)then
       select case(rappDescriptor%ndimension)
       case (NDIM1D)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 8)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i)
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', 0, .true.)
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', 0, .true.)
       case (NDIM2D)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 8)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i)
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i, 9)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i)
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', i, .true.)
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', 0, .true.)
       case (NDIM3D)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 8)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i)
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i, 9)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i)
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', i, .true.)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CZ', i, 10)
+        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CZ', i)
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', i, .true.)
       case DEFAULT
         call collct_setvalue_int(rcollection, 'CoeffMatrix_CX',  0, .true.)
@@ -779,7 +782,7 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'solver',   ssolverName)
 
     ! Initialize time-stepping
-    call solver_createTimestep(rparlist, stimestepName, rtimestep)
+    call tstep_createTimestep(rparlist, stimestepName, rtimestep)
     
     ! Initialize solver structure
     call solver_createSolver(rparlist, ssolverName, rsolver)
@@ -2749,7 +2752,7 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! Vector for the right-hand side
-    type(t_vectorBlock) :: rrhs
+    type(t_vectorBlock), target :: rrhs
 
     ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
@@ -2876,6 +2879,7 @@ contains
     if (rappDescriptor%irhstype > 0) then
       call lsysbl_createVectorBlock(rsolution, rrhs)
       call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+      rcollection%p_rvectorQuickAccess1 => rrhs
     end if
 
     ! Calculate the velocity field
@@ -2911,61 +2915,27 @@ contains
       ! Start time measurement for solution procedure
       call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
       
-      ! Check if right-hand side vector exists
-      if (rappDescriptor%irhstype > 0) then
-
-        ! What time-stepping scheme should be used?
-        select case(rtimestep%ctimestepType)
-          
-        case (SV_RK_SCHEME)
-          
-          ! Adopt explicit Runge-Kutta scheme
-          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-                                   rsolver, rsolution, codire_calcRHS,&
-                                   codire_setBoundary, rcollection, rrhs)
-          
-        case (SV_THETA_SCHEME)
-          
-          ! Adopt two-level theta-scheme
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-                                      rsolver, rsolution, codire_calcResidual,&
-                                      codire_calcJacobian, codire_applyJacobian,&
-                                      codire_setBoundary, rcollection, rrhs)
-          
-        case DEFAULT
-          call output_line('Unsupported time-stepping algorithm!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransientPrimal')
-          call sys_halt()
-        end select
+      ! What time-stepping scheme should be used?
+      select case(rtimestep%ctimestepType)
         
-      else   ! zero right-hand side
-
-        ! What time-stepping scheme should be used?
-        select case(rtimestep%ctimestepType)
-          
-        case (SV_RK_SCHEME)
-          
-          ! Adopt explicit Runge-Kutta scheme
-          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-                                   rsolver, rsolution, codire_calcRHS,&
-                                   codire_setBoundary, rcollection)
-          
-        case (SV_THETA_SCHEME)
-          
-          ! Adopt two-level theta-scheme
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-                                      rsolver, rsolution, codire_calcResidual,&
-                                      codire_calcJacobian, codire_applyJacobian,&
-                                      codire_setBoundary, rcollection)
-          
-        case DEFAULT
-          call output_line('Unsupported time-stepping algorithm!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransientPrimal')
-          call sys_halt()
-        end select
-
-      end if
-
+      case (TSTEP_RK_SCHEME)
+        
+        ! Adopt explicit Runge-Kutta scheme
+        call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
+                                 rsolution, codire_nlsolverCallback, rcollection)
+        
+      case (TSTEP_THETA_SCHEME)
+        
+        ! Adopt two-level theta-scheme
+        call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
+                                    rsolution, codire_nlsolverCallback, rcollection)
+        
+      case DEFAULT
+        call output_line('Unsupported time-stepping algorithm!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransientPrimal')
+        call sys_halt()
+      end select
+      
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescriptor%rtimerSolution)
       
@@ -3087,6 +3057,7 @@ contains
           call lsysbl_resizeVectorBlock(&
               rrhs, p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
           call codire_initRHS(rappDescriptor, p_rproblemLevel, rtimestep%dTime, rrhs)
+          rcollection%p_rvectorQuickAccess1 => rrhs
         end if
 
         ! Stop time measurement for generation of constant coefficient matrices
@@ -3161,7 +3132,7 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! Vector for the right-hand side
-    type(t_vectorBlock) :: rvectorBlock
+    type(t_vectorBlock), target :: rrhs
 
     ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
@@ -3243,33 +3214,23 @@ contains
       call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
 
       ! Reset the time-stepping algorithm
-      call solver_resetTimestep(rtimestep, .false.)
+      call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
 
       ! Check if right-hand side vector exists
       if (rappDescriptor%irhstype > 0) then
+        call lsysbl_createVectorBlock(rsolution, rrhs)
+        call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        rcollection%p_rvectorQuickAccess1 => rrhs
+      end if
 
-        ! Initialize right-hand side vector
-        call lsysbl_createVectorBlock(rsolution, rvectorBlock)
-        call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rvectorBlock)
-
-        ! Solve the primal problem with non-zero right-hand side
-        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
-                                         rsolution, codire_calcRHS, codire_calcResidual,&
-                                         codire_calcJacobian, codire_applyJacobian,&
-                                         codire_setBoundary, rcollection, rvectorBlock)
-
-        ! Release right-hand side vector
-        call lsysbl_releaseVector(rvectorBlock)
-        
-      else
+      ! Solve the primal problem with non-zero right-hand side
+      call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
+                                       rsolution, codire_nlsolverCallback, rcollection)
       
-        ! Solve the primal problem with zero right-hand side
-        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
-                                         rsolution, codire_calcRHS, codire_calcResidual,&
-                                         codire_calcJacobian, codire_applyJacobian,&
-                                         codire_setBoundary, rcollection)
-  
+      ! Release right-hand side vector
+      if (rappDescriptor%irhstype > 0) then
+        call lsysbl_releaseVector(rrhs)
       end if
 
       ! Stop time measurement for solution procedure
@@ -3413,7 +3374,7 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! Vector for the right-hand side
-    type(t_vectorBlock) :: rrhs
+    type(t_vectorBlock), target :: rrhs
 
     ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
@@ -3437,7 +3398,7 @@ contains
     call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
     
     ! Adjust time stepping scheme
-    rtimestep%ctimestepType = SV_THETA_SCHEME
+    rtimestep%ctimestepType = TSTEP_THETA_SCHEME
     rtimestep%dinitialTime  = 0.0_DP
     rtimestep%dinitialStep  = 1.0_DP
     rtimestep%dfinalTime    = 1.0_DP
@@ -3508,35 +3469,25 @@ contains
       call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
       
       ! Reset the time-stepping algorithm
-      call solver_resetTimestep(rtimestep, .false.)
+      call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
 
       ! Check if right-hand side vector exists
       if (rappDescriptor%irhstype > 0) then
-
-        ! Initialize right-hand side vector
         call lsysbl_createVectorblock(rsolution, rrhs)
         call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
-
-        ! Solve the primal problem with non-zero right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, codire_calcResidual,&
-                                    codire_calcJacobian, codire_applyJacobian,&
-                                    codire_setBoundary, rcollection, rrhs)
-        
-        ! Release right-hand side vector
-        call lsysbl_releaseVector(rrhs)
-
-      else
-
-        ! Solve the primal problem with zero right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, codire_calcResidual,&
-                                    codire_calcJacobian, codire_applyJacobian,&
-                                    codire_setBoundary, rcollection)
-
+        rcollection%p_rvectorQuickAccess1 => rrhs
       end if
 
+      ! Solve the primal problem with non-zero right-hand side
+      call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
+                                  rsolution, codire_nlsolverCallback, rcollection)
+        
+      ! Release right-hand side vector
+      if (rappDescriptor%irhstype > 0) then
+        call lsysbl_releaseVector(rrhs)
+      end if
+      
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescriptor%rtimerSolution)
 
@@ -3691,7 +3642,7 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! Vector for the linear target functional and the right-hand side
-    type(t_vectorBlock) :: rtargetFunc,rrhs
+    type(t_vectorBlock), target :: rtargetFunc, rrhs
 
     ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
@@ -3715,7 +3666,7 @@ contains
     call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
 
     ! Adjust time stepping scheme
-    rtimestep%ctimestepType = SV_THETA_SCHEME
+    rtimestep%ctimestepType = TSTEP_THETA_SCHEME
     rtimestep%dinitialTime  = 0.0_DP
     rtimestep%dinitialStep  = 1.0_DP
     rtimestep%dfinalTime    = 1.0_DP
@@ -3786,33 +3737,23 @@ contains
       call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
       
       ! Reset the time-stepping algorithm
-      call solver_resetTimestep(rtimestep, .false.)
+      call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
 
       ! Check if right-hand side vector exists
       if (rappDescriptor%irhstype > 0) then
-
-        ! Initialize right-hand side vector
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
         call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        rcollection%p_rvectorQuickAccess1 => rrhs
+      end if
 
-        ! Solve the primal problem with non-zero right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolutionPrimal, codire_calcResidual,&
-                                    codire_calcJacobian, codire_applyJacobian,&
-                                    codire_setBoundary, rcollection, rrhs)
-        
-        ! Release right-hand side vector
+      ! Solve the primal problem with non-zero right-hand side
+      call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
+                                  rsolutionPrimal, codire_nlsolverCallback, rcollection)
+      
+      ! Release right-hand side vector
+      if (rappDescriptor%irhstype > 0) then
         call lsysbl_releaseVector(rrhs)
-
-      else
-
-        ! Solve the primal problem with zero right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolutionPrimal, codire_calcResidual,&
-                                    codire_calcJacobian, codire_applyJacobian,&
-                                    codire_setBoundary, rcollection)
-
       end if
 
       ! Stop time measurement for solution procedure
@@ -3827,8 +3768,8 @@ contains
       call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Initialize target functional
-      call codire_initTargetFunc(rappDescriptor, p_rproblemLevel,&
-                                 1.0_DP, rtargetFunc)
+      call codire_initTargetFunc(rappDescriptor, p_rproblemLevel, 1.0_DP, rtargetFunc)
+      rcollection%p_rvectorQuickAccess1 => rtargetFunc
       
       ! Stop time measurement for error estimation
       call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
@@ -3857,14 +3798,12 @@ contains
       call lsysbl_createVectorBlock(rsolutionPrimal, rsolutionDual, .true.)
       
       ! Reset the time-stepping and solver algorithms
-      call solver_resetTimestep(rtimestep, .false.)
+      call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
       
       ! Solve the dual problem
-      call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver, rsolutionDual,&
-                                  codire_calcResidual, codire_calcJacobian,&
-                                  codire_applyJacobian, codire_setBoundary,&
-                                  rcollection, rtargetFunc)
+      call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
+                                  rsolutionDual, codire_nlsolverCallback, rcollection)
     
       ! Release discretized target functional
       call lsysbl_releaseVector(rtargetFunc)
@@ -3899,6 +3838,7 @@ contains
         ! Initialize right-hand side vector
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
         call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        rcollection%p_rvectorQuickAccess1 => rrhs
 
         ! Compute the error in the quantity of interest
         call codire_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
