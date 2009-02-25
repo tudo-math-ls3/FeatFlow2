@@ -25,7 +25,7 @@ module flagship_basic
   use fparser
   use io
   use problem
-  use solver
+  use solveraux
   use ucd
 
   implicit none
