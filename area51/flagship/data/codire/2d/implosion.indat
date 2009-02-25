@@ -1,0 +1,42 @@
+# -*- mode: sh; -*-
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                               Implosion of a ring                            #
+#                                                                              #
+################################################################################
+
+defexpr:  sqr1 = SQRT(x^2+y^2)
+
+
+# Specify the initial solution by logical expressions and solution values
+[initial_solution]
+NCOMP
+1
+if(@sqr1 < 1 | @sqr1 > 1.05, 0, 1)
+
+
+# Specify the initial velocity by logical expressions and solution values
+[velocityfield]
+NCOMP
+2
+10
+10
+
+-x/@sqr1
+-y/@sqr1
+
+
+# Specify the boundary conditions for the primal problem
+[boundary_conditions_primal]
+NBCT
+1
+NEXPR
+1
+IBCT
+1
+NCOMP
+1
+PARAMETERS
+1.0  T  1 0.0
