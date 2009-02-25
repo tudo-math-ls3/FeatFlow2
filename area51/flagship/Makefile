@@ -21,12 +21,12 @@ SRC = $(KERNELSRC)
 # application kernel source files
 SRC += boundaryfilter.f90 \
        problem.f90 \
-       solver.f90 \
+       solveraux.f90 \
        solverlinear.f90 \
        solvernonlinear.f90 \
        thermodynamics.f90 \
-       timestep.f90 \
-       timestepaux.f90
+       timestepaux.f90 \
+       timestep.f90
 
 # common application source files
 SRC += flagship.f90 \
