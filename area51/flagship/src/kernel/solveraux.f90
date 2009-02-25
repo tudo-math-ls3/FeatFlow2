@@ -1,104 +1,104 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> solver </name>
+!# <name> solveraux </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module provides the basic data structures and subroutines for handling 
-!# both linear/nonlinear and one-level/multilevel solvers. Note that time-
-!# stepping is seen as a special kind of solution procedure so that the basic
-!# structures for time-stepping schemes are also provided by this module.
-!# A calling program should create a new solver object and fill the required
-!# parameters either by reading a user-supplied parameters or via direct adjustment.
 !#
-!# Furthermore, each object of type t_solver and t_timestep provides 
-!# information about convergence and norms after the solver has terminated.
+!# This module provides the basic data structures and subroutines for
+!# handling both linear/nonlinear and one-level/multilevel solvers. 
+!# A calling program should create a new solver structure and fill the
+!# required parameters either by reading a user-supplied parameters or
+!# via direct adjustment.
+!#
+!# Furthermore, each structure of type t_solver provides information
+!# about convergence and norms after the solver has terminated.
 !#
 !# The following routines are available:
 !#
 !# ----------------------------------------------------------------------------
 !#
-!# 6.) solver_createSolver = solver_createSolverDirect /
+!# 1.) solver_createSolver = solver_createSolverDirect /
 !#                           solver_createSolverIndirect
 !#     -> Creates a new solver from parameter list
 !#
-!# 7.) solver_releaseSolver
-!#     -> Releases an existing solver object
+!# 2.) solver_releaseSolver
+!#     -> Releases an existing solver structure
 !#
-!# 8.) solver_removeSolverTemporal
-!#     -> Removes temporal storage from solver object
+!# 3.) solver_infoSolver
+!#     -> Outputs information about the solver structure
 !#
-!# 9.) solver_infoSolver
-!#     -> Prints information about the solver object
+!# 4.) solver_resetSolver
+!#      -> Resets the solver structure to initial values
 !#
-!# 10.) solver_resetSolver
-!#      -> Resets the solver object to initial values
+!# 5.) solver_removeTempFromSolver
+!#     -> Removes temporal storage from solver structure
 !#
-!# 11.) solver_adjustHierarchy
+!# 6.) solver_adjustHierarchy
 !#     -> Adjusts the internal hierarchy of the complete solver structure
 !#
-!# 12.) solver_showHierarchy
-!#      -> Shows the solver hierarchy in human readable form
+!# 7.) solver_showHierarchy
+!#     -> Shows the solver hierarchy in human readable form
 !#
-!# 13) solver_statistics
-!#     -> Computes statistics for a solver object
+!# 8) solver_statistics
+!#    -> Computes statistics for a solver structure
 !#
-!# 14.) solver_getStatus
-!#      -> Returns the status of solver object in human readable form
+!# 9.) solver_getStatus
+!#     -> Returns the status of solver structure in human readable form
 !#
-!# 15.) solver_getNextSolver
-!#      -> Gets next solver object in hierarchy
+!# 10.) solver_getNextSolver
+!#      -> Gets next solver structure in hierarchy
 !#
-!# 16.) solver_getMinimumMultigridlevel
+!# 11.) solver_getNextSolverByType
+!#      -> Returns next solver with specified type
+!#
+!# 12.) solver_getMinimumMultigridlevel
 !#      -> Returns the minimum multigrid level required in the whole structure
 !#
-!# 17.) solver_getMaximumMultigridlevel
+!# 13.) solver_getMaximumMultigridlevel
 !#      -> Returns the maximum multigrid level required in the whole structure
 !#
-!# 18.) solver_setMinimumMultigridlevel
+!# 14.) solver_setMinimumMultigridlevel
 !#      -> Sets the minimum multigrid level required in the whole structure
 !#
-!# 19.) solver_setMaximumMultigridlevel
+!# 15.) solver_setMaximumMultigridlevel
 !#      -> Sets the maximum multigrid level required in the whole structure
 !#
-!# 20.) solver_setBoundaryCondition
+!# 16.) solver_setBoundaryCondition
 !#      -> Associates boundary conditions structure to the solver
 !#
-!# 21.) solver_setSolverMatrix = solver_setSolverMatrixScalar /
+!# 17.) solver_setSolverMatrix = solver_setSolverMatrixScalar /
 !#                               solver_setSolverMatrixBlock
 !#      -> Associates a matrix to the solver
 !#
-!# 22.) solver_setPrecondMatrix = solver_setPrecondMatrixScalar /
+!# 18.) solver_setPrecondMatrix = solver_setPrecondMatrixScalar /
 !#                                solver_setPrecondMatrixBlock
 !#      -> Associates a matrix to the preconditioner
 !#
-!# 23.) solver_setSmootherMatrix = solver_setSmootherMatrixScalar /
+!# 19.) solver_setSmootherMatrix = solver_setSmootherMatrixScalar /
 !#                                 solver_setSmootherMatrixBlock
 !#      -> Associates a matrix to the smoother
 !#
-!# 24.) solver_updateStructure
+!# 20.) solver_updateStructure
 !#      -> Updates the structure of the solver recursively
 !#
-!# 25.) solver_updateContent
+!# 21.) solver_updateContent
 !#      -> Updates the content of the solver recursively
 !#
-!# 26.) solver_prolongationScalar
+!# 22.) solver_prolongationScalar
 !#      -> Prolongates some scalar-vector from coarse to fine grid
 !#
-!# 27.) solver_prolongationBlock
+!# 23.) solver_prolongationBlock
 !#      -> Prolongates some block-vector from coarse to fine grid
 !#
-!# 28.) solver_restrictionScalar
+!# 24.) solver_restrictionScalar
 !#      -> Restricts some scalar-vector from fine to coarse grid
 !#
-!# 29.) solver_restrictionBlock
+!# 25.) solver_restrictionBlock
 !#      -> Restricts some block-vector from fine to coarse grid
 !#
-!# 30.) solver_copySolver
+!# 26.) solver_copySolver
 !#      -> Copy input/output parameters from one solver to another solver
-!#
-!# 31.) solver_getNextSolverByType
-!#      -> Returns next solver with specified type
 !#
 !# The following auxiliary routines are available:
 !#
@@ -111,7 +111,7 @@
 !# </purpose>
 !##############################################################################
 
-module solver
+module solveraux
 
   use fsystem
   use storage
@@ -135,15 +135,13 @@ module solver
   public :: t_solverILU
   public :: t_solverDefcor
   public :: t_solverNewton
-
-
-
+  
   public :: solver_createSolver
   public :: solver_releaseSolver
-  public :: solver_removeSolverTemporal
   public :: solver_resetSolver
   public :: solver_infoSolver
   public :: solver_copySolver
+  public :: solver_removeTempFromSolver
   public :: solver_adjustHierarchy
   public :: solver_showHierarchy
   public :: solver_statistics
@@ -165,10 +163,6 @@ module solver
   public :: solver_restrictionScalar
   public :: solver_restrictionBlock
   
-  include 'solver.inc'
-
-  ! *****************************************************************************
-  ! *****************************************************************************
   ! *****************************************************************************
 
   interface solver_createSolver
@@ -191,8 +185,6 @@ module solver
     module procedure solver_setSmootherMatrixBlock
   end interface
 
-  ! *****************************************************************************
-  ! *****************************************************************************
   ! *****************************************************************************
 
 !<constants>
@@ -246,9 +238,6 @@ module solver
   ! Preconditioning by (inexact) Newton approach
   integer, parameter, public :: NLSOL_PRECOND_NEWTON        = 3
   integer, parameter, public :: NLSOL_PRECOND_NEWTON_FAILED = -3
-
-  ! Explicit one-step preconditioner
-  integer, parameter, public :: NLSOL_PRECOND_EXPLICIT      = 4
 !</constantblock>
 
 
@@ -256,7 +245,6 @@ module solver
 
   ! Fixed-point iteration
   integer, parameter, public :: NLSOL_SMOOTHER_FIXEDPOINT   = NLSOL_SOLVER_FIXEDPOINT
-
 !</constantblock>
 
 
@@ -330,8 +318,6 @@ module solver
   ! Output errors, warnings and verbose information
   integer, parameter, public :: SV_IOLEVEL_VERBOSE = 4
 
-  ! Run with file output
-  integer, parameter, public :: SV_IOLEVEL_FILE    = 10
 !</constantblock>
 
 
@@ -360,21 +346,6 @@ module solver
 !</constantblock>
 
 
-!<constantblock description="Global Runge-Kutta weights">
-  
-  ! Runge-Kutta one-stage
-  real(DP), dimension(1), parameter :: SV_RK1 = (/ 1.0_DP /)
-
-  ! Runge-Kutta two-stage
-  real(DP), dimension(2), parameter :: SV_RK2 = (/ 0.5_DP, 1.0_DP /)
-
-  ! Runge-Kutta three-stage
-  real(DP), dimension(3), parameter :: SV_RK3 = (/ 0.6_DP, 0.6_DP, 1.0_DP /)
-
-  ! Runge-Kutta four-stage
-  real(DP), dimension(4), parameter :: SV_RK4 = (/ 0.25_DP, 0.5_DP, 0.5_DP, 1.0_DP /)
-!</constantblock>
-
 !<constantblock description="Flags for the solver specification bitfield">
 
   ! Solver structure needs update
@@ -390,245 +361,12 @@ module solver
   ! Empty solver structure
   integer(I32), parameter :: SV_SSPEC_EMPTY                = SV_SSPEC_NEEDSUPDATE
 !</constantblock>
+
 !</constants>
 
   ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
 
-!!$!<types>
-!!$
-!!$!<typeblock>
-!!$
-!!$  ! This data structure contains settings/parameters for time-stepping. Before
-!!$  ! calling the time-stepping algorithm the basic settings need to be initialized.
-!!$
-!!$  type t_timestep
-!!$    
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Name of time-stepping object
-!!$    character(LEN=SYS_STRLEN) :: sName = ''
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Identifies the type of the time-stepping algorithm
-!!$    integer :: ctimestepType = SV_UNDEFINED
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! This determines the output level of the time-stepping algorithm
-!!$    integer :: ioutputLevel
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Norm in which relative changes of solution should be measured
-!!$    integer :: isolNorm
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Initial simulation time
-!!$    real(DP) :: dinitialTime
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Final simulation time
-!!$    real(DP) :: dfinalTime
-!!$
-!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Current time instant
-!!$    real(DP) :: dTime
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Lower bound for the admissible time step
-!!$    real(DP) :: dminStep
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Upper bound for the admissible time step
-!!$    real(DP) :: dmaxStep
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Initial value for time step
-!!$    real(DP) :: dinitialStep
-!!$
-!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Current value for time step
-!!$    real(DP) :: dStep
-!!$
-!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Value for previous time step 
-!!$    real(DP) :: dStep1
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Factor by which the current time step should be scaled
-!!$    ! if the current time step failed; must be < 1.0
-!!$    real(DP) :: dstepReductionFactor
-!!$
-!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Total number of performed time steps
-!!$    integer :: nSteps
-!!$
-!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Total number of rejected time steps
-!!$    integer :: nrejectedSteps
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Implicitness parameter for two-level theta-scheme
-!!$    real(DP) :: theta
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Number of multi-steps for Runge-Kutta method
-!!$    integer :: multisteps
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Algorithm for adaptive time step control
-!!$    integer :: iadaptTimestep
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Number of time steps performed before adaptive time step control is used
-!!$    integer :: npreadaptSteps
-!!$
-!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Relative changes of the solution
-!!$    real(DP) :: drelChange
-!!$
-!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Relative stopping criterion. Stop time-stepping algorithm if
-!!$    ! !! U^{N+1} - U^{N} !! <= EPSSTAG * dStep
-!!$    ! =0: ignore, do not stop time-stepping until final time is reached
-!!$    real(DP) :: depsSteady
-!!$
-!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Unit number for log file output
-!!$    integer :: iunitLogfile = 0
-!!$    
-!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Weights for multistage methods
-!!$    real(DP), dimension(:), pointer :: DmultistepWeights => null()
-!!$
-!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Temporal vectors for old solutions
-!!$    type(t_vectorBlock), dimension(:), pointer :: RtempVectors => null()
-!!$
-!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Substructure for PID controller
-!!$    type(t_pidController), pointer :: p_rpidController => null()
-!!$
-!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Substructure for automatic controller
-!!$    type(t_autoController), pointer :: p_rautoController => null()
-!!$
-!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-!!$    ! Substructure for switched evolution relaxation controller
-!!$    type(t_serController), pointer :: p_rserController => null()
-!!$
-!!$  end type t_timestep
-!!$
-!!$!</typeblock>
-!!$  
-!!$  ! *****************************************************************************  
-!!$
-!!$!<typeblock>
-!!$
-!!$  ! This data structure contains all settings/parameters for 
-!!$  ! proportional-integral-derivative (PID) controlling.
-!!$
-!!$  type t_pidController
-!!$
-!!$    ! Controller specification tag.
-!!$    integer(I32) :: icontrollerSpec = SV_SSPEC_EMPTY
-!!$
-!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
-!!$    ! Exponent for proportional term.
-!!$    real(DP) :: dProportionalExponent
-!!$    
-!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
-!!$    ! Exponent for integral term.
-!!$    real(DP) :: dIntegralExponent
-!!$    
-!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
-!!$    ! Exponent for derivative term.
-!!$    real(DP) :: dDerivativeExponent
-!!$    
-!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
-!!$    ! Factor by which the time step is allowed to increase.
-!!$    real(DP) :: dIncreaseFactor
-!!$    
-!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
-!!$    ! Factor by which the time step is allowed to decrease.
-!!$    real(DP) :: dDecreaseFactor
-!!$    
-!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
-!!$    ! Tolerance of relative changes.
-!!$    real(DP) :: depsRel
-!!$
-!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
-!!$    ! Maximum tolerance for relative changes
-!!$    real(DP) :: dmaxRel
-!!$    
-!!$    ! OUTPUT PARAMETER FOR PID CONTROLLER:
-!!$    ! Measure of the control variable from one time step before.
-!!$    real(DP) :: dcontrolValue1
-!!$
-!!$    ! OUTPUT PARAMETER FOR PID CONTROLLER:
-!!$    ! Measure of the solution change from two time steps before.
-!!$    real(DP) :: dcontrolValue2
-!!$
-!!$  end type t_pidController
-!!$
-!!$!</typeblock>
-!!$
-!!$  ! *****************************************************************************  
-!!$
-!!$!<typeblock>
-!!$
-!!$  ! This data structure contains all settings/parameters
-!!$  ! for automatic time step controlling.
-!!$
-!!$  type t_autoController
-!!$
-!!$    ! Controller specification tag.
-!!$    integer(I32) :: icontrollerSpec = SV_SSPEC_EMPTY
-!!$
-!!$    ! INPUT PARAMETER FOR AUTOMATIC CONTROLLER:
-!!$    ! Factor by which the time step is allowed to decrease.
-!!$    real(DP) :: dDecreaseFactor
-!!$
-!!$    ! INPUT PARAMETER FOR AUTOMATIC CONTROLLER:
-!!$    ! Tolerance of relative changes.
-!!$    real(DP) :: depsRel
-!!$
-!!$    ! INTERNAL PARAMETER FOR AUTOMATIC CONTROLLER
-!!$    ! Temporal vectors for old solutions
-!!$    type(t_vectorBlock), dimension(:), pointer :: RtempVectors => null()
-!!$
-!!$  end type t_autoController
-!!$
-!!$  ! *****************************************************************************  
-!!$
-!!$!<typeblock>
-!!$
-!!$  ! This data structure contains all settings/parameters
-!!$  ! for switched evolution relaxation time step controlling.
-!!$
-!!$  type t_serController
-!!$
-!!$    ! Controller specification tag.
-!!$    integer(I32) :: icontrollerSpec = SV_SSPEC_EMPTY
-!!$
-!!$    ! INPUT PARAMETER FOR SER CONTROLLER:
-!!$    ! Factor by which the time step is allowed to increase.
-!!$    real(DP) :: dIncreaseFactor
-!!$
-!!$    ! INPUT PARAMETER FOR SER CONTROLLER:
-!!$    ! Factor by which the time step is allowed to decrease.
-!!$    real(DP) :: dDecreaseFactor
-!!$
-!!$    ! OUTPUT PARAMETER FOR SER CONTROLLER
-!!$    ! Norm of the stationary defect vector
-!!$    real(DP) :: dsteadyDefect
-!!$
-!!$    ! OUTPUT PARAMETER FOR SER CONTROLLER
-!!$    ! Norm of the stationary defect vector from previous time step
-!!$    real(DP) :: dsteadyDefect1
-!!$
-!!$  end type t_serController
-
-  ! *****************************************************************************
+!<types>
 
 !<typeblock>
   
@@ -671,27 +409,23 @@ module solver
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS
     ! Information output level
-    integer :: ioutputLevel = SVSTD_IOLEVEL
-
-    ! INTERNAL PARAMETER FOR ITERATIVE SOLVERS
-    ! Unit number for log file output
-    integer :: iunitLogfile = 0
+    integer :: ioutputLevel = 0
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Status of the solver
-    integer :: istatus
+    integer :: istatus = 0
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS
     ! Type of norm to use in the residual checking
-    integer :: iresNorm = SVSTD_IRESNORM
+    integer :: iresNorm = 0
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Minimum number of iterations top perform
-    integer :: nminIterations = SVSTD_NMINITERATIONS
+    integer :: nminIterations = 0
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Maximum number of iterations top perform
-    integer :: nmaxIterations = SVSTD_NMAXITERATIONS
+    integer :: nmaxIterations = 0
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Number of performed iterations
@@ -703,8 +437,9 @@ module solver
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Relaxation factor; standard value = 1.0
-    ! If DOMEGA < 0 than implicit under-relaxation is perform by ABS(DOMEGA).
-    ! Otherwise, the value DOMEGA is used to perform explicit under-relaxation of the system.
+    ! If DOMEGA < 0 than implicit under-relaxation is perform by
+    ! ABS(DOMEGA). Otherwise, the value DOMEGA is used to perform
+    ! explicit under-relaxation of the system.
     real(DP) :: domega = 1.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
@@ -712,92 +447,92 @@ module solver
     ! !!defect!! < EPSREL * !!initial defect!!.
     ! =0: ignore, use absolute stopping criterion
     ! Remark: don't set depsAbs=depsRel=0!
-    real(DP) :: depsRel = SVSTD_DEPSREL
+    real(DP) :: depsRel = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Absolute stopping criterion. Stop iteration if
     ! !!defect!! < EPSREL.
     ! =0: ignore, use relative stopping criterion
     ! Remark: don't set depsAbs=depsRel=0!
-    real(DP) :: depsAbs = SVSTD_DEPSABS
+    real(DP) :: depsAbs = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Relative divergence criterion. Treat iteration as
     ! diverged if
     !   !!defect!! >= DIVREL * !!initial defect!!
     ! A value of SYS_INFINITY disables the relative divergence check.
-    real(DP) :: ddivRel = SVSTD_DDIVREL
+    real(DP) :: ddivRel = SYS_INFINITY
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Absolute divergence criterion. Treat iteration as
     ! diverged if
     !   !!defect!! >= DIVREL
     ! A value of SYS_INFINITY disables the absolute divergence check.
-    real(DP) :: ddivAbs = SVSTD_DDIVABS
+    real(DP) :: ddivAbs = SYS_INFINITY
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! RHS-vector is treated as zero if max(rhs) < drhsZero
-    real(DP) :: drhsZero = SVSTD_DRHSZERO
+    real(DP) :: drhsZero = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Defect-vector is treated as zero if !!defect!! < ddefZero
-    real(DP) :: ddefZero = SVSTD_DDEFZERO
+    real(DP) :: ddefZero = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Relative stopping criterion. Stop iteration of
     ! !!current solution - last solution!! <= EPSSTAG
     ! =0: ignore, do not check for stagnation
-    real(DP) :: depsStag = SVSTD_DEPSSTAG
+    real(DP) :: depsStag = 0.0_DP
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Norm of initial right-hand side
-    real(DP) :: dinitialRHS
+    real(DP) :: dinitialRHS = 0.0_DP
     
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Norm of initial residuum
-    real(DP) :: dinitialDefect
+    real(DP) :: dinitialDefect = 0.0_DP
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Norm of final residuum
-    real(DP) :: dfinalDefect
+    real(DP) :: dfinalDefect = 0.0_DP
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Convergence rate
-    real(DP) :: dconvergenceRate
+    real(DP) :: dconvergenceRate = 0.0_DP
     
     ! INPUT: system boundary, this boundary condition is used in
     ! all nonlinear/linear iterations to impose boundary conditions
     type(t_boundaryCondition), pointer :: rboundaryCondition => null()
 
     ! INTERNAL: substructure for generic solver
-    type(t_solver), pointer :: p_solverSubnode     => null()
+    type(t_solver), pointer :: p_solverSubnode => null()
 
     ! INTERNAL: substructure for Multigrid solver
-    type(t_solverMultigrid), pointer :: p_solverMultigrid   => null()
+    type(t_solverMultigrid), pointer :: p_solverMultigrid => null()
 
     ! INTERNAL: substructure for UMFPACK solver
-    type(t_solverUMFPACK), pointer :: p_solverUMFPACK     => null()
+    type(t_solverUMFPACK), pointer :: p_solverUMFPACK => null()
 
     ! INTERNAL: substructure for Jacobi solver
-    type(t_solverJacobi), pointer :: p_solverJacobi      => null()
+    type(t_solverJacobi), pointer :: p_solverJacobi => null()
 
     ! INTERNAL: substructure for (S)SOR solver
-    type(t_solverSSOR), pointer :: p_solverSSOR        => null()
+    type(t_solverSSOR), pointer :: p_solverSSOR => null()
 
     ! INTERNAL: substructure for BiCGSTAB solver
-    type(t_solverBiCGSTAB), pointer :: p_solverBiCGSTAB    => null()
+    type(t_solverBiCGSTAB), pointer :: p_solverBiCGSTAB => null()
 
     ! INTERNAL: substructure for GMRES solver
-    type(t_solverGMRES), pointer :: p_solverGMRES       => null()
+    type(t_solverGMRES), pointer :: p_solverGMRES => null()
 
     ! INTERNAL: substructure for ILU solver
-    type(t_solverILU), pointer :: p_solverILU         => null()
+    type(t_solverILU), pointer :: p_solverILU => null()
 
     ! INTERNAL: substructure for Defect correction
-    type(t_solverDefcor), pointer :: p_solverDefcor       => null()
+    type(t_solverDefcor), pointer :: p_solverDefcor => null()
 
     ! INTERNAL: substructure for Newton's method
-    type(t_solverNewton), pointer :: p_solverNewton       => null()
+    type(t_solverNewton), pointer :: p_solverNewton => null()
   end type t_solver
 
 !</typeblock>
@@ -811,50 +546,50 @@ module solver
   type t_solverMultigrid
 
     ! INPUT: minimum multigrid level
-    integer :: nlmin                                       = 0
+    integer :: nlmin = 0
 
     ! INTERNAL: initial setting of NLMIN
-    integer :: initialNlmin                                 = 0
+    integer :: initialNlmin = 0
 
     ! INPUT: maximum multigrid level
-    integer :: nlmax                                       = 0
+    integer :: nlmax = 0
 
     ! INTERNAL: initial setting if NLMAX
-    integer :: initialNlmax                                 = 0
+    integer :: initialNlmax = 0
 
     ! INPUT: minimum number of multigrid steps
-    integer :: ilmin                                       = 0
+    integer :: ilmin = 0
 
     ! INPUT: maximum number of multigrid steps
-    integer :: ilmax                                       = 0
+    integer :: ilmax = 0
 
     ! INPUT: type of multigrid cycle
-    integer :: icycle                                      = 0
+    integer :: icycle = 0
 
     ! INPUT: Identifier of the smoother
-    character(SYS_STRLEN) :: ssmootherName                  = ''
+    character(SYS_STRLEN) :: ssmootherName = ''
 
     ! INPUT: Identifies the type of smoother
     ! Valid values: SV_UNDEFINED, SV_NONLINEAR, SV_LINEAR
-    integer :: csmootherType                                = SV_UNDEFINED
+    integer :: csmootherType = SV_UNDEFINED
 
     ! INPUT: number of pre-smoothing steps
-    integer :: npresmooth                                   = 0
+    integer :: npresmooth = 0
     
     ! INPUT: number of post-smoothing steps
-    integer :: npostsmooth                                  = 0
+    integer :: npostsmooth = 0
 
     ! INPUT: factor for smoothing steps
-    integer :: nsmoothFactor                                = 0
+    integer :: nsmoothFactor = 0
 
     ! INTERNAL: structure for coarsegrid solver
-    type(t_solver), pointer ::              p_solverCoarsegrid => null()
+    type(t_solver), pointer :: p_solverCoarsegrid => null()
 
     ! INTERNAL: structure for smoothing
-    type(t_solver), dimension(:), pointer ::      p_smoother   => null()
+    type(t_solver), dimension(:), pointer :: p_smoother => null()
 
     ! INTERNAL: system matrices
-    type(t_matrixBlock), dimension(:), pointer :: rmatrix      => null()
+    type(t_matrixBlock), dimension(:), pointer :: rmatrix => null()
 
     ! INTERNAL: temporal vectors
     type(t_vectorBlock), dimension(:), pointer :: RtempVectors => null()
@@ -993,10 +728,10 @@ module solver
     !        For IFILL = 0, the standard ILU decomposition is performed
     !        For IFILL =-1, the standard ILU decomposition is performed with shifting
     !        For IFILL =-2, the modified ILU decomposition is performed with shifting
-    integer :: ifill   = 0
+    integer :: ifill = 0
     
     ! INPUT: Relaxation factor for (M)ILU(s)
-    real(DP) :: domega = 1._DP
+    real(DP) :: domega = 1.0_DP
 
     ! Handle to array [1..*] of integer.
     ! Workspace containing the decomposed matrix.
@@ -1006,16 +741,16 @@ module solver
     integer :: h_Ddata = ST_NOHANDLE
 
     ! Parameter 1 returned by SPLIB for factorized matrix
-    integer :: lu
+    integer :: lu = 0
 
     ! Parameter 2 returned by SPLIB for factorized matrix
-    integer :: jlu
+    integer :: jlu = 0
 
     ! Parameter 3 returned by SPLIB for factorized matrix
-    integer :: ilup
+    integer :: ilup = 0
 
     ! INPUT: tolerance for ILU-factorization
-    real(DP) :: depsILU = SVSTD_DEPSILU
+    real(DP) :: depsILU = 0.0_DP
     
     ! INPUT: ILU decomposition of the system matrix
     type(t_matrixBlock) :: rmatrix
@@ -1052,19 +787,19 @@ module solver
   type t_solverNewton
 
     ! INPUT: check sufficient decrease condition?
-    integer :: icheckSufficientDecrease           = 0
+    integer :: icheckSufficientDecrease = 0
 
     ! INPUT: maximum number of backtracking steps
-    integer :: nmaxBacktrackingSteps              = 0
+    integer :: nmaxBacktrackingSteps = 0
 
     ! INPUT: number of steps before Jacobian matrix needs update
-    integer :: iupdateFrequency                   = 1
+    integer :: iupdateFrequency = 1
 
     ! INPUT: strategy for chosing the forcing term
-    real(DP) :: dforcingStrategy                  = 0._DP
+    real(DP) :: dforcingStrategy = 0.0_DP
 
     ! INPUT: strategy for computing the perturbation parameter
-    real(DP) :: dperturbationStrategy             = 0._DP
+    real(DP) :: dperturbationStrategy = 0.0_DP
 
     ! Temporal vectors
     type(t_vectorBlock), dimension(5) :: RtempVectors
@@ -1077,15 +812,13 @@ module solver
 contains  
 
   ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
 
 !<subroutine>
 
   recursive subroutine solver_createSolverDirect(rparlist, ssectionName, rsolver)
 
 !<description>
-    ! This subroutine creates a new solver object from a given
+    ! This subroutine creates a new solver structure from a given
     ! parameter list. Note that this routine is called recursively
     ! in order  to create the entire solver structure top-down.
     !
@@ -1110,7 +843,7 @@ contains
     ! local variables
     character(LEN=SYS_STRLEN) :: ssolverName,sprecondName,ssmootherName
     integer, dimension(2) :: Isize
-    integer :: csolverType,nKrylov,isolver,ismoother,ios,inum
+    integer :: csolverType,nKrylov,isolver,ismoother
 
     ! Get solver type from parameter list
     call parlst_getvalue_int(rparlist, ssectionName, "csolvertype", csolverType)
@@ -1133,16 +866,16 @@ contains
       ! subnode which is located below the multigrid solver subnode. Both structures
       ! are allocated and filled with required values.
       allocate(rsolver%p_solverMultigrid)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "nlmin", rsolver%p_solverMultigrid%nlmin)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "nlmax", rsolver%p_solverMultigrid%nlmax)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "icycle", rsolver%p_solverMultigrid%icycle)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "ilmin", rsolver%p_solverMultigrid%ilmin)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "ilmax", rsolver%p_solverMultigrid%ilmax)
+      call parlst_getvalue_int(rparlist, ssectionName, "nlmin",&
+                               rsolver%p_solverMultigrid%nlmin)
+      call parlst_getvalue_int(rparlist, ssectionName, "nlmax",&
+                               rsolver%p_solverMultigrid%nlmax)
+      call parlst_getvalue_int(rparlist, ssectionName, "icycle", &
+                               rsolver%p_solverMultigrid%icycle)
+      call parlst_getvalue_int(rparlist, ssectionName, "ilmin", &
+                               rsolver%p_solverMultigrid%ilmin)
+      call parlst_getvalue_int(rparlist, ssectionName, "ilmax", &
+                               rsolver%p_solverMultigrid%ilmax)
 
       ! Set initial levels
       rsolver%p_solverMultigrid%initialNlmin = rsolver%p_solverMultigrid%nlmin
@@ -1169,8 +902,8 @@ contains
                                  rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
       case DEFAULT
-        call output_line('Invalid nonlinear solver for full multigrid &
-            &solver!',OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+        call output_line('Invalid nonlinear solver for full multigrid solver!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
       end select
       ! Now, we are done with the full multigrid solver !!!
@@ -1186,16 +919,16 @@ contains
       ! In addition, a nonlinear multigrid solver may have a nonlinear smoother which
       ! is used to improve the approximation of the nonlinear solution on each level.
       allocate(rsolver%p_solverMultigrid)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "nlmin", rsolver%p_solverMultigrid%nlmin)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "nlmax", rsolver%p_solverMultigrid%nlmax)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "icycle", rsolver%p_solverMultigrid%icycle)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "ilmin", rsolver%p_solverMultigrid%ilmin)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "ilmax", rsolver%p_solverMultigrid%ilmax)
+      call parlst_getvalue_int(rparlist, ssectionName, "nlmin", &
+                               rsolver%p_solverMultigrid%nlmin)
+      call parlst_getvalue_int(rparlist, ssectionName, "nlmax", &
+                               rsolver%p_solverMultigrid%nlmax)
+      call parlst_getvalue_int(rparlist, ssectionName, "icycle", &
+                               rsolver%p_solverMultigrid%icycle)
+      call parlst_getvalue_int(rparlist, ssectionName, "ilmin", &
+                               rsolver%p_solverMultigrid%ilmin)
+      call parlst_getvalue_int(rparlist, ssectionName, "ilmax", &
+                               rsolver%p_solverMultigrid%ilmax)
 
       ! Set initial levels
       rsolver%p_solverMultigrid%initialNlmin = rsolver%p_solverMultigrid%nlmin
@@ -1219,8 +952,8 @@ contains
                                  rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
       case DEFAULT
-        call output_line('Invalid coarse grid solver for nonlinear mul&
-            &tigrid solver!',OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+        call output_line('Invalid coarse grid solver for nonlinear multigrid solver!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
       end select
 
@@ -1230,21 +963,20 @@ contains
       ! the nonlinear algebraic equation. Check if either pre- or
       ! postsmoothing should be applied and allocate smoother
       ! structute accordingly.
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "npresmooth", rsolver%p_solverMultigrid%npresmooth)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "npostsmooth", rsolver%p_solverMultigrid%npostsmooth)
+      call parlst_getvalue_int(rparlist, ssectionName, "npresmooth", &
+                               rsolver%p_solverMultigrid%npresmooth)
+      call parlst_getvalue_int(rparlist, ssectionName, "npostsmooth", &
+                               rsolver%p_solverMultigrid%npostsmooth)
       
       ! Create smoother recursively
       if ((rsolver%p_solverMultigrid%npresmooth  .ne. 0) .or. &
           (rsolver%p_solverMultigrid%npostsmooth .ne. 0)) then
-        call parlst_getvalue_int(rparlist, ssectionName,&
-                                 "nsmoothFactor", rsolver%p_solverMultigrid%nsmoothFactor,&
-                                 SVSTD_NSMOOTHFACTOR)
-        call parlst_getvalue_int(rparlist, ssectionName,&
-                                 "ismoother", ismoother)
-        call parlst_getvalue_string(rparlist, ssectionName,&
-                                    "ssmootherName", ssmootherName)
+        call parlst_getvalue_int(rparlist, ssectionName, "nsmoothFactor", &
+                                 rsolver%p_solverMultigrid%nsmoothFactor)
+        call parlst_getvalue_int(rparlist, ssectionName, "ismoother", &
+                                 ismoother)
+        call parlst_getvalue_string(rparlist, ssectionName, "ssmootherName", &
+                                    ssmootherName)
         
         ! For nonlinear multigrid only nonlinear multigrid- or single
         ! -grid solvers are admissible as smoothers. All other solver
@@ -1256,8 +988,8 @@ contains
           call create_smoother(rparlist, ssmootherName, rsolver%p_solverMultigrid)
 
         case DEFAULT
-          call output_line('Invalid smoother for nonlinear multigrid s&
-              &olver!',OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+          call output_line('Invalid smoother for nonlinear multigrid solver!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
           call sys_halt()
         end select
       end if
@@ -1274,16 +1006,16 @@ contains
       ! In addition, a linear multigrid solver may have a linear smoother which is used
       ! to improve the approximation of the linear solution on each level.
       allocate(rsolver%p_solverMultigrid)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "nlmin", rsolver%p_solverMultigrid%nlmin)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "nlmax", rsolver%p_solverMultigrid%nlmax)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "icycle", rsolver%p_solverMultigrid%icycle)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "ilmin", rsolver%p_solverMultigrid%ilmin)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "ilmax", rsolver%p_solverMultigrid%ilmax)
+      call parlst_getvalue_int(rparlist, ssectionName, "nlmin", &
+                               rsolver%p_solverMultigrid%nlmin)
+      call parlst_getvalue_int(rparlist, ssectionName, "nlmax", &
+                               rsolver%p_solverMultigrid%nlmax)
+      call parlst_getvalue_int(rparlist, ssectionName, "icycle", &
+                               rsolver%p_solverMultigrid%icycle)
+      call parlst_getvalue_int(rparlist, ssectionName, "ilmin", &
+                               rsolver%p_solverMultigrid%ilmin)
+      call parlst_getvalue_int(rparlist, ssectionName, "ilmax", &
+                               rsolver%p_solverMultigrid%ilmax)
       
       ! Set initial levels
       rsolver%p_solverMultigrid%initialNlmin = rsolver%p_solverMultigrid%nlmin
@@ -1307,8 +1039,8 @@ contains
                                  rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
       case DEFAULT
-        call output_line('Invalid coarse grid solver for linear multig&
-            &rid solver!',OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+        call output_line('Invalid coarse grid solver for linear multigrid solver!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
       end select
 
@@ -1316,21 +1048,20 @@ contains
       ! ~~~~~~~~~
       ! Optionally, we need a pre-/postsmoothing algorithm to smooth the linear algebraic equation.
       ! Check if either pre- or postsmoothing should be applied and allocate smoother accordingly.
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "npresmooth", rsolver%p_solverMultigrid%npresmooth)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "npostsmooth", rsolver%p_solverMultigrid%npostsmooth)
+      call parlst_getvalue_int(rparlist, ssectionName, "npresmooth", &
+                               rsolver%p_solverMultigrid%npresmooth)
+      call parlst_getvalue_int(rparlist, ssectionName, "npostsmooth", &
+                               rsolver%p_solverMultigrid%npostsmooth)
       
       ! Create smoother recursively
       if ((rsolver%p_solverMultigrid%npresmooth  .ne. 0) .or. &
           (rsolver%p_solverMultigrid%npostsmooth .ne. 0)) then
-        call parlst_getvalue_int(rparlist, ssectionName,&
-                                 "nsmoothfactor", rsolver%p_solverMultigrid%nsmoothfactor,&
-                                 SVSTD_NSMOOTHFACTOR)
-        call parlst_getvalue_int(rparlist, ssectionName,&
-                                 "ismoother", ismoother)
-        call parlst_getvalue_string(rparlist, ssectionName,&
-                                    "ssmootherName", ssmootherName)
+        call parlst_getvalue_int(rparlist, ssectionName, "nsmoothfactor", &
+                                 rsolver%p_solverMultigrid%nsmoothfactor)
+        call parlst_getvalue_int(rparlist, ssectionName, "ismoother", &
+                                 ismoother)
+        call parlst_getvalue_string(rparlist, ssectionName, "ssmootherName", &
+                                    ssmootherName)
         
         ! For linear multigrid only linear multigrid- or single-grid solvers are
         ! admissible as smoothers. All other solver types must be rejected
@@ -1340,8 +1071,8 @@ contains
           call create_smoother(rparlist, ssmootherName, rsolver%p_solverMultigrid)
           
         case DEFAULT
-          call output_line('Invalid smoother for nonlinear multigrid s&
-              &olver!',OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+          call output_line('Invalid smoother for nonlinear multigrid solver!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
           call sys_halt()
         end select
       end if
@@ -1355,8 +1086,8 @@ contains
       ! This type of solver has no explicit solver subnode but a nonlinear
       ! preconditioner structure. According to the type of nonlinear preconditioning
       ! the corresponding structure is allocated and filled with values
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "isolver", rsolver%isolver)
+      call parlst_getvalue_int(rparlist, ssectionName, "isolver", &
+                               rsolver%isolver)
 
       ! Ok, now we set up the individual solver structure
       select case (rsolver%isolver)
@@ -1366,7 +1097,7 @@ contains
         
       case DEFAULT
         call output_line('Unsupported nonlinear solver!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+                         OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
       end select
 
@@ -1375,8 +1106,8 @@ contains
       ! we just get the name of the linear solver from the parameter list and
       ! create the linear solver recursively:
       allocate(rsolver%p_solverSubnode)
-      call parlst_getvalue_string(rparlist, ssectionName,&
-                                  "ssolverName", ssolverName)
+      call parlst_getvalue_string(rparlist, ssectionName, "ssolverName", &
+                                  ssolverName)
       call solver_createSolver(rparlist, ssolverName, rsolver%p_solverSubnode)
       ! Now, we are done with the nonlinear singlegrid solver !!!
 
@@ -1387,8 +1118,8 @@ contains
       ! This type of solver has several subnodes for the individual single grid solver.
       ! According to the desired solver, the corresponding subnode is allocated and
       ! filled with values.
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "isolver", rsolver%isolver)
+      call parlst_getvalue_int(rparlist, ssectionName, "isolver", &
+                               rsolver%isolver)
       
       ! Ok, now set up the individual solver structures
       select case (rsolver%isolver)
@@ -1407,8 +1138,8 @@ contains
         allocate(rsolver%p_solverBiCGSTAB)  
 
         ! Check for preconditioner
-        call parlst_getvalue_string(rparlist, ssectionName,&
-                                    "sprecondName", sprecondName, "")
+        call parlst_getvalue_string(rparlist, ssectionName, "sprecondName", &
+                                    sprecondName)
 
         if (trim(adjustl(sprecondName)) .ne. "") then
           allocate(rsolver%p_solverBiCGSTAB%p_precond)
@@ -1420,8 +1151,8 @@ contains
         allocate(rsolver%p_solverGMRES)
 
         ! Get dimension of Krylov subspace
-        call parlst_getvalue_int(rparlist, ssectionName,&
-                                 "nkrylov", nKrylov)
+        call parlst_getvalue_int(rparlist, ssectionName, "nkrylov", &
+                                 nKrylov)
         allocate(rsolver%p_solverGMRES%rv(nKrylov+1))
         allocate(rsolver%p_solverGMRES%rz(nKrylov))
 
@@ -1436,8 +1167,8 @@ contains
                          rsolver%p_solverGMRES%h_Dq, ST_NEWBLOCK_NOINIT)
 
         ! Check for preconditioner
-        call parlst_getvalue_string(rparlist, ssectionName,&
-                                    "sprecondName", sprecondName, "")
+        call parlst_getvalue_string(rparlist, ssectionName, "sprecondName", &
+                                    sprecondName)
 
         if (trim(adjustl(sprecondName)) .ne. "") then
           allocate(rsolver%p_solverGMRES%p_precond)
@@ -1447,80 +1178,57 @@ contains
 
       case (LINSOL_SOLVER_ILU)
         allocate(rsolver%p_solverILU)
-        call parlst_getvalue_double(rparlist, ssectionName,&
-                                    "depsILU", rsolver%p_solverILU%depsILU, SVSTD_DEPSILU)
-        call parlst_getvalue_double(rparlist, ssectionName,&
-                                    "domega", rsolver%p_solverILU%domega, SVSTD_DOMEGA)
-        call parlst_getvalue_int(rparlist, ssectionName,&
-                                 "ifill", rsolver%p_solverILU%ifill, 0)
+        call parlst_getvalue_double(rparlist, ssectionName, "depsILU", &
+                                    rsolver%p_solverILU%depsILU)
+        call parlst_getvalue_double(rparlist, ssectionName, "domega", &
+                                    rsolver%p_solverILU%domega)
+        call parlst_getvalue_int(rparlist, ssectionName, "ifill", &
+                                 rsolver%p_solverILU%ifill)
 
       case DEFAULT
         call output_line('Unsupported linear solver!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+                         OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
       end select
       
     case DEFAULT
       call output_line('Unsupported solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
       call sys_halt()
     end select
 
     ! In the second part, all (optinal) parameters which apply to all solvers are read
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             "ioutputlevel", rsolver%ioutputlevel, SVSTD_IOLEVEL)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             "iresNorm", rsolver%iresNorm, SVSTD_IRESNORM)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             "nminIterations", rsolver%nminIterations,&
-                             SVSTD_NMINITERATIONS)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             "nmaxIterations", rsolver%nmaxIterations,&
-                             SVSTD_NMAXITERATIONS)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "domega", rsolver%domega, 1.0_DP)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "depsRel", rsolver%depsRel, SVSTD_DEPSREL)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "depsAbs", rsolver%depsAbs, SVSTD_DEPSABS)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "depsStag", rsolver%depsStag, SVSTD_DEPSSTAG)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "ddivRel", rsolver%ddivRel, SVSTD_DDIVREL)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "ddivAbs", rsolver%ddivAbs, SVSTD_DDIVABS)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "drhsZero", rsolver%drhsZero, SVSTD_DRHSZERO)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "ddefZero", rsolver%ddefZero, SVSTD_DDEFZERO)
-   
-    ! Open logfile if required
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-      ! Get next free unit
-      rsolver%iunitLogfile = sys_getFreeUnit()
-
-      ! Try to open master file
-      open(UNIT=rsolver%iunitLogfile,&
-          FILE=trim(adjustl(rsolver%ssolverName))//'.log',&
-          STATUS='replace', IOSTAT=ios)
-      if (IOS .eq. 0) return
-
-      ! Master file could not be opened, try to open fileXX, where XX=1,2,3,...,99
-      do inum = 1, 99
-        open(UNIT=rsolver%iunitLogfile,&
-            FILE=trim(adjustl(rsolver%ssolverName))//&
-            trim(adjustl(sys_si0(inum,2)))//'.log',&
-            STATUS='replace',IOSTAT=ios)
-        if (IOS .eq. 0) return
-      end do
-    end if
+    call parlst_getvalue_int(rparlist, ssectionName, "ioutputlevel", &
+                             rsolver%ioutputlevel)
+    call parlst_getvalue_int(rparlist, ssectionName, "iresNorm", &
+                             rsolver%iresNorm)
+    call parlst_getvalue_int(rparlist, ssectionName, "nminIterations", &
+                             rsolver%nminIterations)
+    call parlst_getvalue_int(rparlist, ssectionName, "nmaxIterations", &
+                             rsolver%nmaxIterations)
+    call parlst_getvalue_double(rparlist, ssectionName, "domega", &
+                                rsolver%domega)
+    call parlst_getvalue_double(rparlist, ssectionName, "depsRel", &
+                                rsolver%depsRel)
+    call parlst_getvalue_double(rparlist, ssectionName, "depsAbs", &
+                                rsolver%depsAbs)
+    call parlst_getvalue_double(rparlist, ssectionName, "depsStag", &
+                                rsolver%depsStag)
+    call parlst_getvalue_double(rparlist, ssectionName, "ddivRel", &
+                                rsolver%ddivRel)
+    call parlst_getvalue_double(rparlist, ssectionName, "ddivAbs", &
+                                rsolver%ddivAbs)
+    call parlst_getvalue_double(rparlist, ssectionName, "drhsZero", &
+                                rsolver%drhsZero)
+    call parlst_getvalue_double(rparlist, ssectionName, "ddefZero", &
+                                rsolver%ddefZero)
 
   contains
 
     ! Here, the real working routine follows
     
     !*************************************************************
-    ! This subroutine turns an object of type t_solver into a 
+    ! This subroutine turns an structure of type t_solver into a 
     ! preconditioner. Depending on the type of solver, various 
     ! parameters are modified so as to meet the requirements of 
     ! a preconditioner of read in from parameter list
@@ -1545,8 +1253,8 @@ contains
       ! Check if given solver matches the current solver type
       if ((rsolver%csolverType .ne. SV_UNDEFINED) .and.&
           (rsolver%csolverType .ne. csolverType)) then
-        call output_line('The given solver does not match specified ty&
-            &pe!',OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
+        call output_line('The given solver does not match specified type!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
         call sys_halt()
       end if
 
@@ -1569,37 +1277,31 @@ contains
         ! ----------------------------------------------------------------------------------
         ! Create a nonlinear single-grid preconditioner:
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        call parlst_getvalue_int(rparlist, ssectionName,&
-                                 "iprecond", rsolver%iprecond)
+        call parlst_getvalue_int(rparlist, ssectionName, "iprecond", &
+                                 rsolver%iprecond)
         
         ! What kind of preconditioner should be created?
         select case(rsolver%iprecond)
         case (NLSOL_PRECOND_BLOCKD,&
-              NLSOL_PRECOND_DEFCOR,&
-              NLSOL_PRECOND_EXPLICIT)
+              NLSOL_PRECOND_DEFCOR)
           allocate(rsolver%p_solverDefcor)
           
         case (NLSOL_PRECOND_NEWTON)
           allocate(rsolver%p_solverNewton)
-          call parlst_getvalue_int(rparlist, ssectionName,&
-                                   "icheckSufficientDecrease",&
+          call parlst_getvalue_int(rparlist, ssectionName, "icheckSufficientDecrease",&
                                    rsolver%p_solverNewton%icheckSufficientDecrease)
-          call parlst_getvalue_int(rparlist, ssectionName,&
-                                   "nmaxBacktrackingSteps",&
+          call parlst_getvalue_int(rparlist, ssectionName, "nmaxBacktrackingSteps",&
                                    rsolver%p_solverNewton%nmaxBacktrackingSteps)
-          call parlst_getvalue_int(rparlist, ssectionName,&
-                                   "iupdateFrequency",&
+          call parlst_getvalue_int(rparlist, ssectionName, "iupdateFrequency",&
                                    rsolver%p_solverNewton%iupdateFrequency)
-          call parlst_getvalue_double(rparlist, ssectionName,&
-                                      "dforcingStrategy",&
+          call parlst_getvalue_double(rparlist, ssectionName, "dforcingStrategy",&
                                       rsolver%p_solverNewton%dforcingStrategy)
-          call parlst_getvalue_double(rparlist, ssectionName,&
-                                      "dperturbationStrategy",&
+          call parlst_getvalue_double(rparlist, ssectionName, "dperturbationStrategy",&
                                       rsolver%p_solverNewton%dperturbationStrategy)
           
         case DEFAULT
           call output_line('Unsupported nonlinear preconditioner!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
+                           OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
           call sys_halt()
         end select
 
@@ -1614,8 +1316,8 @@ contains
         ! ----------------------------------------------------------------------------------
         ! Create a linear preconditioner:
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        call parlst_getvalue_int(rparlist, ssectionName,&
-                                 "isolver", rsolver%isolver)
+        call parlst_getvalue_int(rparlist, ssectionName, "isolver", &
+                                 rsolver%isolver)
         
         ! What kind of preconditioner should be created?
         select case(rsolver%isolver)
@@ -1630,12 +1332,12 @@ contains
           
         case (LINSOL_SOLVER_ILU)
           allocate(rsolver%p_solverILU)
-          call parlst_getvalue_double(rparlist, ssectionName,&
-                                      "depsILU", rsolver%p_solverILU%depsILU, SVSTD_DEPSILU)
-          call parlst_getvalue_double(rparlist, ssectionName,&
-                                      "domega", rsolver%p_solverILU%domega, SVSTD_DOMEGA)
-          call parlst_getvalue_int(rparlist, ssectionName,&
-                                   "ifill", rsolver%p_solverILU%ifill, 0)
+          call parlst_getvalue_double(rparlist, ssectionName, "depsILU", &
+                                      rsolver%p_solverILU%depsILU)
+          call parlst_getvalue_double(rparlist, ssectionName, "domega", &
+                                      rsolver%p_solverILU%domega)
+          call parlst_getvalue_int(rparlist, ssectionName, "ifill", &
+                                   rsolver%p_solverILU%ifill)
 
         case DEFAULT
           ! Ok, we could not identify one of the simple preconditioners. 
@@ -1657,15 +1359,17 @@ contains
 
       case DEFAULT
         call output_line('Unsupported preconditioner type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
+                         OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
         call sys_halt()
       end select
+
     end subroutine create_preconditioner
 
     !*************************************************************
     ! This subroutine creates the smoother subnode for a given
-    ! object of type t_solverMultigrid. Each smoother subnode
+    ! structure of type t_solverMultigrid. Each smoother subnode
     ! is created individually from the parameter list.
+
     subroutine create_smoother(rparlist, ssectionName, rsolver)
       ! Parameter list containing all data
       type(t_parlist), intent(IN) :: rparlist
@@ -1680,8 +1384,8 @@ contains
       integer :: i,csolverType
 
       ! Get smoother type from parameter list
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "csolverType", csolverType)
+      call parlst_getvalue_int(rparlist, ssectionName, "csolverType", &
+                               csolverType)
       
       ! In the first part mandatory and optional parameters which apply to some type
       ! of solvers are read from the parameter list and applied to the solverrr.
@@ -1720,10 +1424,12 @@ contains
 
       case DEFAULT
         call output_line('Unsupported type of smoother!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'create_smoother')
+                         OU_CLASS_ERROR,OU_MODE_STD,'create_smoother')
         call sys_halt()
       end select
+      
     end subroutine create_smoother
+    
   end subroutine solver_createSolverDirect
   
   ! ***************************************************************************
@@ -1733,7 +1439,7 @@ contains
   recursive subroutine solver_createSolverIndirect(rsolver, rsolverTemplate)
 
 !<description>
-    ! This subroutine creates a new solver object by cloning an existing solver object
+    ! This subroutine creates a new solver structure by cloning an existing solver structure
 !</description>
 
 !<input>
@@ -1747,8 +1453,6 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variables
-    integer :: ios,inum
 
     ! The INTENT(OUT) already initializes rsolver with the most
     ! important information. The rest comes now
@@ -1757,29 +1461,7 @@ contains
     ! Mark the solver as "empty" so that it structure and
     ! its content is updated automatically
     rsolver%isolverSpec = ior(rsolver%isolverSpec, SV_SSPEC_EMPTY)
-
-    ! Open logfile if required
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-      ! Get next free unit
-      rsolver%iunitLogfile = sys_getFreeUnit()
-
-      ! Since the master file is already opend, try to open fileXX, where XX=1,2,3,...,99
-      do inum = 1, 99
-        open(UNIT=rsolver%iunitLogfile,&
-            FILE=trim(adjustl(rsolver%ssolverName))//&
-            trim(adjustl(sys_si0(inum,2)))//'.log',&
-            STATUS='replace', IOSTAT=ios)
-        if (ios .eq. 0) exit
-      end do
-
-      ! Check if logfile could be opened
-      if (ios .ne. 0) then
-        call output_line('Unable to open logfile!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverIndirect')
-        call sys_halt()
-      end if
-    end if
-
+    
     ! Set boundary pointer
     if (associated(rsolverTemplate%rboundaryCondition))&
         rsolver%rboundaryCondition => rsolverTemplate%rboundaryCondition
@@ -2057,6 +1739,7 @@ contains
       rsolver%dforcingStrategy         = rsolverTemplate%dforcingStrategy
       rsolver%dperturbationStrategy    = rsolver%dperturbationStrategy
     end subroutine create_solverNewton
+
   end subroutine solver_createSolverIndirect
 
   ! ***************************************************************************
@@ -2066,7 +1749,7 @@ contains
   recursive subroutine solver_releaseSolver(rsolver)
 
 !<description>
-    ! This subroutine releases a given solver object,
+    ! This subroutine releases a given solver structure,
     ! whereby all of its subnodes are released recursively.
 !</description>
 
@@ -2076,13 +1759,7 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! local variables
-    logical :: bisOpened
     
-    ! Check if output file is open
-    inquire(UNIT=rsolver%iunitLogfile, OPENED=bisOpened)
-    if (bisOpened) close(UNIT=rsolver%iunitLogfile)
-
     ! Nullify boundary condition pointer
     nullify(rsolver%rboundaryCondition)
 
@@ -2402,282 +2079,8 @@ contains
         call lsysbl_releaseVector(rprecond%RtempVectors(i))
       end do
     end subroutine release_solverNewton
+
   end subroutine solver_releaseSolver
-   
-  ! ***************************************************************************
-
-!<subroutine>
-
-  recursive subroutine solver_removeSolverTemporal(rsolver)
-
-!<description>
-    ! This subroutine recursively removes all temporal memory from the
-    ! given solver object and all of its associated subnodes
-!</description>
-
-!<inputoutput>
-    ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
-!</inputoutput>
-!</subroutine>
-
-    ! This type of solver does not have and temporals.
-    ! Hence, we can directly proceed to the subnodes.
-
-    ! Generic solver subnode
-    if (associated(rsolver%p_solverSubnode)) then
-      call solver_removeSolverTemporal(rsolver%p_solverSubnode)
-    end if
-
-    ! Multigrid solver
-    if (associated(rsolver%p_solverMultigrid)) then
-      call remove_solverMultigrid(rsolver%p_solverMultigrid)
-    end if
-
-    ! UMFPACK solver
-    if (associated(rsolver%p_solverUMFPACK)) then
-      call remove_solverUMFPACK(rsolver%p_solverUMFPACK)
-    end if
-
-    ! Jacobi solver
-    if (associated(rsolver%p_solverJacobi)) then
-      call remove_solverJacobi(rsolver%p_solverJacobi)
-    end if
-
-    ! (S)SOR solver
-    if (associated(rsolver%p_solverSSOR)) then
-      call remove_solverSSOR(rsolver%p_solverSSOR)
-    end if
-
-    ! BiCGSTAB solver
-    if (associated(rsolver%p_solverBiCGSTAB)) then
-      call remove_solverBiCGSTAB(rsolver%p_solverBiCGSTAB)
-    end if
-
-    ! GMRES solver
-    if (associated(rsolver%p_solverGMRES)) then
-      call remove_solverGMRES(rsolver%p_solverGMRES)
-    end if
-    
-    ! ILU solver
-    if (associated(rsolver%p_solverILU)) then
-      call remove_solverILU(rsolver%p_solverILU)
-    end if
-
-    ! Defcor preconditioner
-    if (associated(rsolver%p_solverDefcor)) then
-      call remove_solverDefcor(rsolver%p_solverDefcor)
-    end if
-      
-    ! Newton preconditioner
-    if (associated(rsolver%p_solverNewton)) then
-      call remove_solverNewton(rsolver%p_solverNewton)
-    end if
-
-  contains
-    
-    ! Here, the real working routine follows
-    
-    !*************************************************************
-    ! Remove temporal data from multigrid solver
-    
-    subroutine remove_solverMultigrid(rsolver)
-      type(t_solverMultigrid), intent(INOUT) :: rsolver
-
-      ! local variables
-      integer :: i
-      
-      ! Release matrix
-      if (associated(rsolver%rmatrix)) then
-        do i = lbound(rsolver%rmatrix,1),&
-               ubound(rsolver%rmatrix,1)
-          call lsysbl_releaseMatrix(rsolver%rmatrix(i))
-        end do
-      end if
-      
-      ! Release temporal vectors
-      if (associated(rsolver%RtempVectors)) then
-        do i = lbound(rsolver%RtempVectors,1),&
-               ubound(rsolver%RtempVectors,1)
-          call lsysbl_releaseVector(rsolver%RtempVectors(i))
-        end do
-      end if
-      
-      ! Remove temporal from coarsegrid solver
-      if (associated(rsolver%p_solverCoarsegrid)) then
-        call solver_removeSolverTemporal(rsolver%p_solverCoarsegrid)
-      end if
-      
-      ! Remove temporals from smoother
-      if (associated(rsolver%p_smoother)) then
-        do i = lbound(rsolver%p_smoother,1),&
-               ubound(rsolver%p_smoother,1)
-          call solver_removeSolverTemporal(rsolver%p_smoother(i))
-        end do
-      end if
-    end subroutine remove_solverMultigrid
-
-    !*************************************************************
-    ! Remove temporal data from UMFPACK solver
-
-    subroutine remove_solverUMFPACK(rsolver)
-      type(t_solverUMFPACK), intent(INOUT) :: rsolver
-
-      integer :: i
-
-      ! Release UMFPACK handles
-      if (rsolver%isymbolic .ne. 0) call UMF4FSYM(rsolver%isymbolic)
-      if (rsolver%inumeric  .ne. 0) call UMF4FNUM(rsolver%inumeric)
-
-      if (associated(rsolver%IsymbolicBlock)) then
-        do i = lbound(rsolver%IsymbolicBlock,1),&
-               ubound(Rsolver%IsymbolicBlock,1)
-          if (rsolver%IsymbolicBlock(i) .ne. 0) call UMF4FSYM(rsolver%IsymbolicBlock(i))
-        end do
-      end if
-
-      if (associated(rsolver%InumericBlock)) then
-        do i = lbound(rsolver%InumericBlock,1),&
-               ubound(Rsolver%InumericBlock,1)
-          if (rsolver%InumericBlock(i) .ne. 0) call UMF4FNUM(rsolver%InumericBlock(i))
-        end do
-      end if
-
-      ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
-      ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
-    end subroutine remove_solverUMFPACK
-
-    !*************************************************************
-    ! Remove temporal data from Jacobi solver
-    
-    subroutine remove_solverJacobi(rsolver)
-      type(t_solverJacobi), intent(INOUT) :: rsolver
-
-      ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
-      ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
-    end subroutine remove_solverJacobi
-
-    !*************************************************************
-    ! Remove temporal data from (S)SOR solver
-
-    subroutine remove_solverSSOR(rsolver)
-      type(t_solverSSOR), intent(INOUT) :: rsolver
-
-      ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
-
-      ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
-    end subroutine remove_solverSSOR
-
-    !*************************************************************
-    ! Remove temporal data from BiCGSTAB solver
-
-    subroutine remove_solverBiCGSTAB(rsolver)
-      type(t_solverBiCGSTAB), intent(INOUT) :: rsolver
-
-      ! local variables
-      integer :: i
-      
-      ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
-      ! Release temporal vectors
-      do i = lbound(rsolver%RtempVectors,1),&
-             ubound(rsolver%RtempVectors,1)
-        call lsysbl_releaseVector(rsolver%RtempVectors(i))
-      end do
-      
-      ! Remove temporals from preconditioner
-      if (associated(rsolver%p_precond)) then
-        call solver_removeSolverTemporal(rsolver%p_precond)
-      end if
-    end subroutine remove_solverBiCGSTAB
-
-    !*************************************************************
-    ! Remove temporal data from GMRES solver
-
-    subroutine remove_solverGMRES(rsolver)
-      type(t_solverGMRES), intent(INOUT) :: rsolver
-
-      ! local variables
-      integer :: i
-      
-      ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
-      ! Release temporal vectors
-      do i = lbound(rsolver%rv,1),&
-             ubound(rsolver%rv,1)
-        call lsysbl_releaseVector(rsolver%rv(i))
-      end do
-      
-      do i = lbound(rsolver%rz,1),&
-             ubound(rsolver%rz,1)
-        call lsysbl_releaseVector(rsolver%rz(i))
-      end do
-      
-      ! Remove temporals from preconditioner
-      if (associated(rsolver%p_precond)) then
-        call solver_removeSolverTemporal(rsolver%p_precond)
-      end if
-    end subroutine remove_solverGMRES
-
-    !*************************************************************
-    ! Remove temporal data from ILU solver
-
-    subroutine remove_solverILU(rsolver)
-      type(t_solverILU), intent(INOUT) :: rsolver
-
-      ! Release ILU handles
-      if (rsolver%h_Idata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Idata)
-      if (rsolver%h_Ddata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Ddata)
-      
-      ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
-      ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
-    end subroutine remove_solverILU
-
-    !*************************************************************
-    ! Remove temporal data from defect correction algorithm
-    
-    subroutine remove_solverDefcor(rsolver)
-      type(t_solverDefcor), intent(INOUT) :: rsolver
-
-      ! local variables
-      integer :: i
-      
-      ! Release temporal vectors
-      do i = lbound(rsolver%RtempVectors,1),&
-             ubound(rsolver%RtempVectors,1)
-        call lsysbl_releaseVector(rsolver%RtempVectors(i))
-      end do
-    end subroutine remove_solverDefcor
-
-    !*************************************************************
-    ! Remove temporal data from Newton's algorithm
-
-    subroutine remove_solverNewton(rsolver)
-      type(t_solverNewton), intent(INOUT) :: rsolver
-
-      ! local variables
-      integer :: i
-      
-      ! Release temporal vectors
-      do i = lbound(rsolver%RtempVectors,1),&
-             ubound(rsolver%RtempVectors,1)
-        call lsysbl_releaseVector(rsolver%RtempVectors(i))
-      end do
-    end subroutine remove_solverNewton
-  end subroutine solver_removeSolverTemporal
 
   ! ***************************************************************************
 
@@ -2757,7 +2160,6 @@ contains
       call output_line('isolver:                                      '//trim(sys_siL(rsolver%isolver,3)))
       call output_line('iprecond:                                     '//trim(sys_siL(rsolver%iprecond,3)))
       call output_line('ioutputlevel:                                 '//trim(sys_siL(rsolver%ioutputLevel,3)))
-      call output_line('iunitLogfile:                                 '//trim(sys_siL(rsolver%iunitLogfile,5)))
       call output_line('iresNorm:                                     '//trim(sys_siL(rsolver%iresNorm,3)))
       call output_line('nminIterations:                               '//trim(sys_siL(rsolver%nminIterations,5)))
       call output_line('nmaxIterations:                               '//trim(sys_siL(rsolver%nmaxIterations,5)))
@@ -3171,11 +2573,288 @@ contains
 
 !<subroutine>
 
+  recursive subroutine solver_removeTempFromSolver(rsolver)
+
+!<description>
+    ! This subroutine recursively removes all temporal memory from the
+    ! given solver structure and all of its associated subnodes
+!</description>
+
+!<inputoutput>
+    ! solver structure
+    type(t_solver), intent(INOUT) :: rsolver
+!</inputoutput>
+!</subroutine>
+
+    ! This type of solver does not have and temporals.
+    ! Hence, we can directly proceed to the subnodes.
+
+    ! Generic solver subnode
+    if (associated(rsolver%p_solverSubnode)) then
+      call solver_removeTempFromSolver(rsolver%p_solverSubnode)
+    end if
+
+    ! Multigrid solver
+    if (associated(rsolver%p_solverMultigrid)) then
+      call remove_solverMultigrid(rsolver%p_solverMultigrid)
+    end if
+
+    ! UMFPACK solver
+    if (associated(rsolver%p_solverUMFPACK)) then
+      call remove_solverUMFPACK(rsolver%p_solverUMFPACK)
+    end if
+
+    ! Jacobi solver
+    if (associated(rsolver%p_solverJacobi)) then
+      call remove_solverJacobi(rsolver%p_solverJacobi)
+    end if
+
+    ! (S)SOR solver
+    if (associated(rsolver%p_solverSSOR)) then
+      call remove_solverSSOR(rsolver%p_solverSSOR)
+    end if
+
+    ! BiCGSTAB solver
+    if (associated(rsolver%p_solverBiCGSTAB)) then
+      call remove_solverBiCGSTAB(rsolver%p_solverBiCGSTAB)
+    end if
+
+    ! GMRES solver
+    if (associated(rsolver%p_solverGMRES)) then
+      call remove_solverGMRES(rsolver%p_solverGMRES)
+    end if
+    
+    ! ILU solver
+    if (associated(rsolver%p_solverILU)) then
+      call remove_solverILU(rsolver%p_solverILU)
+    end if
+
+    ! Defcor preconditioner
+    if (associated(rsolver%p_solverDefcor)) then
+      call remove_solverDefcor(rsolver%p_solverDefcor)
+    end if
+      
+    ! Newton preconditioner
+    if (associated(rsolver%p_solverNewton)) then
+      call remove_solverNewton(rsolver%p_solverNewton)
+    end if
+
+  contains
+    
+    ! Here, the real working routine follows
+    
+    !*************************************************************
+    ! Remove temporal data from multigrid solver
+    
+    subroutine remove_solverMultigrid(rsolver)
+      type(t_solverMultigrid), intent(INOUT) :: rsolver
+
+      ! local variables
+      integer :: i
+      
+      ! Release matrix
+      if (associated(rsolver%rmatrix)) then
+        do i = lbound(rsolver%rmatrix,1),&
+               ubound(rsolver%rmatrix,1)
+          call lsysbl_releaseMatrix(rsolver%rmatrix(i))
+        end do
+      end if
+      
+      ! Release temporal vectors
+      if (associated(rsolver%RtempVectors)) then
+        do i = lbound(rsolver%RtempVectors,1),&
+               ubound(rsolver%RtempVectors,1)
+          call lsysbl_releaseVector(rsolver%RtempVectors(i))
+        end do
+      end if
+      
+      ! Remove temporal from coarsegrid solver
+      if (associated(rsolver%p_solverCoarsegrid)) then
+        call solver_removeTempFromSolver(rsolver%p_solverCoarsegrid)
+      end if
+      
+      ! Remove temporals from smoother
+      if (associated(rsolver%p_smoother)) then
+        do i = lbound(rsolver%p_smoother,1),&
+               ubound(rsolver%p_smoother,1)
+          call solver_removeTempFromSolver(rsolver%p_smoother(i))
+        end do
+      end if
+    end subroutine remove_solverMultigrid
+
+    !*************************************************************
+    ! Remove temporal data from UMFPACK solver
+
+    subroutine remove_solverUMFPACK(rsolver)
+      type(t_solverUMFPACK), intent(INOUT) :: rsolver
+
+      integer :: i
+
+      ! Release UMFPACK handles
+      if (rsolver%isymbolic .ne. 0) call UMF4FSYM(rsolver%isymbolic)
+      if (rsolver%inumeric  .ne. 0) call UMF4FNUM(rsolver%inumeric)
+
+      if (associated(rsolver%IsymbolicBlock)) then
+        do i = lbound(rsolver%IsymbolicBlock,1),&
+               ubound(Rsolver%IsymbolicBlock,1)
+          if (rsolver%IsymbolicBlock(i) .ne. 0) call UMF4FSYM(rsolver%IsymbolicBlock(i))
+        end do
+      end if
+
+      if (associated(rsolver%InumericBlock)) then
+        do i = lbound(rsolver%InumericBlock,1),&
+               ubound(Rsolver%InumericBlock,1)
+          if (rsolver%InumericBlock(i) .ne. 0) call UMF4FNUM(rsolver%InumericBlock(i))
+        end do
+      end if
+
+      ! Release matrix
+      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      
+      ! Release temporal vector
+      call lsysbl_releaseVector(rsolver%rtempVector)
+    end subroutine remove_solverUMFPACK
+
+    !*************************************************************
+    ! Remove temporal data from Jacobi solver
+    
+    subroutine remove_solverJacobi(rsolver)
+      type(t_solverJacobi), intent(INOUT) :: rsolver
+
+      ! Release matrix
+      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      
+      ! Release temporal vector
+      call lsysbl_releaseVector(rsolver%rtempVector)
+    end subroutine remove_solverJacobi
+
+    !*************************************************************
+    ! Remove temporal data from (S)SOR solver
+
+    subroutine remove_solverSSOR(rsolver)
+      type(t_solverSSOR), intent(INOUT) :: rsolver
+
+      ! Release matrix
+      call lsysbl_releaseMatrix(rsolver%rmatrix)
+
+      ! Release temporal vector
+      call lsysbl_releaseVector(rsolver%rtempVector)
+    end subroutine remove_solverSSOR
+
+    !*************************************************************
+    ! Remove temporal data from BiCGSTAB solver
+
+    subroutine remove_solverBiCGSTAB(rsolver)
+      type(t_solverBiCGSTAB), intent(INOUT) :: rsolver
+
+      ! local variables
+      integer :: i
+      
+      ! Release matrix
+      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      
+      ! Release temporal vectors
+      do i = lbound(rsolver%RtempVectors,1),&
+             ubound(rsolver%RtempVectors,1)
+        call lsysbl_releaseVector(rsolver%RtempVectors(i))
+      end do
+      
+      ! Remove temporals from preconditioner
+      if (associated(rsolver%p_precond)) then
+        call solver_removeTempFromSolver(rsolver%p_precond)
+      end if
+    end subroutine remove_solverBiCGSTAB
+
+    !*************************************************************
+    ! Remove temporal data from GMRES solver
+
+    subroutine remove_solverGMRES(rsolver)
+      type(t_solverGMRES), intent(INOUT) :: rsolver
+
+      ! local variables
+      integer :: i
+      
+      ! Release matrix
+      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      
+      ! Release temporal vectors
+      do i = lbound(rsolver%rv,1),&
+             ubound(rsolver%rv,1)
+        call lsysbl_releaseVector(rsolver%rv(i))
+      end do
+      
+      do i = lbound(rsolver%rz,1),&
+             ubound(rsolver%rz,1)
+        call lsysbl_releaseVector(rsolver%rz(i))
+      end do
+      
+      ! Remove temporals from preconditioner
+      if (associated(rsolver%p_precond)) then
+        call solver_removeTempFromSolver(rsolver%p_precond)
+      end if
+    end subroutine remove_solverGMRES
+
+    !*************************************************************
+    ! Remove temporal data from ILU solver
+
+    subroutine remove_solverILU(rsolver)
+      type(t_solverILU), intent(INOUT) :: rsolver
+
+      ! Release ILU handles
+      if (rsolver%h_Idata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Idata)
+      if (rsolver%h_Ddata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Ddata)
+      
+      ! Release matrix
+      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      
+      ! Release temporal vector
+      call lsysbl_releaseVector(rsolver%rtempVector)
+    end subroutine remove_solverILU
+
+    !*************************************************************
+    ! Remove temporal data from defect correction algorithm
+    
+    subroutine remove_solverDefcor(rsolver)
+      type(t_solverDefcor), intent(INOUT) :: rsolver
+
+      ! local variables
+      integer :: i
+      
+      ! Release temporal vectors
+      do i = lbound(rsolver%RtempVectors,1),&
+             ubound(rsolver%RtempVectors,1)
+        call lsysbl_releaseVector(rsolver%RtempVectors(i))
+      end do
+    end subroutine remove_solverDefcor
+
+    !*************************************************************
+    ! Remove temporal data from Newton's algorithm
+
+    subroutine remove_solverNewton(rsolver)
+      type(t_solverNewton), intent(INOUT) :: rsolver
+
+      ! local variables
+      integer :: i
+      
+      ! Release temporal vectors
+      do i = lbound(rsolver%RtempVectors,1),&
+             ubound(rsolver%RtempVectors,1)
+        call lsysbl_releaseVector(rsolver%RtempVectors(i))
+      end do
+    end subroutine remove_solverNewton
+
+  end subroutine solver_removeTempFromSolver
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   recursive subroutine solver_adjustHierarchy(rsolver, nlminOpt, nlmaxOpt)
 
 !<description>
-    ! This subroutine adjusts the multigrid hierarchy of the complete solver
-    ! structure. This may be required, if the user provides mixed up settings.
+    ! This subroutine adjusts the multigrid hierarchy of the complete
+    ! solver structure. This may be required, if the user provides
+    ! mixed up settings.
 !</description>
 
 !<input>
@@ -3195,7 +2874,7 @@ contains
     ! local variables
     type(t_solverMultigrid), pointer :: p_solverMultigrid
     type(t_solver) :: rsolverTemplateSmoother
-    integer :: i,nlmin,nlmax,ilbound,iubound
+    integer :: i, nlmin, nlmax, ilbound, iubound
     
     ! Determine NLMIN and NLMAX for structure
     if (present(nlminOpt)) then
@@ -3316,6 +2995,7 @@ contains
         call solver_adjustHierarchy(rsolver%p_solverGMRES%p_precond)
       end if
     end if
+
   end subroutine solver_adjustHierarchy
 
   ! ***************************************************************************
@@ -3492,6 +3172,7 @@ contains
         call stopIndent(cindent)
 
       end select
+
     end subroutine showLevel
 
     !*************************************************************
@@ -3513,6 +3194,7 @@ contains
       character(LEN=*), intent(IN) :: cmsg
 
       call output_line(cindent//'  |'//cmsg)
+
     end subroutine continueIndent   
 
     !*************************************************************
@@ -3522,7 +3204,9 @@ contains
       character(LEN=*), intent(IN) :: cindent
       
       call output_line(cindent//'  +')
+
     end subroutine stopIndent
+
   end subroutine solver_showHierarchy
 
   ! ***************************************************************************
@@ -3532,7 +3216,7 @@ contains
   subroutine solver_statistics(rsolver, iiterations)
 
 !<description>
-    ! For a given solver object, this subroutine computes solver 
+    ! For a given solver structure, this subroutine computes solver 
     ! statistics such as total number of iterations, the rate of
     ! convergence and the status. If the optional parameter 
     ! rsolverSource is given, then its data is copied to rsolver
@@ -3624,6 +3308,7 @@ contains
     case DEFAULT
       cstat = "undefined status"
     end select
+
   end function solver_getStatus
 
   ! ***************************************************************************
@@ -3633,7 +3318,7 @@ contains
   function solver_getNextSolver(rsolver) result(p_rsubsolver)
 
 !<description>
-    ! This functions sets the pointer to the next solver object in the solver 
+    ! This functions sets the pointer to the next solver structure in the solver 
     ! hierarchy. If the type of the given solver denotes a single grid solver,
     ! then the corresponding solver subnode is returned if available.
     ! For multigrid-type solvers the corresponding coarsegrid solver is
@@ -3675,7 +3360,44 @@ contains
     case DEFAULT
       nullify(p_rsubsolver)
     end select
+
   end function solver_getNextSolver
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function solver_getNextSolverByType(rsolver, csolverType) result(p_rsubsolver)
+
+!<description>
+    ! This functions sets the pointer to the next solver structure in the
+    ! solver hierarchy which satisfies the specified type isolver. If
+    ! there is no subsolver which satisfies the prescribed type, then
+    ! NULL ist returned.
+!</description>
+
+!<input>
+    ! Solver that is used as base solver
+    type(t_solver), intent(IN), target :: rsolver
+
+    ! Type if solver to return
+    integer, intent(IN) :: csolverType
+!</input>
+
+!<result>
+    ! Pointer to the subsolver
+    ! If no subseolver exists, then NULL is returned
+    type(t_solver), pointer :: p_rsubsolver
+!</result>
+!</function>
+
+    p_rsubsolver => rsolver
+    do while (associated(p_rsubsolver))
+      if (p_rsubsolver%csolverType .eq. csolverType) exit
+      p_rsubsolver => solver_getNextSolver(p_rsubsolver)
+    end do
+
+  end function solver_getNextSolverByType
 
   ! ***************************************************************************
   
@@ -3747,6 +3469,7 @@ contains
         end if
       end if
     end function get_nlmin
+
   end function solver_getMinimumMultigridlevel
 
   ! ***************************************************************************
@@ -3819,6 +3542,7 @@ contains
         end if
       end if
     end function get_nlmax
+
   end function solver_getMaximumMultigridlevel
 
   ! ***************************************************************************
@@ -3898,6 +3622,7 @@ contains
         end if
       end if
     end subroutine set_nlmin
+
   end subroutine solver_setMinimumMultigridlevel
 
   ! ***************************************************************************
@@ -3977,6 +3702,7 @@ contains
         end if
       end if
     end subroutine set_nlmax
+
   end subroutine solver_setMaximumMultigridlevel
 
   ! ***************************************************************************
@@ -4057,6 +3783,7 @@ contains
             rsolver%p_solverGMRES%p_precond, rboundaryCondition, brecursive)
       end if
     end if
+
   end subroutine solver_setBoundaryCondition
 
   ! ***************************************************************************
@@ -4102,7 +3829,7 @@ contains
       ! Check if multigrid level is specified
       if (.not.present(ilev)) then
         call output_line('Multigrid level is missing!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
+                         OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
         call sys_halt()
       end if
 
@@ -4123,12 +3850,12 @@ contains
                                     SV_SSPEC_NEEDSUPDATE)
         else
           call output_line('Specified multigrid level does not exist!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
+                           OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
           call sys_halt()
         end if
       else
         call output_line('Multigrid solver subnode does not exist!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
+                         OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
         call sys_halt()
       end if
 
@@ -4216,9 +3943,10 @@ contains
 
     case DEFAULT
       call output_line('Unsupported solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
       call sys_halt()
     end select
+
   end subroutine solver_setSolverMatrixScalar
 
   ! ***************************************************************************
@@ -4264,7 +3992,7 @@ contains
       ! Check if multigrid level is specified
       if (.not.present(ilev)) then
         call output_line('Multigrid level is missing!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
+                         OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
         call sys_halt()
       end if
 
@@ -4286,12 +4014,12 @@ contains
                                     SV_SSPEC_NEEDSUPDATE)
         else
           call output_line('Specified multigrid level does not exist!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
+                           OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
           call sys_halt()
         end if
       else
         call output_line('Multigrid solver subnode does not exist!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
+                         OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
         call sys_halt()
       end if
 
@@ -4385,9 +4113,10 @@ contains
 
     case DEFAULT
       call output_line('Unsupported solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
       call sys_halt()
     end select
+
   end subroutine solver_setSolverMatrixBlock
 
   ! ***************************************************************************
@@ -4442,7 +4171,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_setPrecondMatrixScalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setPrecondMatrixScalar')
       call sys_halt()
     end select
   end subroutine solver_setPrecondMatrixScalar
@@ -4500,7 +4229,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_setPrecondMatrixBlock')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setPrecondMatrixBlock')
       call sys_halt()
     end select
   end subroutine solver_setPrecondMatrixBlock
@@ -4553,7 +4282,7 @@ contains
         ! Check if multigrid level is specified
         if (.not.present(ilev)) then
           call output_line('Multigrid level is missing!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
+                           OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
           call sys_halt()
         end if
         
@@ -4572,7 +4301,7 @@ contains
             call solver_setSolverMatrix(p_smoother(ilev), rmatrix)
           else
             call output_line('Specified multigrid level does not exist!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
+                             OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
             call sys_halt()
           end if
         end if
@@ -4581,9 +4310,10 @@ contains
 
     case DEFAULT
       call output_line('Unsupported solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
       call sys_halt()
     end select
+
   end subroutine solver_setSmootherMatrixScalar
 
   ! ***************************************************************************
@@ -4634,7 +4364,7 @@ contains
         ! Check if multigrid level is specified
         if (.not.present(ilev)) then
           call output_line('Multigrid level is missing!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixBlock')
+                           OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixBlock')
           call sys_halt()
         end if
 
@@ -4653,7 +4383,7 @@ contains
             call solver_setSolverMatrix(p_smoother(ilev), rmatrix)
           else
             call output_line('Specified multigrid level does not exist!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixBlock')
+                             OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixBlock')
             call sys_halt()
           end if
         end if
@@ -4662,9 +4392,10 @@ contains
 
     case DEFAULT
       call output_line('Unsupported solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixBlock')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixBlock')
       call sys_halt()
     end select
+
   end subroutine solver_setSmootherMatrixBlock
 
   ! ***************************************************************************
@@ -5159,7 +4890,7 @@ contains
           
         else
           call output_line('Smoother structure does not exist!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'smoother_updateStructure')
+                           OU_CLASS_ERROR,OU_MODE_STD,'smoother_updateStructure')
           call sys_halt()
         end if
         
@@ -5174,10 +4905,12 @@ contains
         
       case DEFAULT
         call output_line('Unsupported solver type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'smoother_updateStructure')
+                         OU_CLASS_ERROR,OU_MODE_STD,'smoother_updateStructure')
         call sys_halt()
       end select
+
     end subroutine smoother_updateStructure
+
   end subroutine solver_updateStructure
 
   ! ***************************************************************************
@@ -5329,9 +5062,10 @@ contains
       
     case DEFAULT
       call output_line('Unsupported solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_updateContent')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_updateContent')
       call sys_halt()
     end select
+
   end subroutine solver_updateContent
 
   ! ***************************************************************************
@@ -5388,7 +5122,7 @@ contains
     ! Check if scalar vectors are compatible
     if (rxFine%NVAR .ne. rxCoarse%NVAR) then
       call output_line('Scalar vectors must be compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_prolongationScalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_prolongationScalar')
       call sys_halt()
     end if
       
@@ -5477,6 +5211,7 @@ contains
         end select
       end do
     end subroutine do_prolongationP1Q1
+
   end subroutine solver_prolongationScalar
 
   ! ***************************************************************************
@@ -5515,7 +5250,7 @@ contains
     
     if (rxFine%nblocks .ne. rxCoarse%nblocks) then
       call output_line('Block vectors must be compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_prolongationBlock')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_prolongationBlock')
       call sys_halt()
     end if
     
@@ -5525,6 +5260,7 @@ contains
                                      rxCoarse%RvectorBlock(iblock),&
                                      rxFine%RvectorBlock(iblock))
     end do
+
   end subroutine solver_prolongationBlock
 
   ! ***************************************************************************
@@ -5575,7 +5311,7 @@ contains
     ! Check if scalar vectors are compatible
     if (rxFine%NVAR .ne. rxCoarse%NVAR) then
       call output_line('Scalar vectors must be compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_restrictionScalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_restrictionScalar')
       call sys_halt()
     end if
     
@@ -5651,11 +5387,12 @@ contains
 
         case DEFAULT
           call output_line('Invalid number of vertices per element!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'do_restrictionP1Q1')
+                           OU_CLASS_ERROR,OU_MODE_STD,'do_restrictionP1Q1')
           call sys_halt()
         end select
       end do
     end subroutine do_restrictionP1Q1
+
   end subroutine solver_restrictionScalar
  
   ! ***************************************************************************
@@ -5694,7 +5431,7 @@ contains
     
     if (rxFine%nblocks .ne. rxCoarse%nblocks) then
       call output_line('Block vectors must be compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_restrictionBlock')
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_restrictionBlock')
       call sys_halt()
     end if
     
@@ -5705,6 +5442,7 @@ contains
                                     rxFine%RvectorBlock(iblock),&
                                     rxCoarse%RvectorBlock(iblock))
     end do
+
   end subroutine solver_restrictionBlock
 
   ! ***************************************************************************
@@ -5773,43 +5511,7 @@ contains
   end subroutine solver_copySolver
 
   ! ***************************************************************************
-  
-!<function>
-
-  function solver_getNextSolverByType(rsolver, csolverType) result(p_rsubsolver)
-
-!<description>
-    ! This functions sets the pointer to the next solver object in the
-    ! solver hierarchy which satisfies the specified type isolver. If
-    ! there is no subsolver which satisfies the prescribed type, then
-    ! NULL ist returned.
-!</description>
-
-!<input>
-    ! Solver that is used as base solver
-    type(t_solver), intent(IN), target :: rsolver
-
-    ! Type if solver to return
-    integer, intent(IN) :: csolverType
-!</input>
-
-!<result>
-    ! Pointer to the subsolver
-    ! If no subseolver exists, then NULL is returned
-    type(t_solver), pointer :: p_rsubsolver
-!</result>
-!</function>
-
-    p_rsubsolver => rsolver
-    do while (associated(p_rsubsolver))
-      if (p_rsubsolver%csolverType .eq. csolverType) exit
-      p_rsubsolver => solver_getNextSolver(p_rsubsolver)
-    end do
-
-  end function solver_getNextSolverByType
-
-  ! ***************************************************************************
-  ! ***************************************************************************
+  ! Auxiliary routines
   ! ***************************************************************************
 
 !<subroutine>
@@ -6069,13 +5771,13 @@ contains
 
           case DEFAULT
             call output_line('Unsupported interleave matrix format!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
+                             OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
             call sys_halt()
           end select
 
         case DEFAULT
           call output_line('Unsupported matrix format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
+                           OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
           call sys_halt()
         end select
         
@@ -6098,7 +5800,7 @@ contains
 
         case DEFAULT
           call output_line('Unsupported matrix format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
+                           OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
           call sys_halt()
         end select
         
@@ -6155,7 +5857,7 @@ contains
       ! memory block first and perform reallocation only if mandatory.
       if (h_Idata .eq. ST_NOHANDLE) then
         call storage_new('solver_initILU', 'p_Idata', int(1,I32),&
-            ST_INT, h_Idata, ST_NEWBLOCK_NOINIT)
+                         ST_INT, h_Idata, ST_NEWBLOCK_NOINIT)
       end if
       call storage_getbase_int(h_Idata, p_Idata)
       maxstr = 0
@@ -6182,7 +5884,7 @@ contains
           select case(ierr)
           case (:-1)
             call output_line('Singular matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'solver_initILU')
+                             OU_CLASS_ERROR,OU_MODE_STD,'solver_initILU')
             call sys_halt()
             
           case (0)
@@ -6196,7 +5898,7 @@ contains
           case DEFAULT
             ! Unknown error
             call output_line('Internal error!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'solver_initILU')
+                             OU_CLASS_ERROR,OU_MODE_STD,'solver_initILU')
             call sys_halt()
           end select
         end do try
@@ -6845,4 +6547,4 @@ contains
 
   end subroutine solver_initUMFPACK 
 
-end module solver
+end module solveraux
