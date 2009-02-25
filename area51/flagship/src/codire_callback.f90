@@ -17,70 +17,76 @@
 !#     -> Callback routine for the evaluation of the reference
 !#        function for error estimation using an analytic expression
 !#
-!# 3.) codire_setBoundary
+!# 3.) codire_nlsolverCallback
+!#     -> Callback routine for the nonlinear solver
+!#
+!# 4.) codire_setBoundary
 !#     -> Imposes boundary conditions for nonlinear solver
 !#
-!# 4.) codire_calcPreconditioner
+!# 5.) codire_calcPreconditioner
 !#     -> Calculates the nonlinear preconditioner
 !#
-!# 5.) codire_calcJacobian
+!# 6.) codire_calcJacobian
 !#     -> Calculates the Jacobian matrix
 !#
-!# 6.) codire_applyJacobian
+!# 7.) codire_applyJacobian
 !#     -> Applies the Jacobian matrix to a given vector
 !#
-!# 7.) codire_calcResidual
+!# 8.) codire_calcResidual
 !#     -> Calculates the nonlinear residual vector
 !#
-!# 8.) codire_calcRHS
+!# 9.) codire_calcRHS
 !#     -> Calculates the right-hand side vector
 !#
-!# 9.) codire_calcVelocityField
-!#     -> Calculates the velocity field
+!# 10.) codire_calcVelocityField
+!#      -> Calculates the velocity field
 !#
-!# 10.) codire_setVelocityField
+!# 11.) codire_setVelocityField
 !#      -> Sets the velocity field internally
 !#
-!# 11.) codire_hadaptCallback1d
+!# 12.) codire_hadaptCallback1d
 !#      -> Performs application specific tasks in the adaptation algorithm in 1D
 !#
-!# 12.) codire_hadaptCallback2d
+!# 13.) codire_hadaptCallback2d
 !#      -> Performs application specific tasks in the adaptation algorithm in 2D
 !#
-!# 13.) codire_hadaptCallback3d
+!# 14.) codire_hadaptCallback3d
 !#      -> Performs application specific tasks in the adaptation algorithm in 3D
 !#
-!# 14.) codire_calcPrimalConvConst1d
-!#      -> Calculates the transport coefficients for linear convection in 1D
 !#
-!# 15.) codire_calcDualConvConst1d
-!#      -> Calculates the transport coefficients for linear convection in 1D
+!# The following auxiliary routines are available:
 !#
-!# 16.) codire_calcPrimalConvConst2d
-!#      -> Calculates the transport coefficients for linear convection in 2D
+!# 1.) codire_calcPrimalConvConst1d
+!#     -> Calculates the transport coefficients for linear convection in 1D
 !#
-!# 17.) codire_calcDualConvConst2d
-!#      -> Calculates the transport coefficients for linear convection in 2D
+!# 2.) codire_calcDualConvConst1d
+!#     -> Calculates the transport coefficients for linear convection in 1D
 !#
-!# 18.) codire_calcPrimalConvConst3d
-!#      -> Calculates the transport coefficients for linear convection in 3D
+!# 3.) codire_calcPrimalConvConst2d
+!#     -> Calculates the transport coefficients for linear convection in 2D
 !#
-!# 19.) codire_calcDualConvConst3d
-!#      -> Calculates the transport coefficients for linear convection in 3D
+!# 4.) codire_calcDualConvConst2d
+!#     -> Calculates the transport coefficients for linear convection in 2D
 !#
-!# 20.) codire_calcConvectionBurgersSpT2d
-!#      -> Calculates the transport coefficients for Burgers' equation in space-time
+!# 5.) codire_calcPrimalConvConst3d
+!#     -> Calculates the transport coefficients for linear convection in 3D
 !#
-!# 21.) codire_calcConvectionBuckLevSpT2d
-!#      -> Calculates the transport coefficients for Buckley-Leverett equation in space-time
+!# 6.) codire_calcDualConvConst3d
+!#     -> Calculates the transport coefficients for linear convection in 3D
 !#
-!# 22.) codire_calcConvectionBurgers1d
-!#      -> Calculates the transport coefficients for Burgers' equation in 1D
+!# 7.) codire_calcConvectionBurgersSpT2d
+!#     -> Calculates the transport coefficients for Burgers' equation in space-time
 !#
-!# 23.) codire_calcConvectionBurgers2d
+!# 8.) codire_calcConvectionBuckLevSpT2d
+!#     -> Calculates the transport coefficients for Buckley-Leverett equation in space-time
+!#
+!# 9.) codire_calcConvectionBurgers1d
+!#     -> Calculates the transport coefficients for Burgers' equation in 1D
+!#
+!# 10.) codire_calcConvectionBurgers2d
 !#      -> Calculates the transport coefficients for Burgers' equation in 2D
 !#
-!# 24.) codire_calcConvectionBuckLev1d
+!# 11.) codire_calcConvectionBuckLev1d
 !#      -> Calculates the transport coefficients for Buckley-Leverett equation in 1D
 !#
 !# </purpose>
@@ -103,15 +109,17 @@ module codire_callback
   use linearsystemblock
   use linearsystemscalar
   use problem
-  use solver
+  use solveraux
   use statistics
   use storage
+  use timestepaux
 
   implicit none
 
   private
   public :: codire_coeffVectorAnalytic
   public :: codire_refFuncAnalytic
+  public :: codire_nlsolverCallback
   public :: codire_setBoundary
   public :: codire_calcPreconditioner
   public :: codire_calcJacobian
@@ -415,8 +423,115 @@ contains
 
 !<subroutine>
 
+  subroutine codire_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
+                                     rsolution, rsolutionInitial,&
+                                     rrhs, rres, istep, ioperationSpec,&
+                                     rcollection, istatus)
+
+!<description>
+    ! This subroutine is called by the nonlinear solver and it is responsible
+    ! to assemble preconditioner, right-hand side vector, residual vector, etc.
+!</description>
+
+!<input>
+      ! initial solution vector
+      type(t_vectorBlock), intent(IN) :: rsolutionInitial
+
+      ! number of solver step
+      integer, intent(IN) :: istep
+
+      ! specifier for operations
+      integer(I32), intent(IN) :: ioperationSpec
+!</input>
+
+!<inputoutput>
+      ! problem level structure
+      type(t_problemLevel), intent(INOUT) :: rproblemLevel
+
+      ! time-stepping structure
+      type(t_timestep), intent(INOUT) :: rtimestep
+      
+      ! solver structure
+      type(t_solver), intent(INOUT) :: rsolver
+
+      ! solution vector
+      type(t_vectorBlock), intent(INOUT) :: rsolution
+
+      ! right-hand side vector
+      type(t_vectorBlock), intent(INOUT) :: rrhs
+      
+      ! residual vector
+      type(t_vectorBlock), intent(INOUT) :: rres
+
+      ! collection structure
+      type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+
+!<output>
+      ! status flag
+      integer, intent(OUT) :: istatus
+!</output>
+!</subroutine>
+
+      ! local variables
+      integer :: jacobianMatrix
+
+
+      ! Do we have to calculate the preconditioner?
+      if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) .or.&
+          (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0)) then
+
+        call codire_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
+                                       rsolution, rcollection)
+      end if
+
+
+      ! Do we have to calculate the residual and the constant right-hand side
+      if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+        
+        call codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
+                                 rsolution, rsolutionInitial,&
+                                 rrhs, rres, istep, rcollection)
+      end if
+
+
+      ! Do we have to calculate the Jacobian operator?
+      if (iand(ioperationSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
+
+        call codire_calcJacobian(rproblemLevel, rtimestep, rsolver,&
+                                 rsolution, rsolutionInitial, .false., rcollection)
+      end if
+
+
+      ! Do we have to impose boundary conditions?
+      if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+        
+        call codire_setBoundary(rproblemLevel, rtimestep, rsolver,&
+                                rsolution, rsolutionInitial, rres, rcollection)
+      end if
+
+
+      ! Do we have to apply the Jacobian operator?
+      if (iand(ioperationSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
+        
+        jacobianMatrix = collct_getvalue_int(rcollection, 'jacobianMatrix')
+        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
+                                 rrhs%RvectorBlock(1), rres%RvectorBlock(1),&
+                                 1.0_DP, 1.0_DP)
+      end if
+
+
+      ! Set status flag
+      istatus = 0
+
+    end subroutine codire_nlsolverCallback
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine codire_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                                rsol, rres, rsol0, rcollection)
+                                rsolution, rsolutionInitial, rres, rcollection)
 
 !<description>
     ! This subroutine imposes the nonlinear boundary conditions.
@@ -430,7 +545,7 @@ contains
     type(t_solver), intent(IN) :: rsolver
 
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsol0
+    type(t_vectorBlock), intent(IN) :: rsolutionInitial
 !</input>
 
 !<inputoutput>
@@ -438,7 +553,7 @@ contains
     type(t_problemLevel), intent(INOUT) :: rproblemLevel
 
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsol
+    type(t_vectorBlock), intent(INOUT) :: rsolution
 
     ! residual vector
     type(t_vectorBlock), intent(INOUT) :: rres
@@ -473,12 +588,12 @@ contains
     ! Impose boundary conditions for the solution vector and impose
     ! zeros in the residual vector and the off-diagonal positions of
     ! the system matrix which is obtained from the collection
-
     
     call bdrf_filterSolution(rsolver%rboundaryCondition,&
                              rproblemLevel%rtriangulation,&
                              rproblemLevel%Rmatrix(imatrix),&
-                             rsol, rres, rsol0, rtimestep%dTime)
+                             rsolution, rres, rsolutionInitial,&
+                             rtimestep%dTime)
 
   end subroutine codire_setBoundary
 
@@ -533,7 +648,7 @@ contains
     ! Check if the preconditioner has to be updated
     if (iand(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE) .eq. 0) return
     
-    ! Start time measurement for matrix evaluation
+     ! Start time measurement for matrix evaluation
     rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyMatrix')
     call stat_startTimer(rtimer, STAT_TIMERSHORT)
     
@@ -608,8 +723,9 @@ contains
 
 
     case (DIFFUSION_VARIABLE)
-      print *, "Variable diffusion matrices are yet not implemented!"
-      stop
+      call output_line('Variable diffusion matrices are yet not implemented!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPreconditioner')
+      call sys_halt()
 
       ! Set update notification in problem level structure
       rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
@@ -629,7 +745,6 @@ contains
     primaldual    = collct_getvalue_int(rcollection, 'primaldual')
     ivelocitytype = collct_getvalue_int(rcollection, 'ivelocitytype')
     convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
-
 
     ! Check if velocity is assumed to be discretely divergence free
     bisDivergenceFree = (ivelocitytype .gt. 0)
@@ -1766,11 +1881,11 @@ contains
     integer :: imasstype,imassantidiffusiontype
 
     
-    ! For nonlinear conservation laws, the global system operator
-    ! needs to be updated in each nonlinear iteration. The update
-    ! routine is written such that it first determines if the problem
-    ! is nonlinear and returns without matrix update otherwise.
-    call codire_calcPreconditioner(rproblemLevel, rtimestep, rsolver, rsol, rcollection)
+!!$    ! For nonlinear conservation laws, the global system operator
+!!$    ! needs to be updated in each nonlinear iteration. The update
+!!$    ! routine is written such that it first determines if the problem
+!!$    ! is nonlinear and returns without matrix update otherwise.
+!!$    call codire_calcPreconditioner(rproblemLevel, rtimestep, rsolver, rsol, rcollection)
 
 
     ! Start time measurement for residual/rhs evaluation
