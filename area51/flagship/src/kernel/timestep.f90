@@ -11,17 +11,33 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) tstep_performThetaStep = tstep_performThetaStepScalar /
+!# 1.) tstep_createTimestep = tstep_createTimestepDirect /
+!#                            tstep_createTimestepIndirect
+!#     -> Creates a new time-stepping structure
+!#
+!# 2.) tstep_releaseTimestep
+!#     -> Releases an existing time-stepping structure
+!#
+!# 3.) tstep_infoTimestep
+!#     -> Outputs information about the time-stepping structure
+!#
+!# 4.) tstep_resetTimestep
+!#     -> Resets the time-stepping structure to initial values
+!#
+!# 5.) tstep_removeTempFromTimestep
+!#     -> Removes temporal storage from time-stepping structure
+!#
+!# 6.) tstep_performThetaStep = tstep_performThetaStepScalar /
 !#                              tstep_performThetaStepBlock
 !#     -> Performs one step by the two-level theta scheme to compute the
 !#        solution for the time interval dTime..dTime+dStep. 
 !#
-!# 2.) tstep_performRKStep = tstep_performRKStepScalar /
+!# 7.) tstep_performRKStep = tstep_performRKStepScalar /
 !#                           tstep_performRKStepBlock
 !#     -> Performs one step of an explicit Runge-Kutta scheme to compute the
 !#        solution for the time interval dTime..dTime+dStep
 !#
-!# 3.) tstep_performPseudoStepping = tstep_performPseudoStepScalar /
+!# 8.) tstep_performPseudoStepping = tstep_performPseudoStepScalar /
 !#                                   tstep_performPseudoStepBlock
 !#     -> Performs pseudo time-stepping to compute the steady state solution
 !#
@@ -44,6 +60,7 @@ module timestep
   use linearsystemscalar
   use paramlist
   use problem
+  use timestepaux
   use solver
   use solverlinear
   use solvernonlinear
@@ -51,13 +68,21 @@ module timestep
   implicit none
 
   private
+  public :: tstep_createTimestep
+  public :: tstep_releaseTimestep
+  public :: tstep_infoTimestep
+  public :: tstep_resetTimestep
+  public :: tstep_removeTempFromTimestep
   public :: tstep_performThetaStep
   public :: tstep_performRKStep
   public :: tstep_performPseudoStepping
 
   ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
+
+  interface tstep_createTimestep
+    module procedure tstep_createTimestepDirect
+    module procedure tstep_createTimestepIndirect
+  end interface
 
   interface tstep_performThetaStep
     module procedure tstep_performThetaStepScalar
@@ -74,13 +99,548 @@ module timestep
     module procedure tstep_performPseudoSteppingBlock
   end interface
 
+  ! *****************************************************************************
+
+!<constants>
+
+!<constantblock description="Global Runge-Kutta weights">
+  
+  ! Runge-Kutta one-stage
+  real(DP), dimension(1), parameter :: SV_RK1 = (/ 1.0_DP /)
+
+  ! Runge-Kutta two-stage
+  real(DP), dimension(2), parameter :: SV_RK2 = (/ 0.5_DP, 1.0_DP /)
+
+  ! Runge-Kutta three-stage
+  real(DP), dimension(3), parameter :: SV_RK3 = (/ 0.6_DP, 0.6_DP, 1.0_DP /)
+
+  ! Runge-Kutta four-stage
+  real(DP), dimension(4), parameter :: SV_RK4 = (/ 0.25_DP, 0.5_DP, 0.5_DP, 1.0_DP /)
+!</constantblock>
+
+!</constants>
+
 contains
 
   ! *****************************************************************************
-  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine tstep_createTimestepDirect(rparlist, ssectionName, rtimestep)
+
+!<description>
+    ! This subroutine creates a new time-stepping structure from a
+    ! given parameter list   
+!</description>
+
+!<input>
+    ! Parameter list containing all data
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! Section name of the parameter list containing solver data
+    character(LEN=*), intent(IN) :: ssectionName
+!</input>
+
+!<output>
+    ! Time-stepping object
+    type(t_timestep), intent(OUT) :: rtimestep
+!</output>
+!</subroutine>
+
+
+    ! The INTENT(OUT) already initializes rtimestep with the most
+    ! important information.
+    rtimestep%sName = trim(adjustl(ssectionName))
+    
+    ! Get mandatory configuration values from parameter list
+    call parlst_getvalue_int(   rparlist, ssectionName, "ctimestepType",&
+                                rtimestep%ctimestepType)
+    call parlst_getvalue_double(rparlist, ssectionName, "dfinalTime",&
+                                rtimestep%dfinalTime)
+    call parlst_getvalue_double(rparlist, ssectionName, "dinitialStep",&
+                                rtimestep%dinitialStep) 
+
+    ! Get optional configuration values from parameter list
+    call parlst_getvalue_int(   rparlist, ssectionName, "ioutputlevel",&
+                                rtimestep%ioutputlevel)
+    call parlst_getvalue_int(   rparlist, ssectionName, "isolNorm",&
+                                rtimestep%isolNorm)
+    call parlst_getvalue_double(rparlist, ssectionName, "dinitialTime",&
+                                rtimestep%dinitialTime)
+    call parlst_getvalue_double(rparlist, ssectionName, "dminStep",&
+                                rtimestep%dminStep, rtimestep%dinitialStep)
+    call parlst_getvalue_double(rparlist, ssectionName, "dmaxStep",&
+                                rtimestep%dmaxStep, rtimestep%dinitialStep)
+     call parlst_getvalue_double(rparlist, ssectionName, "dstepReductionFactor",&
+                                rtimestep%dstepReductionFactor)
+    call parlst_getvalue_double(rparlist, ssectionName, "depsSteady",&
+                                rtimestep%depsSteady)
+    call parlst_getvalue_int(   rparlist, ssectionName, "iadapttimestep",&
+                                rtimestep%iadapttimestep)
+    call parlst_getvalue_double(rparlist, ssectionName, "dadaptTime",&
+                                rtimestep%dadaptTime)
+   
+    ! Get solver dependent configuration values from parameter list
+    select case(rtimestep%ctimestepType)
+    case (SV_THETA_SCHEME)
+      ! Two-level theta scheme
+      call parlst_getvalue_double(rparlist, ssectionName, "theta", rtimestep%theta)
+      
+      ! Allocate array of temporal vectors
+      allocate(rtimestep%RtempVectors(1))
+
+    case (SV_RK_SCHEME)
+      ! Multilevel Runge-Kutta scheme
+      call parlst_getvalue_int(rparlist, ssectionName, "multisteps", rtimestep%multisteps)
+
+      select case(rtimestep%multisteps)
+      case (1)
+        allocate(rtimestep%DmultistepWeights(1))
+        rtimestep%DmultistepWeights = SV_RK1
+
+      case (2)
+        allocate(rtimestep%DmultistepWeights(2))
+        rtimestep%DmultistepWeights = SV_RK2
+
+      case (3)
+        allocate(rtimestep%DmultistepWeights(3))
+        rtimestep%DmultistepWeights = SV_RK3
+
+      case (4)
+        allocate(rtimestep%DmultistepWeights(4))
+        rtimestep%DmultistepWeights = SV_RK4
+
+      case DEFAULT
+        allocate(rtimestep%DmultistepWeights(abs(rtimestep%multisteps)))
+        rtimestep%DmultistepWeights = 1._DP
+      end select
+
+      ! Allocate array of temporal vectors
+      allocate(rtimestep%RtempVectors(3))
+
+    case DEFAULT
+      call output_line('Invalid type of time stepping algorithm!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'tstep_createTimestepDirect')
+      call sys_halt()
+    end select
+          
+
+    ! Perform adaptive time-stepping?
+    select case(rtimestep%iadapttimestep)
+
+    case (TSTEP_NOADAPT)
+      ! No adaptive time-stepping
+
+    case (TSTEP_SERADAPT)
+      ! Adaptive time-stepping using switched evolution relaxation
+      allocate(rtimestep%p_rserController)
+      call parlst_getvalue_double(rparlist, ssectionName, "dIncreaseFactor",&
+                                  rtimestep%p_rserController%dIncreaseFactor)
+      call parlst_getvalue_double(rparlist, ssectionName, "dDecreaseFactor",&
+                                  rtimestep%p_rserController%dDecreaseFactor)
+
+
+    case (TSTEP_AUTOADAPT)
+      ! Adaptive time-stepping using automatic time step control
+      allocate(rtimestep%p_rautoController)
+
+      ! Allocate array of temporal vectors
+      allocate(rtimestep%p_rautoController%RtempVectors(2))
+
+      call parlst_getvalue_double(rparlist, ssectionName, "dDecreaseFactor",&
+                                  rtimestep%p_rautoController%dDecreaseFactor)
+      call parlst_getvalue_double(rparlist, ssectionName, "depsRel",&
+                                  rtimestep%p_rautoController%depsRel)
+
+
+    case (TSTEP_PIDADAPT)
+      ! Adaptive time-stepping using the PID controller
+      allocate(rtimestep%p_rpidController)
+
+      ! Get configuration values from parameter list
+      call parlst_getvalue_double(rparlist, ssectionName, "dProportionalExponent",&
+                                  rtimestep%p_rpidController%dProportionalExponent)
+      call parlst_getvalue_double(rparlist, ssectionName, "dIntegralExponent",&
+                                  rtimestep%p_rpidController%dIntegralExponent)
+      call parlst_getvalue_double(rparlist, ssectionName, "dDerivativeExponent",&
+                                  rtimestep%p_rpidController%dDerivativeExponent)
+      call parlst_getvalue_double(rparlist, ssectionName, "dIncreaseFactor",&
+                                  rtimestep%p_rpidController%dIncreaseFactor)
+      call parlst_getvalue_double(rparlist, ssectionName, "dDecreaseFactor",&
+                                  rtimestep%p_rpidController%dDecreaseFactor)
+      call parlst_getvalue_double(rparlist, ssectionName, "depsRel",&
+                                  rtimestep%p_rpidController%depsRel)
+      call parlst_getvalue_double(rparlist, ssectionName, "dmaxRel",&
+                                  rtimestep%p_rpidController%dmaxRel)
+
+    case DEFAULT
+       call output_line('Invalid type of adaptive time-stepping algorithm!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'tstep_createTimestepDirect')
+      call sys_halt()
+    end select
+
+
+    ! Reset any other values
+    call tstep_resetTimestep(rtimestep, .true.)
+
+  end subroutine tstep_createTimestepDirect
+
   ! *****************************************************************************
 
-  !<subroutine>
+!<subroutine>
+
+  subroutine tstep_createTimestepIndirect(rtimestep, rtimestepTemplate)
+
+!<description>
+    ! This subroutine creates a new time-stepping structure by cloning
+    ! an existing time-stepping structure
+!</description>
+
+!<input>
+    ! Template timestep structure
+    type(t_timestep), intent(IN) :: rtimestepTemplate
+!</input>
+
+!<output>
+    ! Timestep structure
+    type(t_timestep), intent(OUT) :: rtimestep
+!</output>
+!</subroutine>
+
+
+    ! The INTENT(OUT) already initializes rtimestep with the most
+    ! important information. The rest comes now
+    rtimestep = rtimestepTemplate
+    
+    ! Create PID controller
+    if (associated(rtimestepTemplate%p_rpidController)) then
+      allocate(rtimestep%p_rpidController)
+      rtimestep%p_rpidController = rtimestepTemplate%p_rpidController
+    end if
+
+    ! Create automatic controller
+    if (associated(rtimestepTemplate%p_rautoController)) then
+      allocate(rtimestep%p_rautoController)
+      rtimestep%p_rautoController = rtimestepTemplate%p_rautoController
+      if (associated(rtimestepTemplate%p_rautoController%RtempVectors)) then
+        allocate(rtimestep%p_rautoController%RtempVectors(&
+            size(rtimestepTemplate%p_rautoController%RtempVectors)))
+      end if
+    end if
+
+    ! Create SER controller
+    if (associated(rtimestepTemplate%p_rserController)) then
+      allocate(rtimestep%p_rserController)
+      rtimestep%p_rserController = rtimestepTemplate%p_rserController
+    end if
+
+    ! Create temporal vectors
+    if (associated(rtimestepTemplate%RtempVectors)) then
+      allocate(rtimestep%RtempVectors(size(rtimestepTemplate%RtempVectors)))
+    end if
+
+    ! Create multistep weights
+    if (associated(rtimestepTemplate%DmultistepWeights)) then
+      allocate(rtimestep%DmultistepWeights(size(rtimestepTemplate%DmultistepWeights)))
+      rtimestep%DmultistepWeights = rtimestepTemplate%DmultistepWeights
+    end if
+
+  end subroutine tstep_createTimestepIndirect
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine tstep_releaseTimestep(rtimestep)
+
+!<description>
+    ! This subroutine releases an existing time-stepping structure
+!</description>
+
+!<inputoutput>
+    ! Time-stepping object
+    type(t_timestep), intent(INOUT) :: rtimestep
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: i
+
+    
+    ! Release PID controller
+    if (associated(rtimestep%p_rpidController)) then
+      deallocate(rtimestep%p_rpidController)
+      nullify(rtimestep%p_rpidController)
+    end if
+
+    ! Release automatic controller
+    if (associated(rtimestep%p_rautoController)) then
+      if (associated(rtimestep%p_rautoController%RtempVectors)) then
+        do i = lbound(rtimestep%p_rautoController%RtempVectors, 1),&
+               ubound(rtimestep%p_rautoController%RtempVectors, 1)
+          call lsysbl_releaseVector(rtimestep%p_rautoController%RtempVectors(i))
+        end do
+        deallocate(rtimestep%p_rautoController%RtempVectors)
+        nullify(rtimestep%p_rautoController%RtempVectors)
+      end if
+      deallocate(rtimestep%p_rautoController)
+      nullify(rtimestep%p_rautoController)
+    end if
+
+    ! Release SER controller
+    if (associated(rtimestep%p_rserController)) then
+      deallocate(rtimestep%p_rserController)
+      nullify(rtimestep%p_rserController)
+    end if
+
+    ! Release temporal vector
+    if (associated(rtimestep%RtempVectors)) then
+      do i = lbound(rtimestep%RtempVectors, 1),&
+             ubound(rtimestep%RtempVectors, 1)
+        call lsysbl_releaseVector(rtimestep%RtempVectors(i))
+      end do
+      deallocate(rtimestep%RtempVectors)
+      nullify(rtimestep%RtempVectors)
+    end if
+
+    ! Release multistep weights
+    if (associated(rtimestep%DmultistepWeights)) then
+      deallocate(rtimestep%DmultistepWeights)
+      nullify(rtimestep%DmultistepWeights)
+    end if
+
+  end subroutine tstep_releaseTimestep
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine tstep_infoTimestep(rtimestep, bprintInternal)
+
+!<description>
+    ! This subroutine prints information about the time-stepping structure
+!</description>
+
+!<input>
+    ! OPTIONAL: Print internal data?
+    logical, intent(IN), optional :: bprintInternal
+!</input>
+
+!<inputoutput>
+    ! Time-stepping object
+    type(t_timestep), intent(INOUT) :: rtimestep
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: i
+
+    
+    ! Output general information
+    call output_line('Timestep:')
+    call output_line('---------')
+    call output_line('Name:                          '//trim(rtimestep%sName))
+    call output_line('Number of time steps:          '//trim(sys_siL(rtimestep%nSteps,15)))
+    call output_line('Number of rejected time steps: '//trim(sys_siL(rtimestep%nrejectedSteps,15)))
+    
+    ! Output detailed information
+    if (present(bprintInternal)) then
+      if (bprintInternal) then
+        
+        call output_line('ctimestepType:                 '//trim(sys_siL(rtimestep%ctimestepType,3)))
+        call output_line('ioutputLevel:                  '//trim(sys_siL(rtimestep%ioutputLevel,3)))
+        call output_line('isolNorm:                      '//trim(sys_siL(rtimestep%isolNorm,3)))
+        call output_line('iadaptTimestep:                '//trim(sys_siL(rtimestep%iadaptTimestep,3)))
+        call output_line('multiSteps:                    '//trim(sys_siL(rtimestep%multiSteps,3)))
+        call output_line('theta:                         '//trim(sys_sdL(rtimestep%theta,5)))
+        call output_line('dinitialTime:                  '//trim(sys_sdL(rtimestep%dinitialTime,5)))
+        call output_line('dfinalTime:                    '//trim(sys_sdL(rtimestep%dfinalTime,5)))
+        call output_line('dminStep:                      '//trim(sys_sdL(rtimestep%dminStep,5)))
+        call output_line('dmaxStep:                      '//trim(sys_sdL(rtimestep%dmaxStep,5)))
+        call output_line('dinitialStep:                  '//trim(sys_sdL(rtimestep%dinitialStep,5)))
+        call output_line('dstepReductionFactor:          '//trim(sys_sdL(rtimestep%dstepReductionFactor,5)))
+        call output_line('drelChange:                    '//trim(sys_sdL(rtimestep%drelChange,5)))
+        call output_line('depsSteady:                    '//trim(sys_sdL(rtimestep%depsSteady,5)))
+        call output_line('dTime:                         '//trim(sys_sdL(rtimestep%dTime,5)))
+        call output_line('dStep:                         '//trim(sys_sdL(rtimestep%dstep,5)))
+        call output_line('dStep1:                        '//trim(sys_sdL(rtimestep%dstep1,5)))
+
+        ! Output information about weights of multistep method
+        if (associated(rtimestep%DmultistepWeights)) then
+          do i = lbound(rtimestep%DmultistepWeights, 1),&
+                 ubound(rtimestep%DmultistepWeights, 1)
+            call output_line('multistep weight['//trim(sys_siL(i,1))//']:           '//&
+                             trim(sys_sdL(rtimestep%DmultistepWeights(i),5)))
+          end do
+        end if
+                
+        ! Output information about the evolutionary PID controller
+        if (associated(rtimestep%p_rpidController)) then
+          call output_lbrk()
+          call output_line('Evolutionary PID controller:')
+          call output_line('----------------------------')
+          call output_line('dProportionalExponent:         '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dProportionalExponent,5)))
+          call output_line('dIntegralExponent:             '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dIntegralExponent,5)))
+          call output_line('dDerivativeExponent:           '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dDerivativeExponent,5)))
+          call output_line('dIncreaseFactor:               '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dIncreaseFactor,5)))
+          call output_line('dDecreaseFactor:               '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dDecreaseFactor,5)))
+          call output_line('depsRel:                       '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%depsRel,5)))
+          call output_line('dmaxRel:                       '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dmaxRel,5)))
+          call output_line('dcontrolValue1:                '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dcontrolValue1,5)))
+          call output_line('dcontrolValue2:                '//&
+                           trim(sys_sdL(rtimestep%p_rpidController%dcontrolValue2,5)))
+        end if
+
+        ! Output information about the automatic time step controller
+        if (associated(rtimestep%p_rautoController)) then
+          call output_lbrk()
+          call output_line('Automatic time step controller:')
+          call output_line('-------------------------------')
+          call output_line('dDecreaseFactor:               '//&
+                           trim(sys_sdL(rtimestep%p_rautoController%dDecreaseFactor,5)))
+          call output_line('depsRel:                       '//&
+                           trim(sys_sdL(rtimestep%p_rautoController%depsRel,5)))
+
+          if (associated(rtimestep%p_rautoController%RtempVectors)) then
+            call output_lbrk()
+            call output_line('Temporal vectors:')
+            call output_line('-----------------')
+            do i = lbound(rtimestep%p_rautoController%RtempVectors, 1),&
+                   ubound(rtimestep%p_rautoController%RtempVectors, 1)
+              call lsysbl_infoVector(rtimestep%p_rautoController%RtempVectors(i))
+            end do
+          end if
+        end if
+
+        ! Output information about the switched evolution relaxation controller
+        if (associated(rtimestep%p_rserController)) then
+          call output_lbrk()
+          call output_line('Switched evolution relaxation (SER) controller:')
+          call output_line('-----------------------------------------------')
+          call output_line('dIncreaseFactor:               '//&
+                           trim(sys_sdL(rtimestep%p_rserController%dIncreaseFactor,5)))
+          call output_line('dDecreaseFactor:               '//&
+                           trim(sys_sdL(rtimestep%p_rserController%dDecreaseFactor,5)))
+          call output_line('dsteadyDefect:                 '//&
+                           trim(sys_sdL(rtimestep%p_rserController%dsteadyDefect,5)))
+          call output_line('dsteadyDefect1:                '//&
+                           trim(sys_sdL(rtimestep%p_rserController%dsteadyDefect1,5)))
+        end if
+
+        ! Output information about auxiliary vectors
+        if (associated(rtimestep%RtempVectors)) then
+          call output_lbrk()
+          call output_line('Temporal vectors:')
+          call output_line('-----------------')
+          do i = lbound(rtimestep%RtempVectors, 1),&
+                 ubound(rtimestep%RtempVectors, 1)
+            call lsysbl_infoVector(rtimestep%RtempVectors(i))
+          end do
+        end if
+      end if
+    end if
+    
+    call output_lbrk()
+
+  end subroutine tstep_infoTimestep
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine tstep_resetTimestep(rtimestep, bresetStatistics)
+
+!<description>
+    ! This subroutine resets the time-stepping structure
+!</description>
+
+!<input>
+    ! If true, the statistical output parameters are reset
+    logical, intent(IN) :: bresetStatistics
+!</input>
+
+!<inputoutput>
+    ! time-stepping object
+    type(t_timestep), intent(INOUT) :: rtimestep
+!</inputoutput>
+!</subroutine>
+
+    ! Reset time step
+    rtimestep%dTime  = rtimeStep%dinitialTime
+    rtimestep%dStep  = rtimeStep%dinitialStep
+    rtimestep%dStep1 = rtimeStep%dinitialStep
+    
+    ! Reset statistical data (if required)
+    if (bresetStatistics) then
+      rtimestep%drelChange     = 0.0_DP
+      rtimestep%nSteps         = 0
+      rtimestep%nrejectedSteps = 0
+    end if
+
+    ! Reset PID controller
+    if (associated(rtimestep%p_rpidController)) then
+      rtimestep%p_rpidController%dcontrolValue1 = 1.0_DP
+      rtimestep%p_rpidController%dcontrolValue2 = 1.0_DP
+    end if
+
+    ! Reset SER controller
+    if (associated(rtimestep%p_rserController)) then
+      rtimestep%p_rserController%dsteadyDefect  = 0.0_DP
+      rtimestep%p_rserController%dsteadyDefect1 = 0.0_DP
+    end if
+
+  end subroutine tstep_resetTimestep
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine tstep_removeTempFromTimestep(rtimestep)
+
+!<description>
+    ! This subroutines removes all temporal memory from the time-stepping structure
+!</description>
+
+!<inputoutput>
+    ! timestep structure
+    type(t_timestep), intent(INOUT) :: rtimestep
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: i
+
+    ! Release temporal vectors in automatic time step control
+    if (associated(rtimestep%p_rautoController)) then
+      if (associated(rtimestep%p_rautoController%RtempVectors)) then
+        do i = lbound(rtimestep%p_rautoController%RtempVectors, 1),&
+               ubound(rtimestep%p_rautoController%RtempVectors, 1)
+          call lsysbl_releaseVector(rtimestep%p_rautoController%RtempVectors(i))
+        end do
+      end if
+    end if
+
+    ! Release temporal vectors in time step structure
+    if (associated(rtimestep%RtempVectors)) then
+      do i = lbound(rtimestep%RtempVectors, 1),&
+             ubound(rtimestep%RtempVectors, 1)
+        call lsysbl_releaseVector(rtimestep%RtempVectors(i))
+      end do
+    end if
+
+  end subroutine tstep_removeTempFromTimestep
+
+  ! *****************************************************************************
+
+!<subroutine>
   
   subroutine tstep_performThetaStepScalar(rproblemLevel, rtimestep, rsolver, rsolution,&
                                           fcb_calcResidual, fcb_calcJacobian,&
@@ -226,7 +786,7 @@ contains
 
     
     ! Set pointer to second temporal vector for the solution computed by local substepping
-    if (rtimestep%iadaptTimestep .eq. SV_TIMESTEP_AUTOADAPT) then
+    if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
       p_rsolutionRef => rtimestep%p_rautoController%RtempVectors(1)
       p_rsolutionAux => rtimestep%p_rautoController%RtempVectors(2)
 
@@ -270,7 +830,7 @@ contains
 
 
       ! Compute reference solution by performing two time steps of size Dt/2
-      if (rtimestep%iadaptTimestep .eq. SV_TIMESTEP_AUTOADAPT) then
+      if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
 
         ! Set time step to smaller value
         rtimestep%dStep = rtimestep%dStep/2.0_DP
@@ -336,14 +896,6 @@ contains
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
-
-      ! Write time step to file?
-      if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-        write(rtimestep%iunitLogfile, FMT='("(01),",F20.5,3(",",E16.8E3))')&
-            rtimestep%dTime, rtimestep%dStep, rtimestep%dStep/rtimestep%dStep1,&
-            rtimestep%drelChange
-      end if
-
       
       ! Do we have to reject to current solution?
       if (breject) then
@@ -504,7 +1056,7 @@ contains
 
 
     ! Set pointer to second temporal vector for the solution computed by local substepping
-    if (rtimestep%iadaptTimestep .eq. SV_TIMESTEP_AUTOADAPT) then
+    if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
       p_rsolutionRef => rtimestep%p_rautoController%RtempVectors(1)
       p_rsolutionAux => rtimestep%p_rautoController%RtempVectors(2)
 
@@ -568,7 +1120,7 @@ contains
 
 
       ! Compute reference solution by performing two time steps of size Dt/2
-      if (rtimestep%iadaptTimestep .eq. SV_TIMESTEP_AUTOADAPT) then
+      if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
 
         ! Set time step to smaller value
         rtimestep%dStep = rtimestep%dStep/2.0_DP
@@ -683,14 +1235,6 @@ contains
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
-
-      ! Write time step to file?
-      if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-        write(rtimestep%iunitLogfile, FMT='("(01),",F20.5,3(",",E16.8E3))')&
-            rtimestep%dTime, rtimestep%dStep, rtimestep%dStep/rtimestep%dStep1,&
-            rtimestep%drelChange
-      end if
-
 
       ! Do we have to reject to current solution?
       if (breject) then
@@ -962,7 +1506,7 @@ contains
 
     select case(rtimestep%iadaptTimestep)
 
-    case (SV_TIMESTEP_AUTOADAPT)
+    case (TSTEP_AUTOADAPT)
       !-------------------------------------------------------------------------
       ! Automatic time step control
       !
@@ -1016,7 +1560,7 @@ contains
       end if
 
 
-    case (SV_TIMESTEP_PIDADAPT)
+    case (TSTEP_PIDADAPT)
       !-------------------------------------------------------------------------
       ! Evolutionary PID controller
       !
@@ -1076,7 +1620,7 @@ contains
         ! Adopt previous time step if solution did not change
         if (dChange .le. SYS_EPSREAL) return
 
-        if (rtimestep%nSteps .gt. rtimestep%npreadaptSteps) then
+        if (rtimestep%dTime .gt. rtimestep%dadaptTime) then
           
           ! Calculate the 'optimal' time step size
           dPaux = (p_rpidController%dcontrolValue1/dChange)**p_rpidController%dProportionalExponent
@@ -1106,7 +1650,7 @@ contains
       end if
 
 
-    case (SV_TIMESTEP_SERADAPT)
+    case (TSTEP_SERADAPT)
       !-------------------------------------------------------------------------
       ! Switched evolution relaxation (SER)
       !
