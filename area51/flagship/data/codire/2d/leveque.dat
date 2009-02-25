@@ -250,7 +250,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.05
+dfinalTime = 0.01
 
 # initial time step size
 dinitialStep = 0.001
@@ -301,10 +301,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 4
+nlmin = 6
 
 # maximum multigrid level number
-nlmax = 4
+nlmax = 6
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -683,7 +683,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 3
+npreadapt = 0
 
 # number of adaptation steps
 nadapt = 0
@@ -692,7 +692,7 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.005
+dstepadapt = 0.0
 
 # maximum number of refinement levels
 nsubdividemax = 3
