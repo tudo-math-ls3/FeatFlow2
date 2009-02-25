@@ -9,6 +9,7 @@ include $(FEATFLOW)/Globals.mk
 
 # Overwrite compiler flags
 BLASLIB = -L$(GOTOBLAS_LIB) -lgoto -lpthread
+OPTFLAGS= -O3 -xT
 
 # application include dirs
 INCDIR = -I./src -I./src/kernel
@@ -24,7 +25,8 @@ SRC += boundaryfilter.f90 \
        solverlinear.f90 \
        solvernonlinear.f90 \
        thermodynamics.f90 \
-       timestep.f90
+       timestep.f90 \
+       timestepaux.f90
 
 # common application source files
 SRC += flagship.f90 \
