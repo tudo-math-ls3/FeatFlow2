@@ -108,6 +108,7 @@ module spacematvecassembly
   use trilinearformevaluation
   use matrixio
   use feevaluation
+  use optcontrolconvection
   
   use convection
     
@@ -763,18 +764,18 @@ contains
   ! It specifies where to evaluate the nonlinearity and must contain the data
   ! for the 'previous' timestep. If there is no previous timestep (e.g.
   ! like in the 0th timestep), the vector can be undefined.
-  type(t_vectorBlock), intent(IN), optional :: rvector1
+  type(t_vectorBlock), intent(IN), target, optional :: rvector1
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
   ! It specifies where to evaluate the nonlinearity and must contain the data
   ! for the 'current' timestep. 
-  type(t_vectorBlock), intent(IN), optional :: rvector2
+  type(t_vectorBlock), intent(IN), target, optional :: rvector2
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
   ! It specifies where to evaluate the nonlinearity and must contain the data
   ! for the 'next' timestep. If there is no next timestep (e.g.
   ! like in the last timestep), the vector can be undefined.
-  type(t_vectorBlock), intent(IN), optional :: rvector3
+  type(t_vectorBlock), intent(IN), target, optional :: rvector3
 
   ! OPTIONAL: This parameter allows to specify a 'fine grid matrix'. This is 
   ! usually done when assembling matrices on multiple levels. If specified, the
@@ -804,6 +805,10 @@ contains
     type(t_vectorBlock) :: rtempVector
     type(t_convecStabilisation) :: rstabilisation
     integer :: i,j
+    type(t_optcoperator) :: roptcoperator
+    type(t_vectorBlock), pointer :: p_rprimalSol, p_rdualSol
+    
+    logical, parameter :: bnewmethod = .false.
     
     ballocate = .false.
     if ((rmatrix%NEQ .le. 0) .or. &
@@ -851,218 +856,386 @@ contains
    
     if (iand(coperation,CCMASM_COMPUTE) .ne. 0) then
 
-      ! The system matrix in the whole looks like:
-      !          
-      !    ( A11  A12  B1  R1           ) 
-      !    ( A21  A22  B2       R1      ) 
-      !    ( B1^T B2^T I                ) 
-      !    ( R2            A44  A45  B1 ) 
-      !    (      R2       A54  A55  B2 ) 
-      !    (               B1^T B2^T I  ) 
-      !
-      ! With some multiplication factors in front of the matrices.
-      !
-      ! At first switch off all submatrices. Those submatrices that we
-      ! assign some data are explicitely switched on again.
-      rmatrix%RmatrixBlock(:,:)%dscaleFactor = 0.0_DP
-      
-      ! Primal equation
-      ! ---------------
-      ! In the first step, assemble the linear parts
-      ! (Laplace, Mass, B/B^T) on the main diagonal of the primal equation.
-      call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
-          LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,3)
-      call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
-          rmatrixComponents%Diota(1,1),rmatrixComponents%Dalpha(1,1),&
-          rmatrixComponents%Dtheta(1,1),&
-          rmatrixComponents%Deta(1,1),rmatrixComponents%Dtau(1,1),.false.)
+      if (.not. bnewmethod) then
+        ! The system matrix in the whole looks like:
+        !          
+        !    ( A11  A12  B1  R1           ) 
+        !    ( A21  A22  B2       R1      ) 
+        !    ( B1^T B2^T I                ) 
+        !    ( R2            A44  A45  B1 ) 
+        !    (      R2       A54  A55  B2 ) 
+        !    (               B1^T B2^T I  ) 
+        !
+        ! With some multiplication factors in front of the matrices.
+        !
+        ! At first switch off all submatrices. Those submatrices that we
+        ! assign some data are explicitely switched on again.
+        rmatrix%RmatrixBlock(:,:)%dscaleFactor = 0.0_DP
+        
+        ! Primal equation
+        ! ---------------
+        ! In the first step, assemble the linear parts
+        ! (Laplace, Mass, B/B^T) on the main diagonal of the primal equation.
+        call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,3)
+        call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
+            rmatrixComponents%Diota(1,1),rmatrixComponents%Dalpha(1,1),&
+            rmatrixComponents%Dtheta(1,1),&
+            rmatrixComponents%Deta(1,1),rmatrixComponents%Dtau(1,1),.false.)
 
 
-      ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
-      ! u*grad(.)+grad(u)*(.) to the velocity.
-      rstabilisation = t_convecStabilisation(&
-          rmatrixComponents%iupwind1,rmatrixComponents%dupsam1)
-      select case (rmatrixComponents%iprimalSol)
-      case (1)
-        call assembleConvection (&
-            rmatrixComponents,rtempMatrix,rvector1,&
-            rmatrixComponents%Dgamma(1,1),rmatrixComponents%DgammaT(1,1),&
-            rmatrixComponents%Dnewton(1,1),rmatrixComponents%DnewtonT(1,1),&
-            rstabilisation)      
-      case (2)
-        call assembleConvection (&
-            rmatrixComponents,rtempMatrix,rvector2,&
-            rmatrixComponents%Dgamma(1,1),rmatrixComponents%DgammaT(1,1),&
-            rmatrixComponents%Dnewton(1,1),rmatrixComponents%DnewtonT(1,1),&
-            rstabilisation)      
-      case (3)
-        call assembleConvection (&
-            rmatrixComponents,rtempMatrix,rvector3,&
-            rmatrixComponents%Dgamma(1,1),rmatrixComponents%DgammaT(1,1),&
-            rmatrixComponents%Dnewton(1,1),rmatrixComponents%DnewtonT(1,1),&
-            rstabilisation)      
-      end select
+        ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
+        ! u*grad(.)+grad(u)*(.) to the velocity.
+        rstabilisation = t_convecStabilisation(&
+            rmatrixComponents%iupwind1,rmatrixComponents%dupsam1)
+        select case (rmatrixComponents%iprimalSol)
+        case (1)
+          call assembleConvection (&
+              rmatrixComponents,rtempMatrix,rvector1,&
+              rmatrixComponents%Dgamma(1,1),rmatrixComponents%DgammaT(1,1),&
+              rmatrixComponents%Dnewton(1,1),rmatrixComponents%DnewtonT(1,1),&
+              rstabilisation)      
+        case (2)
+          call assembleConvection (&
+              rmatrixComponents,rtempMatrix,rvector2,&
+              rmatrixComponents%Dgamma(1,1),rmatrixComponents%DgammaT(1,1),&
+              rmatrixComponents%Dnewton(1,1),rmatrixComponents%DnewtonT(1,1),&
+              rstabilisation)      
+        case (3)
+          call assembleConvection (&
+              rmatrixComponents,rtempMatrix,rvector3,&
+              rmatrixComponents%Dgamma(1,1),rmatrixComponents%DgammaT(1,1),&
+              rmatrixComponents%Dnewton(1,1),rmatrixComponents%DnewtonT(1,1),&
+              rstabilisation)      
+        end select
 
-      ! Reintegrate the computed matrix
-      call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,1,1)
+        ! Reintegrate the computed matrix
+        call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,1,1)
 
-      ! Include the mass matrix blocks
-      !
-      !    (  .    .    .    R1   .    . ) 
-      !    (  .    .    .    .    R1   . ) 
-      !    (  .    .    .    .    .    . )
-      
-      call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
-          LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,3,4,6)
-      select case (rmatrixComponents%idualSol)
-      case (1)
-        call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector1, &
-            rmatrixComponents%Dalpha(1,2))
-      case (2)
-        call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector2, &
-            rmatrixComponents%Dalpha(1,2))
-      case (3)
-        call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector3, &
-            rmatrixComponents%Dalpha(1,2))
-      end select
+        ! Include the mass matrix blocks
+        !
+        !    (  .    .    .    R1   .    . ) 
+        !    (  .    .    .    .    R1   . ) 
+        !    (  .    .    .    .    .    . )
+        
+        call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,3,4,6)
+        select case (rmatrixComponents%idualSol)
+        case (1)
+          call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector1, &
+              rmatrixComponents%Dalpha(1,2))
+        case (2)
+          call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector2, &
+              rmatrixComponents%Dalpha(1,2))
+        case (3)
+          call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector3, &
+              rmatrixComponents%Dalpha(1,2))
+        end select
 
-      ! Reintegrate the computed matrix
-      call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,1,4)
+        ! Reintegrate the computed matrix
+        call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,1,4)
 
-      ! Dual equation
-      ! -------------
-      ! In the first step, assemble the linear parts
-      ! (Laplace, Mass, B/B^T) on the main diagonal of the primal equation.
-      call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
-          LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,6)
-      call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
-          rmatrixComponents%Diota(2,2),rmatrixComponents%Dalpha(2,2),&
-          rmatrixComponents%Dtheta(2,2),&
-          rmatrixComponents%Deta(2,2),rmatrixComponents%Dtau(2,2),.true.)
+        ! Dual equation
+        ! -------------
+        ! In the first step, assemble the linear parts
+        ! (Laplace, Mass, B/B^T) on the main diagonal of the primal equation.
+        call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,6)
+        call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
+            rmatrixComponents%Diota(2,2),rmatrixComponents%Dalpha(2,2),&
+            rmatrixComponents%Dtheta(2,2),&
+            rmatrixComponents%Deta(2,2),rmatrixComponents%Dtau(2,2),.true.)
 
-      ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
-      ! u*grad(.)+grad(u)*(.) to the velocity.
-      rstabilisation = t_convecStabilisation(&
-          rmatrixComponents%iupwind1,rmatrixComponents%dupsam1)
-      select case (rmatrixComponents%iprimalSol)
-      case (1)
-        call assembleConvection (&
-            rmatrixComponents,rtempMatrix,rvector1,&
-            rmatrixComponents%Dgamma(2,2),rmatrixComponents%DgammaT(2,2),&
-            rmatrixComponents%Dnewton(2,2),rmatrixComponents%DnewtonT(2,2),&
-            rstabilisation)      
-      case (2)
-        call assembleConvection (&
-            rmatrixComponents,rtempMatrix,rvector2,&
-            rmatrixComponents%Dgamma(2,2),rmatrixComponents%DgammaT(2,2),&
-            rmatrixComponents%Dnewton(2,2),rmatrixComponents%DnewtonT(2,2),&
-            rstabilisation)      
-      case (3)
-        call assembleConvection (&
-            rmatrixComponents,rtempMatrix,rvector3,&
-            rmatrixComponents%Dgamma(2,2),rmatrixComponents%DgammaT(2,2),&
-            rmatrixComponents%Dnewton(2,2),rmatrixComponents%DnewtonT(2,2),&
-            rstabilisation)      
-      end select
+        ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
+        ! u*grad(.)+grad(u)*(.) to the velocity.
+        rstabilisation = t_convecStabilisation(&
+            rmatrixComponents%iupwind1,rmatrixComponents%dupsam1)
+        select case (rmatrixComponents%iprimalSol)
+        case (1)
+          call assembleConvection (&
+              rmatrixComponents,rtempMatrix,rvector1,&
+              rmatrixComponents%Dgamma(2,2),rmatrixComponents%DgammaT(2,2),&
+              rmatrixComponents%Dnewton(2,2),rmatrixComponents%DnewtonT(2,2),&
+              rstabilisation)      
+        case (2)
+          call assembleConvection (&
+              rmatrixComponents,rtempMatrix,rvector2,&
+              rmatrixComponents%Dgamma(2,2),rmatrixComponents%DgammaT(2,2),&
+              rmatrixComponents%Dnewton(2,2),rmatrixComponents%DnewtonT(2,2),&
+              rstabilisation)      
+        case (3)
+          call assembleConvection (&
+              rmatrixComponents,rtempMatrix,rvector3,&
+              rmatrixComponents%Dgamma(2,2),rmatrixComponents%DgammaT(2,2),&
+              rmatrixComponents%Dnewton(2,2),rmatrixComponents%DnewtonT(2,2),&
+              rstabilisation)      
+        end select
 
-      ! Reintegrate the computed matrix
-      call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,4,4)
+        ! Reintegrate the computed matrix
+        call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,4,4)
 
-      ! Include the mass matrix blocks
-      !
-      !    (  R2   .    .    .    .    .  ) 
-      !    (  .    R2   .    .    .    .  ) 
-      !    (  .    .    .    .    .    .  )
-      !
-      ! Remember that they are nonlinear if we have a preconditioner with
-      ! Newton activated!
-      
-      call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
-          LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,6,1,3)
-      
-      ! Assemble linear parts.
-      call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
-          rmatrixComponents%Diota(2,1),rmatrixComponents%Dalpha(2,1),&
-          rmatrixComponents%Dtheta(2,1),&
-          rmatrixComponents%Deta(2,1),rmatrixComponents%Dtau(2,1),.false.)
-          
-      select case (rmatrixComponents%idualSol)
-      case (1)
-        call lsysbl_deriveSubvector(rvector1,rtempVector, 4,6,.true.)
-      case (2)
-        call lsysbl_deriveSubvector(rvector2,rtempVector, 4,6,.true.)
-      case (3)
-        call lsysbl_deriveSubvector(rvector3,rtempVector, 4,6,.true.)
-      end select
-          
-      call assembleConvection (&
-          rmatrixComponents,rtempMatrix,rtempVector,&
-          rmatrixComponents%Dgamma(2,1),rmatrixComponents%DgammaT(2,1),&
-          rmatrixComponents%Dnewton(2,1),rmatrixComponents%DnewtonT(2,1),&
-          rstabilisation)      
-
-      ! Reintegrate the computed matrix
-      call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,4,1)
-
-      ! Switch the I-matrix in the continuity equation on/off.
-      ! The matrix always exists -- but is usually filled with zeroes
-      ! or switched off.
-      rmatrix%RmatrixBlock(3,3)%dscaleFactor = rmatrixComponents%Dkappa(1,1)
-      if (rmatrixComponents%Dkappa(1,1) .ne. 0.0_DP) then
-        call lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(3,3))
-      end if
-      
-      rmatrix%RmatrixBlock(6,6)%dscaleFactor = rmatrixComponents%Dkappa(2,2)
-      if (rmatrixComponents%Dkappa(2,2) .ne. 0.0_DP) then
-        call lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(6,6))
-      end if
-
-      ! Matrix restriction
-      ! ---------------------------------------------------
-
-      ! For the construction of matrices on lower levels, call the matrix
-      ! restriction. In case we have a uniform discretisation with Q1~,
-      ! iadaptivematrix may be <> 0 and so this will rebuild some matrix entries
-      ! by a Galerkin approach using constant prolongation/restriction.
-      ! This helps to stabilise the solver if there are elements in the
-      ! mesh with high aspect ratio.
-      if (present(rfineMatrix)) then
-      
-        ! Primal system:
-        call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(1,1), &
-            rmatrix%RmatrixBlock(1,1), &
-            rmatrixComponents%iadaptiveMatrices, &
-            rmatrixComponents%dadmatthreshold)
+        ! Include the mass matrix blocks
+        !
+        !    (  R2   .    .    .    .    .  ) 
+        !    (  .    R2   .    .    .    .  ) 
+        !    (  .    .    .    .    .    .  )
+        !
+        ! Remember that they are nonlinear if we have a preconditioner with
+        ! Newton activated!
+        
+        call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,6,1,3)
+        
+        ! Assemble linear parts.
+        call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
+            rmatrixComponents%Diota(2,1),rmatrixComponents%Dalpha(2,1),&
+            rmatrixComponents%Dtheta(2,1),&
+            rmatrixComponents%Deta(2,1),rmatrixComponents%Dtau(2,1),.false.)
             
-        if (.not. lsyssc_isMatrixContentShared(&
-            rfineMatrix%RmatrixBlock(1,1),rfineMatrix%RmatrixBlock(2,2))) then
-          call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(2,2), &
+        select case (rmatrixComponents%idualSol)
+        case (1)
+          call lsysbl_deriveSubvector(rvector1,rtempVector, 4,6,.true.)
+        case (2)
+          call lsysbl_deriveSubvector(rvector2,rtempVector, 4,6,.true.)
+        case (3)
+          call lsysbl_deriveSubvector(rvector3,rtempVector, 4,6,.true.)
+        end select
+            
+        call assembleConvection (&
+            rmatrixComponents,rtempMatrix,rtempVector,&
+            rmatrixComponents%Dgamma(2,1),rmatrixComponents%DgammaT(2,1),&
+            rmatrixComponents%Dnewton(2,1),rmatrixComponents%DnewtonT(2,1),&
+            rstabilisation)      
+
+        ! Reintegrate the computed matrix
+        call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,4,1)
+
+        ! Switch the I-matrix in the continuity equation on/off.
+        ! The matrix always exists -- but is usually filled with zeroes
+        ! or switched off.
+        rmatrix%RmatrixBlock(3,3)%dscaleFactor = rmatrixComponents%Dkappa(1,1)
+        if (rmatrixComponents%Dkappa(1,1) .ne. 0.0_DP) then
+          call lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(3,3))
+        end if
+        
+        rmatrix%RmatrixBlock(6,6)%dscaleFactor = rmatrixComponents%Dkappa(2,2)
+        if (rmatrixComponents%Dkappa(2,2) .ne. 0.0_DP) then
+          call lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(6,6))
+        end if
+
+        ! Matrix restriction
+        ! ---------------------------------------------------
+
+        ! For the construction of matrices on lower levels, call the matrix
+        ! restriction. In case we have a uniform discretisation with Q1~,
+        ! iadaptivematrix may be <> 0 and so this will rebuild some matrix entries
+        ! by a Galerkin approach using constant prolongation/restriction.
+        ! This helps to stabilise the solver if there are elements in the
+        ! mesh with high aspect ratio.
+        if (present(rfineMatrix)) then
+        
+          ! Primal system:
+          call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(1,1), &
               rmatrix%RmatrixBlock(1,1), &
               rmatrixComponents%iadaptiveMatrices, &
               rmatrixComponents%dadmatthreshold)
-        end if
-          
-        ! Dual system
-        call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(4,4), &
-            rmatrix%RmatrixBlock(4,4), &
-            rmatrixComponents%iadaptiveMatrices, &
-            rmatrixComponents%dadmatthreshold)
+              
+          if (.not. lsyssc_isMatrixContentShared(&
+              rfineMatrix%RmatrixBlock(1,1),rfineMatrix%RmatrixBlock(2,2))) then
+            call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(2,2), &
+                rmatrix%RmatrixBlock(1,1), &
+                rmatrixComponents%iadaptiveMatrices, &
+                rmatrixComponents%dadmatthreshold)
+          end if
             
-        if (.not. lsyssc_isMatrixContentShared(&
-          rmatrix%RmatrixBlock(4,4),rmatrix%RmatrixBlock(5,5))) then
-          call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(5,5), &
-              rmatrix%RmatrixBlock(5,5), &
+          ! Dual system
+          call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(4,4), &
+              rmatrix%RmatrixBlock(4,4), &
               rmatrixComponents%iadaptiveMatrices, &
               rmatrixComponents%dadmatthreshold)
+              
+          if (.not. lsyssc_isMatrixContentShared(&
+            rmatrix%RmatrixBlock(4,4),rmatrix%RmatrixBlock(5,5))) then
+            call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(5,5), &
+                rmatrix%RmatrixBlock(5,5), &
+                rmatrixComponents%iadaptiveMatrices, &
+                rmatrixComponents%dadmatthreshold)
+          end if
+          
+        end if
+
+        ! Release memory
+        call lsysbl_releaseMatrix(rtempMatrix)
+        if (rtempVector%NEQ .ne. 0) &
+          call lsysbl_releaseVector (rtempVector)
+
+        !call matio_writeBlockMatrixHR (rmatrix, 'matrix',&
+        !    .true., 0, 'matrix1.txt', '(E12.5)', 1E-10_DP)
+        
+      else
+
+        ! New implementation: Use the 'direct' assembly routine.
+        
+        rmatrix%RmatrixBlock(1:2,1:2)%dscaleFactor = 1.0_DP
+        rmatrix%RmatrixBlock(4:5,4:5)%dscaleFactor = 1.0_DP
+        rmatrix%RmatrixBlock(1:2,4:5)%dscaleFactor = 1.0_DP
+        rmatrix%RmatrixBlock(4:5,1:2)%dscaleFactor = 1.0_DP
+
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
+        
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,4))        
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,5))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,4))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,5))
+        
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,4))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,4))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,5))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,5))
+        
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,1))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,2))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,1))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,2))
+        
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,6))
+        
+        ! The B1/B2 matrices exist up to now only in rmatrixComponents.
+        ! Put a copy of them into the block matrix.
+        !
+        ! Note that we share the structure of B1/B2 with those B1/B2 of the
+        ! block matrix, while we create copies of the entries. The B-blocks
+        ! are already prepared and memory for the entries is already allocated;
+        ! so we only have to copy the entries.
+        !
+        ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
+        ! memory if necessary.
+        if (rmatrixComponents%Deta(1,1) .ne. 0.0_DP) then
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1, &
+                                        rmatrix%RmatrixBlock(1,3),&
+                                        LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2, &
+                                        rmatrix%RmatrixBlock(2,3),&
+                                        LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
         end if
         
+        if (rmatrixComponents%Dtau(1,1) .ne. 0.0_DP) then                              
+          ! Furthermore, put B1^T and B2^T to the block matrix.
+          ! These matrices are always 'shared'.
+          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+                                        rmatrix%RmatrixBlock(3,1),&
+                                        LSYSSC_TR_VIRTUAL)
+
+          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
+                                        rmatrix%RmatrixBlock(3,2),&
+                                        LSYSSC_TR_VIRTUAL)
+        end if
+                                        
+        if (rmatrixComponents%Dtau(2,2) .ne. 0.0_DP) then
+          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+                                        rmatrix%RmatrixBlock(6,4),&
+                                        LSYSSC_TR_VIRTUAL)
+
+          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
+                                        rmatrix%RmatrixBlock(6,5),&
+                                        LSYSSC_TR_VIRTUAL)
+        end if
+
+        rmatrix%RmatrixBlock(1,3)%dscaleFactor = rmatrixComponents%Deta(1,1)
+        rmatrix%RmatrixBlock(2,3)%dscaleFactor = rmatrixComponents%Deta(1,1)
+
+        rmatrix%RmatrixBlock(4,6)%dscaleFactor = rmatrixComponents%Deta(2,2)
+        rmatrix%RmatrixBlock(5,6)%dscaleFactor = rmatrixComponents%Deta(2,2)
+        
+        rmatrix%RmatrixBlock(3,1)%dscaleFactor = rmatrixComponents%Dtau(1,1)
+        rmatrix%RmatrixBlock(3,2)%dscaleFactor = rmatrixComponents%Dtau(1,1)
+
+        rmatrix%RmatrixBlock(6,4)%dscaleFactor = rmatrixComponents%Dtau(2,2)
+        rmatrix%RmatrixBlock(6,5)%dscaleFactor = rmatrixComponents%Dtau(2,2)
+
+        ! ---------------------------------------------------
+        ! Now a slightly more advanced task for which we use a separate
+        ! routine and some submatrices/vectors: The nonlinearity.
+
+        ! Initialise the operator structure for what we need.
+        roptcoperator%dupsamPrimal = rmatrixComponents%dupsam1
+        roptcoperator%dupsamDual = rmatrixComponents%dupsam2
+        
+        ! Timestep-weights
+        roptcoperator%dprimalAlpha = rmatrixComponents%Dalpha(1,1)
+        roptcoperator%ddualAlpha   = rmatrixComponents%Dalpha(2,2)
+
+        ! Stokes operator
+        roptcoperator%dnu = rmatrixComponents%dnu
+        roptcoperator%dprimalBeta = rmatrixComponents%Dtheta(1,1)
+        roptcoperator%ddualBeta   = rmatrixComponents%Dtheta(2,2)
+        
+        ! Nonlinearity
+        if (rmatrixComponents%Dgamma(1,1) .ne. 0.0_DP) then
+          roptcoperator%dprimalDelta = rmatrixComponents%Dgamma(1,1)
+          roptcoperator%ddualDelta   = rmatrixComponents%Dgamma(2,2)
+          roptcoperator%ddualNewtonTrans = rmatrixComponents%DnewtonT(2,2)
+          
+          ! Whether or not Newton is active has no influence to the
+          ! defect, so the following lines are commented out.
+          ! if (rparams%bnewton) then
+          roptcoperator%dprimalNewton    = rmatrixComponents%Dnewton(1,1)
+          roptcoperator%ddualRDeltaTrans = rmatrixComponents%DgammaT(2,1)
+          roptcoperator%ddualRNewton     = rmatrixComponents%Dnewton(2,1)
+          ! end if
+          
+        end if
+        
+        ! Coupling matrices
+        !if (rparams%bdualcoupledtoprimal) then
+          roptcoperator%ddualRAlpha = rmatrixComponents%Dalpha(2,1)
+        !end if
+
+        !if (rparams%bcontrolactive) then
+          roptcoperator%dcontrolWeight = -rmatrixComponents%Dalpha(1,2)*rmatrixComponents%dalphaC
+          roptcoperator%dcontrolMultiplier = -1.0_DP/rmatrixComponents%dalphaC
+        !end if
+        
+        if (rmatrixComponents%ccontrolConstraints .ne. 0) then
+          roptcoperator%ccontrolProjection = rmatrixComponents%ccontrolConstraints
+          roptcoperator%dmin1 = rmatrixComponents%dumin1
+          roptcoperator%dmax1 = rmatrixComponents%dumax1
+          roptcoperator%dmin2 = rmatrixComponents%dumin2
+          roptcoperator%dmax2 = rmatrixComponents%dumax2
+        end if
+        
+        select case (rmatrixComponents%iprimalSol)
+        case (1)
+          p_rprimalSol => rvector1
+        case (2)
+          p_rprimalSol => rvector2
+        case (3)
+          p_rprimalSol => rvector3
+        end select
+        
+        select case (rmatrixComponents%idualSol)
+        case (1)
+          p_rdualSol => rvector1
+        case (2)
+          p_rdualSol => rvector2
+        case (3)
+          p_rdualSol => rvector3
+        end select
+        
+        ! Calculate the velocity-dependent part of the system matrix.
+        call conv_strdiffOptC2dgetMatrix (rmatrix,roptcoperator,1.0_DP,&
+            p_rprimalSol,p_rdualSol)
+            
+        !call matio_writeBlockMatrixHR (rmatrix, 'matrix',&
+        !    .true., 0, 'matrix2.txt', '(E12.5)', 1E-10_DP)
+      
       end if
-
-      ! Release memory
-      call lsysbl_releaseMatrix(rtempMatrix)
-      if (rtempVector%NEQ .ne. 0) &
-        call lsysbl_releaseVector (rtempVector)
-
+      
     end if
     
   contains
@@ -3255,18 +3428,18 @@ contains
   ! It specifies where to evaluate the nonlinearity and must contain the data
   ! for the 'previous' timestep. If there is no previous timestep (e.g.
   ! like in the 0th timestep), the vector can be undefined.
-  type(t_vectorBlock), intent(IN), optional :: rvector1
+  type(t_vectorBlock), intent(IN), target, optional :: rvector1
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
   ! It specifies where to evaluate the nonlinearity and must contain the data
   ! for the 'current' timestep. 
-  type(t_vectorBlock), intent(IN), optional :: rvector2
+  type(t_vectorBlock), intent(IN), target, optional :: rvector2
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
   ! It specifies where to evaluate the nonlinearity and must contain the data
   ! for the 'next' timestep. If there is no next timestep (e.g.
   ! like in the last timestep), the vector can be undefined.
-  type(t_vectorBlock), intent(IN), optional :: rvector3
+  type(t_vectorBlock), intent(IN), target, optional :: rvector3
 
 !</input>
 
@@ -3282,7 +3455,11 @@ contains
     type(t_matrixBlock) :: rtempmatrix
     type(t_vectorBlock) :: rtempVectorX,rtempVectorB
     type(t_vectorBlock) :: rvectorPrimal,rvectorDual
+    type(t_vectorBlock), pointer :: p_rprimalSol, p_rdualSol
     type(t_convecStabilisation) :: rstabilisation    
+    type(t_optcoperator) :: roptcoperator
+    
+    logical, parameter :: bnewmethod = .false.
     
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dd
@@ -3292,373 +3469,533 @@ contains
     dcx = 1.0_DP
     if (present(cx)) dcx = cx
     
-    ! The system matrix looks like:
-    !          
-    !    ( A11  A12  B1  M~           ) 
-    !    ( A21  A22  B2       M~      ) 
-    !    ( B1^T B2^T                  ) 
-    !    ( M             A44  A45  B1 ) 
-    !    (      M        A54  A55  B2 ) 
-    !    (               B1^T B2^T    ) 
-    !
-    ! We have now to manually perform a matrix-vector multiplication with
-    ! all submatrices in that matrix. At first, we start with the
-    ! linear part, that's the easiest.
-    !
-    ! ---------------------------------------------------
-    ! 1.) Identity.
-    !    ( I                          ) 
-    !    (      I                     ) 
-    !    (                            ) 
-    !    (               I            ) 
-    !    (                    I       ) 
-    !    (                            ) 
-
-    if (rmatrixComponents%Diota(1,1) .ne. 0.0_DP) then
-      call lsyssc_vectorLinearComb (&
-          rx%RvectorBlock(1), rd%RvectorBlock(1), &
-          -rmatrixComponents%Diota(1,1)*dcx, 1.0_DP)
-
-      call lsyssc_vectorLinearComb (&
-          rx%RvectorBlock(2), rd%RvectorBlock(2), &
-          -rmatrixComponents%Diota(1,1)*dcx, 1.0_DP)
-    end if
-
-    if (rmatrixComponents%Diota(2,2) .ne. 0.0_DP) then
-      call lsyssc_vectorLinearComb (&
-          rx%RvectorBlock(4), rd%RvectorBlock(4), &
-          -rmatrixComponents%Diota(2,2)*dcx, 1.0_DP)
-
-      call lsyssc_vectorLinearComb (&
-          rx%RvectorBlock(5), rd%RvectorBlock(5), &
-          -rmatrixComponents%Diota(2,2)*dcx, 1.0_DP)
-    end if
-
-    ! ---------------------------------------------------
-    ! 2.) Mass matrices
-    !    ( M                          ) 
-    !    (      M                     ) 
-    !    (                            ) 
-    !    ( M             M            ) 
-    !    (      M             M       ) 
-    !    (                            ) 
-    if (rmatrixComponents%Dalpha(1,1) .ne. 0.0_DP) then
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
-          rx%RvectorBlock(1), rd%RvectorBlock(1), &
-          -rmatrixComponents%Dalpha(1,1)*dcx, 1.0_DP)
-
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
-          rx%RvectorBlock(2), rd%RvectorBlock(2), &
-          -rmatrixComponents%Dalpha(1,1)*dcx, 1.0_DP)
-    end if
-
-    if (rmatrixComponents%Dalpha(2,2) .ne. 0.0_DP) then
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
-          rx%RvectorBlock(4), rd%RvectorBlock(4), &
-          -rmatrixComponents%Dalpha(2,2)*dcx, 1.0_DP)
-
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
-          rx%RvectorBlock(5), rd%RvectorBlock(5), &
-          -rmatrixComponents%Dalpha(2,2)*dcx, 1.0_DP)
-    end if
-
-    if (rmatrixComponents%Dalpha(2,1) .ne. 0.0_DP) then
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
-          rx%RvectorBlock(1), rd%RvectorBlock(4), &
-          -rmatrixComponents%Dalpha(2,1)*dcx, 1.0_DP)
-
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
-          rx%RvectorBlock(2), rd%RvectorBlock(5), &
-          -rmatrixComponents%Dalpha(2,1)*dcx, 1.0_DP)
-    end if
+    if (.not. bnewmethod) then
     
-    ! Don't do anything with Dalpha(1,2) -- the mass matrices here
-    ! are probably nonlinear! We assemble them later!
-    
-    ! ---------------------------------------------------
-    ! 3.) Stokes matrices
-    !    ( L                          ) 
-    !    (      L                     ) 
-    !    (                            ) 
-    !    (               L            ) 
-    !    (                    L       ) 
-    !    (                            ) 
-    if (rmatrixComponents%Dtheta(1,1) .ne. 0.0_DP) then
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
-          rx%RvectorBlock(1), rd%RvectorBlock(1), &
-          -rmatrixComponents%Dtheta(1,1)*dcx, 1.0_DP)
+      ! The system matrix looks like:
+      !          
+      !    ( A11  A12  B1  M~           ) 
+      !    ( A21  A22  B2       M~      ) 
+      !    ( B1^T B2^T                  ) 
+      !    ( M             A44  A45  B1 ) 
+      !    (      M        A54  A55  B2 ) 
+      !    (               B1^T B2^T    ) 
+      !
+      ! We have now to manually perform a matrix-vector multiplication with
+      ! all submatrices in that matrix. At first, we start with the
+      ! linear part, that's the easiest.
+      !
+      ! ---------------------------------------------------
+      ! 1.) Identity.
+      !    ( I                          ) 
+      !    (      I                     ) 
+      !    (                            ) 
+      !    (               I            ) 
+      !    (                    I       ) 
+      !    (                            ) 
 
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
-          rx%RvectorBlock(2), rd%RvectorBlock(2), &
-          -rmatrixComponents%Dtheta(1,1)*dcx, 1.0_DP)
-    end if
-          
-    if (rmatrixComponents%Dtheta(2,2) .ne. 0.0_DP) then
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
-          rx%RvectorBlock(4), rd%RvectorBlock(4), &
-          -rmatrixComponents%Dtheta(2,2)*dcx, 1.0_DP)
+      if (rmatrixComponents%Diota(1,1) .ne. 0.0_DP) then
+        call lsyssc_vectorLinearComb (&
+            rx%RvectorBlock(1), rd%RvectorBlock(1), &
+            -rmatrixComponents%Diota(1,1)*dcx, 1.0_DP)
 
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
-          rx%RvectorBlock(5), rd%RvectorBlock(5), &
-          -rmatrixComponents%Dtheta(2,2)*dcx, 1.0_DP)
-    end if
-    
-    ! ---------------------------------------------------
-    ! 3.) B-matrices
-    !    (           B1               ) 
-    !    (           B2               ) 
-    !    (                            ) 
-    !    (                        B1  ) 
-    !    (                        B2  ) 
-    !    (                            ) 
-    
-    if (rmatrixComponents%Deta(1,1) .ne. 0.0_DP) then
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
-          rx%RvectorBlock(3), rd%RvectorBlock(1), &
-          -rmatrixComponents%Deta(1,1)*dcx, 1.0_DP)
-
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
-          rx%RvectorBlock(3), rd%RvectorBlock(2), &
-          -rmatrixComponents%Deta(1,1)*dcx, 1.0_DP)
-    end if
-    
-    if (rmatrixComponents%Deta(2,2) .ne. 0.0_DP) then
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
-          rx%RvectorBlock(6), rd%RvectorBlock(4), &
-          -rmatrixComponents%Deta(2,2)*dcx, 1.0_DP)
-
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
-          rx%RvectorBlock(6), rd%RvectorBlock(5), &
-          -rmatrixComponents%Deta(2,2)*dcx, 1.0_DP)
-    end if
-    
-    ! ---------------------------------------------------
-    ! 4.) B^T-matrices
-    !    (                            ) 
-    !    (                            ) 
-    !    ( B1^T B2^T                  ) 
-    !    (                            ) 
-    !    (                            ) 
-    !    (              B1^T B2^T     ) 
-    
-    if (rmatrixComponents%Dtau(1,1) .ne. 0.0_DP) then
-      if (associated(rmatrixComponents%p_rmatrixB1T)) then
-        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1T, &
-            rx%RvectorBlock(1), rd%RvectorBlock(3), &
-            -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
-      else
-        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
-            rx%RvectorBlock(1), rd%RvectorBlock(3), &
-            -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP,.true.)
+        call lsyssc_vectorLinearComb (&
+            rx%RvectorBlock(2), rd%RvectorBlock(2), &
+            -rmatrixComponents%Diota(1,1)*dcx, 1.0_DP)
       end if
 
-      if (associated(rmatrixComponents%p_rmatrixB2T)) then
-        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2T, &
-            rx%RvectorBlock(2), rd%RvectorBlock(3), &
-            -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
-      else
-        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
-            rx%RvectorBlock(2), rd%RvectorBlock(3), &
-            -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP,.true.)
-      end if
-    end if
-    
-    if (rmatrixComponents%Dtau(2,2) .ne. 0.0_DP) then
-      if (associated(rmatrixComponents%p_rmatrixB1T)) then
-        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1T, &
-            rx%RvectorBlock(4), rd%RvectorBlock(6), &
-            -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
-      else
-        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
-            rx%RvectorBlock(4), rd%RvectorBlock(6), &
-            -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP,.true.)
+      if (rmatrixComponents%Diota(2,2) .ne. 0.0_DP) then
+        call lsyssc_vectorLinearComb (&
+            rx%RvectorBlock(4), rd%RvectorBlock(4), &
+            -rmatrixComponents%Diota(2,2)*dcx, 1.0_DP)
+
+        call lsyssc_vectorLinearComb (&
+            rx%RvectorBlock(5), rd%RvectorBlock(5), &
+            -rmatrixComponents%Diota(2,2)*dcx, 1.0_DP)
       end if
 
-      if (associated(rmatrixComponents%p_rmatrixB2T)) then
-        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2T, &
-            rx%RvectorBlock(5), rd%RvectorBlock(6), &
-            -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
-      else
-        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
-            rx%RvectorBlock(5), rd%RvectorBlock(6), &
-            -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP,.true.)
+      ! ---------------------------------------------------
+      ! 2.) Mass matrices
+      !    ( M                          ) 
+      !    (      M                     ) 
+      !    (                            ) 
+      !    ( M             M            ) 
+      !    (      M             M       ) 
+      !    (                            ) 
+      if (rmatrixComponents%Dalpha(1,1) .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
+            rx%RvectorBlock(1), rd%RvectorBlock(1), &
+            -rmatrixComponents%Dalpha(1,1)*dcx, 1.0_DP)
+
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
+            rx%RvectorBlock(2), rd%RvectorBlock(2), &
+            -rmatrixComponents%Dalpha(1,1)*dcx, 1.0_DP)
       end if
-    end if
-    
-    ! ---------------------------------------------------
-    ! Now a slightly more advanced task for which we use a separate
-    ! routine and some submatrices/vectors: The nonlinearity.
-    !
-    ! Get a reference to the correct velocity vector we have to use for the
-    ! nonlinearity.
-    select case (rmatrixComponents%iprimalSol)
-    case (1)
-      call lsysbl_deriveSubvector(rvector1,rvectorPrimal, 1,2,.true.)
-    case (2)
-      call lsysbl_deriveSubvector(rvector2,rvectorPrimal, 1,2,.true.)
-    case (3)
-      call lsysbl_deriveSubvector(rvector3,rvectorPrimal, 1,2,.true.)
-    end select
 
-    select case (rmatrixComponents%idualSol)
-    case (1)
-      call lsysbl_deriveSubvector(rvector1,rvectorDual, 4,5,.true.)
-    case (2)
-      call lsysbl_deriveSubvector(rvector2,rvectorDual, 4,5,.true.)
-    case (3)
-      call lsysbl_deriveSubvector(rvector3,rvectorDual, 4,5,.true.)
-    end select
-    
-    ! Create a 2x2 matrix based on the structure of the FE space.
-    ! The matrix does not need any entries, we only need the structure.
-    call lsysbl_createEmptyMatrix (rtempMatrix,NDIM2D)
-    call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
-        rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
-        rtempMatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
-        rtempMatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
-        rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    call lsysbl_updateMatStrucInfo (rtempMatrix)
+      if (rmatrixComponents%Dalpha(2,2) .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
+            rx%RvectorBlock(4), rd%RvectorBlock(4), &
+            -rmatrixComponents%Dalpha(2,2)*dcx, 1.0_DP)
 
-    ! 1.) Primal equation, y*grad(.), probably + grad(.)*y
-    !
-    !    ( N(y) N(y)                  ) 
-    !    ( N(y) N(y)                  ) 
-    !    (                            ) 
-    !    (                            ) 
-    !    (                            ) 
-    !    (                            ) 
-    
-    rstabilisation = t_convecStabilisation(&
-        rmatrixComponents%iupwind1,rmatrixComponents%dupsam1)
-    
-    call lsysbl_deriveSubvector(rx,rtempVectorX,1,2,.true.)
-    call lsysbl_deriveSubvector(rd,rtempVectorB,1,2,.true.)
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
+            rx%RvectorBlock(5), rd%RvectorBlock(5), &
+            -rmatrixComponents%Dalpha(2,2)*dcx, 1.0_DP)
+      end if
 
-    call assembleConvectionDefect (&
-        rmatrixComponents,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
-        rmatrixComponents%Dgamma(1,1),rmatrixComponents%DgammaT(1,1),&
-        rmatrixComponents%Dnewton(1,1),rmatrixComponents%DnewtonT(1,1),&
-        rstabilisation,dcx)    
-    
-    call lsysbl_releaseVector (rtempVectorX)
-    call lsysbl_releaseVector (rtempVectorB)
-    
-    ! 2.) Dual equation, y*grad(.) + grad(.)^T*y
-    !
-    !    (                            ) 
-    !    (                            ) 
-    !    (                            ) 
-    !    (              N*(y) N*(y)   ) 
-    !    (              N*(y) N*(y)   ) 
-    !    (                            ) 
-    
-    rstabilisation = t_convecStabilisation(&
-        rmatrixComponents%iupwind2,rmatrixComponents%dupsam2)
-    
-    call lsysbl_deriveSubvector(rx,rtempVectorX,4,5,.true.)
-    call lsysbl_deriveSubvector(rd,rtempVectorB,4,5,.true.)
+      if (rmatrixComponents%Dalpha(2,1) .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
+            rx%RvectorBlock(1), rd%RvectorBlock(4), &
+            -rmatrixComponents%Dalpha(2,1)*dcx, 1.0_DP)
 
-    call assembleConvectionDefect (&
-        rmatrixComponents,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
-        rmatrixComponents%Dgamma(2,2),rmatrixComponents%DgammaT(2,2),&
-        rmatrixComponents%Dnewton(2,2),rmatrixComponents%DnewtonT(2,2),&
-        rstabilisation,dcx)    
-    
-    call lsysbl_releaseVector (rtempVectorX)
-    call lsysbl_releaseVector (rtempVectorB)
-    
-    ! 3.) Dual equation, Newton term lambda*grad(.) + grad(.)^T*lambda
-    !
-    !    (                            ) 
-    !    (                            ) 
-    !    (                            ) 
-    !    (   N*(l) N*(l)              ) 
-    !    (   N*(l) N*(l)              ) 
-    !    (                            ) 
-    
-    rstabilisation = t_convecStabilisation(&
-        rmatrixComponents%iupwind2,rmatrixComponents%dupsam2)
-    
-    call lsysbl_deriveSubvector(rx,rtempVectorX,1,2,.true.)
-    call lsysbl_deriveSubvector(rd,rtempVectorB,4,5,.true.)
-
-    call assembleConvectionDefect (&
-        rmatrixComponents,rtempMatrix,rvectorDual,rtempVectorX,rtempVectorB,&
-        rmatrixComponents%Dgamma(2,1),rmatrixComponents%DgammaT(2,1),&
-        rmatrixComponents%Dnewton(2,1),rmatrixComponents%DnewtonT(2,1),&
-        rstabilisation,dcx)    
-    
-    call lsysbl_releaseVector (rtempVectorX)
-    call lsysbl_releaseVector (rtempVectorB)
-    
-    ! 4.) (Projected) mass matrix
-    !
-    !    (              PM(l)         ) 
-    !    (                    PM(l)   ) 
-    !    (                            ) 
-    !    (                            ) 
-    !    (                            ) 
-    !    (                            ) 
-    
-    ! What's the type of the current matrix? Is this a Newton-matrix?
-    if (rmatrixComponents%cmatrixType .eq. 0) then
-
-      ! No, this is a standard matrix. That means, we just have to project
-      ! the control u and multiply it with the mass matrix.
-
-      ! Copy our solution vector \lambda. Scale it by -1/alpha.
-      call lsysbl_deriveSubvector(rx,rtempVectorX,4,5,.false.)
-      call lsysbl_scaleVector(rtempVectorX,-rmatrixComponents%Dalpha(1,2))
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
+            rx%RvectorBlock(2), rd%RvectorBlock(5), &
+            -rmatrixComponents%Dalpha(2,1)*dcx, 1.0_DP)
+      end if
       
-      ! Project that to the allowed range.
-      if (rmatrixComponents%ccontrolConstraints .ne. 0) then
-        call cc_projectControlTimestep (rtempVectorX%RvectorBlock(1),&
-            rmatrixComponents%dumin1,rmatrixComponents%dumax1)
-        call cc_projectControlTimestep (rtempVectorX%RvectorBlock(2),&
-            rmatrixComponents%dumin2,rmatrixComponents%dumax2)
+      ! Don't do anything with Dalpha(1,2) -- the mass matrices here
+      ! are probably nonlinear! We assemble them later!
+      
+      ! ---------------------------------------------------
+      ! 3.) Stokes matrices
+      !    ( L                          ) 
+      !    (      L                     ) 
+      !    (                            ) 
+      !    (               L            ) 
+      !    (                    L       ) 
+      !    (                            ) 
+      if (rmatrixComponents%Dtheta(1,1) .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
+            rx%RvectorBlock(1), rd%RvectorBlock(1), &
+            -rmatrixComponents%Dtheta(1,1)*dcx, 1.0_DP)
+
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
+            rx%RvectorBlock(2), rd%RvectorBlock(2), &
+            -rmatrixComponents%Dtheta(1,1)*dcx, 1.0_DP)
       end if
+            
+      if (rmatrixComponents%Dtheta(2,2) .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
+            rx%RvectorBlock(4), rd%RvectorBlock(4), &
+            -rmatrixComponents%Dtheta(2,2)*dcx, 1.0_DP)
 
-      ! Now carry out MV and include it to the defect.
-      ! Note that the multiplication factor is -(-cx) = cx because
-      ! it's put on the RHS of the system for creating the defect.
-      ! d = b - cx A x = b - ... + \nu Laplace(y) - y\grad(y) - grad(p) + P(-1/alpha lambda)
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
-          rtempVectorX%RvectorBlock(1), &
-          rd%RvectorBlock(1), dcx, 1.0_DP)
-      call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
-          rtempVectorX%RvectorBlock(2), &
-          rd%RvectorBlock(2), dcx, 1.0_DP)
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
+            rx%RvectorBlock(5), rd%RvectorBlock(5), &
+            -rmatrixComponents%Dtheta(2,2)*dcx, 1.0_DP)
+      end if
+      
+      ! ---------------------------------------------------
+      ! 3.) B-matrices
+      !    (           B1               ) 
+      !    (           B2               ) 
+      !    (                            ) 
+      !    (                        B1  ) 
+      !    (                        B2  ) 
+      !    (                            ) 
+      
+      if (rmatrixComponents%Deta(1,1) .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
+            rx%RvectorBlock(3), rd%RvectorBlock(1), &
+            -rmatrixComponents%Deta(1,1)*dcx, 1.0_DP)
 
-      call lsysbl_releaseVector (rtempVectorX)
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
+            rx%RvectorBlock(3), rd%RvectorBlock(2), &
+            -rmatrixComponents%Deta(1,1)*dcx, 1.0_DP)
+      end if
+      
+      if (rmatrixComponents%Deta(2,2) .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
+            rx%RvectorBlock(6), rd%RvectorBlock(4), &
+            -rmatrixComponents%Deta(2,2)*dcx, 1.0_DP)
 
-    else
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
+            rx%RvectorBlock(6), rd%RvectorBlock(5), &
+            -rmatrixComponents%Deta(2,2)*dcx, 1.0_DP)
+      end if
+      
+      ! ---------------------------------------------------
+      ! 4.) B^T-matrices
+      !    (                            ) 
+      !    (                            ) 
+      !    ( B1^T B2^T                  ) 
+      !    (                            ) 
+      !    (                            ) 
+      !    (              B1^T B2^T     ) 
+      
+      if (rmatrixComponents%Dtau(1,1) .ne. 0.0_DP) then
+        if (associated(rmatrixComponents%p_rmatrixB1T)) then
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1T, &
+              rx%RvectorBlock(1), rd%RvectorBlock(3), &
+              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
+        else
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
+              rx%RvectorBlock(1), rd%RvectorBlock(3), &
+              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP,.true.)
+        end if
 
-      ! Yes, that's a Newton matrix. That means, we have to multiply the
-      ! vector with the derivative of the projection operator:
-      ! b-(-P[a,b]'(-1/alpha lambda)).
-      ! For that purpose, we have to assemble special mass matrices:
+        if (associated(rmatrixComponents%p_rmatrixB2T)) then
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2T, &
+              rx%RvectorBlock(2), rd%RvectorBlock(3), &
+              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
+        else
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
+              rx%RvectorBlock(2), rd%RvectorBlock(3), &
+              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP,.true.)
+        end if
+      end if
+      
+      if (rmatrixComponents%Dtau(2,2) .ne. 0.0_DP) then
+        if (associated(rmatrixComponents%p_rmatrixB1T)) then
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1T, &
+              rx%RvectorBlock(4), rd%RvectorBlock(6), &
+              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
+        else
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
+              rx%RvectorBlock(4), rd%RvectorBlock(6), &
+              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP,.true.)
+        end if
+
+        if (associated(rmatrixComponents%p_rmatrixB2T)) then
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2T, &
+              rx%RvectorBlock(5), rd%RvectorBlock(6), &
+              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
+        else
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
+              rx%RvectorBlock(5), rd%RvectorBlock(6), &
+              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP,.true.)
+        end if
+      end if
+      
+      ! ---------------------------------------------------
+      ! Now a slightly more advanced task for which we use a separate
+      ! routine and some submatrices/vectors: The nonlinearity.
+      !
+      ! Get a reference to the correct velocity vector we have to use for the
+      ! nonlinearity.
+      select case (rmatrixComponents%iprimalSol)
+      case (1)
+        call lsysbl_deriveSubvector(rvector1,rvectorPrimal, 1,2,.true.)
+      case (2)
+        call lsysbl_deriveSubvector(rvector2,rvectorPrimal, 1,2,.true.)
+      case (3)
+        call lsysbl_deriveSubvector(rvector3,rvectorPrimal, 1,2,.true.)
+      end select
+
       select case (rmatrixComponents%idualSol)
       case (1)
-        call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
-            rd,dcx*rmatrixComponents%Dalpha(1,2),rvector1)
+        call lsysbl_deriveSubvector(rvector1,rvectorDual, 4,5,.true.)
       case (2)
-        call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
-            rd,dcx*rmatrixComponents%Dalpha(1,2),rvector2)
+        call lsysbl_deriveSubvector(rvector2,rvectorDual, 4,5,.true.)
       case (3)
-        call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
-            rd,dcx*rmatrixComponents%Dalpha(1,2),rvector3)
+        call lsysbl_deriveSubvector(rvector3,rvectorDual, 4,5,.true.)
       end select
       
-    end if
-    
-    ! Release the temp vectors/matrices, that's it.
-    call lsysbl_releaseVector (rvectorDual)
-    call lsysbl_releaseVector (rvectorPrimal)
-    call lsysbl_releaseMatrix (rtempMatrix)
+      ! Create a 2x2 matrix based on the structure of the FE space.
+      ! The matrix does not need any entries, we only need the structure.
+      call lsysbl_createEmptyMatrix (rtempMatrix,NDIM2D)
+      call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
+          rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+      call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
+          rtempMatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+      call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
+          rtempMatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+      call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
+          rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+      call lsysbl_updateMatStrucInfo (rtempMatrix)
 
+      ! 1.) Primal equation, y*grad(.), probably + grad(.)*y
+      !
+      !    ( N(y) N(y)                  ) 
+      !    ( N(y) N(y)                  ) 
+      !    (                            ) 
+      !    (                            ) 
+      !    (                            ) 
+      !    (                            ) 
+      
+      rstabilisation = t_convecStabilisation(&
+          rmatrixComponents%iupwind1,rmatrixComponents%dupsam1)
+      
+      call lsysbl_deriveSubvector(rx,rtempVectorX,1,2,.true.)
+      call lsysbl_deriveSubvector(rd,rtempVectorB,1,2,.true.)
+
+      call assembleConvectionDefect (&
+          rmatrixComponents,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
+          rmatrixComponents%Dgamma(1,1),rmatrixComponents%DgammaT(1,1),&
+          rmatrixComponents%Dnewton(1,1),rmatrixComponents%DnewtonT(1,1),&
+          rstabilisation,dcx)    
+      
+      call lsysbl_releaseVector (rtempVectorX)
+      call lsysbl_releaseVector (rtempVectorB)
+      
+      ! 2.) Dual equation, y*grad(.) + grad(.)^T*y
+      !
+      !    (                            ) 
+      !    (                            ) 
+      !    (                            ) 
+      !    (              N*(y) N*(y)   ) 
+      !    (              N*(y) N*(y)   ) 
+      !    (                            ) 
+      
+      rstabilisation = t_convecStabilisation(&
+          rmatrixComponents%iupwind2,rmatrixComponents%dupsam2)
+      
+      call lsysbl_deriveSubvector(rx,rtempVectorX,4,5,.true.)
+      call lsysbl_deriveSubvector(rd,rtempVectorB,4,5,.true.)
+
+      call assembleConvectionDefect (&
+          rmatrixComponents,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
+          rmatrixComponents%Dgamma(2,2),rmatrixComponents%DgammaT(2,2),&
+          rmatrixComponents%Dnewton(2,2),rmatrixComponents%DnewtonT(2,2),&
+          rstabilisation,dcx)    
+      
+      call lsysbl_releaseVector (rtempVectorX)
+      call lsysbl_releaseVector (rtempVectorB)
+      
+      ! 3.) Dual equation, Newton term lambda*grad(.) + grad(.)^T*lambda
+      !
+      !    (                            ) 
+      !    (                            ) 
+      !    (                            ) 
+      !    (   N*(l) N*(l)              ) 
+      !    (   N*(l) N*(l)              ) 
+      !    (                            ) 
+      
+      rstabilisation = t_convecStabilisation(&
+          rmatrixComponents%iupwind2,rmatrixComponents%dupsam2)
+      
+      call lsysbl_deriveSubvector(rx,rtempVectorX,1,2,.true.)
+      call lsysbl_deriveSubvector(rd,rtempVectorB,4,5,.true.)
+
+      call assembleConvectionDefect (&
+          rmatrixComponents,rtempMatrix,rvectorDual,rtempVectorX,rtempVectorB,&
+          rmatrixComponents%Dgamma(2,1),rmatrixComponents%DgammaT(2,1),&
+          rmatrixComponents%Dnewton(2,1),rmatrixComponents%DnewtonT(2,1),&
+          rstabilisation,dcx)    
+      
+      call lsysbl_releaseVector (rtempVectorX)
+      call lsysbl_releaseVector (rtempVectorB)
+      
+      ! 4.) (Projected) mass matrix
+      !
+      !    (              PM(l)         ) 
+      !    (                    PM(l)   ) 
+      !    (                            ) 
+      !    (                            ) 
+      !    (                            ) 
+      !    (                            ) 
+      
+      ! What's the type of the current matrix? Is this a Newton-matrix?
+      if (rmatrixComponents%cmatrixType .eq. 0) then
+
+        ! No, this is a standard matrix. That means, we just have to project
+        ! the control u and multiply it with the mass matrix.
+
+        ! Copy our solution vector \lambda. Scale it by -1/alpha.
+        call lsysbl_deriveSubvector(rx,rtempVectorX,4,5,.false.)
+        call lsysbl_scaleVector(rtempVectorX,-rmatrixComponents%Dalpha(1,2))
+        
+        ! Project that to the allowed range.
+        if (rmatrixComponents%ccontrolConstraints .ne. 0) then
+          call cc_projectControlTimestep (rtempVectorX%RvectorBlock(1),&
+              rmatrixComponents%dumin1,rmatrixComponents%dumax1)
+          call cc_projectControlTimestep (rtempVectorX%RvectorBlock(2),&
+              rmatrixComponents%dumin2,rmatrixComponents%dumax2)
+        end if
+
+        ! Now carry out MV and include it to the defect.
+        ! Note that the multiplication factor is -(-cx) = cx because
+        ! it's put on the RHS of the system for creating the defect.
+        ! d = b - cx A x = b - ... + \nu Laplace(y) - y\grad(y) - grad(p) + P(-1/alpha lambda)
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
+            rtempVectorX%RvectorBlock(1), &
+            rd%RvectorBlock(1), dcx, 1.0_DP)
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
+            rtempVectorX%RvectorBlock(2), &
+            rd%RvectorBlock(2), dcx, 1.0_DP)
+
+        call lsysbl_releaseVector (rtempVectorX)
+
+      else
+
+        ! Yes, that's a Newton matrix. That means, we have to multiply the
+        ! vector with the derivative of the projection operator:
+        ! b-(-P[a,b]'(-1/alpha lambda)).
+        ! For that purpose, we have to assemble special mass matrices:
+        select case (rmatrixComponents%idualSol)
+        case (1)
+          call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+              rd,dcx*rmatrixComponents%Dalpha(1,2),rvector1)
+        case (2)
+          call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+              rd,dcx*rmatrixComponents%Dalpha(1,2),rvector2)
+        case (3)
+          call assemblePrimalUConstrMassDefect (rmatrixComponents,rx,&
+              rd,dcx*rmatrixComponents%Dalpha(1,2),rvector3)
+        end select
+        
+      end if
+      
+      ! Release the temp vectors/matrices, that's it.
+      call lsysbl_releaseVector (rvectorDual)
+      call lsysbl_releaseVector (rvectorPrimal)
+      call lsysbl_releaseMatrix (rtempMatrix)
+
+    else
+    
+      ! ---------------------------------------------------
+      ! 3.) B-matrices
+      !    (           B1               ) 
+      !    (           B2               ) 
+      !    (                            ) 
+      !    (                        B1  ) 
+      !    (                        B2  ) 
+      !    (                            ) 
+      
+      if (rmatrixComponents%Deta(1,1) .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
+            rx%RvectorBlock(3), rd%RvectorBlock(1), &
+            -rmatrixComponents%Deta(1,1)*dcx, 1.0_DP)
+
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
+            rx%RvectorBlock(3), rd%RvectorBlock(2), &
+            -rmatrixComponents%Deta(1,1)*dcx, 1.0_DP)
+      end if
+      
+      if (rmatrixComponents%Deta(2,2) .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
+            rx%RvectorBlock(6), rd%RvectorBlock(4), &
+            -rmatrixComponents%Deta(2,2)*dcx, 1.0_DP)
+
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
+            rx%RvectorBlock(6), rd%RvectorBlock(5), &
+            -rmatrixComponents%Deta(2,2)*dcx, 1.0_DP)
+      end if
+      
+      ! ---------------------------------------------------
+      ! 4.) B^T-matrices
+      !    (                            ) 
+      !    (                            ) 
+      !    ( B1^T B2^T                  ) 
+      !    (                            ) 
+      !    (                            ) 
+      !    (              B1^T B2^T     ) 
+      
+      if (rmatrixComponents%Dtau(1,1) .ne. 0.0_DP) then
+        if (associated(rmatrixComponents%p_rmatrixB1T)) then
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1T, &
+              rx%RvectorBlock(1), rd%RvectorBlock(3), &
+              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
+        else
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
+              rx%RvectorBlock(1), rd%RvectorBlock(3), &
+              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP,.true.)
+        end if
+
+        if (associated(rmatrixComponents%p_rmatrixB2T)) then
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2T, &
+              rx%RvectorBlock(2), rd%RvectorBlock(3), &
+              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
+        else
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
+              rx%RvectorBlock(2), rd%RvectorBlock(3), &
+              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP,.true.)
+        end if
+      end if
+      
+      if (rmatrixComponents%Dtau(2,2) .ne. 0.0_DP) then
+        if (associated(rmatrixComponents%p_rmatrixB1T)) then
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1T, &
+              rx%RvectorBlock(4), rd%RvectorBlock(6), &
+              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
+        else
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
+              rx%RvectorBlock(4), rd%RvectorBlock(6), &
+              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP,.true.)
+        end if
+
+        if (associated(rmatrixComponents%p_rmatrixB2T)) then
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2T, &
+              rx%RvectorBlock(5), rd%RvectorBlock(6), &
+              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
+        else
+          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
+              rx%RvectorBlock(5), rd%RvectorBlock(6), &
+              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP,.true.)
+        end if
+      end if
+      
+      ! ---------------------------------------------------
+      ! Now a slightly more advanced task for which we use a separate
+      ! routine and some submatrices/vectors: The nonlinearity.
+
+      ! Initialise the operator structure for what we need.
+      roptcoperator%dupsamPrimal = rmatrixComponents%dupsam1
+      roptcoperator%dupsamDual = rmatrixComponents%dupsam2
+      
+      ! Timestep-weights
+      roptcoperator%dprimalAlpha = rmatrixComponents%Dalpha(1,1)
+      roptcoperator%ddualAlpha   = rmatrixComponents%Dalpha(2,2)
+
+      ! Stokes operator
+      roptcoperator%dnu = rmatrixComponents%dnu
+      roptcoperator%dprimalBeta = rmatrixComponents%Dtheta(1,1)
+      roptcoperator%ddualBeta   = rmatrixComponents%Dtheta(2,2)
+      
+      ! Nonlinearity
+      if (rmatrixComponents%Dgamma(1,1) .ne. 0.0_DP) then
+        roptcoperator%dprimalDelta = rmatrixComponents%Dgamma(1,1)
+        roptcoperator%ddualDelta   = rmatrixComponents%Dgamma(2,2)
+        roptcoperator%ddualNewtonTrans = rmatrixComponents%DnewtonT(2,2)
+        
+        ! Whether or not Newton is active has no influence to the
+        ! defect, so the following lines are commented out.
+        if (rmatrixComponents%Dnewton(1,1) .ne. 0.0_DP) then
+          roptcoperator%dprimalNewton    = 1.0_DP
+          roptcoperator%ddualRDeltaTrans = 1.0_DP
+          roptcoperator%ddualRNewton     = -1.0_DP
+        end if
+        
+      end if
+      
+      ! Coupling matrices
+      !if (rparams%bdualcoupledtoprimal) then
+        roptcoperator%ddualRAlpha = rmatrixComponents%Dalpha(2,1)
+      !end if
+
+      !if (rparams%bcontrolactive) then
+        roptcoperator%dcontrolWeight = -rmatrixComponents%Dalpha(1,2)*rmatrixComponents%dalphaC
+        roptcoperator%dcontrolMultiplier = -1.0_DP/rmatrixComponents%dalphaC
+      !end if
+      
+      if (rmatrixComponents%ccontrolConstraints .ne. 0) then
+        roptcoperator%ccontrolProjection = rmatrixComponents%ccontrolConstraints
+        roptcoperator%dmin1 = rmatrixComponents%dumin1
+        roptcoperator%dmax1 = rmatrixComponents%dumax1
+        roptcoperator%dmin2 = rmatrixComponents%dumin2
+        roptcoperator%dmax2 = rmatrixComponents%dumax2
+      end if
+      
+      select case (rmatrixComponents%iprimalSol)
+      case (1)
+        p_rprimalSol => rvector1
+      case (2)
+        p_rprimalSol => rvector2
+      case (3)
+        p_rprimalSol => rvector3
+      end select
+      
+      select case (rmatrixComponents%idualSol)
+      case (1)
+        p_rdualSol => rvector1
+      case (2)
+        p_rdualSol => rvector2
+      case (3)
+        p_rdualSol => rvector3
+      end select
+      
+      ! Calculate the velocity-dependent part of the system matrix.
+      call conv_strdiffOptC2dgetDefect (rmatrixComponents%p_rmatrixMass,&
+          roptcoperator,p_rprimalSol,p_rdualSol,dcx,rx,rd)
+    
+    end if
     
 !    ! --------------------------------------------------------------------------
 !    ! 
