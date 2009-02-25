@@ -35,13 +35,10 @@
 !#     -> Initializes the global problem structure based on the
 !#        parameter settings given by the parameter list
 !#
-!# 3.) mhd_initSourceTerm
-!#     -> Initializes the source term for the Euler equations
-!#
-!# 4.) mhd_outputSolution
+!# 3.) mhd_outputSolution
 !#     -> Outputs the solution vector to file in UCD format
 !#
-!# 5.) mhd_solveTransientPrimal
+!# 4.) mhd_solveTransientPrimal
 !#     -> Solves the primal formulation of the time-dependent 
 !#        simplified MHD equations
 !# </purpose>
@@ -67,12 +64,14 @@ module mhd_application
   use linearsystemblock
   use linearsystemscalar
   use mhd_basic
+  use mhd_callback
   use paramlist
   use problem
-  use solver
+  use solveraux
   use statistics
   use storage
   use timestep
+  use timestepaux
   use ucd
 
   implicit none
@@ -243,10 +242,9 @@ contains
       call mhd_outputSolution(rparlist, 'MHDsimple', rproblem%p_rproblemLevelMax,&
                               rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
       
-      
     case DEFAULT
       call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'euler')
+                       OU_CLASS_ERROR,OU_MODE_STD,'mhd_simple')
       call sys_halt()
     end select
 
@@ -258,8 +256,10 @@ contains
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
     
-    ! Release solvers
-    call solver_releaseTimestep(rtimestepEuler)
+    ! Release time-stepping
+    call tstep_releaseTimestep(rtimestepEuler)
+
+    ! Release solver
     call solver_releaseSolver(rsolverEuler)
     
     ! Release boundary conditions
@@ -279,8 +279,10 @@ contains
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescrTransport%rtimerPrepostProcess, STAT_TIMERSHORT)
     
-    ! Release solvers
-    call solver_releaseTimestep(rtimestepTransport)
+    ! Release time-stepping
+    call tstep_releaseTimestep(rtimestepTransport)
+
+    ! Release solver
     call solver_releaseSolver(rsolverTransport)
     
     ! Release application descriptor
@@ -391,7 +393,7 @@ contains
     rproblemDescriptor%nafcstab      = 2   ! for inviscid and convective stabilization
     rproblemDescriptor%nlmin         = nlmin
     rproblemDescriptor%nlmax         = nlmax
-    rproblemDescriptor%nmatrixScalar = rproblemDescriptor%ndimension + 7
+    rproblemDescriptor%nmatrixScalar = rproblemDescriptor%ndimension + 8
     rproblemDescriptor%nmatrixBlock  = 2
     rproblemDescriptor%nvectorScalar = 0
     rproblemDescriptor%nvectorBlock  = 1   ! external velocity field
@@ -429,68 +431,6 @@ contains
     end do
 
   end subroutine mhd_initProblem
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine mhd_initSourceTerm(rappDescriptor, rsolutionTransport, dtime, rvectorSource)
-
-!<description>
-    ! This subroutine initializes the source term for the compressible
-    ! Euler model using a thin-shell analysis for the Lorentz force
-!</description>
-
-!<input>
-    ! application descriptor for the Euler model
-    type(t_euler), intent(IN) :: rappDescriptor
-
-    ! solution of the scalar transport model
-    type(t_vectorBlock), intent(IN), target :: rsolutionTransport
-
-    ! simulation time
-    real(DP), intent(IN) :: dtime
-!</input>
-
-!<inputoutput>
-    ! source term for the Euler model
-    type(t_vectorBlock), intent(INOUT) :: rvectorSource
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_collection) :: rcollection
-    type(t_linearForm) :: rform
-
-    
-    ! What system format are we?
-    select case(rappDescriptor%isystemFormat)
-
-    case(SYSTEM_INTERLEAVEFORMAT)
-
-    case(SYSTEM_BLOCKFORMAT)
-
-      ! Fill the first component with zero
-      call lsyssc_clearVector(rvectorSource%RvectorBlock(1))
-
-      ! Create a collection and attach the solution of the scalar
-      ! transport model to the first quick access block vector
-      call collct_init(rcollection)
-      rcollection%DquickAccess(1) = dtime
-      rcollection%p_rvectorQuickAccess1 = rsolutionTransport
-
-      ! Set up the corresponding linear form
-      rform%itermCount      = 1
-      rform%Idescriptors(1) = DER_FUNC
-
-      ! Build the discretized source term for the x-momentum equation
-      call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
-                                  rform, .true., rvector%RvectorBlock(1),&
-                                  codire_coeffVectorAnalytic, rcollection)
-
-    end select
-
-  end subroutine mhd_initSourceTerm
 
   !*****************************************************************************
 
@@ -768,8 +708,8 @@ contains
     type(t_solver), intent(INOUT), target :: rsolverTransport
 
     ! primal solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolutionEuler
-    type(t_vectorBlock), intent(INOUT) :: rsolutionTransport
+    type(t_vectorBlock), intent(INOUT), target :: rsolutionEuler
+    type(t_vectorBlock), intent(INOUT), target :: rsolutionTransport
 
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollectionEuler
@@ -779,9 +719,6 @@ contains
 
     ! Pointer to the current multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
-
-    ! Vector for the source term
-    type(t_vectorBlock) :: rvectorSource
 
     ! section names
     character(LEN=SYS_STRLEN) :: soutputName
@@ -816,14 +753,11 @@ contains
                                      rsolutionEuler, 0.0_DP, rproblem%rboundary,&
                                      euler_calcBoundaryvalues3d)
     end select
-
-    ! Initialize the source term
-    call lsysbl_createVectorBlock(rsolutionEuler, rvectorSource)
-
-!!$    ! Initialize timer for intermediate UCD exporter
-!!$    dtimeUCD = rtimestepEuler%dinitialTime
-!!$    call parlst_getvalue_string(rparlist, ssectionNameEuler, 'output', soutputName)
-!!$    call parlst_getvalue_double(rparlist, trim(soutputName), 'dstepUCD', dstepUCD, 0.0_DP)
+    
+    ! Initialize timer for intermediate UCD exporter
+    dtimeUCD = rtimestepEuler%dinitialTime
+    call parlst_getvalue_string(rparlist, 'MHDsimple', 'output', soutputName)
+    call parlst_getvalue_double(rparlist, trim(soutputName), 'dstepUCD', dstepUCD, 0.0_DP)
 
     ! Attach the boundary condition to the solver structure
     call solver_setBoundaryCondition(rsolverEuler, rbdrCondEuler, .true.)
@@ -859,44 +793,107 @@ contains
     
     timeloop: do
       
-      !-------------------------------------------------------------------------
-      ! Compute 'half' time-step for the compressible Euler model
-      !-------------------------------------------------------------------------
+      ! Check for user interaction
+      if (signal_SIGINT(-1) > 0 )&
+          call mhd_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
+                                  rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
 
-!      call mhd_initSourceTerm
+      !-------------------------------------------------------------------------
+      ! Compute Euler model for full time step
+      !-------------------------------------------------------------------------
 
       ! Start time measurement for solution procedure
       call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
-      
+
+      ! Attach solution from scalar model to collection
+      rcollectionEuler%p_rvectorQuickAccess1 => rsolutionTransport
+
       ! What time-stepping scheme should be used?
       select case(rtimestepEuler%ctimestepType)
         
-      case (SV_RK_SCHEME)
+      case (TSTEP_RK_SCHEME)
         
         ! Adopt explicit Runge-Kutta scheme
-        call tstep_performRKStep(p_rproblemLevel, rtimestepEuler,&
-                                 rsolverEuler, rsolutionEuler, euler_calcRHS,&
-                                 euler_setBoundary, rcollectionEuler)
+        call tstep_performRKStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
+                                 rsolutionEuler, mhd_nlsolverCallback, rcollectionEuler)
         
-      case (SV_THETA_SCHEME)
+      case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler,&
-                                    rsolverEuler, rsolutionEuler, euler_calcResidual,&
-                                    euler_calcJacobian, euler_applyJacobian,&
-                                    euler_setBoundary, rcollectionEuler)
+        call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
+                                    rsolutionEuler, mhd_nlsolverCallback, rcollectionEuler)
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransient')
+                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
         call sys_halt()
       end select
-      
+
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescrEuler%rtimerSolution)
+
       
+      !-------------------------------------------------------------------------
+      ! Compute scalar transport model for full time step
+      !-------------------------------------------------------------------------
+      
+      ! Start time measurement for solution procedure
+      call stat_startTimer(rappDescrTransport%rtimerSolution, STAT_TIMERSHORT)
+      
+      ! Set velocity field for scalar model problem
+      call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)      
+
+      ! What time-stepping scheme should be used?
+      select case(rtimestepTransport%ctimestepType)
+        
+      case (TSTEP_RK_SCHEME)
+        
+        ! Adopt explicit Runge-Kutta scheme
+        call tstep_performRKStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
+                                 rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+        
+      case (TSTEP_THETA_SCHEME)
+        
+        ! Adopt two-level theta-scheme
+        call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
+                                    rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+          
+      case DEFAULT
+        call output_line('Unsupported time-stepping algorithm!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
+        call sys_halt()
+      end select
+
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(rappDescrTransport%rtimerSolution)
+
+
       ! Reached final time, then exit the infinite time loop?
-      if (rtimestepEuler%dTime .ge. rtimestepEuler%dfinalTime) exit timeloop
+      if ((rtimestepEuler%dTime     .ge. rtimestepEuler%dfinalTime) .or.&
+          (rtimestepTransport%dTime .ge. rtimestepTransport%dfinalTime)) exit timeloop
+
+
+      !-------------------------------------------------------------------------
+      ! Post-process intermediate solution
+      !-------------------------------------------------------------------------
+      
+      if ((dstepUCD .gt. 0.0_DP) .and. (rtimestepEuler%dTime .ge. dtimeUCD .or.&
+                                        rtimestepTransport%dTime .ge. dtimeUCD)) then
+        
+        ! Set time for next intermediate solution export
+        dtimeUCD = dtimeUCD + dstepUCD
+        
+        ! Start time measurement for post-processing
+        call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
+        
+        ! Export the intermediate solution
+        call mhd_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
+                                rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
+        
+        ! Stop time measurement for post-processing
+        call stat_stopTimer(rappDescrEuler%rtimerPrepostProcess)
+        
+      end if
 
     end do timeloop
 
