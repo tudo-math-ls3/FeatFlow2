@@ -148,6 +148,7 @@ module solveraux
   public :: solver_getStatus
   public :: solver_getNextSolver
   public :: solver_getNextSolverByType
+  public :: solver_getNextSolverByTypes
   public :: solver_getMinimumMultigridlevel
   public :: solver_getMaximumMultigridlevel
   public :: solver_setMinimumMultigridlevel
@@ -208,96 +209,9 @@ module solveraux
 
   ! Linear multigrid solver type
   integer, parameter, public :: SV_LINEARMG     = 4
-
-  ! Two-level theta-scheme
-  integer, parameter, public :: SV_THETA_SCHEME = 5
-
-  ! Two-level Runge-Kutta scheme
-  integer, parameter, public :: SV_RK_SCHEME    = 6
   
   ! Full multigrid solver for steady state computations
-  integer, parameter, public :: SV_FMG          = 7
-!</constantblock>
-
-
-!<constantblock description="Global nonlinear solution algorithms">
-
-  ! Fixed-point iteration
-  integer, parameter, public :: NLSOL_SOLVER_FIXEDPOINT    = 101
-!</constantblock>
-
-
-!<constantblock description="Global nonlinear preconditioners">
-  
-  ! Preconditioning by segregated/block-diagonal approach
-  integer, parameter, public :: NLSOL_PRECOND_BLOCKD        = 1
-
-  ! Preconditioning by defect-correction approach
-  integer, parameter, public :: NLSOL_PRECOND_DEFCOR        = 2
-
-  ! Preconditioning by (inexact) Newton approach
-  integer, parameter, public :: NLSOL_PRECOND_NEWTON        = 3
-  integer, parameter, public :: NLSOL_PRECOND_NEWTON_FAILED = -3
-!</constantblock>
-
-
-!<constantblock description="Global nonlinear smoothers">
-
-  ! Fixed-point iteration
-  integer, parameter, public :: NLSOL_SMOOTHER_FIXEDPOINT   = NLSOL_SOLVER_FIXEDPOINT
-!</constantblock>
-
-
-!<constantblock description="Global linear solution algorithms">
-
-  ! no solver
-  integer, parameter, public :: LINSOL_SOLVER_NONE     = 0
-
-  ! (block-)Jacobi iteration $x_1 = x_0 + \omega D^{-1} (b-Ax_0)$
-  integer, parameter, public :: LINSOL_SOLVER_JACOBI   = 2
-  
-  ! (block-)SOR/GS iteration $x_1 = x_0 + (L+\omega D)^{-1}(b-Ax_0)$
-  integer, parameter, public :: LINSOL_SOLVER_SOR      = 4
-  
-  ! (block-)SSOR iteration
-  integer, parameter, public :: LINSOL_SOLVER_SSOR     = 5
-
-  ! BiCGStab iteration (preconditioned) 
-  integer, parameter, public :: LINSOL_SOLVER_BICGSTAB = 7
-  
-  ! GMRES iteration (preconditioned) 
-  integer, parameter, public :: LINSOL_SOLVER_GMRES    = 8
-  
-  ! Identifier for Umfpack4
-  integer, parameter, public :: LINSOL_SOLVER_UMFPACK4 = 11
-
-  ! MILU(s) solver (scalar system)
-  integer, parameter, public :: LINSOL_SOLVER_ILU      = 50
-!</constantblock>
-
-
-!<constantblock description="Global linear smoothers">
-
-  ! no smoother
-  integer, parameter, public :: LINSOL_SMOOTHER_NONE     = LINSOL_SOLVER_NONE
-
-  ! (block-)Jacobi smoother
-  integer, parameter, public :: LINSOL_SMOOTHER_JACOBI   = LINSOL_SOLVER_JACOBI
-
-  ! (block-)SOR/GS smoother
-  integer, parameter, public :: LINSOL_SMOOTHER_SOR      = LINSOL_SOLVER_SOR
-
-  ! (bock-)BiCGSTAB smoother
-  integer, parameter, public :: LINSOL_SMOOTHER_BiCGSTAB = LINSOL_SOLVER_BiCGSTAB
-
-  ! (block-)GMRES smoother
-  integer, parameter, public :: LINSOL_SMOOTHER_GMRES    = LINSOL_SOLVER_GMRES
-
-  ! (block-)SSOR smoother
-  integer, parameter, public :: LINSOL_SMOOTHER_SSOR     = LINSOL_SOLVER_SSOR
-  
-  ! ILU(0) smoother (scalar system)
-  integer, parameter, public :: LINSOL_SMOOTHER_ILU      = LINSOL_SOLVER_ILU
+  integer, parameter, public :: SV_FMG          = 5
 !</constantblock>
 
 
@@ -360,6 +274,103 @@ module solveraux
 
   ! Empty solver structure
   integer(I32), parameter :: SV_SSPEC_EMPTY                = SV_SSPEC_NEEDSUPDATE
+!</constantblock>
+
+
+!<constantblock description="Global nonlinear solution algorithms">
+
+  ! Fixed-point iteration
+  integer, parameter, public :: NLSOL_SOLVER_FIXEDPOINT    = 101
+!</constantblock>
+
+
+!<constantblock description="Global nonlinear preconditioners">
+  
+  ! Preconditioning by segregated/block-diagonal approach
+  integer, parameter, public :: NLSOL_PRECOND_BLOCKD        = 1
+
+  ! Preconditioning by defect-correction approach
+  integer, parameter, public :: NLSOL_PRECOND_DEFCOR        = 2
+
+  ! Preconditioning by (inexact) Newton approach
+  integer, parameter, public :: NLSOL_PRECOND_NEWTON        = 3
+  integer, parameter, public :: NLSOL_PRECOND_NEWTON_FAILED = -3
+!</constantblock>
+
+
+!<constantblock description="Global nonlinear smoothers">
+
+  ! Fixed-point iteration
+  integer, parameter, public :: NLSOL_SMOOTHER_FIXEDPOINT   = NLSOL_SOLVER_FIXEDPOINT
+!</constantblock>
+
+
+!<constantblock description="Flags for the nonlinear solver operation specification bitfield">
+
+  ! Nonlinear solver requires calculation of preconditioner
+  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCPRECOND    = 2**0
+
+  ! Nonlinear solver requires calculation of residual vector
+  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCRESIDUAL   = 2**1
+
+  ! Nonlinear solver requires calculation of Jacobian operator
+  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCJACOBIAN   = 2**2
+
+  ! Nonlinear solver requires application of Jacobian operator
+  integer(I32), parameter, public :: NLSOL_OPSPEC_APPLYJACOBIAN  = 2**3
+!</constantblock>
+
+
+!<constantblock description="Global linear solution algorithms">
+
+  ! no solver
+  integer, parameter, public :: LINSOL_SOLVER_NONE     = 0
+
+  ! (block-)Jacobi iteration $x_1 = x_0 + \omega D^{-1} (b-Ax_0)$
+  integer, parameter, public :: LINSOL_SOLVER_JACOBI   = 2
+  
+  ! (block-)SOR/GS iteration $x_1 = x_0 + (L+\omega D)^{-1}(b-Ax_0)$
+  integer, parameter, public :: LINSOL_SOLVER_SOR      = 4
+  
+  ! (block-)SSOR iteration
+  integer, parameter, public :: LINSOL_SOLVER_SSOR     = 5
+
+  ! BiCGStab iteration (preconditioned) 
+  integer, parameter, public :: LINSOL_SOLVER_BICGSTAB = 7
+  
+  ! GMRES iteration (preconditioned) 
+  integer, parameter, public :: LINSOL_SOLVER_GMRES    = 8
+  
+  ! Identifier for Umfpack4
+  integer, parameter, public :: LINSOL_SOLVER_UMFPACK4 = 11
+
+  ! MILU(s) solver (scalar system)
+  integer, parameter, public :: LINSOL_SOLVER_ILU      = 50
+!</constantblock>
+
+
+!<constantblock description="Global linear smoothers">
+
+  ! no smoother
+  integer, parameter, public :: LINSOL_SMOOTHER_NONE     = LINSOL_SOLVER_NONE
+
+  ! (block-)Jacobi smoother
+  integer, parameter, public :: LINSOL_SMOOTHER_JACOBI   = LINSOL_SOLVER_JACOBI
+
+  ! (block-)SOR/GS smoother
+  integer, parameter, public :: LINSOL_SMOOTHER_SOR      = LINSOL_SOLVER_SOR
+
+  ! (bock-)BiCGSTAB smoother
+  integer, parameter, public :: LINSOL_SMOOTHER_BiCGSTAB = LINSOL_SOLVER_BiCGSTAB
+
+  ! (block-)GMRES smoother
+  integer, parameter, public :: LINSOL_SMOOTHER_GMRES    = LINSOL_SOLVER_GMRES
+
+  ! (block-)SSOR smoother
+  integer, parameter, public :: LINSOL_SMOOTHER_SSOR     = LINSOL_SOLVER_SSOR
+  
+  ! ILU(0) smoother (scalar system)
+  integer, parameter, public :: LINSOL_SMOOTHER_ILU      = LINSOL_SOLVER_ILU
 !</constantblock>
 
 !</constants>
@@ -3367,6 +3378,42 @@ contains
   
 !<function>
 
+  function solver_getNextSolverByTypes(rsolver, CsolverType) result(p_rsubsolver)
+
+!<description>
+    ! This functions sets the pointer to the next solver structure in the
+    ! solver hierarchy which satisfies the specified type isolver. If
+    ! there is no subsolver which satisfies the prescribed type, then
+    ! NULL ist returned.
+!</description>
+
+!<input>
+    ! Solver that is used as base solver
+    type(t_solver), intent(IN), target :: rsolver
+
+    ! Array of types of solver to return
+    integer, dimension(:), intent(IN) :: CsolverType
+!</input>
+
+!<result>
+    ! Pointer to the subsolver
+    ! If no subseolver exists, then NULL is returned
+    type(t_solver), pointer :: p_rsubsolver
+!</result>
+!</function>
+
+    p_rsubsolver => rsolver
+    do while (associated(p_rsubsolver))
+      if (any(p_rsubsolver%csolverType .eq. CsolverType)) exit
+      p_rsubsolver => solver_getNextSolver(p_rsubsolver)
+    end do
+
+  end function solver_getNextSolverByTypes
+
+  ! ***************************************************************************
+  
+!<function>
+
   function solver_getNextSolverByType(rsolver, csolverType) result(p_rsubsolver)
 
 !<description>
@@ -3380,7 +3427,7 @@ contains
     ! Solver that is used as base solver
     type(t_solver), intent(IN), target :: rsolver
 
-    ! Type if solver to return
+    ! Type of solver to return
     integer, intent(IN) :: csolverType
 !</input>
 
@@ -3398,7 +3445,7 @@ contains
     end do
 
   end function solver_getNextSolverByType
-
+  
   ! ***************************************************************************
   
 !<function>
