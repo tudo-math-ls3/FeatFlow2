@@ -265,7 +265,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,i1,k,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB, ifunc
+  integer :: i,i1,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB, ifunc
   logical :: bIdenticalTrialAndTest, bIdenticalFuncAndTrial, bIdenticalFuncAndTest
   integer :: IEL, IELmax, IELset, IDOFE, JDOFE
   integer :: JCOL0,JCOL,idertype
