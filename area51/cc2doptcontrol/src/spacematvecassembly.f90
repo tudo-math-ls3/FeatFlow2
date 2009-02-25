@@ -3945,8 +3945,7 @@ contains
         roptcoperator%ddualDelta   = rmatrixComponents%Dgamma(2,2)
         roptcoperator%ddualNewtonTrans = rmatrixComponents%DnewtonT(2,2)
         
-        ! Whether or not Newton is active has no influence to the
-        ! defect, so the following lines are commented out.
+        ! Newton implies additional operators.
         if (rmatrixComponents%Dnewton(1,1) .ne. 0.0_DP) then
           roptcoperator%dprimalNewton    = 1.0_DP
           roptcoperator%ddualRDeltaTrans = 1.0_DP
