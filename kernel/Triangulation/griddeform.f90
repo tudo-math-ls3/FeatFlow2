@@ -84,11 +84,13 @@ MODULE griddeform
 
 !<constants>
 
-  INTEGER(I32), PARAMETER :: GRIDDEF_CLASSICAL = 0
+  INTEGER(I32), PARAMETER :: GRIDDEF_CLASSICAL  = 0
 
   INTEGER(I32), PARAMETER :: GRIDDEF_MULTILEVEL = -1
   
-  INTEGER(I32), PARAMETER :: GRIDDEF_FIXED = 2
+  INTEGER(I32), PARAMETER :: GRIDDEF_FIXED      = 2
+  
+  INTEGER(I32), PARAMETER :: GRIDDEF_USER       = 3
 
 !</constants>
 
@@ -246,14 +248,15 @@ MODULE griddeform
     ! tells whether the structure needs to be reinitialised
     logical             :: breinit = .false.
 
-  END TYPE t_griddefWork
+  end type t_griddefWork
   !</typeblock>
 !</types>    
 
-CONTAINS
+contains
 
 !<subroutine>
-  SUBROUTINE griddef_deformationInit(rgriddefInfo,rtriangulation,NLMAX,rboundary)
+  subroutine griddef_deformationInit(rgriddefInfo,rtriangulation,NLMAX,&
+                    rboundary,iadaptSteps)
   
 !<description>
   ! This subroutine initialises the rgriddefinfo structure which describes the
@@ -264,42 +267,44 @@ CONTAINS
 
 !<inputoutput>  
   ! We will fill this structure with useful values
-  TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+  type(t_griddefInfo), intent(inout) :: rgriddefInfo
   
   ! The underlying triangulation
-  TYPE(t_triangulation), INTENT(INOUT), TARGET :: rtriangulation
+  type(t_triangulation), intent(inout), target :: rtriangulation
   
   ! the boundary information
-  TYPE(t_boundary), INTENT(INOUT), TARGET :: rboundary
+  type(t_boundary), intent(inout), target :: rboundary
+  
+  integer, optional :: iadaptSteps
   
 !</inputoutput>
 
 !<input>
-  INTEGER, INTENT(IN) :: NLMAX 
+  integer, intent(in) :: NLMAX 
 !</input>  
 !</subroutine>
   
   ! Local variables
-  INTEGER :: iaux
+  integer :: iaux
   ! pointers to the arrays, we need to fill 
   ! with useful default parameters
-  INTEGER, DIMENSION(:), POINTER :: p_Dql2
-  INTEGER, DIMENSION(:), POINTER :: p_Dqlinfty  
-  INTEGER, DIMENSION(:), POINTER :: p_nadapSteps  
-  INTEGER, DIMENSION(:), POINTER :: p_calcAdapSteps    
-  INTEGER, DIMENSION(:), POINTER :: p_nadapStepsReally      
-  INTEGER, DIMENSION(:), POINTER :: p_nmaxCorrSteps        
-  INTEGER, DIMENSION(:), POINTER :: p_ncorrSteps          
-  INTEGER, DIMENSION(:), POINTER :: p_ilevelODE          
-  INTEGER, DIMENSION(:), POINTER :: p_ilevelODECorr         
-  INTEGER, DIMENSION(:), POINTER :: p_npreSmoothSteps          
-  INTEGER, DIMENSION(:), POINTER :: p_npostSmoothSteps          
-  INTEGER, DIMENSION(:), POINTER :: p_nintSmoothSteps          
-  INTEGER, DIMENSION(:), POINTER :: p_nmonSmoothsteps          
-  INTEGER, DIMENSION(:), POINTER :: p_cpreSmoothMthd          
-  INTEGER, DIMENSION(:), POINTER :: p_cpostSmoothMthd          
-  INTEGER, DIMENSION(:), POINTER :: p_cintSmoothMthd            
-  REAL(DP), DIMENSION(:), POINTER :: p_DblendPar            
+  integer, dimension(:), pointer :: p_Dql2
+  integer, dimension(:), pointer :: p_Dqlinfty  
+  integer, dimension(:), pointer :: p_nadapSteps  
+  integer, dimension(:), pointer :: p_calcAdapSteps    
+  integer, dimension(:), pointer :: p_nadapStepsReally      
+  integer, dimension(:), pointer :: p_nmaxCorrSteps        
+  integer, dimension(:), pointer :: p_ncorrSteps          
+  integer, dimension(:), pointer :: p_ilevelODE          
+  integer, dimension(:), pointer :: p_ilevelODECorr         
+  integer, dimension(:), pointer :: p_npreSmoothSteps          
+  integer, dimension(:), pointer :: p_npostSmoothSteps          
+  integer, dimension(:), pointer :: p_nintSmoothSteps          
+  integer, dimension(:), pointer :: p_nmonSmoothsteps          
+  integer, dimension(:), pointer :: p_cpreSmoothMthd          
+  integer, dimension(:), pointer :: p_cpostSmoothMthd          
+  integer, dimension(:), pointer :: p_cintSmoothMthd            
+  real(dp), dimension(:), pointer :: p_DblendPar            
   
   rgriddefInfo%p_rtriangulation => rtriangulation 
   
@@ -470,11 +475,20 @@ CONTAINS
         ! initialize the blending parameter
         rgriddefInfo%dblendPar = 1.0_dp
         
-        ! initialize the number of adaptation steps
-        rgriddefInfo%nadaptionSteps = 1
+        if(present(iadaptSteps))then
+          ! initialize the number of adaptation steps
+          rgriddefInfo%nadaptionSteps = iadaptSteps
+          
+          ! set Adaptive control
+          p_calcAdapSteps(NLMAX) = GRIDDEF_USER
+        else
+          ! initialize the number of adaptation steps
+          rgriddefInfo%nadaptionSteps = 1
+          
+          ! set Adaptive control
+          p_calcAdapSteps(NLMAX) = GRIDDEF_FIXED
         
-        ! set Adaptive control
-        p_calcAdapSteps(NLMAX) = GRIDDEF_FIXED
+        end if
         
      CASE(GRIDDEF_MULTILEVEL)
      
@@ -937,7 +951,7 @@ CONTAINS
 
   !<inoutput>
     ! handle of vector with elementwise error contributions
-    INTEGER(I32), INTENT(INOUT):: h_Dcontrib
+    integer(i32), intent(INOUT):: h_Dcontrib
   !</inoutput>
   
     ! A callback routine for the monitor function
@@ -948,13 +962,13 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER(I32):: nmaxCorrSteps, NLMAX,ilevelODE,idef
+  integer(I32):: nmaxCorrSteps, NLMAX,ilevelODE,idef
   ! A scalar matrix and vector. The vector accepts the RHS of the problem
   ! in scalar form.
   
-  INTEGER, DIMENSION(:), POINTER :: p_nadapStepsReally
-  REAL(dp), DIMENSION(:), POINTER :: p_DblendPar    
-  INTEGER, DIMENSION(:), POINTER :: p_ilevelODE  
+  integer, dimension(:), pointer :: p_nadapStepsReally
+  real(dp), dimension(:), pointer :: p_DblendPar    
+  integer, dimension(:), pointer :: p_ilevelODE  
   
   
   
@@ -962,7 +976,7 @@ CONTAINS
   NLMAX = rgriddefInfo%iminDefLevel
   
   ! get some needed pointers
-  CALL storage_getbase_int(rgriddefInfo%h_nadapStepsReally,p_nadapStepsReally)
+  call storage_getbase_int(rgriddefInfo%h_nadapStepsReally,p_nadapStepsReally)
   
   CALL storage_getbase_int(rgriddefInfo%h_ilevelODE,p_ilevelODE)            
 
@@ -989,7 +1003,7 @@ CONTAINS
 
   !
 !  IF (p_nadapStepsReally(NLMAX) .gt. 0) THEN
-    CALL storage_getbase_double(rgriddefInfo%h_DblendPar,p_DblendPar)
+  call storage_getbase_double(rgriddefInfo%h_DblendPar,p_DblendPar)
 !   ilevelODE = p_ilevelODE(NLMAX)
 !  ENDIF
 
@@ -997,7 +1011,12 @@ CONTAINS
     ! loop over adaption cycles
     do idef = 1,rgriddefInfo%nadaptionSteps
 
-
+    
+    call output_lbrk ()
+    print *,"Adaptation Step: ",idef
+    call output_line ('-------------------')
+    call output_lbrk ()
+    
 !    ! final deformation step
 !    if (idef .eq. rgriddefInfo%nadapStepsReally(ilevel)) then
 !      benforceVerts = .TRUE.
@@ -1056,7 +1075,7 @@ CONTAINS
 !    endif
     end do ! end do  
 
-  END SUBROUTINE
+  end subroutine
  
  ! **************************************************************************************** 
  
@@ -1084,7 +1103,7 @@ CONTAINS
     
     real(dp), dimension(:), pointer :: p_DblendPar
     
-    CALL storage_getbase_int(rgriddefInfo%h_calcAdapSteps,p_calcAdapSteps) 
+    call storage_getbase_int(rgriddefInfo%h_calcAdapSteps,p_calcAdapSteps) 
     
     ! we prescribe a fixed number of adaptation steps
     if(p_calcAdapSteps(rgriddefInfo%iminDefLevel) .eq. GRIDDEF_FIXED)then
@@ -1092,13 +1111,17 @@ CONTAINS
       rgriddefInfo%nadaptionSteps = 20
     
     end if
+    if(p_calcAdapSteps(rgriddefInfo%iminDefLevel) .eq. GRIDDEF_USER)then
+    
+    end if
+    
     
     ! now allocate memory for the parameters
-    CALL storage_new('griddef_computeAdapSteps','rgriddefInfo%h_DblendPar',&
+    call storage_new('griddef_computeAdapSteps','rgriddefInfo%h_DblendPar',&
           rgriddefInfo%nadaptionSteps,ST_DOUBLE,rgriddefInfo%h_DblendPar,&
           ST_NEWBLOCK_ZERO)
           
-    CALL storage_getbase_double(rgriddefInfo%h_DblendPar,p_DblendPar)   
+    call storage_getbase_double(rgriddefInfo%h_DblendPar,p_DblendPar)   
     
     ! compute the blending parameter
     do idef=1,rgriddefInfo%nadaptionSteps-1
@@ -1110,7 +1133,7 @@ CONTAINS
     ! set the parameter for the final step
     p_DblendPar(rgriddefInfo%nadaptionSteps) = 1.0_dp
                                       
-  END SUBROUTINE ! griddef_computeAdapSteps
+  end subroutine ! griddef_computeAdapSteps
   
 ! **************************************************************************************** 
  
@@ -2721,6 +2744,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
 !</description>
 
 !<input>
+  ! Global vertex index
   INTEGER(I32):: ive
 !</input>
 
@@ -2844,7 +2868,9 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   end do
 
   iboundary = 0
+  
   ! get parameter value
+  ! get the index of ive in the p_IverticesAtBoundary array
   icp1 = p_IboundaryCpIdx(p_InodalProperty(ive))
   icp2 = p_IboundaryCpIdx(p_InodalProperty(ive)+1)-1
   do ibd=icp1,icp2
@@ -2854,7 +2880,10 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     end if        
   end do
   
+  ! get the number of boundary segments in
+  ! the boundary component 
   iend = boundary_igetNsegments(rgriddefInfo%p_rboundary,p_InodalProperty(ive))
+  
   ! create the boundary regions
   do iregions=1,iend
   ! Idea: create the regions, check in which region the parameter is
@@ -2862,9 +2891,12 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
                              iregions,rregion(iregions))
   end do
 
-  ! convert to a length parameterisation
-  ! assign the parameter value 
+  ! with this information we can assign the
+  ! parameter value
   dalpha = p_DvertexParameterValue(iboundary)
+  
+  ! this will be the start alpha
+  ! we also have a copy of the 01 parameterisation
   dalpha_start = dalpha
   
   ! convert this parameter in to length parameterisation
@@ -2875,7 +2907,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   ! we want to stay in this boundary region
   do iregions=1,iend
   ! Idea: create the regions, check in which region the parameter is
-    if(boundary_isInRegion (rregion(iregions),p_InodalProperty(ive),dalpha))then
+    if(boundary_isInRegion (rregion(iregions),p_InodalProperty(ive),dalpha_start))then
       exit
     end if
   end do   
@@ -2924,7 +2956,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   ! perform the actual Euler step
   ! get the normal vector
   call boundary_getNormalVec2D(rgriddefInfo%p_rboundary,p_InodalProperty(ive),&
-                             dalpha,dnx, dny, BDR_NORMAL_MEAN, BDR_PAR_01)
+                             dalpha,dnx, dny, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
   ! get the tangential vector
   dtmp = dnx
   dnx  = -dny
@@ -2940,11 +2972,13 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   dtime = dtime + dstepSize
 
   ! While we are still in the [0,1] interval(with a small tolerance)
-  IF (dtime .le. 1.0_DP - deps) THEN
+  if (dtime .le. 1.0_DP - deps) then
 
+    !--------------------IHATETHISTYPEOFLOOP----------------------
      ! for the other time steps, we have really to search
-    calculationloopEE_bdy : DO
+    calculationloopEE_bdy : do
     
+    ! the alpha at the beginning of the loop in lngthParam
     dalpha_old = dalpha
     
     ! zero the Dvalues
@@ -2952,6 +2986,12 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     
     bsearchFailed = .true.
     icount = 0
+
+    ! we need a 01 parameterisation for this search
+    dalpha_01 = boundary_convertParameter(rgriddefInfo%p_rboundary, &
+                                     p_InodalProperty(ive), dalpha,&
+                                     BDR_PAR_LENGTH,BDR_PAR_01)
+    
     ! loop over the edges
     do iedge=1,iupper
       ivertex = p_IedgesAtBoundary(iedge)
@@ -2999,7 +3039,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
       ! 
       ! Find the boundary edge that corresponds to
       ! the current parameter
-      if((dalpha .ge. dparam1) .and. (dalpha .le. dparam2))then
+      if((dalpha_01 .ge. dparam1) .and. (dalpha_01 .le. dparam2))then
         iinelement = p_IelementsAtEdge(1,p_IedgesAtBoundary(iedge))
         bsearchFailed = .false.
         
@@ -3007,6 +3047,8 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
       end if
 
     end do ! end do (for all boundary edges)
+
+ !----------------------------------We either found the edge or not---------------------------------------   
 
     ! time interval exhausted, calculation finished and exit
     IF (bsearchFailed) THEN
@@ -3023,8 +3065,8 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
       ! write
       p_DvertexCoords(1,ive) = dx
       p_DvertexCoords(2,ive) = dy     
-      EXIT calculationloopEE_bdy
-    END IF ! (dtime .ge. 1.0_DP - deps)
+      exit calculationloopEE_bdy
+    end if ! (dtime .ge. 1.0_DP - deps)
 
     ! evaluate phi now in element iinelement    
     ! convert the parameter value and evaluate
@@ -3074,9 +3116,14 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     dtime = dtime + dstepSize
     ivbd = 0
     
+    ! update the 01 param value
+    dalpha_01 = boundary_convertParameter(rgriddefInfo%p_rboundary, &
+                                     p_InodalProperty(ive), dalpha,&
+                                     BDR_PAR_LENGTH,BDR_PAR_01)
+    
     ! if the point is outside the domain, stop moving it
-    IF ((dalpha .lt. rregion(iregions)%dminParam) .or. & 
-        (dalpha .gt. rregion(iregions)%dmaxParam)) THEN
+    IF ((dalpha_01 .lt. rregion(iregions)%dminParam) .or. & 
+        (dalpha_01 .gt. rregion(iregions)%dmaxParam)) THEN
         
         ! convert and write
         dalpha_old = boundary_convertParameter(rgriddefInfo%p_rboundary, &
