@@ -14,7 +14,8 @@
   use collection
   use linearsystemblock
   use problem
-  use solver
+  use solveraux
+  use timestepaux
 
 !<input>
     ! time-stepping structure
@@ -54,7 +55,8 @@
   use collection
   use linearsystemblock
   use problem
-  use solver
+  use solveraux
+  use timestepaux
 
 !<input>
     ! time-stepping structure
@@ -100,7 +102,8 @@
   use collection
   use linearsystemblock
   use problem
-  use solver
+  use solveraux
+  use timestepaux
 
 !<input>
     ! time-stepping structure
@@ -142,7 +145,8 @@
   use collection
   use linearsystemblock
   use problem
-  use solver
+  use solveraux
+  use timestepaux
 
 !<input>
     ! time-stepping algorithm
