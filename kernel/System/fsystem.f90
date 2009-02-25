@@ -113,7 +113,10 @@ module fsystem
   integer, parameter :: DP = selected_real_kind(15,307)
 
   ! kind value for 80/128 bit float (quad precision)
-  integer, parameter :: QP = selected_real_kind(18,4931)
+  !integer, parameter :: QP = selected_real_kind(18,4931)
+  
+  ! Temporarily QP is equal to DP to avoid compiler problems
+  integer, parameter :: QP = DP
   
   ! Note: Depending on the platform and the compiler, QP is either an 80
   ! or an 128 bit float. The g95 and gfortran compilers use 80 floats
