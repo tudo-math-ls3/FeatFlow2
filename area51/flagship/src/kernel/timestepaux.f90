@@ -16,6 +16,16 @@ module timestepaux
 
 !<constants>
 
+!<constantblock description="Global time-stepping types">
+
+  ! Two-level theta-scheme
+  integer, parameter, public :: TSTEP_THETA_SCHEME = 1
+
+  ! Two-level Runge-Kutta scheme
+  integer, parameter, public :: TSTEP_RK_SCHEME    = 2
+!</constantblock>
+
+
 !<constantblock description="Adaptive time-stepping types">
 
   ! No adaptive time-stepping
@@ -29,6 +39,26 @@ module timestepaux
 
   ! Adaptive time-stepping by switched evolution relaxation
   integer, parameter, public :: TSTEP_SERADAPT  = 3
+!</constantblock>
+
+
+!<constantblock description="Global flags for information output">
+
+  ! Silent run, no output at all
+  integer, parameter, public :: TSTEP_IOLEVEL_SILENT  = 0
+
+  ! Output only errors
+  integer, parameter, public :: TSTEP_IOLEVEL_ERROR   = 1
+
+  ! Output only errors and warnings
+  integer, parameter, public :: TSTEP_IOLEVEL_WARNING = 2
+
+  ! Output errors, warnings and information
+  integer, parameter, public :: TSTEP_IOLEVEL_INFO    = 3
+
+  ! Output errors, warnings and verbose information
+  integer, parameter, public :: TSTEP_IOLEVEL_VERBOSE = 4
+
 !</constantblock>
 
 !</constants>
