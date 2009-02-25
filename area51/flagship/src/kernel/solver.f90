@@ -16,22 +16,6 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) solver_createTimestep = solver_createTimestepDirect /
-!#                             solver_createTimestepIndirect
-!#     -> Creates a new time-stepping from parameter list
-!#
-!# 2.) solver_releaseTimestep
-!#     -> Releases an existing time-stepping  object
-!#
-!# 3.) solver_removeTimestepTemporal
-!#     -> Removes temporal storage from time-stepping object
-!#
-!# 4.) solver_infoTimestep
-!#     -> Prints information about the time-stepping scheme
-!#
-!# 5.) solver_resetTimestep
-!#     -> Resets the time-stepping object to initial values
-!#
 !# ----------------------------------------------------------------------------
 !#
 !# 6.) solver_createSolver = solver_createSolverDirect /
@@ -141,10 +125,6 @@ module solver
   implicit none
 
   private
-  public :: t_timestep
-  public :: t_pidController
-  public :: t_autoController
-  public :: t_serController
   public :: t_solver
   public :: t_solverMultigrid
   public :: t_solverUMFPACK
@@ -156,11 +136,8 @@ module solver
   public :: t_solverDefcor
   public :: t_solverNewton
 
-  public :: solver_createTimestep
-  public :: solver_releaseTimestep
-  public :: solver_removeTimestepTemporal
-  public :: solver_resetTimestep
-  public :: solver_infoTimestep
+
+
   public :: solver_createSolver
   public :: solver_releaseSolver
   public :: solver_removeSolverTemporal
@@ -194,11 +171,6 @@ module solver
   ! *****************************************************************************
   ! *****************************************************************************
 
-  interface solver_createTimestep
-    module procedure solver_createTimestepDirect
-    module procedure solver_createTimestepIndirect
-  end interface
-
   interface solver_createSolver
     module procedure solver_createSolverDirect
     module procedure solver_createSolverIndirect
@@ -224,22 +196,6 @@ module solver
   ! *****************************************************************************
 
 !<constants>
-
-!<constantblock description="Adaptive time-stepping types">
-
-  ! No adaptive time-stepping
-  integer, parameter, public :: SV_TIMESTEP_NOADAPT   = 0
-
-  ! Adaptive time-stepping by PID controller
-  integer, parameter, public :: SV_TIMESTEP_PIDADAPT  = 1
-
-  ! Adaptive time-stepping by truncation error analysis
-  integer, parameter, public :: SV_TIMESTEP_AUTOADAPT = 2
-
-  ! Adaptive time-stepping by switched evolution relaxation
-  integer, parameter, public :: SV_TIMESTEP_SERADAPT  = 3
-!</constantblock>
-
 
 !<constantblock description="Global solver types">
 
@@ -440,237 +396,237 @@ module solver
   ! *****************************************************************************
   ! *****************************************************************************
 
-!<types>
-
-!<typeblock>
-
-  ! This data structure contains settings/parameters for time-stepping. Before
-  ! calling the time-stepping algorithm the basic settings need to be initialized.
-
-  type t_timestep
-    
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Name of time-stepping object
-    character(LEN=SYS_STRLEN) :: sName = ''
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Identifies the type of the time-stepping algorithm
-    integer :: ctimestepType = SV_UNDEFINED
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! This determines the output level of the time-stepping algorithm
-    integer :: ioutputLevel = SVSTD_IOLEVEL
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Norm in which relative changes of solution should be measured
-    integer :: isolNorm
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Initial simulation time
-    real(DP) :: dinitialTime
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Final simulation time
-    real(DP) :: dfinalTime
-
-    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Current time instant
-    real(DP) :: dTime
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Lower bound for the admissible time step
-    real(DP) :: dminStep
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Upper bound for the admissible time step
-    real(DP) :: dmaxStep
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Initial value for time step
-    real(DP) :: dinitialStep
-
-    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Current value for time step
-    real(DP) :: dStep
-
-    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Value for previous time step 
-    real(DP) :: dStep1
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Factor by which the current time step should be scaled
-    ! if the current time step failed; must be < 1.0
-    real(DP) :: dstepReductionFactor
-
-    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Total number of performed time steps
-    integer :: nSteps
-
-    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Total number of rejected time steps
-    integer :: nrejectedSteps
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Implicitness parameter for two-level theta-scheme
-    real(DP) :: theta
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Number of multi-steps for Runge-Kutta method
-    integer :: multisteps
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Algorithm for adaptive time step control
-    integer :: iadaptTimestep
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Number of time steps performed before adaptive time step control is used
-    integer :: npreadaptSteps
-
-    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Relative changes of the solution
-    real(DP) :: drelChange
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Relative stopping criterion. Stop time-stepping algorithm if
-    ! !! U^{N+1} - U^{N} !! <= EPSSTAG * dStep
-    ! =0: ignore, do not stop time-stepping until final time is reached
-    real(DP) :: depsSteady
-
-    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Unit number for log file output
-    integer :: iunitLogfile = 0
-    
-    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Weights for multistage methods
-    real(DP), dimension(:), pointer :: DmultistepWeights => null()
-
-    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Temporal vectors for old solutions
-    type(t_vectorBlock), dimension(:), pointer :: RtempVectors => null()
-
-    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Substructure for PID controller
-    type(t_pidController), pointer :: p_rpidController => null()
-
-    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Substructure for automatic controller
-    type(t_autoController), pointer :: p_rautoController => null()
-
-    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Substructure for switched evolution relaxation controller
-    type(t_serController), pointer :: p_rserController => null()
-
-  end type t_timestep
-
-!</typeblock>
-  
-  ! *****************************************************************************  
-
-!<typeblock>
-
-  ! This data structure contains all settings/parameters for 
-  ! proportional-integral-derivative (PID) controlling.
-
-  type t_pidController
-
-    ! Controller specification tag.
-    integer(I32) :: icontrollerSpec = SV_SSPEC_EMPTY
-
-    ! INPUT PARAMETER FOR PID CONTROLLER:
-    ! Exponent for proportional term.
-    real(DP) :: dProportionalExponent
-    
-    ! INPUT PARAMETER FOR PID CONTROLLER:
-    ! Exponent for integral term.
-    real(DP) :: dIntegralExponent
-    
-    ! INPUT PARAMETER FOR PID CONTROLLER:
-    ! Exponent for derivative term.
-    real(DP) :: dDerivativeExponent
-    
-    ! INPUT PARAMETER FOR PID CONTROLLER:
-    ! Factor by which the time step is allowed to increase.
-    real(DP) :: dIncreaseFactor
-    
-    ! INPUT PARAMETER FOR PID CONTROLLER:
-    ! Factor by which the time step is allowed to decrease.
-    real(DP) :: dDecreaseFactor
-    
-    ! INPUT PARAMETER FOR PID CONTROLLER:
-    ! Tolerance of relative changes.
-    real(DP) :: depsRel
-
-    ! INPUT PARAMETER FOR PID CONTROLLER:
-    ! Maximum tolerance for relative changes
-    real(DP) :: dmaxRel
-    
-    ! OUTPUT PARAMETER FOR PID CONTROLLER:
-    ! Measure of the control variable from one time step before.
-    real(DP) :: dcontrolValue1
-
-    ! OUTPUT PARAMETER FOR PID CONTROLLER:
-    ! Measure of the solution change from two time steps before.
-    real(DP) :: dcontrolValue2
-
-  end type t_pidController
-
-!</typeblock>
-
-  ! *****************************************************************************  
-
-!<typeblock>
-
-  ! This data structure contains all settings/parameters
-  ! for automatic time step controlling.
-
-  type t_autoController
-
-    ! Controller specification tag.
-    integer(I32) :: icontrollerSpec = SV_SSPEC_EMPTY
-
-    ! INPUT PARAMETER FOR AUTOMATIC CONTROLLER:
-    ! Factor by which the time step is allowed to decrease.
-    real(DP) :: dDecreaseFactor
-
-    ! INPUT PARAMETER FOR AUTOMATIC CONTROLLER:
-    ! Tolerance of relative changes.
-    real(DP) :: depsRel
-
-    ! INTERNAL PARAMETER FOR AUTOMATIC CONTROLLER
-    ! Temporal vectors for old solutions
-    type(t_vectorBlock), dimension(:), pointer :: RtempVectors => null()
-
-  end type t_autoController
-
-  ! *****************************************************************************  
-
-!<typeblock>
-
-  ! This data structure contains all settings/parameters
-  ! for switched evolution relaxation time step controlling.
-
-  type t_serController
-
-    ! Controller specification tag.
-    integer(I32) :: icontrollerSpec = SV_SSPEC_EMPTY
-
-    ! INPUT PARAMETER FOR SER CONTROLLER:
-    ! Factor by which the time step is allowed to increase.
-    real(DP) :: dIncreaseFactor
-
-    ! INPUT PARAMETER FOR SER CONTROLLER:
-    ! Factor by which the time step is allowed to decrease.
-    real(DP) :: dDecreaseFactor
-
-    ! OUTPUT PARAMETER FOR SER CONTROLLER
-    ! Norm of the stationary defect vector
-    real(DP) :: dsteadyDefect
-
-    ! OUTPUT PARAMETER FOR SER CONTROLLER
-    ! Norm of the stationary defect vector from previous time step
-    real(DP) :: dsteadyDefect1
-
-  end type t_serController
+!!$!<types>
+!!$
+!!$!<typeblock>
+!!$
+!!$  ! This data structure contains settings/parameters for time-stepping. Before
+!!$  ! calling the time-stepping algorithm the basic settings need to be initialized.
+!!$
+!!$  type t_timestep
+!!$    
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Name of time-stepping object
+!!$    character(LEN=SYS_STRLEN) :: sName = ''
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Identifies the type of the time-stepping algorithm
+!!$    integer :: ctimestepType = SV_UNDEFINED
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! This determines the output level of the time-stepping algorithm
+!!$    integer :: ioutputLevel
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Norm in which relative changes of solution should be measured
+!!$    integer :: isolNorm
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Initial simulation time
+!!$    real(DP) :: dinitialTime
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Final simulation time
+!!$    real(DP) :: dfinalTime
+!!$
+!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Current time instant
+!!$    real(DP) :: dTime
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Lower bound for the admissible time step
+!!$    real(DP) :: dminStep
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Upper bound for the admissible time step
+!!$    real(DP) :: dmaxStep
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Initial value for time step
+!!$    real(DP) :: dinitialStep
+!!$
+!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Current value for time step
+!!$    real(DP) :: dStep
+!!$
+!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Value for previous time step 
+!!$    real(DP) :: dStep1
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Factor by which the current time step should be scaled
+!!$    ! if the current time step failed; must be < 1.0
+!!$    real(DP) :: dstepReductionFactor
+!!$
+!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Total number of performed time steps
+!!$    integer :: nSteps
+!!$
+!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Total number of rejected time steps
+!!$    integer :: nrejectedSteps
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Implicitness parameter for two-level theta-scheme
+!!$    real(DP) :: theta
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Number of multi-steps for Runge-Kutta method
+!!$    integer :: multisteps
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Algorithm for adaptive time step control
+!!$    integer :: iadaptTimestep
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Number of time steps performed before adaptive time step control is used
+!!$    integer :: npreadaptSteps
+!!$
+!!$    ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Relative changes of the solution
+!!$    real(DP) :: drelChange
+!!$
+!!$    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Relative stopping criterion. Stop time-stepping algorithm if
+!!$    ! !! U^{N+1} - U^{N} !! <= EPSSTAG * dStep
+!!$    ! =0: ignore, do not stop time-stepping until final time is reached
+!!$    real(DP) :: depsSteady
+!!$
+!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Unit number for log file output
+!!$    integer :: iunitLogfile = 0
+!!$    
+!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Weights for multistage methods
+!!$    real(DP), dimension(:), pointer :: DmultistepWeights => null()
+!!$
+!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Temporal vectors for old solutions
+!!$    type(t_vectorBlock), dimension(:), pointer :: RtempVectors => null()
+!!$
+!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Substructure for PID controller
+!!$    type(t_pidController), pointer :: p_rpidController => null()
+!!$
+!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Substructure for automatic controller
+!!$    type(t_autoController), pointer :: p_rautoController => null()
+!!$
+!!$    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+!!$    ! Substructure for switched evolution relaxation controller
+!!$    type(t_serController), pointer :: p_rserController => null()
+!!$
+!!$  end type t_timestep
+!!$
+!!$!</typeblock>
+!!$  
+!!$  ! *****************************************************************************  
+!!$
+!!$!<typeblock>
+!!$
+!!$  ! This data structure contains all settings/parameters for 
+!!$  ! proportional-integral-derivative (PID) controlling.
+!!$
+!!$  type t_pidController
+!!$
+!!$    ! Controller specification tag.
+!!$    integer(I32) :: icontrollerSpec = SV_SSPEC_EMPTY
+!!$
+!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
+!!$    ! Exponent for proportional term.
+!!$    real(DP) :: dProportionalExponent
+!!$    
+!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
+!!$    ! Exponent for integral term.
+!!$    real(DP) :: dIntegralExponent
+!!$    
+!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
+!!$    ! Exponent for derivative term.
+!!$    real(DP) :: dDerivativeExponent
+!!$    
+!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
+!!$    ! Factor by which the time step is allowed to increase.
+!!$    real(DP) :: dIncreaseFactor
+!!$    
+!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
+!!$    ! Factor by which the time step is allowed to decrease.
+!!$    real(DP) :: dDecreaseFactor
+!!$    
+!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
+!!$    ! Tolerance of relative changes.
+!!$    real(DP) :: depsRel
+!!$
+!!$    ! INPUT PARAMETER FOR PID CONTROLLER:
+!!$    ! Maximum tolerance for relative changes
+!!$    real(DP) :: dmaxRel
+!!$    
+!!$    ! OUTPUT PARAMETER FOR PID CONTROLLER:
+!!$    ! Measure of the control variable from one time step before.
+!!$    real(DP) :: dcontrolValue1
+!!$
+!!$    ! OUTPUT PARAMETER FOR PID CONTROLLER:
+!!$    ! Measure of the solution change from two time steps before.
+!!$    real(DP) :: dcontrolValue2
+!!$
+!!$  end type t_pidController
+!!$
+!!$!</typeblock>
+!!$
+!!$  ! *****************************************************************************  
+!!$
+!!$!<typeblock>
+!!$
+!!$  ! This data structure contains all settings/parameters
+!!$  ! for automatic time step controlling.
+!!$
+!!$  type t_autoController
+!!$
+!!$    ! Controller specification tag.
+!!$    integer(I32) :: icontrollerSpec = SV_SSPEC_EMPTY
+!!$
+!!$    ! INPUT PARAMETER FOR AUTOMATIC CONTROLLER:
+!!$    ! Factor by which the time step is allowed to decrease.
+!!$    real(DP) :: dDecreaseFactor
+!!$
+!!$    ! INPUT PARAMETER FOR AUTOMATIC CONTROLLER:
+!!$    ! Tolerance of relative changes.
+!!$    real(DP) :: depsRel
+!!$
+!!$    ! INTERNAL PARAMETER FOR AUTOMATIC CONTROLLER
+!!$    ! Temporal vectors for old solutions
+!!$    type(t_vectorBlock), dimension(:), pointer :: RtempVectors => null()
+!!$
+!!$  end type t_autoController
+!!$
+!!$  ! *****************************************************************************  
+!!$
+!!$!<typeblock>
+!!$
+!!$  ! This data structure contains all settings/parameters
+!!$  ! for switched evolution relaxation time step controlling.
+!!$
+!!$  type t_serController
+!!$
+!!$    ! Controller specification tag.
+!!$    integer(I32) :: icontrollerSpec = SV_SSPEC_EMPTY
+!!$
+!!$    ! INPUT PARAMETER FOR SER CONTROLLER:
+!!$    ! Factor by which the time step is allowed to increase.
+!!$    real(DP) :: dIncreaseFactor
+!!$
+!!$    ! INPUT PARAMETER FOR SER CONTROLLER:
+!!$    ! Factor by which the time step is allowed to decrease.
+!!$    real(DP) :: dDecreaseFactor
+!!$
+!!$    ! OUTPUT PARAMETER FOR SER CONTROLLER
+!!$    ! Norm of the stationary defect vector
+!!$    real(DP) :: dsteadyDefect
+!!$
+!!$    ! OUTPUT PARAMETER FOR SER CONTROLLER
+!!$    ! Norm of the stationary defect vector from previous time step
+!!$    real(DP) :: dsteadyDefect1
+!!$
+!!$  end type t_serController
 
   ! *****************************************************************************
 
@@ -1123,587 +1079,6 @@ contains
   ! *****************************************************************************
   ! *****************************************************************************
   ! *****************************************************************************
-
-!<subroutine>
-
-  subroutine solver_createTimestepDirect(rparlist, ssectionName, rtimestep)
-
-!<description>
-    ! This subroutine creates a new timestep object from a
-    ! given parameter list
-    
-!</description>
-
-!<input>
-    ! Parameter list containing all data
-    type(t_parlist), intent(IN) :: rparlist
-
-    ! Section name of the parameter list containing solver data
-    character(LEN=*), intent(IN) :: ssectionName
-!</input>
-
-!<output>
-    ! Time-stepping object
-    type(t_timestep), intent(OUT) :: rtimestep
-!</output>
-!</subroutine>
-
-    ! local variable
-    integer :: ios,inum
-
-    ! The INTENT(OUT) already initializes rtimestep with the most
-    ! important information.
-    rtimestep%sName = trim(adjustl(ssectionName))
-    
-    ! Get mandatory configuration values from parameter list
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             "ctimestepType", rtimestep%ctimestepType)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "dfinalTime", rtimestep%dfinalTime)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "dinitialStep", rtimestep%dinitialStep) 
-
-    ! Get optional configuration values from parameter list
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             "ioutputlevel", rtimestep%ioutputlevel, SVSTD_IOLEVEL)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             "isolNorm", rtimestep%isolNorm, SVSTD_ISOLNORM)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "dinitialTime", rtimestep%dinitialTime, 0._DP)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "dminStep", rtimestep%dminStep,&
-                                rtimestep%dinitialStep)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "dmaxStep", rtimestep%dmaxStep,&
-                                rtimestep%dinitialStep)
-     call parlst_getvalue_double(rparlist, ssectionName,&
-                                "dstepReductionFactor",&
-                                rtimestep%dstepReductionFactor,&
-                                SVSTD_DSTEPREDUCTIONFACTOR)
-    call parlst_getvalue_double(rparlist, ssectionName,&
-                                "depsSteady", rtimestep%depsSteady, SVSTD_DEPSSTEADY)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             "iadapttimestep", rtimestep%iadapttimestep,&
-                             SVSTD_IADAPTTIMESTEP)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             "npreadaptSteps", rtimestep%npreadaptSteps,&
-                             SVSTD_NPREADAPTSTEPS)
-    
-
-    ! Get solver dependent configuration values from parameter list
-    select case(rtimestep%ctimestepType)
-    case (SV_THETA_SCHEME)
-      ! Two-level theta scheme
-      call parlst_getvalue_double(rparlist, ssectionName,&
-                                  "theta", rtimestep%theta)
-      
-      ! Allocate array of temporal vectors
-      allocate(rtimestep%RtempVectors(1))
-
-    case (SV_RK_SCHEME)
-      ! Multilevel Runge-Kutta scheme
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               "multisteps", rtimestep%multisteps)
-
-      select case(rtimestep%multisteps)
-      case (1)
-        allocate(rtimestep%DmultistepWeights(1))
-        rtimestep%DmultistepWeights = SV_RK1
-
-      case (2)
-        allocate(rtimestep%DmultistepWeights(2))
-        rtimestep%DmultistepWeights = SV_RK2
-
-      case (3)
-        allocate(rtimestep%DmultistepWeights(3))
-        rtimestep%DmultistepWeights = SV_RK3
-
-      case (4)
-        allocate(rtimestep%DmultistepWeights(4))
-        rtimestep%DmultistepWeights = SV_RK4
-
-      case DEFAULT
-        allocate(rtimestep%DmultistepWeights(abs(rtimestep%multisteps)))
-        rtimestep%DmultistepWeights = 1._DP
-      end select
-
-      ! Allocate array of temporal vectors
-      allocate(rtimestep%RtempVectors(3))
-
-    case DEFAULT
-      call output_line('Invalid solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_createTimestepDirect')
-      call sys_halt()
-    end select
-          
-
-    ! Perform adaptive time-stepping?
-    select case(rtimestep%iadapttimestep)
-
-    case (SV_TIMESTEP_SERADAPT)
-      ! Adaptive time-stepping using switched evolution relaxation
-      allocate(rtimestep%p_rserController)
-      call parlst_getvalue_double(rparlist, ssectionName, "dIncreaseFactor",&
-                                  rtimestep%p_rserController%dIncreaseFactor, SVSTD_DINCREASEFACTOR)
-      call parlst_getvalue_double(rparlist, ssectionName, "dDecreaseFactor",&
-                                  rtimestep%p_rserController%dDecreaseFactor, SVSTD_DDECREASEFACTOR)
-
-
-    case (SV_TIMESTEP_AUTOADAPT)
-      ! Adaptive time-stepping using automatic time step control
-      allocate(rtimestep%p_rautoController)
-
-      ! Allocate array of temporal vectors
-      allocate(rtimestep%p_rautoController%RtempVectors(2))
-
-      call parlst_getvalue_double(rparlist, ssectionName, "dDecreaseFactor",&
-                                  rtimestep%p_rautoController%dDecreaseFactor, SVSTD_DDECREASEFACTOR)
-      call parlst_getvalue_double(rparlist, ssectionName,&
-                                  "depsRel", rtimestep%p_rautoController%depsRel, SVSTD_DEPSABS)
-
-
-    case (SV_TIMESTEP_PIDADAPT)
-      ! Adaptive time-stepping using the PID controller
-      allocate(rtimestep%p_rpidController)
-
-      ! Get configuration values from parameter list
-      call parlst_getvalue_double(rparlist, ssectionName, "dProportionalExponent",&
-                                  rtimestep%p_rpidController%dProportionalExponent,&
-                                  SVSTD_DPROPORTIONALEXPONENT)
-      call parlst_getvalue_double(rparlist, ssectionName, "dIntegralExponent",&
-                                  rtimestep%p_rpidController%dIntegralExponent,&
-                                  SVSTD_DINTEGRALEXPONENT)
-      call parlst_getvalue_double(rparlist, ssectionName, "dDerivativeExponent",&
-                                  rtimestep%p_rpidController%dDerivativeExponent,&
-                                  SVSTD_DDERIVATIVEEXPONENT)
-      call parlst_getvalue_double(rparlist, ssectionName, "dIncreaseFactor",&
-                                  rtimestep%p_rpidController%dIncreaseFactor, SVSTD_DINCREASEFACTOR)
-      call parlst_getvalue_double(rparlist, ssectionName, "dDecreaseFactor",&
-                                  rtimestep%p_rpidController%dDecreaseFactor, SVSTD_DDECREASEFACTOR)
-      call parlst_getvalue_double(rparlist, ssectionName, "depsRel",&
-                                  rtimestep%p_rpidController%depsRel, SVSTD_DEPSREL)
-      call parlst_getvalue_double(rparlist, ssectionName, "dmaxRel",&
-                                  rtimestep%p_rpidController%dmaxRel, SVSTD_DMAXREL)
-
-    end select
-
-
-
-    ! Reset any other values
-    call solver_resetTimestep(rtimestep, .true.)
-
-    ! Open logfile if required
-    if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-
-      ! Get next free unit
-      rtimestep%iunitLogfile = sys_getFreeUnit()
-      
-      ! Try to open master file
-      open(UNIT=rtimestep%iunitLogfile,&
-          FILE=trim(adjustl(rtimestep%sName))//'.log',&
-          STATUS='replace', IOSTAT=ios)
-      if (ios .eq. 0) return
-
-      ! Master file could not be opened, try to open fileXX, where XX=1,2,3,...,99
-      do inum = 1, 99
-        open(UNIT=rtimestep%iunitLogfile,&
-            FILE=trim(adjustl(rtimestep%sName))//&
-            trim(adjustl(sys_si0(inum,2)))//'.log',&
-            STATUS='replace', IOSTAT=ios)
-        if (ios .eq. 0) return
-      end do
-      
-      ! We are unable to open the logfile
-      call output_line('Unable to open logfile!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_createTimestepDirect')
-      call sys_halt()
-    end if
-
-  end subroutine solver_createTimestepDirect
-
-  ! *****************************************************************************
-
-!<subroutine>
-
-  subroutine solver_createTimestepIndirect(rtimestep, rtimestepTemplate)
-
-!<description>
-    ! This subroutine creates a new timestep object by 
-    ! cloning an existing tiemstep object
-!</description>
-
-!<input>
-    ! Template timestep structure
-    type(t_timestep), intent(IN) :: rtimestepTemplate
-!</input>
-
-!<output>
-    ! Timestep structure
-    type(t_timestep), intent(OUT) :: rtimestep
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: ios,inum
-
-    ! The INTENT(OUT) already initializes rtimestep with the most
-    ! important information. The rest comes now
-    rtimestep = rtimestepTemplate
-    
-    ! Open logfile if required
-    if (rtimestep%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-      ! Get next free unit
-      rtimestep%iunitLogfile = sys_getFreeUnit()
-      
-      ! Since the master file is already opend, 
-      ! try to open fileXX, where XX=1,2,3,...,99
-      do inum = 1, 99
-        open(UNIT=rtimestep%iunitLogfile,&
-            FILE=trim(adjustl(rtimestep%sName))//&
-            trim(adjustl(sys_si0(inum,2)))//'.log',&
-            STATUS='replace', IOSTAT=ios)
-        if (ios .eq. 0) exit
-      end do
-      
-      ! Check if logfile could be opened
-      if (ios .ne. 0) then
-        call output_line('Unable to open logfile!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'solver_createTimestepIndirect')
-        call sys_halt()
-      end if
-    end if
-    
-    ! Create PID controller
-    if (associated(rtimestepTemplate%p_rpidController)) then
-      allocate(rtimestep%p_rpidController)
-      rtimestep%p_rpidController = rtimestepTemplate%p_rpidController
-    end if
-
-    ! Create automatic controller
-    if (associated(rtimestepTemplate%p_rautoController)) then
-      allocate(rtimestep%p_rautoController)
-      rtimestep%p_rautoController = rtimestepTemplate%p_rautoController
-      if (associated(rtimestepTemplate%p_rautoController%RtempVectors)) then
-        allocate(rtimestep%p_rautoController%RtempVectors(&
-            size(rtimestepTemplate%p_rautoController%RtempVectors)))
-      end if
-    end if
-
-    ! Create SER controller
-    if (associated(rtimestepTemplate%p_rserController)) then
-      allocate(rtimestep%p_rserController)
-      rtimestep%p_rserController = rtimestepTemplate%p_rserController
-    end if
-
-    ! Create temporal vectors
-    if (associated(rtimestepTemplate%RtempVectors)) then
-      allocate(rtimestep%RtempVectors(size(rtimestepTemplate%RtempVectors)))
-    end if
-
-    ! Create multistep weights
-    if (associated(rtimestepTemplate%DmultistepWeights)) then
-      allocate(rtimestep%DmultistepWeights(size(rtimestepTemplate%DmultistepWeights)))
-      rtimestep%DmultistepWeights = rtimestepTemplate%DmultistepWeights
-    end if
-  end subroutine solver_createTimestepIndirect
-
-  ! *****************************************************************************
-
-!<subroutine>
-
-  subroutine solver_releaseTimestep(rtimestep)
-
-!<description>
-    ! This subroutine releases an existing timestep object
-!</description>
-
-!<inputoutput>
-    ! Time-stepping object
-    type(t_timestep), intent(INOUT) :: rtimestep
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    integer :: i
-    logical :: bisOpened
-
-    ! Check if output file is open
-    inquire(UNIT=rtimestep%iunitLogfile, OPENED=bisOpened)
-    if (bisOpened) close(UNIT=rtimestep%iunitLogfile)
-
-    ! Release PID controller
-    if (associated(rtimestep%p_rpidController)) then
-      deallocate(rtimestep%p_rpidController)
-      nullify(rtimestep%p_rpidController)
-    end if
-
-    ! Release automatic controller
-    if (associated(rtimestep%p_rautoController)) then
-      if (associated(rtimestep%p_rautoController%RtempVectors)) then
-        do i = lbound(rtimestep%p_rautoController%RtempVectors, 1),&
-               ubound(rtimestep%p_rautoController%RtempVectors, 1)
-          call lsysbl_releaseVector(rtimestep%p_rautoController%RtempVectors(i))
-        end do
-        deallocate(rtimestep%p_rautoController%RtempVectors)
-        nullify(rtimestep%p_rautoController%RtempVectors)
-      end if
-      deallocate(rtimestep%p_rautoController)
-      nullify(rtimestep%p_rautoController)
-    end if
-
-    ! Release SER controller
-    if (associated(rtimestep%p_rserController)) then
-      deallocate(rtimestep%p_rserController)
-      nullify(rtimestep%p_rserController)
-    end if
-
-    ! Release temporal vector
-    if (associated(rtimestep%RtempVectors)) then
-      do i = lbound(rtimestep%RtempVectors, 1),&
-             ubound(rtimestep%RtempVectors, 1)
-        call lsysbl_releaseVector(rtimestep%RtempVectors(i))
-      end do
-      deallocate(rtimestep%RtempVectors)
-      nullify(rtimestep%RtempVectors)
-    end if
-
-    ! Release multistep weights
-    if (associated(rtimestep%DmultistepWeights)) then
-      deallocate(rtimestep%DmultistepWeights)
-      nullify(rtimestep%DmultistepWeights)
-    end if
-  end subroutine solver_releaseTimestep
-
-  ! *****************************************************************************
-
-!<subroutine>
-
-  subroutine solver_removeTimestepTemporal(rtimestep)
-
-!<description>
-    ! This subroutines removes all temporal memory from the given timestep object
-!</description>
-
-!<inputoutput>
-    ! timestep structure
-    type(t_timestep), intent(INOUT) :: rtimestep
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    integer :: i
-
-    ! Release temporal vectors in automatic time step control
-    if (associated(rtimestep%p_rautoController)) then
-      if (associated(rtimestep%p_rautoController%RtempVectors)) then
-        do i = lbound(rtimestep%p_rautoController%RtempVectors, 1),&
-               ubound(rtimestep%p_rautoController%RtempVectors, 1)
-          call lsysbl_releaseVector(rtimestep%p_rautoController%RtempVectors(i))
-        end do
-      end if
-    end if
-
-    ! Release temporal vectors in time step structure
-    if (associated(rtimestep%RtempVectors)) then
-      do i = lbound(rtimestep%RtempVectors, 1),&
-             ubound(rtimestep%RtempVectors, 1)
-        call lsysbl_releaseVector(rtimestep%RtempVectors(i))
-      end do
-    end if
-  end subroutine solver_removeTimestepTemporal
-
-  ! *****************************************************************************
-
-!<subroutine>
-
-  subroutine solver_infoTimestep(rtimestep, bprintInternal)
-
-!<description>
-    ! This subroutine prints information about the given timestep object
-!</description>
-
-!<input>
-    ! OPTIONAL: Print internal data?
-    logical, intent(IN), optional :: bprintInternal
-!</input>
-
-!<inputoutput>
-    ! Time-stepping object
-    type(t_timestep), intent(INOUT) :: rtimestep
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    integer :: i
-
-    
-    ! Output general information
-    call output_line('Timestep:')
-    call output_line('---------')
-    call output_line('Name:                          '//trim(rtimestep%sName))
-    call output_line('Number of time steps:          '//trim(sys_siL(rtimestep%nSteps,15)))
-    call output_line('Number of rejected time steps: '//trim(sys_siL(rtimestep%nrejectedSteps,15)))
-    
-    ! Output detailed information
-    if (present(bprintInternal)) then
-      if (bprintInternal) then
-        
-        call output_line('ctimestepType:                 '//trim(sys_siL(rtimestep%ctimestepType,3)))
-        call output_line('ioutputLevel:                  '//trim(sys_siL(rtimestep%ioutputLevel,3)))
-        call output_line('isolNorm:                      '//trim(sys_siL(rtimestep%isolNorm,3)))
-        call output_line('iadaptTimestep:                '//trim(sys_siL(rtimestep%iadaptTimestep,3)))
-        call output_line('multiSteps:                    '//trim(sys_siL(rtimestep%multiSteps,3)))
-        call output_line('theta:                         '//trim(sys_sdL(rtimestep%theta,5)))
-        call output_line('dinitialTime:                  '//trim(sys_sdL(rtimestep%dinitialTime,5)))
-        call output_line('dfinalTime:                    '//trim(sys_sdL(rtimestep%dfinalTime,5)))
-        call output_line('dminStep:                      '//trim(sys_sdL(rtimestep%dminStep,5)))
-        call output_line('dmaxStep:                      '//trim(sys_sdL(rtimestep%dmaxStep,5)))
-        call output_line('dinitialStep:                  '//trim(sys_sdL(rtimestep%dinitialStep,5)))
-        call output_line('dstepReductionFactor:          '//trim(sys_sdL(rtimestep%dstepReductionFactor,5)))
-        call output_line('drelChange:                    '//trim(sys_sdL(rtimestep%drelChange,5)))
-        call output_line('depsSteady:                    '//trim(sys_sdL(rtimestep%depsSteady,5)))
-               
-        ! Output information about weights of multistep method
-        if (associated(rtimestep%DmultistepWeights)) then
-          do i = lbound(rtimestep%DmultistepWeights, 1),&
-                 ubound(rtimestep%DmultistepWeights, 1)
-            call output_line('multistep weight['//trim(sys_siL(i,1))//']:           '//&
-                             trim(sys_sdL(rtimestep%DmultistepWeights(i),5)))
-          end do
-        end if
-        
-        call output_line('dTime:                         '//trim(sys_sdL(rtimestep%dTime,5)))
-        call output_line('dStep:                         '//trim(sys_sdL(rtimestep%dstep,5)))
-        call output_line('dStep1:                        '//trim(sys_sdL(rtimestep%dstep1,5)))
-        call output_line('iunitLogfile:                  '//trim(sys_siL(rtimestep%iunitLogfile,3)))
-        
-        ! Output information about the evolutionary PID controller
-        if (associated(rtimestep%p_rpidController)) then
-          call output_lbrk()
-          call output_line('Evolutionary PID controller:')
-          call output_line('----------------------------')
-          call output_line('dProportionalExponent:         '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dProportionalExponent,5)))
-          call output_line('dIntegralExponent:             '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dIntegralExponent,5)))
-          call output_line('dDerivativeExponent:           '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dDerivativeExponent,5)))
-          call output_line('dIncreaseFactor:               '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dIncreaseFactor,5)))
-          call output_line('dDecreaseFactor:               '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dDecreaseFactor,5)))
-          call output_line('depsRel:                       '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%depsRel,5)))
-          call output_line('dmaxRel:                       '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dmaxRel,5)))
-          call output_line('dcontrolValue1:                '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dcontrolValue1,5)))
-          call output_line('dcontrolValue2:                '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dcontrolValue2,5)))
-        end if
-
-        ! Output information about the automatic time step controller
-        if (associated(rtimestep%p_rautoController)) then
-          call output_lbrk()
-          call output_line('Automatic time step controller:')
-          call output_line('-------------------------------')
-          call output_line('dDecreaseFactor:               '//&
-                           trim(sys_sdL(rtimestep%p_rautoController%dDecreaseFactor,5)))
-          call output_line('depsRel:                       '//&
-                           trim(sys_sdL(rtimestep%p_rautoController%depsRel,5)))
-
-          if (associated(rtimestep%p_rautoController%RtempVectors)) then
-            call output_lbrk()
-            call output_line('Temporal vectors:')
-            call output_line('-----------------')
-            do i = lbound(rtimestep%p_rautoController%RtempVectors, 1),&
-                   ubound(rtimestep%p_rautoController%RtempVectors, 1)
-              call lsysbl_infoVector(rtimestep%p_rautoController%RtempVectors(i))
-            end do
-          end if
-        end if
-
-        ! Output information about the switched evolution relaxation controller
-        if (associated(rtimestep%p_rserController)) then
-          call output_lbrk()
-          call output_line('Switched evolution relaxation (SER) controller:')
-          call output_line('-----------------------------------------------')
-          call output_line('dIncreaseFactor:               '//&
-                           trim(sys_sdL(rtimestep%p_rserController%dIncreaseFactor,5)))
-          call output_line('dDecreaseFactor:               '//&
-                           trim(sys_sdL(rtimestep%p_rserController%dDecreaseFactor,5)))
-          call output_line('dsteadyDefect:                 '//&
-                           trim(sys_sdL(rtimestep%p_rserController%dsteadyDefect,5)))
-          call output_line('dsteadyDefect1:                '//&
-                           trim(sys_sdL(rtimestep%p_rserController%dsteadyDefect1,5)))
-        end if
-
-        ! Output information about auxiliary vectors
-        if (associated(rtimestep%RtempVectors)) then
-          call output_lbrk()
-          call output_line('Temporal vectors:')
-          call output_line('-----------------')
-          do i = lbound(rtimestep%RtempVectors, 1),&
-                 ubound(rtimestep%RtempVectors, 1)
-            call lsysbl_infoVector(rtimestep%RtempVectors(i))
-          end do
-        end if
-      end if
-    end if
-    
-    call output_lbrk()
-  end subroutine solver_infoTimestep
-  
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine solver_resetTimestep(rtimestep, bresetStatistics)
-
-!<description>
-    ! This subroutine resets a given timestep object to its original values
-!</description>
-
-!<input>
-    ! If true, the statistical output parameters are reset
-    logical, intent(IN) :: bresetStatistics
-!</input>
-
-!<inputoutput>
-    ! time-stepping object
-    type(t_timestep), intent(INOUT) :: rtimestep
-!</inputoutput>
-!</subroutine>
-
-    ! Reset time step
-    rtimestep%dTime  = rtimeStep%dinitialTime
-    rtimestep%dStep  = rtimeStep%dinitialStep
-    rtimestep%dStep1 = rtimeStep%dinitialStep
-    
-    ! Reset statistical data (if required)
-    if (bresetStatistics) then
-      rtimestep%drelChange     = 0.0_DP
-      rtimestep%nSteps         = 0
-      rtimestep%nrejectedSteps = 0
-    end if
-
-    ! Reset PID controller
-    if (associated(rtimestep%p_rpidController)) then
-      rtimestep%p_rpidController%dcontrolValue1 = 1._DP
-      rtimestep%p_rpidController%dcontrolValue2 = 1._DP
-    end if
-
-    ! Reset SER controller
-    if (associated(rtimestep%p_rserController)) then
-      rtimestep%p_rserController%dsteadyDefect  = 0._DP
-      rtimestep%p_rserController%dsteadyDefect1 = 0._DP
-    end if
-  end subroutine solver_resetTimestep
-
-  ! ***************************************************************************
-  ! ***************************************************************************
-  ! ***************************************************************************
-
 
 !<subroutine>
 
