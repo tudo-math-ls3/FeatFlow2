@@ -57,10 +57,3 @@ NCOMP
 1
 PARAMETERS
 4.0  T  0
-
-
-
-[rhs]
-NCOMP
-1
-0.0
