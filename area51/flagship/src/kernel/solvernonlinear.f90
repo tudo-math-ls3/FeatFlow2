@@ -79,9 +79,10 @@ module solvernonlinear
   use linearsystemscalar
   use paramlist
   use problem
-  use solver
+  use solveraux
   use solverlinear
   use storage
+  use timestepaux
  
   implicit none
 
@@ -344,15 +345,7 @@ contains
                                                           max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
             call output_separator(OU_SEP_TILDE)
             call output_lbrk()
-          end if
-
-          ! Write nonlinear defect to file?
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-            write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,2(",",E16.8E3))')&
-                imgstep, rsolver%dfinalDefect,&
-                rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
-          end if
-          
+          end if          
 
           ! Check if residual increased too much
           if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or.&
@@ -396,13 +389,6 @@ contains
           call output_lbrk()
         end if
         
-        ! Write nonlinear convergence rate to logfile?
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-          write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-              rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
-              rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-              rsolver%dconvergenceRate
-        end if
       end if
       
 
@@ -856,15 +842,6 @@ contains
           call output_lbrk()
         end if
         
-        ! Write nonlinear defect to logfile?
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-          write(UNIT=p_rsolver%iunitLogfile,FMT='("(01),",I10,3(",",E16.8E3))')&
-              iiterations, p_rsolver%dfinalDefect,&
-              p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-              p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
-        end if
-        
-
       case(NLSOL_PRECOND_DEFCOR,&
            NLSOL_PRECOND_NEWTON_FAILED)
 
@@ -919,14 +896,6 @@ contains
           call output_lbrk()
         end if
         
-        ! Write nonlinear defect to logfile?
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-          write(UNIT=p_rsolver%iunitLogfile,FMT='("(01),",I10,3(",",E16.8E3))')&
-              iiterations, p_rsolver%dfinalDefect,&
-              p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-              p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
-        end if
-                    
 
       case(NLSOL_PRECOND_NEWTON)
 
@@ -1023,14 +992,6 @@ contains
           call output_lbrk()
         end if
        
-        ! Write nonlinear defect to logfile?
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-          write(UNIT=p_rsolver%iunitLogfile,FMT='("(01),",I10,3(",",E16.8E3))')&
-              iiterations, p_rsolver%dfinalDefect,&
-              p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-              p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect)
-        end if
-        
         
       case DEFAULT
         call output_line('Invalid nonlinear preconditioner!',&
@@ -1094,13 +1055,6 @@ contains
       call output_lbrk()
     end if
 
-    ! Write nonlinear convergence rate to logfile?
-    if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-      write(UNIT=p_rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-          rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-          rsolver%dconvergenceRate
-    end if
   end subroutine nlsol_solveFixedpointBlock
 
   !*****************************************************************************
@@ -1551,8 +1505,8 @@ contains
     real(DP) :: dStepOpt
 
     select case(rtimestep%iadaptTimestep)
-
-    case (SV_TIMESTEP_SERADAPT)
+      
+    case (TSTEP_SERADAPT)
       !-------------------------------------------------------------------------
       ! Switched evolution relaxation (SER)
       !
