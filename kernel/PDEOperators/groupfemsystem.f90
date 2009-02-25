@@ -239,7 +239,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,j
+    integer :: i
 
 
     ! Check if block matrix has only one block
