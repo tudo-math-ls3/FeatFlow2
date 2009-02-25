@@ -68,17 +68,17 @@
 !##############################################################################
 
 module solverlinear
-  use fsystem
-  use storage
-  use genoutput
-  use sortstrategy
-  use linearalgebra
-  use linearsystemscalar
-  use linearsystemblock
 
-  use problem
   use boundaryfilter
-  use solver
+  use fsystem
+  use genoutput
+  use linearalgebra
+  use linearsystemblock
+  use linearsystemscalar
+  use problem
+  use solveraux
+  use sortstrategy
+  use storage
 
   implicit none
 
@@ -295,13 +295,6 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveMultigridBlock')
           call sys_halt()
         end select
-
-        ! Write linear convergence rate to logfile?
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-          write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-              rsolver%iiterations, rsolver%dfinalDefect, rsolver%dinitialDefect,&
-              rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
-        end if
         
       else
         
@@ -382,14 +375,6 @@ contains
             call output_lbrk()
           end if
           
-          ! Write linear defect to file?
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-            write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
-                imgstep, rsolver%dfinalDefect,&
-                rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-                rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
-          end if
-
           ! Check if residual increased too much
           if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or. &
               rsolver%dfinalDefect > rsolver%ddivAbs) then
@@ -438,15 +423,7 @@ contains
           call output_separator(OU_SEP_PERC)
           call output_lbrk()
         end if
-
-        ! Write nonlinear convergence rate to logfile?
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-          write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-              rsolver%iiterations, rsolver%dfinalDefect,&
-              rsolver%dinitialDefect,&
-              rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-              rsolver%dconvergenceRate
-        end if
+      
       end if
 
       
@@ -918,14 +895,6 @@ contains
         call output_lbrk()
       end if
 
-      ! Write linear defect to file?
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-        write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
-            iiterations, rsolver%dfinalDefect,&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
-      end if
-
       ! Check if residual increased too much
       if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or. &
           rsolver%dfinalDefect > rsolver%ddivAbs) then
@@ -973,15 +942,6 @@ contains
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
-    end if
-
-    ! Write linear convergence rate to logfile?
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-      write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-          rsolver%iiterations, rsolver%dfinalDefect,&
-          rsolver%dinitialDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-          rsolver%dconvergenceRate
     end if
     
   end subroutine linsol_solveJacobi
@@ -1117,14 +1077,6 @@ contains
         call output_lbrk()
       end if
 
-      ! Write linear defect to file?
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-        write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
-            iiterations, rsolver%dfinalDefect,&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
-      end if
-
       ! Check if residual increased too much
       if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or. &
           rsolver%dfinalDefect > rsolver%ddivAbs) then
@@ -1174,15 +1126,6 @@ contains
       call output_lbrk()
     end if
     
-    ! Write linear convergence rate to logfile?
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-      write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-          rsolver%iiterations, rsolver%dfinalDefect,&
-          rsolver%dinitialDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-          rsolver%dconvergenceRate
-    end if
-
   end subroutine linsol_solveSSOR
 
   ! ***************************************************************************
@@ -1411,14 +1354,6 @@ contains
         call output_lbrk()
       end if
 
-      ! Write linear defect to file?
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-        write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
-            iiterations, rsolver%dfinalDefect,&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
-      end if
-      
       ! Check if residual increased too much
       if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or. &
           rsolver%dfinalDefect > rsolver%ddivAbs) then
@@ -1466,15 +1401,6 @@ contains
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
-    end if
-
-    ! Write linear convergence rate to logfile?
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-      write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-          rsolver%iiterations, rsolver%dfinalDefect,&
-          rsolver%dinitialDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-          rsolver%dconvergenceRate
     end if
 
   end subroutine linsol_solveBicgstab
@@ -1705,14 +1631,6 @@ contains
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
-
-      ! Write linear defect to file?
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-        write(UNIT=rsolver%iunitLogfile, FMT='("(01),",I10,3(",",E16.8E3))')&
-            iiterations, rsolver%dfinalDefect,&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),&
-            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect)
-      end if
       
       ! Check if residual increased too much
       if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or. &
@@ -1761,15 +1679,6 @@ contains
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
-    end if
-
-    ! Write linear convergence rate to logfile?
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_FILE) then
-      write(UNIT=rsolver%iunitLogfile,FMT='("(02),",I10,4(",",E16.8E3))')&
-          rsolver%iiterations, rsolver%dfinalDefect,&
-          rsolver%dinitialDefect,&
-          rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),&
-          rsolver%dconvergenceRate
     end if
 
   end subroutine linsol_solveFgmres
