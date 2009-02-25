@@ -4,10 +4,14 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module provides the basic data structures and subroutines for handling
-!# time-dependent problems. A calling program should create a new object of
-!# time t_timestep and fill the required parameters either by reading a user-
-!# supplied parameter file of via direct adjustment.
+!# This module provides the basic data structures and subroutines for
+!# handling time-dependent problems. A calling program should create a
+!# new object of time t_timestep and fill the required parameters
+!# either by reading a user- supplied parameter file of via direct
+!# adjustment.
+!#
+!# Furthermore, each object of type t_solver provides information
+!# about convergence and norms after the solver has terminated.
 !#
 !# The following routines are available:
 !#
@@ -61,7 +65,7 @@ module timestep
   use paramlist
   use problem
   use timestepaux
-  use solver
+  use solveraux
   use solverlinear
   use solvernonlinear
 
