@@ -225,10 +225,10 @@ ucderror = out/burgers2d_error
 ioutputlevel = 2
 
 # type of time-stepping algorithm
-# 5 = two-level theta-scheme
-# 6 = explicit Runge-Kutta scheme
-# 7 = full MG
-ctimestepType = 5
+# 1 = two-level theta-scheme
+# 2 = explicit Runge-Kutta scheme
+# 5 = full MG
+ctimestepType = 1
 
 # norm to use for solution variation checking
 # 0 = Euclidian norm
@@ -285,7 +285,7 @@ depsSteady = 0.0
 
 ################################################################################
 [FullMultigridSolver]
- csolverType = 7
+ csolverType = 5
 ################################################################################
 
 # level of output information:
