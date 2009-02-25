@@ -119,13 +119,14 @@ module euler_application
   use pprocindicator
   use pprocsolution
   use problem
-  use solver
+  use solveraux
   use spatialdiscretisation
   use statistics
   use stdoperators
   use storage
   use thermodynamics
   use timestep
+  use timestepaux
   use ucd
 
   implicit none
@@ -299,8 +300,10 @@ contains
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
     
-    ! Release solvers
-    call solver_releaseTimestep(rtimestep)
+    ! Release time-stepping
+    call tstep_releaseTimestep(rtimestep)
+    
+    ! Release solver
     call solver_releaseSolver(rsolver)
     
     ! Release problem structure
@@ -466,25 +469,25 @@ contains
 
     ! Add internal information about the position of 
     ! constant coefficient matrices and auxiliary vectors
-    call parlst_getvalue_int(rparlist, ssectionName, 'InviscidAFC', i, 1)
+    call parlst_getvalue_int(rparlist, ssectionName, 'InviscidAFC', i)
     call collct_setvalue_int(rcollection, 'InviscidAFC', i, .true.)
 
-    call parlst_getvalue_int(rparlist, ssectionName, 'SystemMatrix', i, 1)
+    call parlst_getvalue_int(rparlist, ssectionName, 'SystemMatrix', i)
     call collct_setvalue_int(rcollection, 'SystemMatrix', i, .true.)
 
-    call parlst_getvalue_int(rparlist, ssectionName, 'JacobianMatrix', i, 2)
+    call parlst_getvalue_int(rparlist, ssectionName, 'JacobianMatrix', i)
     call collct_setvalue_int(rcollection, 'JacobianMatrix', i, .true.)
 
-    call parlst_getvalue_int(rparlist, ssectionName, 'TemplateMatrix', i, 3)
+    call parlst_getvalue_int(rparlist, ssectionName, 'TemplateMatrix', i)
     call collct_setvalue_int(rcollection, 'TemplateMatrix', i, .true.)
 
     if ((rappDescriptor%imasstype .ne. MASS_ZERO) .or.&
         (rappDescriptor%imassantidiffusiontype .ne. MASS_ZERO)) then
 
-      call parlst_getvalue_int(rparlist, ssectionName, 'ConsistentMassMatrix', i, 4)
+      call parlst_getvalue_int(rparlist, ssectionName, 'ConsistentMassMatrix', i)
       call collct_setvalue_int(rcollection, 'ConsistentMassMatrix', i, .true.)
 
-      call parlst_getvalue_int(rparlist, ssectionName, 'LumpedMassMatrix', i, 5)
+      call parlst_getvalue_int(rparlist, ssectionName, 'LumpedMassMatrix', i)
       call collct_setvalue_int(rcollection, 'LumpedMassMatrix', i, .true.)
 
     else
@@ -496,22 +499,22 @@ contains
 
     select case(rappDescriptor%ndimension)
     case (NDIM1D)
-      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 6)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', 0, .true.)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', 0, .true.)
     case (NDIM2D)
-      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 6)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
-      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i, 7)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', i, .true.)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', 0, .true.)
     case (NDIM3D)
-      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i, 6)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
-      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i, 7)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', i, .true.)
-      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CZ', i, 8)
+      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CZ', i)
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', i, .true.)
     case DEFAULT
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CX',  0, .true.)
@@ -564,7 +567,7 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'solver',   ssolverName)
 
     ! Initialize time-stepping
-    call solver_createTimestep(rparlist, stimestepName, rtimestep)
+    call tstep_createTimestep(rparlist, stimestepName, rtimestep)
     
     ! Initialize solver structure
     call solver_createSolver(rparlist, ssolverName, rsolver)
@@ -2204,20 +2207,17 @@ contains
       ! What time-stepping scheme should be used?
       select case(rtimestep%ctimestepType)
         
-      case (SV_RK_SCHEME)
+      case (TSTEP_RK_SCHEME)
         
         ! Adopt explicit Runge-Kutta scheme
-        call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-                                 rsolver, rsolution, euler_calcRHS,&
-                                 euler_setBoundary, rcollection)
+        call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
+                                 rsolution, euler_nlsolverCallback, rcollection)
         
-      case (SV_THETA_SCHEME)
+      case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-                                    rsolver, rsolution, euler_calcResidual,&
-                                    euler_calcJacobian, euler_applyJacobian,&
-                                    euler_setBoundary, rcollection)
+        call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
+                                    rsolution, euler_nlsolverCallback, rcollection)
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
