@@ -116,23 +116,27 @@ contains
 !************************************************************************
 
 !<subroutine>
-  subroutine error_print(icode, sroutine, bcritical, iarg1, iarg2, darg1, darg2, &
-                         sarg1, sarg2)
-!<description>
-!This routine prints the error message for the given error code. If the occured error is
-!critical so that the further program execution is impossible the program terminates.
-!</description>
+  subroutine error_print(&
+       icode, sroutine, bcritical, &
+       iarg1, iarg2, &
+       darg1, darg2, &
+       sarg1, sarg2)
 
-!<input>
+  !<description>
+    ! This routine acts as wrapper routine for error_print_aux. The preprocessor f90cpp
+    ! will replace all occurences of this routine with calls to error_print_aux,
+    ! inserting corrected line numbers etc.
+  !</description>
+  !<input>
+
+    !error code
+    integer, intent(in) :: icode
 
     !name of the calling routine
     character (len = *), intent(in) :: sroutine
 
     !flag if the error is critical, then terminate the program
     logical, intent(in) :: bcritical
-
-    !error code
-    integer, intent(in) :: icode
 
     !integer argument 1 (optional)
     integer, optional :: iarg1
@@ -151,141 +155,260 @@ contains
 
     !string argument 2 (optional)
     character(len = *), optional :: sarg2
-! </input>
+  !</input>
+!</subroutine>
+
+    call error_print_aux(0, "-", icode, sroutine, bcritical, &
+                         iarg1, iarg2, &
+                         darg1, darg2, &
+                         sarg1, sarg2)
+
+  end subroutine error_print
+
+!************************************************************************
+
+  subroutine error_print_aux(&
+       iline, sfile, icode, sroutine, bcritical, &
+       iarg1, iarg2, &
+       darg1, darg2, &
+       sarg1, sarg2)
+
+  !<description>
+    ! This routine prints the error message for the given error code. If the occured
+    ! error is critical so that the further program execution is impossible the program
+    ! terminates.
+    ! Even though this routine is public, users should never call it directly, because
+    ! it is used by the preprocessor f90cpp.
+  !</description>
+
+  !<input>
+
+    ! line of calling error_print
+    integer(I32), intent(in) :: iline
+
+    ! file of calling error_print
+    character(len=*), intent(in) :: sfile
+
+    !error code
+    integer, intent(in) :: icode
+
+    !name of the calling routine
+    character (len = *), intent(in) :: sroutine
+
+    !flag if the error is critical, then terminate the program
+    logical, intent(in) :: bcritical
+
+    !integer argument 1 (optional)
+    integer, optional :: iarg1
+
+    !integer argument 2 (optional)
+    integer, optional :: iarg2
+
+    !double argument 1 (optional)
+    real(DP), optional :: darg1
+
+    !double argument 2 (optional)
+    real(DP), optional :: darg2
+
+    !string argument 1 (optional)
+    character(len = *), optional :: sarg1
+
+    !string argument 2 (optional)
+    character(len = *), optional :: sarg2
+  !</input>
 
 !</subroutine>
 
-    character(len = SYS_STRLEN) :: sstring, sstring1, sstring2
+    character(len = SYS_STRLEN) :: sstring, sstring1, sstring2, sprefix
+
+    ! strings to construct the actual error message
+    ! hard-coded indices, please obey:
+    ! Smessage(1)  = delimiter
+    ! Smessage(2)  = error code and routine
+    ! Smessage(3)  = line number and file
+    ! Smessage(4)  = empty line for improved layout
+    ! Smessage(5)  = message body
+    ! Smessage(6)  = message body
+    ! Smessage(7)  = message body
+    ! Smessage(8)  = message body
+    ! Smessage(9)  = message body
+    ! Smessage(10) = message body
+    ! Smessage(11) = message body
+    ! Smessage(12) = message body
+    ! Smessage(13) = message body
+    ! Smessage(14) = message body
+    ! Smessage(15) = message body
+    ! Smessage(16) = delimiter
+    integer(I32), parameter :: NMESSAGELINES = 16
+    character(len=SYS_STRLEN), dimension(NMESSAGELINES) :: Smessage
+    character(len=SYS_STRLEN), dimension(NMESSAGELINES) :: Smessage2
+
+    ! initialise all message strings
+    Smessage(:) = ""
+    Smessage2(:) = ""
     
+
+    ! Set module-private error code
     ierror = icode
+
     
-    call output_line(OU_CLASS_ERROR, "", "******************************************" // &
-         "********************************")
+    ! Error or warning only?
     if (bcritical) then
-      call output_line(OU_CLASS_ERROR, "", &
-                       "ERROR " // trim(sys_siL(icode, 5)) // " in '" // sroutine // "': ")
+      sstring1 = "ERROR"
+      sprefix = "[ERR]"
     else
-      call output_line(OU_CLASS_ERROR, "", &
-                       "WARNING " // trim(sys_siL(icode, 5)) // " in '" // sroutine // "': ")
+      sstring1 = "WARNING"
+      sprefix = "[WARN]"
     endif
+
+    ! message header
+    Smessage(1) = "*************************************" // &
+                  "*************************************"
+
+    ! Line information available?
+    if (iline .ne. 0 ) then
+      Smessage(2) = trim(sstring1) // " " // trim(sys_siL(icode, 5)) // &
+                  " in <" // sroutine // ">,"
+      Smessage(3) = "raised in line " // trim(sys_siL(iline, 5)) // &
+                  " in file <" // sfile // ">:"
+      Smessage(4) = ""
+    else
+      Smessage(2) = trim(sstring1) // " " // trim(sys_siL(icode, 5)) // &
+                  " in <" // sroutine // ">:"
+      Smessage(3) = ""
+      Smessage(4) = ""
+    endif
+
+
 
     select case (icode)
     case (ERR_YNI)
       if (present(sarg1)) then
-        call output_line(OU_CLASS_ERROR, "", trim(sarg1))
+        Smessage(5) = trim(sarg1)
+        if (present(sarg2)) Smessage(6) = trim(sarg2)
       else
-        write(OU_LOG, '(A)') "Yet not implemented."
-      end if
+        Smessage(5) = "Yet not implemented."
+      endif
 
     case (ERR_STRING_TO_INT)
-      call output_line(OU_CLASS_ERROR, "", "Error while converting string '" // trim(sarg1) // &
-                                     "' to int.")
+      Smessage(5) = "Error while converting string <" // trim(sarg1) // "> to int."
 
     case (ERR_STRING_TO_REAL)
-      call output_line(OU_CLASS_ERROR, "", "Error while converting string '" // trim(sarg1) // &
-                                     "' to real.")
-
-! Case never used in FEAST
-!    case (ERR_ST_NOMB)
-!      write(OU_LOG, '(A)') "No memory block free."
-
-! Case never used in FEAST
-!    case (ERR_ST_HEAPF)
-!      write(OU_LOG, '(A)') "Wrong heap descriptor."
+      Smessage(5) = "Error while converting string <" // trim(sarg1) // "> to real."
 
 !*********************************** 14 io *****************************************
     case(ERR_IO_NOFREEUNIT)
-      call output_line(OU_CLASS_ERROR, "", "No free unit found, not able to open the file.")
+      Smessage(5) = "No free unit found. Not able to open the file."
 
     case (ERR_IO_FILEIO)
-      call output_line(OU_CLASS_ERROR, "", "File input/output error.")
+      Smessage(5) = "File input/output error."
       if (present(sarg1)) then
-        call output_line(OU_CLASS_ERROR, "", sarg1)
+        Smessage(6) = sarg1
       endif
 
     case (ERR_IO_EMPTYFILENAME)
       if (present(sarg1)) then
-        call output_line(OU_CLASS_ERROR, "", "File name '" // trim(sarg1) // "' empty.")
+        Smessage(5) = "File name <" // trim(sarg1) // "> empty."
       else
-        call output_line(OU_CLASS_ERROR, "", "File name empty.")
+        Smessage(5) = "File name empty."
       endif
 
     case (ERR_IO_WRONGSTRUCT)
-      write(OU_LOG, '(A)') "error during read: wrong structure"
+      Smessage(5) = "error during read: wrong structure"
 
     case(ERR_IO_NOSUCHFILE)
-      call output_line(OU_CLASS_ERROR, "", "File " // trim(sarg1) // " does not exist.")
-      call output_line(OU_CLASS_ERROR, "", "Read from file failed.")
+      Smessage(5) = "File " // trim(sarg1) // " does not exist."
+      Smessage(6) = "Read from file failed."
 
     case(ERR_IO_MATRIX_UNASSEMBLED)
       if (present(iarg1)) then
         sstring = sys_siL(iarg1,1)
       else
         sstring = "[unknown]"
-      end if
+      endif
 
-      if (present(iarg1)) then
+      if (present(iarg2)) then
         sstring1 = sys_siL(iarg2,1)
       else
         sstring1 = "[unknown]"
-      end if
+      endif
 
       if (present(sarg1)) then
         sstring2 = sarg1
       else
         sstring2 = "[unknown]"
-      end if
-      call output_line(OU_CLASS_ERROR, "", "Block (" // trim(sstring) // "," // &
-                                     trim(sstring1) // ") of matrix '" // &
-                                     trim(sstring2) // "' seems not properly assembled.")
-      call output_line(OU_CLASS_ERROR, "", "Export skipped.")
+      endif
+      Smessage(5) = "Block (" // trim(sstring) // "," // &
+                    trim(sstring1) // ") of matrix <" // &
+                    trim(sstring2) // ">"
+      Smessage(6) = "seems not properly assembled. Export skipped."
 
 
 !********************************* 31 storage **********************************
 
     case (ERR_ST_NODES)
-      call output_line(OU_CLASS_ERROR, "", "No descriptor block free.")
+      Smessage(5) = "FEAT ran out of storage descriptors. Please increase the value of"
+      Smessage(6) = "STORAGE_DES in the configuration file."
 
     case (ERR_ST_DESF)
-      call output_line(OU_CLASS_ERROR, "", "Wrong descriptor block.")
+      Smessage(5) = "Wrong descriptor block."
 
     case (ERR_ST_DESTF)
-      call output_line(OU_CLASS_ERROR, "", "Wrong descriptor type.")
+      Smessage(5) = "Wrong descriptor type."
 
     case (ERR_ST_NOMEM)
-      call output_line(OU_CLASS_ERROR, "", "Not enough memory on heap " // &
-                                     trim(adjustl(sys_i6(iarg1))) // &
-                                     ". Needs additionally " // &
-                                     trim(adjustl(sys_i12(iarg2))) // &
-                                     " entries! Aborting program.")
+      Smessage(5) = "Not enough memory on heap " // trim(sys_siL(iarg1, 6)) // &
+                    ". Needs additionally " // trim(sys_siL(iarg2, 12)) // &
+                    " entries! "
 
     case (ERR_ST_ALLOCF)
-      call output_line(OU_CLASS_ERROR, "", "Memory allocation error.")
+      Smessage(5) = "Memory allocation error."
 
     case (ERR_ST_INVREQUEST)
-      call output_line(OU_CLASS_ERROR, "", "Request for invalid amount of memory:")
-      call output_line(OU_CLASS_ERROR, "", "For " // sarg1 // " the size " // &
-                                     trim(adjustl(sys_i12(iarg1))) // &
-                                     " was requested.")
+      Smessage(5) = "Request for invalid amount of memory:"
+      Smessage(6) = "For " // trim(sarg1) // " the size " // &
+                    trim(sys_siL(iarg1, 12)) // " was requested."
+
     case (ERR_ST_FREE_BLOCK_ERROR)
-      call output_line(OU_CLASS_ERROR, "", "There cannot be more FREE storage blocks " // &
-                                     "than the maximum number of blocks.")
+      Smessage(5) = "There cannot be more FREE storage blocks " // &
+                    "than the maximum number of blocks."
 
 !********************************* default **********************************
 
     case default
-      call output_line(OU_CLASS_ERROR, "", "Unknown error code raised! " // sys_i12(icode))
+      Smessage(5) = "Unknown error code raised! " // trim(sys_siL(icode, 12))
 
     end select
 
+    ! message footer
+    Smessage(NMESSAGELINES) = "******************************************" // &
+                              "********************************"
 
 
-    call output_line(OU_CLASS_ERROR, "", "******************************************" // &
-                                   "********************************")
+!    call output_line(OU_CLASS_ERROR, "", "******************************************" // &
+!                                   "********************************")
 
     !Force warnings/errors to appear on screen/in log file.
     call sys_flush(OU_LOG)
     call sys_flush(6)
+
+    ! pretty-print error message (warning: semi-hardcoded based on index ranges)
+    do i = 1, 4
+      Smessage2(i) = trim(sprefix) // " " // trim(Smessage(i))
+    enddo
+    inextLine = 5
+    do i = 5, NMESSAGELINES-1
+      if (Smessage(i) .ne. "") then
+        Smessage2(inextLine) = trim(sprefix) // " " // trim(Smessage(i))
+        inextLine = inextLine + 1
+      endif
+    enddo
+    Smessage2(inextLine) = trim(sprefix) // " " // trim(Smessage(NMESSAGELINES))
+
+    do i = 1, inextLine
+!      write(SYS_LOG, '(a)') trim(Smessage2(i))
+      call output_line(OU_CLASS_ERROR, "", trim(Smessage2(i)))
+    enddo
 
     !In case the thrown error has been critical, end program now
     if (bcritical) then
@@ -300,7 +423,7 @@ contains
 
     endif
 
-  end subroutine error_print
+  end subroutine error_print_aux
 
 !************************************************************************
   
