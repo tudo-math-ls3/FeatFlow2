@@ -1,0 +1,3770 @@
+#!/usr/bin/env perl
+#
+########################################################################
+#                                                                      #
+#         FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T          #
+#                                                                      #
+# Authors: Ch.Becker,                                                  #
+#          S.Buijssen, D.Goeddeke, M.Grajewski, H.Wobker,              #
+#          S.Kilian, S.Turek                                           #
+#                                                                      #
+# Contact: Applied Mathematics, TU Dortmund                            #
+#          Vogelpothsweg 87, 44227 Dortmund                            #
+#          Germany                                                     #
+#                                                                      #
+# Web:     http://www.feast.tu-dortmund.de                             #
+#          mailto:feast@math.tu-dortmund.de                            #
+#                                                                      #
+########################################################################
+#
+# short description:
+#   script to create your FEAST application's Makefile
+#
+# long version:
+#   FEAST's bin/configure is a Perl script which basically does what you
+#   would expect from a normal GNU configure: It determines a set of
+#   values necessary to compile your FEAST application on the machine you
+#   logged into, finds the dependencies between the sources files and
+#   finally creates a Makefile for your application. There are three
+#   reasons why the GNU configure wasn't used: First, FEAST is not
+#   published under GNU license yet and second, most of the stuff GNU
+#   configure does is not necessary for Fortran programs. It was designed
+#   to create Makefiles for C / C++ programs. Finally was it easier to
+#   design this Perl script to meet our needs than to learn to speak
+#   autoconf syntax and make it work for us. FEAST's bin/configure
+#   accepts a bunch of command line arguments. You get a complete list
+#   via 'bin/configure --help'. Using these command line arguments you
+#   can override the default values of bin/configure,
+#   kernel/arch/Makefile.inc and
+#   the files in kernel/arch/templates/*.mk. For instance, you can change
+#   application name, make program to use, build ID, Fortran compiler and/
+#   or libraries to use, the source files your application is built
+#   from, special compile flags and preprocessor instructions only your
+#   application needs/respects etc. Adding '--debug' to your command line
+#   arguments will additionally print a list of all Makefile variables
+#   that are explicitly overridden from the command line. Their values
+#   will take precedence over the default values set in
+#   kernel/arch/Makefile.inc and the template files in
+#   kernel/arch/templates/*.mk for these variables.
+#
+# by Sven H.M. Buijssen (sven.buijssen@math.tu-dortmund.de)
+#
+# Current version:
+# $Id: configure,v 2.47 2009/01/28 23:29:13 buijssen Exp $
+
+
+# ======================
+# === Libraries used ===
+
+# Allow proper programming only
+# (a bit like Fortran90's "implicit none")
+use strict;
+use warnings;
+
+# Use a recent version of Perl
+#v-string in use/require non-portable: use v5.6.1;
+use 5.006_001;
+
+# For unicode source files
+#use Encode;
+
+# being able to use tmpname to create temporary files
+use POSIX;
+
+# handling of command line options
+use Getopt::Long 2.33 qw(:config prefix_pattern=--);
+
+# Portably get the pathname of the current working directory
+use Cwd qw(abs_path cwd);
+
+# Portably parse a pathname into directory, basename and extensions
+use File::Basename;
+
+# the current hostname
+use Sys::Hostname;
+
+# Methods for manipulating file specifications.
+use File::Spec;
+
+# Don't buffer print messages, show them immediately even if there is no carriage return yet.
+use IO::Handle qw(autoflush);
+STDOUT->autoflush(1);
+
+
+# ===========================================
+# === Define some constants and variables ===
+
+use constant VERSION => 287;
+
+use constant INITIAL_MESSAGE =>
+    "This is the FEAT2 custom configuration program.\n" .
+    "It is not GNU Configure.\n\n" .
+    "There are a couple of optional arguments to this program,\n" .
+    "use '--help' command line option to learn about them.\n\n";
+
+# program name
+my $progname = &basename($0);
+
+# This configure script is supposed to reside under bin/ in the main FeatFlow2 directory.
+# This information is used to locate Makefile settings and source files. To locate those
+# files from somewhere in the FeatFlow2 source tree, use the path information that is
+# supplied on invocation of this script.
+#
+# version with relative paths
+my $FEASTBASEDIR = &abs_path(&dirname($0) . "/..");
+
+# version with absolute paths
+# (when changing to absolute paths again, be aware that copying of
+# included files to object directory may happen multiple times as
+# the file may get on the list with absolute and relative path)
+#my $FEASTBASEDIR = &get_feast_basedir(&cwd());
+
+# name of Makefile to create
+my $MAKEFILE     = "GNUmakefile";
+
+# some important files and directories.
+# The values are supposed to be relative to the FEAST main directory.
+my $MAKEFILE_INC          = "Makefile.inc";
+my $MAKEFILE_BUILDID_INC  = "Makefile.buildID.inc";
+my $MAKEFILE_CPU_INC      = "Makefile.cpu.inc";
+my $SRCDIR_KERNEL         = "kernel";
+my $SRCDIR_ARCH           = "kernel/arch-specific";
+my $SRCDIR_APP            = ".";
+
+# suffix for directories to store FEAST and third-party libraries
+#
+# (Third party libraries are independent of FEAST sources and, as such, can
+# be shared among all FEAST applications.)
+use constant OBJDIR        => "object/\$(ID)";
+use constant OBJDIR_LIB    => "object/\$(LIBID)";
+
+use constant SRCLIST_KERNEL =>
+    "Adaptivity/hadaptaux.f90 Adaptivity/hadaptaux1d.f90 Adaptivity/hadaptaux2d.f90 " .
+    "Adaptivity/hadaptaux3d.f90 Adaptivity/hadaptivity.f90 " .
+
+    "BasicGeometry/basicgeometry.f90 BasicGeometry/geometry.f90 BasicGeometry/geometryaux.f90 " .
+
+    "Boundary/boundary.f90 Boundary/fictitiousboundary.f90 " .
+
+    "ContinuousFormulation/boundarycondition.f90 ContinuousFormulation/scalarpde.f90 " .
+
+    "DOFMaintenance/bcassembly.f90 DOFMaintenance/bilinearformevaluation.f90 " .
+    "DOFMaintenance/discretebc.f90 DOFMaintenance/discretefbc.f90 DOFMaintenance/dofmapping.f90 " .
+    "DOFMaintenance/domainintegration.f90 DOFMaintenance/feevaluation.f90 " .
+    "DOFMaintenance/linearformevaluation.f90 DOFMaintenance/matrixfilters.f90 " .
+    "DOFMaintenance/multileveloperators.f90 DOFMaintenance/multilevelprojection.f90 " .
+    "DOFMaintenance/sortstrategy.f90 DOFMaintenance/spatialdiscretisation.f90 " .
+    "DOFMaintenance/trilinearformevaluation.f90 DOFMaintenance/vectorfilters.f90 " .
+
+    "DataStructures/arraylist.f90 DataStructures/binarytree.f90 DataStructures/graph.f90 " .
+    "DataStructures/list.f90 DataStructures/octree.f90 DataStructures/quadtree.f90 DataStructures/stack.f90 " .
+
+    "ElementCubature/cubature.f90 ElementCubature/derivatives.f90 ElementCubature/element.f90 " .
+    "ElementCubature/element_hexa3d.f90 ElementCubature/element_line1d.f90 " .
+    "ElementCubature/element_prism3d.f90 ElementCubature/element_pyra3d.f90 " .
+    "ElementCubature/element_quad2d.f90 ElementCubature/element_tetra3d.f90 " .
+    "ElementCubature/element_tri2d.f90 ElementCubature/elementbase.f90 " .
+    "ElementCubature/elementpreprocessing.f90 ElementCubature/transformation.f90 " .
+
+    "LinearAlgebra/linearalgebra.f90 LinearSolver/coarsegridcorrection.f90 LinearSolver/filtersupport.f90 " .
+    "LinearSolver/iluk.f90 LinearSolver/linearsolver.f90 LinearSolver/linearsolverautoinitialise.f90 " .
+    "LinearSolver/quicksolver.f90 LinearSolver/vanka.f90 LinearSolver/vanka_bouss2d.f90 " .
+    "LinearSolver/vanka_navst2d.f90 LinearSystem/globalsystem.f90 LinearSystem/linearsystemblock.f90 " .
+    "LinearSystem/linearsystemscalar.f90 LinearSystem/matrixmodification.f90 " .
+
+    "Mathematics/adjacency.f90 Mathematics/mprimitives.f90 " .
+
+    "NonlinearSolver/nonlinearsolver.f90 " .
+
+    "PDEOperators/afcstabilisation.f90 PDEOperators/convection.f90 PDEOperators/groupfemscalar.f90 " .
+    "PDEOperators/groupfemsystem.f90 PDEOperators/jumpstabilisation.f90 " .
+    "PDEOperators/matrixrestriction.f90 PDEOperators/stdoperators.f90 " .
+
+    "Postprocessing/boundaryintegral.f90 Postprocessing/mapleio.f90 Postprocessing/matrixio.f90 " .
+    "Postprocessing/pprocerror.f90 Postprocessing/pprocgradients.f90 Postprocessing/pprocindicator.f90 " .
+    "Postprocessing/pprocnavierstokes.f90 Postprocessing/ucd.f90 Postprocessing/vectorio.f90 " .
+
+    "Preprocessing/pprocsolution.f90 " .
+
+    "ProblemSupport/collection.f90 " .
+
+    "Projection/analyticprojection.f90 Projection/spdiscprojection.f90 " .
+
+    "System/afcutil.f90 System/error.f90 System/externalstorage.f90 System/fparser.f90 " .
+    "System/fpersistence.f90 System/fsystem.f90 System/genoutput.f90 System/io.f90 " .
+    "System/paramlist.f90 System/signal.f90 System/sort.f90 System/statistics.f90 " .
+    "System/storage.f90 System/textstream.f90 System/uuid.f90 " .
+
+    "TimeDependence/timestepping.f90 " .
+
+    "Triangulation/griddeform.f90 Triangulation/meshadjacency.f90 Triangulation/meshmodification.f90 " .
+    "Triangulation/meshregion.f90 Triangulation/triangulation.f90 Triangulation/triasearch.f90";
+
+use constant SRCLIST_ARCH      => "";
+
+
+# Files generated automatically in the coarse of a make run to
+# build either object files or the application itself.
+# The list is used to set up the clean up targets 'clean*' and 'purge*'
+use constant SRCLIST_GENERATED => " " .
+                                  "\$(FILE_F77_INFO).version \$(FILE_F77_INFO).ls " .
+                                  "\$(FILE_F90_INFO).version \$(FILE_F90_INFO).ls " .
+                                  "\$(FILE_CC_INFO).version  \$(FILE_CC_INFO).ls " .
+                                  "\$(FILE_CXX_INFO).version \$(FILE_CXX_INFO).ls " .
+                                  "\$(COMPILER_SETTINGS)";
+#use constant PROGRAM_FILE      => "src/cc2d.f90";
+
+# List of files that should not be included in a Makefile ALTHOUGH
+# they are included into a source file via an 'include' statement.
+# This list typically contains system header files like "mpif.h".
+# Note:
+# If an 'include' statement in a Fortran source file contains a
+# relative or absolute path (and not only the file' basename), it
+# will be included into the Makefile even when the file's basename
+# is listed here.
+use constant DO_NOT_INCLUDE => "";
+
+# List of files that must be included as prerequisite of each
+# object file.
+use constant MUST_INCLUDE => "";
+
+# List of header files that needed to be copied to object directory
+# instead of being evaluated and then stored in object directory
+# (This list typically consists of all files defining C preprocessor
+#  macros that need to be evaluated when being included into a
+#  Fortran source file.)
+use constant HEADER_FILES_TO_COPY =>
+    "";
+
+
+# All header files referenced by Fortran 90 source files
+my @headerfiles   = ();
+
+# Valid id to build for
+my @valid_id      = ();
+
+# Some auxiliary variables
+my $objdir         = "";
+my $objdir_lib     = "";
+my $currentFile    = "";
+my $oldEntry       = "";
+my $make           = "";
+my $makeversion    = "";
+my $makeInMakefile = "";
+my $buildID        = "";
+my $buildID_lib    = "";
+my $counter        = 0;
+my $warnings       = "";
+
+# list of modules used in one file
+my @module = ();
+
+# hash for use when configuring benchmark applications
+# It is not necessary to perform the very same tests for
+# every benchmark application. When creating the meta Makefile
+# for the benchmark folder these tests are performed.
+# sub-configures are called with undocumented command line
+# options that set these tested values such that the
+# corresponding tests can be skipped.
+my %cachedtests = ();
+
+# variables for command line options
+my %cl = ();
+
+# defaults for Makefile variables
+my %defaults = (
+    APPNAME             => "feat2app",
+    APPONLYFLAGS        => [],
+    AR                  => "",
+    BUILDLIB            => [],
+    CC                  => "",
+    CFLAGSC             => [],
+    CFLAGSCXX           => [],
+    CFLAGSF77           => [],
+    CFLAGSF90           => [],
+    COPROCLIST          => [],
+    CXX                 => "",
+    F77                 => "",
+    F90                 => "",
+    FORCE_ID            => "NO",
+    ID                  => "",
+    INC                 => [],
+    LD                  => "",
+    LDFLAGS             => [],
+    LIBDIR              => [],
+    LIBS                => [],
+    MODE                => "SERIAL",
+    MODEXTENSION        => "",
+    MONITOR_COMPILE_ENV => "YES",
+    MOVEMOD             => "",
+    MPIINC              => [],
+    MPILIBDIR           => [],
+    MPILIBS             => [],
+    MPIWRAPPERS         => "NO",
+    OBJDIR              => "",
+    OBJDIR_LIB          => "",
+    OPT                 => "YES",
+    PROGRAMFILE         => "masterslave.f90",
+    RANLIB              => "",
+    RELINK_ALWAYS       => "YES",
+    SRCEXTRA            => "",
+    SRCLIST_APP         => [ "slavemod.f90", "userdef.f90" ],
+);
+
+
+# ===========================
+# === Program starts here ===
+#
+#
+#
+# Parse command line
+#
+# If GetOptions() returns false, the function detected one or
+# more errors during option parsing. So, this script should die.
+#
+# Pass the variables by reference (syntax: prefix them with a backslash),
+# when passing an array explicitly
+#
+# Agreement: store command line options that directly translate into
+# a Makefile variable (e.g. --opt => OPT) in capital letters, all
+# remaining command line options (e.g. --runregressionbenchmark) in
+# lower case.
+my $unknownoption=0;
+GetOptions (
+            "appname=s"                     => \$cl{'APPNAME'},
+            "no-opt"                        => sub { $cl{'OPT'} = 0 },
+            "apponlyflags=s"                => \@{ $cl{'APPONLYFLAGS'} },
+            "ar=s"                          => \$cl{'AR'},
+            "regressionbenchmark"           => \$cl{'regressionbenchmark'},
+            "regression-benchmark"          => \$cl{'regressionbenchmark'},
+            "buildlib=s"                    => \@{ $cl{'BUILDLIB'} },
+            # Store values given via --cached-* in a cache,
+            # the related tests will be skipped, greatly speeding up
+            # configure process.
+            "cached-make-program=s"         => sub { $cachedtests{'make-program'} = $_[1]; },
+            "cached-gnumake-version=s"      => sub { $cachedtests{'gnumake-version'} = $_[1]; },
+            "cached-make-sets-make-var"     => sub { $cachedtests{'make-sets-make-var'} = 1; },
+            "cached-build-id=s"             => sub { $cachedtests{'build-id'} = $_[1]; },
+            "cc=s"                          => \$cl{'CC'},
+            "cflagsc=s"                     => \@{ $cl{'CFLAGSC'} },
+            "cflagscxx=s"                   => \@{ $cl{'CFLAGSCXX'} },
+            "cflagsf77=s"                   => \@{ $cl{'CFLAGSF77'} },
+            "cflagsf90=s"                   => \@{ $cl{'CFLAGSF90'} },
+	    "coproclist=s"                  => \@{ $cl{'COPROCLIST'} },
+            "cxx=s"                         => \$cl{'CXX'},       # an alias for --cpp, for consistency with --cflagscxx
+            "cpp=s"                         => \$cl{'CXX'},
+            "debug"                         => \$cl{'debug'},
+            "f77=s"                         => \$cl{'F77'},
+            "f90=s"                         => \$cl{'F90'},
+            "force-id"                      => \$cl{'FORCE_ID'},
+            "help"                          => \$cl{'help'},
+            "id=s"                          => \$cl{'ID'},
+            "inc=s"                         => \@{ $cl{'INC'} },
+            "ld=s"                          => \$cl{'LD'},
+            "ldflags=s"                     => \@{ $cl{'LDFLAGS'} },
+            "libdir=s"                      => \@{ $cl{'LIBDIR'} },
+            "libs=s"                        => \@{ $cl{'LIBS'} },
+            "list-all-ids"                  => \$cl{'listallids'},
+            "list-app-modules"              => \$cl{'listappmodules'},
+            "list-ids"                      => \$cl{'listids'},
+            "list-kernel-modules"           => \$cl{'listkernelmodules'},
+            "listallids"                    => \$cl{'listallids'},
+            "listids"                       => \$cl{'listids'},
+            "make=s"                        => \$cl{'make'},
+            "makefile=s"                    => \$cl{'makefile'},
+            "mode=s"                        => \$cl{'MODE'},
+            "modextension=s"                => \$cl{'MODEXTENSION'},
+            "monitor-compile-env!"          => \$cl{'MONITOR_COMPILE_ENV'},
+            "movemod=s"                     => \$cl{'MOVEMOD'},
+            "mpiinc=s"                      => \@{ $cl{'MPIINC'} },
+            "mpilibdir=s"                   => \@{ $cl{'MPILIBDIR'} },
+            "mpilibs=s"                     => \@{ $cl{'MPILIBS'} },
+            "mpiwrappers!"                  => \$cl{'MPIWRAPPERS'},
+            "objdir-prefix=s"               => \$cl{'objdirprefix'},
+            "objdir-lib-prefix=s"           => \$cl{'objdirlibprefix'},
+            "opt:s"                         => \$cl{'OPT'},
+            "parallel"                      => sub { $cl{'MODE'} = "parallel" },
+            "programfile=s"                 => \$cl{'programfile'},
+            "ranlib=s"                      => \$cl{'RANLIB'},
+            "relink-always!"                => \$cl{'RELINK_ALWAYS'},
+            "serial"                        => sub { $cl{'MODE'} = "serial" },
+            "srcextra=s"                    => \@{ $cl{'SRCEXTRA'} },
+            "srclist-app=s"                 => \@{ $cl{'SRCLIST_APP'} },
+            "srclist_app=s"                 => \@{ $cl{'SRCLIST_APP'} },
+            "suppressflags=s"               => \@{ $cl{'suppressflags'} },
+            "version"                       => \$cl{'version'},
+            ) || ($unknownoption=1);
+
+$FEASTBASEDIR = ".." if ($cl{'regressionbenchmark'});
+
+# Show version if requested
+&show_version() if ($cl{'version'});
+
+# Show help if requested
+&show_help() if ($cl{'help'});
+
+
+# Check given command line options
+&check_options();
+
+print INITIAL_MESSAGE;
+
+# Show values in debug mode
+&debug_command_line_options() if ($cl{'debug'});
+
+# Checking for variant of make
+# We desperately need GNU make as MAKEFILE_INC heavily uses GNU Make extensions,
+# so make sure we have GNU make as we have to invoke GNU make from this script.
+&check_for_gnumake();
+
+# Check whether make sets $(MAKE) variable
+&check_make_sets_make_variable();
+
+# Get build ID (needed to parse the target platform specific
+# files for dependencies) from command line or determine
+# the default one for current host.
+$buildID = &get_buildID();
+$buildID_lib = &get_buildID_lib();
+
+# Show valid build IDs if requested
+# (see below for a list restricted to current host. Can be executed
+#  not before valid make version has been found and guess_id has been run.)
+&list_all_ids() if ($cl{'listallids'});
+
+# Show valid build IDs for current host if requested
+&list_ids() if ($cl{'listids'});
+
+# List modules when asked for it
+&list_kernel_modules() if ($cl{'listkernelmodules'});
+&list_app_modules()    if ($cl{'listappmodules'});
+
+# Check whether build ID is valid (if not a subconfigure for benchmark application
+# as then this test has already been performed by a directly preceding call of this
+# script)
+if (! defined($cachedtests{'build-id'})) {
+    if (! &id_is_valid($buildID)) {
+        die "\n" . $progname.": ERROR: ".
+            "The build ID is not valid.\n" .
+            "There is no such case handled in " .
+            &concat_filename($FEASTBASEDIR, $MAKEFILE_CPU_INC) . ".\n" .
+            "I refuse to create a Makefile.\n";
+    }
+}
+
+# Special feature coproc-bail-out:
+# Refuse to create a Makefile in case coprocessor support is requested
+# in combination with certain (unsupported) build IDs.
+# Note that this has to be held synchroneous with fb2/master.configure
+# and also note that there is another location in this file which needs
+# updating whenever this is modified. Simply search for the next occurence of
+# 'coproc-bail-out' (without the quotation marks)
+my $entry = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
+# no support for *-*-*-*-psc-*, *-*-*-*-sunstudio-*, sx*-none-superux-*-f90-*
+if ($#{$entry} >= 0 &&
+    ($buildID =~ m/^\w+-\w+-\w+-\w+-(psc|sunstudio)-\w+$/ ||
+     $buildID =~ m/^sx\w+-none-superux-\w+-f90-\w+$/)) {
+    # Create an empty Makefile to prevent breaking compilation of
+    # complete benchmark just because configuring one application
+    # failed.
+    print "creating $MAKEFILE (with empty targets).\n";
+    open(MAKEFILE_HDL, ">" , $MAKEFILE) or die "$progname: ERROR: Cannot open file <$MAKEFILE> for writing: $!\n";
+    print MAKEFILE_HDL
+	"#!/usr/bin/env make\n" .
+	"\n" .
+	"clean-app:\n" .
+	"clean-libs:\n" .
+	"clean:\n" .
+	"default:\n" .
+	"id:\n" .
+	"idonly:\n" .
+	"libs:\n" .
+	"purge:\n";
+    close(MAKEFILE_HDL);
+
+    # set error code on exit. The value is queried in fbenchmark2/bin/runregressiontest
+    # (certain cases are known to fail and should not trigger an e-mail notification)
+    $! = 15;
+    die "\n" . $progname.": ERROR: ".
+	"Coprocessor support is not available in combination with\n" .
+	"Pathscale, Sun Studio nor NEC compiler suites. Simply because the respective\n" .
+	"Fortran compilers create symbol names that can not be cross-language\n" .
+	"referenced in C code. I purposely refuse to create a Makefile.\n";
+}
+
+# Backup old Makefile if existent and has not zero size
+if ( -e $MAKEFILE && -s $MAKEFILE ) {
+    print "renaming existing $MAKEFILE to $MAKEFILE" . ".bak\n";
+    rename($MAKEFILE, $MAKEFILE . ".bak") or die "Failed to rename $MAKEFILE to $MAKEFILE" . ".bak.\n";
+}
+
+# Now, create either the FEAST regression directory meta Makefile
+# or a Makefile for a simple FEAST application
+if ($cl{'regressionbenchmark'}) {
+    &create_feastBenchmarkMakefile();
+    # Loop over all subdirectories matching src_* and
+    # configure the FEAST benchmark applications
+    opendir(DIRECTORY, ".") ||
+        die "\n" . $progname.": ERROR: " .
+            "Can't open directory . for reading. This is supposed never to happen!\n";
+    my @srcdirs = grep /^src_/, readdir DIRECTORY;
+    my $cwd = &cwd();
+
+    # Pipe through command line options of regression benchmark configure
+    # call to benchmark applications' configure
+    my $options = "";
+    $options .= " --apponlyflags=\""   . join(',', @{$cl{'apponlyflags'}}) . "\"" if ($#{$cl{'apponlyflags'}}  >= 0);
+    $options .= " --buildlib=\""       . join(',', @{$cl{'buildlib'}})     . "\"" if ($#{$cl{'buildlib'}} >= 0);
+    $options .= " --cc=\""             . $cl{'CC'}                         . "\"" if (defined($cl{'CC'}) && $cl{'CC'});
+    $options .= " --cflagsc=\""        . join(',', @{$cl{'cflagsc'}})      . "\"" if ($#{$cl{'cflagsc'}} >= 0);
+    $options .= " --cflagscxx=\""      . join(',', @{$cl{'cflagscxx'}})    . "\"" if ($#{$cl{'cflagscxx'}} >= 0);
+    $options .= " --cflagsf77=\""      . join(',', @{$cl{'cflagsf77'}})    . "\"" if ($#{$cl{'cflagsf77'}} >= 0);
+    $options .= " --cflagsf90=\""      . join(',', @{$cl{'cflagsf90'}})    . "\"" if ($#{$cl{'cflagsf90'}} >= 0);
+    $options .= " --coproclist=\""     . join(',', @{$cl{'COPROCLIST'}})   . "\"" if ($#{$cl{'coproclist'}} >= 0);
+    $options .= " --cxx=\""            . $cl{'CXX'}                        . "\"" if (defined($cl{'CXX'}) && $cl{'CXX'});
+    $options .= " --debug"                                                        if (defined($cl{'debug'}) && $cl{'debug'});
+    $options .= " --f77=\""            . $cl{'F77'}                        . "\"" if (defined($cl{'F77'}) && $cl{'F77'});
+    $options .= " --f90=\""            . $cl{'F90'}                        . "\"" if (defined($cl{'F90'}) && $cl{'F90'});
+    $options .= " --force-id"                                                     if (defined($cl{'FORCE_ID'}) && $cl{'FORCE_ID'} eq "YES");
+    $options .= " --id=\""             . $cl{'ID'}                         . "\"" if (defined($cl{'ID'}) && $cl{'ID'});
+    $options .= " --inc=\""            . join(',', @{$cl{'inc'}})          . "\"" if ($#{$cl{'inc'}} >= 0);
+    $options .= " --ld=\""             . $cl{'LD'}                         . "\"" if (defined($cl{'LD'}) && $cl{'LD'});
+    $options .= " --ldflags=\""        . join(',', @{$cl{'ldflags'}})      . "\"" if ($#{$cl{'ldflags'}} >= 0);
+    $options .= " --libdir=\""         . join(',', @{$cl{'libdir'}})       . "\"" if ($#{$cl{'libdir'}} >= 0);
+    $options .= " --libs=\""           . join(',', @{$cl{'libs'}})         . "\"" if ($#{$cl{'libs'}} >= 0);
+    $options .= " --list-app-modules"                                             if (defined($cl{'listappmodules'}) && $cl{'listappmodules'});
+    # option $cl{'make'} does not need to be passed as it is passed as
+    # a cached value anyway!
+    $options .= " --makefile=\""       . $cl{'makefile'}                   . "\"" if (defined($cl{'makefile'}) && $cl{'makefile'});
+    $options .= " --mode=\""           . $cl{'MODE'}                       . "\"" if (defined($cl{'MODE'}) && $cl{'MODE'});
+    $options .= " --modextension=\""   . $cl{'MODEXTENSION'}               . "\"" if (defined($cl{'MODEXTENSION'}) && $cl{'MODEXTENSION'});
+    $options .= " --monitor-compile-env"                                          if (defined($cl{'MONITOR_COMPILE_ENV'}) && $cl{'MONITOR_COMPILE_ENV'} eq "YES");
+    $options .= " --no-monitor-compile-env"                                       if (defined($cl{'MONITOR_COMPILE_ENV'}) && $cl{'MONITOR_COMPILE_ENV'} eq "NO");
+    $options .= " --movemod=\""        . $cl{'MOVEMOD'}                    . "\"" if (defined($cl{'MOVEMOD'}) && $cl{'MOVEMOD'});
+    $options .= " --mpiinc=\""         . join(',', @{$cl{'mpiinc'}})       . "\"" if ($#{$cl{'mpiinc'}} >= 0);
+    $options .= " --mpilibdir=\""      . join(',', @{$cl{'mpilibdir'}})    . "\"" if ($#{$cl{'mpilibdir'}} >= 0);
+    $options .= " --mpilibs=\""        . join(',', @{$cl{'mpilibs'}})      . "\"" if ($#{$cl{'mpilibs'}} >= 0);
+    $options .= " --mpiwrappers"                                                  if (defined($cl{'MPIWRAPPERS'}) && $cl{'MPIWRAPPERS'} eq "YES");
+    $options .= " --no-mpiwrappers"                                               if (defined($cl{'MPIWRAPPERS'}) && $cl{'MPIWRAPPERS'} eq "NO");
+    $options .= " --objdir-prefix=\""     . $cl{'objdirprefix'}            . "\"" if (defined($cl{'objdirprefix'}) && $cl{'objdirprefix'});
+    $options .= " --objdir-lib-prefix=\"" . $cl{'objdirlibprefix'}         . "\"" if (defined($cl{'objdirlibprefix'}) && $cl{'objdirlibprefix'});
+    $options .= " --opt=\""            . $cl{'OPT'}                        . "\"" if (defined($cl{'OPT'}) && $cl{'OPT'});
+    # --parallel skipped as it is an alternative for --mode=".." only
+    $options .= " --ranlib=\""         . $cl{'ranlib'}                     . "\"" if (defined($cl{'RANLIB'}) && $cl{'RANLIB'});
+    $options .= " --relink-always"                                                if (defined($cl{'RELINK_ALWAYS'}) && $cl{'RELINK_ALWAYS'} eq "YES");
+    $options .= " --no-relink-always"                                             if (defined($cl{'RELINK_ALWAYS'}) && $cl{'RELINK_ALWAYS'} eq "NO");
+    # --serial skipped as it is an alternative for --mode=".." only
+    $options .= " --suppressflags=\"" . join(',', @{$cl{'suppressflags'}}) . "\"" if ($#{$cl{'suppressflags'}} >= 0);
+
+    foreach my $feastappdir (sort @srcdirs) {
+        my $dir = &concat_filename($cwd, $feastappdir);
+        print "\n\nEntering directory <$dir>.\n";
+        chdir $feastappdir;
+        # Call sub-configure with undocumented command line options
+        # that cause skipping of time-consuming (and, for benchmark
+        # applications' configure being sub-configure calls, redundant)
+        # sanity checks.
+        system("./configure --cached-make-program='$make' --cached-gnumake-version='$makeversion' --cached-make-sets-make-var --cached-build-id='$buildID' $options");
+	# Catch errors
+	if ($? != 0) {
+	    $warnings .=
+		"*************************************************************\n" .
+		$progname.": WARNING:\n".
+		"Invoking configure in subdirectory <$feastappdir> returned\n" .
+		"error code " . ($? >> 8) . ". You might want to check.\n" .
+		"*************************************************************\n\n";
+	}
+        print "Leaving directory <$dir>.\n";
+        chdir "..";
+    }
+    closedir(DIRECTORY);
+} else {
+    my @srclist_app = &get_sourcefilelist();
+    &create_feastAppMakefile(\@srclist_app);
+    # Some prose at the end
+    &print_statistics_about_feastAppMakefile(\@srclist_app);
+}
+
+if ($warnings ne "") {
+    warn $warnings;
+}
+
+
+
+
+
+
+
+
+
+# ===============================
+# === Some internal functions ===
+
+# Function: Check for GNU make and version
+sub check_for_gnumake {
+    if (defined($cachedtests{'make-program'})) {
+        # sub-configure calls when configuring regression benchmark
+        # applications can skip the test as it has already been
+        # performed earlier.
+        $make = $cachedtests{'make-program'};
+
+    } else {
+        # This is a simple configure of one FEAST application
+
+        # If a special 'make' was specified on command line, use it,
+        # otherwise you the default 'make'.
+        print "checking whether environment sets \$MAKE... ";
+        if ($ENV{'MAKE'}) {
+            print "yes\n";
+            $make = $ENV{'MAKE'};
+
+            # Both $MAKE (env variable) and --make= (command line option) given.
+            if (defined($cl{'make'}) && $cl{'make'} ne "") {
+                $warnings .=
+                    "*************************************************************\n" .
+                    $progname.": WARNING:\n".
+                    "make program $cl{'make'} given via the command line will\n" .
+                    "override the environment variable setting of \$MAKE.\n" .
+                    "*************************************************************\n\n";
+                $make  = $cl{'make'};
+            }
+        } else {
+            print "no\n";
+            # Make not set via environment, use 'make' as default value
+            $make = "make";
+            if (defined($cl{'make'})) {
+                # Use make program given as command line option.
+                $make = $cl{'make'};
+            }
+        }
+    }
+
+    print "checking whether $make is GNU make... ";
+    if (defined($cachedtests{'gnumake-version'})) {
+        # sub-configure calls when configuring regression benchmark
+        # applications can skip the test as it has already been
+        # performed earlier.
+        print "yes (cached)\n";
+
+    } else {
+        # This is a simple configure of one FEAST application
+
+        $makeversion = `$make --version 2>/dev/null`;
+        if ($makeversion =~ m/^GNU Make/i) {
+            print "yes\n";
+        } else {
+            print "no\n";
+            die $progname.": ERROR:\n".
+                "Sorry, GNU Make >= 3.80 is required to create and, later on, use the Makefile.\n" .
+                "<$make>, however, is not GNU Make.\n" .
+                "Please use '--make=PROG' to specify a valid instance of GNU make or set the\n" .
+                "environment variable \$MAKE accordingly.\n";
+        }
+    }
+
+    # Checking for version of make
+    # We need at least 3.80.
+    print "checking whether $make is GNU make version >= 3.80... ";
+    if (defined($cachedtests{'gnumake-version'})) {
+        # sub-configure calls when configuring regression benchmark
+        # applications can skip the test as it has already been
+        # performed earlier.
+        print $cachedtests{'gnumake-version'} . ", yes (cached)\n";
+
+    } else {
+        # Re-use the return value of the previous 'make --version' call.
+        $makeversion =~ s/^GNU Make.* (\d*\.[\d\.]*).*$/$1/s;
+        if ($makeversion =~ m/^(3\.[8-9].*|[4-9]\.\d.*)$/) {
+            print "$makeversion, yes\n";
+        } else {
+            print "$makeversion, no\n";
+            die $progname.": ERROR:\n".
+                "Sorry, GNU Make >= 3.80 is required to create and, later on, use the Makefile.\n" .
+                "<$make>, however, is $makeversion.\n" .
+                "Please use '--make=PROG' to specify a valid instance of GNU make or set the\n" .
+                "environment variable \$MAKE accordingly.\n";
+        }
+    }
+}
+
+
+
+# Function: Check whether make sets $(MAKE) variable
+sub check_make_sets_make_variable {
+    # Checking for setting of $(MAKE) variable
+    print "checking whether $make sets \${MAKE}... ";
+    if (defined($cachedtests{'make-sets-make-var'})) {
+        # sub-configure calls when configuring regression benchmark
+        # applications can skip the test as it has already been
+        # performed earlier.
+        print "yes (cached)\n";
+        $makeInMakefile = "\$(MAKE)";
+
+    } else {
+        my $tmpfile = POSIX::tmpnam();
+        open(TMPFILE, ">", $tmpfile) or die $progname.":\nCannot open file <$tmpfile> for writing: $!\n";
+        print TMPFILE "all:\n\t\@echo 'maketemp=\"\${MAKE}\"'";
+        close(TMPFILE);
+        my $currentString = `$make -f $tmpfile | grep maketemp=`;
+        unlink($tmpfile);
+        undef $tmpfile;
+
+        # If $(MAKE) variable is set, use $(MAKE) in Makefile rules instead of
+        # hardcoding the value of $make.
+        # Reason: Submake processes only know of each other when using $(MAKE),
+        # not if they are called like an ordinary program, even if the program
+        # name used is 'make'.
+        # Consequence: Parallel make may fail!
+        # Note: This should never fail as GNU Make sets $(MAKE).
+        if ($currentString ne "") {
+            print "yes\n";
+            $makeInMakefile = "\$(MAKE)";
+        } else {
+            print "no\n";
+            $makeInMakefile = $make;
+        }
+    }
+}
+
+
+# Function: Check whether command line options make sense and normalise them
+#           (i.e. capitalise if needed, remove duplicates etc.)
+sub check_options {
+    my $cloption = "";
+
+    # First detect if any unknown option has been given
+    if ($unknownoption) {
+       die $progname.": ERROR:".
+           INITIAL_MESSAGE .
+           "Unknown option(s) found: " . join(' ', @ARGV) . "\n" .
+           (" " x (length($progname)+2)) . "Check options specified on command line or in your local\n" .
+           (" " x (length($progname)+2)) . "configure script.\n";
+    }
+
+    # Now detect a wrong use of command line options, check whether
+    # we have still command line arguments after processing all valid
+    # command line options. (Only strings that do not start with '--'
+    # are detected here.)
+    if ($#ARGV > -1) {
+        die $progname.": ERROR:".
+           INITIAL_MESSAGE .
+            "Unknown option(s) found: " . join(' ', @ARGV) . "\n" .
+            "Check options specified on command line or in your local configure script.\n" .
+            "Try `$progname --help' for more information.\n";
+    }
+
+    # For options that can take multiple strings, whitespace and comma-separated
+    # lists of values and multiple instances of the option are allowed.
+    # Normalise the values by converting strings to real arrays.
+    foreach my $entry ('APPONLYFLAGS', 'BUILDLIB', 'CFLAGSC', 'CFLAGSCXX',
+		       'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
+		       'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
+		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCLIST_APP') {
+	@{ $cl{$entry} } = split(/\s+/,
+				 join(' ',
+				      split(/,/,
+					    join(',', @{ $cl{$entry} })
+				      )));
+    }
+
+    # For this list only commas are allowed to separate things.
+    # (Because sometimes options are to be filtered that are space-separated.)
+    @{$cl{'suppressflags'}} = split(/,/, join(',', @{$cl{'suppressflags'}}));
+
+    # Do not allow whitespace-only values for OBJDIR_PREFIX and OBJDIR_LIB_PREFIX
+    if (defined($cl{'objdirprefix'}) && $cl{'objdirprefix'} =~ m/^\s*$/) {
+        die $progname.": ERROR:".
+           INITIAL_MESSAGE .
+            "Argument to --objdir-prefix must not contain whitespace characters only.\n" .
+            "Try `$progname --help' for more information.\n";
+    }
+    if (defined($cl{'objdirlibprefix'}) && $cl{'objdirlibprefix'} =~ m/^\s*$/) {
+        die $progname.": ERROR:".
+           INITIAL_MESSAGE .
+            "Argument to --objdir-lib-prefix must not contain whitespace characters only.\n" .
+            "Try `$progname --help' for more information.\n";
+    }
+
+    # Override default setting for Makefile name?
+    $MAKEFILE = $cl{'makefile'} if (defined($cl{'makefile'}));
+
+
+    # Special treatment of --opt/--no-opt/--opt=expensive option:
+    # The problem is that we want to provide a consistent way to specify
+    # optimisation levels: --opt, --no-opt (as with every other switch),
+    # but also want to allow for arguments: --opt=expensive.
+    #
+    # There is no easy way to immediately allow this with Getopt::Long.
+    #
+    # Exploit the facts that
+    # * $cl{'OPT'} is uninitialised by default
+    # * $cl{'OPT'} has an empty value when --opt has been specified
+    # * $cl{'OPT'} has value 0 when --no-opt has been specified
+    # * $cl{'OPT'} has value "string" when --opt="string" has been specified
+    if (defined($cl{'OPT'})) {
+	$cl{'OPT'} = 1 if ($cl{'OPT'} eq "");
+    }
+
+    # Special feature for Sven who always forgets the correct
+    # keyword for all-in-optimisation with Intel: it's "expensive".
+    if ($ENV{'MAKEFLAGS'}) {
+	$ENV{'MAKEFLAGS'} =~ s/\bOPT=(EXPENSIVE|EXTREME|EXTENDED|MASSIVE)\b/OPT=EXPENSIVE/ig;
+    }
+
+
+    # Now check whether some options are inherited via MAKEFLAGS and
+    # given as command line arguments. Include binary options here, i.e.
+    # options that do not take an argument (e.g. --force-id, --opt)
+    # because of agreement no.3 (see below).
+    #
+    # Agreement:
+    # * Environment variable values take precedence over
+    #   command line options
+    # * Values are converted to upper case for the Makefile
+    # * 0/1 values are mapped to NO/YES for the Makefile
+    foreach my $entry ('FORCE_ID', 'MODE', 'MONITOR_COMPILE_ENV',
+		       'MPIWRAPPERS', 'OPT', 'RELINK_ALWAYS') {
+	# Check environment variable MAKEFLAGS and give a warning if
+	# options given via environment *and* command line collide.
+	if ($ENV{'MAKEFLAGS'}) {
+	    if ($ENV{'MAKEFLAGS'} =~ /\b$entry=(.+?)\b/i) {
+		my $envvalue = $1;
+		# Capitalise value
+		$envvalue =~ tr/a-z/A-Z/;
+		# Map 0/1 values to NO/YES
+		$envvalue = "NO"  if ($envvalue eq "0");
+		$envvalue = "YES" if ($envvalue eq "1");
+
+		if (defined($cl{$entry})) {
+		    my $clvalue = $cl{$entry};
+		    # Capitalise value
+		    $clvalue =~ tr/a-z/A-Z/;
+		    # Map 0/1 values to NO/YES
+		    $clvalue = "NO"  if ($clvalue eq "0");
+		    $clvalue = "YES" if ($clvalue eq "1");
+
+		    # Value collision? Then issue a warning
+		    if ($clvalue ne $envvalue) {
+			# reconstruct name of command line option for variable
+			$cloption = lc("--" . $entry);
+			$cloption =~ s/_/-/g;
+                        $warnings .=
+			    "************************************************************************\n" .
+			    $progname.": WARNING:\n" .
+			    &format_filelist("", 0, 72,
+					     "\$MAKEFLAGS contains \"$entry=$envvalue\" while \"" . $cloption .
+					     "=$clvalue\" has been specified as well. Environment variables " .
+					     "take precedence, will take \"$entry=$envvalue\" for the " .
+					     "Makefile.\n", "", "") . "\n" .
+			    "************************************************************************\n\n";
+		    }
+		} else {
+		    # Treat an environment variable as if given via command line option.
+		    $cl{$entry} = $envvalue;
+		}
+	    }
+	}
+
+	# Normal case: option not inherited by a make process (i.e. via MAKEFLAGS)
+        # It cannot happen that an option is given directly via the environment,
+        # as that would have triggered the unknown option error, we can now
+        # proceed with capitalising and normalising values
+	elsif (defined($cl{$entry})) {
+	    # Capitalise value
+	    $cl{$entry} =~ tr/a-z/A-Z/;
+	    # Map 0/1 values to NO/YES
+	    $cl{$entry} = "NO"  if ($cl{$entry} eq "0");
+	    $cl{$entry} = "YES" if ($cl{$entry} eq "1");
+	}
+    }
+
+
+    # Valid keywords? (both for options that take exactly one string and those that can take multiple)
+    my %validkeywords = (
+	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda13", "opengl" ],  # List of valid coprocessor backends
+	"FORCE_ID"            => [ "yes", "no" ],
+	"MODE"                => [ "parallel", "serial" ],
+	"MONITOR_COMPILE_ENV" => [ "yes", "no" ],
+	"MPIWRAPPERS"         => [ "yes", "no" ],
+	"OPT"                 => [ "yes", "no", "expensive" ],
+	"RELINK_ALWAYS"       => [ "yes", "no" ],
+    );
+
+    foreach my $entry (keys %validkeywords) {
+	if (defined($cl{$entry})) {
+	    if (ref($cl{$entry}) eq "") {
+		# Dealing with a scalar value
+
+		# Trim whitespace (not necessary?)
+#	        $cl{$entry} =~ s/^\s*(\S*)\s*$/$1/;
+
+		my $regexp = "^(" . join('|', @{ $validkeywords{$entry} }) . ')$';
+		if ($cl{$entry} !~ m/$regexp/i) {
+		    # reconstruct name of command line option from variable name
+		    $cloption = lc("--" . $entry);
+		    $cloption =~ s/_/-/g;
+		    die $progname.": ERROR:".
+			INITIAL_MESSAGE .
+			"Unknown keyword for option $cloption: <$cl{$entry}>\n" .
+			"Valid keywords are <" . join("> and <", @{ $validkeywords{$entry} }) . ">.\n" .
+			"Try `$progname --help' for more information.\n";
+		}
+
+	    } elsif (ref($cl{$entry}) eq "ARRAY") {
+		# Dealing with an array
+
+		# convert array of valid keywords into hash for easier lookups
+		my %isvalid = ();
+		map { $isvalid{$_} = $_; } @{ $validkeywords{$entry} };
+
+                # Check whether every keyword is a valid one.
+		foreach my $key ( @{ $cl{$entry} } ) {
+		    if (! defined($isvalid{$key})) {
+			# reconstruct name of command line option from variable name
+			$cloption = lc("--" . $entry);
+			$cloption =~ s/_/-/g;
+			die $progname.": ERROR:".
+			    INITIAL_MESSAGE .
+			    "Unknown keyword for option $cloption: <$key>\n" .
+			    "Valid keywords are <" . join("> and <", @{ $validkeywords{$entry} }) . ">.\n" .
+			    "Try `$progname --help' for more information.\n";
+		    }
+		}
+		undef %isvalid;
+	    } # end case command line option takes multiple values
+	} # end case command line option has been given
+    } # end loop over all command line options to test
+
+    return;
+}
+
+
+
+# Function: Create Makefile for a FEAST application
+sub create_feastAppMakefile {
+    my $srclist_app = $_[0];
+    my $entry;
+
+    # Hash containing -- with special keywords -- all dependencies of
+    # all files for which make_dep_list / get_dependency has been called.
+    my %dependencyLists = ();
+
+    print "creating dependency lists... ";
+
+    # A hash that maps module file names to file system object (including path information)
+    my %path = ();
+
+    # Dependencies of each object file
+    my $objectfiles_and_dependencies = "";
+    # Determine Makefile dependency list for every kernel module object file
+    foreach $entry (split(/\s+/, join(' ', SRCLIST_KERNEL))) {
+	$path{$entry} = &concat_filename($FEASTBASEDIR, $SRCDIR_KERNEL, $entry);
+        $objectfiles_and_dependencies .=
+            &make_dep_list(\%dependencyLists, $path{$entry},
+                           "\$(SRCDIR_KERNEL)/" . $entry, 1, "o", "o",
+                           "\$(OBJDIR)") . "\n\n";
+    }
+
+    # Dependencies of each object file from architecture-specific
+    # kernel modules
+    foreach $entry (split(/\s+/, join(' ', SRCLIST_ARCH))) {
+	$path{$entry} = &concat_filename($FEASTBASEDIR, $SRCDIR_ARCH, $entry);
+        $objectfiles_and_dependencies .=
+            &make_dep_list(\%dependencyLists, $path{$entry},
+                           "\$(SRCDIR_ARCH)/" . $entry, 1, ".o", "o",
+                           "\$(OBJDIR)") . "\n\n";
+    }
+
+    # Dependencies of each object file from application modules
+#    push @tmparray, ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'programfile'});
+    foreach $entry ( @{$srclist_app} ) {
+	$path{$entry} = &concat_filename($SRCDIR_APP, $entry);
+        $objectfiles_and_dependencies .=
+	    &make_dep_list(\%dependencyLists, $path{$entry},
+			   "\$(SRCDIR_APP)/" . $entry, 1, "o", "o",
+			   "\$(OBJDIR)") . "\n\n";
+    }
+    print "done\n";
+
+    # The instructions above ensure that for all FEAST source files
+    # a dependency list is written to the Makefile. Later, (generic)
+    # compile rule will be added.
+    # But sometimes, some source files are not required for a particular
+    # application. The dependency list of the application itself and the
+    # link command should only contain the files that are really referenced.
+    # In other words, if module A is not referenced anywhere, it should neither
+    # be compiled nor included in the application binary.
+    # Hence, loop again through (possibly all) files, starting
+    # with the program file, to find out which FEAST kernel files are really
+    # used. This could not be done previously as previously the loop forcibly
+    # was over all source files.
+    #
+    # Remark: To avoid i/o redundancy, i.e. to not open and parse source
+    # files again, the cached results of previous get_dependency() calls
+    # are used. It makes a small difference (12-15% faster).
+    my @modulesToParse;
+    push @modulesToParse, ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'programfile'});
+    my %modulesParsed;
+    my $i = -1;
+    while ($i < $#modulesToParse) {
+	$i++;
+	# remove any path information
+	my $currentFile = &get_filename($modulesToParse[$i]);
+
+	# Skip file if it has already been parsed.
+	next if (defined($modulesParsed{$currentFile}));
+
+	# Set flag that the files has already been parsed to
+	# prevent duplicate parsing.
+	$modulesParsed{$currentFile} = 1;
+
+	# Reuse the cached list of dependencies (modules and include files)
+	foreach my $entry (@{ $dependencyLists{$currentFile} }) {
+	    # Module?
+	    if ($entry =~ m/^module:(.+)$/) {
+		push @modulesToParse, $1 . ".f90";
+	    }
+	}
+    }
+    undef $i;
+    my @requiredObjFiles;
+    foreach my $entry (sort keys %modulesParsed) {
+	$entry =~ s/^(.*)\.f90$/\$(OBJDIR)\/$1.o/;
+	push @requiredObjFiles, $entry;
+    }
+
+    #
+    # Start to create the Makefile
+    #
+    print "creating $MAKEFILE.\n";
+    open(MAKEFILE_HDL, ">" , $MAKEFILE) or die "$progname: ERROR: Cannot open file <$MAKEFILE> for writing: $!\n";
+
+    # Create head section: include global Makefile settings,
+    # specifying the application name, sbblas version
+    print MAKEFILE_HDL
+        "#!/usr/bin/env make\n" .
+        "\n" .
+
+        "########################################################################\n" .
+        "#                                                                      #\n" .
+        "#         FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T          #\n" .
+        "#                                                                      #\n" .
+        "# Authors: Ch.Becker,                                                  #\n" .
+        "#          S.Buijssen, D.Goeddeke, M.Grajewski, H.Wobker,              #\n" .
+        "#          S.Kilian, S.Turek                                           #\n" .
+        "#                                                                      #\n" .
+        "# Contact: Applied Mathematics, Dortmund University of Technology      #\n" .
+        "#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
+        "#          Germany                                                     #\n" .
+        "#                                                                      #\n" .
+        "# Web:     http://www.feast.tu-dortmund.de                             #\n" .
+        "#          mailto:feast\@math.tu-dortmund.de                            #\n" .
+        "#                                                                      #\n" .
+        "########################################################################\n" .
+        "#                                                                      #\n";
+    $entry = (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'};
+    print MAKEFILE_HDL
+        "# Makefile for application $entry for architecture:" .
+	(" " x (26 - length($entry))) . "#\n" .
+        "#          " . $buildID . (" " x (60 - length($buildID))) . "#\n" .
+        "#                                                                      #\n" .
+        "# Automatically generated by:                                          #\n";
+    $entry = &get_version();
+    print MAKEFILE_HDL
+        "#          FEAST-configure script v" . $entry . (" " x (36 - length($entry))) . "#\n" .
+	"########################################################################\n" .
+	"\n";
+
+    if (defined($cl{'ID'})) {
+	print MAKEFILE_HDL
+	    "# Fix a particular build ID, do not use the default one\n" .
+	    "# (There are Makefile rules that will verify that the given build ID\n" .
+	    "#  fits to the archicecture, cpu and operating system at make runtime.)\n" .
+	    "ID                   := $cl{'ID'}\n\n";
+    }
+    print MAKEFILE_HDL
+        "# Path to this FEAST installation\n" .
+        "FEASTBASEDIR          = " . $FEASTBASEDIR . "\n\n" .
+        "# Location of Makefile.buildID.inc\n" .
+        "MAKEFILE_BUILDID_INC  = \$(FEASTBASEDIR)/" . $MAKEFILE_BUILDID_INC . "\n\n" .
+        "# Location of Makefile.cpu.inc\n" .
+        "MAKEFILE_CPU_INC      = \$(FEASTBASEDIR)/" . $MAKEFILE_CPU_INC . "\n\n";
+    $entry = (defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'};
+    print MAKEFILE_HDL
+        "# For development and debugging turn this to \"NO\", for good\n" .
+        "# optimisation to \"YES\". To squeeze out the last bit of performance out\n" .
+        "# of your machine (at the expense of a possibly drastic increase in compile\n" .
+        "# compile time) enable full optimisation with \"EXPENSIVE\".\n" .
+	"OPT                 = $entry\n\n";
+
+    $entry = (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'};
+    print MAKEFILE_HDL
+        "# Application name\n" .
+        "APPNAME             = $entry\n\n";
+
+    $entry = (defined($cl{'FORCE_ID'})) ? $cl{'FORCE_ID'} : $defaults{'FORCE_ID'};
+    print MAKEFILE_HDL
+        "# Force using given build ID, skip tests that verify that the given\n" .
+        "# build ID fits to the current archicecture, cpu and operating system\n" .
+        "FORCE_ID            = $entry\n\n";
+
+    $entry = (defined($cl{'MODE'})) ? $cl{'MODE'} : $defaults{'MODE'};
+    print MAKEFILE_HDL
+        "# Create binary for serial or parallel execution?\n" .
+        "MODE                = $entry\n\n";
+
+    $entry = (defined($cl{'MONITOR_COMPILE_ENV'})) ? $cl{'MONITOR_COMPILE_ENV'} : $defaults{'MONITOR_COMPILE_ENV'};
+    print MAKEFILE_HDL
+        "# Enable checks whether compiler modification dates or compiler settings for\n" .
+        "# current build ID have changed since last invocation of make?\n" .
+        "MONITOR_COMPILE_ENV = $entry\n\n";
+
+    $entry = (defined($cl{'MPIWRAPPERS'})) ? $cl{'MPIWRAPPERS'} : $defaults{'MPIWRAPPERS'};
+    print MAKEFILE_HDL
+        "# Create binary with or without mpi wrappers\n" .
+        "MPIWRAPPERS         = $entry\n\n";
+
+    $entry = (defined($cl{'RELINK_ALWAYS'})) ? $cl{'RELINK_ALWAYS'} : $defaults{'RELINK_ALWAYS'};
+    print MAKEFILE_HDL
+        "# Relink application every time make is invoked\n" .
+        "# (i.e. regardless whether a source file has changed?)\n" .
+        "# (Might be useful when developing on multiple platforms.)\n" .
+        "RELINK_ALWAYS       = $entry\n" .
+        "\n\n";
+
+
+    ##############################################################################
+    # Create section specifying source directories and source files
+    print MAKEFILE_HDL
+        "# source directories of sparse banded blas, kernel and application files\n" .
+        "SRCDIR_KERNEL = \$(FEASTBASEDIR)/" . $SRCDIR_KERNEL . "\n" .
+        "SRCDIR_ARCH   = \$(FEASTBASEDIR)/" . $SRCDIR_ARCH   . "\n" .
+        "SRCDIR_APP    = " . $SRCDIR_APP    . "\n\n";
+
+
+    # Determine object directories
+    $objdir = OBJDIR;
+    # The object directory for libraries should be shared among all
+    # FEAST applications. By design, there is no dependency of a
+    # library on the FEAST kernel or a FEAST application. Compiler
+    # command line settings are identical for a library, regardless
+    # the FEAST application that needs it.
+    # FEAST applications are always stored two directory levels deeper
+    # than the FEAST base directory where the libraries are.
+    # The same structure should hold for object files:
+    #    .../applications/poisson/object/<build ID>/
+    #    .../applications/tutorial/object/<build ID>/
+    #    .../object/<build ID>/
+    $objdir_lib = File::Spec->catdir("..", "..", OBJDIR_LIB);
+
+    if ($cl{'objdirprefix'}) {
+        # Prefix given for object directories, override defaults
+        my $objdirprefix = $cl{'objdirprefix'};
+        chomp($objdirprefix);
+
+        # Try to remove path portion of $FEASTBASEDIR.
+        $objdirprefix =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
+
+        # Try to remove home directory portion of $FEASTBASEDIR.
+        $objdirprefix =~ s/\Q$ENV{HOME}\E/\$(HOME)/;
+
+	# append default name for object directories
+        $objdir = File::Spec->catdir($objdirprefix, OBJDIR);
+    }
+
+    if ($cl{'objdirlibprefix'}) {
+        # Prefix given for libraries' object directories, override defaults
+        my $objdirlibprefix = $cl{'objdirlibprefix'};
+        chomp($objdirlibprefix);
+
+        # Try to remove path portion of $FEASTBASEDIR.
+        $objdirlibprefix =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
+
+        # Try to remove home directory portion of $FEASTBASEDIR.
+        $objdirlibprefix =~ s/\Q$ENV{HOME}\E/\$(HOME)/;
+
+	# append default name for object directories
+        $objdir_lib = File::Spec->catdir($objdirlibprefix, OBJDIR_LIB);
+    }
+    print MAKEFILE_HDL
+        "# Create an appropriate directory name for object files, based on build\n" .
+        "# ID, execution mode and optimisation level.  \n" .
+        "#\n" .
+        "# Object directory for FEAST object files. Build ID already contains\n" .
+        "# most of the necessary information (even choice of MPI in case of parallel mode)\n" .
+        "# we simply have to distinguish here the optimisation level (on/off aka yes/no)\n" .
+        "OBJDIR = " . $objdir . "-opt\$(OPT)\n" .
+        "\n" .
+        "# Object directory for libraries (third party tools)\n" .
+        "OBJDIR_LIB = " . $objdir_lib . "-opt\$(OPT)\n" .
+        "\n" .
+
+        "# names of files for sparse banded blas, kernel (also platform specific)\n" .
+        "# and application\n" .
+        &format_list("SRCLIST_KERNEL = ", 8, 70, SRCLIST_KERNEL, "\\\n", "\\") . "\n" .
+        &format_list("SRCLIST_ARCH   = ", 8, 70, SRCLIST_ARCH, "\\\n", "\\") . "\n";
+
+    # Source file contain PROGRAM needs separate handling and is not to be
+    # included in Makefile's SRCLIST_APP variable.
+    # Convert array on the fly into a hash from which program file can be easily
+    # deleted.
+    my %srclist = ();
+    map { $srclist{$_} = "" } @{$srclist_app};
+    delete $srclist{((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'programfile'})};
+
+    print MAKEFILE_HDL
+	&format_list("SRCLIST_APP    = ", 8, 70, join(' ', sort keys %srclist), "\\\n", "\\") . "\n";
+    undef %srclist;
+
+    print MAKEFILE_HDL
+        &format_list("PROGRAM_FILE   = ", 8, 70, ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'programfile'}), "\\\n", "\\") . "\n\n" .
+
+        "# Files included in source files that need to be evaluated by cpp\n" .
+        &format_list("INCLUDED_FILES_TO_COPY = ", 8, 70,
+		     HEADER_FILES_TO_COPY, "\\\n", "\\") . "\n";
+
+    # The idea is to have only paths relative to FEASTBASEDIR.
+    # Substitute absolute path information in @headerfiles accordingly.
+    my @tmparray = ();
+    foreach $entry (@headerfiles) {
+	my $file_PathUsingBasedir = $entry;
+	$file_PathUsingBasedir =~ s/$FEASTBASEDIR/\$(FEASTBASEDIR)/;
+	push @tmparray, $file_PathUsingBasedir;
+    }    
+    print MAKEFILE_HDL
+        &format_list("INCLUDED_FILES_TO_EVALUATE_WITH_CPP = ", 8, 70,
+		     join(' ', sort @tmparray), "\\\n", "\\") . "\n\n";
+    undef @tmparray;
+
+    # Create section where the source directories and files are put together
+    # and the object files resulting from them.
+    print MAKEFILE_HDL
+        "# List of all Fortran 77 source files\n" .
+	"SRCF77   = \$(filter %.f, \\\n" .
+	"\t\t\$(patsubst %, \$(SRCDIR_KERNEL)/%, \$(SRCLIST_KERNEL)) \\\n" .
+	"\t\t\$(patsubst %, \$(SRCDIR_ARCH)/%,   \$(SRCLIST_ARCH)) \\\n" .
+	"\t\t\$(patsubst %, \$(SRCDIR_APP)/%,    \$(SRCLIST_APP)))\n\n" .
+        "# List of all Fortran 90 source files (without program file)\n" .
+	"SRCF90   = \$(filter %.f90, \\\n" .
+	"\t\t\$(patsubst %, \$(SRCDIR_KERNEL)/%, \$(SRCLIST_KERNEL)) \\\n" .
+	"\t\t\$(patsubst %, \$(SRCDIR_ARCH)/%,   \$(SRCLIST_ARCH)) \\\n" .
+	"\t\t\$(patsubst %, \$(SRCDIR_APP)/%,    \$(SRCLIST_APP)))\n\n" .
+        "# List of all object files from Fortran 77 source files\n" .
+        "OBJF77   = \$(patsubst %.f, \$(OBJDIR)/%.o, \$(notdir \$(SRCF77)))\n\n" .
+        "# List of all object files from Fortran 90 source files (only modules)\n" .
+        "OBJF90   = \$(patsubst %.f90, \$(OBJDIR)/%.o, \$(notdir \$(SRCF90)))\n\n" .
+        "# List of object files only needed for current build ID\n" .
+        "OBJEXTRA = \$(patsubst %.f,   \$(OBJDIR)/%.o, \$(filter %.f,   \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t   \$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t   \$(patsubst %.c,   \$(OBJDIR)/%.o, \$(filter %.c,   \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t   \$(patsubst %.cc,  \$(OBJDIR)/%.o, \$(filter %.cc,  \$(notdir \$(SRCEXTRA)))) \n\n" .
+
+        "# Main object file (i.e. file containing the 'program' statement)\n" .
+        "OBJPRG = \$(patsubst %.f90, \$(OBJDIR)/%.o, \$(notdir \$(PROGRAM_FILE)))\n\n" .
+
+        "# List of header files to be copied to object directory\n" .
+        "OBJHEADERCOPY = \$(patsubst %, \$(OBJDIR)/%, \$(notdir \$(INCLUDED_FILES_TO_COPY)))\n\n" .
+
+        "# List of header files to be evaluated and stored to object directory\n" .
+        "OBJHEADEREVAL = \$(patsubst %, \$(OBJDIR)/%, \$(notdir \$(INCLUDED_FILES_TO_EVALUATE_WITH_CPP)))\n\n" .
+
+        "# List of all object files (dynamically generated from the list\n" .
+        "# of .f90 and .f files)\n" .
+        "#OBJ = \$(OBJF77) \$(OBJF90) \$(OBJEXTRA) \$(OBJPRG)\n\n" .
+        "# Minimal list of object files needed to build the application\n" .
+        &format_list("OBJ =", 6, 70,
+		     join(' ', @requiredObjFiles) . " \$(OBJF77) \$(OBJEXTRA)", "", "\\") . "\n\n" .
+        "# List of library files\n" .
+        "LIB = \$(BUILDLIB:%=\$(OBJDIR_LIB)/lib%.a)\n\n\n\n";
+
+    ##############################################################################
+    # Import settings for compiler, linker etc.
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Import a default build ID setting in case no build ID has been set yet.\n" .
+        "include \$(MAKEFILE_BUILDID_INC)\n\n" .
+        "# Import settings for compiler, linker etc.\n" .
+        "include \$(MAKEFILE_CPU_INC)\n\n";
+
+
+    ##############################################################################
+    # Override settings from Makefile.inc with settings from command line
+    # (or default values from hash %default.)
+    print MAKEFILE_HDL "# Settings from configure command line which override settings from Makefile.inc\n";
+    my $overwritten = 0;
+    foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC',
+		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CXX', 'F77',
+		       'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
+		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
+		       'MPILIBS', 'RANLIB') {
+	my $string = (defined($cl{$entry})) ? $cl{$entry} : $defaults{$entry};
+	if (ref($string) eq "") {
+	    # current token is a scalar value, print if not empty
+	    if ($string ne "") {
+		print MAKEFILE_HDL $entry . " "x(13-length($entry)) . "= $string\n";
+		$overwritten++;
+	    }
+	} elsif (ref($string) eq "ARRAY") {
+	    # current token is an array, print if at least one entry
+
+	    # $cl{'...'} has been passed as an array to GetOptions()
+	    # and as such is always defined. But is does not necessarily have
+	    # entries. So, don't test with perl function defined(). Test whether
+	    # one or more entries. (Perl count from zero, like C does.)
+	    if ($#{$string} >= 0) {
+		print MAKEFILE_HDL $entry . " "x(13-length($entry)) . "= " . join(' ', @{$string}) . "\n";
+		$overwritten++;
+	    }
+	}
+    }
+    if ($#{$cl{'suppressflags'}} >= 0) {
+        foreach $entry ("CFLAGSF77", "CFLAGSF90", "CFLAGSC", "CFLAGSCXX", "LDFLAGS") {
+            foreach (@{$cl{'suppressflags'}}) {
+                print MAKEFILE_HDL
+                    $entry . " " x (12 - length($entry)) . ":= \$(filter-out $_, \$($entry))\n";
+            }
+        }
+        $overwritten++;
+    }
+
+    print MAKEFILE_HDL "# (none given on command line)\n" unless ($overwritten);
+    print MAKEFILE_HDL "\n";
+    undef $overwritten;
+
+
+    ##############################################################################
+    # New style support for coprocessors
+    #
+    # It is somewhat counterintuitive and against our intention to include the
+    # instructions enabling coprocessor support in FEAST here instead of *before*
+    # the previous section where Makefile.inc settings are overridden
+    # with any setting from the command line. If settings are to be overridden
+    # (e.g. CC, CFLAGSF90, BUILDLIB or APPONLYFLAGS), this operation should be the
+    # last one.
+    # But in this case a configure call like:
+    #   ../../bin/configure --apponlyflags=-DDISABLE_ERRORCONTROL --coproclist=cpu
+    # would first *append* coprocessor settings to APPONLYFLAGS
+    #   APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT $(APPONLYFLAGS)
+    # and then *override* any settings with those from the command line:
+    #   APPONLYFLAGS = -DDISABLE_ERRORCONTROL
+    # So, one would be required to know all settings for all possible coprocessors
+    # and specify them on the command line. That is not a feasible approach.
+    # Coprocessor support is hence included *after* including settings from the
+    # command line that override previous settings. For sake of user convenience
+    # we cede a bit of strictness.
+    $entry = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
+    if ($#{$entry} >= 0) {
+
+	# convert array with coprocessors into hash for easier lookups
+	my %coprocs = ();
+	map { $coprocs{$_} = $_; } @{ $entry };
+
+	# write out general coproc-specific variable additions
+        print MAKEFILE_HDL
+            "# Coprocessor-specific special options\n" .
+	    "SRCEXTRA     := \$(SRCEXTRA) coproc.c coproc_solver.c\n" .
+	    "BUILDLIB     := \$(BUILDLIB) coproc\n" .
+	    "LIBS         := -lcoproc \$(LIBS)\n" .
+	    "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
+
+	# if CUDA is listed as coprocessor,  it needs to be linked linked against the binary
+	if (defined($coprocs{'cuda10'})) {
+	    print MAKEFILE_HDL
+		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
+		"APPONLYFLAGS := -DHAS_CUDA10 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
+		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n";
+	}
+	if (defined($coprocs{'cuda11'})) {
+	    print MAKEFILE_HDL
+		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
+		"APPONLYFLAGS := -DHAS_CUDA11 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
+		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n";
+	}
+	if (defined($coprocs{'cuda13'})) {
+	    print MAKEFILE_HDL
+		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
+		"APPONLYFLAGS := -DHAS_CUDA13 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
+		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n";
+	}
+
+	# if OPENGL is listed as coprocessor, X11, GL and GLEW need to be linked linked against the binary
+	if (defined($coprocs{'opengl'})) {
+	    print MAKEFILE_HDL
+		"# OPENGL is among the list of coprocessors, so link against X11, GL and GLEW and add appropriate includes.\n" .
+		"APPONLYFLAGS := -DHAS_OPENGL \$(APPONLYFLAGS) -I\$(GLEW_INC_PATH) \n" .
+		"LDFLAGS      := \$(LDFLAGS) -L\$(GLEW_LIB_PATH) -lGLEW -lGL -lGLU -lX11\n";
+	}
+
+	print MAKEFILE_HDL "\n";
+    }
+    print MAKEFILE_HDL "\n";
+
+
+
+    ##############################################################################
+    # assemble settings for include paths, library search path and libraries to
+    # link against, depending on whether we have a parallel or sequential build
+    # (has to be done in every application's Makefile to allow override of
+    #  settings on the command line or as a configure option.)
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# assemble settings for include paths, library search path and libraries to\n" .
+        "# link against, depending on whether we have a parallel or sequential build\n" .
+        "# (has to be done in every application's Makefile to allow override of\n" .
+        "#  settings on the command line or as a configure option.)\n" .
+        "##############################################################################\n" .
+        "\n" .
+        "ifeq (\$(strip \$(CFLAGSF77LIBS)),)\n" .
+        "CFLAGSF77LIBS = \$(CFLAGSF77)\n" .
+        "endif\n\n" .
+
+        "ifeq (\$(strip \$(MODE)), PARALLEL)\n" .
+        "# mode PARALLEL\n" .
+        "LIBDIR := \$(MPILIBDIR) \$(LIBDIR)\n" .
+        "LIBS   := \$(MPILIBS)   \$(LIBS)\n" .
+        "endif\n\n\n\n";
+
+
+    ##############################################################################
+    # Define all functions
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Functions\n\n" .
+
+    # Define a function as a switch whether to move created .mod files to
+    # $(OBJDIR) or not
+        "# Define a function as a switch whether to move newly created module information\n" .
+        "# files (extension: \$(MODEXTENSION)) to \$(OBJDIR) or not. Some compilers don't do\n" .
+        "# that automatically and mess up the working directory instead with those files.\n" .
+        "ifeq (\$(strip \$(MOVEMOD)), YES)\n" .
+        "MOVE_MOD_FILES = && \\\n" .
+        "    mv \$(patsubst %.f90,%.\$(MODEXTENSION),\$(filter %.f90,\$(notdir \$<))) \$(dir \$\@)\n" .
+        "else\n" .
+        "MOVE_MOD_FILES =\n" .
+        "endif\n\n" .
+
+    # Test whether the object directory where files are created is identical
+    # to the one where they are supposed to be stored. If not, copy file to
+    # \$(OBJDIR)
+    #    "# Test whether the object directory where files are created is identical\n" .
+    #    "# to the one where they are supposed to be stored. If not, copy file to\n" .
+    #    "# \$(OBJDIR)\n" .
+    #    "COPY_IF_NEEDED = \\\n" .
+    #    "    \$(if \$(findstring \\\n" .
+    #    "\t\$(shell (cd \$(DIR)/\$(OBJDIR); /bin/pwd)), \\\n" .
+    #    "\t\$(shell (cd \$(OBJDIR); /bin/pwd))), , cp -p \$(DIR)/\$\@ \$(OBJDIR))\n\n\n" .
+
+    # Function to delete a single file at once
+    # (The reason why we need this and the magic why this works lies within
+    #  the blank line after the remove command. This way the remove commands
+    #  in a foreach-loop are triggered one after another - in separate
+    #  sub-shells. Not in a single sub-shell command. As this may result
+    #  on some machines in error messages of type:
+    #  execvp: rm: Arg list too long)
+        "# Functions to delete a single file / directory at once\n" .
+        "# (The reason why we need this and the magic why this works lies within\n" .
+        "#  the blank line after the remove command. This way the remove commands\n" .
+        "#  in a foreach-loop are triggered one after another - in separate\n" .
+        "#  sub-shells. Not in a single sub-shell command. As this may result\n" .
+        "#  on some machines in error messages of type:\n" .
+        "#  execvp: rm: Arg list too long)\n" .
+        "define remove_file\n" .
+        "    rm -f \$(file)\n\n" .
+        "endef\n\n" .
+        "# Recursively remove directories. For the first two directory levels\n" .
+        "# print an error message if removal failed. (The restriction to two\n" .
+        "# levels is rather arbitrary. It's the least number of directory levels\n" .
+        "# created by a FEAST Makefile. To show an error message unconditionally\n" .
+        "# is not desired as you would always get an error message at the end.)\n" .
+        "define remove_directory\n" .
+        "    \@dir=\$(dir); depth=0; \\\n" .
+        "    while test -d \$\${dir} -a \$\${dir} != '.' -a \$\${dir} != '/'; do \\\n" .
+        "\tif rmdir \$\${dir} 2>/dev/null; then \\\n" .
+        "\t    echo \"rmdir \$\${dir}\"; \\\n" .
+        "\t    dir=`dirname \$\${dir}`; \\\n" .
+        "\telse \\\n" .
+        "\t    test \$\${depth} -lt 2 && \$(print_directory_not_empty); \\\n" .
+        "\t    dir='.'; \\\n" .
+        "\tfi; \\\n" .
+        "\tdepth=`expr \$\${depth} + 1`; \\\n" .
+        "    done\n\n" .
+        "endef\n\n" .
+        "# Function to be called if directory removal did not work unexpectedly.\n" .
+        "define print_directory_not_empty\n" .
+        "    (echo; \\\n" .
+        "     echo '# ---------------------------------------------------------------------'; \\\n" .
+        "     echo '# This Makefile previously created the directory '; \\\n" .
+        "     echo '#'; \\\n" .
+        "     echo \"# \$\${dir}\"; \\\n" .
+        "     echo '#'; \\\n" .
+        "     echo '# and was about to remove it. Since there are files in that directory'; \\\n" .
+        "     echo '# that this Makefile did not create, it will not be removed.'; \\\n" .
+        "     echo '# ---------------------------------------------------------------------')\n" .
+        "endef\n\n\n\n";
+
+
+    ##############################################################################
+    # Final sanity checks
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Final sanity checks\n\n" .
+
+#	"# Sanity check. Don't let path to object directory become too long for PGI!\n" .
+#	"# Reason:\n" .
+#	"#   The PGI compiler cannot handle object directories exceeding a length\n" .
+#	"#   of 120 characters. Using it to store files works, using it to look\n" .
+#	"#   for module files works, using it as include path (for header files)\n" .
+#	"#   does *not* work - *without* any error message! Header files are simply\n" .
+#	"#   reported to not be found.\n" .
+#	"ifneq (,\$(findstring -DUSE_COMPILER_PGI, \$(APPONLYFLAGS) \$(CFLAGSF90) ))\n" .
+#	"ifeq (\$(shell echo \"`echo \$(OBJDIR) | wc -c` > 120\" | bc), 1)\n" .
+#	"MESSAGE := \$(MESSAGE) \\\n" .
+#	"\t   echo; \\\n" .
+#	"\t   echo '*** Error: Object directory too long. PGI compiler is unable to handle'; \\\n" .
+#	"\t   echo '***        include directories of this length. Cowardly refusing compilation.'; \\\n" .
+#	"\t   echo; \\\n" .
+#	"\t   exit 1;\n" .
+#	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
+#	"# all the command line options a compile command usually gets.\n" .
+#	"F77 = \$(MESSAGE) echo\n" .
+#	"F90 = \$(F77)\n" .
+#	"CC  = \$(F77)\n" .
+#	"CXX = \$(F77)\n" .
+#	"LD  = \$(F77)\n" .
+#	"endif\n" .
+#	"endif\n\n" .
+
+	"# Makefile variable OPT must have exactly one out of three possible values:\n" .
+	"# NO, YES or EXPENSIVE. If that requirement is not met, unset all compiler\n" .
+	"# definitions in order to always raise an error when make is invoked.\n" .
+	"ifneq (\$(strip \$(OPT)), EXPENSIVE)\n" .
+	"ifneq (\$(strip \$(OPT)), YES)\n" .
+	"ifneq (\$(strip \$(OPT)), NO)\n" .
+	"MESSAGE := \$(MESSAGE) \\\n" .
+	"\t   echo; \\\n" .
+	"\t   echo '*** Error: Optimisation level keyword \$(OPT) unknown.'; \\\n" .
+	"\t   echo '***        Valid keywords are NO, YES and EXPENSIVE.'; \\\n" .
+	"\t   echo '***        Cowardly refusing compilation.'; \\\n" .
+	"\t   echo; \\\n" .
+	"\t   exit 1;\n" .
+	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
+	"# all the command line options a compile command usually gets.\n" .
+	"F77 = \$(MESSAGE) echo\n" .
+	"F90 = \$(F77)\n" .
+	"CC  = \$(F77)\n" .
+	"CXX = \$(F77)\n" .
+	"LD  = \$(F77)\n" .
+	"endif\n" .
+	"endif\n" .
+	"endif\n\n" .
+
+        "# Makefile variable MODE must have exactly one out of two possible values:\n" .
+        "# PARALLEL or SERIAL\n" .
+        "# In case neither PARALLEL nor SERIAL is given as mode, unset all compiler\n" .
+        "# definitions in order to always raise an error when make is invoked.\n" .
+        "ifneq (\$(strip \$(MODE)), PARALLEL)\n" .
+        "ifneq (\$(strip \$(MODE)), SERIAL)\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Error: Build type \$(MODE) unknown.'; \\\n" .
+        "\t   echo '***        Valid keywords are SERIAL or PARALLEL.'; \\\n" .
+        "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77 = \$(MESSAGE) echo\n" .
+        "F90 = \$(F77)\n" .
+        "CC  = \$(F77)\n" .
+        "CXX = \$(F77)\n" .
+        "LD  = \$(F77)\n" .
+        "endif\n" .
+        "endif\n\n" .
+
+        "# If a parallel application should be built, but preprocessor switch\n" .
+        "# -DENABLE_SERIAL_BUILD appears among compiler flags, unset all compiler definitions\n" .
+        "# in order to always raise an error when make is invoked.\n" .
+        "ifeq (\$(strip \$(MODE)), PARALLEL)\n" .
+        "ifneq (,\$(findstring -DENABLE_SERIAL_BUILD ,\\\n" .
+        "\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCXX) ))\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Error: Build type PARALLEL cannot be used in combination'; \\\n" .
+        "\t   echo '***        with preprocessor switch -DENABLE_SERIAL_BUILD.'; \\\n" .
+        "\t   echo '***        Please choose for either one. Cowardly refusing compilation.'; \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77 = \$(MESSAGE) echo\n" .
+        "F90 = \$(F77)\n" .
+        "CC  = \$(F77)\n" .
+        "CXX = \$(F77)\n" .
+        "LD  = \$(F77)\n" .
+        "endif\n" .
+        "endif\n\n\n\n" .
+
+        "# Catch case that a build ID has been given for which\n" .
+        "# compiler settings are not (fully) set up.\n" .
+        "DETAIL := \n" .
+	"ifneq (\$(TOKEN1)\$(TOKEN2)\$(TOKEN3)\$(TOKEN4)\$(TOKEN5), 11111)\n" .
+        "ifneq (\$(TOKEN1), 1)\n" .
+        "DETAIL := \$(DETAIL) echo '***        1st token not matched against any rule in \$(MAKEFILE_CPU_INC).';\n" .
+        "endif\n" .
+        "ifneq (\$(TOKEN2), 1)\n" .
+        "DETAIL := \$(DETAIL) echo '***        2nd token not matched against any rule in \$(MAKEFILE_CPU_INC)';\n" .
+        "endif\n" .
+        "ifneq (\$(TOKEN3), 1)\n" .
+        "DETAIL := \$(DETAIL) echo '***        3rd token not matched against any rule in \$(MAKEFILE_CPU_INC)';\n" .
+        "endif\n" .
+        "ifneq (\$(TOKEN4), 1)\n" .
+        "DETAIL := \$(DETAIL) echo '***        4th token not matched against any rule in \$(MAKEFILE_CPU_INC).';\n" .
+        "endif\n" .
+        "ifneq (\$(TOKEN5), 1)\n" .
+        "DETAIL := \$(DETAIL) echo '***        5th token not matched against any rule in \$(MAKEFILE_CPU_INC).';\n" .
+        "endif\n" .
+        "endif\n\n" .
+
+        "# Test for 6th token in case of MODE=PARALLEL\n" .
+        "ifeq (\$(strip \$(MODE)), PARALLEL)\n" .
+        "ifneq (\$(TOKEN6), 1)\n" .
+        "DETAIL := \$(DETAIL) echo '***        6th token not matched against any rule in \$(MAKEFILE_CPU_INC).';\n" .
+        "endif\n" .
+        "endif\n\n" .
+
+        "# NOw, override any compiler settings in case any token is unset\n" .
+        "ifneq (\$(DETAIL),)\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Error: Invalid build ID \$(ID)'; \\\n" .
+        "\t   \$(DETAIL) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77 = \$(MESSAGE) echo\n" .
+        "F90 = \$(F77)\n" .
+        "CC  = \$(F77)\n" .
+        "CXX = \$(F77)\n" .
+        "LD  = \$(F77)\n" .
+        "endif\n\n\n\n" .
+
+
+	"# Catch case (coproc-bail-out) that coprocessor support is not available for all build IDs\n" .
+	"ifneq (,\$(findstring -DENABLE_COPROCESSOR_SUPPORT ,\\\n" .
+	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCXX) ))\n" .
+	"# Initialise value\n" .
+	"DETAIL :=\n" .
+	"ifneq (, \$(findstring -DUSE_COMPILER_PATHSCALE ,\\\n" .
+	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCXX) ))\n" .
+	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with the Pathscale compiler suite:';\n" .
+	"endif\n" .
+	"ifneq (, \$(findstring -DUSE_COMPILER_NEC ,\\\n" .
+	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCXX) ))\n" .
+	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with NEC compilers:';\n" .
+	"endif\n" .
+	"ifneq (, \$(findstring -DUSE_COMPILER_SUNSTUDIO ,\\\n" .
+	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCXX) ))\n" .
+	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with Sun Studio compiler suite:';\n" .
+	"endif\n\n" .
+	"# Throw error if value is set by now\n" .
+	"ifneq (,\$(DETAIL))\n" .
+	"MESSAGE := \$(MESSAGE) \\\n" .
+	"\t   echo; \\\n" .
+	"\t   echo '*** Error: Coprocessor support not available for build ID \$(ID)'; \\\n" .
+	"\t   \$(DETAIL) \\\n" .
+	"\t   echo '*** Symbol names generated by its Fortran compiler lead to incompilable C code.'; \\\n" .
+	"\t   echo; \\\n" .
+	"\t   exit 51;\n" .
+	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
+	"# all the command line options a compile command usually gets.\n" .
+	"F77 = \$(MESSAGE) echo\n" .
+	"F90 = \$(F77)\n" .
+	"CC  = \$(F77)\n" .
+	"CXX = \$(F77)\n" .
+	"LD  = \$(F77)\n" .
+	"endif\n" .
+	"endif\n\n\n\n";
+
+
+
+    ##############################################################################
+    # Define default target
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Default target if make is invoked without any argument:\n" .
+        "# compile the application\n" .
+        "default: all\n\n\n\n";
+
+
+    ##############################################################################
+    # Dependencies of each object file
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Dependencies of each object file\n\n" .
+        $objectfiles_and_dependencies . "\n\n";
+
+
+    ##############################################################################
+    # Dependencies of header files to be copied or evaluated and stored in
+    # object directory
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Dependencies of header files to be copied or evaluated and stored in\n" .
+        "# object directory\n\n";
+    foreach $entry (split(/\s+/, HEADER_FILES_TO_COPY)) {
+        print MAKEFILE_HDL
+            &make_dep_list(\%dependencyLists, $entry,
+                           "\$(SRCDIR_KERNEL)/" . &basename($entry), 0, "", "o",
+                           "\$(OBJDIR)") . "\n\n" if ($entry);
+    }
+    foreach $entry (@headerfiles) {
+        # Some include files are from kernel directory, some from sbblas directory.
+        # They are to be treated differently.
+        if ($entry) {
+            # if (&dirname($entry) =~ m|/$SRCDIR_KERNEL$|) {
+            #     print MAKEFILE_HDL
+            #         &make_dep_list(\%dependencyLists, $entry,
+            #                        "\$(SRCDIR_KERNEL)/" . &basename($entry), 0, "", "o",
+            #                        "\$(OBJDIR)") . "\n\n";
+            #     warn $progname.":\n" .
+            #         "Obsolete branch 1 for <$entry>.\n" .
+            #         "Inform the configure maintainer about this case.\n";
+            # } elsif (&dirname($entry) =~ m|/$SRCDIR_ARCH$|) {
+            #     print MAKEFILE_HDL
+            #         &make_dep_list(\%dependencyLists, $entry,
+            #                        "\$(SRCDIR_ARCH)/" . &basename($entry), 0, "", "o",
+            #                        "\$(OBJDIR)") . "\n\n";
+            #     warn $progname.":\n" .
+            #         "Obsolete branch 2 for <$entry>.\n" .
+            #         "Inform the configure maintainer about this case.\n";
+            # } else {
+
+	    # The idea is to have only paths relative to FEASTBASEDIR.
+	    # Substitute absolute path information accordingly.
+	    my $file_PathUsingBasedir = $entry;
+	    $file_PathUsingBasedir =~ s/$FEASTBASEDIR/\$(FEASTBASEDIR)/;
+	    print MAKEFILE_HDL
+		&make_dep_list(\%dependencyLists, $entry,
+			       $file_PathUsingBasedir, 0, "", "o",
+			       "\$(OBJDIR)") . "\n\n";
+            # }
+        }
+    }
+    print MAKEFILE_HDL "\n\n";
+
+
+    ##############################################################################
+    # Compilation and link directives
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Compilation and link directives\n\n" .
+
+        "# default target: compile the FEAST application\n" .
+        "all:\tgreeting \$(APPNAME)\n\n" .
+
+    # debug build
+        "# 'make debug' will compile without optimisation and with debug symbols\n" .
+        "debug:\n" .
+        "\t\@$makeInMakefile OPT=NO\n\n" .
+
+    # all libraries
+        "# Create all libraries\n" .
+        "libs:\t\$(LIB)\n\n" .
+
+    # all object files
+        "# Compile all object files\n" .
+        "obj:\t\$(OBJ)\n\n" .
+
+    # Link statement for application
+        "# Link statement for application\n" .
+        "\$(APPNAME): | \$(OBJDIR) \$(LIB)\n" .
+        "\$(APPNAME): \$(OBJ)\n" .
+        "\t\@echo \"# Linking FEAST application <\$(APPNAME)>\"\n" .
+        "\t\$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n" .
+        "ifneq (\$(MESSAGE),)\n" .
+        "\t\@\$(MESSAGE)\n" .
+        "endif\n\n" .
+
+    # Just link the program, without considering dependencies
+    # (For cases where you just made a few changes to a code that
+    #  will not harm other modules. Then, use this make target to
+    #  shortcut the build.)
+        "# Just link the program, without considering dependencies\n" .
+        "# (For cases where you just made a few changes to a code that\n" .
+        "#  will not harm other modules. Then, use this make target to\n" .
+        "#  shortcut the build.)\n" .
+        "link: | \$(OBJDIR)\n" .
+        "\t\@echo \"# Linking FEAST application <\$(APPNAME)>\"\n" .
+        "\t\$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n\n" .
+
+    # Global dependencies for object files
+        "# Global dependencies for object files\n" .
+        "\$(OBJ): | \$(OBJDIR_LIB) \$(OBJDIR)\n" .
+        "\$(OBJ): | check-or-store-settings\n\n" .
+
+	"# Please keep in mind:\n" .
+	"# GNU Make 3.80 requires that an order-only prerequisite shall not be\n" .
+	"# put on the same line as a prerequisite of an implicit rule. \$< would\n" .
+	"# will be set to the first order-only prerequisite. Potentially this\n" .
+	"# leads to rebuilding the target every time make is invoked. Or the\n" .
+	"# target can not be built at all.\n\n" .
+
+    # Create build rule for object files from Fortran 77 source
+        "# Compile statement for each object file from Fortran 77 source\n" .
+        "\$(OBJF77): | \$(OBJDIR)\n" .
+        "\$(OBJF77):\n" .
+        "\t\$(F77) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
+
+#        "# Additional global dependencies for object files from Fortran 90 sources\n" .
+#        "\$(OBJF90):\n" .
+
+    # Workaround for NEC C IA-64 Compiler, Revision 6.1 internal compiler error
+#	"# Workaround:\n" .
+#	"# Compiling on a NEC gateway Itanium2 server gives internal compiler errors\n" .
+#	"# with NEC C IA-64 Compiler, Revision 6.1 if -O3 is used. Lowering optimisation\n" .
+#	"# to -O2 helps.\n" .
+#	"COMPILERVERSION := \$(shell eval \$(F90VERSION) )\n" .
+#	"ifneq (,\$(findstring NEC Fortran IA-64 Compiler,\$(COMPILERVERSION)))\n" .
+#	"ifneq (,\$(findstring Revision 6.1,\$(COMPILERVERSION)))\n" .
+#	"\$(OBJDIR)/linearsystem.o \$(OBJDIR)/masterservice.o \$(OBJDIR)/storage.o \$(OBJDIR)/visoutput.o:\n" .
+#	"\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(subst -O3,-O2,\$(CFLAGSF90)) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n" .
+#	"endif\n" .
+#	"endif\n\n" .
+
+    # Create build rule for object files from Fortran 90 source
+	"# Create build rule for object files from Fortran 90 source\n" .
+        "\$(OBJF90): | \$(OBJDIR)\n" .
+        "\$(OBJF90):\n" .
+        "\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n\n" .
+
+    # Create separate rule for source file containing program
+        "# Compile statement for source file containing program start\n" .
+        "# (a separate statement is needed because it defines a program, not a module\n" .
+        "#  and, hence, we should not try to move a .mod file as we do with any module.)\n" .
+        "\$(OBJPRG): | \$(OBJDIR)\n" .
+        "\$(OBJPRG):\n" .
+        "\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
+
+    # Include implicit rules for files only needed for specific
+    # build IDs. They are listed in $(SRCEXTRA) and are supposed
+    # to be located in $(SRCDIR_ARCH).
+        "# Include implicit rules for files only needed for specific\n" .
+        "# build IDs. They are listed in \$(SRCEXTRA) and are\n" .
+        "# supposed to be located in \$(SRCDIR_ARCH).\n" .
+        "\$(OBJDIR)/%.o: | \$(OBJDIR)\n" .
+
+    # Generic rule for *.f files out of SRCEXTRA
+	"# Generic rule for *.f files out of SRCEXTRA\n" .
+	"\$(patsubst %.f, \$(OBJDIR)/%.o, \$(filter %.f, \$(notdir \$(SRCEXTRA)))): \$(patsubst %, \$(FEASTBASEDIR)/%, \$(SRCEXTRA))\n" .
+	"\t\$(F77) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA)) -o \$\@\n\n" .
+
+    # Generic rule for *.f90 files out of SRCEXTRA
+	"# Generic rule for *.f90 files out of SRCEXTRA\n" .
+	"# (Remember that those files are supposed to provide no Fortran module\n" .
+	"#  - otherwise they would be on the normal kernel file list - and as\n" .
+	"#  such do not try to move a .mod file upon compilation as a workaround\n" .
+	"#  for compilers that do not create .mod files in the object directory,\n" .
+	"#  in the working directory.)\n" .
+	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))): \$(patsubst %, \$(FEASTBASEDIR)/%, \$(SRCEXTRA))\n" .
+	"\t\$(F90) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA)) -o \$\@\n\n" .
+
+    # Generic rule for *.c files out of SRCEXTRA
+	"# Generic rule for *.c files out of SRCEXTRA\n" .
+	"\$(patsubst %.c, \$(OBJDIR)/%.o, \$(filter %.c, \$(notdir \$(SRCEXTRA)))): \$(patsubst %, \$(FEASTBASEDIR)/%, \$(SRCEXTRA))\n" .
+	"\t\$(CC) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).c, \$(SRCEXTRA)) -o \$\@\n\n" .
+
+    # Generic rule for *.cc files out of SRCEXTRA
+	"# Generic rule for *.cc files out of SRCEXTRA\n" .
+	"\$(patsubst %.cc, \$(OBJDIR)/%.o, \$(filter %.cc, \$(notdir \$(SRCEXTRA)))): \$(patsubst %, \$(FEASTBASEDIR)/%, \$(SRCEXTRA))\n" .
+	"\t\$(CXX) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA)) -o \$\@\n\n" .
+
+    # All files listed in $(SRCEXTRA) should be compiled, but depending on
+    # its extension with a separate rule. Fortran, Fortran90, C and C++
+    # source files have been dealt with above. If, however, a file is
+    # listed in $(SRCEXTRA) that does not exist in $(SRCDIR_ARCH) none
+    # of the above rules matched. The following rule is a catch-all for
+    # any remaining object file to be compiled - be it because its
+    # source file is written in another language or be it because its
+    # source file simply does not exist.
+    # But ensure that no kernel module that is - wrongfully - missing from
+    # SRCLIST_KERNEL etc. is reported as being listed in $(SRCEXTRA). This
+    # would baffle the user completely.
+        "# All files listed in \$(SRCEXTRA) should be compiled, but depending on\n" .
+        "# its extension with a separate rule. Fortran, Fortran90, C and C++\n" .
+        "# source files have been dealt with above. If, however, a file is\n" .
+        "# listed in \$(SRCEXTRA) that does not exist in \$(SRCDIR_ARCH) none\n" .
+        "# of the above rules matched. The following rule is a catch-all for\n" .
+        "# any remaining object file to be compiled - be it because its\n" .
+        "# source file is written in another language or be it because its\n" .
+        "# source file simply does not exist.\n" .
+        "# But ensure that no kernel module that is - wrongfully - missing from\n" .
+        "# SRCLIST_KERNEL etc. is reported as being listed in \$(SRCEXTRA). This\n" .
+        "# would baffle the user completely.\n" .
+        "\$(OBJDIR)/%.o:\n" .
+        "# File from SRCEXTRA that can not be found?\n" .
+        "define srcextra_file_not_found\n" .
+        "    echo;\n" .
+        "    echo \"ERROR: <\$(filter \$*.%, \$(SRCEXTRA))> not found.\";\n" .
+        "    echo;\n" .
+        "    echo \"<\$(filter \$*.%, \$(SRCEXTRA))> is specified in SRCEXTRA (defined in\";\n" .
+        "    echo \"\$(MAKEFILE_CPU_INC) or \$(dir \$(MAKEFILE_CPU_INC))/templates/*.mk\";\n" .
+        "    echo \"and as such is to be compiled additionally for this build ID.\";\n" .
+        "    echo \"It is supposed to reside in directory\";\n" .
+        "    echo \"\$(SRCDIR_ARCH),\";\n" .
+        "    echo \"but does not.\";\n" .
+        "    echo;\n" .
+        "    exit 1;\n" .
+        "endef\n" .
+        "# No file from SRCEXTRA? Then probably a file is missing from SRCLIST_KERNEL.\n" .
+        "define kernel_file_not_on_the_list\n" .
+        "    echo;\n" .
+        "    echo \"ERROR: No rule to make target <\$*.o>.\";\n" .
+        "    echo;\n" .
+        "    echo \"You might have forgotten to add the corresponding source file to any\";\n" .
+        "    echo \"of the Makefile variables SRCLIST_KERNEL, SRCLIST_ARCH or SRCLIST_APP.\";\n" .
+        "    echo;\n" .
+        "    exit 1\n" .
+        "endef\n" .
+        "\t\@\$(if \$(strip \$(filter \$*.%, \$(SRCEXTRA))), \\\n" .
+        "\t\t\$(srcextra_file_not_found), \$(kernel_file_not_on_the_list))\n\n" .
+        "\n\n";
+
+
+    ##############################################################################
+    # Create, copy or evaluate header files to be included in Fortran 90 source files
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Create, copy or evaluate header files to be included in Fortran 90 source files\n\n" .
+        "# Copy some header files to object directory\n" .
+        "\$(OBJHEADERCOPY): | \$(OBJDIR)\n" .
+        "\$(OBJHEADERCOPY):\n" .
+        "\tcp -p \$< \$(OBJDIR)\n\n" .
+
+        "# Others need to be evaluated with cpp first before being stored there.\n" .
+        "\$(OBJHEADEREVAL): | \$(OBJDIR)\n" .
+        "\$(OBJHEADEREVAL): TMPFILE=\$(OBJDIR)/\$(notdir \$<).tmp\n" .
+        "\$(OBJHEADEREVAL):\n" .
+        "\t\@echo \"# Preprocessing \$<\"\n" .
+        "\t\$(CPP) -I\$(OBJDIR) \\\n" .
+        "\t      \$< \\\n" .
+        "\t    > \$(TMPFILE)\n" .
+        "\t\@echo \"# Compensating for line number changes in preprocessed \$<\"\n" .
+        "\tawk -f \$(FEASTBASEDIR)/bin/postprocess_cppoutput.awk \\\n" .
+        "\t      \$(TMPFILE) \\\n" .
+        "\t    > \$(OBJDIR)/\$(notdir \$<)\n" .
+        "\trm -f \$(TMPFILE)\n" .
+        "\n\n";
+
+
+    ##############################################################################
+    # Cleaning up things
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Cleaning up things\n\n" .
+
+    # Clean statement
+        "# Clean all object files for current architecture\n" .
+        "clean:\tclean-libs clean-app\n\n" .
+
+    # clean-app statement
+        "# Clean all FEAST object files for current architecture\n" .
+        "clean-app:\n" .
+        "\t\@echo \"# Removing application binary\"\n" .
+        "\t-rm -f \$(APPNAME) core\n" .
+        "\t\@echo \"# Removing generated source files\"\n" .
+        "\t-\$(foreach file, \\\n" .
+        &format_list("\t    \$(patsubst %, \$(OBJDIR)/%, ", 16, 70, SRCLIST_GENERATED, "\\\n", "\\") . "), \\\n" .
+        "\t    \$(remove_file))\n" .
+        "\t\@echo \"# Removing wrapped source and header files\"\n" .
+        "\t-\$(foreach file, \$(OBJHEADERCOPY) \$(OBJHEADEREVAL), \$(remove_file))\n" .
+        "\t-\$(foreach file, \\\n" .
+        "\t    \$(patsubst %.o, %.f90, \$(OBJF90) \$(OBJPRG)) \\\n" .
+        "\t    \$(patsubst %, \$(OBJDIR)/%, \$(filter %.f90, \$(SRCEXTRA))), \\\n" .
+        "\t    \$(remove_file))\n" .
+        "\t\@echo \"# Removing object files\"\n" .
+        "\t-\$(foreach file, \\\n" .
+        "\t    \$(OBJF77) \$(OBJF90) \$(OBJEXTRA) \$(OBJPRG), \\\n" .
+        "\t    \$(remove_file))\n" .
+        "\t\@echo \"# Removing module information files\"\n" .
+        "\t-rm -f \$(OBJDIR)/*.\$(MODEXTENSION)\n" .
+        "\t\@echo \"# Removing object directories\"\n" .
+        "\t\$(foreach dir, \$(OBJDIR), \$(remove_directory))\n\n" .
+
+    # clean-libs statement
+        "# Clean all external libraries for current architecture\n" .
+        "clean-libs: \$(BUILDLIB:%=clean-%)\n" .
+        "\t-\$(foreach file, \\\n" .
+        &format_list("\t    \$(patsubst %, \$(OBJDIR_LIB)/%, ", 16, 70, SRCLIST_GENERATED, "\\\n", "\\") . "), \\\n" .
+        "\t    \$(remove_file))\n" .
+        "\t-\$(foreach file, \$(LIB), \$(remove_file))\n" .
+        "\t\@echo \"# Removing object directories\"\n" .
+        "\t\$(foreach dir, \$(OBJDIR_LIB), \$(remove_directory))\n\n" .
+
+    # Purge statement
+        "# Clean all object files for all architectures\n" .
+        "# (But be utmost restrictive by only removing files created by a (recent) FEAST Makefile.)\n" .
+        "purge:\tpurge-libs purge-app\n" .
+        "\t\@echo \"# Removing Makefile\"\n" .
+        "\t-rm -f Makefile Makefile.bak\n\n" .
+
+        "# Clean all FEAST object files for all architectures\n" .
+        "# (But be utmost restrictive by only removing files created by a (recent) FEAST Makefile.)\n" .
+        "purge-app: PURGEDIR = \$(dir \$(OBJDIR))\n" .
+        "purge-app:\n" .
+        "        # Go to the directories that contain the architecture-specific\n" .
+        "        # object sub-directories and delete in those sub-directories\n" .
+        "        # * all object files in those where made from FEAST source files.\n" .
+        "        # * all module information files in those where made from FEAST\n" .
+        "        #   Fortran 90 source files.\n" .
+        "\t\@echo\n" .
+        "\t\@echo \"# Cleaning up in FEAST object directory:\"\n" .
+        "\t\@echo \"# Removing wrapped source files, object files and\"\n" .
+        "\t\@echo \"# module information files.\"\n" .
+        "\t-\$(foreach file, \\\n" .
+        "\t    \$(patsubst %.f,  \$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(notdir \$(SRCF77))) \\\n" .
+        &format_list("\t    \$(patsubst %,\$(PURGEDIR)*-*-*-*-*-*-*-opt*/%, ", 20, 70,
+                     "\$(notdir \$(SRCF90)) \$(notdir \$(PROGRAM_FILE)) " . SRCLIST_GENERATED .
+		     " \$(notdir \$(INCLUDED_FILES_TO_COPY)) \$(notdir \$(INCLUDED_FILES_TO_EVALUATE_WITH_CPP))", "\\\n", "\\") . ") \\\n" .
+        "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(notdir \$(SRCF90)) \$(notdir \$(PROGRAM_FILE))) \\\n" .
+        "\t    \$(patsubst %.f,  \$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(filter %.f,   \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t    \$(patsubst %.c,  \$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(filter %.c,   \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t    \$(patsubst %.cc, \$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(filter %.cc,  \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.\$(MODEXTENSION), \\\n" .
+        "\t\t\$(notdir \$(SRCF90)) \$(notdir \$(PROGRAM_FILE))), \\\n" .
+        "\t    \$(remove_file))\n" .
+        "\t\@echo \"# Removing object directories\"\n" .
+        "\t\$(foreach dir, \$(OBJDIR), \$(remove_directory))\n" .
+        "\t\@echo \"# Removing FEAST log and GMV & AVS output files\"\n" .
+        "\t-rm -f feastlog.* *.gmv *.inp\n" .
+        "\t\@echo \"# Removing autopartitioning, profiling and core file\"\n" .
+        "\t-rm -f autopart[0-4].fpart gmon.out core\n\n" .
+
+    # purge-libs statement
+        "# Clean all object files of all external libraries for all architectures\n" .
+        "# (But be utmost restrictive by only removing files created by a (recent) FEAST Makefile.)\n" .
+        "purge-libs: PURGEDIR = \$(dir \$(OBJDIR_LIB))\n" .
+        "purge-libs: \$(BUILDLIB:%=purge-%)\n" .
+        "        # Go to the directories that contain the architecture-specific\n" .
+        "        # object sub-directories and delete in those sub-directories\n" .
+        "        # * all libraries shipped with FEAST.\n" .
+        "\t\@echo \"# Removing metis, blas, lapack, umfpack and AMD libraries\"\n" .
+        "\t\@echo \"# for all build IDs\"\n" .
+        "\t-\$(foreach file, \\\n" .
+        "\t    \$(patsubst %, \$(PURGEDIR)*-*-*-*-*-*-opt*/lib%.a, \$(BUILDLIB)) \\\n" .
+        &format_list("\t    \$(patsubst %, \$(PURGEDIR)*-*-*-*-*-*-opt*/%, ", 16, 70, SRCLIST_GENERATED, "\\\n", "\\") . "), \\\n" .
+        "\t    \$(remove_file))\n" .
+        "\t\$(foreach dir, \$(PURGEDIR)*-*-*-*-*-*-opt*, \$(remove_directory))\n\n";
+
+    # shortcut to delete an object file in the current object directory
+    # (useful if you do not want to remember that directory name)
+    print MAKEFILE_HDL
+        "# shortcut to delete an object file in the current object directory\n" .
+        "# (useful if you do not want to remember that directory name)\n" .
+        "delete:\n" .
+        "\t\@if test -z \"\$(FILE)\"; then \\\n" .
+        "\t    echo \"ERROR: No file specified to delete in directory\"; \\\n" .
+        "\t    echo \"       \$(OBJDIR).\"; \\\n" .
+        "\t    echo \"Usage: \$(MAKE) delete FILE=<module.o>\"; \\\n" .
+        "\telse \\\n" .
+        "\t    if test -f \"\$(OBJDIR)/\$(FILE)\"; then \\\n" .
+        "\t\techo \"# Removing \$(OBJDIR)/\$(FILE)\"; \\\n" .
+        "\t\trm -f \$(OBJDIR)/\$(FILE); \\\n" .
+        "\t    else \\\n" .
+        "\t\techo \"No file found that could be removed!\"; \\\n" .
+        "\t    fi; \\\n" .
+        "\tfi;\n\n\n\n";
+
+
+    ##############################################################################
+    # Libraries (coproc, metis, umfpack, blas, lapack)
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Libraries (coproc, metis, umfpack, AMD, blas, lapack)\n\n" .
+
+        "# A prerequisite for all libraries is that the object directory\n" .
+        "# to store should exist. The pipe is to determine that we want\n" .
+        "# a order-only prerequisite. Thus, no recompiling happens when\n" .
+        "# the time stamp of the object directory is newer than the files\n" .
+        "# within!\n" .
+        "\$(LIB): | \$(OBJDIR_LIB)\n" .
+        "# Check also whether compiler or compile settings changed\n" .
+        "\$(LIB): | check-or-store-settings\n\n" .
+
+    # coproc library path settings
+        "# coproc library path settings\n" .
+        "\$(OBJDIR_LIB)/libcoproc.a clean-coproc purge-coproc: \\\n" .
+        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/coproc\n\n" .
+
+    # coproc library
+        "# Create coproc library\n" .
+        "\$(OBJDIR_LIB)/libcoproc.a:\n" .
+        "\t\@echo \"# Building unified coproc library\"\n" .
+        "\t(cd \$(DIR) && \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t\tOPT=\"\$(OPT)\" FEASTBASEDIR=\"\$(FEASTBASEDIR)\" \\\n" .
+        "\t\tBUILDID=\"\$(ID)\" \\\n" .
+        "\t\tAPPONLYFLAGS=\"\$(APPONLYFLAGS)\" \\\n" .
+        "\t\tFEASTFLAGSFORTRAN=\"\$(CFLAGSF90)\" \\\n" .
+        "\t\tFEASTFLAGSC=\"\$(CFLAGSC)\" \\\n" .
+        "\t\tFEASTCOMPILER=\"\$(CC)\" \\\n" .
+        "\t\tAR=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\" \\\n" .
+	"\t\t";
+
+    my $tmparray = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
+    foreach $entry ( @{ $tmparray } ) {
+	print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
+    }
+    print MAKEFILE_HDL
+	")\n\n" .
+
+    # metis library path settings
+        "# metis library path settings\n" .
+        "\$(OBJDIR_LIB)/libmetis.a clean-metis purge-metis: \\\n" .
+        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/metis\n\n" .
+
+    # metis library
+        "# Create metis library\n" .
+        "\$(OBJDIR_LIB)/libmetis.a:\n" .
+        "\t\@echo \"# Building metis library\"\n" .
+        "\t(cd \$(DIR) && \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t\tCC=\"\$(CC)\" CFLAGSC=\"\$(CFLAGSC)\" \\\n" .
+        "\t\tAR=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
+
+    # umfpack library path settings
+        "# umfpack library path settings\n" .
+        "\$(OBJDIR_LIB)/libumfpack.a clean-umfpack purge-umfpack: \\\n" .
+        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/UMFPACK\n\n" .
+
+    # umfpack library
+        "# Create umfpack library\n" .
+        "\$(OBJDIR_LIB)/libumfpack.a:\n" .
+        "\t\@echo \"# Building umfpack library\"\n" .
+        "\t(cd \$(DIR) && \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t\tCC=\"\$(CC)\" CXXVERSION=\"\$(CXXVERSION)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
+        "\t\tAR=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\" ID=\"\$(ID)\")\n\n" .
+
+    # AMD library path settings
+        "# AMD library path settings\n" .
+        "\$(OBJDIR_LIB)/libamd.a clean-amd purge-amd: \\\n" .
+        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/AMD\n\n" .
+
+    # AMD library
+        "# Create AMD library\n" .
+        "\$(OBJDIR_LIB)/libamd.a:\n" .
+        "\t\@echo \"# Building amd library\"\n" .
+        "\t(cd \$(DIR) && \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t\tCC=\"\$(CC)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
+        "\t\tAR=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
+
+    # blas path settings
+        "# blas library path settings\n" .
+        "\$(OBJDIR_LIB)/libblas.a clean-blas purge-blas: \\\n" .
+        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/BLAS\n\n" .
+
+    # blas library
+        "# Create blas library\n" .
+        "\$(OBJDIR_LIB)/libblas.a:\n" .
+        "\t\@echo \"# Building blas library\"\n" .
+        "\t(cd \$(DIR) && \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
+
+    # lapack path settings
+        "# lapack library path settings\n" .
+        "\$(OBJDIR_LIB)/liblapack.a clean-lapack purge-lapack: \\\n" .
+        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/lapack-3.2\n\n" .
+
+    # lapack library
+        "# Create lapack library\n" .
+        "ifeq (\$(GOTOBLAS_PATCH_FOR_LAPACK),)\n" .
+        "\$(OBJDIR_LIB)/liblapack.a: GOTOBLAS_PATCH_FOR_LAPACK = NOT_REQUIRED\n" .
+        "endif\n" .
+        "\$(OBJDIR_LIB)/liblapack.a:\n" .
+        "\t\@echo \"# Building lapack library\"\n" .
+        "\t(cd \$(DIR) && \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" GOTOBLAS_PATCH_FOR_LAPACK=\"\$(GOTOBLAS_PATCH_FOR_LAPACK)\" \\\n" .
+        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
+
+    # This is technically wrong, it suffices to pass the HAS_* flags only to the coproc library.
+    # But I do not speak enough perl to do this, so we just pass these flags to all libraries,
+    # silently assuming that all other libs' clean targets will not break if they see them.
+    # [dom, October 30 2008]
+
+    # Clean rule for every library
+    print MAKEFILE_HDL
+        "# Clean rule for every library\n" .
+        "\$(BUILDLIB:%=clean-%):\n" .
+        "\t\@( cd \$(DIR) && \\\n" .
+        "\t    \$(MAKE) -f Makefile.FEAST OBJDIR=\"\$(OBJDIR_LIB)\" ";
+    $tmparray = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
+    foreach $entry ( @{ $tmparray } ) {
+	print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
+    }
+    print MAKEFILE_HDL
+	"clean )\n\n";
+
+    # Purge rule for every library
+    print MAKEFILE_HDL
+        "# Purge rule for every library\n" .
+        "\$(BUILDLIB:%=purge-%): PURGEDIR = \$(dir \$(OBJDIR_LIB))\n" .
+        "\$(BUILDLIB:%=purge-%):\n" .
+        "\t\@( cd \$(DIR) && \\\n" .
+        "\t    \$(MAKE) -f Makefile.FEAST OBJDIR=\"\$(PURGEDIR)*-*-*-*-*-*-opt*\" ";
+    $tmparray = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
+    foreach $entry ( @{ $tmparray } ) {
+	print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
+    }
+    print MAKEFILE_HDL
+	"purge )\n\n" .
+        "\n\n";
+
+
+    ##############################################################################
+    # Shortcuts
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Shortcuts\n\n" .
+
+    # Shortcuts for all libraries:
+    # e.g. invoke 'make metis', 'make libmetis' or 'make libmetis.a' to
+    #      have \$(OBJDIR_LIB)/libmetis.a' built
+        "# Shortcuts for all libraries:\n" .
+        "# e.g. invoke 'make metis', 'make libmetis' or 'make libmetis.a' to\n" .
+        "#      have \$(OBJDIR_LIB)/libmetis.a' built\n" .
+        ".PHONY: \$(BUILDLIB) \\\n" .
+        "\t\$(patsubst %, lib%, \$(BUILDLIB)) \\\n" .
+        "\t\$(patsubst %, lib%.a, \$(BUILDLIB))\n" .
+        "\$(BUILDLIB):\n" .
+        "\t@\$(MAKE) \$(OBJDIR_LIB)/lib\$@.a\n" .
+        "\$(patsubst %, lib%, \$(BUILDLIB)):\n" .
+        "\t@\$(MAKE) \$(OBJDIR_LIB)/\$@.a\n" .
+        "\$(patsubst %, lib%.a, \$(BUILDLIB)):\n" .
+        "\t@\$(MAKE) \$(OBJDIR_LIB)/\$@\n\n" .
+
+    # Shortcuts for all FEAST object files:
+    # e.g. invoke 'make assembly.o' to have 'make $(OBJDIR)/assembly.o' built
+        "# Shortcuts for all FEAST object files:\n" .
+        "# e.g. invoke 'make assembly.o' to have 'make \$(OBJDIR)/assembly.o' built\n" .
+        ".PHONY: \$(patsubst %.f, %.o, \$(notdir \$(SRCF77))) \\\n" .
+        "\t\$(patsubst %.f90, %.o, \$(notdir \$(SRCF90) \$(notdir \$(PROGRAM_FILE)))) \\\n" .
+        "\t\$(notdir \$(OBJEXTRA))\n" .
+        "\$(patsubst %.f, %.o, \$(notdir \$(SRCF77))) \\\n" .
+        "\$(patsubst %.f90, %.o, \$(notdir \$(SRCF90) \$(notdir \$(PROGRAM_FILE)))) \\\n" .
+        "\$(notdir \$(OBJEXTRA)):\n" .
+        "\t\@\$(MAKE) \$(OBJDIR)/\$\@\n\n\n\n";
+
+
+    ##############################################################################
+    # Targets to check whether compilers and compile settings are consistent
+    # among subsequent make invocations.
+
+    # Store compiler modification dates and compiler settings etc.
+    # for current build ID.
+    # This information is later on used to check whether the object files
+    # in \$(DIR) need to be recompiled.
+    ##############################################################################
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Targets to check whether compilers and compile settings are consistent\n" .
+        "# among subsequent make invocations.\n\n" .
+    #    ".PHONY:   check-or-store-settings\n" .
+    #    "check-or-store-settings: | \$(OBJDIR_LIB) \$(OBJDIR)\n" .
+    #    "ifeq (\$(strip \$(MONITOR_COMPILE_ENV)),YES)\n" .
+    #    "\t\@\$(foreach target, \\\n" .
+    #    "\t    check-settings-objdir check-settings-objdir_lib \\\n" .
+    #    "\t    store-settings-objdir store-settings-objdir_lib, \\\n" .
+    #    "\t    \$(MAKE) \$(target) || exit 1; )\n" .
+    #    "endif\n\n" .
+
+        "OBJDIR_LOCKFILE     = \$(OBJDIR)/LOCK.compile-env-settings\n" .
+        "OBJDIR_LIB_LOCKFILE = \$(OBJDIR_LIB)/LOCK.compile-env-settings\n\n" .
+
+        ".PHONY:    check-or-store-settings\n" .
+        "check-or-store-settings: WAITTIME = 1\n" .
+        "check-or-store-settings: RETRIES  = 10\n" .
+        "check-or-store-settings: | \$(OBJDIR_LIB) \$(OBJDIR)\n" .
+        "ifeq (\$(strip \$(MONITOR_COMPILE_ENV)),YES)\n" .
+        "\t\@trap \"rm -f \$(OBJDIR_LOCKFILE)\" 2 3 9; \\\n" .
+        "\tif test -f \$(OBJDIR_LOCKFILE); then \\\n" .
+        "\t    if test \$(MAKELEVEL) -lt \$(RETRIES); then \\\n" .
+        "\t\techo; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# Detected concurrent read/write access to those files storing compile\"; \\\n" .
+        "\t\techo \"# environment settings. Waiting for the other process to finish.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# If you are sure that this is a false alarm, simply remove the file\"; \\\n" .
+        "\t\techo \"# <\$(OBJDIR_LOCKFILE)>.\"; \\\n" .
+        "\t\techo \"# Then, compilation will proceed automatically.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo; \\\n" .
+        "\t\tsleep \$(WAITTIME); \\\n" .
+        "\t\t\$(MAKE) check-or-store-settings; \\\n" .
+        "\t    else \\\n" .
+        "\t\techo; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# Lock for read access to those files storing compile environment\"; \\\n" .
+        "\t\techo \"# has not been released within \"`expr \$(WAITTIME) \\* \$(RETRIES)`\" seconds.\"; \\\n" .
+        "\t\techo \"# Giving up.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# In case of a false alarm please manually remove file\"; \\\n" .
+        "\t\techo \"# <\$(OBJDIR_LOCKFILE)>.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo; \\\n" .
+        "\t\texit 1; \\\n" .
+        "\t    fi; \\\n" .
+        "\telse \\\n" .
+        "\t    touch \$(OBJDIR_LOCKFILE); \\\n" .
+        "\t    error=0; \\\n" .
+        "\t    if test -s \$(OBJDIR)/\$(COMPILER_SETTINGS); then \\\n" .
+        "\t\t\$(MAKE) check-settings-objdir || error=1; \\\n" .
+        "\t    else \\\n" .
+        "\t\t\$(MAKE) store-settings-objdir || error=1; \\\n" .
+        "\t    fi; \\\n" .
+        "\t    rm -f \$(OBJDIR_LOCKFILE); \\\n" .
+        "\t    if test \$\${error} = 1; then \\\n" .
+        "\t\texit 1; \\\n" .
+        "\t    fi; \\\n" .
+        "\tfi; \\\n" .
+        "\ttrap - 2 3 9;\n" .
+        "\t\@trap \"rm -f \$(OBJDIR_LIB_LOCKFILE)\" 2 3 9; \\\n" .
+        "\tif test -f \$(OBJDIR_LIB_LOCKFILE); then \\\n" .
+        "\t    if test \$(MAKELEVEL) -lt \$(RETRIES); then \\\n" .
+        "\t\techo; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# Detected concurrent read/write access to those files storing compile\"; \\\n" .
+        "\t\techo \"# environment settings. Waiting for the other process to finish.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# If you are sure that this is a false alarm, simply remove the file\"; \\\n" .
+        "\t\techo \"# <\$(OBJDIR_LIB_LOCKFILE)>.\"; \\\n" .
+        "\t\techo \"# Then, compilation will proceed automatically.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo; \\\n" .
+        "\t\tsleep \$(WAITTIME); \\\n" .
+        "\t\t\$(MAKE) check-or-store-settings; \\\n" .
+        "\t    else \\\n" .
+        "\t\techo; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# Lock for read access to those files storing compile environment\"; \\\n" .
+        "\t\techo \"# has not been released within \"`expr \$(WAITTIME) \\* \$(RETRIES)`\" seconds.\"; \\\n" .
+        "\t\techo \"# Giving up.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# In case of a false alarm please manually remove file\"; \\\n" .
+        "\t\techo \"# <\$(OBJDIR_LIB_LOCKFILE)>.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo; \\\n" .
+        "\t\texit 1; \\\n" .
+        "\t    fi; \\\n" .
+        "\telse \\\n" .
+        "\t    touch \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t    error=0; \\\n" .
+        "\t    if test -s \$(OBJDIR_LIB)/\$(COMPILER_SETTINGS); then \\\n" .
+        "\t\t\$(MAKE) check-settings-objdir_lib || error=1; \\\n" .
+        "\t    else \\\n" .
+        "\t\t\$(MAKE) store-settings-objdir_lib || error=1; \\\n" .
+        "\t    fi; \\\n" .
+        "\t    rm -f \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t    if test \$\${error} = 1; then \\\n" .
+        "\t\texit 1; \\\n" .
+        "\t    fi; \\\n" .
+        "\tfi; \\\n" .
+        "\ttrap - 2 3 9;\n" .
+        "endif\n\n" .
+
+
+    # Check whether compiler modification dates or compiler settings for
+    # current build ID have changed since last invocation of make.
+    # If so, force re-compilation.
+        "# Check whether compiler modification dates or compiler settings for\n" .
+        "# current build ID have changed since last invocation of make.\n" .
+        "# If so, force re-compilation.\n" .
+        ".PHONY:    check-settings-objdir\n" .
+        "check-settings-objdir: DIR = \$(OBJDIR)\n" .
+        "check-settings-objdir: \$(OBJDIR)\n" .
+        "        # What exactly is done here?\n" .
+        "        # In total, 9 files are created in the current object directory.\n" .
+        "        # 2 per compiler, 1 for the compiler command line settings. These\n" .
+        "        # settings are compared to previously stored ones.\n" .
+        "        # For every compiler the output of 'ls -lLd <absolute_path_to_compiler>'\n" .
+        "        # is stored in one file. To a separate file, the output of '<compiler>\n" .
+        "        # <get-version-info>' is stored. As the syntax to retrieve the compiler\n" .
+        "        # version is different for most compilers, the variables F77VERSION,\n" .
+        "        # F90VERSION, CCVERSION and CXXVERSION are evaluated. They are defined\n" .
+        "        # in one of kernel/arch/templates/*.mk files. These 8 files should catch\n" .
+        "        # all cases where a compiler has been updated, swapped for another and\n" .
+        "        # similar. In general, it is not recommended to mix object files created\n" .
+        "        # by different compiler or compiler versions.\n" .
+        "        # Compiler command line settings are stored as well. This is done to\n" .
+        "        # catch altered preprocessor macros: '-DFOO -DBAR' is used the first\n" .
+        "        # time an application is compiled while for the second compilation\n" .
+        "        # settings have been changed to '-DBAZ'. Ordinary Makefile don't detect\n" .
+        "        # this despite the change possibly having a big impact on which code\n" .
+        "        # is compiled. The same holds true for different kind of optimisation\n" .
+        "        # flags. The mechanism ensures that all object files have been compiled\n" .
+        "        # with the very same settings when it comes to linking. The settings\n" .
+        "        # stored are:\n" .
+        "        # CFLAGSF77LIBS = [...]\n" .
+        "        # CFLAGSF77     = [...]\n" .
+        "        # CFLAGSF90     = [...]\n" .
+        "        # CFLAGSC       = [...]\n" .
+        "        # CFLAGSCXX     = [...]\n" .
+        "        # APPONLYFLAGS  = [...]\n" .
+        "        # INC           = [...]\n" .
+        "        # The output is similar to the corresponding lines of 'make id' output.\n" .
+        "        # Path information, however, needs to be removed from these settings.\n" .
+        "        # Otherwise, it would not be possible to share libraries among FEAST\n" .
+        "        # applications as the settings above often contain absolute paths to\n" .
+        "        # object directories which would lead to conflicts, e.g.:\n" .
+        "        # CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_disk/object\n" .
+        "        # CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_poisson/object\n" .
+        "\t\@+\\\n" .
+	"\techo \"# Checking whether compiler or compiler command line settings\"; \\\n" .
+	"\techo \"# used to build the application have changed since last time\"; \\\n" .
+	"\techo \"# 'make' was run for this build ID.\"; \\\n" .
+        "\tadditionalflags=\"APPONLYFLAGS  = \$(APPONLYFLAGS)\"; \\\n" .
+        "\tmessage=\"\"; \\\n" .
+        "\tCOMPILERNAME=\"F77\"; COMPILER=\"\$(F77)\"; \\\n" .
+        "\tCOMPILERVERSION=\"\$(F77VERSION)\"; \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_F77_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_F77_INFO).ls\";      \$(ls-lLd-for-compiler-foo); \\\n" .
+        "\tCOMPILERNAME=\"F90\"; COMPILER=\"\$(F90)\"; \\\n" .
+        "\tCOMPILERVERSION=\"\$(F90VERSION)\"; \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_F90_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_F90_INFO).ls\";      \$(ls-lLd-for-compiler-foo); \\\n" .
+        "\tCOMPILERNAME=\"C\"; COMPILER=\"\$(CC)\"; \\\n" .
+        "\tCOMPILERVERSION=\"\$(CCVERSION)\"; \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_CC_INFO).version\";  \$(version-info-compiler-foo); \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_CC_INFO).ls\";       \$(ls-lLd-for-compiler-foo); \\\n" .
+        "\tCOMPILERNAME=\"C++\"; COMPILER=\"\$(CXX)\"; \\\n" .
+        "\tCOMPILERVERSION=\"\$(CXXVERSION)\"; \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_CXX_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_CXX_INFO).ls\";      \$(ls-lLd-for-compiler-foo); \\\n" .
+        "\tif test -s \$(DIR)/\$(COMPILER_SETTINGS); then \\\n" .
+        "\t    recompile=no; \\\n" .
+        "\t    (echo 'CFLAGSF77LIBS =' \$(CFLAGSF77LIBS) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo 'CFLAGSF90     =' \$(CFLAGSF90) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
+        "\t\t\ts^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
+        "\t\t\ts^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\"; \\\n" .
+        "\t     echo 'CFLAGSC       =' \$(CFLAGSC) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo \$\${additionalflags}; \\\n" .
+        "\t     echo 'INC           =' \$(INC); ) | \\\n" .
+        "\t\tdiff -w \$(DIR)/\$(COMPILER_SETTINGS) -  || recompile=yes; \\\n" .
+        "\t    if test \$\${recompile} = yes; then \\\n" .
+        "\t\tif test -n \"\$\${message}\"; then \\\n" .
+        "\t\t    oldmessage=\"\$\${message}\"; \\\n" .
+        "\t\t    message=`echo \"#NEWLINE # Compiler settings have changed.NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# The above output is 'diff' output. Syntax:NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# < [old settings]NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# ---NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# > [new settings]NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}#NEWLINE # Additionally holds:NEWLINE \$\${oldmessage}\"`; \\\n" .
+        "\t\telse \\\n" .
+        "\t\t    message=`echo \"#NEWLINE # Compiler settings have changed.NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# The above output is 'diff' output. Syntax:NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# < [old settings]NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# ---NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# > [new settings]NEWLINE \"`; \\\n" .
+        "\t\tfi; \\\n" .
+        "\t    fi; \\\n" .
+        "\tfi; \\\n" .
+        "\tif test -n \"\$\${message}\"; then \\\n" .
+        "\t    echo \$\${message} | perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
+        "\t    echo \"#\";  \\\n" .
+        "\t    echo \"# FEAST application should be recompiled.\"; \\\n" .
+        "\t    echo \"# Please issue a\"; \\\n" .
+	"\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '/^.* -- / { sub(/^.* -- /, \"\"); print \$0}'`\"; \\\n" .
+        "\t    echo \"# % \$(MAKE) \$\${overwrittenmakevars} clean-app; \$(MAKE) \$\${overwrittenmakevars} obj\"; \\\n" .
+        "\t    echo \"# or if you prefer tabula rasa\"; \\\n" .
+        "\t    echo \"# % \$(MAKE) \$\${overwrittenmakevars} clean; \$(MAKE) \$\${overwrittenmakevars}\"; \\\n" .
+        "\t    echo \"#\";  \\\n" .
+        "\t    echo \"# You can deactivate this checking by compiling\"; \\\n" .
+        "\t    echo \"# with 'MONITOR_COMPILE_ENV=NO'.\"; \\\n" .
+        "\t    echo \"#######################################################################\"; \\\n" .
+        "\t    rm -f \$(OBJDIR_LOCKFILE); \\\n" .
+        "\t    exit 1; \\\n" .
+        "\tfi;\n\n" .
+
+        ".PHONY:    check-settings-objdir_lib\n" .
+        "check-settings-objdir_lib: DIR = \$(OBJDIR_LIB)\n" .
+        "check-settings-objdir_lib: \$(OBJDIR_LIB)\n" .
+        "ifneq (\$(OBJDIR_LIB), \$(OBJDIR))\n" .
+        "        # What exactly is done here? See comment in target check-settings-objdir.\n" .
+        "\t\@+\\\n" .
+	"\techo \"# Checking whether compiler or compiler command line settings\"; \\\n" .
+	"\techo \"# used to build the libraries have changed since last time\"; \\\n" .
+	"\techo \"# 'make' was run for this build ID.\"; \\\n" .
+        "\tadditionalflags=\"\"; \\\n" .
+        "\tmessage=\"\"; \\\n" .
+        "\tCOMPILERNAME=\"F77\"; COMPILER=\"\$(F77)\"; \\\n" .
+        "\tCOMPILERVERSION=\"\$(F77VERSION)\"; \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_F77_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
+        "\tCOMPILERNAME=\"F90\"; COMPILER=\"\$(F90)\"; \\\n" .
+        "\tCOMPILERVERSION=\"\$(F90VERSION)\"; \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_F90_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
+        "\tCOMPILERNAME=\"C\"; COMPILER=\"\$(CC)\"; \\\n" .
+        "\tCOMPILERVERSION=\"\$(CCVERSION)\"; \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_CC_INFO).version\";  \$(version-info-compiler-foo); \\\n" .
+        "\tCOMPILERNAME=\"C++\"; COMPILER=\"\$(CXX)\"; \\\n" .
+        "\tCOMPILERVERSION=\"\$(CXXVERSION)\"; \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_CXX_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
+        "\tif test -s \$(DIR)/\$(COMPILER_SETTINGS); then \\\n" .
+        "\t    recompile=no; \\\n" .
+        "\t    (echo 'CFLAGSF77LIBS =' \$(CFLAGSF77LIBS) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo 'CFLAGSF90     =' \$(CFLAGSF90) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
+        "\t\t\ts^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
+        "\t\t\ts^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\"; \\\n" .
+        "\t     echo 'CFLAGSC       =' \$(CFLAGSC) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo \$\${additionalflags}; \\\n" .
+        "\t     echo 'INC           =' \$(INC); ) | \\\n" .
+        "\t\tdiff -w \$(DIR)/\$(COMPILER_SETTINGS) -  || recompile=yes; \\\n" .
+        "\t    if test \$\${recompile} = yes; then \\\n" .
+        "\t\tif test -n \"\$\${message}\"; then \\\n" .
+        "\t\t    oldmessage=\"\$\${message}\"; \\\n" .
+        "\t\t    message=`echo \"#NEWLINE # Compiler settings have changed.NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# The above output is 'diff' output. Syntax:NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# < [old settings]NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# ---NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# > [new settings]NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}#NEWLINE # Additionally holds:NEWLINE \$\${oldmessage}\"`; \\\n" .
+        "\t\telse \\\n" .
+        "\t\t    message=`echo \"#NEWLINE # Compiler settings have changed.NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# The above output is 'diff' output. Syntax:NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# < [old settings]NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# ---NEWLINE \"`; \\\n" .
+        "\t\t    message=`echo \"\$\${message}# > [new settings]NEWLINE \"`; \\\n" .
+        "\t\tfi; \\\n" .
+        "\t    fi; \\\n" .
+        "\tfi; \\\n" .
+        "\tif test -n \"\$\${message}\"; then \\\n" .
+        "\t    echo \$\${message} | perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
+        "\t    echo \"#\";  \\\n" .
+        "\t    echo \"# Libraries FEAST relies on should be recompiled.\"; \\\n" .
+        "\t    echo \"# Please issue at least a\"; \\\n" .
+	"\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '/^.* -- / { sub(/^.* -- /, \"\"); print \$0}'`\"; \\\n" .
+#	"\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '{ for ( i = 1; i <= NF; i++ ) if (\$\$i ~ /[A-Z]*=/) printf \\\" \\\"\$\$i }'`\"; \\\n" .
+        "\t    echo \"# % \$(MAKE) \$\${overwrittenmakevars} clean-libs; \$(MAKE) \$\${overwrittenmakevars} libs\"; \\\n" .
+        "\t    echo \"# or if you prefer tabula rasa\"; \\\n" .
+        "\t    echo \"# % \$(MAKE) \$\${overwrittenmakevars} clean; \$(MAKE) \$\${overwrittenmakevars}\"; \\\n" .
+        "\t    echo \"#\";  \\\n" .
+        "\t    echo \"# You can deactivate this checking by compiling\"; \\\n" .
+        "\t    echo \"# with 'MONITOR_COMPILE_ENV=NO'.\"; \\\n" .
+        "\t    echo \"#######################################################################\"; \\\n" .
+        "\t    rm -f \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t    exit 1; \\\n" .
+        "\tfi;\n" .
+        "endif\n\n" .
+
+        "# Function to check whether the version string of program <foo>,\n" .
+        "# obtainable via variable \${FOOVERSION}, differs from the\n" .
+        "# information stored in \${FILE}.\n" .
+        "#\n" .
+        "# When parallel compiling several applications that share the same\n" .
+        "# object directory for libraries, it can happen that make process A\n" .
+        "# starts to create \${FILE} (so \${FILE} being empty, but existing)\n" .
+        "# while make process B tries already to check settings inside.\n" .
+        "# So, we do not check with 'test -f', but 'test -s'.\n" .
+        "define version-info-compiler-foo\n" .
+        "    recompile=no; \\\n" .
+        "    if test -s \$\${FILE}; then \\\n" .
+        "\tif test -n \"\$\${COMPILERVERSION}\"; then \\\n" .
+        "\t    eval \$\${COMPILERVERSION} | \\\n" .
+        "\t    diff -w \$\${FILE} - > /dev/null || \\\n" .
+        "\t    recompile=yes; \\\n" .
+        "\telse \\\n" .
+        "\t    echo; echo \"Error: \$\${COMPILER} not found.\"; echo; \\\n" .
+        "\t    rm -f \$(OBJDIR_LOCKFILE); exit 1; \\\n" .
+        "\tfi; \\\n" .
+        "\tif test \$\${recompile} = yes; then \\\n" .
+        "\t    message=`echo \$\${message}; echo \"#NEWLINE\"`; \\\n" .
+        "\t    message=`echo \$\${message}; echo \"# Version information of \$\${COMPILERNAME} compiler has changed:NEWLINE\"`; \\\n" .
+        "\t    message=`echo \$\${message}; echo \"#  previously: \\`cat \$\${FILE}\\`NEWLINE\"`; \\\n" .
+        "\t    message=`echo \$\${message}; echo \"#  currently : \\`eval \$\${COMPILERVERSION}\\`NEWLINE\"`; \\\n" .
+        "\t    message=`echo \$\${message}; echo \"#  (command used to determine this: \$\${COMPILERVERSION})NEWLINE\"`; \\\n" .
+        "\tfi; \\\n" .
+        "    fi\n" .
+        "endef\n\n\n" .
+
+        "# Function to check whether the output of 'ls -lLd <foo>' differs\n" .
+        "# from the information stored in \${FILE}.\n" .
+        "#\n" .
+        "# (When parallel compiling several applications that share the same\n" .
+        "#  object directory for libraries, it can happen that make process A\n" .
+        "#  starts to create \${FILE} (so \${FILE} being empty, but existing)\n" .
+        "#  while make process B tries already to check settings inside.\n" .
+        "#  So, we do not check with 'test -f', but 'test -s'.)\n" .
+        "define ls-lLd-for-compiler-foo\n" .
+        "    LANG=C; \\\n" .
+        "    recompile=no; \\\n" .
+        "    if test -s \$\${FILE}; then \\\n" .
+        "\tcompilerpath=`which \$\${COMPILER} 2> /dev/null`; \\\n" .
+        "\tif test -n \"\$\${compilerpath}\"; then \\\n" .
+        "\t    ls -lLd \$\${compilerpath} | \\\n" .
+        "\t    diff -w \$\${FILE} - > /dev/null || \\\n" .
+        "\t    recompile=yes; \\\n" .
+        "\telse \\\n" .
+        "\t    echo; echo \"Error: \$\${COMPILER} not found.\"; echo; \\\n" .
+        "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t    exit 1; \\\n" .
+        "\tfi; \\\n" .
+        "\tif test \$\${recompile} = yes; then \\\n" .
+        "\t    message=`echo \$\${message}; echo \"#NEWLINE\"`; \\\n" .
+        "\t    message=`echo \$\${message}; echo \"# File information of \$\${COMPILERNAME} compiler has changed:NEWLINE\"`; \\\n" .
+        "\t    message=`echo \$\${message}; echo \"#  previously: \\`cat \$\${FILE}\\`NEWLINE\"`; \\\n" .
+        "\t    message=`echo \$\${message}; echo \"#  currently : \\`ls -lLd \$\${compilerpath}\\`NEWLINE\"`; \\\n" .
+        "\t    message=`echo \$\${message}; echo \"#  (command used to determine this: ls -lLd \$\${compilerpath})NEWLINE\"`; \\\n" .
+        "\tfi; \\\n" .
+        "    fi\n" .
+        "endef\n\n\n" .
+
+    # Store compiler modification dates and compiler settings etc.
+    # for current build ID.
+    # This information is later on used to check whether the object files
+    # in $(DIR) need to be recompiled.
+        "# Store compiler modification dates and compiler settings etc.\n" .
+        "# for current build ID.\n" .
+        "# This information is later on used to check whether the object files\n" .
+        "# in \$(DIR) need to be recompiled.\n" .
+        ".PHONY:    store-settings-objdir\n" .
+        "store-settings-objdir: DIR = \$(OBJDIR)\n" .
+        "store-settings-objdir: \$(OBJDIR) #| check-settings-objdir\n" .
+        "\t\@+additionalflags=\"APPONLYFLAGS  = \$(APPONLYFLAGS)\"; \\\n" .
+	"\techo \"# Storing current compiler and compiler command line settings\"; \\\n" .
+	"\techo \"# used to compile the application for subsequent 'make' calls\"; \\\n" .
+        "\techo \"# to detect future changes and force automatic recompilation...\"; \\\n" .
+        "\t\$(store-settings)\n\n" .
+
+        ".PHONY:    store-settings-objdir_lib\n" .
+        "store-settings-objdir_lib: DIR = \$(OBJDIR_LIB)\n" .
+        "store-settings-objdir_lib: \$(OBJDIR_LIB) #| check-settings-objdir_lib\n" .
+        "ifneq (\$(OBJDIR_LIB), \$(OBJDIR))\n" .
+        "\t\@+additionalflags=\"\"; \\\n" .
+	"\techo \"# Storing current compiler and compiler command line settings\"; \\\n" .
+	"\techo \"# used to compile the libraries for subsequent 'make' calls\"; \\\n" .
+        "\techo \"# to detect future changes and force automatic recompilation...\"; \\\n" .
+
+        "\t\$(store-settings)\n" .
+        "endif\n\n" .
+
+        "# What exactly is done here?\n" .
+        "# In total, 9 files are created in the current object directory.\n" .
+        "# 2 per compiler, 1 for the compiler command line settings.\n" .
+        "# For every compiler the output of 'ls -lLd <absolute_path_to_compiler>'\n" .
+        "# is stored in one file. To a separate file, the output of '<compiler>\n" .
+        "# <get-version-info>' is stored. As the syntax to retrieve the compiler\n" .
+        "# version is different for most compilers, the variables F77VERSION,\n" .
+        "# F90VERSION, CCVERSION and CXXVERSION are evaluated. They are defined\n" .
+        "# in one of kernel/arch/templates/*.mk files. These 8 files should catch\n" .
+        "# all cases where a compiler has been updated, swapped for another and\n" .
+        "# similar. In general, it is not recommended to mix object files created\n" .
+        "# by different compiler or compiler versions.\n" .
+        "# Compiler command line settings are stored as well. This is done to\n" .
+        "# catch altered preprocessor macros: '-DFOO -DBAR' is used the first\n" .
+        "# time an application is compiled while for the second compilation\n" .
+        "# settings have been changed to '-DBAZ'. Ordinary Makefile don't detect\n" .
+        "# this despite the change possibly having a big impact on which code\n" .
+        "# is compiled. The same holds true for different kind of optimisation\n" .
+        "# flags. The mechanism ensures that all object files have been compiled\n" .
+        "# with the very same settings when it comes to linking. The settings\n" .
+        "# stored are:\n" .
+        "# CFLAGSF77LIBS = [...]\n" .
+        "# CFLAGSF77     = [...]\n" .
+        "# CFLAGSF90     = [...]\n" .
+        "# CFLAGSC       = [...]\n" .
+        "# CFLAGSCXX     = [...]\n" .
+        "# APPONLYFLAGS  = [...]\n" .
+        "# INC           = [...]\n" .
+        "# The output is similar to the corresponding lines of 'make id' output.\n" .
+        "# Path information, however, needs to be removed from these settings.\n" .
+        "# Otherwise, it would not be possible to share libraries among FEAST\n" .
+        "# applications as the settings above often contain absolute paths to\n" .
+        "# object directories which would lead to conflicts, e.g.:\n" .
+        "# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_disk/object\n" .
+        "# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_poisson/object\n" .
+        "define store-settings\n" .
+        "    LANG=C; \\\n" .
+        "    if test -n \"\$(F77)\"; then \\\n" .
+        "\t\$(F77VERSION) > \"\$(DIR)/\$(FILE_F77_INFO).version\"; \\\n" .
+        "\tcompilerpath=\`which 2>/dev/null \$(F77)\`; \\\n" .
+        "\tif test -f \"\$\${compilerpath}\" -o -L \"\$\${compilerpath}\"; then \\\n" .
+        "\t    ls -lLd \$\${compilerpath} > \"\$(DIR)/\$(FILE_F77_INFO).ls\"; \\\n" .
+        "\telse \\\n" .
+        "\t    echo; echo \"Error: F77 compiler not found.\"; echo; \\\n" .
+        "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t    exit 1; \\\n" .
+        "\tfi; \\\n" .
+        "    else \\\n" .
+        "\techo; echo \"Error: F77 compiler not set.\"; echo; \\\n" .
+        "\trm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\texit 1; \\\n" .
+        "    fi; \\\n" .
+        "    if test -n \"\$(F90)\"; then \\\n" .
+        "\t\$(F90VERSION) > \"\$(DIR)/\$(FILE_F90_INFO).version\"; \\\n" .
+        "\tcompilerpath=\`which 2>/dev/null \$(F90)\`; \\\n" .
+        "\tif test -f \"\$\${compilerpath}\" -o -L \"\$\${compilerpath}\"; then \\\n" .
+        "\t    ls -lLd \$\${compilerpath} > \"\$(DIR)/\$(FILE_F90_INFO).ls\"; \\\n" .
+        "\telse \\\n" .
+        "\t    echo; echo \"Error: F90 compiler not found.\"; echo; \\\n" .
+        "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t    exit 1; \\\n" .
+        "\tfi; \\\n" .
+        "    else \\\n" .
+        "\techo; echo \"Error: F90 compiler not set.\"; echo; \\\n" .
+        "\trm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\texit 1; \\\n" .
+        "    fi; \\\n" .
+        "    if test -n \"\$(CC)\"; then \\\n" .
+        "\t\$(CCVERSION) > \"\$(DIR)/\$(FILE_CC_INFO).version\"; \\\n" .
+        "\tcompilerpath=\`which 2>/dev/null \$(CC)\`; \\\n" .
+        "\tif test -f \"\$\${compilerpath}\" -o -L \"\$\${compilerpath}\"; then \\\n" .
+        "\t    ls -lLd \$\${compilerpath} > \"\$(DIR)/\$(FILE_CC_INFO).ls\"; \\\n" .
+        "\telse \\\n" .
+        "\t    echo; echo \"Error: C compiler not found.\"; echo; \\\n" .
+        "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t    exit 1; \\\n" .
+        "\tfi; \\\n" .
+        "    else \\\n" .
+        "\techo; echo \"Error: C compiler not set.\"; echo; \\\n" .
+        "\trm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\texit 1; \\\n" .
+        "    fi; \\\n" .
+        "    if test -n \"\$(CXX)\"; then \\\n" .
+        "\t\$(CXXVERSION) > \"\$(DIR)/\$(FILE_CXX_INFO).version\"; \\\n" .
+        "\tcompilerpath=\`which 2>/dev/null \$(CXX)\`; \\\n" .
+        "\tif test -f \"\$\${compilerpath}\" -o -L \"\$\${compilerpath}\"; then \\\n" .
+        "\t    ls -lLd \$\${compilerpath} > \"\$(DIR)/\$(FILE_CXX_INFO).ls\"; \\\n" .
+        "\telse \\\n" .
+        "\t    echo; echo \"Error: C++ compiler not found.\"; echo; \\\n" .
+        "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t    exit 1; \\\n" .
+        "\tfi; \\\n" .
+        "    else \\\n" .
+        "\techo; echo \"Error: C++ compiler not set.\"; echo; \\\n" .
+        "\trm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\texit 1; \\\n" .
+        "    fi; \\\n" .
+        "    (echo 'CFLAGSF77LIBS =' \$(CFLAGSF77LIBS) | \\\n" .
+        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "     echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
+        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "     echo 'CFLAGSF90     =' \$(CFLAGSF90) | \\\n" .
+        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
+        "\t   s^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
+        "\t   s^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\"; \\\n" .
+        "     echo 'CFLAGSC       =' \$(CFLAGSC) | \\\n" .
+        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
+        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "     echo \$\${additionalflags}; \\\n" .
+        "     echo 'INC           =' \$(INC); ) > \$(DIR)/\$(COMPILER_SETTINGS); \\\n" .
+        "    echo \"# Done.\"\n" .
+        "endef\n\n" .
+
+    # For slow file systems ensure that a directory to be created
+    # actually has appeared before continuing.
+        "# For slow file systems ensure that a directory to be created\n" .
+        "# actually has appeared before continuing.\n" .
+        "define wait-for-directory-to-appear\n" .
+        "    echo; echo \"# Waiting till object directory <\$\${DIR}> appears...\"; \\\n" .
+        "    while ! test -d \$\${DIR}; do sleep 1; done; \\\n" .
+        "    echo \"# Object directory <\$\${DIR}> available. Continuing compilation...\"\n" .
+        "\n" .
+        "endef\n\n\n\n";
+
+
+    ##############################################################################
+    # Auxiliary targets
+    print MAKEFILE_HDL
+        "##############################################################################\n" .
+        "# Auxiliary targets\n\n" .
+
+    # Greeting
+        "# Greeting\n" .
+        ".PHONY: greeting\n" .
+        "greeting:\n" .
+        "\t\@echo \"# Building FEAT2.0 application <\$(APPNAME)>\"\n\n";
+
+    # Test whether given ID (possibly hard-coded in top section or given
+    # on command line) is valid
+    print MAKEFILE_HDL
+        "# Test whether given ID (possibly hard-coded in top section or given\n" .
+        "# on command line) is valid\n" .
+        ".PHONY: verify-id\n" .
+        "verify-id:\n" .
+        "ifneq (\$(strip \$(FORCE_ID)),YES)\n" .
+        "ifeq (,\$(findstring \$(REALID), \$(ID)))\n" .
+        "\t\@echo; \\\n" .
+        "\t echo '*** Error: Build ID \$(ID)'; \\\n" .
+        "\t echo '***        is *not* valid for current host!'; \\\n" .
+        "\t echo '***        \$(FEASTBASEDIR)/bin/guess_id reported a host of type \$(REALID).'; \\\n" .
+        "\t echo '***        Cowardly refusing compilation.'; \\\n" .
+        "\t echo;\n" .
+	"\t\@exit 1;\n" .
+        "endif\n" .
+        "endif\n\n";
+
+    print MAKEFILE_HDL
+    # Create object directories
+        "# Create object directories\n" .
+        ".PHONY: \$(OBJDIR)\n" .
+        "\$(OBJDIR):      | verify-id\n" .
+        "ifneq (\$(MESSAGE),)\n" .
+        "\t\@\$(MESSAGE)\n" .
+        "endif\n" .
+        "\t\@test -d \$(OBJDIR) || (rm -f \$(OBJDIR); mkdir -p \$(OBJDIR))\n" .
+        "#\t\@DIR=\$(OBJDIR); \$(wait-for-directory-to-appear)\n\n" .
+        "ifneq (\$(OBJDIR_LIB), \$(OBJDIR))\n" .
+        ".PHONY: \$(OBJDIR_LIB)\n" .
+        "\$(OBJDIR_LIB):  | verify-id \$(OBJDIR)\n" .
+        "ifneq (\$(MESSAGE),)\n" .
+        "\t\@\$(MESSAGE)\n" .
+        "endif\n" .
+        "\t\@test -d \$(OBJDIR_LIB) || (rm -f \$(OBJDIR_LIB); mkdir -p \$(OBJDIR_LIB))\n" .
+        "#\t\@DIR=\$(OBJDIR_LIB); \$(wait-for-directory-to-appear)\n" .
+        "endif\n\n" .
+
+    # aliases for global targets .id / .idonly
+        "# aliases for global target .id & .idonly\n" .
+        "# show current build ID and all compile settings applied\n" .
+        ".PHONY:\tid\n" .
+        "id:\t.id\n\n" .
+        "# show current build ID\n" .
+        ".PHONY:\tidonly\n" .
+        "idonly:   .idonly\n\n" .
+
+    # print a list of all valid build IDs for current host
+        "# print a list of all valid build IDs for current host\n" .
+        ".PHONY:\tlistids list.ids list-ids\n" .
+        "listids:\tlist-ids\n" .
+        "list.ids:\tlist-ids\n" .
+        "list-ids:\n" .
+        "\t\@echo \"The following are valid build IDs for current host:\"\n" .
+        "# It would be a lot nicer if we could distribute the following perl\n" .
+        "# command over several lines, but this breaks with GNU Make 3.81\n" .
+        "# (though it works with GNU Make 3.80).\n" .
+        "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
+        "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
+        "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
+
+
+    # print a list of all valid build IDs
+        "# print a list of all valid build IDs\n" .
+        ".PHONY:\tlistallids list.all.ids list-all-ids\n" .
+        "listallids:\tlist-all-ids\n" .
+        "list.all.ids:\tlist-all-ids\n" .
+        "list-all-ids:\n" .
+        "\t\@echo \"The following are all valid build IDs:\"\n" .
+        "# It would be a lot nicer if we could distribute the following perl\n" .
+        "# command over several lines, but this breaks with GNU Make 3.81\n" .
+        "# (though it works with GNU Make 3.80).\n" .
+        "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
+        "\t    \$(MAKEFILE_CPU_INC) | sort;\n\n" .
+        "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
+
+
+    # create tag file for emacs users
+	"# create tag file for emacs users\n" .
+	".PHONY: tags\n" .
+        "tags: \$(SRCF77) \$(SRCF90) \$(FEASTBASEDIR)/\$(SRCEXTRA)\n" .
+	"\trm -f TAGS\n" .
+	"\tetags \$(filter %.c %.f %.f90,\$^)\n\n" .
+
+
+    # print help message
+        "# print a help screen\n" .
+        "help:\n" .
+        "\t\@echo \"Usage: make [targets...]\"\n" .
+        "\t\@echo \"\"\n" .
+        "\t\@echo \"where targets include:\"\n" .
+        "\t\@echo \"\"\n" .
+        "\t\@echo \"  help           display this help\"\n" .
+        "\t\@echo \"  all            compile application (default)\"\n" .
+        "\t\@echo \"  debug          compile application without optimisation flags,\"\n" .
+        "\t\@echo \"                   include debugging symbols\"\n" .
+        "\t\@echo \"  libs           compile all libraries specified in variable BUILDLIB\"\n" .
+        "\t\@echo \"                   (currently: \$(BUILDLIB))\"\n" .
+        "\t\@echo \"  clean          remove all object files and libraries\"\n" .
+        "\t\@echo \"  clean-app      remove only FEAST object files\"\n" .
+        "\t\@echo \"  clean-libs     remove libraries and the object files they are built from\"\n" .
+        "\t\@echo \"  purge          remove all object files and libraries for all build IDs\"\n" .
+        "\t\@echo \"  purge-libs     remove libraries and the object files they are built from\"\n" .
+        "\t\@echo \"                   for all build IDs\"\n" .
+        "\t\@echo \"\"\n" .
+        "\t\@echo \"Additional auxiliary targets include:\"\n" .
+        "\t\@echo \"  idonly         show current build ID\"\n" .
+        "\t\@echo \"  id             show current build ID and all compile settings\"\n" .
+        "\t\@echo \"                   that would be applied during compilation\"\n" .
+        "\t\@echo \"  list-ids       print a list of valid build IDs for current host\"\n" .
+        "\t\@echo \"  list-all-ids   print a list of all valid build IDs\"\n" .
+        "\t\@echo \"  <library>      compile only <library>, where <library> is one of\"\n" .
+        "\t\@echo \"                   'metis', 'umfpack', 'blas', 'lapack' etc.\"\n" .
+        "\t\@echo \"  <object file>  compile <object file>, where <object file> is one of FEAST's\"\n" .
+        "\t\@echo \"                   object files. (The object directory can be omitted). Those\"\n" .
+        "\t\@echo \"                   modules <object file> depends on will be built if necessary\"\n" .
+        "\t\@echo \"  link           force re-linking (do not bother whether any module needs \"\n" .
+        "\t\@echo \"                   recompilation due to dependencies and/or time stamps)\"\n" .
+        "\t\@echo \"  delete FILE=<object file>\"\n" .
+        "\t\@echo \"                 removes <object file> from current object directory;\"\n" .
+        "\t\@echo \"                   no need to remember or know the name of that directory\"\n" .
+        "\t\@echo \"\"\n" .
+        "\t\@echo \"Makefile variables that you might consider overwriting on the command line include:\"\n" .
+        "\t\@echo \"  APPNAME=<string>\"\n" .
+        "\t\@echo \"                 application name\"\n" .
+        "\t\@echo \"  OPT=<NO|YES|EXPENSIVE>\"\n" .
+        "\t\@echo \"                 whether to compile application without, with normal optimisation\"\n" .
+        "\t\@echo \"                   or expensive optimisation flags. 'make OPT=NO' is equivalent to\"\n" .
+        "\t\@echo \"                   'make debug'\"\n" .
+        "\t\@echo \"  MPIWRAPPERS=<NO|YES>\"\n" .
+        "\t\@echo \"                 whether or not to use MPI wrapper commands for compilation\"\n" .
+        "\t\@echo \"  RELINK_ALWAYS=<NO|YES>\"\n" .
+        "\t\@echo \"                 whether or not $make should relink an application every time it\"\n" .
+        "\t\@echo \"                   is invoked regardless whether a source file has changed\"\n" .
+        "\t\@echo \"  MONITOR_COMPILE_ENV=<NO|YES>\"\n" .
+        "\t\@echo \"                 whether or not $make should check path and modification dates\"\n" .
+        "\t\@echo \"                   of compilers and compiler settings across multiple\"\n" .
+        "\t\@echo \"                   compilation attempts\"\n" .
+        "\t\@echo \"  MODE=<PARALLEL|SERIAL>\"\n" .
+        "\t\@echo \"                 whether to build parallel or serial version of application\"\n" .
+        "\t\@echo \"\"\n" .
+        "\n\n";
+
+    # phony statements
+    # For explanation see section 4.6 of GNU Make Manual,
+    # http://www.gnu.org/software/make/manual/make.html#Phony-Targets
+    print MAKEFILE_HDL
+        "# For explanation see section 4.6 of GNU Make Manual,\n" .
+        "# http://www.gnu.org/software/make/manual/make.html#Phony-Targets\n" .
+        ".PHONY: all clean clean-app clean-libs debug default delete \\\n" .
+        "\thelp libs link purge purge-libs\n\n" .
+        "# Relink binary every time make is invoked?\n" .
+        "ifeq (\$(strip \$(RELINK_ALWAYS)),YES)\n" .
+        ".PHONY: \$(APPNAME)\n" .
+        "endif\n\n";
+
+    print MAKEFILE_HDL
+    # Phony targets for all shortcuts
+        "# Phony targets for all shortcuts\n" .
+        ".PHONY: \$(BUILDLIB:%=clean-%) \$(BUILDLIB:%=purge-%)\n";
+
+    close(MAKEFILE_HDL);
+}
+
+
+
+# Function: Creates "Meta" Makefile for benchmark, i.e. creates the Makefile
+#           for the regression benchmark directory.
+# Note: Main reason why this Makefile is dynamically created and not static
+#       is that it needs to *always* return correct values for 'make idonly'.
+#       Previous implementations with a static Makefile only reported correct
+#       build IDs in case default build IDs were used.
+sub create_feastBenchmarkMakefile {
+    close(MAKEFILE_HDL);
+
+    die "Currently unsupported.\n";
+}
+
+
+
+# Function: Concatenates the arguments to a path
+sub concat_filename {
+    my (@args) = (@_);
+    my $i = 0;
+    my $result = "";
+
+    # Strip off empty arguments from argument list
+    for (my $i = 0; $i <= $#args; $i++) {
+        if ($args[$i] =~ m/^\s*$/) {
+            splice(@args, $i, 1);
+            $i--;
+        }
+    }
+
+    # Concatenate the remaining arguments
+    $result = $args[0];
+    for (my $i = 1; $i <= $#args; $i++) {
+        $result = File::Spec->catfile($result, $args[$i]);
+    }
+
+    return $result;
+}
+
+
+
+# Function which prints the parsed command line options to screen
+sub debug_command_line_options {
+    my $string = "";
+
+    foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC',
+		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90',
+		       'COPROCLIST', 'CXX', 'F77', 'F90', 'FORCE_ID', 'ID', 'INC',
+		       'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODE', 'MODEXTENSION',
+		       'MOVEMOD', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS',
+		       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCLIST_APP') {
+	# Determine type of variable: scalar or array
+	if (ref($cl{$entry}) eq "") {
+	    # current token is a scalar value, print if not empty
+	    next unless (defined($cl{$entry}));
+
+	    $string .= $entry . " "x(13-length($entry)) . "= " . $cl{$entry} . "\n";
+	} elsif (ref($cl{$entry}) eq "ARRAY") {
+	    # current token is an array, print if at least one entry
+
+	    # $cl{'...'} has been passed as an array to GetOptions()
+	    # and as such is always defined. But is does not necessarily have
+	    # entries. So, don't test with perl function defined(). Test whether
+	    # one or more entries. (Perl count from zero, like C does.)
+	    next unless ($#{ $cl{$entry} } >= 0);
+
+	    $string .= $entry . " "x(13-length($entry)) . "= " . join(' ', @{ $cl{$entry} }) . "\n";
+	}
+    }
+
+    if ($string ne "") {
+	print "These Makefile variables have been explicitly overridden by command line\n" .
+	      "options. Their values will take precedence over the default settings made\n" .
+	      "in kernel/arch/Makefile.inc and the template files kernel/arch/templates/*.mk:\n" .
+	      $string . "\n";
+    }
+
+    return;
+}
+
+
+
+# Function which splits up a given file list over several lines,
+# with word wrap at column $max and an indent of $indent spaces.
+# Returns that string.
+sub format_list {
+    my ($target, $indent, $max, $filelist, $firstseparator, $separator) = (@_);
+    my $line      = $target;
+    my $string    = "";
+    my $entriesInCurrLine = 0;
+    my $DepsTotal = 0;
+
+    foreach my $entry (split(/\s+/, $filelist)) {
+        # Ignore empty list entries
+        next if ($entry =~ m/^\s*$/);
+
+        # The first entry sometimes should start a new line
+        # Use value of $firstseparator for this.
+        if ($DepsTotal == 0) {
+            $line .= $firstseparator;
+            if ($firstseparator =~ m/\n/) {
+                $string .= $line;
+                $entriesInCurrLine = 0;
+                $line = (" " x ($indent-1));
+            }
+        }
+
+        # Add entry to current line if maximum column number
+        # has not been reached yet
+        if (length($line . $entry) < $max  ||  $entriesInCurrLine == 0) {
+            $line .= " " unless ($line eq "");
+            $line .= $entry;
+            $entriesInCurrLine++;
+        } else {
+            $line   .= " " . $separator . "\n";
+            $string .= $line;
+            $line    = (" " x ($indent)) . $entry;
+            $entriesInCurrLine = 1;
+        }
+        $DepsTotal++;
+    }
+    $string .= $line;
+
+    return $string;
+}
+
+
+
+# Function: Determine build ID (do not check yet whether it's valid)
+sub get_buildID {
+    # Skip this test for a benchmark application configure run
+    # as then this test has already been performed by a directly
+    # preceding call of this script)
+    if (defined($cachedtests{'build-id'})) {
+        # sub-configure calls when configuring regression benchmark
+        # applications can skip the test as it has already been
+        # performed earlier.
+        print "using given build ID... ";
+        print $cachedtests{'build-id'} . " (cached)\n";
+        $buildID = $cachedtests{'build-id'};
+
+    } else {
+        # Use build id string from command line if specified or environment
+        if (defined($cl{'ID'}) && $cl{'ID'} !~ m/^\s*$/) {
+            print "using given build ID... ";
+            $buildID = $cl{'ID'};
+        } elsif (defined($ENV{ID})) {
+            print "using given build ID... ";
+            $cl{'ID'} = $ENV{ID};
+            $buildID  = $ENV{ID};
+        } else {
+            # Otherwise take default build id from MAKEFILE_INC for guessed platform
+            print "retrieving default build ID... ";
+
+	    # Pass along the desired execution mode of the application.
+	    # If set to parallel mode, the build ID contains an additional 6th token 
+	    # naming the MPI library.
+	    my $mode = (defined($cl{'MODE'})) ? $cl{'MODE'} : $defaults{'MODE'};
+
+            # Use '--no-print-directory' to ensure that when this configure script
+            # is run from a Makefile, make will not print lines like
+            # make[?]: Entering directory `<some dirs>/feast/feast/<some other dirs>'
+            # See section 5.6.4 of GNU Make Manual,
+            # http://www.gnu.org/software/make/manual/html_mono/make.html#IDX250
+            my $command = "cd " . &dirname(&concat_filename($FEASTBASEDIR, $MAKEFILE_INC)) .
+                          " && $make --no-print-directory -f " . &basename($MAKEFILE_INC) . " MODE=$mode .idonly";
+            $buildID = `$command`;
+            chomp($buildID);
+        }
+
+        print $buildID . "\n";
+    }
+
+    return $buildID;
+}
+
+
+
+# Function: Determine build ID for libraries (do not check yet whether it's valid)
+sub get_buildID_lib {
+    my $string = $buildID;
+    $string =~ s/^(\w+-\w+-\w+-\w+)-\w+-\w+/$1/;
+    return $string;
+}
+
+
+
+# Function which parses a given file for Fortran 90-style 'use' statements,
+# Fortran 90-style 'include' and CPP-style '#include' statements.
+# Returns a list of all modules and include files that given file depends on.
+sub get_dependency {
+    my ($file) = (@_);
+    my @dependencies = ();
+    my $line = "";
+    my $aux;
+
+#    open (INFILE, "<:utf8", $file) or die "$progname: Cannot open file <$file> for reading: $!\n";
+    open (INFILE, "<", $file) or die "$progname: ERROR: Cannot open file <$file> for reading: $!\n";
+
+    # Loop through file line by line
+    LINE: while (defined($line = <INFILE>)) {
+        # Remove comments
+        $line =~ s/\!.*$//;
+        $line =~ s/^[Cc].*$//;
+
+        # Parse for "use foobar" statements
+        # and add the module to the list (with keyword prefix 'module:')
+        if ($line =~ m/^\s*use\s+(\w+)/i) {
+            $aux = $1;
+            # Check whether current module  is already on the list
+            push @dependencies, "module:$1"
+                unless (join(' ', @dependencies) =~ m/\bmodule:$aux\b/);
+        }
+
+        # Parse for C Preprocessor and Fortran includes:
+        # i.e. parse for "include '...'", "include "..."" and  "include <...>"
+        # and add the include file to the list (with keyword prefix 'include:')
+        if ($line =~ m/^[#\s]*include\s+['"<](\S+)['">]/) { #" (comment only to fix syntax highlighting)
+            $aux = $1;
+
+            # Check whether current include file is already on the list
+            push @dependencies, "include:$aux"
+                unless ((join(' ', @dependencies) =~ m/\binclude:$aux\b/) or
+                        (DO_NOT_INCLUDE =~ m/\b$aux\b/));
+        }
+
+        next LINE;
+    }
+    close(INFILE);
+
+    return @dependencies;
+}
+
+
+
+# Function which determines the base directory of the FEAST installation
+# from the string given as argument (which is supposed to be the invocation
+# path of this script).
+sub get_feast_basedir() {
+    my ($string) = (@_);
+
+    my $path = &dirname($string);
+
+    # FEAST base dir is one directory higher than the directory bin/
+    # where this script should be located.
+    $path .= "/..";
+
+    # Strip 'bin/..' at the end of the string
+#    $path =~ s/bin\/\.\.$//;
+
+    # Remove any occurrences of './' and trailing slashes
+#    $path = File::Spec->canonpath($path);
+
+    # If path now empty, set to current path
+#    $path = "." if ($path =~ m/^$/);
+
+    $path = &abs_path($path);
+
+    return $path;
+}
+
+
+
+# Function: Shell program 'basename' rewritten in Perl
+sub get_filename {
+    my ($filename) = (@_);
+
+    $filename =~ s/^.*\/([^\/]+)\s*$/$1/;
+    return $filename;
+}
+
+
+
+# Function: Returns source file list
+sub get_sourcefilelist {
+    # $cl{'SRCLIST_APP'} has been passed as an array to GetOptions()
+    # and as such is always defined. But is does not necessarily have
+    # entries. So, don't test with perl function defined(). Test whether
+    # one or more entries. (Perl count from zero, like C does.)
+    if ($#{ $cl{'SRCLIST_APP'} } >= 0) {
+        # Remove duplicate entries from application source file list
+        my @tmplist = ();
+        $oldEntry = "";
+        foreach my $entry (sort @{ $cl{'SRCLIST_APP'} }) {
+            # Exclude empty list members
+            if ($entry) {
+                # We have a sorted list of source files. Checking
+                # whether two subsequent files have identical names
+                # excludes duplicate entries.
+                if ($entry ne $oldEntry) {
+                    push @tmplist, $entry;
+                    $oldEntry = $entry;
+                }
+            }
+        }
+	return @tmplist;
+    } else {
+	return @{ $defaults{'SRCLIST_APP'} };
+    }
+}
+
+
+
+# Function: Build list of valid build IDs from MAKEFILE_INC
+sub get_validIDs {
+    my $filename = &concat_filename($FEASTBASEDIR, $MAKEFILE_CPU_INC);
+
+    open(FILE, "<" , $filename) or
+        die $progname.": ERROR:".
+            INITIAL_MESSAGE .
+            "Cannot open file <$filename> for reading: $!\n\n" .
+            "Make sure the path to Makefile.inc is set correctly in\n" .
+            "$progname and that you do not invoke this script from\n" .
+            "the directory feast/bin, but from one of the application\n" .
+            "directories.\n";
+    while (<FILE>) {
+        if (m/^ifeq \(\$\(call match,\$\(ID\),(.*)\),yes\)\s*$/) {
+            push @valid_id, $1;
+        }
+    }
+    close(FILE);
+}
+
+
+
+# Determine version of this script
+# (from the CVS ID in the header of this script or
+#  from the hard-coded VERSION constant)
+sub get_version {
+    my $version = "";
+    my $additional = "";
+
+    # Open this script for reading
+    open(FILE, "<", $0);
+    if (! eof(FILE)) {
+        while (<FILE>) {
+            if (m/^# \$Id: configure,v ([\d\.]+) /) {
+                $version = $1;
+                last;
+            }
+        }
+    }
+    close(FILE);
+
+    # Fall back to hard-coded version number if version number unset
+    $version = VERSION if ($version eq "");
+
+    return $version;
+}
+
+
+
+# Function which verifies that a given build ID is valid.
+# In fact, it just checks whether the given id has a section in MAKEFILE_INC.
+# Return values are TRUE (1) or FALSE (0) for valid or not.
+sub id_is_valid {
+    # Get valid IDs from MAKEFILE_INC
+    &get_validIDs();
+
+    my ($id) = (@_);
+    foreach my $entry (@valid_id) {
+	return 1 if ($id =~ m/$entry/);
+    }
+    return 0;
+}
+
+
+
+# Function which prints a complete list of valid build IDs to screen.
+sub list_all_ids {
+    # Get valid IDs from MAKEFILE_INC
+    &get_validIDs();
+
+    print "\n$progname v" . &get_version() . ":\n" .
+          "Valid build IDs match against the following regular expressions:\n";
+    foreach my $entry (sort @valid_id) {
+        if ($entry eq $buildID) {
+            print "* $entry (default)\n";
+        } else {
+            print "* $entry\n";
+        }
+    }
+    if (-1 == $#valid_id) {
+	print "     (none)\n\n" .
+	      "This is not supposed to happen. There has probably been some syntax change\n" .
+	      "in the file <" . $MAKEFILE_CPU_INC . ">.\n" .
+	      "Please adapt function list_all_ids() and/or get_validIDs() in $0 to it.\n";
+    } else {
+	print "\n" .
+              "Use any of these build IDs as argument for the --id option.\n" .
+              "The current build ID for " . &hostname() . " is:\n" .
+              " " x ((66 - length($buildID))/2) . $buildID . "\n" .
+              "\n";
+    }
+    exit 0;
+}
+
+
+
+# Function which outputs all all application's proprietary source files
+sub list_app_modules {
+    my @list;
+
+    print "\nList of all application's proprietary source files:\n";
+    foreach ( &get_sourcefilelist() ) {
+        push @list, &concat_filename($SRCDIR_APP, $_);
+    }
+
+    print foreach (join("\n", @list)) . "\n";
+    exit 0;
+}
+
+
+
+# Function which prints a list of valid build IDs for the current host to screen.
+sub list_ids {
+    # Get valid IDs from MAKEFILE_INC
+    &get_validIDs();
+
+    my $id = $buildID;
+    $id =~ s/^(\w+-\w+-\w+).*$/$1/;
+
+    print "\n$progname v" . &get_version() . ":\n" .
+          "Valid build IDs (for $id hosts) match\n" .
+          "against the following regular expressions:\n";
+    foreach my $entry (sort @valid_id) {
+        if ($entry =~ m/^$id/) {
+            if ($entry eq $buildID) {
+                print "* $entry (default)\n";
+            } else {
+                print "* $entry\n";
+            }
+        }
+    }
+    if (-1 == $#valid_id) {
+	print "     (none)\n\n" .
+	      "This is not supposed to happen. There has probably been some syntax change\n" .
+	      "in the file <" . $MAKEFILE_CPU_INC . ">.\n" .
+	      "Please adapt function list_ids() and/or get_validIDs() in $0 to it.\n";
+    } else {
+	print "\n" .
+	      "Use any of these build IDs as argument for the --id option.\n" .
+	      "The current build ID for " . &hostname() . " is:\n" .
+	      " " x ((66 - length($buildID))/2) . $buildID . "\n" .
+	      "\n";
+    }
+    exit 0;
+}
+
+
+
+# Function which outputs all FEAST kernel files the application is built from
+sub list_kernel_modules {
+    my @list;
+
+    print "\nList of all FEAST kernel files the application is built from:\n";
+    foreach (split(/\s+/, SRCLIST_KERNEL)) {
+        push @list, &concat_filename($FEASTBASEDIR, $SRCDIR_KERNEL, $_);
+    }
+    (my $dir = File::Spec->catdir($FEASTBASEDIR, $SRCDIR_ARCH)) =~ s/\$\(ID\)/$buildID/;
+    foreach (split(/\s+/, SRCLIST_ARCH)) {
+        s/ID/$buildID/;
+        push @list, &concat_filename($dir, $_);
+    }
+
+    print foreach (join("\n", @list)) . "\n";
+    exit 0;
+}
+
+
+
+# Function which gets the name of a Fortran 77/90 source file or a header file and
+# returns the dependency list for a Makefile statement.
+sub make_dep_list {
+    my ($dependencyListsHashRef,                        # is output variable
+	$fileToParse, $parsedFile_PathInMakeSyntax,
+        $parsedFile_changeExtensionForMakeTarget,       # boolean variable
+        $parsedFile_ExtensionForMakeTarget,             # if previous variable is true, this holds the new extension
+        $moduleFiles_extension,                         # file extension of Fortran~90 module object files, typically: "o"
+        $objectdir) = (@_);
+    my $depstring  = "";
+    my $objstring  = "";
+    my $aux        = "";
+    my @deps       = ();
+
+    # Strip off any path information
+    $aux = get_filename($fileToParse);
+
+    # Get a list of modules and include files
+    # (modules are marked with prefix 'module:',
+    #  include files with prefix 'include:')
+    @deps = &get_dependency($fileToParse) if ($aux =~ m/\.(f90|f|h|inc)$/);
+
+    # Store dependencies for later re-use
+#    ${ $dependencyListsHashRef }{$fileToParse} = \@deps;
+    ${ $dependencyListsHashRef }{$aux} = \@deps;
+
+    # Construct name of object file from source file name
+    $aux =~ s/\.[^\.]+$/.\Q$parsedFile_ExtensionForMakeTarget\E/ if ($parsedFile_changeExtensionForMakeTarget);
+    $objstring = &concat_filename($objectdir, $aux) . ": ";
+
+    # Create the list of depending files
+    $depstring = "$parsedFile_PathInMakeSyntax ";
+
+    # Add must-includes to list
+    foreach $aux (split('\s+', MUST_INCLUDE)) {
+        push @deps, "mustinclude:" . $aux;
+    }
+
+    foreach $aux (@deps) {
+        # Module?
+        if ($aux =~ m/^module:(.+)$/) {
+            $depstring .= "$objectdir/$1.$moduleFiles_extension ";
+        }
+        # Include file
+        elsif ($aux =~ m/^include:(.+)$/) {
+            $depstring .= "$objectdir/" . &basename($1) . " ";
+
+            # Add included file (adding relevant path info) to global list
+            # of included files (in order to have them evaluated by cpp
+            # on make invocation and then stored into object directory)
+            $aux = &abs_path(&concat_filename(&dirname($fileToParse), $1));
+            # Cut off leading './', if any
+#            $aux =~ s/^\.\///;
+
+            # Add to the list if not already on the list or in 'forbidden' lists
+            unless ((join(' ', @headerfiles) =~ m/\Q$aux\E/) or
+                    (DO_NOT_INCLUDE          =~ m/\Q$aux\E/) or
+                    (HEADER_FILES_TO_COPY    =~ m/\Q$aux\E/)) {
+                push @headerfiles, $aux;
+            }
+
+        }
+        # Files that must be included
+        elsif ($aux =~ m/^mustinclude:(.+)$/) {
+            $depstring .= "$1 ";
+        }
+    }
+
+    return &format_list($objstring, 8, 70, $depstring, "\\\n", "\\");
+}
+
+
+
+# Function: Print statistics about Makefile for a FEAST application created just now
+sub print_statistics_about_feastAppMakefile {
+    my $srclist_app = $_[0];
+    my $string = "";
+
+    print "\n$MAKEFILE successfully generated by $progname !\n\n";
+    print "Configuration:\n";
+    print "  Application name             : " .
+	( (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'} ) . "\n";
+    print "  Application program file     : <" .
+	( (defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'programfile'} ) . ">\n";
+
+    print &format_list("  Application's source files   :", 33, 75,
+		       "<" . join("> <", @{$srclist_app}), "", "") . ">\n";
+
+    $string = (defined($cl{'RELINK_ALWAYS'})) ? $cl{'RELINK_ALWAYS'} : $defaults{'RELINK_ALWAYS'};
+    print "  Application binary           : will be " .
+	( ($string eq "YES") ? "relinked every time make is invoked" : "linked only when missing" ) . "\n";
+
+    $string = $objdir;
+    # Replace the symbolic names $(HOME) and $(ID), used in the Makefile,
+    # with something that works on the command line: ~ and build ID.
+    $string =~ s/\$\(HOME\)/~/;
+    $string =~ s/\$\(ID\)/$buildID/;
+    print "  Object files go to           : <$string>,\n";
+    # Replace the symbolic names $(HOME) and $(ID), used in the Makefile,
+    # with something that works on the command line: ~ and build ID.
+    $string = $objdir_lib;
+    $string =~ s/\$\(HOME\)/~/;
+    $string =~ s/\$\(LIBID\)/$buildID_lib/;
+    print "                                 <$string>\n";
+
+    print "  Optimisation level           : ";
+    $string = (defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'};
+    if ($string eq "EXPENSIVE") {
+        print "expensive optimisations\n";
+    } elsif ($string eq "YES") {
+        print "full optimisation\n";
+    } else {
+        print "no optimisation\n";
+    }
+
+    $string = (defined($cl{'MONITOR_COMPILE_ENV'})) ? $cl{'MONITOR_COMPILE_ENV'} : $defaults{'MONITOR_COMPILE_ENV'};
+    print "  Detect changes in compile env: " .
+	( ($string eq "YES") ? "enabled" : "disabled" ) . "\n";
+
+    $string = (defined($cl{'MPIWRAPPERS'})) ? $cl{'MPIWRAPPERS'} : $defaults{'MPIWRAPPERS'};
+    print "  Use MPI wrapper commands     : " .
+	( ($string eq "YES") ? "enabled" : "disabled" ) . "\n";
+
+    $string = (defined($cl{'MODE'})) ? $cl{'MODE'} : $defaults{'MODE'};
+    print "  Runtime mode                 : " .
+	( ($string eq "SERIAL") ? "serial application" : "parallel application" ) . "\n";
+
+    if ($#{$cl{'COPROCLIST'}} >= 0) {
+	print &format_list("  Coprocessor(s)               :", 33, 100,
+			   join(' ', @{$cl{'COPROCLIST'}}), "", "") . "\n";
+    }
+
+    print "\n\n";
+
+}
+
+
+
+# Function which shows valid options and IDs to this script
+sub show_help {
+    my $counter = 0;
+    print
+        "Usage: $progname [options]\n" .
+        "Default settings are taken from Makefile.inc based on a guessed host id.\n" .
+        "Options specified here will override these settings.\n" .
+        "Configuration:\n" .
+        "--------------\n" .
+        "--appname=<file>    Set application name to <file> (default: " . $defaults{'APPNAME'} . ")\n" .
+        "--apponlyflags=<string>\n" .
+        "                    Additional preprocessor and compiler flags used only\n" .
+        "                    for application's source files.\n" .
+        "                    Typically, the switch is used for preprocessor flags\n" .
+        "                    that make only sense for a specific application.\n" .
+        "                    Interferences with other applications defining the\n" .
+        "                    same preprocessor directives are prevented. Third-\n" .
+        "                    party libraries can still be used across different\n" .
+        "                    applications as they are compiled without flags in\n" .
+        "                    <string>.\n" .
+        "--force-id          A build ID is accepted even if the system verify fails\n" .
+        "--id=<string>       Configure for build ID <string>.\n" .
+        "                    For a list of already set up configurations for current\n" .
+        "                    host invoke '$progname --list-ids'.\n" .
+        "                    For a complete list invoke '$progname --list-all-ids'\n" .
+        "--regression-benchmark\n" .
+        "                    Create Makefile for FEAST regression benchmark and\n" .
+        "                    fork configure calls for all benchmark applications,\n" .
+        "                    i.e. all directories starting with 'src_'\n" .
+        "--programfile=<file>\n" .
+	"                    Set application's program file to <file>\n" .
+	"                    (Reason: Parsing to build a minimal list of required \n" .
+	"                     source files needs a starting point. Being explicit\n" .
+	"                     avoids problems with less tidy users.)\n" .
+        "--srclist_app=<string>\n" .
+	"                    Set application's source files to <string>\n" .
+        "--mode=<string>     where <string> is one of PARALLEL or SERIAL.\n" .
+        "                    Create Makefile for a parallel or serial application\n" .
+        "                    (default: " . lc($defaults{'MODE'}) . ").\n" .
+        "--[no-]opt,--opt=expensive\n" .
+        "                    Controls whether to use no (but including debugging\n" .
+        "                    symbols), good or expensive compiler optimisation\n" .
+        "                    (default: " . lc($defaults{'OPT'}) . ").\n" .
+        "--objdir-prefix=<dir>\n" .
+	"                    Prepend <dir> to paths of an application's object files.\n" .
+	"                    (default: none)\n" .
+        "--objdir-lib-prefix=<dir>\n" .
+	"                    Prepend <dir> to paths of libraries' object files.\n" .
+	"                    Typically all libraries can be shared among all FEAST\n" .
+	"                    applications as they have no dependency on the FEAST\n" .
+	"                    kernel or a FEAST application and have always identical\n" .
+	"                    compile settings. In particular when compiling the\n" .
+	"                    the regression benchmark it makes a big difference\n" .
+	"                    having to compile libraries only once (default: ../..).\n" .
+        "--[no-]mpiwrappers  Controls whether or not to use MPI wrappers for\n" .
+        "                    compiling and linking (default: " .
+	lc($defaults{'MPIWRAPPERS'}) . ").\n" .
+        "--[no-]monitor-compile-env\n" .
+        "                    Monitor modification dates of all compilers and\n" .
+        "                    compile settings for changes in subsequent\n" .
+        "                    compilations. In case of discrepancies, recompile\n" .
+        "                    application (default: " .
+	lc($defaults{'MONITOR_COMPILE_ENV'}) . ").\n" .
+        "--make=<file>       Set make program to <file>\n" .
+        "--makefile=<file>   Name of makefile to create\n" .
+        "--f77=<file>        Fortran 77 compiler\n" .
+        "--f90=<file>        Fortran 90 compiler\n" .
+        "--cc=<file>         C compiler\n" .
+        "--cpp=<file>        C++ compiler\n" .
+        "--ld=<file>         Linker\n" .
+        "--cflagsf77=<string>\n" .
+	"                    Set Fortran 77 compiler flags to <string>\n" .
+        "--cflagsf90=<string>\n" .
+	"                    Set Fortran 90 compiler flags to <string>\n" .
+        "--cflagsc=<string>  Set C compiler flags to <string>\n" .
+        "--cflagscxx=<string>\n" .
+	"                    Set C++ compiler flags to <string>\n" .
+        "--ldflags=<string>  Set linker flags to <string>\n" .
+        "--suppressflags=<string>\n" .
+        "                    Remove all (comma-separated) strings in <string> from C,\n" .
+        "                    Fortran 77/90 compiler and linker settings, i.e.\n" .
+        "                    from CFLAGSF77, CFLAGSF90, CFLAGSC, CFLAGSCXX and\n" .
+        "                    LDFLAGS.\n" .
+        "                    If your application does not compile or run properly\n" .
+        "                    because of a specific compiler option that ought not\n" .
+        "                    be removed globally, you can inhibit its usage for\n" .
+        "                    your application by adding the exact string to <string>.\n" .
+        "--modextension=<string>\n" .
+        "                    Specify <string> as extension used by the Fortran 90\n" .
+        "                    compiler for module information files\n" .
+        "--movemod=<string>  If the Fortran 90 compiler fails to store module\n" .
+        "                    information files in \$(OBJDIR) and fills up the\n" .
+        "                    working directory instead, use --movemod=YES to\n" .
+        "                    have the Makefile compensate for this annoyance.\n" .
+        "--inc=<dir>         F77/F90/C/C++ header files in <dir>\n" .
+        "--buildlib=<string> Specify libraries to build\n" .
+        "                    (like: coproc umfpack blas lapack metis)\n" .
+        "--libdir=<dir>      Object code libraries in DIR\n" .
+        "--libs=ARG          Libraries to include in build\n" .
+        "--mpiinc=<string>   Include directive for MPI header files\n" .
+        "--mpilibdir=<string>\n" .
+	"                    Extension for the linker search path to find MPI\n" .
+	"                    libraries\n" .
+        "--mpilibs=<string>  Linker commands specifying MPI libraries to link against\n" .
+        "--ar=<file>         Path and options for creating archives\n" .
+        "--ranlib=<file>     Path and options to create index for archives\n" .
+	"--coproclist=<string>\n" .
+	"                    Identifier for coprocessor support.\n" .
+	"                    Valid IDs are: cpu, opengl, cuda10, cuda11, cuda13. \n" .
+	"                    Note that the cpu identifier must always be set if coprocessor\n" .
+	"                    support is requested.\n" .
+        "--[no-]relink-always\n" .
+        "                    Whether or not to relink the application every time\n" .
+        "                    make is invoked (default: " .
+	lc($defaults{'RELINK_ALWAYS'}) . ").\n" .
+        "                    Be careful with --no-relink-always:\n" .
+        "                    When developing on multiple platforms, your\n" .
+        "                    application might not be relinked if no source file\n" .
+        "                    has changed since you changed platform!\n" .
+        "--debug             Show settings stored into Makefile which will\n" .
+        "                    override defaults from Makefile.inc.\n" .
+        "                    This flag is *not* an alias for --no-opt nor does\n" .
+        "                    it result in a Makefile that creates code with\n" .
+        "                    debugging symbols!\n\n" .
+
+        "Options which cause $progname to print only information without a\n" .
+        "Makefile being created:\n" .
+        "--help              Print this message\n" .
+        "--version           Show version information\n" .
+        "--list-ids          Print a list of valid build IDs for current\n" .
+        "                    host. Use any of the items as ARCH argument for --id\n" .
+        "                    option.\n" .
+        "--list-all-ids      Print a list of all valid build IDs. Use any\n" .
+        "                    of them as ARCH argument for --id option\n" .
+        "--list-kernel-modules\n" .
+        "                    Print all FEAST kernel files the application is\n" .
+        "                    built from\n" .
+        "--list-app-modules  Print application's proprietary source files\n";
+    exit 0;
+}
+
+
+
+# Function which shows this script's version
+sub show_version {
+    print $progname . " v" . &get_version() . "\n";
+    print "Written by Sven H.M. Buijssen.\n";
+
+    exit 0;
+}
+
+
+
+# Function to have a Unix-portable which within perl
+# (inspired from File::Which 0.05)
+sub which {
+    my ($exec) = @_;
+
+    return undef unless $exec;
+
+    my $all = wantarray;
+    my @results = ();
+    my @path_ext = ('');
+
+    my @path = File::Spec->path();
+    unshift @path, File::Spec->curdir;
+
+    for my $base (map { &concat_filename($_, $exec) } @path) {
+        for my $ext (@path_ext) {
+            my $file = $base.$ext;
+
+            if ((-x $file)      # executable, normal case
+                and !-d _)      # and we don't want dirs to pass (as they are -x)
+            {
+                return $file unless $all;
+                push @results, $file;       # Make list to return later
+            }
+        }
+    }
+
+    if ($all) {
+        return @results;
+    } else {
+        return undef;
+    }
+}

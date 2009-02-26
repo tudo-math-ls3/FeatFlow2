@@ -1,0 +1,302 @@
+#!/bin/sh
+#
+# short description:
+#   script to be able to use the GNU C preprocessor even for Fortran90 source files
+#   on every platform we are developing FEAST on.
+#   The original source file is piped through the GNU C preprocessor, 
+#   the resulting temporary file is stored to the directory of the first
+#   object file or program name found on the command line, the compile 
+#   statement is accordingly adjusted and finally invoked. 
+#   Special care is taken to ensure that line numbers of the preprocessed 
+#   code match those of the original source code.
+#
+# originally written by Christian Becker (christian.becker@math.tu-dortmund.de)
+# rewritten and documented by Sven H.M. Buijssen (sven.buijssen@math.tu-dortmund.de)
+# minor contributions by Dominik Goeddeke (dominik.goeddeke@math.tu-dortmund.de)
+#
+# Current version:
+# $Id: f90cpp,v 2.5 2009/01/28 23:34:35 buijssen Exp $
+
+# Do not let the script get confused by non-English messages
+# of system calls.
+# (LC_ALL overrides the value of the LANG environment variable 
+# and the values of any other LC_* environment variables.)
+LC_ALL=C
+
+# Initialise some variables
+option=""
+objdir=""
+addcppflags=""
+STORAGEGETBASE_CALLS_TO_MACRO=0
+cppcmd="cpp " # previously: "cpp -CC "
+
+# Loop through command line arguments and 
+# filter out the Fortran90 source file.
+while : true
+do
+  case "$1" in
+    # We reached the Fortran90 source file
+    # in the command line arguments given to
+    # the compiler.
+    expin*):
+	# Special token FEAST compile command contains on NEC SX-8
+        # for code optimisation. Add the string back to the command line
+        # options.
+	ttf=`echo $1 | sed 's/expin=//; s/,/ /g;'`
+	for object in ${ttf}; do
+		test -e ${object} || touch ${object};
+	done
+
+	option="${option} $1"
+	;;
+
+    *.f90)
+	# Store name of source file (including path)
+	sourcefile=$1
+	# Variant 1:
+	# Extract the filename (i.e. discard the path)
+	preprocessedfile=`basename ${sourcefile}`
+
+	# Variant 2:
+	# Extract the filename (i.e. discard the path)
+	# and discard the ".f90" extension, add "_wrappertmp.f90" suffix
+#	preprocessedfile=`basename ${sourcefile} | sed 's/.f90//'`"_wrappertmp.f90"
+
+	# Replace the original source file in the compile
+	# statement with the preprocessed (wrapped) source
+	# file.
+	option="${option} ${preprocessedfile}"
+	;;
+
+    *.o)
+	# Determine where the object files are stored
+	# (because we want to store the preprocessed 
+	# (wrapped) source files there, too.)
+        if test -z "${objdir}"; then
+	    objdir=`dirname $1`
+	fi
+	option="${option} $1"
+	;;
+
+    -o)
+	# When not using this script in FEAST context (e.g. to test
+	# some small debug program with preprocessor statements), 
+	# usually no separate object file needs to be created, the
+	# executable name is directly given on the command line.
+	# No *.o file means, the objdir variable is not set which
+	# may lead to problems.
+        shift
+	# Determine where the object files are stored
+	# (because we want to store the preprocessed 
+	# (wrapped) source files there, too.)
+        if test -z "${objdir}"; then
+	    objdir=`dirname $1`
+	fi
+	option="${option} -o $1"
+	;;
+
+    -D*)
+        # Specific preprocessor flag found to set a preprocessor macro.
+        # Prevent it being passed to a Fortran compiler where it could be
+        # interpreted as something else.
+        # Additionally, some preprocessor macros are intended for this
+        # script, not for cpp. Deal with them right here.
+        addcppflags="${addcppflags} $1"
+
+        if test "$1" = '-DENABLE_CPPMACRO_FOR_STORAGEGETBASE'; then
+          STORAGEGETBASE_CALLS_TO_MACRO=1
+        fi
+
+	# Try to detect IBM system
+        if test "$1" = '-DUSE_COMPILER_XLF'; then
+	  cppcmd="cpp " # previously: "cpp -C "
+	  # Add more include directories to search for
+	  option="${option} -I. -I${objdir}"
+        fi
+
+	# Try to detect NEC system
+        if test "$1" = '-DUSE_COMPILER_NEC'; then
+	  cppcmd="sxc++ -E "  # -Kkeep_comments
+          # Add more include directories to search for
+#	  option="${option} -I. -I${objdir}"
+        fi
+        ;;
+
+    -U*)
+        # Specific preprocessor flag found to unset a preprocessor macro.
+        # Prevent it being passed to a Fortran compiler where it could be
+        # interpreted as something else.
+        addcppflags="${addcppflags} $1"
+	;;
+
+    *)
+	# Add string to command line options again
+	option="${option} $1"
+	;;
+  esac
+  # Step to next string in command line
+  shift
+  # Exit loop if all command line arguments have been parsed
+  if test -z "$1"; then break; fi;
+done
+
+if test -z "${preprocessedfile}"; then
+    echo $0": No source file in given command line detected. Aborting..."
+    exit 1;
+fi
+
+# Adjust the path where the preprocessed (wrapped) source 
+# files are stored. This is done only now because you can
+# not be sure that "-o objdir/foo.o" is given before
+# or behind "-c srcdir/foo.f90".
+if test -n "${objdir}"; then
+    eval      option=\`"echo ${option} | sed 's^ ${preprocessedfile}^ ${objdir}/${preprocessedfile}^'"\`;
+    preprocessedfile="${objdir}/${preprocessedfile}"
+fi
+
+# Catch case where the file to preprocess and compile is stored
+# locally and no object directory has been given. In this case
+# the preprocessed file would overwrite the source file.
+# Catch also the following case:  
+#  sourcefile=fileA,  preprocessedfile = ./fileA
+if test "`dirname ${sourcefile}`"  = "`dirname ${preprocessedfile}`" -a \
+        "`basename ${sourcefile}`" = "`basename ${preprocessedfile}`"; then
+    echo $0": Please do not use the same directory for source and object file."
+    echo $0": Preprocessed file is written to the same directory as the object"
+    echo $0": file and would overwrite the source file. Aborting..."
+    exit 1;
+fi
+
+sedscript=""
+
+# Sed command (1) to turn all calls of FEAST kernel routine storagegetbase*
+# on-the-fly into macros that are subsequently expanded by the C preprocessor
+# directly to the appropriate commands.
+if test ${STORAGEGETBASE_CALLS_TO_MACRO} -eq 1; then
+  sedscript="${sedscript} s/call storage_getbase_int_umfpack/STORAGE_GETBASE_INTEGER_UMFPACK/g;";
+  sedscript="${sedscript} s/call storage_getbase_int/STORAGE_GETBASE_INTEGER/g;";
+  sedscript="${sedscript} s/call storage_getbase_double/STORAGE_GETBASE_DOUBLE/g;";
+fi
+
+# Sed command (2) to hide all Fortran 90 string concatenation 
+# operators ('//') and any C comment ('/*'/ from the C preprocessor. 
+# Otherwise it would interpret them as C++ comment start operator and 
+# remove everything behind it - which is definitely not what we want to 
+# present the Fortran 90 compiler afterwards.
+#
+# Whenever changing the token /=%/~, please do not forget to update all
+# occurences in kernel/feastcppmacros.h!
+sedscript="${sedscript} s|//|/=%/~|g; s|/\*|/=%*~|g;"
+
+# Sed command (3) to strip path information from Fortran 90- and 
+# CPP-style include statements. The files to be included (either by cpp 
+# or Fortran compiler) will be found in $objdir. The Makefile should have 
+# copied or evaluated and stored them there.
+# (For understanding the syntax of match double quotes when arguments
+# are given in double quotes, too, see question 4.32 of the SED FAQ
+# (http://sed.sourceforge.net/grabbag/tutorials/sedfaq.txt):
+# How do I handle Unix shell quoting in sed?)
+sedscript="${sedscript} s|\([# ]include [<"\""']\).*/\([^/]*[>"\""']\)|\1\2|;"
+
+
+# Replaces calls of error_print() with a version that automatically
+# inserts file name and line number of calling position.
+# Add that routine's name to a use,only section.
+sedscript="${sedscript} s|use[ ]*error[ ]*,[ ]*only: |use error, only: error_print_aux,|g;"
+sedscript="${sedscript} s|call error_print[ ]*(|call error_print_aux(__LINE__,__FILE__,|g;"
+
+
+# Now, it gets complex. Here, we hide all the magic that enables us
+# to use the C preprocessor from within Fortran source code.
+#
+# 1) First, call sed to do some on-the-fly conversions within the source 
+#    code as needed. See the comments above when seting up the sed commands.
+# 2) Then, call the C preprocessor. That's the main intention of this 
+#    script.
+# 3) map MYNEWLINE to '\n':
+#    Necessary because it is not possible to instruct the C preprocessor 
+#    to set explicit carriage returns at distinct places. In C, that's not 
+#    necessary as lines may become arbitrarily long. But Fortran 90 accepts
+#    only 132 columns and some compilers really respect and enforce this
+#    restriction! So, for very long lines, as generated by preprocesor 
+#    constructs defined in feastdefs.h, the positions where they should be 
+#    wrapped around are marked with the (arbitrarily chosen) string 
+#    MYNEWLINE. The output of the C preprocessor is postprocessed and any 
+#    occurrence of MYNEWLINE is replaced by a carriage return.
+#    This has to be done in a separate perl command as the sed command on
+#    NEC cannot deal with carriage return. Hence, we cannot integrate
+#    this substitution with the remaining.
+#    (The reason why it is done with perl instead of aggregating it with 
+#    the subsequently called sed script is the inability of some sed
+#    installations to insert a newline character. See question 4.1 of
+#    'The SED FAQ'.
+# 4a)map '/=%/~' to '//' and '/=%*~' to '/*'
+#    (Reverse operation for sed command (3).)
+#    The Fortran 90 string concatenation operator '//' indicates in C++
+#    the start of a comment. So, macros cannot simply use '//'. Instead
+#    we arbitrarily chose the string '/=%/' and after the C preprocessor
+#    call we replace it with the correct Fortran 90 string concatenator.
+#    The same holds for '/*' which may occur in ascii graphics.
+# 4b)map '= >' to '=>', '. TRUE .' to '.TRUE.', '. FALSE .' to '.FALSE.'
+#    NEC C preprocessor inserts blanks into the Fortran 90 pointer 
+#    assignment operator and the boolean constants. These have to be 
+#    removed again. Any Fortran 90 compiler would bail out.
+# 5) The awk constructs ensure that the line numbers of the C preprocessed
+#    source code match the line numbers of the original code. So, if
+#    we debug the code or the runtime environments reports an error in
+#    line X, this awk code ensures that the error really occurred in line
+#    X of the code we are editing. Awk adds extra source lines by means
+#    of the lines beginning with '#' the C preprocessor adds.
+# 6) map '#' at beginning of a line to '!#':
+#    Hide the preprocessor directives for the C/C++ compiler (see previous
+#    point) from the Fortran compiler.
+sed -e "${sedscript}" ${sourcefile} > ${preprocessedfile}
+${cppcmd} -I${objdir} ${addcppflags} ${preprocessedfile} > ${preprocessedfile}".$$"
+rc=$?
+# in order to catch all errors raised by the preprocessor one 
+# *must not* directly pipe its output to our postprocessing chain!
+
+# Do not start compilation if the preprocessor reported an error.
+if test ${rc} -ne 0; then
+  echo "****************************************************************"
+  echo "ATTENTION: The preprocessor returned a nonzero error code."
+  echo "This probably means it tries to signal an error, so we bail out."
+#   echo "As the author of this funky hack does not have access to"
+#   echo "anything other than the GNU preprocessor (for which nonzero really"
+#   echo "means that an error has occured), then please implement a more"
+#   echo "platform-independet version of this hack if you see this message"
+#   echo "without any traces of an error somewhere above in the bulk of"
+#   echo "compiler output. You might want to try compilation without"
+#   echo "the -j parameter to make."
+#   echo "Cheers, dom [April 1st 2008]"
+  echo "****************************************************************"
+  \rm ${preprocessedfile} ${preprocessedfile}".$$"
+  exit ${rc}
+fi
+
+# Postprocess preprocessor output
+# (particularly remove the absolute path to the source file as it likely
+#  blows the 132 character limit the Fortran 90/95 standard imposes)
+perl -pe "s/MYNEWLINE/\n/g; s%${objdir}/%%g; s|\. TRUE \.|.TRUE.|g; s|\. FALSE \.|.FALSE.|g; s|\/=%\/~|//|g; s|\/=%\*~|/*|g; s/= >/=>/g;" < ${preprocessedfile}".$$" | \
+    awk -f ../../bin/postprocess_cppoutput.awk | \
+    sed 's/^\#/!\#/g;' > ${preprocessedfile}
+
+# remove temporary files
+\rm ${preprocessedfile}".$$"
+
+# For debugging this script:
+# Show which compile command is actually invoked
+#echo "# Invoking the following compile command:"; echo "${option}"; echo "# End"
+
+# Invoke the actual compile command
+eval `echo "${option}" | sed "s/~/'/g"`
+
+# Get return code from compile command
+rc=$?
+
+# Remove preprocessed (cpp, sed, awk etc.) file 
+# - usually not a good idea as a debugger requires this file
+#/bin/rm $preprocessedfile
+
+# Exit with return code from compile command
+exit $rc
