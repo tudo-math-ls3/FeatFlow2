@@ -173,9 +173,8 @@ module convection
     real(DP) :: dnewtonTransposed = 0.0_DP
     
     ! Calculation of local H.
-    ! In 3D, there are 2 different methods to calculate the local H which
-    ! is needed for the assembly of the convective part.
-    ! =0: Use the cube-root of the volume of the hexahedron as local H
+    ! =0: 2D: Use the root of the area of the hexahedron as local H
+    !     3D: Use the cube-root of the volume of the hexahedron as local H
     ! =1: Use the length of the way that a particle travels through
     !     the hexahedron in direction of the flow
     integer :: clocalH = 1
@@ -1368,7 +1367,7 @@ contains
                       p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                       rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                       rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
-                      rconfig%bALE, &
+                      rconfig%bALE, rconfig%clocalh,&
                       p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity)
                     
       else
@@ -1390,7 +1389,7 @@ contains
                         p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                         rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                         rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
-                        rconfig%bALE, &
+                        rconfig%bALE, rconfig%clocalh,&
                         p_DsolX,p_DdefectX, DmeshVelocity)
         end do
       
@@ -1404,7 +1403,7 @@ contains
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix, cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
-                    rconfig%bALE, DmeshVelocity=DmeshVelocity)
+                    rconfig%bALE, rconfig%clocalh,DmeshVelocity=DmeshVelocity)
 
       !!! DEBUG:
       !call matio_writeMatrixHR (rmatrix, 'matrix',&
@@ -1421,7 +1420,7 @@ contains
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, bALE, &
-                  Du1,Ddef1, DmeshVelocity)
+                  clocalh, Du1,Ddef1, DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   !  
@@ -1545,6 +1544,9 @@ contains
       
   ! Whether or not to use the ALE method
   logical, intent(IN) :: bALE
+  
+  ! Method how to compute the local h
+  integer, intent(in) :: clocalh
       
   ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
@@ -1868,12 +1870,10 @@ contains
       ! In this case, we even switch of the calculation of the local Delta,
       ! as it is always =0.0, so we save a little bit time.
       if ((ddelta .ne. 0.0_DP) .and. (dupsam .ne. 0.0_DP))then
-        do IEL=1,IELmax-IELset+1
-          call getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
-                      int(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
-                      p_IverticesAtElement,p_DvertexCoords,Idofs(:,IEL),indof, &
-                      dupsam,dre)
-        end do ! IEL
+        call getLocalDeltaQuad (clocalh,&
+                      u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
+                      p_IelementList(IELset:IELmax),&
+                      duMaxR,DlocalDelta,p_rtriangulation,Idofs,dupsam,dre)
       end if
                                    
       ! For the assembly of the global matrix, we use a "local"
@@ -2397,7 +2397,7 @@ contains
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, bALE, &
-                  Du1,Du2,Ddef1,Ddef2, DmeshVelocity)
+                  clocalh,Du1,Du2,Ddef1,Ddef2, DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   !  
@@ -2516,6 +2516,9 @@ contains
       
   ! Whether or not to use the ALE method
   logical, intent(IN) :: bALE
+  
+  ! Method how to compute the local h
+  integer, intent(in) :: clocalh
       
   ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
@@ -2848,12 +2851,10 @@ contains
       ! In this case, we even switch of the calculation of the local Delta,
       ! as it is always =0.0, so we save a little bit time.
       if ((ddelta .ne. 0.0_DP) .and. (dupsam .ne. 0.0_DP))then
-        do IEL=1,IELmax-IELset+1
-          call getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
-                      int(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
-                      p_IverticesAtElement,p_DvertexCoords,Idofs(:,IEL),indof, &
-                      dupsam,dre)
-        end do ! IEL
+        call getLocalDeltaQuad (clocalh,&
+                      u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
+                      p_IelementList(IELset:IELmax),&
+                      duMaxR,DlocalDelta,p_rtriangulation,Idofs,dupsam,dre)
       end if
                                    
       ! For the assembly of the global matrix, we use a "local"
@@ -3636,7 +3637,7 @@ contains
                     rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                     rconfig%dnewton, rconfig%ddeltaTransposed, &
-                    rconfig%dnewtonTransposed, rconfig%bALE, &
+                    rconfig%dnewtonTransposed, rconfig%bALE, rconfig%clocalh,&
                     p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity)
                     
     else
@@ -3646,7 +3647,7 @@ contains
                     rmatrix, cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                     rconfig%dnewton, rconfig%ddeltaTransposed, rconfig%dnewtonTransposed, &
-                    rconfig%bALE, DmeshVelocity=DmeshVelocity)
+                    rconfig%bALE, rconfig%clocalh,DmeshVelocity=DmeshVelocity)
 
       !!! DEBUG:
       !call matio_writeMatrixHR (rmatrix, 'matrix',&
@@ -3669,7 +3670,7 @@ contains
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, dnewton, &
-                  ddeltaTransposed,dnewtonTransposed, bALE, &
+                  ddeltaTransposed,dnewtonTransposed, bALE, clocalh, &
                   Du1,Du2,Ddef1,Ddef2, DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -3813,6 +3814,9 @@ contains
   ! Whether or not to use the ALE method
   logical, intent(IN) :: bALE
       
+  ! Method how to compute the local h
+  integer, intent(in) :: clocalh
+
   ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
@@ -4246,12 +4250,10 @@ contains
       ! In this case, we even switch of the calculation of the local Delta,
       ! as it is always =0.0, so we save a little bit time.
       if ((ddelta .ne. 0.0_DP) .and. (dupsam .ne. 0.0_DP))then
-        do IEL=1,IELmax-IELset+1
-          call getLocalDeltaQuad (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
-                      int(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
-                      p_IverticesAtElement,p_DvertexCoords,Idofs(:,IEL),indof, &
-                      dupsam,dre)
-        end do ! IEL
+        call getLocalDeltaQuad (clocalh,&
+                      u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
+                      p_IelementList(IELset:IELmax),&
+                      duMaxR,DlocalDelta,p_rtriangulation,Idofs,dupsam,dre)
       end if
                                    
       ! For the assembly of the global matrix, we use a "local"
@@ -5476,31 +5478,38 @@ contains
 
   ! ----------------------------------------------------------------------
 
-  pure subroutine getLocalDeltaQuad (U1L1,U1L2,U2L1,U2L2,A1L,A2L,IEL,&
-                      duMaxR,ddelta,Kvert,Dcorvg,KDFG,IDFL,UPSAM,NUREC)
+  subroutine getLocalDeltaQuad (clocalh,&
+                      Du1x,Du1y,Du2x,Du2y,da1,da2,Ielements,&
+                      duMaxR,Ddelta,rtriangulation,Idofs,dupsam,dnurec)
 
-  ! This routine calculates a local ddelta=DELTA_T for a finite element
-  ! T=IEL. This can be used by the streamline diffusion stabilisation
-  ! technique as a multiplier of the (local) bilinear form.
+  ! This routine calculates a local ddelta=DELTA_T for a set of finite 
+  ! elements Ielements. This can be used by the streamline diffusion 
+  ! stabilisation technique as a multiplier of the (local) bilinear form.
   !
   ! The effective velocity that is used for calculating the ddelta
   ! is combined by a weighted mean of the two velocity fields U1,U2
   ! by:
-  !                   Ux = A1*U1Lx + A2*U2Lx
+  !                   du = da1*Du1 + da2*Du2
   ! The coefficients A1,A2 allow the caller to take influence on which
   ! velocity field to weight more.
   
+  ! Method how to compute the local h.
+  ! =0: Use the root of the area of the element as local H
+  ! =1: Use the length of the way that a particle travels through
+  !     the element in direction of the flow
+  integer, intent(in) :: clocalH 
+  
   ! Main velocity field.
-  real(DP), dimension(*), intent(IN) :: U1L1,U1L2
+  real(DP), dimension(*), intent(IN) :: du1x,du1y
   
   ! Secondary velocity field. 
-  real(DP), dimension(*), intent(IN) :: U2L1,U2L2
+  real(DP), dimension(*), intent(IN) :: du2x,du2y
   
-  ! weighting factor for U1L1/U1L2
-  real(DP), intent(IN) :: A1L
+  ! weighting factor for Du1
+  real(DP), intent(IN) :: da1
   
-  ! weighting factor for U2L1/U2L2
-  real(DP), intent(IN) :: A2L
+  ! weighting factor for Du2
+  real(DP), intent(IN) :: da2
   
   ! Reciprocal of the maximum norm of velocity in the domain:
   ! 1/duMaxR = 1/||u||_Omega
@@ -5509,98 +5518,185 @@ contains
   ! Reciprocal value 1/NU of coefficient NU in front of the
   ! Laplacian term of the Navier-Stokes equation
   !   NU * Laplace(u) + u*grad(u) + ...
-  real(DP), intent(IN) :: NUREC
+  real(DP), intent(IN) :: dnuRec
   
   ! user defined parameter for configuring the streamline diffusion.
   ! < 0: Simple calculation of ddelta, using 
   !      ddelta = |UPSAM| * h_T.
   ! > 0: usually UPSAM = 0.1 .. 2; Samarskji-like calculation of ddelta using:
   !      ddelta = UPSAM * h_t/||u||_T * 2*Re_T/(1+Re_T)
-  real(DP), intent(IN) :: UPSAM
+  real(DP), intent(IN) :: dupsam
   
-  ! Element where the ddelta should be calculated
-  integer(PREC_ELEMENTIDX), intent(IN) :: IEL
+  ! List of elements where the Ddelta should be calculated
+  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
   
-  ! Number of degrees of freedom on element IEL
-  integer, intent(IN) :: IDFL
+  ! Array with global degrees of freedom on the elements
+  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: Idofs
   
-  ! Array with global degrees of freedom, corresponding to
-  ! local degrees of freedom 1..IDFL on element IEL.
-  integer(PREC_DOFIDX), dimension(*), intent(IN) :: KDFG
-  
-  integer(PREC_VERTEXIDX), dimension(TRIA_MAXNVE2D,*), intent(IN) :: Kvert
-  real(DP), dimension(NDIM2D,*), intent(IN) :: Dcorvg
+  ! Triangulation that defines the mesh.
+  type(t_triangulation), intent(in) :: rtriangulation
 
-  ! local ddelta
-  real(DP), intent(OUT) :: ddelta
+  ! Out: local Ddelta on all elements
+  real(DP), dimension(:), intent(OUT) :: ddelta
 
   ! local variables
-  real(DP) :: dlocalH,DU1,DU2,dunorm,RELOC
+  real(DP) :: dlocalH,du1,du2,dunorm,dreLoc
+  integer :: iel,ielidx
   integer(PREC_DOFIDX) :: idof
+  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  real(DP), dimension(:), pointer :: p_DelementVolume
 
-    ! Loop through the local degrees of freedom on element IEL.
-    ! Sum up the velocities on these DOF's. This will result
-    ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
-    ! through element IEL.
+    ! Get some crucial data
+    if (clocalh .eq. 0) then
+      call storage_getbase_double (rtriangulation%h_DelementVolume,p_DelementVolume)
+      
+      ! Loop through all elements
+      do ielidx = 1,size(Ielements)
+      
+        iel = Ielements(ielidx)
 
-    ! For elements whose DOF's represent directly the velocity, U1/U2 
-    ! represent the mean velocity
-    ! along an egde/on the midpoint of each edge, so U1/U2 is
-    ! clearly an approximation to the velocity in element T.
+        ! Loop through the local degrees of freedom on element IEL.
+        ! Sum up the velocities on these DOF's. This will result
+        ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
+        ! through element IEL.
 
-    DU1=0.0_DP
-    DU2=0.0_DP
-    do idof=1,IDFL
-      DU1=DU1+(A1L*U1L1(KDFG(idof))+A2L*U2L1(KDFG(idof)))
-      DU2=DU2+(A1L*U1L2(KDFG(idof))+A2L*U2L2(KDFG(idof)))
-    end do
+        ! For elements whose DOF's represent directly the velocity, U1/U2 
+        ! represent the mean velocity
+        ! along an egde/on the midpoint of each edge, so U1/U2 is
+        ! clearly an approximation to the velocity in element T.
 
-    ! Calculate the norm of that local velocity:
+        du1=0.0_DP
+        du2=0.0_DP
+        do idof=1,ubound(Idofs,1)
+          du1=du1+(da1*du1x(Idofs(idof,ielidx))+da2*du2x(Idofs(idof,ielidx)))
+          du2=du2+(da1*du1y(Idofs(idof,ielidx))+da2*du2y(Idofs(idof,ielidx)))
+        end do
 
-    dunorm = sqrt(DU1**2+DU2**2) / dble(IDFL)
-    
-    ! Now we have:   dunorm = ||u||_T
-    ! and:           u_T = a1*u1_T + a2*u2_T
+        ! Calculate the norm of that local velocity:
 
-    ! If the norm of the velocity is small, we choose ddelta = 0,
-    ! which results in central difference in the streamline diffusion
-    ! matrix assembling:
+        dunorm = sqrt(du1**2+du2**2) / real(ubound(Idofs,1),DP)
+        
+        ! Now we have:   dunorm = ||u||_T
+        ! and:           u_T = a1*u1_T + a2*u2_T
 
-    if (dunorm.le.1D-8) then
-    
-      ddelta = 0.0_DP
+        ! If the norm of the velocity is small, we choose ddelta = 0,
+        ! which results in central difference in the streamline diffusion
+        ! matrix assembling:
 
+        if (dunorm .le. 1E-8_DP) then
+        
+          Ddelta(ielidx) = 0.0_DP
+
+        else
+
+          ! Calculate the local h from the area of the element
+          dlocalH = sqrt(p_DelementVolume(iel))
+
+          ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+
+          if (dupsam .lt. 0.0_DP) then
+
+            ! For UPSAM<0, we use simple calculation of ddelta:        
+          
+            Ddelta(ielidx) = abs(dupsam)*dlocalH
+            
+          else
+          
+            ! For UPSAM >= 0, we use standard Samarskji-like calculation
+            ! of ddelta. At first calculate the local Reynolds number
+            ! RELOC = Re_T = ||u||_T * h_T / NU
+            
+            dreLoc = dunorm*dlocalH*dnuRec
+            
+            ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
+            
+            Ddelta(ielidx) = dupsam * dlocalH*duMaxR * 2.0_DP*(dreLoc/(1.0_DP+dreLoc))
+            
+          end if ! (UPSAM.LT.0.0)
+          
+        end if ! (dunorm.LE.1D-8)
+
+      end do      
+      
     else
+    
+      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
+      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
 
-      ! u_T defines the "slope" of the velocity through
-      ! the element T. At next, calculate the local mesh width
-      ! dlocalH = h = h_T on our element T=IEL:
-
-      call getLocalMeshWidthQuad (dlocalH,dunorm, DU1, DU2, IEL, Kvert,Dcorvg)
-
-      ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
-
-      if (UPSAM.lt.0.0_DP) then
-
-        ! For UPSAM<0, we use simple calculation of ddelta:        
+      ! Loop through all elements
+      do ielidx = 1,size(Ielements)
       
-        ddelta = abs(UPSAM)*dlocalH
+        iel = Ielements(ielidx)
+
+        ! Loop through the local degrees of freedom on element IEL.
+        ! Sum up the velocities on these DOF's. This will result
+        ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
+        ! through element IEL.
+
+        ! For elements whose DOF's represent directly the velocity, U1/U2 
+        ! represent the mean velocity
+        ! along an egde/on the midpoint of each edge, so U1/U2 is
+        ! clearly an approximation to the velocity in element T.
+
+        du1=0.0_DP
+        du2=0.0_DP
+        do idof=1,ubound(Idofs,1)
+          du1=du1+(da1*du1x(Idofs(idof,ielidx))+da2*du2x(Idofs(idof,ielidx)))
+          du2=du2+(da1*du1y(Idofs(idof,ielidx))+da2*du2y(Idofs(idof,ielidx)))
+        end do
+
+        ! Calculate the norm of that local velocity:
+
+        dunorm = sqrt(du1**2+du2**2) / real(ubound(Idofs,1),DP)
         
-      else
-      
-        ! For UPSAM >= 0, we use standard Samarskji-like calculation
-        ! of ddelta. At first calculate the local Reynolds number
-        ! RELOC = Re_T = ||u||_T * h_T / NU
+        ! Now we have:   dunorm = ||u||_T
+        ! and:           u_T = a1*u1_T + a2*u2_T
+
+        ! If the norm of the velocity is small, we choose ddelta = 0,
+        ! which results in central difference in the streamline diffusion
+        ! matrix assembling:
+
+        if (dunorm .le. 1E-8_DP) then
         
-        RELOC = dunorm*dlocalH*NUREC
-        
-        ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
-        
-        ddelta = UPSAM * dlocalH*duMaxR * 2.0_DP*(RELOC/(1.0_DP+RELOC))
-        
-      end if ! (UPSAM.LT.0.0)
-      
-    end if ! (dunorm.LE.1D-8)
+          Ddelta(ielidx) = 0.0_DP
+
+        else
+
+          ! u_T defines the "slope" of the velocity through
+          ! the element T. At next, calculate the local mesh width
+          ! dlocalH = h = h_T on our element T=IEL:
+
+          call getLocalMeshWidthQuad (dlocalH,dunorm, du1, du2, iel, &
+              p_IverticesAtElement,p_DvertexCoords)
+
+          ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+
+          if (dupsam .lt. 0.0_DP) then
+
+            ! For UPSAM<0, we use simple calculation of ddelta:        
+          
+            Ddelta(ielidx) = abs(dupsam)*dlocalH
+            
+          else
+          
+            ! For UPSAM >= 0, we use standard Samarskji-like calculation
+            ! of ddelta. At first calculate the local Reynolds number
+            ! RELOC = Re_T = ||u||_T * h_T / NU
+            
+            dreLoc = dunorm*dlocalH*dnuRec
+            
+            ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
+            
+            Ddelta(ielidx) = dupsam * dlocalH*duMaxR * 2.0_DP*(dreLoc/(1.0_DP+dreLoc))
+            
+          end if ! (UPSAM.LT.0.0)
+          
+        end if ! (dunorm.LE.1D-8)
+
+      end do
+
+    end if
 
   end subroutine
 
