@@ -132,6 +132,13 @@ iUpwind            = 0
 
 dUpsam             = 1.0
 
+# Calculation of local H for Streamline Diffusion
+# 0= set local H to sqrt(area(T))
+# 1= set local H to the length of the way a particle travels through
+#    a cell
+
+iLocalH = 1
+
 # Element type to use for the unified edge oriented jump stabilisation.
 # Allows to use a different finite element for setting up the stabilisation
 # than for discretising the equation. Only used if iUpwind=2.

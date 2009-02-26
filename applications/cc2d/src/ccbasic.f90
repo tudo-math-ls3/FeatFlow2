@@ -168,6 +168,9 @@ module ccbasic
     ! Standard values: Streamline diffusion: 1.0. Upwind: 0.1. Edge oriented: 0.01.
     real(DP) :: dupsam = 1.0_DP
     
+    ! Calculation of local H for streamline diffusion
+    integer :: clocalH = 0
+    
   end type
 
 !</typeblock>

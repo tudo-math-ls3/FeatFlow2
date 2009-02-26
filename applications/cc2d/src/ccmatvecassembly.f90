@@ -181,6 +181,10 @@ module ccmatvecassembly
     ! 0.0 deactivates any stabilisation.
     real(DP) :: dupsam = 0.0_DP
     
+    ! STABILISATION: Specifies how the local H should be calculated for
+    ! streamline diffusion.
+    integer :: clocalH
+    
     ! MATRIX RESTRICTION: Parameter to activate matrix restriction.
     ! Can be used to generate parts of the matrices on coarse grids where the
     ! aspect ratio of the cells is large. Only applicable for $\tilde Q_1$
@@ -764,6 +768,9 @@ contains
           ! Set stabilisation parameter
           rstreamlineDiffusion%dupsam = rnonlinearCCMatrix%dupsam
           
+          ! Set calculation method for local H
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
+          
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
           
@@ -1335,6 +1342,9 @@ contains
           
           ! Set stabilisation parameter
           rstreamlineDiffusion%dupsam = rnonlinearCCMatrix%dupsam
+          
+          ! Set calculation method for local H
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
           
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma

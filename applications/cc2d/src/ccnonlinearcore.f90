@@ -425,7 +425,6 @@ module ccnonlinearcore
     ! TAU-parameter that switch the B^T-term on/off
     real(DP) :: dtau = 0.0_DP
     
-    
     ! Minimum allowed damping parameter; OMGMIN
     real(DP) :: domegaMin = 0.0_DP
     
@@ -567,6 +566,7 @@ contains
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+      rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
       rnonlinearCCMatrix%p_rdiscretisation => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
       rnonlinearCCMatrix%p_rdiscretisationStabil => &
@@ -764,6 +764,7 @@ contains
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+      rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
       rnonlinearCCMatrix%iadaptiveMatrices = &
           rnonlinearIteration%rprecSpecials%iadaptiveMatrices
       rnonlinearCCMatrix%dadmatthreshold = &
@@ -1331,6 +1332,7 @@ contains
           rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
           rnonlinearCCMatrix%dnu = rproblem%dnu
           rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+          rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
           rnonlinearCCMatrix%iadaptiveMatrices = &
               rnonlinearIteration%rprecSpecials%iadaptiveMatrices
           rnonlinearCCMatrix%dadmatthreshold = &

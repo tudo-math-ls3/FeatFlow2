@@ -157,6 +157,9 @@ contains
     
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'DUPSAM',rproblem%rstabilisation%dupsam,0.0_DP)
+    
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'ILOCALH',rproblem%rstabilisation%clocalH,1)
 
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'IELEMENTTYPESTABIL',iElementTypeStabil,0)
