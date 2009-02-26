@@ -631,27 +631,27 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_EDGEIDX), dimension(4) :: Iedge
-    integer(PREC_MATIDX) :: IlocalMatrix(4,4)
+    integer, dimension(4) :: Iedge
+    integer :: IlocalMatrix(4,4)
     real(DP), dimension(4) :: Dflux(4),Duu1(4),Duu2(4),XV(4),YV(4)
     real(DP), dimension(4,4) :: DlocalMatrix(4,4)
 
     real(DP) :: dcenterX, dcenterY, XN, YN, G1, G2, dupsre, ELMH
     real(DP) :: DL0, DL2, H00, H22, dflux0, dflux2
-    integer(PREC_ELEMENTIDX) :: iel
-    integer(PREC_VERTEXIDX) :: iv, ivt1,ivt2
-    integer(PREC_EDGEIDX) :: im1, im0, im2
+    integer :: iel
+    integer :: iv, ivt1,ivt2
+    integer :: im1, im0, im2
     integer I,II
     integer ia1, ia2, J, JJ, ia
     real(DP), dimension(4) :: DuALE1,DuALE2
 
     real(DP), dimension(:), pointer :: p_Da
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kcol
+    integer, dimension(:), pointer :: p_Kld
     
-    integer(PREC_VERTEXIDX) :: NVT
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_Kvert
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_Kmid
+    integer :: NVT
+    integer, dimension(:,:), pointer :: p_Kvert
+    integer, dimension(:,:), pointer :: p_Kmid
     real(DP), dimension(:,:), pointer :: p_Dcorvg
     
     ! There is no additional type/completeness check in the parameters here. 
@@ -1572,16 +1572,16 @@ contains
 
   ! local variables
   integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
-  integer(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
-  integer(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
+  integer :: JCOL0,IDFG,JDFG,JCOL
+  integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
   real(DP) :: dumax,dumaxr, du1loc, du2loc, dunorm,db,OM,AH,denth,dre,dny
   real(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ
   integer :: NVE
   
   ! Matrix structure arrays
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
   real(DP), dimension(:), pointer :: p_Da
   
   ! An array receiving the coordinates of cubature points on
@@ -1594,7 +1594,7 @@ contains
   ! Triangulation
   type(t_triangulation), pointer :: p_rtriangulation
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
+  integer, dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -1603,12 +1603,9 @@ contains
   ! One and only element distribution
   type(t_elementDistribution), pointer :: p_relementDistribution
 
-  ! Cubature point coordinates on the reference element
-  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  real(DP), dimension(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(:), allocatable :: Domega
   
   ! number of cubature points on the reference element
   integer :: ncubp
@@ -1620,7 +1617,7 @@ contains
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: Idofs, IdofsALE
+  integer, dimension(:,:), allocatable, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
@@ -1628,11 +1625,11 @@ contains
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  integer(PREC_DOFIDX), dimension(:,:,:), allocatable :: Kentry
+  integer, dimension(:,:,:), allocatable :: Kentry
   real(DP), dimension(:,:), allocatable :: Dentry
 
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList
+  integer, dimension(:), pointer :: p_IelementList
 
   ! Pointer to the velocity field in the cubature points.
   real(DP), dimension(:,:,:), allocatable :: Dvelocity
@@ -1711,19 +1708,15 @@ contains
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
-    ! Allocate some memory to hold the cubature points on the reference element
-    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-
-    ! Initialise the cubature formula,
-    ! Get cubature weights and point coordinates on the reference element
-    call cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    ! Get the number of cubature points for the cubature formula
+    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeBilForm)
     
-    ! Reformat the cubature points; they are in the wrong shape!
-    do i=1,ncubp
-      do k=1,ubound(p_DcubPtsRef,1)
-        p_DcubPtsRef(k,i) = Dxi(i,k)
-      end do
-    end do
+    ! Allocate two arrays for the points and the weights
+    allocate(Domega(ncubp))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
+    
+    ! Get the cubature formula
+    call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
     
     ! Allocate an array saving the coordinates of corner vertices of elements
     
@@ -2379,6 +2372,7 @@ contains
     call elprep_releaseElementSet(revalElementSet)
 
     deallocate(p_DcubPtsRef)
+    deallocate(Domega)
     deallocate(DlocalDelta)
     deallocate(Dvelocity)
     deallocate(Dentry)
@@ -2552,16 +2546,16 @@ contains
 
   ! local variables
   integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
-  integer(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
-  integer(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
+  integer :: JCOL0,IDFG,JDFG,JCOL
+  integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
   real(DP) :: dumax,dumaxr, du1loc, du2loc, dunorm,db,OM,AH,denth,dre,dny
   real(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ
   integer :: NVE
   
   ! Matrix structure arrays
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
   real(DP), dimension(:), pointer :: p_Da
   
   ! An array receiving the coordinates of cubature points on
@@ -2574,7 +2568,7 @@ contains
   ! Triangulation
   type(t_triangulation), pointer :: p_rtriangulation
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
+  integer, dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -2583,12 +2577,9 @@ contains
   ! One and only element distribution
   type(t_elementDistribution), pointer :: p_relementDistribution
 
-  ! Cubature point coordinates on the reference element
-  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  real(DP), dimension(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(:), allocatable :: Domega
   
   ! number of cubature points on the reference element
   integer :: ncubp
@@ -2600,7 +2591,7 @@ contains
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: Idofs, IdofsALE
+  integer, dimension(:,:), allocatable, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
@@ -2608,11 +2599,11 @@ contains
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  integer(PREC_DOFIDX), dimension(:,:,:), allocatable :: Kentry
+  integer, dimension(:,:,:), allocatable :: Kentry
   real(DP), dimension(:,:), allocatable :: Dentry
 
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList
+  integer, dimension(:), pointer :: p_IelementList
 
   ! Pointer to the velocity field in the cubature points.
   real(DP), dimension(:,:,:), allocatable :: Dvelocity
@@ -2692,19 +2683,15 @@ contains
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
-    ! Allocate some memory to hold the cubature points on the reference element
-    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-
-    ! Initialise the cubature formula,
-    ! Get cubature weights and point coordinates on the reference element
-    call cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    ! Get the number of cubature points for the cubature formula
+    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeBilForm)
     
-    ! Reformat the cubature points; they are in the wrong shape!
-    do i=1,ncubp
-      do k=1,ubound(p_DcubPtsRef,1)
-        p_DcubPtsRef(k,i) = Dxi(i,k)
-      end do
-    end do
+    ! Allocate two arrays for the points and the weights
+    allocate(Domega(ncubp))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
+    
+    ! Get the cubature formula
+    call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
     
     ! Allocate an array saving the coordinates of corner vertices of elements
     
@@ -3361,6 +3348,7 @@ contains
     call elprep_releaseElementSet(revalElementSet)
 
     deallocate(p_DcubPtsRef)
+    deallocate(Domega)
     deallocate(DlocalDelta)
     deallocate(Dvelocity)
     deallocate(Dentry)
@@ -3852,8 +3840,8 @@ contains
 
   ! local variables
   integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
-  integer(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
-  integer(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
+  integer :: JCOL0,IDFG,JDFG,JCOL
+  integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
   real(DP) :: dumax,dumaxr, du1loc, du2loc, dunorm,db,OM,AH,denth,dre,dny
   real(DP) :: du1locx,du2locx,du1locy,du2locy,dbx,dby
@@ -3862,12 +3850,12 @@ contains
   integer :: NVE
   
   ! Matrix structure arrays
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
   real(DP), dimension(:), pointer :: p_Da11,p_Da22
 
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol12
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld12
+  integer, dimension(:), pointer :: p_Kcol12
+  integer, dimension(:), pointer :: p_Kld12
   real(DP), dimension(:), pointer :: p_Da12,p_Da21
   
   ! An array receiving the coordinates of cubature points on
@@ -3880,7 +3868,7 @@ contains
   ! Triangulation
   type(t_triangulation), pointer :: p_rtriangulation
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
+  integer, dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -3889,12 +3877,9 @@ contains
   ! One and only element distribution
   type(t_elementDistribution), pointer :: p_relementDistribution
 
-  ! Cubature point coordinates on the reference element
-  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  real(DP), dimension(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(:), allocatable :: Domega
   
   ! number of cubature points on the reference element
   integer :: ncubp
@@ -3907,7 +3892,7 @@ contains
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: Idofs, IdofsALE
+  integer, dimension(:,:), allocatable, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
@@ -3915,18 +3900,18 @@ contains
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  integer(PREC_DOFIDX), dimension(:,:,:), allocatable :: Kentry
+  integer, dimension(:,:,:), allocatable :: Kentry
   real(DP), dimension(:,:,:), allocatable :: Dentry
   
   ! Additional contributions for the submatrices A11, A12, A21, A22 stemming from Newton.
-  integer(PREC_DOFIDX), dimension(:,:,:), allocatable :: Kentry12
+  integer, dimension(:,:,:), allocatable :: Kentry12
   real(DP), dimension(:,:,:), allocatable :: DentryA11
   real(DP), dimension(:,:,:), allocatable :: DentryA12
   real(DP), dimension(:,:,:), allocatable :: DentryA21
   real(DP), dimension(:,:,:), allocatable :: DentryA22
 
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList
+  integer, dimension(:), pointer :: p_IelementList
 
   ! Pointer to the velocity field in the cubature points.
   real(DP), dimension(:,:,:), allocatable :: Dvelocity
@@ -4031,19 +4016,15 @@ contains
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
-    ! Allocate some memory to hold the cubature points on the reference element
-    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-
-    ! Initialise the cubature formula,
-    ! Get cubature weights and point coordinates on the reference element
-    call cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    ! Get the number of cubature points for the cubature formula
+    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeBilForm)
     
-    ! Reformat the cubature points; they are in the wrong shape!
-    do i=1,ncubp
-      do k=1,ubound(p_DcubPtsRef,1)
-        p_DcubPtsRef(k,i) = Dxi(i,k)
-      end do
-    end do
+    ! Allocate two arrays for the points and the weights
+    allocate(Domega(ncubp))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
+    
+    ! Get the cubature formula
+    call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
     
     ! Open-MP-Extension: Open threads here.
     ! "csysTrial" is declared as private; shared gave errors with the Intel compiler
@@ -5472,6 +5453,7 @@ contains
     deallocate(DbasALE)
     deallocate(Dbas)
     !%OMP end PARALLEL
+    deallocate(Domega)
     deallocate(p_DcubPtsRef)
     
   end subroutine
@@ -6351,16 +6333,16 @@ contains
 
   ! local variables
   integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
-  integer(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
-  integer(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
+  integer :: JCOL0,IDFG,JDFG,JCOL
+  integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
   real(DP) :: dumax,dumaxr, du1loc, du2loc, du3loc, dunorm,db,OM,AH,denth,dre,dny
   real(DP) :: HBASI1,HBASI2,HBASI3,HBASI4,HBASJ1,HBASJ2,HBASJ3,HBASJ4,HSUMI,HSUMJ
   integer :: NVE
   
   ! Matrix structure arrays
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
   real(DP), dimension(:), pointer :: p_Da
   
   ! An array receiving the coordinates of cubature points on
@@ -6373,7 +6355,7 @@ contains
   ! Triangulation
   type(t_triangulation), pointer :: p_rtriangulation
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -6382,12 +6364,9 @@ contains
   ! One and only element distribution
   type(t_elementDistribution), pointer :: p_relementDistribution
 
-  ! Cubature point coordinates on the reference element
-  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  real(DP), dimension(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(:), allocatable :: Domega
   
   ! number of cubature points on the reference element
   integer :: ncubp
@@ -6399,7 +6378,7 @@ contains
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: Idofs, IdofsALE
+  integer, dimension(:,:), allocatable, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
@@ -6407,11 +6386,11 @@ contains
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  integer(PREC_DOFIDX), dimension(:,:,:), allocatable :: Kentry
+  integer, dimension(:,:,:), allocatable :: Kentry
   real(DP), dimension(:,:), allocatable :: Dentry
 
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList
+  integer, dimension(:), pointer :: p_IelementList
 
   ! Pointer to the velocity field in the cubature points.
   real(DP), dimension(:,:,:), allocatable :: Dvelocity
@@ -6493,19 +6472,15 @@ contains
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
-    ! Allocate some memory to hold the cubature points on the reference element
-    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-
-    ! Initialise the cubature formula,
-    ! Get cubature weights and point coordinates on the reference element
-    call cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    ! Get the number of cubature points for the cubature formula
+    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeBilForm)
     
-    ! Reformat the cubature points; they are in the wrong shape!
-    do i=1,ncubp
-      do k=1,ubound(p_DcubPtsRef,1)
-        p_DcubPtsRef(k,i) = Dxi(i,k)
-      end do
-    end do
+    ! Allocate two arrays for the points and the weights
+    allocate(Domega(ncubp))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
+    
+    ! Get the cubature formula
+    call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
     
     ! Allocate an array saving the coordinates of corner vertices of elements
     
@@ -7189,6 +7164,7 @@ contains
     call elprep_releaseElementSet(revalElementSet)
 
     deallocate(p_DcubPtsRef)
+    deallocate(Domega)
     deallocate(DlocalDelta)
     deallocate(Dvelocity)
     deallocate(Dentry)
@@ -7718,8 +7694,8 @@ contains
 
   ! local variables
   integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
-  integer(PREC_DOFIDX) :: JCOL0,IDFG,JDFG,JCOL
-  integer(PREC_ELEMENTIDX) :: IEL,IELset,IELmax
+  integer :: JCOL0,IDFG,JDFG,JCOL
+  integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
   real(DP) :: dumax,dumaxr, du1loc, du2loc, du3loc, dunorm,db,OM,AH,denth,dre,dny
   real(DP) :: du1locx,du2locx,du3locx,du1locy,du2locy,du3locy,&
@@ -7729,8 +7705,8 @@ contains
   integer :: NVE
   
   ! Matrix structure arrays
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
   real(DP), dimension(:), pointer :: p_Da11,p_Da12,p_Da13,&
                  p_Da21,p_Da22,p_Da23,p_Da31,p_Da32,p_Da33
 
@@ -7744,7 +7720,7 @@ contains
   ! Triangulation
   type(t_triangulation), pointer :: p_rtriangulation
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IfacesAtElement,&
+  integer, dimension(:,:), pointer :: p_IfacesAtElement,&
                                     p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
@@ -7754,12 +7730,9 @@ contains
   ! One and only element distribution
   type(t_elementDistribution), pointer :: p_relementDistribution
 
-  ! Cubature point coordinates on the reference element
-  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  real(DP), dimension(CUB_MAXCUBP) :: Domega
+  real(DP), dimension(:), allocatable :: Domega
   
   ! number of cubature points on the reference element
   integer :: ncubp
@@ -7772,7 +7745,7 @@ contains
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: Idofs, IdofsALE
+  integer, dimension(:,:), allocatable, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test and trial spaces.
@@ -7780,7 +7753,7 @@ contains
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  integer(PREC_DOFIDX), dimension(:,:,:), allocatable :: Kentry
+  integer, dimension(:,:,:), allocatable :: Kentry
   real(DP), dimension(:,:,:), allocatable :: Dentry
   
   ! Additional contributions for the submatrices Aij stemming from Newton.
@@ -7795,7 +7768,7 @@ contains
   real(DP), dimension(:,:,:), allocatable :: DentryA33
 
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList
+  integer, dimension(:), pointer :: p_IelementList
 
   ! Pointer to the velocity field in the cubature points.
   real(DP), dimension(:,:,:), allocatable :: Dvelocity
@@ -7900,19 +7873,15 @@ contains
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
-    ! Allocate some memory to hold the cubature points on the reference element
-    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-
-    ! Initialise the cubature formula,
-    ! Get cubature weights and point coordinates on the reference element
-    call cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    ! Get the number of cubature points for the cubature formula
+    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeBilForm)
     
-    ! Reformat the cubature points; they are in the wrong shape!
-    do i=1,ncubp
-      do k=1,ubound(p_DcubPtsRef,1)
-        p_DcubPtsRef(k,i) = Dxi(i,k)
-      end do
-    end do
+    ! Allocate two arrays for the points and the weights
+    allocate(Domega(ncubp))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
+    
+    ! Get the cubature formula
+    call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
     
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
@@ -9200,7 +9169,9 @@ contains
     deallocate(DbasALE)
     deallocate(Dbas)
     !§OMP end PARALLEL
+    deallocate(Domega)
     deallocate(p_DcubPtsRef)
+    
   end subroutine
 
   ! ***************************************************************************
@@ -9252,17 +9223,17 @@ contains
   real(DP), intent(IN) :: UPSAM
   
   ! Element where the ddelta should be calculated
-  integer(PREC_ELEMENTIDX), intent(IN) :: IEL
+  integer, intent(IN) :: IEL
   
   ! Number of degrees of freedom on element IEL
   integer, intent(IN) :: IDFL
   
   ! Array with global degrees of freedom, corresponding to
   ! local degrees of freedom 1..IDFL on element IEL.
-  integer(PREC_DOFIDX), dimension(:), intent(IN) :: KDFG
+  integer, dimension(:), intent(IN) :: KDFG
   
   ! The IverticesAtElement array from the triangulation
-  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: Kvert
+  integer, dimension(:,:), intent(IN) :: Kvert
   
   ! The DvertexCoords array from the triangulation
   real(DP), dimension(:,:), intent(IN) :: Dcorvg
@@ -9278,7 +9249,7 @@ contains
   ! local variables
   real(DP) :: dlocalH,dunorm,RELOC
   real(DP), dimension(3) :: Du
-  integer(PREC_DOFIDX) :: idof
+  integer :: idof
 
     ! Loop through the local degrees of freedom on element IEL.
     ! Sum up the velocities on these DOF's. This will result
@@ -9392,17 +9363,17 @@ contains
   real(DP), intent(IN) :: UPSAM
   
   ! Element where the ddelta should be calculated
-  integer(PREC_ELEMENTIDX), intent(IN) :: IEL
+  integer, intent(IN) :: IEL
   
   ! Number of degrees of freedom on element IEL
   integer, intent(IN) :: IDFL
   
   ! Array with global degrees of freedom, corresponding to
   ! local degrees of freedom 1..IDFL on element IEL.
-  integer(PREC_DOFIDX), dimension(:), intent(IN) :: KDFG
+  integer, dimension(:), intent(IN) :: KDFG
   
   ! The IverticesAtElement array from the triangulation
-  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: Kvert
+  integer, dimension(:,:), intent(IN) :: Kvert
   
   ! The DvertexCoords array from the triangulation
   real(DP), dimension(:,:), intent(IN) :: Dcorvg
@@ -9418,7 +9389,7 @@ contains
   ! local variables
   real(DP) :: dlocalH,dunorm,RELOC
   real(DP), dimension(3) :: Du
-  integer(PREC_DOFIDX) :: idof
+  integer :: idof
 
     ! Calculate the local mesh width dlocalH = h = h_T on our element T=IEL:
     call getHexaVolume(dlocalH,IEL,Kvert,Dcorvg)
@@ -9483,10 +9454,10 @@ contains
   real(DP), intent(IN)                                :: dunorm
 
   ! Element where the local h should be calculated
-  integer(PREC_ELEMENTIDX), intent(IN)                :: iel
+  integer, intent(IN)                :: iel
   
   ! The IverticesAtElement array from the triangulation
-  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
   
   ! The DvertexCoords array from the triangulation
   real(DP), dimension(:,:), intent(IN)                :: DvertexCoords
@@ -9692,10 +9663,10 @@ contains
 
 !<input>
   ! Element where the local h should be calculated
-  integer(PREC_ELEMENTIDX), intent(IN)                :: iel
+  integer, intent(IN)                :: iel
   
   ! The IverticesAtElement array from the triangulation
-  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
   
   ! The DvertexCoords array from the triangulation
   real(DP), dimension(:,:), intent(IN)                :: DvertexCoords
