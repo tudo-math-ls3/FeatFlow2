@@ -1588,7 +1588,7 @@ contains
         
         ! All residual information calculated.
         ! Check for divergence; use a 'NOT' for better NaN handling.
-        bdivergence = .not. (dres/dresOld .lt. 1E2)
+        bdivergence = .not. (dres/dresINIT .lt. 1E5)
         
         ! Check for convergence
         if((ddelU .le. depsUR).and.(ddelP .le. depsPR)   .and. &
@@ -1911,8 +1911,10 @@ contains
         
         ! If bsuccess=false, the preconditioner had an error.
         if (.not. bsuccess) then
-          call output_line ('NLSOL: Iteration '//&
-              trim(sys_siL(ite,10))//' canceled as the preconditioner went down!')
+          if (rsolverNode%ioutputLevel .ge. 0) then
+            call output_line ('NLSOL: Iteration '//&
+                trim(sys_siL(ite,10))//' canceled as the preconditioner went down!')
+          end if
           rsolverNode%iresult = 3
           exit
         end if
@@ -1922,8 +1924,10 @@ contains
         ! iteration would behave exactly as before!
         ! So in this case, there's nothing to do, we can stop the iteration.
         if (domega .eq. 0.0_DP) then
-          call output_line ('NLSOL: Iteration '//&
-              trim(sys_siL(ite,10))//' canceled as there is no progress anymore!')
+          if (rsolverNode%ioutputLevel .ge. 1) then
+            call output_line ('NLSOL: Iteration '//&
+                trim(sys_siL(ite,10))//' canceled as there is no progress anymore!')
+          end if
           exit
         else
           ! Add the correction vector in rd to rx;
@@ -1949,6 +1953,10 @@ contains
         
           ! Check for divergence
           if (bdivergence) then
+            if (rsolverNode%ioutputLevel .ge. 0) then
+              call output_line ('NLSOL: Iteration '//&
+                  trim(sys_siL(ite,10))//' canceled, divergence detected!')
+            end if
             rsolverNode%iresult = 1
             exit
           end if
