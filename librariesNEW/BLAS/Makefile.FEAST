@@ -1,0 +1,355 @@
+# -*- makefile -*-
+
+#include make.inc
+
+#######################################################################
+#  This is the makefile to create a library for the BLAS.
+#  The files are grouped as follows:
+#
+#       SBLAS1 -- Single precision real BLAS routines
+#       CBLAS1 -- Single precision complex BLAS routines
+#       DBLAS1 -- Double precision real BLAS routines
+#       ZBLAS1 -- Double precision complex BLAS routines
+#
+#       CB1AUX -- Real BLAS routines called by complex routines
+#       ZB1AUX -- D.P. real BLAS routines called by d.p. complex
+#                 routines
+#
+#      ALLBLAS -- Auxiliary routines for Level 2 and 3 BLAS
+#
+#       SBLAS2 -- Single precision real BLAS2 routines
+#       CBLAS2 -- Single precision complex BLAS2 routines
+#       DBLAS2 -- Double precision real BLAS2 routines
+#       ZBLAS2 -- Double precision complex BLAS2 routines
+#
+#       SBLAS3 -- Single precision real BLAS3 routines
+#       CBLAS3 -- Single precision complex BLAS3 routines
+#       DBLAS3 -- Double precision real BLAS3 routines
+#       ZBLAS3 -- Double precision complex BLAS3 routines
+#
+#  The library can be set up to include routines for any combination
+#  of the four precisions.  To create or add to the library, enter make
+#  followed by one or more of the precisions desired.  Some examples:
+#       make single
+#       make single complex
+#       make single double complex complex16
+#  Note that these commands are not safe for parallel builds.
+#
+#  Alternatively, the commands
+#       make all
+#  or
+#       make
+#  without any arguments creates a library of all four precisions.
+#  The name of the library is held in BLASLIB, which is set in the
+#  make.inc
+#
+#  To remove the object files after the library is created, enter
+#       make clean
+#  To force the source files to be recompiled, enter, for example,
+#       make single FRC=FRC
+#
+#---------------------------------------------------------------------
+#
+#  Edward Anderson, University of Tennessee
+#  March 26, 1990
+#  Susan Ostrouchov,  September 30, 1994
+#  Julie Langou, March 2007
+#
+#  Adapted to the needs of the FEAST library by
+#  Sven Buijssen, University of Dortmund
+#  Last updated February 23, 2009
+#
+#######################################################################
+
+OBJDIR  = object
+BLASLIB = $(OBJDIR)/libblas.a
+
+all: single double complex complex16
+
+#---------------------------------------------------------
+#  Comment out the next 6 definitions if you already have
+#  the Level 1 BLAS.
+#---------------------------------------------------------
+SRC_SBLAS1 = isamax.f sasum.f saxpy.f scopy.f sdot.f snrm2.f \
+	     srot.f srotg.f sscal.f sswap.f
+SBLAS1     = $(SRC_SBLAS1:%.f=$(OBJDIR)/%.o)
+$(SBLAS1): $(FRC)
+
+SRC_CBLAS1 = scasum.f scnrm2.f icamax.f caxpy.f ccopy.f \
+	     cdotc.f cdotu.f csscal.f crotg.f cscal.f cswap.f
+CBLAS1     = $(SRC_CBLAS1:%.f=$(OBJDIR)/%.o)
+$(CBLAS1): $(FRC)
+
+SRC_DBLAS1 = idamax.f dasum.f daxpy.f dcopy.f ddot.f dnrm2.f \
+	     drot.f drotg.f dscal.f dswap.f
+DBLAS1     = $(SRC_DBLAS1:%.f=$(OBJDIR)/%.o)
+$(DBLAS1): $(FRC)
+
+SRC_ZBLAS1 = dcabs1.f dzasum.f dznrm2.f izamax.f zaxpy.f zcopy.f \
+	     zdotc.f zdotu.f zdscal.f zrotg.f zscal.f zswap.f
+ZBLAS1     = $(SRC_ZBLAS1:%.f=$(OBJDIR)/%.o)
+$(ZBLAS1): $(FRC)
+
+SRC_CB1AUX = isamax.f sasum.f saxpy.f scopy.f snrm2.f sscal.f
+CB1AUX     = $(SRC_CB1AUX:%.f=$(OBJDIR)/%.o)
+$(CB1AUX): $(FRC)
+
+SRC_ZB1AUX = idamax.f dasum.f daxpy.f dcopy.f dnrm2.f dscal.f
+ZB1AUX     = $(SRC_ZB1AUX:%.f=$(OBJDIR)/%.o)
+$(ZB1AUX): $(FRC)
+
+#---------------------------------------------------------------------
+#  The following line defines auxiliary routines needed by both the
+#  Level 2 and Level 3 BLAS.  Comment it out only if you already have
+#  both the Level 2 and 3 BLAS.
+#---------------------------------------------------------------------
+SRC_ALLBLAS  = lsame.f xerbla.f
+ALLBLAS      = $(SRC_ALLBLAS:%.f=$(OBJDIR)/%.o)
+$(ALLBLAS) : $(FRC)
+
+#---------------------------------------------------------
+#  Comment out the next 4 definitions if you already have
+#  the Level 2 BLAS.
+#---------------------------------------------------------
+SRC_SBLAS2 = sgemv.f sgbmv.f ssymv.f ssbmv.f sspmv.f \
+	     strmv.f stbmv.f stpmv.f strsv.f stbsv.f stpsv.f \
+	     sger.f ssyr.f sspr.f ssyr2.f sspr2.f
+SBLAS2     = $(SRC_SBLAS2:%.f=$(OBJDIR)/%.o)
+$(SBLAS2): $(FRC)
+
+SRC_CBLAS2 = cgemv.f cgbmv.f chemv.f chbmv.f chpmv.f \
+	     ctrmv.f ctbmv.f ctpmv.f ctrsv.f ctbsv.f ctpsv.f \
+	     cgerc.f cgeru.f cher.f chpr.f cher2.f chpr2.f
+CBLAS2     = $(SRC_CBLAS2:%.f=$(OBJDIR)/%.o)
+$(CBLAS2): $(FRC)
+
+SRC_DBLAS2 = dgemv.f dgbmv.f dsymv.f dsbmv.f dspmv.f \
+	     dtrmv.f dtbmv.f dtpmv.f dtrsv.f dtbsv.f dtpsv.f \
+	     dger.f dsyr.f dspr.f dsyr2.f dspr2.f
+DBLAS2     = $(SRC_DBLAS2:%.f=$(OBJDIR)/%.o)
+$(DBLAS2): $(FRC)
+
+SRC_ZBLAS2 = zgemv.f zgbmv.f zhemv.f zhbmv.f zhpmv.f \
+	     ztrmv.f ztbmv.f ztpmv.f ztrsv.f ztbsv.f ztpsv.f \
+	     zgerc.f zgeru.f zher.f zhpr.f zher2.f zhpr2.f
+ZBLAS2     = $(SRC_ZBLAS2:%.f=$(OBJDIR)/%.o)
+$(ZBLAS2): $(FRC)
+
+#---------------------------------------------------------
+#  Comment out the next 4 definitions if you already have
+#  the Level 3 BLAS.
+#---------------------------------------------------------
+SRC_SBLAS3 = sgemm.f ssymm.f ssyrk.f ssyr2k.f strmm.f strsm.f
+SBLAS3     = $(SRC_SBLAS3:%.f=$(OBJDIR)/%.o)
+$(SBLAS3): $(FRC)
+
+SRC_CBLAS3 = cgemm.f csymm.f csyrk.f csyr2k.f ctrmm.f ctrsm.f \
+	     chemm.f cherk.f cher2k.f
+CBLAS3     = $(SRC_CBLAS3:%.f=$(OBJDIR)/%.o)
+$(CBLAS3): $(FRC)
+
+SRC_DBLAS3 = dgemm.f dsymm.f dsyrk.f dsyr2k.f dtrmm.f dtrsm.f
+DBLAS3     = $(SRC_DBLAS3:%.f=$(OBJDIR)/%.o)
+$(DBLAS3): $(FRC)
+
+SRC_ZBLAS3 = zgemm.f zsymm.f zsyrk.f zsyr2k.f ztrmm.f ztrsm.f \
+	     zhemm.f zherk.f zher2k.f
+ZBLAS3     = $(SRC_ZBLAS3:%.f=$(OBJDIR)/%.o)
+$(ZBLAS3): $(FRC)
+
+ALLOBJ=$(SBLAS1) $(SBLAS2) $(SBLAS3) $(DBLAS1) $(DBLAS2) $(DBLAS3)	\
+	$(CBLAS1) $(CBLAS2) $(CBLAS3) $(ZBLAS1) 	\
+	$(ZBLAS2) $(ZBLAS3) $(ALLBLAS)
+
+$(BLASLIB): $(ALLOBJ)
+	$(ARCH) $(ARCHFLAGS) $@ $(ALLOBJ)
+	$(RANLIB) $@
+
+single: $(SBLAS1) $(ALLBLAS) $(SBLAS2) $(SBLAS3)
+	$(ARCH) $(ARCHFLAGS) $(BLASLIB) $(SBLAS1) $(ALLBLAS) \
+	$(SBLAS2) $(SBLAS3)
+	$(RANLIB) $(BLASLIB)
+
+double: $(DBLAS1) $(ALLBLAS) $(DBLAS2) $(DBLAS3)
+	$(ARCH) $(ARCHFLAGS) $(BLASLIB) $(DBLAS1) $(ALLBLAS) \
+	$(DBLAS2) $(DBLAS3)
+	$(RANLIB) $(BLASLIB)
+
+complex: $(CBLAS1) $(CB1AUX) $(ALLBLAS) $(CBLAS2) $(CBLAS3)
+	$(ARCH) $(ARCHFLAGS) $(BLASLIB) $(CBLAS1) $(CB1AUX) \
+	$(ALLBLAS) $(CBLAS2) $(CBLAS3)
+	$(RANLIB) $(BLASLIB)
+
+complex16: $(ZBLAS1) $(ZB1AUX) $(ALLBLAS) $(ZBLAS2) $(ZBLAS3)
+	$(ARCH) $(ARCHFLAGS) $(BLASLIB) $(ZBLAS1) $(ZB1AUX) \
+	$(ALLBLAS) $(ZBLAS2) $(ZBLAS3)
+	$(RANLIB) $(BLASLIB)
+
+FRC:
+	@FRC=$(FRC)
+
+
+# Separate target for those parts of blas that are needed for FEAST.
+# You should not just use 'make single double' as this would result
+# in the library being rebuilt every time you invoke 'make'.
+# This because 'single' and 'double' are phony targets.
+#
+# So, build a single and double precision blas version.
+$(BLASLIB): $(SBLAS1) $(ALLBLAS) $(SBLAS2) $(SBLAS3) \
+	    $(DBLAS1) $(DBLAS2) $(DBLAS3)
+	$(ARCH) $(ARCHFLAGS) $(BLASLIB) \
+		$(SBLAS1) $(ALLBLAS) $(SBLAS2) $(SBLAS3) \
+		$(DBLAS1) $(DBLAS2) $(DBLAS3)
+	$(RANLIB) $(BLASLIB)
+
+
+# Function to delete a single file at once
+define remove_file
+    rm -f $(file)
+
+endef
+
+clean:
+        # Delete every file separately to prevent errors of kind: 
+        # execvp: rm: Arg list too long
+	-$(foreach file, $(ALLBLAS) $(CB1AUX) $(ZB1AUX) \
+			 $(CBLAS1) $(CBLAS2) $(CBLAS3) \
+			 $(DBLAS1) $(DBLAS2) $(DBLAS3) \
+			 $(SBLAS1) $(SBLAS2) $(SBLAS3) \
+			 $(ZBLAS1) $(ZBLAS2) $(ZBLAS3) $(BLASLIB), $(remove_file))
+	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
+
+purge:
+        # Delete every file separately to prevent errors of kind: 
+        # execvp: rm: Arg list too long
+	-$(foreach file, $(ALLBLAS) $(CB1AUX) $(ZB1AUX) \
+			 $(CBLAS1) $(CBLAS2) $(CBLAS3) \
+			 $(DBLAS1) $(DBLAS2) $(DBLAS3) \
+			 $(SBLAS1) $(SBLAS2) $(SBLAS3) \
+			 $(ZBLAS1) $(ZBLAS2) $(ZBLAS3) $(BLASLIB), $(remove_file))
+	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
+
+
+#-------------------------------------------------------------------------------
+# Before creating any object file, first create the object directory.
+#-------------------------------------------------------------------------------
+# Note:
+# An order-only prerequisite shall not be put on the same line as a prerequisite
+# of an implicit rule. Otherwise the target defined in this implicit rule is
+# rebuilt every time you invoke make!
+$(OBJDIR)/%.o: | $(OBJDIR)
+$(OBJDIR)/%.o: %.f
+	$(FORTRAN) $(OPTS) -c $< -o $@
+
+$(OBJDIR):
+	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
+
+# Phony targets
+.PHONY:	single double complex complex16 FRC clean purge 
+
+
+#.f.o:
+#	$(FORTRAN) $(OPTS) -c $*.f
+
+
+#-------------------------------------------------------------------------------
+# Unpack tarball as required.
+#-------------------------------------------------------------------------------
+# Note: This is trickier than one might think:
+# A tarball should only get extracted (and possibly patched) once. If already
+# extracted, there is no need to reextract it. Parallel make runs should stick
+# to this rule as well.
+# All source files are created by one rule, the extract command. But 
+# implementing it like:
+#   $(SRC_BLAS):
+#         <extract tarball>
+# would mean that e.g. in a 4-way parallel make run, a tarball would get
+# extracted 4 times in parallel, because make is not aware that the rule is
+# identical for the first 4 items of $(SRC_BLAS). Extracting the same tarball 
+# several times simultaneously, may cause several problems. Among those is 
+# the case where a source file gets already compiled while it is being 
+# overwritten by its copy from the tarball. Beware of doing that.
+# Things get worse when multiple external Makefiles call this Makefile in
+# parallel and ask for the compilation of the library. This happens regularly
+# when compiling the FEAST regression benchmark as this is usually done in
+# parallel with up to 32 processes.
+# The extraction of tarballs needs to be serialised somehow - which is not
+# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
+# .NOTPARALLEL is not an option.)
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract BLAS tarball when required.
+#-------------------------------------------------------------------------------
+
+# List of required source files from BLAS package. Purpose: let them share
+# a single common prerequisite that in turn is created by unpacking the tarball.
+# That's the key to serialise the unpacking process.
+
+
+SRC_BLAS = $(SRC_SBLAS1) $(SRC_CBLAS1) $(SRC_DBLAS1) $(SRC_ZBLAS1) \
+	   $(SRC_CB1AUX) $(SRC_ZB1AUX) $(SRC_ALLBLAS) \
+	   $(SRC_SBLAS2) $(SRC_CBLAS2) $(SRC_DBLAS2) $(SRC_ZBLAS2) \
+	   $(SRC_SBLAS3) $(SRC_CBLAS3) $(SRC_DBLAS3) $(SRC_ZBLAS3)
+
+# Choose the last file that is extracted from the BLAS tarball. It's
+# existence indicates that the BLAS tarball has been unpacked already
+# completely. This approach is a hack to serialise a parallel make run,
+# parallel threads pause till make has passed through this needle's eye.
+LAST_FILE_FROM_BLAS_TARBALL = ztrsv.f
+$(SRC_BLAS): $(LAST_FILE_FROM_BLAS_TARBALL)
+
+# To catch the case where several applications simultaneously
+# try to build the BLAS library (e.g. parallel make of the 
+# FEAST regression benchmark), this extractions needs to deploy
+# a locking mechanism.
+$(LAST_FILE_FROM_BLAS_TARBALL):  NAME     = "BLAS reference implementation sources"
+$(LAST_FILE_FROM_BLAS_TARBALL):  TARBALL  = ../blas.tgz
+$(LAST_FILE_FROM_BLAS_TARBALL):  LOCKFILE = ../LOCK.unpack.blas.tar.gz
+$(LAST_FILE_FROM_BLAS_TARBALL):  WAITTIME = 3
+$(LAST_FILE_FROM_BLAS_TARBALL):  RETRIES  = 10
+$(LAST_FILE_FROM_BLAS_TARBALL):
+	@$(call UNPACK)
+
+
+
+# Function to unpack a tarball - as a serialised operation
+# using a locking mechanism
+UNPACK=trap "rm -f $(LOCKFILE)" 2 3 9; \
+	if test -f $(LOCKFILE); then \
+	    loop=0; \
+	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
+		echo; \
+		echo "\#"; \
+		echo "\# Detected a concurrent attempt to unpack $(TARBALL)."; \
+		echo "\# Waiting for the other process to finish."; \
+		echo "\#"; \
+		echo "\# If you are sure that this is a false alarm, simply remove the file"; \
+		echo "\# <"`pwd`"/$(LOCKFILE)>."; \
+		echo "\# Then, compilation will proceed automatically."; \
+		echo "\#"; \
+		echo; \
+		sleep $(WAITTIME); \
+		loop=`expr $${loop} + 1`; \
+	    done; \
+	    if test -f $(LOCKFILE); then \
+		echo; \
+		echo "\#"; \
+		echo "\# Lock for unpacking $(TARBALL) has not been released"; \
+		echo "\# within "`expr $(WAITTIME) \* $(RETRIES)`" seconds. Giving up."; \
+		echo "\#"; \
+		echo "\# In case of a false alarm please manually remove the file"; \
+		echo "\# <$(LOCKFILE)>."; \
+		echo "\#"; \
+		echo; \
+		exit 1; \
+	    fi; \
+	else \
+	    touch $(LOCKFILE); \
+	    echo "\# Extracting $(NAME)..."; \
+	    gzip -dc $(TARBALL) | ( cd ..; tar -xvf - ); \
+	    rm -f $(LOCKFILE); \
+	fi; \
+	trap - 2 3 9;
+
+

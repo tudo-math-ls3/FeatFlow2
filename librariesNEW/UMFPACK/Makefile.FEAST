@@ -1,0 +1,583 @@
+# -*- makefile -*-
+
+#-------------------------------------------------------------------------------
+# UMFPACK Makefile for compiling on Unix systems (for GNU Make)
+# (adapted for the FEAST package, based on Lib/GNUmakefile from UMFPACK 5.2)
+#
+# Whereever UMFPACK Makefile instructions have been altered, the original
+# ones immediately precede the new ones and carry the prefix #FEAST#.
+#-------------------------------------------------------------------------------
+
+#FEAST# default: ../Lib/libumfpack.a
+default: $(OBJDIR)/libumfpack.a
+
+#FEAST# include ../UFconfig/UFconfig.mk
+
+C = $(CC) $(CFLAGS) $(UMFPACK_CONFIG) -DNO_TIMER \
+    -IInclude -ISource -I../AMD/Include -I../UFconfig
+#FEAST#    -I../Include -I../Source -I../../AMD/Include -I../../UFconfig
+
+#-------------------------------------------------------------------------------
+# source files
+#-------------------------------------------------------------------------------
+
+# non-user-callable umf_*.[ch] files:
+UMFCH = umf_assemble umf_blas3_update umf_build_tuples umf_create_element \
+	umf_dump umf_extend_front umf_garbage_collection umf_get_memory \
+	umf_init_front umf_kernel umf_kernel_init umf_kernel_wrapup \
+	umf_local_search umf_lsolve umf_ltsolve umf_mem_alloc_element \
+	umf_mem_alloc_head_block umf_mem_alloc_tail_block \
+	umf_mem_free_tail_block umf_mem_init_memoryspace \
+	umf_report_vector umf_row_search umf_scale_column \
+	umf_set_stats umf_solve umf_symbolic_usage umf_transpose \
+	umf_tuple_lengths umf_usolve umf_utsolve umf_valid_numeric \
+	umf_valid_symbolic umf_grow_front umf_start_front umf_2by2 \
+	umf_store_lu umf_scale
+
+# non-user-callable umf_*.[ch] files, int/UF_long versions only (no real/complex):
+UMFINT = umf_analyze umf_apply_order umf_colamd umf_free umf_fsize \
+	umf_is_permutation umf_malloc umf_realloc umf_report_perm \
+	umf_singletons
+
+# non-user-callable, created from umf_ltsolve.c, umf_utsolve.c,
+# umf_triplet.c, and umf_assemble.c , with int/UF_long and real/complex versions:
+UMF_CREATED = umf_lhsolve umf_uhsolve umf_triplet_map_nox \
+	umf_triplet_nomap_x umf_triplet_nomap_nox umf_triplet_map_x \
+	umf_assemble_fixq umf_store_lu_drop
+
+# non-user-callable, int/UF_long and real/complex versions:
+UMF = $(UMF_CREATED) $(UMFCH)
+
+# user-callable umfpack_*.[ch] files (int/UF_long and real/complex):
+UMFPACK = umfpack_col_to_triplet umfpack_defaults umfpack_free_numeric \
+	umfpack_free_symbolic umfpack_get_numeric umfpack_get_lunz \
+	umfpack_get_symbolic umfpack_get_determinant umfpack_numeric \
+	umfpack_qsymbolic umfpack_report_control umfpack_report_info \
+	umfpack_report_matrix umfpack_report_numeric umfpack_report_perm \
+	umfpack_report_status umfpack_report_symbolic umfpack_report_triplet \
+	umfpack_report_vector umfpack_solve umfpack_symbolic \
+	umfpack_transpose umfpack_triplet_to_col umfpack_scale \
+	umfpack_load_numeric umfpack_save_numeric \
+	umfpack_load_symbolic umfpack_save_symbolic
+
+# user-callable, created from umfpack_solve.c (umfpack_wsolve.h exists, though):
+# with int/UF_long and real/complex versions:
+UMFPACKW = #FEAST# umfpack_wsolve
+
+USER = $(UMFPACKW) $(UMFPACK)
+
+# user-callable, only one version for int/UF_long, real/complex, *.[ch] files:
+GENERIC = umfpack_timer umfpack_tictoc umfpack_global
+
+#-------------------------------------------------------------------------------
+# include files:
+#-------------------------------------------------------------------------------
+
+#FEAST Substitution Rule# ../Include/ => Include/
+#FEAST Substitution Rule# ../Source/  => Source/
+#FEAST Substitution Rule# ../../AMD/  => ../AMD/
+INC = Include/umfpack.h ../UFconfig/UFconfig.h \
+	Source/umf_config.h Source/umf_version.h \
+	Source/umf_internal.h Source/umf_triplet.h \
+	$(addprefix Source/,  $(addsuffix .h,$(UMFCH))) \
+	$(addprefix Source/,  $(addsuffix .h,$(UMFINT))) \
+	$(addprefix Include/, $(addsuffix .h,$(USER))) \
+	$(addprefix Include/, $(addsuffix .h,$(GENERIC))) \
+	../AMD/Include/amd_internal.h ../AMD/Include/amd.h
+
+#-------------------------------------------------------------------------------
+# object files for each version
+#-------------------------------------------------------------------------------
+
+#FEAST# DI = $(addsuffix .o, $(subst umf_,umf_di_,$(UMF)) $(subst umfpack_,umfpack_di_,$(USER)))
+ifeq (,$(findstring -DENABLE_64BIT_UMFPACK, $(CFLAGS)))
+# 32bit interface
+DI = $(addsuffix .o, $(subst umf_,$(OBJDIR)/umf_di_,$(UMF)) $(subst umfpack_,$(OBJDIR)/umfpack_di_,$(USER)))
+DL = #FEAST#
+else
+# 64bit interface
+DI = #FEAST#
+DL = $(addsuffix .o, $(subst umf_,$(OBJDIR)/umf_dl_,$(UMF)) $(subst umfpack_,$(OBJDIR)/umfpack_dl_,$(USER)))
+endif
+ZI = #FEAST# $(addsuffix .o, $(subst umf_,umf_zi_,$(UMF)) $(subst umfpack_,umfpack_zi_,$(USER)))
+ZL = #FEAST# $(addsuffix .o, $(subst umf_,umf_zl_,$(UMF)) $(subst umfpack_,umfpack_zl_,$(USER)))
+#FEAST# II = $(addsuffix .o, $(subst umf_,umf_i_,$(UMFINT)))
+II = $(addsuffix .o, $(subst umf_,$(OBJDIR)/umf_i_,$(UMFINT)))
+#FEAST# LL = $(addsuffix .o, $(subst umf_,umf_l_,$(UMFINT)))
+LL = $(addsuffix .o, $(subst umf_,$(OBJDIR)/umf_l_,$(UMFINT)))
+#FEAST# GN = $(addsuffix .o, $(subst umfpack_,umfpack_gn_,$(GENERIC)))
+GN = $(addsuffix .o, $(subst umfpack_,$(OBJDIR)/umfpack_gn_,$(GENERIC)))
+
+
+#-------------------------------------------------------------------------------
+# compile each int and UF_long routine (with no real/complex version)
+#-------------------------------------------------------------------------------
+
+#FEAST Substitution Rule# All object files got a '$(OBJDIR)/' prefix
+#FEAST Substitution Rule# All source files got the '../' stripped
+$(OBJDIR)/umf_i_%.o: Source/umf_%.c $(INC)
+	$(C) -DDINT -c $< -o $@
+
+$(OBJDIR)/umf_l_%.o: Source/umf_%.c $(INC)
+	$(C) -DDLONG -c $< -o $@
+
+#-------------------------------------------------------------------------------
+# compile each routine in the DI version
+#-------------------------------------------------------------------------------
+
+$(OBJDIR)/umf_di_%.o: Source/umf_%.c $(INC)
+	$(C) -DDINT -c $< -o $@
+
+$(OBJDIR)/umf_di_%hsolve.o: Source/umf_%tsolve.c $(INC)
+	$(C) -DDINT -DCONJUGATE_SOLVE -c $< -o $@
+
+$(OBJDIR)/umf_di_triplet_map_x.o: Source/umf_triplet.c $(INC)
+	$(C) -DDINT -DDO_MAP -DDO_VALUES -c $< -o $@
+
+$(OBJDIR)/umf_di_triplet_map_nox.o: Source/umf_triplet.c $(INC)
+	$(C) -DDINT -DDO_MAP -c $< -o $@
+
+$(OBJDIR)/umf_di_triplet_nomap_x.o: Source/umf_triplet.c $(INC)
+	$(C) -DDINT -DDO_VALUES -c $< -o $@
+
+$(OBJDIR)/umf_di_triplet_nomap_nox.o: Source/umf_triplet.c $(INC)
+	$(C) -DDINT -c $< -o $@
+
+$(OBJDIR)/umf_di_assemble_fixq.o: Source/umf_assemble.c $(INC)
+	$(C) -DDINT -DFIXQ -c $< -o $@
+
+$(OBJDIR)/umf_di_store_lu_drop.o: Source/umf_store_lu.c $(INC)
+	$(C) -DDINT -DDROP -c $< -o $@
+
+$(OBJDIR)/umfpack_di_wsolve.o: Source/umfpack_solve.c $(INC)
+	$(C) -DDINT -DWSOLVE -c $< -o $@
+
+$(OBJDIR)/umfpack_di_%.o: Source/umfpack_%.c $(INC)
+	$(C) -DDINT -c $< -o $@
+
+#-------------------------------------------------------------------------------
+# compile each routine in the DL version
+#-------------------------------------------------------------------------------
+
+$(OBJDIR)/umf_dl_%.o: Source/umf_%.c $(INC)
+	$(C) -DDLONG -c $< -o $@
+
+#FEAST# Workaround:
+#FEAST# Compiling umf_dl_garbage_collection.o and umf_dl_blas3_update.o on a 
+#FEAST# NEC gateway Itanium2 server gives an internal compiler error with 
+#FEAST# NEC C IA-64 Compiler, Revision 6.1 if -O3 and -DLONG are used together.
+#FEAST# Lowering optimisation to -O2 helps.
+#FEAST# Note: It would be natural to test the version of the C compiler in here.
+#FEAST# But unfortunately, the MPI wrapper command mpicc for NEC C IA-64 Compiler, 
+#FEAST# Revision 6.1 does report nothing when command line argument -V is used.
+#FEAST# The c++ cousin, however, does report the version.
+COMPILERVERSION := $(shell eval $(CXXVERSION) )
+ifneq (,$(findstring NEC C++ IA-64 Compiler,$(COMPILERVERSION)))
+ifneq (,$(findstring Revision 6.1,$(COMPILERVERSION)))
+$(OBJDIR)/umf_dl_blas3_update.o: Source/umf_blas3_update.c $(INC)
+	$(subst -O3,-O2,$(C)) -DDLONG -c $< -o $@
+
+$(OBJDIR)/umf_dl_garbage_collection.o: Source/umf_garbage_collection.c $(INC)
+	$(subst -O3,-O2,$(C)) -DDLONG -c $< -o $@
+endif
+endif
+
+$(OBJDIR)/umf_dl_%hsolve.o: Source/umf_%tsolve.c $(INC)
+	$(C) -DDLONG -DCONJUGATE_SOLVE -c $< -o $@
+
+$(OBJDIR)/umf_dl_triplet_map_x.o: Source/umf_triplet.c $(INC)
+	$(C) -DDLONG -DDO_MAP -DDO_VALUES -c $< -o $@
+
+$(OBJDIR)/umf_dl_triplet_map_nox.o: Source/umf_triplet.c $(INC)
+	$(C) -DDLONG -DDO_MAP -c $< -o $@
+
+$(OBJDIR)/umf_dl_triplet_nomap_x.o: Source/umf_triplet.c $(INC)
+	$(C) -DDLONG -DDO_VALUES -c $< -o $@
+
+$(OBJDIR)/umf_dl_triplet_nomap_nox.o: Source/umf_triplet.c $(INC)
+	$(C) -DDLONG -c $< -o $@
+
+$(OBJDIR)/umf_dl_assemble_fixq.o: Source/umf_assemble.c $(INC)
+	$(C) -DDLONG -DFIXQ -c $< -o $@
+
+$(OBJDIR)/umf_dl_store_lu_drop.o: Source/umf_store_lu.c $(INC)
+	$(C) -DDLONG -DDROP -c $< -o $@
+
+$(OBJDIR)/umfpack_dl_wsolve.o: Source/umfpack_solve.c $(INC)
+	$(C) -DDLONG -DWSOLVE -c $< -o $@
+
+$(OBJDIR)/umfpack_dl_%.o: Source/umfpack_%.c $(INC)
+	$(C) -DDLONG -c $< -o $@
+
+#-------------------------------------------------------------------------------
+# compile each routine in the ZI version
+#-------------------------------------------------------------------------------
+
+$(OBJDIR)/umf_zi_%.o: Source/umf_%.c $(INC)
+	$(C) -DZINT -c $< -o $@
+
+$(OBJDIR)/umf_zi_%hsolve.o: Source/umf_%tsolve.c $(INC)
+	$(C) -DZINT -DCONJUGATE_SOLVE -c $< -o $@
+
+$(OBJDIR)/umf_zi_triplet_map_x.o: Source/umf_triplet.c $(INC)
+	$(C) -DZINT -DDO_MAP -DDO_VALUES -c $< -o $@
+
+$(OBJDIR)/umf_zi_triplet_map_nox.o: Source/umf_triplet.c $(INC)
+	$(C) -DZINT -DDO_MAP -c $< -o $@
+
+$(OBJDIR)/umf_zi_triplet_nomap_x.o: Source/umf_triplet.c $(INC)
+	$(C) -DZINT -DDO_VALUES -c $< -o $@
+
+$(OBJDIR)/umf_zi_triplet_nomap_nox.o: Source/umf_triplet.c $(INC)
+	$(C) -DZINT -c $< -o $@
+
+$(OBJDIR)/umf_zi_assemble_fixq.o: Source/umf_assemble.c $(INC)
+	$(C) -DZINT -DFIXQ -c $< -o $@
+
+$(OBJDIR)/umf_zi_store_lu_drop.o: Source/umf_store_lu.c $(INC)
+	$(C) -DZINT -DDROP -c $< -o $@
+
+$(OBJDIR)/umfpack_zi_wsolve.o: Source/umfpack_solve.c $(INC)
+	$(C) -DZINT -DWSOLVE -c $< -o $@
+
+$(OBJDIR)/umfpack_zi_%.o: Source/umfpack_%.c $(INC)
+	$(C) -DZINT -c $< -o $@
+
+#-------------------------------------------------------------------------------
+# compile each routine in the ZL version
+#-------------------------------------------------------------------------------
+
+$(OBJDIR)/umf_zl_%.o: Source/umf_%.c $(INC)
+	$(C) -DZLONG -c $< -o $@
+
+$(OBJDIR)/umf_zl_%hsolve.o: Source/umf_%tsolve.c $(INC)
+	$(C) -DZLONG -DCONJUGATE_SOLVE -c $< -o $@
+
+$(OBJDIR)/umf_zl_triplet_map_x.o: Source/umf_triplet.c $(INC)
+	$(C) -DZLONG -DDO_MAP -DDO_VALUES -c $< -o $@
+
+$(OBJDIR)/umf_zl_triplet_map_nox.o: Source/umf_triplet.c $(INC)
+	$(C) -DZLONG -DDO_MAP -c $< -o $@
+
+$(OBJDIR)/umf_zl_triplet_nomap_x.o: Source/umf_triplet.c $(INC)
+	$(C) -DZLONG -DDO_VALUES -c $< -o $@
+
+$(OBJDIR)/umf_zl_triplet_nomap_nox.o: Source/umf_triplet.c $(INC)
+	$(C) -DZLONG -c $< -o $@
+
+$(OBJDIR)/umf_zl_assemble_fixq.o: Source/umf_assemble.c $(INC)
+	$(C) -DZLONG -DFIXQ -c $< -o $@
+
+$(OBJDIR)/umf_zl_store_lu_drop.o: Source/umf_store_lu.c $(INC)
+	$(C) -DZLONG -DDROP -c $< -o $@
+
+$(OBJDIR)/umfpack_zl_wsolve.o: Source/umfpack_solve.c $(INC)
+	$(C) -DZLONG -DWSOLVE -c $< -o $@
+
+$(OBJDIR)/umfpack_zl_%.o: Source/umfpack_%.c $(INC)
+	$(C) -DZLONG -c $< -o $@
+
+#-------------------------------------------------------------------------------
+# Create the generic routines (GN) using a generic rule
+#-------------------------------------------------------------------------------
+
+$(OBJDIR)/umfpack_gn_%.o: Source/umfpack_%.c $(INC)
+	$(C) -c $< -o $@
+
+#-------------------------------------------------------------------------------
+# Create the Lib/libumfpack.a library
+#-------------------------------------------------------------------------------
+
+#FEAST# ../Lib/libumfpack.a: $(II) $(LL) $(GN) $(DI) $(DL) $(ZI) $(ZL)
+#FEAST# 	$(AR) ../Lib/libumfpack.a $^
+#FEAST# 	- $(RANLIB) ../Lib/libumfpack.a
+
+#-------------------------------------------------------------------------------
+# Remove all but the files in the original distribution
+#-------------------------------------------------------------------------------
+
+#FEAST# purge: clean
+#FEAST# 	- $(RM) ../Lib/libumfpack.a
+#FEAST# 
+#FEAST# clean:
+#FEAST# 	- $(RM) $(CLEAN)
+
+
+#-------------------------------------------------------------------------------
+# From here till the end of the file are additional instructions added for
+# smooth FEAST integration:
+#-------------------------------------------------------------------------------
+
+# FEAST's Fortran to C interface (32 or 64bit)
+$(OBJDIR)/umf4_f77wrapper_feast.o: umf4_f77wrapper_feast.c $(INC)
+ifeq (,$(findstring -DENABLE_64BIT_UMFPACK, $(CFLAGS)))
+            # 32bit interface
+	    $(C) -c $< -o $@
+else
+            # 64bit interface
+	    $(C) -DDLONG -c $< -o $@
+endif
+
+
+#-------------------------------------------------------------------------------
+# Create the library
+#-------------------------------------------------------------------------------
+# Note:
+# Explicitly take precautions to reflect the considerations in Section 11.3 of 
+# the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
+# This Makefile is potentially called simultaneously from multiple make processes,
+# e.g. when compiling the FEAST regression benchmark in parallel. Concurrent 
+# attempts to create the archive should not happen. Try to avoid it with the
+# usual FEAST lock file mechanism.
+$(OBJDIR)/libumfpack.a:  LOCKFILE = ../LOCK.creating.libumfpack.a
+$(OBJDIR)/libumfpack.a:  WAITTIME = 10
+$(OBJDIR)/libumfpack.a:  RETRIES  = 24
+$(OBJDIR)/libumfpack.a: $(II) $(LL) $(GN) $(DI) $(DL) $(ZI) $(ZL) $(OBJDIR)/umf4_f77wrapper_feast.o
+	@trap "rm -f $(LOCKFILE)" 2 3 9; \
+	if test -f $(LOCKFILE); then \
+	    loop=0; \
+	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
+		echo; \
+		echo "\#"; \
+		echo "\# Detected a concurrent attempt to create $@."; \
+		echo "\# Waiting for the other process to finish."; \
+		echo "\#"; \
+		echo "\# If you are sure that this is a false alarm, simply remove the file"; \
+		echo "\# <"`pwd`"/$(LOCKFILE)>."; \
+		echo "\# Then, compilation will proceed automatically."; \
+		echo "\#"; \
+		echo; \
+		sleep $(WAITTIME); \
+		loop=`expr $${loop} + 1`; \
+	    done; \
+	    if test -f $(LOCKFILE); then \
+		echo; \
+		echo "\#"; \
+		echo "\# Lock for creating $@"; \
+		echo "\# was not released within "`expr $(WAITTIME) \* $(RETRIES)`" seconds."; \
+		echo "\# Giving up."; \
+		echo "\#"; \
+		echo "\# In case of a false alarm please manually remove the file"; \
+		echo "\# <$(LOCKFILE)>."; \
+		echo "\#"; \
+		echo; \
+		exit 1; \
+	    fi; \
+	else \
+	    touch $(LOCKFILE); \
+	    echo $(AR) $@ $^; \
+	    $(AR) $@ $^; \
+	    echo $(RANLIB) $@; \
+	    $(RANLIB) $@; \
+	    rm -f $(LOCKFILE); \
+	fi; \
+	trap - 2 3 9;
+
+
+#-------------------------------------------------------------------------------
+# Before creating any object file, first create the object directory.
+#-------------------------------------------------------------------------------
+# Note:
+# An order-only prerequisite shall not be put on the same line as a prerequisite 
+# of an implicit rule. Otherwise the target defined in this implicit rule is
+# rebuilt every time you invoke make!
+$(II) $(LL) $(GN) $(DI) $(DL) $(ZI) $(ZL) $(OBJDIR)/umf4_f77wrapper_feast.o: | $(OBJDIR)
+
+$(OBJDIR):
+	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
+
+
+#-------------------------------------------------------------------------------
+# The function 'match' is used to match ID agains wildcards.
+#-------------------------------------------------------------------------------
+#
+# variant 1 (slower, especially on old machines, but possibly more portable)
+#match=$(shell echo $(1) | awk '/$(2)/ { print "yes"; }')
+#
+# variant 2 (fastest so far)
+match=$(shell echo $(1) | sed -e 's/$(2)/yes/')
+
+
+#-------------------------------------------------------------------------------
+# Unpack tarballs as required.
+#-------------------------------------------------------------------------------
+# Note: This is trickier than one might think:
+# A tarball should only get extracted (and possibly patched) once. If already
+# extracted, there is no need to reextract it. Parallel make runs should stick
+# to this rule as well.
+# All source files are created by one rule, the extract command. But 
+# implementing it like:
+#   $(SRC_AMD):
+#         <extract tarball>
+# would mean that e.g. in a 4-way parallel make run, a tarball would get
+# extracted 4 times in parallel, because make is not aware that the rule is
+# identical for the first 4 items of $(SRC_AMD). The same holds for
+# $(SRC_UFCONFIG) and $(SRC_UMFCONFIG). Extracting the same tarball several
+# times simultaneously, gives rise to several problems. Among those is the case
+# where a source file gets already compiled while it is being overwritten by its
+# copy from the tarball. Beware of doing that.
+# Things get worse when multiple external Makefiles call this Makefile in
+# parallel and ask for the compilation of the library. This happens regularly
+# when compiling the FEAST regression benchmark as this is usually done in
+# parallel with up to 32 processes.
+# The extraction of tarballs needs to be serialised somehow - which is not
+# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
+# .NOTPARALLEL is not an option.)
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract AMD tarball when required.
+#-------------------------------------------------------------------------------
+
+# List of required source files from AMD package. Purpose: let them share
+# a single common prerequisite that in turn is created by unpacking the tarball.
+# That's the key to serialise the unpacking process.
+SRC_AMD = ../AMD/Include/amd_internal.h ../AMD/Include/amd.h
+
+# Choose the last file that is extracted from the AMD tarball. It's
+# existence indicates that the AMD tarball has been unpacked already
+# completely. This approach is a hack to serialise a parallel make run,
+# parallel threads pause till make has passed through this needle's eye.
+LAST_FILE_FROM_AMD_TARBALL = ../AMD/README.txt
+$(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
+
+# To catch the case where several applications simultaneously
+# try to build the UMFPACK library (e.g. parallel make of the 
+# FEAST regression benchmark), this extractions needs to deploy
+# a locking mechanism.
+$(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2 sources"
+$(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = ../AMD-2.2.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 5
+$(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 48
+$(LAST_FILE_FROM_AMD_TARBALL):
+	@$(call UNPACK)
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract UFconfig tarball when required.
+#-------------------------------------------------------------------------------
+
+# List of required source files from UFconfig package. Purpose: let them share
+# a single common prerequisite that in turn is created by unpacking the tarball.
+# That's the key to serialise the unpacking process.
+UFCONFIG = ../UFconfig/UFconfig.h
+SRC_UFCONFIG = $(UFCONFIG)
+
+$(UFCONFIG):  NAME     = "UFconfig 3.1.0 sources"
+$(UFCONFIG):  TARBALL  = ../UFconfig-3.1.0.tar.gz
+$(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.1.0.tar.gz
+$(UFCONFIG):  WAITTIME = 5
+$(UFCONFIG):  RETRIES  = 48
+$(UFCONFIG):
+	@$(call UNPACK)
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract UMFPACK tarball when required.
+#-------------------------------------------------------------------------------
+
+# List of required source files from UMFPACK package. Purpose: let them share
+# a single common prerequisite that in turn is created by unpacking the tarball.
+# That's the key to serialise the unpacking process.
+SRC_UMFPACK = Include/umfpack.h \
+              Source/umf_triplet.c Source/umf_config.h Source/umf_version.h \
+	      Source/umf_internal.h Source/umf_triplet.h \
+	      $(addprefix Source/,  $(addsuffix .c,$(UMFCH))) \
+	      $(addprefix Source/,  $(addsuffix .h,$(UMFCH))) \
+	      $(addprefix Source/,  $(addsuffix .c,$(UMFINT))) \
+	      $(addprefix Source/,  $(addsuffix .h,$(UMFINT))) \
+	      $(addprefix Source/,  $(addsuffix .c,$(USER))) \
+	      $(addprefix Include/, $(addsuffix .h,$(USER))) \
+	      $(addprefix Source/,  $(addsuffix .c,$(GENERIC))) \
+	      $(addprefix Include/, $(addsuffix .h,$(GENERIC)))
+
+# Choose the last file that is extracted from the UMFPACK tarball. It's
+# existence indicates that the UMFPACK tarball has been unpacked already
+# completely. This approach is a hack to serialise a parallel make run,
+# parallel threads pause till make has passed through this needle's eye.
+LAST_FILE_FROM_UMFPACK_TARBALL = Demo/umfpack_dl_demo.c
+$(SRC_UMFPACK): $(LAST_FILE_FROM_UMFPACK_TARBALL)
+
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.2 sources"
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = ../UMFPACK-5.2.tar.gz
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.2.tar.gz
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  WAITTIME = 10
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
+$(LAST_FILE_FROM_UMFPACK_TARBALL):
+	@$(call UNPACK)
+ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*-.*),yes)
+	@echo "# Patching UMFPACK 5.2 sources for NEC..."
+# Fortunately, sed on NEC's gateway is a sed that supports in place editing.
+	sed -i.orig -e 's/#pragma ivdep/#pragma cdir nodep/; s/#pragma novector/#pragma cdir novector/;' Source/*.c
+	@echo "# Sources patched."
+endif
+
+
+# Function to unpack a tarball - as a serialised operation
+# using a locking mechanism
+UNPACK=trap "rm -f $(LOCKFILE)" 2 3 9; \
+	if test -f $(LOCKFILE); then \
+	    loop=0; \
+	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
+		echo; \
+		echo "\#"; \
+		echo "\# Detected a concurrent attempt to unpack $(TARBALL)."; \
+		echo "\# Waiting for the other process to finish."; \
+		echo "\#"; \
+		echo "\# If you are sure that this is a false alarm, simply remove the file"; \
+		echo "\# <"`pwd`"/$(LOCKFILE)>."; \
+		echo "\# Then, compilation will proceed automatically."; \
+		echo "\#"; \
+		echo; \
+		sleep $(WAITTIME); \
+		loop=`expr $${loop} + 1`; \
+	    done; \
+	    if test -f $(LOCKFILE); then \
+		echo; \
+		echo "\#"; \
+		echo "\# Lock for unpacking $(TARBALL) has not been released"; \
+		echo "\# within "`expr $(WAITTIME) \* $(RETRIES)`" seconds. Giving up."; \
+		echo "\#"; \
+		echo "\# In case of a false alarm please manually remove the file"; \
+		echo "\# <$(LOCKFILE)>."; \
+		echo "\#"; \
+		echo; \
+		exit 1; \
+	    fi; \
+	else \
+	    touch $(LOCKFILE); \
+	    echo "\# Extracting $(NAME)..."; \
+	    gzip -dc $(TARBALL) | ( cd ..; tar -xvf - ); \
+	    rm -f $(LOCKFILE); \
+	fi; \
+	trap - 2 3 9;
+
+
+
+#-------------------------------------------------------------------------------
+# Clean up targets
+#-------------------------------------------------------------------------------
+
+# Function to delete a single file at once
+define remove_file
+    rm -f $(file)
+
+endef
+
+clean:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/libumfpack.a
+clean:
+#	-rm $(OBJ) $(OBJDIR)/libamd.a # *.il work.*
+        # Delete every file separately to prevent errors of kind: 
+        # execvp: rm: Arg list too long
+	-$(foreach file, $(FILES), $(remove_file))
+	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
+
+purge:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/libumfpack.a
+purge:
+        # Delete every file separately to prevent errors of kind: 
+        # execvp: rm: Arg list too long
+	-$(foreach file, $(FILES), $(remove_file))
+	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
+	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source Tcov
+

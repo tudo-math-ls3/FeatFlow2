@@ -1,0 +1,319 @@
+# -*- makefile -*-
+
+#-------------------------------------------------------------------------------
+# AMD Makefile for compiling on Unix systems (for GNU make only)
+# (adapted for the FEAST package, based on Lib/GNUmakefile from AMD 2.2)
+#
+# Whereever AMD Makefile instructions have been altered, the original
+# ones immediately precede the new ones and carry the prefix #FEAST#.
+#-------------------------------------------------------------------------------
+
+#FEAST# default: ../Lib/libamd.a
+default: $(OBJDIR)/libamd.a
+
+#FEAST# include ../../UFconfig/UFconfig.mk
+
+#FEAST# C = $(CC) $(CFLAGS) $(CONFIG) -I../Include -I../../UFconfig
+C = $(CC) $(CFLAGS) $(CONFIG) -IInclude -I../UFconfig
+
+#-------------------------------------------------------------------------------
+# source files
+#-------------------------------------------------------------------------------
+
+AMD = amd_aat amd_1 amd_2 amd_dump amd_postorder amd_post_tree amd_defaults \
+	amd_order amd_control amd_info amd_valid amd_preprocess
+
+#FEAST# UFCONFIG = ../../UFconfig/UFconfig.h
+UFCONFIG = ../UFconfig/UFconfig.h
+
+#FEAST# INC = ../Include/amd.h ../Include/amd_internal.h $(UFCONFIG)
+INC = Include/amd.h Include/amd_internal.h $(UFCONFIG)
+
+#-------------------------------------------------------------------------------
+# object files for each version
+#-------------------------------------------------------------------------------
+
+#FEAST# AMDI = $(addsuffix .o, $(subst amd_,amd_i_,$(AMD)))
+AMDI = $(addsuffix .o, $(subst amd_,$(OBJDIR)/amd_i_,$(AMD)))
+#FEAST# AMDL = $(addsuffix .o, $(subst amd_,amd_l_,$(AMD)))
+AMDL = $(addsuffix .o, $(subst amd_,$(OBJDIR)/amd_l_,$(AMD)))
+
+
+#-------------------------------------------------------------------------------
+# compile each int and long routine (with no real/complex version)
+#-------------------------------------------------------------------------------
+
+#FEAST# amd_global.o: ../Source/amd_global.c $(INC)
+$(OBJDIR)/amd_global.o: Source/amd_global.c $(INC)
+	$(C) -c $< -o $@
+
+#FEAST# amd_i_%.o: ../Source/amd_%.c $(INC)
+$(OBJDIR)/amd_i_%.o: Source/amd_%.c $(INC)
+	$(C) -DDINT -c $< -o $@
+
+#FEAST# amd_l_%.o: ../Source/amd_%.c $(INC)
+$(OBJDIR)/amd_l_%.o: Source/amd_%.c $(INC)
+	$(C) -DDLONG -c $< -o $@
+
+#-------------------------------------------------------------------------------
+# Create the libamd.a library (C versions only)
+#-------------------------------------------------------------------------------
+
+#FEAST# ../Lib/libamd.a: amd_global.o $(AMDI) $(AMDL)
+#FEAST#	$(AR) ../Lib/libamd.a $^
+#FEAST#	- $(RANLIB) ../Lib/libamd.a
+
+#-------------------------------------------------------------------------------
+# compile the Fortran versions and the libamdf77.a library
+#-------------------------------------------------------------------------------
+
+#FEAST# fortran: ../Lib/libamdf77.a
+fortran: $(OBJDIR)/libamdf77.a
+
+#FEAST# AMDF77 = amd.o amdbar.o
+AMDF77 = $(OBJDIR)/amd.o $(OBJDIR)/amdbar.o
+
+#FEAST# amd.o: ../Source/amd.f
+#FEAST# 	$(F77) $(F77FLAGS) -c ../Source/amd.f -o amd.o
+$(OBJDIR)/amd.o: Source/amd.f
+	$(F77) $(F77FLAGS) -c Source/amd.f -o $(OBJDIR)/amd.o
+
+#FEAST# amdbar.o: ../Source/amdbar.f
+#FEAST# 	$(F77) $(F77FLAGS) -c ../Source/amdbar.f -o amdbar.o
+$(OBJDIR)/amdbar.o: Source/amdbar.f
+	$(F77) $(F77FLAGS) -c Source/amdbar.f -o $(OBJDIR)/amdbar.o
+
+#FEAST# ../Lib/libamdf77.a: $(AMDF77)
+#FEAST# 	$(AR) ../Lib/libamdf77.a $^
+#FEAST# 	- $(RANLIB) ../Lib/libamdf77.a
+$(OBJDIR)/libamdf77.a: $(AMDF77)
+	$(AR) $(OBJDIR)/libamdf77.a $^
+	- $(RANLIB) $(OBJDIR)/libamdf77.a
+
+#-------------------------------------------------------------------------------
+# Remove all but the files in the original distribution
+#-------------------------------------------------------------------------------
+
+#FEAST# clean:
+#FEAST#	- $(RM) $(CLEAN)
+#FEAST#
+#FEAST# purge: distclean
+#FEAST#
+#FEAST# distclean: clean
+#FEAST#	- $(RM) ../Lib/libamd.a ../Lib/libamdf77.a
+
+
+#-------------------------------------------------------------------------------
+# From here till the end of the file are additional instructions added for
+# smooth FEAST integration:
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Create the library
+#-------------------------------------------------------------------------------
+# Note:
+# Explicitly take precautions to reflect the considerations in Section 11.3 of 
+# the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
+# This Makefile is potentially called simultaneously from multiple make processes,
+# e.g. when compiling the FEAST regression benchmark in parallel. Concurrent 
+# attempts to create the archive should not happen. Try to avoid it with the
+# usual FEAST lock file mechanism.
+$(OBJDIR)/libamd.a:  LOCKFILE = ../LOCK.creating.libamd.a
+$(OBJDIR)/libamd.a:  WAITTIME = 2
+$(OBJDIR)/libamd.a:  RETRIES  = 10
+$(OBJDIR)/libamd.a: $(OBJDIR)/amd_global.o $(AMDI) $(AMDL)
+	@trap "rm -f $(LOCKFILE)" 2 3 9; \
+	if test -f $(LOCKFILE); then \
+	    loop=0; \
+	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
+		echo; \
+		echo "#"; \
+		echo "# Detected a concurrent attempt to create $@."; \
+		echo "# Waiting for the other process to finish."; \
+		echo "#"; \
+		echo "# If you are sure that this is a false alarm, simply remove the file"; \
+		echo "# <"`pwd`"/$(LOCKFILE)>."; \
+		echo "# Then, compilation will proceed automatically."; \
+		echo "#"; \
+		echo; \
+		sleep $(WAITTIME); \
+		loop=`expr $${loop} + 1`; \
+	    done; \
+	    if test -f $(LOCKFILE); then \
+		echo; \
+		echo "#"; \
+		echo "# Lock for creating $@"; \
+		echo "# was not released within "`expr $(WAITTIME) \* $(RETRIES)`" seconds."; \
+		echo "# Giving up."; \
+		echo "#"; \
+		echo "# In case of a false alarm please manually remove the file"; \
+		echo "# <$(LOCKFILE)>."; \
+		echo "#"; \
+		echo; \
+		exit 1; \
+	    fi; \
+	else \
+	    touch $(LOCKFILE); \
+	    echo $(AR) $@ $^; \
+	    $(AR) $@ $^; \
+	    echo $(RANLIB) $@; \
+	    $(RANLIB) $@; \
+	    rm -f $(LOCKFILE); \
+	fi; \
+	trap - 2 3 9;
+
+
+
+#-------------------------------------------------------------------------------
+# Before creating any object file, first create the object directory.
+#-------------------------------------------------------------------------------
+# Note:
+# An order-only prerequisite shall not be put on the same line as a prerequisite
+# of an implicit rule. Otherwise the target defined in this implicit rule is
+# rebuilt every time you invoke make!
+$(OBJDIR)/%.o: | $(OBJDIR)
+
+$(OBJDIR):
+	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
+
+
+#-------------------------------------------------------------------------------
+# Unpack tarballs as required.
+#-------------------------------------------------------------------------------
+# Note: This is trickier than one might think:
+# A tarball should only get extracted (and possibly patched) once. If already
+# extracted, there is no need to reextract it. Parallel make runs should stick
+# to this rule as well.
+# All source files are created by one rule, the extract command. But 
+# implementing it like:
+#   $(SRC_AMD):
+#         <extract tarball>
+# would mean that e.g. in a 4-way parallel make run, a tarball would get
+# extracted 4 times in parallel, because make is not aware that the rule is
+# identical for the first 4 items of $(SRC_AMD). The same holds for
+# $(SRC_UFCONFIG). Extracting the same tarball several times simultaneously, 
+# gives rise to several problems. Among those is the case where a source file 
+# gets already compiled while it is being overwritten by its copy from the 
+# tarball. Beware of doing that.
+# Things get worse when multiple external Makefiles call this Makefile in
+# parallel and ask for the compilation of the library. This happens regularly
+# when compiling the FEAST regression benchmark as this is usually done in
+# parallel with up to 32 processes.
+# The extraction of tarballs needs to be serialised somehow - which is not
+# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
+# .NOTPARALLEL is not an option.)
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract AMD tarball when required.
+#-------------------------------------------------------------------------------
+
+# List of required source files from AMD package. Purpose: let them share
+# a single common prerequisite that in turn is created by unpacking the tarball.
+# That's the key to serialise the unpacking process.
+SRC_AMD = Include/amd_internal.h Include/amd.h \
+	  Source/amd.f Source/amdbar.f Source/amd_global.c \
+	  $(addprefix Source/, $(addsuffix .c,$(AMD)))
+
+# Choose the last file that is extracted from the AMD tarball. It's
+# existence indicates that the AMD tarball has been unpacked already
+# completely. This approach is a hack to serialise a parallel make run, 
+# parallel threads pause till make has passed through this needle's eye.
+LAST_FILE_FROM_AMD_TARBALL = ../AMD/README.txt
+$(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
+
+# To catch the case where several applications simultaneously
+# try to build the UMFPACK library (e.g. parallel make of the 
+# FEAST regression benchmark), this extractions needs to deploy
+# a locking mechanism.
+$(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2 sources"
+$(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = ../AMD-2.2.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 3
+$(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 10
+$(LAST_FILE_FROM_AMD_TARBALL):
+	@$(call UNPACK)
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract UFconfig tarball when required.
+#-------------------------------------------------------------------------------
+
+# List of required source files from UFconfig package. Purpose: let them share
+# a single common prerequisite that in turn is created by unpacking the tarball.
+# That's the key to serialise the unpacking process.
+SRC_UFCONFIG = $(UFCONFIG)
+
+$(UFCONFIG):  NAME     = "UFconfig 3.1.0 sources"
+$(UFCONFIG):  TARBALL  = ../UFconfig-3.1.0.tar.gz
+$(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.1.0.tar.gz
+$(UFCONFIG):  WAITTIME = 1
+$(UFCONFIG):  RETRIES  = 10
+$(UFCONFIG):
+	@$(call UNPACK)
+
+
+
+# Function to unpack a tarball - as a serialised operation
+# using a locking mechanism
+UNPACK=trap "rm -f $(LOCKFILE)" 2 3 9; \
+	if test -f $(LOCKFILE); then \
+	    loop=0; \
+	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
+		echo; \
+		echo "\#"; \
+		echo "\# Detected a concurrent attempt to unpack $(TARBALL)."; \
+		echo "\# Waiting for the other process to finish."; \
+		echo "\#"; \
+		echo "\# If you are sure that this is a false alarm, simply remove the file"; \
+		echo "\# <"`pwd`"/$(LOCKFILE)>."; \
+		echo "\# Then, compilation will proceed automatically."; \
+		echo "\#"; \
+		echo; \
+		sleep $(WAITTIME); \
+		loop=`expr $${loop} + 1`; \
+	    done; \
+	    if test -f $(LOCKFILE); then \
+		echo; \
+		echo "\#"; \
+		echo "\# Lock for unpacking $(TARBALL) has not been released"; \
+		echo "\# within "`expr $(WAITTIME) \* $(RETRIES)`" seconds. Giving up."; \
+		echo "\#"; \
+		echo "\# In case of a false alarm please manually remove the file"; \
+		echo "\# <$(LOCKFILE)>."; \
+		echo "\#"; \
+		echo; \
+		exit 1; \
+	    fi; \
+	else \
+	    touch $(LOCKFILE); \
+	    echo "\# Extracting $(NAME)..."; \
+	    gzip -dc $(TARBALL) | ( cd ..; tar -xvf - ); \
+	    rm -f $(LOCKFILE); \
+	fi; \
+	trap - 2 3 9;
+
+
+#-------------------------------------------------------------------------------
+# Clean up targets
+#-------------------------------------------------------------------------------
+
+# Function to delete a single file at once
+define remove_file
+    rm -f $(file)
+
+endef
+
+clean:
+#	-rm $(OBJ) $(OBJDIR)/libamd.a # *.il work.*
+        # Delete every file separately to prevent errors of kind: 
+        # execvp: rm: Arg list too long
+	-$(foreach file, $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
+	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
+
+purge:
+        # Delete every file separately to prevent errors of kind: 
+        # execvp: rm: Arg list too long
+	-$(foreach file, $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
+	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
+	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source
