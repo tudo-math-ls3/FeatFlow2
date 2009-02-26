@@ -34,9 +34,11 @@
 
 
 # Don't let the script be confused by non-english messages
-# from system information programs
-unset LC_MESSAGES
-unset LANG
+# from system information programs.
+# (LC_ALL overrides the value of the LANG environment variable 
+# and the value of any other LC_* environment variables.)
+LC_ALL=C
+
 
 # standard ID settings
 arch=`(uname -m || echo none) 2>/dev/null | tr ' [A-Z]' '_[a-z]' |tr -d '*?/()-'`
@@ -89,8 +91,8 @@ case ${id} in
 			7) cpu="pentium3" core="catmai";;
 			8|10|11) cpu="pentium3" core="coppermine";;
 			9|13) cpu="pentiumm" core="banias";;
-			14) cpu="core" core="banias";;
-			15) cpu="core2" core="core2";;
+			14) cpu="coresolo" core="banias";;
+			15) cpu="coreduo" core="core2";;
 		    esac
 		    ;;
 		7) 
@@ -136,8 +138,10 @@ case ${id} in
 		    ;;
 		15)
 		    case "$model" in
-			5) cpu="opteron";;
-			*) cpu="athlon64";;
+                        5|37) cpu="opteron";;
+                        65) cpu="opteronx2";;
+                        72) cpu="turionx2";;
+                        *) cpu="athlon64";;
 		    esac
 		    ;;
 		*) cpu="i386";;
@@ -252,7 +256,10 @@ case ${id} in
 
     ia64-*-linux)
 	family=`(sed -n 's/^family.*: \(.*\)$/\1/p' /proc/cpuinfo | head -n 1)`
-	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
+	case "$family" in
+	    32) cpu="itanium2x2";;
+	    Itanium\ 2) cpu="itanium2";;
+	esac
 	;;
 
     *-*-hpux*)

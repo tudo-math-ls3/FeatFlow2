@@ -25,7 +25,7 @@ endif
 # AMD64 /w GNU compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)),yes)
+ifeq ($(call match,$(ID),pc64-(athlon.*|opteron.*|turion.*)-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 CPP=g++
 FC=g95
@@ -71,7 +71,7 @@ endif
 # AMD64 /w Intel compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)-ifc),yes)
+ifeq ($(call match,$(ID),pc64-(athlon.*|opteron.*|turion.*)-(linux|cygwin_nt?.?)-ifc),yes)
 CC=icc
 CPP=icpc
 FC=ifort
@@ -106,7 +106,7 @@ endif
 # AMD64 /w PGI compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)-pgi),yes)
+ifeq ($(call match,$(ID),pc64-(athlon.*|opteron.*|turion.*)-(linux|cygwin_nt?.?)-pgi),yes)
 CC=pgcc
 CPP=pgcc
 FC=pgf95
@@ -142,7 +142,7 @@ endif
 # AMD64 /w Pathscale compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)-path),yes)
+ifeq ($(call match,$(ID),pc64-(athlon.*|opteron.*|turion.*)-(linux|cygwin_nt?.?)-path),yes)
 CC=pathcc
 CPP=pathcc
 FC=pathf90
@@ -168,7 +168,7 @@ endif
 # AMD64 /w SUN compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)-sun),yes)
+ifeq ($(call match,$(ID),pc64-(athlon.*|opteron.*|turion.*)-(linux|cygwin_nt?.?)-sun),yes)
 CC=suncc
 CPP=suncc
 FC=sunf90
@@ -249,7 +249,7 @@ endif
 # Intel /w GNU compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)),yes)
+ifeq ($(call match,$(ID),pc64-core.*-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 CPP=g++
 FC=g95
@@ -275,7 +275,7 @@ endif
 # Intel /w Intel compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)-ifc),yes)
+ifeq ($(call match,$(ID),pc64-core.*-(linux|cygwin_nt?.?)-ifc),yes)
 CC=icc
 CPP=icpc
 FC=ifort
@@ -304,7 +304,7 @@ endif
 # Intel /w Intel MPI compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)-mpi),yes)
+ifeq ($(call match,$(ID),pc64-core.*-(linux|cygwin_nt?.?)-mpi),yes)
 CC=icc
 CPP=icpc
 FC=mpif90
@@ -333,7 +333,7 @@ endif
 # Intel /w SUN compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)-sun),yes)
+ifeq ($(call match,$(ID),pc64-core.*-(linux|cygwin_nt?.?)-sun),yes)
 CC=suncc
 CPP=suncc
 FC=sunf90
