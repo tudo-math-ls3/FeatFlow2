@@ -23,6 +23,10 @@ program flagship
   ! global parameter list
   type(t_parlist) :: rparlist
 
+  ! local constants
+  character(LEN=*), parameter  :: sversion = VERSION
+  character(LEN=*), parameter  :: sbuild = BUILD
+
   ! local variables
   character(LEN=SYS_STRLEN) :: cbuffer, hostname, hosttype, username
   character(LEN=SYS_STRLEN) :: application, sparameterfileName
@@ -30,8 +34,6 @@ program flagship
   character(LEN=8)  :: sdate
   integer, external :: signal_SIGINT, signal_SIGQUIT
 
-
-  include '.version'
   
   ! Initialize Feat2 subsystem
   call system_init()
@@ -56,10 +58,11 @@ program flagship
   call parlst_init(rparlist)
   call parlst_readfromfile(rparlist, trim(sparameterfileName))
   
+
   ! Print welcome screen
   call output_lbrk()
   call output_separator(OU_SEP_STAR)
-  call output_line('  FLAGSHIP: Version '//VERSION//',   Build '//BUILD)
+  call output_line('  FLAGSHIP: Version ' // sversion // ',   Build ' // sbuild)
   call output_line('            Date '//sdate(7:8)//'.'//sdate(5:6)//'.'//sdate(1:4)//&
                    ', Time '//stime(1:2)//':'//stime(3:4)//':'//stime(5:6))
   call output_separator(OU_SEP_STAR)
