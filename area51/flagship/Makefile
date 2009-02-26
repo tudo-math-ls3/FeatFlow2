@@ -62,7 +62,7 @@ EXEC=flagship-$(ID)
 # used libraries
 FEATLIB= minisplib umfpack4 amd
 
-default: version all
+default: .version all
 
 # include make rules
 include $(FEATFLOW)/Rules_apps.mk
@@ -70,6 +70,6 @@ include $(FEATFLOW)/Rules_apps.mk
 # include automatic dependencies
 -include Deps.mk
 
-version: .version
+.version:
 	@echo "CHARACTER(LEN=5) :: VERSION = '"`date +%y`"/"`date +%m`"'" > .version
 	@echo "CHARACTER(LEN=8) :: BUILD   = '"`date +%Y%m%d`"'" >> .version
