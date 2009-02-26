@@ -467,6 +467,11 @@ module element
   ! non-parametric, integral mean value based
   integer(I32), parameter, public :: EL_EM30_3D = EL_Q1T_3D + EL_NONPARAMETRIC + 2**16
   
+  ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
+  ! non-parametric, integral mean value based, new implementation
+  integer(I32), parameter, public :: EL_EM30_NEW_3D = EL_Q1T_3D + EL_NONPARAMETRIC &
+                                                      + 2**16 + 2**19
+
   ! ID of nonconforming quadrilateral FE, Q2~.
   integer(I32), parameter, public :: EL_Q2T_3D  = EL_3D + 50
   integer(I32), parameter, public :: EL_E050_3D = EL_Q2T_3D
@@ -717,6 +722,8 @@ contains
       elem_igetID = EL_E030_3D
     case("EL_EM30_3D")
       elem_igetID = EL_EM30_3D
+    case("EL_EM30_NEW_3D")
+      elem_igetID = EL_EM30_NEW_3D
     case("EL_Q2T_3D","EL_E050_3D")
       elem_igetID = EL_E050_3D
     case("EL_EM50_3D")
@@ -1689,6 +1696,8 @@ contains
         call elem_R1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM30_3D)
         call elem_EM30_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EM30_NEW_3D)
+        bwrapSim2 = .true.
       case (EL_E030_3D)
         call elem_E030_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_E031_3D)
@@ -2486,7 +2495,9 @@ contains
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal)
 
-      !call elem_eval_EM30_3D(ieltyp, revalElementSet, Bder, Dbas)
+    case (EL_EM30_NEW_3D)
+      ! new implementation of 3D EM30
+      call elem_eval_EM30_3D(ieltyp, revalElementSet, Bder, Dbas)
     
     case (EL_E030_3D)
       call elem_E030_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
