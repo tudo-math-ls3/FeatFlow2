@@ -14,6 +14,13 @@ endif
 LIBS     := $(LIBS) -lacml
 
 
+
+##############################################################################
+# Goto BLAS and LAPACK also needed by the Sparse Banded Blas benchmark
+##############################################################################
+SBB_LIBS     := $(SBB_LIBS) -lacml
+
+
 # The settings needed to compile a FEAST application are "wildly" distributed
 # over several files ((Makefile.inc and templates/*.mk) and if-branches 
 # (in an attempt to reduce duplicate code and inconsistencies among all build 

@@ -7,6 +7,13 @@ LIBS          := $(LIBS) -lsunperf #-ldl
 
 
 
+##############################################################################
+# BLAS and LAPACK also needed by the Sparse Banded Blas benchmark
+##############################################################################
+#SBB_BUILDLIB   = blas lapack
+SBB_LIBS       = -lsunperf #-ldl  #$(SBB_BUILDLIB:%=-l%)
+
+
 # The settings needed to compile a FEAST application are "wildly" distributed
 # over several files ((Makefile.inc and templates/*.mk) and if-branches 
 # (in an attempt to reduce duplicate code and inconsistencies among all build 

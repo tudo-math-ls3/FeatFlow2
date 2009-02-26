@@ -137,6 +137,12 @@ MODEXTENSION = mod
 MOVEMOD   = NO
 
 
+##############################################################################
+# Commands needed by the Sparse Banded Blas benchmark
+##############################################################################
+SBB_CVERSIONCMD = $(F77) -V  2>&1 | sed 's|(R)||g; 1!d;'
+
+
 # The settings needed to compile a FEAST application are "wildly" distributed
 # over several files ((Makefile.inc and templates/*.mk) and if-branches 
 # (in an attempt to reduce duplicate code and inconsistencies among all build 

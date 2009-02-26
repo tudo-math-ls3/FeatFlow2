@@ -95,6 +95,12 @@ MODEXTENSION = mod
 MOVEMOD   = YES
 
 
+##############################################################################
+# Commands needed by the Sparse Banded Blas benchmark
+##############################################################################
+SBB_CVERSIONCMD = $(F77) -V 2>&1 | awk '{if ( NR == 1 ) print $1 $3}'
+
+
 # The settings needed to compile a FEAST application are "wildly" distributed
 # over several files ((Makefile.inc and templates/*.mk) and if-branches 
 # (in an attempt to reduce duplicate code and inconsistencies among all build 

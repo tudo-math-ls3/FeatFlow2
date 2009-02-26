@@ -28,6 +28,18 @@ GOTOBLAS_PATCH_FOR_LAPACK = REQUIRED
 
 
 
+##############################################################################
+# Goto BLAS and LAPACK also needed by the Sparse Banded Blas benchmark
+##############################################################################
+SBB_BUILDLIB := $(SBB_BUILDLIB) lapack
+SBB_LIBS     := $(SBB_LIBS) -lgoto -llapack
+# If preprocessor switch -DENABLE_SERIAL_BUILD does occur in compiler flags,
+# a build for serial execution is requested.
+ifneq (,$(findstring -DENABLE_SERIAL_BUILD ,$(APPONLYFLAGS) $(CFLAGSF90) ))
+SBB_LIBS     := $(SBB_LIBS) -lpthread
+endif
+
+
 # The settings needed to compile a FEAST application are "wildly" distributed
 # over several files ((Makefile.inc and templates/*.mk) and if-branches 
 # (in an attempt to reduce duplicate code and inconsistencies among all build 
