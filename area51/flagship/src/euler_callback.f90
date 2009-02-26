@@ -123,6 +123,7 @@ contains
 
 
     ! Do we have to calculate the preconditioner?
+    ! --------------------------------------------------------------------------
     if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) .or.&
         (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0)) then
       
@@ -132,6 +133,7 @@ contains
     
     
     ! Do we have to calculate the residual and the constant right-hand side
+    ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
       call euler_calcResidual(rproblemLevel, rtimestep, rsolver,&
@@ -141,6 +143,7 @@ contains
     
     
     ! Do we have to impose boundary conditions?
+    ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
       call euler_setBoundary(rproblemLevel, rtimestep, rsolver,&
