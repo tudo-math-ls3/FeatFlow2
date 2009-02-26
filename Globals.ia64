@@ -9,7 +9,7 @@
 # IA64  /w ??? compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),ia64-itanium.?-linux),yes)
+ifeq ($(call match,$(ID),ia64-itanium.*-linux),yes)
 CC=cc
 CPP=c++
 FC=f90
@@ -27,7 +27,7 @@ endif
 # IA64  /w Intel compiler
 ########################################################################
 
-ifeq ($(call match,$(ID),ia64-itanium.?-linux-ifc),yes)
+ifeq ($(call match,$(ID),ia64-itanium.*-linux-ifc),yes)
 CC=icc
 CPP=icpc
 FC=ifort
