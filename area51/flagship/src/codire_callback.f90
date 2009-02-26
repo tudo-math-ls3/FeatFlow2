@@ -478,6 +478,7 @@ contains
 
 
     ! Do we have to calculate the preconditioner?
+    ! --------------------------------------------------------------------------
     if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) .or.&
         (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0)) then
       
@@ -487,6 +488,7 @@ contains
     
     
     ! Do we have to calculate the residual and the constant right-hand side
+    ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
       call codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
@@ -496,6 +498,7 @@ contains
     
     
     ! Do we have to calculate the Jacobian operator?
+    ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
       
       call codire_calcJacobian(rproblemLevel, rtimestep, rsolver,&
@@ -504,6 +507,7 @@ contains
     
     
     ! Do we have to impose boundary conditions?
+    ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
       call codire_setBoundary(rproblemLevel, rtimestep, rsolver,&
@@ -512,6 +516,7 @@ contains
     
 
     ! Do we have to apply the Jacobian operator?
+    ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
       
       jacobianMatrix = collct_getvalue_int(rcollection, 'jacobianMatrix')
