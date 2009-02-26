@@ -120,10 +120,14 @@ MODULE griddeform
     ! 
     type(t_hgridLevels), dimension(:), pointer :: p_rhLevels
 
-    ! Pointer to a triangulation structure, 2D
+    ! this is a Pointer to the original triangulation structure,
+    ! when our deformation was a success, we will overwrite 
+    ! this structure with the deformed vertex coordinates
     type(t_triangulation), pointer :: p_rtriangulation => NULL()
     
-    ! Pointer to a triangulation structure, 2D
+    ! Pointer to a triangulation structure, we use this one
+    ! as our local copy, in case of a successful deformation
+    ! it will be become the new triangulation
     type(t_triangulation) :: rDeftriangulation 
     
     ! the boundary information of the undeformed grid
@@ -281,7 +285,7 @@ MODULE griddeform
 contains
 
 !<subroutine>
-  subroutine griddef_deformationInit(rgriddefInfo,rtriangulation,NLMAX,NLMIN,&
+  subroutine griddef_deformationInit(rgriddefInfo,rtriangulation,NLMIN,NLMAX,&
                     rboundary,iadaptSteps)
   
 !<description>
@@ -549,7 +553,7 @@ contains
 !****************************************************************************************
   
 !<subroutine>
-  subroutine griddef_buildHGrid(rgriddefInfo,rtriangulation,NLMAX,NLMIN)
+  subroutine griddef_buildHGrid(rgriddefInfo,rtriangulation,iLevel)
 !<description>
   ! In this routine we build the HGridstructure that
   ! represent the levels of the grid
@@ -565,26 +569,38 @@ contains
 !</inputoutput>
 
 !<input>
-  integer, intent(in) :: NLMAX 
-  
-  integer, intent(in) :: NLMIN
+  integer, intent(in) :: iLevel  
 !</input>  
+
 !</subroutine>
   
   ! Local variables
-  integer :: i
+  integer :: i,idupFlag
   
   ! we dublicate all levels of the grid hierachy and
   ! share the vertices, only on the level NLMAX we
   ! actually copy the vertex coordinates
-  
-  do i=NLMIN,NLMAX-1
-    ! dublicate triangulation
-    ! share the vertex coordinates
-  end do
-  
-  ! on the maximum level, we copy the coordinates
-  
+  ! Set it up to share all 
+  idupFlag = TR_SHARE_ALL
+  if(iLevel .lt. rgriddefInfo%NLMIN)then
+    !nothing
+  else if((iLevel .ge. rgriddefInfo%NLMIN).and.(iLevel .lt. rgriddefInfo%NLMAX))then
+    ! share all
+    call tria_duplicate(rtriangulation,&
+         rgriddefInfo%p_rhLevels(iLevel)%rtriangulation,idupFlag)
+  else if(iLevel .eq. rgriddefInfo%NLMAX)then
+    ! we only want to dublicate the vertexcoords
+    ! and boundary parameters
+    idupFlag = idupFlag - TR_SHARE_DVERTEXCOORDS
+    idupFlag = idupFlag - TR_SHARE_DVERTEXPARAMETERVALUE
+
+    ! We copy only the vertex coordinates and the boundary parameter values
+    call tria_duplicate(rtriangulation,&
+         rgriddefInfo%p_rhLevels(iLevel)%rtriangulation,idupFlag)
+  else
+  ! nothing
+  end if
+ 
   end subroutine ! griddef_buildHGrid
 
 !****************************************************************************************
@@ -694,6 +710,9 @@ contains
     CALL storage_free(rgriddefInfo%h_DblendPar)
   END IF
   
+  ! release copied memory on the NLMAX level
+  
+  ! deallocate the levels structure
   deallocate(rgriddefInfo%p_rhLevels)
   
   if(rgriddefWork%breinit)then  
@@ -2613,7 +2632,7 @@ contains
     end do
 
   
-  END SUBROUTINE ! end griddef_moveMesh
+  end subroutine ! end griddef_moveMesh
   
   !****************************************************************************
 
@@ -2630,10 +2649,10 @@ contains
 
 !<inputoutput>
   ! structure containing all parameter settings for grid deformation
-  TYPE(t_griddefInfo), INTENT(INOUT)  :: rgriddefInfo
+  type(t_griddefInfo), intent(inout)  :: rgriddefInfo
 
   ! structure containing all vector handles for the deformation algorithm
-  TYPE(t_griddefWork), INTENT(INOUT)  :: rgriddefWork
+  type(t_griddefWork), intent(inout)  :: rgriddefWork
 !</inputoutput>
 
 !</subroutine>
@@ -2641,60 +2660,45 @@ contains
   ! local variables
   
   ! true, if the point is not inside the domain
-  LOGICAL :: bsearchFailed
+  logical :: bsearchFailed
 
   ! coordinates of evaluation point
-  REAL(DP) :: dx, dy
+  real(dp) :: dx, dy
 
   ! time and step size for ODE solving
-  REAL(DP) :: dtime, dstepSize,deps
+  real(dp) :: dtime, dstepSize,deps
 
   ! level diference between PDE and PDE level
-  INTEGER(I32):: ilevDiff
+  integer(i32):: ilevDiff
 
   ! number of ODE time steps
-  INTEGER(I32)::  ntimeSteps, ive, Ielement,IelementHint,ivbd
+  INTEGEr(i32)::  ntimeSteps, ive, Ielement,IelementHint,ivbd
 
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
   
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementsAtVertex  
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
-  INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
+  integer(i32), dimension(:), pointer :: p_IelementsAtVertex  
+  integer(i32), dimension(:), pointer :: p_IelementsAtVertexIdx
+  integer(i32), dimension(:), pointer :: p_InodalProperty
 
-  ! These arrays are needed when we treat boundary vertices      
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx  
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IverticesAtBoundary
-  REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue      
-  
-  REAL(DP), DIMENSION(4) :: Dvalues  
-  REAL(DP), DIMENSION(2) :: Dpoint
+  real(dp), dimension(4) :: Dvalues  
+  real(dp), dimension(2) :: Dpoint
 
   deps = 0.0000000001_dp
 
-  ! Get the boundary information we need
-  CALL storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DvertexParameterValue,&
-  p_DvertexParameterValue)
-
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IboundaryCpIdx,&
-  p_IboundaryCpIdx)
-  
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IverticesAtBoundary,&
-  p_IverticesAtBoundary)  
-
   ! get the elements at vertex index array
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertexIdx,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertexIdx,&
   p_IelementsAtVertexIdx)
 
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_InodalProperty,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_InodalProperty,&
   p_InodalProperty)
   
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  CALL storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
+  call storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
   p_DvertexCoords)    
 
   ntimeSteps = rgriddefInfo%ntimeSteps
@@ -2704,13 +2708,13 @@ contains
   ! is treated by prolongating the vector field to ODE level.
   ilevDiff = rgriddefInfo%imindefLevel
 
-  DO ive=1, rgriddefInfo%rDeftriangulation%NVT
+  do ive=1, rgriddefInfo%rDeftriangulation%NVT
 
-    IF(p_InodalProperty(ive) .ne. 0)THEN
+    if(p_InodalProperty(ive) .ne. 0)then
     
-      CALL griddef_perform_boundary2(rgriddefInfo, rgriddefWork,ive)
+      call griddef_perform_boundary2(rgriddefInfo, rgriddefWork,ive)
       
-    ELSE
+    else
       ! inner node      
       ! initialise time variable
       dtime = 0.0_DP
@@ -2733,7 +2737,7 @@ contains
       Ielement = p_IelementsAtVertex(p_IelementsAtVertexIdx(ive))
       
       ! evaluate the functions on the element
-      CALL griddef_evalPhi_Known(DER_FUNC, Dvalues, &
+      call griddef_evalPhi_Known(DER_FUNC, Dvalues, &
            rgriddefWork%rvecGradBlock%RvectorBlock(1), &
            rgriddefWork%rvecGradBlock%RvectorBlock(2), &
            rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1), &
@@ -2761,10 +2765,10 @@ contains
       dtime = dtime + dstepSize
 
       ! While we are still in the [0,1] interval(with a small tolerance)
-      IF (dtime .le. 1.0_DP - deps) THEN
+      if (dtime .le. 1.0_DP - deps) then
 
          ! for the other time steps, we have really to search
-        calculationloopEE_inner : DO
+        calculationloopEE_inner : do
         
         ! zero the Dvalues
         Dvalues(:) = 0.0_dp
@@ -2773,7 +2777,7 @@ contains
         Dpoint(1) = dx
         Dpoint(2) = dy      
         
-        CALL griddef_evalphi_ray(DER_FUNC, Dvalues, &
+        call griddef_evalphi_ray(DER_FUNC, Dvalues, &
            rgriddefWork%rvecGradBlock%RvectorBlock(1), &
            rgriddefWork%rvecGradBlock%RvectorBlock(2), &
            rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1), &
@@ -2781,10 +2785,10 @@ contains
            Dpoint,bsearchFailed,IelementHint)        
 
         ! if the point is outside the domain, stop moving it
-        IF (bsearchFailed) THEN
+        if (bsearchFailed) then
           bsearchFailed = .FALSE.
-          EXIT calculationloopEE_inner
-        ENDIF
+          exit calculationloopEE_inner
+        endif
 
         ! compute step size for next time step
         dstepSize = 0.05_dp !griddef_computeStepSize(dtime, ntimeSteps)
@@ -2799,23 +2803,23 @@ contains
         dtime = dtime + dstepSize
         ivbd = 0
         ! time interval exhausted, calculation finished and exit
-        IF (dtime .ge. 1.0_DP - deps) THEN
+        if (dtime .ge. 1.0_DP - deps) then
               p_DvertexCoords(1,ive) = dx
               p_DvertexCoords(2,ive) = dy     
-            EXIT calculationloopEE_inner
+            exit calculationloopEE_inner
 !          END IF ! nodelProperty .ne. 0
-        END IF ! (dtime .ge. 1.0_DP - deps)
-        ENDDO calculationloopEE_inner
+        end if ! (dtime .ge. 1.0_DP - deps)
+        enddo calculationloopEE_inner
       ! in case time interval exhausted in the first time step  
-      ELSE
+      else
         ! write the coordinates
         p_DvertexCoords(1,ive) = dx
         p_DvertexCoords(2,ive) = dy     
-      ENDIF ! dtime
-  END IF ! nodal_property .ne. 0    
-  END DO ! ive
+      endif ! dtime
+  end if ! nodal_property .ne. 0    
+  end do ! ive
   
-  END SUBROUTINE ! end griddef_performEE
+  end subroutine ! end griddef_performEE
   
   !****************************************************************************  
 
