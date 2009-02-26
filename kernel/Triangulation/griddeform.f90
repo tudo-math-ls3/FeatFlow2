@@ -128,7 +128,7 @@ MODULE griddeform
     ! Pointer to a triangulation structure, we use this one
     ! as our local copy, in case of a successful deformation
     ! it will be become the new triangulation
-    type(t_triangulation) :: rDeftriangulation 
+    ! type(t_triangulation) :: rDeftriangulation 
     
     ! the boundary information of the undeformed grid
     type(t_boundary), pointer :: p_rboundary
@@ -984,18 +984,6 @@ contains
   NEL   = rgriddefInfo%p_rtriangulation%NEL
   NVT   = rgriddefInfo%p_rtriangulation%NVT
   NLMAX = rgriddefInfo%iminDefLevel
-  
-  ! Set it up to share all 
-  idupFlag = TR_SHARE_ALL
-
-  ! we only want to dublicate the vertexcoords
-  ! and boundary parameters
-  idupFlag = idupFlag - TR_SHARE_DVERTEXCOORDS
-  idupFlag = idupFlag - TR_SHARE_DVERTEXPARAMETERVALUE
-
-  ! We copy only the vertex coordinates and the boundary parameter values
-  call tria_duplicate(rgriddefInfo%p_rtriangulation,rgriddefInfo%rDeftriangulation,&
-                      idupFlag)
                                         
   end subroutine ! end griddef_prepareDeformation
 
@@ -2113,12 +2101,12 @@ contains
   CALL lsysbl_createVecBlockIndirect (rgriddefWork%rrhsBlock, rgriddefWork%rSolBlock, .TRUE.)
   CALL lsysbl_createVecBlockIndirect (rgriddefWork%rrhsBlock, rgriddefWork%rtempBlock, .TRUE.)
 
-  END SUBROUTINE  
+  end subroutine  
 
   !****************************************************************************
 
 !<subroutine>
-  SUBROUTINE griddef_createRHS (rgriddefWork,rdiscretisation)
+  subroutine griddef_createRHS (rgriddefWork,rdiscretisation)
 !<description>
   ! This routine calculates the entries of a discretised finite element vector.
   ! The discretisation is assumed to be conformal, i.e. the DOF's
@@ -2140,93 +2128,93 @@ contains
 
 !<inputoutput>
   ! structure containing all vector handles for the deformation algorithm
-  TYPE(t_griddefWork), INTENT(INOUT)  :: rgriddefWork
+  type(t_griddefWork), intent(inout)  :: rgriddefWork
 
-  TYPE(t_blockDiscretisation), INTENT(INOUT)  :: rdiscretisation 
+  type(t_blockDiscretisation), intent(inout)  :: rdiscretisation 
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,k,icurrentElementDistr, ICUBP
-  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE
-  REAL(DP) :: OM
+  integer :: i,k,icurrentElementDistr, ICUBP
+  integer(i32) :: IEL, IELmax, IELset, IDOFE
+  real(dp) :: OM
   
   ! Array to tell the element which derivatives to calculate
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+  logical, dimension(el_maxnder) :: Bder
   
   ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+  real(dp), dimension(cub_maxcubp, ndim3d) :: Dxi
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+  real(dp), dimension(cub_maxcubp) :: Domega
   
   ! number of cubature points on the reference element
-  INTEGER :: ncubp
+  integer :: ncubp
   
   ! Pointer to the vector entries
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataMon,p_DdataArea
+  real(dp), dimension(:), pointer :: p_DdataMon,p_DdataArea
 
   ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsFunc
+  integer(prec_dofidx), dimension(:,:), allocatable, target :: IdofsTest
+  integer(prec_dofidx), dimension(:,:), allocatable, target :: IdofsFunc
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test space.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTest,DbasFunc
+  real(dp), dimension(:,:,:,:), allocatable, target :: DbasTest,DbasFunc
   
   ! Number of entries in the vector - for quicker access
-  INTEGER(I32) :: NEQ
+  integer(i32) :: NEQ
   
   ! Type of transformation from the reference to the real element 
-  INTEGER :: ctrafoType
+  integer :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
-  INTEGER(I32) :: cevaluationTag
+  integer(i32) :: cevaluationTag
 
   ! Number of local degees of freedom for test functions
-  INTEGER :: indofTest,indofFunc
+  integer :: indofTest,indofFunc
   
   ! The triangulation structure - to shorten some things...
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
+  type(t_triangulation), pointer :: p_rtriangulation
   
   ! A pointer to an element-number list
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+  integer(i32), dimension(:), pointer :: p_IelementList
   
   ! A small vector holding only the additive controbutions of
   ! one element
-  REAL(DP), DIMENSION(EL_MAXNBAS) :: DlocalData
+  real(dp), dimension(el_maxnbas) :: DlocalData
   
   ! An array that takes coordinates of the cubature formula on the reference element
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: p_DcubPtsRef
+  real(dp), dimension(:,:), allocatable :: p_DcubPtsRef
 
   ! Pointer to the jacobian determinants
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+  real(dp), dimension(:,:), pointer :: p_Ddetj
   
   ! Entries of the right hand side
-  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  real(dp), dimension(:), pointer :: p_Ddata
   
   ! Current element distribution
-  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
-  TYPE(t_elementDistribution), POINTER :: p_elementDistributionFunc
+  type(t_elementDistribution), pointer :: p_elementDistribution
+  type(t_elementDistribution), pointer :: p_elementDistributionFunc
   
   ! Number of elements in the current element distribution
-  INTEGER(PREC_ELEMENTIDX) :: NEL
+  integer(PREC_ELEMENTIDX) :: NEL
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
-  INTEGER :: nelementsPerBlock
+  integer :: nelementsPerBlock
   
   ! Pointer to the coefficients that are computed by the callback routine.
-  REAL(DP) :: dcoeff,dmonVal,dareaVal
+  real(dp) :: dcoeff,dmonVal,dareaVal
   
   ! A t_domainIntSubset structure that is used for storing information
   ! and passing it to callback routines.
-  TYPE(t_evalElementSet) :: revalSubset
-  LOGICAL :: bcubPtsInitialised
-  TYPE(t_vectorScalar), POINTER :: rvectorArea,rvectorMon,rvectorRhs
+  type(t_evalElementSet) :: revalSubset
+  logical :: bcubPtsInitialised
+  type(t_vectorScalar), pointer :: rvectorArea,rvectorMon,rvectorRhs
   ! Create a t_discreteBC structure where we store all discretised boundary
   ! conditions.
   
@@ -2244,9 +2232,9 @@ contains
   NEQ = rvectorMon%NEQ
 
   rvectorRhs  => rgriddefWork%rrhsBlock%RvectorBlock(1)
-  CALL lsyssc_getbase_double(rvectorRhs,p_Ddata)
-  CALL lsyssc_getbase_double(rvectorMon,p_DdataMon)
-  CALL lsyssc_getbase_double(rvectorArea,p_DdataArea)
+  call lsyssc_getbase_double(rvectorRhs,p_Ddata)
+  call lsyssc_getbase_double(rvectorMon,p_DdataMon)
+  call lsyssc_getbase_double(rvectorArea,p_DdataArea)
   
 
   
@@ -2257,13 +2245,13 @@ contains
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
   ! BILF_NELEMSIM. This is only used for allocating some arrays.
-  nelementsPerBlock = MIN(LINF_NELEMSIM,p_rtriangulation%NEL)
+  nelementsPerBlock = min(LINF_NELEMSIM,p_rtriangulation%NEL)
   
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
   !CALL ZTIME(DT(2))
 
-  DO icurrentElementDistr = 1,rdiscretisation%RspatialDiscr(1)%inumFESpaces
+  do icurrentElementDistr = 1,rdiscretisation%RspatialDiscr(1)%inumFESpaces
   
     ! Activate the current element distribution
     p_elementDistribution => &
@@ -2272,7 +2260,7 @@ contains
         rvectorMon%p_rspatialDiscr%RelementDistr(icurrentElementDistr)
   
     ! Cancel if this element distribution is empty.
-    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+    if (p_elementDistribution%NEL .EQ. 0) cycle
 
     ! Get the number of local DOF's for trial and test functions
     indofTest = elem_igetNDofLoc(p_elementDistribution%celement)
@@ -2283,18 +2271,18 @@ contains
     ctrafoType = elem_igetTrafoType(p_elementDistribution%celement)
 
     ! Allocate some memory to hold the cubature points on the reference element
-    ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
     
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    call cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Reformat the cubature points; they are in the wrong shape!
-    DO i=1,ncubp
-      DO k=1,UBOUND(p_DcubPtsRef,1)
+    do i=1,ncubp
+      do k=1,ubound(p_DcubPtsRef,1)
         p_DcubPtsRef(k,i) = Dxi(i,k)
-      END DO
-    END DO
+      end do
+    end do
     
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -2303,17 +2291,17 @@ contains
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    ALLOCATE(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%celement),&
+    allocate(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%celement),&
              ncubp,nelementsPerBlock))
-    ALLOCATE(DbasFunc(indofTest,elem_getMaxDerivative(p_elementDistributionFunc%celement),&
+    allocate(DbasFunc(indofTest,elem_getMaxDerivative(p_elementDistributionFunc%celement),&
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
-    ALLOCATE(IdofsTest(indofTest,nelementsPerBlock))
-    ALLOCATE(IdofsFunc(indofFunc,nelementsPerBlock))
+    allocate(IdofsTest(indofTest,nelementsPerBlock))
+    allocate(IdofsFunc(indofFunc,nelementsPerBlock))
 
     ! Initialisation of the element set.
-    CALL elprep_init(revalSubset)
+    call elprep_init(revalSubset)
 
     ! Indicate that cubature points must still be initialised in the element set.
     bcubPtsInitialised = .false.
@@ -2321,14 +2309,14 @@ contains
     !CALL ZTIME(DT(3))
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
+    call storage_getbase_int (p_elementDistribution%h_IelementList, &
                               p_IelementList)
                               
     ! Get the number of elements there.
     NEL = p_elementDistribution%NEL
   
     ! Loop over the elements - blockwise.
-    DO IELset = 1, NEL, LINF_NELEMSIM
+    do IELset = 1, NEL, LINF_NELEMSIM
     
       ! We always handle LINF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -2341,9 +2329,9 @@ contains
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our LINF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1), p_IelementList(IELset:IELmax), &
+      call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1), p_IelementList(IELset:IELmax), &
                                    IdofsTest)
-      CALL dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1), p_IelementList(IELset:IELmax), &
+      call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1), p_IelementList(IELset:IELmax), &
                                    IdofsFunc)
                                    
       !CALL ZTIME(DT(4))
@@ -2372,26 +2360,26 @@ contains
       ! Because the IF-command does not work with OpenMP! bcubPtsInitialised
       ! is a local variable and will therefore ensure that every thread
       ! is initialising its local set of cubature points!
-      IF (.NOT. bcubPtsInitialised) THEN
+      if (.NOT. bcubPtsInitialised) then
         bcubPtsInitialised = .true.
         cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
-      ELSE
+      else
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
-      END IF
+      end if
 
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
-      CALL elprep_prepareSetForEvaluation (revalSubset,&
+      call elprep_prepareSetForEvaluation (revalSubset,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
           
       p_Ddetj => revalSubset%p_Ddetj
       
       ! Calculate the values of the basis functions.
-      CALL elem_generic_sim2 (p_elementDistribution%celement, &
+      call elem_generic_sim2 (p_elementDistribution%celement, &
           revalSubset, Bder, DbasTest)
-      CALL elem_generic_sim2 (p_elementDistributionFunc%celement, &
+      call elem_generic_sim2 (p_elementDistributionFunc%celement, &
           revalSubset, Bder, DbasFunc)
 
       ! --------------------- DOF COMBINATION PHASE ------------------------
@@ -2403,10 +2391,10 @@ contains
       ! loop through the DOF's and cubature points to calculate the
       ! integral:
       
-      DO IEL=1,IELmax-IELset+1
+      do IEL=1,IELmax-IELset+1
         
         ! Loop over all cubature points on the current element
-        DO ICUBP = 1, ncubp
+        do ICUBP = 1, ncubp
         
           ! calculate the current weighting factor in the cubature formula
           ! in that cubature point.
@@ -2421,46 +2409,46 @@ contains
           dcoeff = 0.0_DP
           dmonVal  = 0.0_dp
           dareaVal = 0.0_dp
-          DO IDOFE=1,indofFunc
+          do IDOFE=1,indofFunc
             dcoeff = dcoeff+DbasFunc(IDOFE,DER_FUNC,ICUBP,IEL)*&
               (1.0_DP/p_DdataMon(IdofsFunc(IDOFE,IEL)) - 1.0_DP/p_DdataArea(IdofsFunc(IDOFE,IEL)))
               
             dmonVal = dmonVal+DbasFunc(IDOFE,DER_FUNC,ICUBP,IEL)*p_DdataMon(IdofsFunc(IDOFE,IEL))
             dareaVal = dareaVal+DbasFunc(IDOFE,DER_FUNC,ICUBP,IEL)*p_DdataArea(IdofsFunc(IDOFE,IEL))
-          END DO ! IDOFE
+          end do ! IDOFE
           
           dmonVal = 1.0_dp/dmonVal - 1.0_dp/dareaVal
           
           ! Now loop through all possible combinations of DOF's
           ! in the current cubature point. Incorporate the data to the FEM vector
 
-          DO IDOFE=1,indofTest
+          do IDOFE=1,indofTest
             p_Ddata(IdofsTest(IDOFE,IEL)) = p_Ddata(IdofsTest(IDOFE,IEL)) + &
               DbasTest(IDOFE,DER_FUNC,ICUBP,IEL)*OM*dmonVal
-          END DO ! IDOFE
+          end do ! IDOFE
             
-        END DO ! ICUBP 
+        end do ! ICUBP 
 
-      END DO ! IEL
+      end do ! IEL
 
-    END DO ! IELset
+    end do ! IELset
     
     ! Release memory
-    DEALLOCATE(IdofsTest,IdofsFunc)
-    DEALLOCATE(DbasTest,DbasFunc)
+    deallocate(IdofsTest,IdofsFunc)
+    deallocate(DbasTest,DbasFunc)
 
-    CALL elprep_releaseElementSet(revalSubset)
+    call elprep_releaseElementSet(revalSubset)
     
-    DEALLOCATE(p_DcubPtsRef)
+    deallocate(p_DcubPtsRef)
 
-  END DO ! icurrentElementDistr
+  end do ! icurrentElementDistr
   
-  END SUBROUTINE ! griddef_createRHS
+  end subroutine ! griddef_createRHS
 
   !****************************************************************************
  
 !<subroutine>  
-  SUBROUTINE griddef_moveMesh(rgriddefInfo, rgriddefWork,rdiscretisation)
+  subroutine griddef_moveMesh(rgriddefInfo, rgriddefWork,rdiscretisation)
 !<description>
     ! This subroutine performs the actual deformation of the mesh. To do this, the grid 
     ! points are moved in a vector field represented by DphiX and DphiY, the monitor 
@@ -2493,34 +2481,36 @@ contains
 
 !<inputoutput>
   ! structure containing all parameter settings for grid deformation
-  TYPE(t_griddefInfo), INTENT(INOUT)  :: rgriddefInfo
+  type(t_griddefInfo), intent(inout)  :: rgriddefInfo
 
   ! structure containing all vector handles for the deformation algorithm
-  TYPE(t_griddefWork), INTENT(INOUT)  :: rgriddefWork
+  type(t_griddefWork), intent(inout)  :: rgriddefWork
 
-  TYPE(t_blockDiscretisation), INTENT(INOUT)  :: rdiscretisation 
+  type(t_blockDiscretisation), intent(inout)  :: rdiscretisation 
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordsReal
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  REAL(DP), DIMENSION(:), POINTER :: p_DvertexParametersReal
-  REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameters
-  integer :: i
+  real(dp), dimension(:,:), pointer :: p_DvertexCoordsReal
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
+  real(dp), dimension(:), pointer :: p_DvertexParametersReal
+  real(dp), dimension(:), pointer :: p_DvertexParameters
+  integer :: i,NLMAX
+  
+  NLMAX=rgriddefInfo%NLMAX
   
   
-  CALL storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
+  call storage_getbase_double2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_dvertexCoords,&
   p_DvertexCoords)    
 
-  CALL storage_getbase_double2d(rgriddefInfo%p_rtriangulation%h_dvertexCoords,&
+  call storage_getbase_double2d(rgriddefInfo%p_rtriangulation%h_dvertexCoords,&
   p_DvertexCoordsReal)   
   
-  CALL storage_getbase_double(rgriddefInfo%rDeftriangulation%h_DvertexParameterValue,&
+  call storage_getbase_double(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DvertexParameterValue,&
   p_DvertexParameters)
   
-  CALL storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DvertexParameterValue,&
+  call storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DvertexParameterValue,&
   p_DvertexParametersReal)   
   
   
@@ -2672,7 +2662,7 @@ contains
   integer(i32):: ilevDiff
 
   ! number of ODE time steps
-  INTEGEr(i32)::  ntimeSteps, ive, Ielement,IelementHint,ivbd
+  integer(i32)::  ntimeSteps, ive, Ielement,IelementHint,ivbd,nlmax
 
   real(dp), dimension(:,:), pointer :: p_DvertexCoords
   
@@ -2685,20 +2675,22 @@ contains
 
   deps = 0.0000000001_dp
 
+  NLMAX=rgriddefInfo%NLMAX
+  
   ! get the elements at vertex index array
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertexIdx,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertexIdx,&
   p_IelementsAtVertexIdx)
 
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_InodalProperty,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_InodalProperty,&
   p_InodalProperty)
   
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  call storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
+  call storage_getbase_double2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_dvertexCoords,&
   p_DvertexCoords)    
 
   ntimeSteps = rgriddefInfo%ntimeSteps
@@ -2708,7 +2700,7 @@ contains
   ! is treated by prolongating the vector field to ODE level.
   ilevDiff = rgriddefInfo%imindefLevel
 
-  do ive=1, rgriddefInfo%rDeftriangulation%NVT
+  do ive=1, rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%NVT
 
     if(p_InodalProperty(ive) .ne. 0)then
     
@@ -2889,47 +2881,49 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   integer(i32), dimension(:), allocatable :: rElements
   
   ! INTEGER
-  integer(i32) :: iregions,iedge,iupper,ivertex,icount,iinelement,iend
+  integer(i32) :: iregions,iedge,iupper,ivertex,icount,iinelement,iend,NLMAX
 
   deps = 0.0000000001_dp
+  
+  NLMAX=rgriddefInfo%NLMAX
 
   ! Get the boundary information we need
-  call storage_getbase_double(rgriddefInfo%rDeftriangulation%h_DvertexParameterValue,&
+  call storage_getbase_double(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DvertexParameterValue,&
   p_DvertexParameterValueNew)
   
   call storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DvertexParameterValue,&
   p_DvertexParameterValue)
   
 
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IboundaryCpIdx,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IboundaryCpIdx,&
   p_IboundaryCpIdx)
   
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IverticesAtBoundary,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IverticesAtBoundary,&
   p_IverticesAtBoundary)  
 
   ! get the elements at vertex index array
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertexIdx,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertexIdx,&
   p_IelementsAtVertexIdx)
 
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_InodalProperty,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_InodalProperty,&
   p_InodalProperty)
   
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  call storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
+  call storage_getbase_double2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_dvertexCoords,&
   p_DvertexCoords)    
   
-  call storage_getbase_int(rgriddefInfo%rDeftriangulation%h_IedgesAtBoundary,&
+  call storage_getbase_int(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IedgesAtBoundary,&
   p_IedgesAtBoundary)    
   
-  call storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IverticesAtEdge,&
+  call storage_getbase_int2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IverticesAtEdge,&
   p_IverticesAtEdge)    
   
-  call storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IelementsAtEdge,&
+  call storage_getbase_int2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtEdge,&
   p_IelementsAtEdge)        
   
   Ivalues = (/1,2,3,4/)
@@ -3326,44 +3320,46 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   integer(i32), dimension(:), allocatable :: rElements
   
   ! INTEGER
-  integer(i32) :: iregions,iedge,iupper,ivertex,icount,iinelement
+  integer(i32) :: iregions,iedge,iupper,ivertex,icount,iinelement,NLMAX
+  
+  NLMAX=rgriddefInfo%NLMAX
 
   deps = 0.0000000001_dp
 
   ! Get the boundary information we need
-  call storage_getbase_double(rgriddefInfo%rDeftriangulation%h_DvertexParameterValue,&
+  call storage_getbase_double(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DvertexParameterValue,&
   p_DvertexParameterValue)
 
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IboundaryCpIdx,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IboundaryCpIdx,&
   p_IboundaryCpIdx)
   
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IverticesAtBoundary,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IverticesAtBoundary,&
   p_IverticesAtBoundary)  
 
   ! get the elements at vertex index array
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertexIdx,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertexIdx,&
   p_IelementsAtVertexIdx)
 
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_InodalProperty,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_InodalProperty,&
   p_InodalProperty)
   
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  call storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
+  call storage_getbase_double2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_dvertexCoords,&
   p_DvertexCoords)    
   
  
-  call storage_getbase_int(rgriddefInfo%rDeftriangulation%h_IedgesAtBoundary,&
+  call storage_getbase_int(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IedgesAtBoundary,&
   p_IedgesAtBoundary)    
   
-  call storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IverticesAtEdge,&
+  call storage_getbase_int2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IverticesAtEdge,&
   p_IverticesAtEdge)    
   
-  call storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IelementsAtEdge,&
+  call storage_getbase_int2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtEdge,&
   p_IelementsAtEdge)        
 
   ! allocate the regions
@@ -4197,7 +4193,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
  !****************************************************************************  
   
 !<subroutine>  
-  SUBROUTINE griddef_getAreaDeformed(rgriddefInfo,&
+  subroutine griddef_getAreaDeformed(rgriddefInfo,&
              rvectorAreaBlockQ0,rvectorAreaBlockQ1,rvectorAreaQ0)
   
   !<description>
@@ -4207,59 +4203,62 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+    type(t_griddefInfo), intent(inout) :: rgriddefInfo
 
-    TYPE(t_vectorBlock),INTENT(INOUT)  :: rvectorAreaBlockQ0
-    TYPE(t_vectorBlock),INTENT(INOUT)  :: rvectorAreaBlockQ1 
-    TYPE(t_vectorScalar),INTENT(INOUT) :: rvectorAreaQ0  
+    type(t_vectorBlock),intent(inout)  :: rvectorAreaBlockQ0
+    type(t_vectorBlock),intent(inout)  :: rvectorAreaBlockQ1 
+    type(t_vectorScalar),intent(inout) :: rvectorAreaQ0  
   !</output>  
 
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_DareaLevel
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    REAL(DP), DIMENSION(:), POINTER :: p_Darea
-    REAL(DP), DIMENSION(:), POINTER :: p_DareaProj    
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE2D) :: Dpoints
-    INTEGER :: ive
+    integer(prec_vertexidx), dimension(:,:), pointer :: p_IverticesAtElement
+    integer(prec_vertexidx), dimension(:), pointer :: p_DareaLevel
+    real(dp), dimension(:,:), pointer :: p_DvertexCoords
+    real(dp), dimension(:), pointer :: p_Darea
+    real(dp), dimension(:), pointer :: p_DareaProj    
+    integer(prec_elementidx) :: iel
+    real(dp), dimension(ndim2d,tria_maxnve2d) :: Dpoints
+    integer :: ive,NLMAX
 
-    TYPE(t_blockDiscretisation) :: rprjDiscretisation
-    TYPE(t_blockDiscretisation) :: rdiscretisation    
+    type(t_blockDiscretisation) :: rprjDiscretisation
+    type(t_blockDiscretisation) :: rdiscretisation  
+    
+    
+    NLMAX=rgriddefInfo%NLMAX   
         
     ! Is everything here we need?
-    IF (rgriddefInfo%rDeftriangulation%h_DvertexCoords .EQ. ST_NOHANDLE) THEN
-      CALL output_line ('h_DvertexCoords not available!', &
+    if (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %h_DvertexCoords .EQ. ST_NOHANDLE) then
+      call output_line ('h_DvertexCoords not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (rgriddefInfo%rDeftriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
+    if (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %h_IverticesAtElement .EQ. ST_NOHANDLE) then
       CALL output_line ('IverticesAtElement  not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
       CALL sys_halt()
     END IF
     
     ! Do we have (enough) memory for that array?
-    IF (rgriddefInfo%rDeftriangulation%h_DelementVolume .EQ. ST_NOHANDLE) THEN
+    IF (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %h_DelementVolume .EQ. ST_NOHANDLE) then
       CALL storage_new ('tria_genElementVolume2D', 'DAREA', &
-          INT(rgriddefInfo%rDeftriangulation%NEL+1,I32), ST_DOUBLE, &
-          rgriddefInfo%rDeftriangulation%h_DelementVolume, ST_NEWBLOCK_NOINIT)
+          INT(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %NEL+1,I32), ST_DOUBLE, &
+          rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %h_DelementVolume, ST_NEWBLOCK_NOINIT)
     END IF
     
     CALL spdiscr_initBlockDiscr (rdiscretisation,1,&
-                                 rgriddefInfo%rDeftriangulation)
+                                 rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   )
                                    
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                   EL_E011,CUB_G2X2,rgriddefInfo%rDeftriangulation)
+                                   EL_E011,CUB_G2X2,rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation)
                                    
     
     ! Get the arrays
-    CALL storage_getbase_double2D (rgriddefInfo%rDeftriangulation%h_DvertexCoords,&
+    CALL storage_getbase_double2D (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %h_DvertexCoords,&
         p_DvertexCoords)
-    CALL storage_getbase_int2D (rgriddefInfo%rDeftriangulation%h_IverticesAtElement,&
+    CALL storage_getbase_int2D (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %h_IverticesAtElement,&
         p_IverticesAtElement)
     
     ! Set up an empty block vector    
@@ -4281,7 +4280,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     
     ! Loop over all elements calculate the area 
     ! and save it in our vector
-    DO iel=1,rgriddefInfo%rDeftriangulation%NEL
+    DO iel=1,rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%NEL
       
       IF (p_IverticesAtElement(4,iel) .EQ. 0) THEN
         ! triangular element
