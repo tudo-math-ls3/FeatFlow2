@@ -2889,7 +2889,7 @@ sub create_feastAppMakefile {
     # create tag file for emacs users
 	"# create tag file for emacs users\n" .
 	".PHONY: tags\n" .
-        "tags: \$(SRCF77) \$(SRCF90) \$(FEASTBASEDIR)/\$(SRCEXTRA)\n" .
+        "tags: \$(SRCF77) \$(SRCF90) \$(patsubst %, \$(FEASTBASEDIR)/%, \$(SRCEXTRA))\n" .
 	"\trm -f TAGS\n" .
 	"\tetags \$(filter %.c %.f %.f90,\$^)\n\n" .
 
