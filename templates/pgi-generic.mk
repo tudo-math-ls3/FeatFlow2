@@ -1,0 +1,139 @@
+# -*- mode: makefile -*-
+
+##############################################################################
+# Select compilers
+#
+##############################################################################
+COMPILERNAME = PGI
+
+# Default: No compiler wrapper commands
+# This works both for builds of serial and parallel applications
+F77       = pgf77
+F90       = pgf95
+CC        = pgcc
+CXX	  = pgCC
+LD        = pgf95
+
+# If preprocessor switch -DENABLE_SERIAL_BUILD does not occur in compiler flags,
+# a build for parallel execution is requested.
+ifeq (,$(findstring -DENABLE_SERIAL_BUILD ,$(APPONLYFLAGS) $(CFLAGSF90) ))
+ifeq ($(strip $(MPIWRAPPERS)), YES)
+F77       = mpif77
+F90       = mpif90
+CC        = mpicc
+CXX	  = mpiCC
+LD        = mpif90
+endif
+endif
+
+
+##############################################################################
+# Commands to get version information from compiler
+##############################################################################
+F77VERSION = $(F77) -V | head -n 2
+F90VERSION = $(F90) -V | head -n 2
+CCVERSION  = $(CC)  -V | head -n 2
+CXXVERSION = $(CXX) -V | head -n 2
+
+
+##############################################################################
+# compiler flags 
+# (including non-architecture specific optimisation flags)
+##############################################################################
+
+# WARNING WARNING WARNING
+# All integer variables in FEAST are explicitly typed to either 32 or 64 bits.
+# The only native integers are literals and code written in F77 (blas, lapack, 
+# sbblas) and C (metis, coproc backend). FEAST assumes that all these (native) 
+# integers are 32-bit!!!
+# So, to get things running with compilers that do not default native integers
+# to 32 bits, we need to add an appropriate compiler flag to
+# CFLAGSF77LIBS: -i4. 
+# This also applies when changing the kind-values in kernel/fsystem.f90.
+
+# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
+# pray that they default the 'int' type properly.
+
+ifeq ($(call optimise), YES)
+# -Mcache_align is important when using ACML.
+CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -O4 -i4 -fastsse \
+		 -Mcray=pointer -Mcache_align -Minline=size:32 -Munroll=c:4 \
+		 -Mvect=assoc,cachesize:1048576,prefetch,sse
+CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
+# PGI F90 Compiler v6.1.x most likely needs "-g -Msave" otherwise FEAST used to
+# crash as soon as it tries to start solving something! This might have been
+# fixed, though, with revision 2.5 of parallel.f90.
+CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) \
+		 $(CFLAGSF77LIBS) -module $(OBJDIR) -I $(OBJDIR)
+CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O4 -fastsse \
+		 -Mcache_align -Minline=size:32 -Munroll=c:4 \
+		 -Mvect=assoc,cachesize:1048576,prefetch,sse
+LDFLAGS       := $(LDFLAGS)
+else
+CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -i4 -O0 -g -Mbounds
+CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
+# PGI F90 Compiler (at least 6.1.x) needs 
+# * -g flag (even for -O0 optimisation level)
+# otherwise FEAST crashes as soon as it tries to start solving something!
+CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) \
+	         $(CFLAGSF77LIBS) -module $(OBJDIR) -I $(OBJDIR)
+CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O0 -g -B -Mbounds
+LDFLAGS       := $(LDFLAGS)
+endif
+
+
+# detect compiler version
+PGIVERSION  := $(shell eval $(F90VERSION) )
+
+# enable workarounds for PGI 6.1 compiler
+ifneq (,$(findstring pgf90 6.1-,$(PGIVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_PGI_6_1 $(CFLAGSF90)
+endif
+
+# enable workarounds for PGI 6.2 compiler
+ifneq (,$(findstring pgf90 6.2-,$(PGIVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_PGI_6_2 $(CFLAGSF90)
+endif
+
+# enable workarounds for PGI 7.0 compiler
+ifneq (,$(findstring pgf95 7.0-,$(PGIVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_PGI_7_0 $(CFLAGSF90)
+endif
+
+
+##############################################################################
+# Extension compiler uses for name of generated module information files
+# (some compilers generate .mod files, others .MOD files)
+##############################################################################
+MODEXTENSION = mod
+
+
+##############################################################################
+# Manual moving of generated module information files to 
+# object directory needed?
+##############################################################################
+MOVEMOD   = NO
+
+
+# The settings needed to compile a FEAST application are "wildly" distributed
+# over several files ((Makefile.inc and templates/*.mk) and if-branches 
+# (in an attempt to reduce duplicate code and inconsistencies among all build 
+# IDs that e.g. use the same MPI environment). Not having all settings at 
+# *one* place entails the risk (especially in the event of setting up a new 
+# build ID) that settings are incompletely defined. A simple typo in a matching 
+# rule in Makefile.inc may prevent that the compiler and compiler command line
+# flags are set. Compilation would fail with the most peculiar errors - if not
+# the Makefile had been set up to catch such a case.
+# Each build ID in FEAST has 6 tokens: architecture, cpu, operating system,
+# compiler family, BLAS implementation, MPI environment. Whenever setting
+# one of these, an according flag is set. They are named TOKEN1 up to TOKEN6.
+# Before starting to actually compile a FEAST application, every Makefile
+# generated by bin/configure checks whether all six tokens are set *for the 
+# choosen build ID*. If not, the user gets an error message describing exactly 
+# what information is missing, e.g. token 5 not set which means there is no
+# information available which BLAS implementation to use and where to find the
+# library.
+#
+# In this file, the fourth token has been set: compiler and compiler command
+# line options. Set the flag accordingly.
+TOKEN4 := 1
