@@ -80,62 +80,82 @@ MODULE griddeform
   USE ucd  
   use linearsolver
   
-  IMPLICIT NONE
+  implicit none
 
 !<constants>
 
-  INTEGER(I32), PARAMETER :: GRIDDEF_CLASSICAL  = 0
+  integer(i32), parameter :: GRIDDEF_CLASSICAL  = 0
 
-  INTEGER(I32), PARAMETER :: GRIDDEF_MULTILEVEL = -1
+  integer(i32), parameter :: GRIDDEF_MULTILEVEL = -1
   
-  INTEGER(I32), PARAMETER :: GRIDDEF_FIXED      = 2
+  integer(i32), parameter :: GRIDDEF_FIXED      = 2
   
-  INTEGER(I32), PARAMETER :: GRIDDEF_USER       = 3
+  integer(i32), parameter :: GRIDDEF_USER       = 3
 
 !</constants>
 
 !<types>
+
+  !<typeblock>
+  ! This type contains the different levels of a multigrid 
+  ! so that they can be efficiently used in the deformation routine
+  type t_hgridLevels
+  
+  ! An object for saving the triangulation on the domain
+  type(t_triangulation) :: rtriangulation
+
+  ! An object specifying the block discretisation
+  ! (size of subvectors in the solution vector, trial/test functions,...)
+  ! type(t_blockDiscretisation) :: rdiscretisation
+  
+  end type
+  
+  !<\typeblock>
+
   !<typeblock>
   ! This type contains everything which is necessary to define
   ! a certain deformation algorithm.
-  TYPE t_griddefInfo
+  type t_griddefInfo
+
+    ! 
+    type(t_hgridLevels), dimension(:), pointer :: p_rhLevels
 
     ! Pointer to a triangulation structure, 2D
-    TYPE(t_triangulation), POINTER :: p_rtriangulation => NULL()
+    type(t_triangulation), pointer :: p_rtriangulation => NULL()
     
     ! Pointer to a triangulation structure, 2D
-    TYPE(t_triangulation) :: rDeftriangulation 
+    type(t_triangulation) :: rDeftriangulation 
     
     ! the boundary information of the undeformed grid
-    TYPE(t_boundary), POINTER :: p_rboundary
+    type(t_boundary), pointer :: p_rboundary
 
     ! description missing
-    INTEGER(I32):: cdefStyle
+    integer(i32):: cdefStyle
 
     ! number of time steps in ODE solver
-    INTEGER(I32):: ntimeSteps
+    integer(i32):: ntimeSteps
 
     ! type of ODE solver
-    INTEGER(I32):: codeMethod
+    integer(i32):: codeMethod
 
     ! regularisation parameter for monitor function
     ! if dregpar .lt. 0: dregpar is weighted by <tex>$0.5^{maxMGLevel}$</tex>
-    REAL(DP) :: dregpar
+    real(dp) :: dregpar
 
     ! form parameter for monitor function
-    REAL(DP) ::dexponent
+    real(dp) ::dexponent
     
     ! Blending parameter for basic deformation     
-    REAL(DP) :: dblendPar
+    real(dp) :: dblendPar
 
     ! number of adaptation steps
-    INTEGER(i32) :: nadaptionSteps
+    integer(i32) :: nadaptionSteps
 
     ! admissible quality number (stopping criterion for correction)
-    REAL(DP) :: dtolQ = ST_NOHANDLE
+    real(dp) :: dtolQ = ST_NOHANDLE
 
     ! description missing
-    integer(I32) :: h_Dql2 = ST_NOHANDLE
+    integer(i32) :: h_Dql2 = ST_NOHANDLE
     
     ! description missing
     integer(I32) :: h_Dqlinfty = ST_NOHANDLE
@@ -217,34 +237,40 @@ MODULE griddeform
 
     ! Feat-vector with boundary description
     integer(I32):: h_IboundCompDescr_handles = ST_NOHANDLE
+    
+    ! save the minimum level
+    integer :: NLMIN
+    
+    ! save the maximum level
+    integer :: NLMAX
 
   end type t_griddefInfo
   !</typeblock>
   
   !<typeblock>
   ! description missing
-  TYPE t_griddefWork
+  type t_griddefWork
 
     ! handle of vector containing the area distribution (nodewise representation)
     
     ! A block vector to store the are distribution
-    TYPE(t_vectorBlock)  :: rvectorAreaBlockQ1    
+    type(t_vectorBlock)  :: rvectorAreaBlockQ1    
         ! A block vector where we store the monitor function
-    TYPE(t_vectorBlock)  :: rvectorMonFuncQ1      
+    type(t_vectorBlock)  :: rvectorMonFuncQ1      
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
-    TYPE(t_matrixScalar) :: rmatrix
+    type(t_matrixScalar) :: rmatrix
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
-    TYPE(t_matrixBlock) :: rmatDeform
+    type(t_matrixBlock) :: rmatDeform
     ! handle for solution of Poisson problem in deformation method
-    TYPE(t_vectorBlock) :: rSolBlock
+    type(t_vectorBlock) :: rSolBlock
     ! handle for rhs of Poisson problem in deformation method
-    TYPE(t_vectorBlock) :: rrhsBlock
+    type(t_vectorBlock) :: rrhsBlock
     ! handle for rhs of Poisson problem in deformation method
-    TYPE(t_vectorBlock) :: rtempBlock
+    type(t_vectorBlock) :: rtempBlock
     ! block vector for the recovered gradient
-    TYPE(t_vectorBlock) :: rvecGradBlock
+    type(t_vectorBlock) :: rvecGradBlock
     ! tells whether the structure needs to be reinitialised
     logical             :: breinit = .false.
 
@@ -255,7 +281,7 @@ MODULE griddeform
 contains
 
 !<subroutine>
-  subroutine griddef_deformationInit(rgriddefInfo,rtriangulation,NLMAX,&
+  subroutine griddef_deformationInit(rgriddefInfo,rtriangulation,NLMAX,NLMIN,&
                     rboundary,iadaptSteps)
   
 !<description>
@@ -281,6 +307,8 @@ contains
 
 !<input>
   integer, intent(in) :: NLMAX 
+  
+  integer, intent(in) :: NLMIN
 !</input>  
 !</subroutine>
   
@@ -306,6 +334,9 @@ contains
   integer, dimension(:), pointer :: p_cintSmoothMthd            
   real(dp), dimension(:), pointer :: p_DblendPar            
   
+  ! We store a pointer to the input triangulation
+  ! in the moveMesh subroutine we dublicate it and
+  ! and only share the vertex coordinates...
   rgriddefInfo%p_rtriangulation => rtriangulation 
   
   rgriddefInfo%p_rboundary => rboundary
@@ -313,123 +344,123 @@ contains
   rgriddefInfo%dblendPar = 1.0_dp
   
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_Dql2',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_Dql2',&
                    NLMAX, ST_INT, rgriddefInfo%h_Dql2,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_Dqlinfty',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_Dqlinfty',&
                    NLMAX, ST_INT, rgriddefInfo%h_Dqlinfty,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_nadapSteps',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nadapSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_nadapSteps,&
                    ST_NEWBLOCK_ZERO)    
                    
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_calcAdapSteps',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_calcAdapSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_calcAdapSteps,&
                    ST_NEWBLOCK_ZERO)    
 
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_nadapStepsReally',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nadapStepsReally',&
                    NLMAX, ST_INT, rgriddefInfo%h_nadapStepsReally,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_nmaxCorrSteps',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nmaxCorrSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_nmaxCorrSteps,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_ncorrSteps',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_ncorrSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_ncorrSteps,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_ilevelODE',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_ilevelODE',&
                    NLMAX, ST_INT, rgriddefInfo%h_ilevelODE,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_ilevelODECorr',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_ilevelODECorr',&
                    NLMAX, ST_INT, rgriddefInfo%h_ilevelODECorr,&
                    ST_NEWBLOCK_ZERO)    
 
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_npreSmoothSteps',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_npreSmoothSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_npreSmoothSteps,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_npostSmoothSteps',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_npostSmoothSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_npostSmoothSteps,&
                    ST_NEWBLOCK_ZERO)    
 
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_nintSmoothSteps',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nintSmoothSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_nintSmoothSteps,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_nmonSmoothsteps',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nmonSmoothsteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_nmonSmoothsteps,&
                    ST_NEWBLOCK_ZERO)    
 
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_cpreSmoothMthd',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_cpreSmoothMthd',&
                    NLMAX, ST_INT, rgriddefInfo%h_cpreSmoothMthd,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_cpostSmoothMthd',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_cpostSmoothMthd',&
                    NLMAX, ST_INT, rgriddefInfo%h_cpostSmoothMthd,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  CALL storage_new('griddef_deformationInit', 'rgriddefInfo%h_cintSmoothMthd',&
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_cintSmoothMthd',&
                    NLMAX, ST_INT, rgriddefInfo%h_cintSmoothMthd,&
                    ST_NEWBLOCK_ZERO)    
 
     
   
   ! Now get all the just allocated pointers
-  CALL storage_getbase_int(rgriddefInfo%h_Dql2,p_Dql2)
+  call storage_getbase_int(rgriddefInfo%h_Dql2,p_Dql2)
   
-  CALL storage_getbase_int(rgriddefInfo%h_Dqlinfty,p_Dqlinfty)  
+  call storage_getbase_int(rgriddefInfo%h_Dqlinfty,p_Dqlinfty)  
 
-  CALL storage_getbase_int(rgriddefInfo%h_nadapSteps,p_nadapSteps)  
+  call storage_getbase_int(rgriddefInfo%h_nadapSteps,p_nadapSteps)  
   
-  CALL storage_getbase_int(rgriddefInfo%h_calcAdapSteps,p_calcAdapSteps)    
+  call storage_getbase_int(rgriddefInfo%h_calcAdapSteps,p_calcAdapSteps)    
   
-  CALL storage_getbase_int(rgriddefInfo%h_nadapStepsReally,p_nadapStepsReally)      
+  call storage_getbase_int(rgriddefInfo%h_nadapStepsReally,p_nadapStepsReally)      
   
-  CALL storage_getbase_int(rgriddefInfo%h_nmaxCorrSteps,p_nmaxCorrSteps)        
+  call storage_getbase_int(rgriddefInfo%h_nmaxCorrSteps,p_nmaxCorrSteps)        
   
-  CALL storage_getbase_int(rgriddefInfo%h_ncorrSteps,p_ncorrSteps)          
+  call storage_getbase_int(rgriddefInfo%h_ncorrSteps,p_ncorrSteps)          
 
-  CALL storage_getbase_int(rgriddefInfo%h_ilevelODE,p_ilevelODE)          
+  call storage_getbase_int(rgriddefInfo%h_ilevelODE,p_ilevelODE)          
 
-  CALL storage_getbase_int(rgriddefInfo%h_ilevelODECorr,p_ilevelODECorr)          
+  call storage_getbase_int(rgriddefInfo%h_ilevelODECorr,p_ilevelODECorr)          
   
-  CALL storage_getbase_int(rgriddefInfo%h_npreSmoothSteps,p_npreSmoothSteps)          
+  call storage_getbase_int(rgriddefInfo%h_npreSmoothSteps,p_npreSmoothSteps)          
 
-  CALL storage_getbase_int(rgriddefInfo%h_npostSmoothSteps,p_npostSmoothSteps)          
+  call storage_getbase_int(rgriddefInfo%h_npostSmoothSteps,p_npostSmoothSteps)          
 
-  CALL storage_getbase_int(rgriddefInfo%h_nintSmoothSteps,p_nintSmoothSteps)          
+  call storage_getbase_int(rgriddefInfo%h_nintSmoothSteps,p_nintSmoothSteps)          
     
-  CALL storage_getbase_int(rgriddefInfo%h_nmonSmoothsteps,p_nmonSmoothsteps)          
+  call storage_getbase_int(rgriddefInfo%h_nmonSmoothsteps,p_nmonSmoothsteps)          
       
-  CALL storage_getbase_int(rgriddefInfo%h_cpreSmoothMthd,p_cpreSmoothMthd)          
+  call storage_getbase_int(rgriddefInfo%h_cpreSmoothMthd,p_cpreSmoothMthd)          
 
-  CALL storage_getbase_int(rgriddefInfo%h_cpostSmoothMthd,p_cpostSmoothMthd)          
+  call storage_getbase_int(rgriddefInfo%h_cpostSmoothMthd,p_cpostSmoothMthd)          
   
-  CALL storage_getbase_int(rgriddefInfo%h_cintSmoothMthd,p_cintSmoothMthd)            
+  call storage_getbase_int(rgriddefInfo%h_cintSmoothMthd,p_cintSmoothMthd)            
 
 
   ! Set the deformation style to classical
@@ -443,9 +474,9 @@ contains
   
   ! Here we initialize the structure with the standard values according to
   ! the desired grid deformation method.
-  SELECT CASE(rgriddefInfo%cdefStyle)
+  select case(rgriddefInfo%cdefStyle)
   
-      CASE(GRIDDEF_CLASSICAL)
+      case(GRIDDEF_CLASSICAL)
 
         ! initialise... here should be the absolute PDE Level
         ! where the deformation takes place.     
@@ -490,23 +521,76 @@ contains
         
         end if
         
-     CASE(GRIDDEF_MULTILEVEL)
+        
+     case(GRIDDEF_MULTILEVEL)
      
      ! do something here in the future        
         
-  END SELECT
+  end select
   
   ! get number of adaption steps on level iaux
   p_nmaxCorrSteps(rgriddefInfo%iminDefLevel) = 0
 
+  ! get the minimum deformation level
   p_ilevelODECorr(rgriddefInfo%iminDefLevel) = rgriddefInfo%iminDefLevel
+  
+  ! store the value of NLMIN
+  rgriddefInfo%NLMIN = NLMIN
 
-  END SUBROUTINE 
+  ! store the value of NLMAX  
+  rgriddefInfo%NLMAX = NLMAX
+  
+  ! Allocate memory for all the levels.
+  allocate(rgriddefInfo%p_rhLevels(1:NLMAX))
+  
+
+  end subroutine 
+
+!****************************************************************************************
+  
+!<subroutine>
+  subroutine griddef_buildHGrid(rgriddefInfo,rtriangulation,NLMAX,NLMIN)
+!<description>
+  ! In this routine we build the HGridstructure that
+  ! represent the levels of the grid
+!</description>  
+
+!<inputoutput>  
+  ! We will fill this structure with useful values
+  type(t_griddefInfo), intent(inout) :: rgriddefInfo
+  
+  ! The underlying triangulation
+  type(t_triangulation), intent(inout), target :: rtriangulation
+  
+!</inputoutput>
+
+!<input>
+  integer, intent(in) :: NLMAX 
+  
+  integer, intent(in) :: NLMIN
+!</input>  
+!</subroutine>
+  
+  ! Local variables
+  integer :: i
+  
+  ! we dublicate all levels of the grid hierachy and
+  ! share the vertices, only on the level NLMAX we
+  ! actually copy the vertex coordinates
+  
+  do i=NLMIN,NLMAX-1
+    ! dublicate triangulation
+    ! share the vertex coordinates
+  end do
+  
+  ! on the maximum level, we copy the coordinates
+  
+  end subroutine ! griddef_buildHGrid
 
 !****************************************************************************************
 
 !<subroutine>  
-  SUBROUTINE griddef_DeformationDone(rgriddefInfo,rgriddefWork)
+  subroutine griddef_DeformationDone(rgriddefInfo,rgriddefWork)
 !<description>
   ! 
   ! Here we release the rgriddefInfo structure
@@ -517,68 +601,68 @@ contains
   
 !<inputoutput>  
   ! We will fill this structure with useful values
-  TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+  type(t_griddefInfo), intent(INOUT) :: rgriddefInfo
   
   !
-  TYPE(t_griddefWork), INTENT(INOUT) :: rgriddefWork
+  type(t_griddefWork), intent(INOUT) :: rgriddefWork
 !</inputoutput>
 !</subroutine>
 
   ! deallocate memory
-  IF (rgriddefInfo%h_Dql2 .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_Dql2)
-  END IF
+  if (rgriddefInfo%h_Dql2 .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_Dql2)
+  end if
   
   ! deallocate memory
-  IF (rgriddefInfo%h_Dqlinfty .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_Dqlinfty)
-  END IF
+  if (rgriddefInfo%h_Dqlinfty .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_Dqlinfty)
+  end if
 
   ! deallocate memory
-  IF (rgriddefInfo%h_calcAdapSteps .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_calcAdapSteps)
-  END IF
+  if (rgriddefInfo%h_calcAdapSteps .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_calcAdapSteps)
+  end if
 
   ! deallocate memory
-  IF (rgriddefInfo%h_nadapSteps .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_nadapSteps)
-  END IF
+  if (rgriddefInfo%h_nadapSteps .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_nadapSteps)
+  end if
 
 
   ! deallocate memory
-  IF (rgriddefInfo%h_nadapStepsReally .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_nadapStepsReally)
-  END IF
+  if (rgriddefInfo%h_nadapStepsReally .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_nadapStepsReally)
+  end if
 
   ! deallocate memory
-  IF (rgriddefInfo%h_nmaxCorrSteps .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_nmaxCorrSteps)
-  END IF
+  if (rgriddefInfo%h_nmaxCorrSteps .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_nmaxCorrSteps)
+  end if
 
   ! deallocate memory
-  IF (rgriddefInfo%h_ncorrSteps .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_ncorrSteps)
-  END IF
+  if (rgriddefInfo%h_ncorrSteps .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_ncorrSteps)
+  end if
 
   ! deallocate memory
-  IF (rgriddefInfo%h_ilevelODE .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_ilevelODE)
-  END IF
+  if (rgriddefInfo%h_ilevelODE .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_ilevelODE)
+  end if
 
   ! deallocate memory
-  IF (rgriddefInfo%h_ilevelODECorr .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_ilevelODECorr)
-  END IF
+  if (rgriddefInfo%h_ilevelODECorr .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_ilevelODECorr)
+  end if
 
   ! deallocate memory
-  IF (rgriddefInfo%h_npreSmoothSteps .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_npreSmoothSteps)
-  END IF
+  if (rgriddefInfo%h_npreSmoothSteps .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_npreSmoothSteps)
+  end if
 
   ! deallocate memory
-  IF (rgriddefInfo%h_npostSmoothSteps .NE. ST_NOHANDLE) THEN
-    CALL storage_free(rgriddefInfo%h_npostSmoothSteps)
-  END IF
+  if (rgriddefInfo%h_npostSmoothSteps .NE. ST_NOHANDLE) then
+    call storage_free(rgriddefInfo%h_npostSmoothSteps)
+  end if
 
   ! deallocate memory
   IF (rgriddefInfo%h_nintSmoothSteps .NE. ST_NOHANDLE) THEN
@@ -609,6 +693,8 @@ contains
   IF (rgriddefInfo%h_DblendPar .NE. ST_NOHANDLE) THEN
     CALL storage_free(rgriddefInfo%h_DblendPar)
   END IF
+  
+  deallocate(rgriddefInfo%p_rhLevels)
   
   if(rgriddefWork%breinit)then  
     CALL griddef_freeWorkDef(rgriddefWork)
@@ -791,7 +877,7 @@ contains
 !****************************************************************************************
   
 !<subroutine>   
-  SUBROUTINE griddef_calcMonitorFunction(rgriddefInfo, rdiscretisation, &
+  subroutine griddef_calcMonitorFunction(rgriddefInfo, rdiscretisation, &
                                       rgriddefWork,def_monitorfct)
   !<description>
     ! 
@@ -802,14 +888,14 @@ contains
 
   !<inputout>
     ! structure containing all parameter settings for grid deformation
-    TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+    type(t_griddefInfo), intent(INOUT) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    TYPE(t_griddefWork), INTENT(INOUT) :: rgriddefWork
+    type(t_griddefWork), intent(INOUT) :: rgriddefWork
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
-    TYPE(t_blockDiscretisation), INTENT(IN)  :: rdiscretisation    
+    type(t_blockDiscretisation), intent(IN)  :: rdiscretisation    
 
   !</inputout>
 
@@ -820,9 +906,9 @@ contains
 !</subroutine>
 
   ! local variables
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  REAL(DP), DIMENSION(:), POINTER :: p_Dentries
-  TYPE(t_vectorScalar), POINTER :: p_rvectorMonFuncQ1 
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
+  real(dp), dimension(:), pointer :: p_Dentries
+  type(t_vectorScalar), pointer :: p_rvectorMonFuncQ1 
   
   ! get the pointer to the coords of the grid
   ! this only works for Q1
@@ -842,12 +928,12 @@ contains
   call def_monitorfct(p_DvertexCoords,p_Dentries)
 
    
-  END SUBROUTINE
+  end subroutine
   
 !****************************************************************************************
 
 !<subroutine>  
-  SUBROUTINE griddef_prepareDeformation(rgriddefInfo, rdiscretisation, &
+  subroutine griddef_prepareDeformation(rgriddefInfo, rdiscretisation, &
                                       rgriddefWork)
   !<description>
     ! This subroutine performs all preparations for deformation which are necessary
@@ -857,14 +943,14 @@ contains
 
   !<inputout>
     ! structure containing all parameter settings for grid deformation
-    TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+    type(t_griddefInfo), intent(inout) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    TYPE(t_griddefWork), INTENT(INOUT) :: rgriddefWork
+    type(t_griddefWork), intent(inout) :: rgriddefWork
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
-    TYPE(t_blockDiscretisation), INTENT(IN)  :: rdiscretisation    
+    type(t_blockDiscretisation), intent(in)  :: rdiscretisation    
 
   !</inputout>
 
@@ -873,7 +959,7 @@ contains
   ! local variables
   
   ! maximum number of correction steps (local instance)
-  INTEGER(I32):: idupFlag, NEL, NVT, NLMAX
+  integer(i32):: idupFlag, NEL, NVT, NLMAX
 
   ! get these numbers 
   NEL   = rgriddefInfo%p_rtriangulation%NEL
@@ -888,13 +974,11 @@ contains
   idupFlag = idupFlag - TR_SHARE_DVERTEXCOORDS
   idupFlag = idupFlag - TR_SHARE_DVERTEXPARAMETERVALUE
 
-  CALL tria_duplicate(rgriddefInfo%p_rtriangulation,rgriddefInfo%rDeftriangulation,&
+  ! We copy only the vertex coordinates and the boundary parameter values
+  call tria_duplicate(rgriddefInfo%p_rtriangulation,rgriddefInfo%rDeftriangulation,&
                       idupFlag)
-                      
-                      
-                          
                                         
-  END SUBROUTINE ! end griddef_prepareDeformation
+  end subroutine ! end griddef_prepareDeformation
 
 ! ****************************************************************************************  
 
@@ -2736,7 +2820,7 @@ contains
   !****************************************************************************  
 
 !<subroutine>
-SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
+subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
 !<description>
   !
   !
@@ -2745,15 +2829,15 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
 
 !<input>
   ! Global vertex index
-  INTEGER(I32):: ive
+  integer(I32):: ive
 !</input>
 
 !<inputoutput>
   ! structure containing all parameter settings for grid deformation
-  TYPE(t_griddefInfo), INTENT(INOUT)  :: rgriddefInfo
+  type(t_griddefInfo), intent(inout)  :: rgriddefInfo
 
   ! structure containing all vector handles for the deformation algorithm
-  TYPE(t_griddefWork), INTENT(INOUT)  :: rgriddefWork
+  TYPe(t_griddefWork), intent(inout)  :: rgriddefWork
 !</inputoutput>
 
 !</subroutine>
@@ -2761,44 +2845,44 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   ! local variables
   
   ! true, if the point is not inside the domain
-  LOGICAL :: bsearchFailed
+  logical :: bsearchFailed
 
   ! coordinates of evaluation point
-  REAL(DP) :: dx, dy, dparam1,dparam2,dparam,dalpha_01,dnx,dny,dtmp
+  real(DP) :: dx, dy, dparam1,dparam2,dparam,dalpha_01,dnx,dny,dtmp
 
   ! time and step size for ODE solving
-  REAL(DP) :: dtime, dstepSize,deps,dalpha,dalpha_old,dalpha_start
+  real(DP) :: dtime, dstepSize,deps,dalpha,dalpha_old,dalpha_start
 
   ! level diference between PDE and PDE level
-  INTEGER(I32):: ilevDiff
+  integer(I32):: ilevDiff
 
   ! number of ODE time steps
-  INTEGER(I32)::  ntimeSteps,Ielement,IelementHint,icp1,icp2,ivbd,ibd,iboundary
+  integer(I32)::  ntimeSteps,Ielement,IelementHint,icp1,icp2,ivbd,ibd,iboundary
 
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
   
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementsAtVertex  
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
-  INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
+  integer(i32), dimension(:), pointer :: p_IelementsAtVertex  
+  integer(i32), dimension(:), pointer :: p_IelementsAtVertexIdx
+  integer(i32), dimension(:), pointer :: p_InodalProperty
 
-  ! These arrays are needed when we treat boundary vertices      
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx  
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IverticesAtBoundary
-  REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue  
-  REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValueNew  
+  ! these arrays are needed when we treat boundary vertices      
+  integer(i32), dimension(:), pointer :: p_IboundaryCpIdx  
+  integer(i32), dimension(:), pointer :: p_IverticesAtBoundary
+  real(dp), dimension(:), pointer :: p_DvertexParameterValue  
+  real(dp), dimension(:), pointer :: p_DvertexParameterValueNew  
   
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IelementsAtEdge
-  INTEGER(I32), DIMENSION(:), POINTER ::   p_IedgesAtBoundary      
+  integer(i32), dimension(:,:), pointer :: p_IverticesAtEdge
+  integer(i32), dimension(:,:), pointer :: p_IelementsAtEdge
+  integer(i32), dimension(:), pointer ::   p_IedgesAtBoundary      
   
-  integer(i32), DIMENSION(4) :: Ivalues  
-  real(dp), DIMENSION(4) :: Dvalues  
-  REAL(DP), DIMENSION(2) :: Dpoint
+  integer(i32), dimension(4) :: Ivalues  
+  real(dp), dimension(4) :: Dvalues  
+  real(dp), dimension(2) :: Dpoint
   
   ! make all the regions
-  TYPE(t_boundaryRegion), DIMENSION(:), ALLOCATABLE :: rregion
+  type(t_boundaryRegion), dimension(:), allocatable :: rregion
   
-  INTEGER(I32), DIMENSION(:), ALLOCATABLE :: rElements
+  integer(i32), dimension(:), allocatable :: rElements
   
   ! INTEGER
   integer(i32) :: iregions,iedge,iupper,ivertex,icount,iinelement,iend
@@ -2806,42 +2890,42 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   deps = 0.0000000001_dp
 
   ! Get the boundary information we need
-  CALL storage_getbase_double(rgriddefInfo%rDeftriangulation%h_DvertexParameterValue,&
+  call storage_getbase_double(rgriddefInfo%rDeftriangulation%h_DvertexParameterValue,&
   p_DvertexParameterValueNew)
   
-  CALL storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DvertexParameterValue,&
+  call storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DvertexParameterValue,&
   p_DvertexParameterValue)
   
 
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IboundaryCpIdx,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IboundaryCpIdx,&
   p_IboundaryCpIdx)
   
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IverticesAtBoundary,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IverticesAtBoundary,&
   p_IverticesAtBoundary)  
 
   ! get the elements at vertex index array
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertexIdx,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertexIdx,&
   p_IelementsAtVertexIdx)
 
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_InodalProperty,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_InodalProperty,&
   p_InodalProperty)
   
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  CALL storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
+  call storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
   p_DvertexCoords)    
   
-  CALL storage_getbase_int(rgriddefInfo%rDeftriangulation%h_IedgesAtBoundary,&
+  call storage_getbase_int(rgriddefInfo%rDeftriangulation%h_IedgesAtBoundary,&
   p_IedgesAtBoundary)    
   
-  CALL storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IverticesAtEdge,&
+  call storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IverticesAtEdge,&
   p_IverticesAtEdge)    
   
-  CALL storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IelementsAtEdge,&
+  call storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IelementsAtEdge,&
   p_IelementsAtEdge)        
   
   Ivalues = (/1,2,3,4/)
@@ -2935,7 +3019,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   Ielement = p_IelementsAtVertex(p_IelementsAtVertexIdx(ive))
   
   ! evaluate the functions on the element
-  CALL griddef_evalPhi_Known(DER_FUNC, Dvalues, &
+  call griddef_evalPhi_Known(DER_FUNC, Dvalues, &
        rgriddefWork%rvecGradBlock%RvectorBlock(1), &
        rgriddefWork%rvecGradBlock%RvectorBlock(2), &
        rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1), &
@@ -3051,7 +3135,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
  !----------------------------------We either found the edge or not---------------------------------------   
 
     ! time interval exhausted, calculation finished and exit
-    IF (bsearchFailed) THEN
+    if (bsearchFailed) then
     
       ! convert and write
       dalpha_old = boundary_convertParameter(rgriddefInfo%p_rboundary, &
@@ -3085,7 +3169,7 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
    
     ! search in which element the point is
     ! iel ivbd param value  
-    CALL griddef_evalphi_ray_bound(DER_FUNC, Dvalues, &
+    call griddef_evalphi_ray_bound(DER_FUNC, Dvalues, &
        rgriddefWork%rvecGradBlock%RvectorBlock(1), &
        rgriddefWork%rvecGradBlock%RvectorBlock(2), &
        rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1), &
@@ -3122,8 +3206,8 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
                                      BDR_PAR_LENGTH,BDR_PAR_01)
     
     ! if the point is outside the domain, stop moving it
-    IF ((dalpha_01 .lt. rregion(iregions)%dminParam) .or. & 
-        (dalpha_01 .gt. rregion(iregions)%dmaxParam)) THEN
+    if ((dalpha_01 .lt. rregion(iregions)%dminParam) .or. & 
+        (dalpha_01 .gt. rregion(iregions)%dmaxParam)) then
         
         ! convert and write
         dalpha_old = boundary_convertParameter(rgriddefInfo%p_rboundary, &
@@ -3140,11 +3224,11 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
         ! write the coordindates                                
         p_DvertexCoords(1,ive) = dx
         p_DvertexCoords(2,ive) = dy     
-      EXIT calculationloopEE_bdy
-    ENDIF
+      exit calculationloopEE_bdy
+    endif
     
     ! time interval exhausted, calculation finished and exit
-    IF (dtime .ge. 1.0_DP - deps) THEN
+    if (dtime .ge. 1.0_DP - deps) then
 
       ! convert from length parameterisation to 01
       dalpha = boundary_convertParameter(rgriddefInfo%p_rboundary, &
@@ -3159,24 +3243,24 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
       ! write the coordindates                                
       p_DvertexCoords(1,ive) = dx
       p_DvertexCoords(2,ive) = dy     
-      EXIT calculationloopEE_bdy
-    END IF ! (dtime .ge. 1.0_DP - deps)
+      exit calculationloopEE_bdy
+    end if ! (dtime .ge. 1.0_DP - deps)
     
-    ENDDO calculationloopEE_bdy
+    enddo calculationloopEE_bdy
   ! in case time interval exhausted in the first time step  
-  ELSE
+  else
     ! write the coordinates
     p_DvertexCoords(1,ive) = dx
     p_DvertexCoords(2,ive) = dy     
-  ENDIF ! dtime
+  endif ! dtime
 
-  END SUBROUTINE
+  end subroutine
 
 
   !****************************************************************************  
 
 !<subroutine>  
-  SUBROUTINE griddef_perform_boundary(rgriddefInfo,rgriddefWork,ive)
+  subroutine griddef_perform_boundary(rgriddefInfo,rgriddefWork,ive)
 !<description>
   !
   !
@@ -3184,58 +3268,58 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
 !</description>
 
 !<input>
-  INTEGER(I32):: ive
+  integer(I32):: ive
 !</input>
 
 !<inputoutput>
   ! structure containing all parameter settings for grid deformation
-  TYPE(t_griddefInfo), INTENT(INOUT)  :: rgriddefInfo
+  type(t_griddefInfo), intent(inout)  :: rgriddefInfo
 
   ! structure containing all vector handles for the deformation algorithm
-  TYPE(t_griddefWork), INTENT(INOUT)  :: rgriddefWork
+  type(t_griddefWork), intent(inout)  :: rgriddefWork
 
 !</inputoutput>
 !</subroutine>
 
   ! local variables
   ! true, if the point is not inside the domain
-  LOGICAL :: bsearchFailed
+  logical :: bsearchFailed
 
   ! coordinates of evaluation point
-  REAL(DP) :: dx, dy, dparam1,dparam2,dparam
+  real(DP) :: dx, dy, dparam1,dparam2,dparam
 
   ! time and step size for ODE solving
-  REAL(DP) :: dtime, dstepSize,deps,dalpha,dalpha_old,dalpha_start
+  real(DP) :: dtime, dstepSize,deps,dalpha,dalpha_old,dalpha_start
 
   ! level difference between PDE and PDE level
-  INTEGER(I32):: ilevDiff
+  integer(I32):: ilevDiff
 
   ! number of ODE time steps
-  INTEGER(I32)::  ntimeSteps,Ielement,IelementHint,icp1,icp2,ivbd,ibd
+  integer(I32)::  ntimeSteps,Ielement,IelementHint,icp1,icp2,ivbd,ibd
 
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
   
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementsAtVertex  
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
-  INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
+  integer(i32), dimension(:), pointer :: p_IelementsAtVertex  
+  integer(i32), dimension(:), pointer :: p_IelementsAtVertexIdx
+  integer(i32), dimension(:), pointer :: p_InodalProperty
 
   ! These arrays are needed when we treat boundary vertices      
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx  
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IverticesAtBoundary
-  INTEGER(I32), DIMENSION(:), POINTER :: p_Isegs
-  REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue  
+  integer(i32), dimension(:), pointer :: p_IboundaryCpIdx  
+  integer(i32), dimension(:), pointer :: p_IverticesAtBoundary
+  integer(i32), dimension(:), pointer :: p_Isegs
+  real(dp), dimension(:), pointer :: p_DvertexParameterValue  
   
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IelementsAtEdge
-  INTEGER(I32), DIMENSION(:), POINTER ::   p_IedgesAtBoundary      
+  integer(i32), dimension(:,:), pointer :: p_IverticesAtEdge
+  integer(i32), dimension(:,:), pointer :: p_IelementsAtEdge
+  integer(i32), dimension(:), pointer ::   p_IedgesAtBoundary      
   
-  REAL(DP), DIMENSION(4) :: Dvalues  
-  REAL(DP), DIMENSION(2) :: Dpoint
+  real(dp), dimension(4) :: Dvalues  
+  real(dp), dimension(2) :: Dpoint
   
   ! make all the regions
-  TYPE(t_boundaryRegion), DIMENSION(:), ALLOCATABLE :: rregion
+  type(t_boundaryRegion), dimension(:), allocatable :: rregion
   
-  INTEGER(I32), DIMENSION(:), ALLOCATABLE :: rElements
+  integer(i32), dimension(:), allocatable :: rElements
   
   ! INTEGER
   integer(i32) :: iregions,iedge,iupper,ivertex,icount,iinelement
@@ -3243,39 +3327,39 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   deps = 0.0000000001_dp
 
   ! Get the boundary information we need
-  CALL storage_getbase_double(rgriddefInfo%rDeftriangulation%h_DvertexParameterValue,&
+  call storage_getbase_double(rgriddefInfo%rDeftriangulation%h_DvertexParameterValue,&
   p_DvertexParameterValue)
 
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IboundaryCpIdx,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IboundaryCpIdx,&
   p_IboundaryCpIdx)
   
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IverticesAtBoundary,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IverticesAtBoundary,&
   p_IverticesAtBoundary)  
 
   ! get the elements at vertex index array
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertexIdx,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertexIdx,&
   p_IelementsAtVertexIdx)
 
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_InodalProperty,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_InodalProperty,&
   p_InodalProperty)
   
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  CALL storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
+  call storage_getbase_int (rgriddefInfo%rDeftriangulation%h_IelementsAtVertex,&
   p_IelementsAtVertex)
   
-  CALL storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
+  call storage_getbase_double2d(rgriddefInfo%rDeftriangulation%h_dvertexCoords,&
   p_DvertexCoords)    
   
  
-  CALL storage_getbase_int(rgriddefInfo%rDeftriangulation%h_IedgesAtBoundary,&
+  call storage_getbase_int(rgriddefInfo%rDeftriangulation%h_IedgesAtBoundary,&
   p_IedgesAtBoundary)    
   
-  CALL storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IverticesAtEdge,&
+  call storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IverticesAtEdge,&
   p_IverticesAtEdge)    
   
-  CALL storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IelementsAtEdge,&
+  call storage_getbase_int2d(rgriddefInfo%rDeftriangulation%h_IelementsAtEdge,&
   p_IelementsAtEdge)        
 
   ! allocate the regions
@@ -3935,53 +4019,53 @@ SUBROUTINE griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
 
 !<input>
   ! type of function value to evaluate. One of the DER_xxxx constants
-  INTEGER, INTENT(IN)           :: iderType
-  INTEGER, INTENT(IN)           :: iinelement
+  integer, intent(in)           :: iderType
+  integer, intent(in)           :: iinelement
   
   ! the scalar solution vector that is to be evaluated.
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecMon
+  type(t_vectorScalar), intent(IN)              :: rvecMon
   
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecGradX
+  type(t_vectorScalar), intent(IN)              :: rvecGradX
   
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecGradY  
+  type(t_vectorScalar), intent(IN)              :: rvecGradY  
   
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecArea    
+  type(t_vectorScalar), intent(IN)              :: rvecArea    
   
   ! a list of points where to evaluate
   ! dimension(1..ndim,1..npoints)
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  real(dp), dimension(:), intent(in) :: Dpoint
   
   ! OPTIONAL: A list of elements that are near the points in Dpoints.
   ! This gives only a hint where to start searching for the actual elements
   ! containing the points. This is ignored if Ielements is specified!
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN), OPTIONAL :: IelementsHint
+  integer(prec_elementidx), intent(in), optional :: IelementsHint
   
   ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens
   ! if a point is located outside of the domain. May happen e.g. in
   ! nonconvex domains. FEVL_NONMESHPTS_NONE is the default 
   ! parameter if cnonmeshPoints is not specified. 
-  INTEGER, INTENT(IN), OPTIONAL :: cnonmeshPoints  
+  integer, intent(in), optional :: cnonmeshPoints  
   
 !</input>
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dvalues
+  real(dp), dimension(:), intent(out) :: Dvalues
 !</output>      
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: cnonmesh
-  INTEGER :: ieltype,indof,nve,ibas
-  INTEGER(PREC_ELEMENTIDX) :: iel
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+  integer :: cnonmesh
+  integer :: ieltype,indof,nve,ibas
+  integer(prec_elementidx) :: iel
+  integer(i32), dimension(:), pointer :: p_IelementDistr
+  logical, dimension(el_maxnder) :: Bder
   
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataMon
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataArea
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataGradX
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataGradY
+  real(dp), dimension(:), pointer :: p_DdataMon
+  real(dp), dimension(:), pointer :: p_DdataArea
+  real(dp), dimension(:), pointer :: p_DdataGradX
+  real(dp), dimension(:), pointer :: p_DdataGradY
   
   ! Transformation
   INTEGER(I32) :: ctrafoType
