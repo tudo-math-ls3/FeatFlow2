@@ -29,6 +29,8 @@ module error
 
   use genoutput
   use fsystem
+  
+  implicit none
 
   !constants to use for subroutine error_print(...) indicating if the
   !error is critical (causing program exit).
@@ -242,6 +244,7 @@ contains
     integer(I32), parameter :: NMESSAGELINES = 16
     character(len=SYS_STRLEN), dimension(NMESSAGELINES) :: Smessage
     character(len=SYS_STRLEN), dimension(NMESSAGELINES) :: Smessage2
+    integer :: i,inextline
 
     ! initialise all message strings
     Smessage(:) = ""

@@ -78,34 +78,34 @@ contains
 
 !</function>
 
-  integer(I32) :: ieltyp
-  integer(I32), dimension(2) :: IelTypes
+  integer(I32) :: celement
+  integer(I32), dimension(2) :: Celements
 
   dof_igetNDofGlob = 0
 
   select case(rdiscretisation%ndimension)
   case (NDIM1D)
   
-      ieltyp = rdiscretisation%RelementDistr(1)%celement
-      dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, ieltyp)
+      celement = rdiscretisation%RelementDistr(1)%celement
+      dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, celement)
 
   case (NDIM2D)
     if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
 
-      ieltyp = rdiscretisation%RelementDistr(1)%celement
+      celement = rdiscretisation%RelementDistr(1)%celement
       ! Uniform discretisation - fall back to the old FEAT mapping
-      dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation, ieltyp)
+      dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation, celement)
 
     else if (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL) then
 
       ! Conformal discretisation. That's a little bit tricky!
       ! At first, we support only the case where two element types are mixed.
       if (rdiscretisation%inumFESpaces .eq. 2) then
-        IelTypes(1) = rdiscretisation%RelementDistr(1)%celement
-        IelTypes(2) = rdiscretisation%RelementDistr(2)%celement
+        Celements(1) = rdiscretisation%RelementDistr(1)%celement
+        Celements(2) = rdiscretisation%RelementDistr(2)%celement
 
         dof_igetNDofGlob = NDFG_conformal2D_2el (&
-            rdiscretisation%p_rtriangulation, IelTypes(1:2))
+            rdiscretisation%p_rtriangulation, Celements(1:2))
         
       end if
 
@@ -115,10 +115,10 @@ contains
     ! Currently, only uniform discretisations are supported.
     if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
 
-      ieltyp = rdiscretisation%RelementDistr(1)%celement
+      celement = rdiscretisation%RelementDistr(1)%celement
 
       ! Uniform discretisation - fall back to the old FEAT mapping
-      dof_igetNDofGlob = NDFG_uniform3D (rdiscretisation%p_rtriangulation, ieltyp)
+      dof_igetNDofGlob = NDFG_uniform3D (rdiscretisation%p_rtriangulation, celement)
     
     end if
 
@@ -136,18 +136,18 @@ contains
     ! Internal subroutine: Get global DOF number for uniform discretisation
     ! with only one element type.
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    integer function NDFG_uniform1D (rtriangulation, ieltype)
+    integer function NDFG_uniform1D (rtriangulation, celement)
     
     ! IN: The underlying triangulation
     type(t_triangulation), intent(IN) :: rtriangulation
     
     ! IN: The element type of the discretisation
-    integer(I32), intent(IN) :: ieltype
+    integer(I32), intent(IN) :: celement
     
     ! OUT: number of global DOF's.
     
     ! The number of global DOF's depends on the element type...
-    select case (elem_getPrimaryElement(ieltype))
+    select case (elem_getPrimaryElement(celement))
     case (EL_P0_1D)
       ! DOF's in the cell midpoints
       NDFG_uniform1D = rtriangulation%NEL
@@ -163,7 +163,7 @@ contains
     case (EL_PN_1D)
       ! DOF's in the vertices + cells
       NDFG_uniform1D = rtriangulation%NVT + rtriangulation%NEL * &
-                       iand(ishft(ieltype,-16),255_I32)
+                       iand(ishft(celement,-16),255_I32)
     end select
     
     end function
@@ -174,18 +174,18 @@ contains
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! This is roughly the NDFG routine of the old FEAT library...
     
-    integer function NDFG_uniform2D (rtriangulation, ieltype)
+    integer function NDFG_uniform2D (rtriangulation, celement)
     
     ! IN: The underlying triangulation
     type(t_triangulation), intent(IN) :: rtriangulation
     
     ! IN: The element type of the discretisation
-    integer(I32), intent(IN) :: ieltype
+    integer(I32), intent(IN) :: celement
     
     ! OUT: number of global DOF's.
     
     ! The number of global DOF's depends on the element type...
-    select case (elem_getPrimaryElement(ieltype))
+    select case (elem_getPrimaryElement(celement))
     case (EL_P0, EL_Q0)
       ! DOF's in the cell midpoints
       NDFG_uniform2D = rtriangulation%NEL
@@ -228,22 +228,22 @@ contains
     ! with two element types.
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
-    integer function NDFG_conformal2D_2el (rtriangulation, IelTypes)
+    integer function NDFG_conformal2D_2el (rtriangulation, Celements)
     
     ! IN: The underlying triangulation
     type(t_triangulation), intent(IN) :: rtriangulation
     
-    ! IN: List of element types in the discretisation. IelTypes(1) is one element
-    ! type identifier, IelTypes(2) the other one.
-    integer(I32), dimension(:), intent(IN) :: IelTypes
+    ! IN: List of element types in the discretisation. Celements(1) is one element
+    ! type identifier, Celements(2) the other one.
+    integer(I32), dimension(:), intent(IN) :: Celements
     
     ! OUT: number of global DOF's.
     
     ! local variables
-    integer(I32), dimension(size(IelTypes)) :: IelTypesPrimary
+    integer(I32), dimension(size(Celements)) :: IelTypesPrimary
     
     ! Get the primary element number
-    IelTypesPrimary = elem_getPrimaryElement(IelTypes)
+    IelTypesPrimary = elem_getPrimaryElement(Celements)
     
     ! The number of global DOF's depends on the element type...
     select case (IelTypesPrimary(1))
@@ -288,18 +288,18 @@ contains
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! This is roughly the NDFG routine of the old FEAT library...
     
-    integer function NDFG_uniform3D (rtriangulation, ieltype)
+    integer function NDFG_uniform3D (rtriangulation, celement)
     
     ! IN: The underlying triangulation
     type(t_triangulation), intent(IN) :: rtriangulation
     
     ! IN: The element type of the discretisation
-    integer(I32), intent(IN) :: ieltype
+    integer(I32), intent(IN) :: celement
     
     ! OUT: number of global DOF's.
     
     ! The number of global DOF's depends on the element type...
-    select case (elem_getPrimaryElement(ieltype))
+    select case (elem_getPrimaryElement(celement))
     case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
       ! DOF's in the cell midpoints
       NDFG_uniform3D = rtriangulation%NEL
@@ -454,8 +454,8 @@ contains
     integer, dimension(:,:), pointer :: p_2darray,p_2darray2,p_2darray3
     integer, dimension(:), pointer :: p_IelementCounter
     type(t_triangulation), pointer :: p_rtriangulation     
-    integer(I32) :: ieltype
-    integer(I32), dimension(2) :: IelTypes
+    integer(I32) :: celement
+    integer(I32), dimension(2) :: Celements
 
     p_rtriangulation => rdiscretisation%p_rtriangulation
     
@@ -466,9 +466,9 @@ contains
       ! structure (if necessary) to prevent another call using pointers...
       ! The number of global DOF's depends on the element type...
       
-      ieltype = rdiscretisation%RelementDistr(1)%celement
+      celement = rdiscretisation%RelementDistr(1)%celement
       
-      select case (elem_getPrimaryElement(ieltype))
+      select case (elem_getPrimaryElement(celement))
       case (EL_P0_1D)
         ! DOF's for P0
         call dof_locGlobUniMult_P0_1D(IelIdx, IdofGlob)
@@ -493,7 +493,7 @@ contains
       case (EL_PN_1D)
         ! DOF's in the vertices
         call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
-        call dof_locGlobUniMult_PN_1D(iand(int(ishft(ieltype,-16)),255), &
+        call dof_locGlobUniMult_PN_1D(iand(int(ishft(celement,-16)),255), &
             p_rtriangulation%NVT, p_rtriangulation%NEL, p_2darray, IelIdx, IdofGlob)
         return
       end select
@@ -507,9 +507,9 @@ contains
         ! structure (if necessary) to prevent another call using pointers...
         ! The number of global DOF's depends on the element type...
         
-        ieltype = rdiscretisation%RelementDistr(1)%celement
+        celement = rdiscretisation%RelementDistr(1)%celement
         
-        select case (elem_getPrimaryElement(ieltype))
+        select case (elem_getPrimaryElement(celement))
         case (EL_P0, EL_Q0)
           ! DOF's for Q0
           call dof_locGlobUniMult_P0Q0(IelIdx, IdofGlob)
@@ -576,16 +576,16 @@ contains
         ! At first, we support only the case where two element types are mixed.
         if (rdiscretisation%inumFESpaces .eq. 2) then
 
-          IelTypes(1) = rdiscretisation%RelementDistr(1)%celement
-          IelTypes(2) = rdiscretisation%RelementDistr(2)%celement
+          Celements(1) = rdiscretisation%RelementDistr(1)%celement
+          Celements(2) = rdiscretisation%RelementDistr(2)%celement
 
           ! Get the primary element type(s)
-          IelTypes = elem_getPrimaryElement(IelTypes)
+          Celements = elem_getPrimaryElement(Celements)
 
           ! Now the actual mappings...
-          select case (IelTypes(1))
+          select case (Celements(1))
           case (EL_P0, EL_Q0)
-            select case (IelTypes(2))
+            select case (Celements(2))
             case (EL_P0, EL_Q0)
               ! DOF's in the cell midpoints.
               ! That works like P0 elements.
@@ -594,7 +594,7 @@ contains
             end select
             
           case (EL_P1, EL_Q1)
-            select case (IelTypes(2))
+            select case (Celements(2))
             case (EL_P1, EL_Q1)
               ! DOF's in the vertices.
               ! That works like P1 elements.
@@ -604,7 +604,7 @@ contains
             end select
             
           case (EL_P2, EL_Q2)
-            select case (IelTypes(2))
+            select case (Celements(2))
             case (EL_P2, EL_Q2)
               ! DOF's in the vertices, edges and element mitpoints of the quads.
               ! For this purpose, we need the element counter array that counts
@@ -633,7 +633,7 @@ contains
             end select
 
           case (EL_P1T, EL_Q1T)
-            select case (IelTypes(2))
+            select case (Celements(2))
             case (EL_P1T, EL_Q1T)
               ! DOF's in the edges
               ! That works like P1 elements.
@@ -656,9 +656,9 @@ contains
         ! For this purpose we evaluate the pointers in the discretisation
         ! structure (if necessary) to prevent another call using pointers...
         ! The number of global DOF's depends on the element type...
-        ieltype = rdiscretisation%RelementDistr(1)%celement
+        celement = rdiscretisation%RelementDistr(1)%celement
         
-        select case (elem_getPrimaryElement(ieltype))
+        select case (elem_getPrimaryElement(celement))
         case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
           ! DOF's for Q0
           call dof_locGlobUniMult_P0Q0_3D(IelIdx, IdofGlob)

@@ -1638,7 +1638,7 @@ contains
   real(DP), dimension(:), allocatable :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoType
+  integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
@@ -2612,7 +2612,7 @@ contains
   real(DP), dimension(:), allocatable :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoType
+  integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
@@ -3924,7 +3924,7 @@ contains
   real(DP), dimension(:), allocatable :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoType
+  integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
@@ -5513,7 +5513,7 @@ contains
   integer, dimension(:), intent(IN) :: Ielements
   
   ! Array with global degrees of freedom on the elements
-  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: Idofs
+  integer, dimension(:,:), intent(IN) :: Idofs
   
   ! Triangulation that defines the mesh.
   type(t_triangulation), intent(in) :: rtriangulation
@@ -5524,7 +5524,7 @@ contains
   ! local variables
   real(DP) :: dlocalH,du1,du2,dunorm,dreLoc
   integer :: iel,ielidx
-  integer(PREC_DOFIDX) :: idof
+  integer :: idof
   integer, dimension(:,:), pointer :: p_IverticesAtElement
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   real(DP), dimension(:), pointer :: p_DelementVolume
@@ -6399,7 +6399,7 @@ contains
   real(DP), dimension(:), allocatable :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoType
+  integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
@@ -7782,7 +7782,7 @@ contains
   real(DP), dimension(:), allocatable :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoType
+  integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
