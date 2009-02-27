@@ -2043,7 +2043,7 @@ contains
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
-    ! Initialize the solution vector 
+    ! Create the solution vector
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
     if (p_rdiscretisation%ncomponents .ne. euler_getNVAR(p_rproblemLevel)) then
       rsolution%RvectorBlock(1)%NVAR = euler_getNVAR(p_rproblemLevel)
@@ -2051,7 +2051,7 @@ contains
       call lsysbl_resizeVectorBlock(rsolution, isize, .false., .false.)
     end if
     
-    ! Impose boundary conditions explicitly
+    ! Initialize the solution vector and impose boundary conditions explicitly
     call euler_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
     select case(rappDescriptor%ndimension)
     case (NDIM1D)
