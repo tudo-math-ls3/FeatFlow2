@@ -13,7 +13,14 @@ RANLIB    = ranlib -X 64
 ##############################################################################
 # subroutines/functions missing in system libraries
 ##############################################################################
-SRCEXTRA := $(SRCEXTRA) #amub.f90 ib21.f if117.f ifd17.f sysextra.c transp.f90 
+SRCEXTRA := $(SRCEXTRA) \
+	    # kernel/arch/amub.f90 kernel/arch/ib21.f kernel/arch/if117.f \
+	    # kernel/arch/ifd17.f kernel/arch/sysextra.c kernel/arch/transp.f90 
+
+##############################################################################
+# Sparse Banded Blas benchmark
+##############################################################################
+SBB_SRCEXTRA = ztime_ibmregatta.f
 
 
 # The settings needed to compile a FEAST application are "wildly" distributed

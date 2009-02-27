@@ -13,7 +13,9 @@ RANLIB    = touch
 ##############################################################################
 # subroutines/functions missing in system libraries
 ##############################################################################
-SRCEXTRA := $(SRCEXTRA) #amub.f90 if117.f ifd17.f transp.f90 ib21.f sysextra.c
+SRCEXTRA := $(SRCEXTRA) \
+	    # kernel/arch/amub.f90 kernel/arch/if117.f kernel/arch/ifd17.f \
+	    # kernel/arch/transp.f90 kernel/arch/ib21.f kernel/arch/sysextra.c
 
 
 # The settings needed to compile a FEAST application are "wildly" distributed

@@ -41,6 +41,10 @@ OPT := $(shell echo $(OPT) | tr '[a-z]' '[A-Z]')
 # (This is never a problem with GNU make.)
 SHELL = /bin/sh
 
+# Set location of buildconf.h (i.e. file containing build ID
+# for automatic choice of best SBBLAS version within FEAST)
+BUILDCONF_H = "buildconf.h"
+
 # Files to store compiler modification dates and compiler settings etc.
 # for current build ID. This information is used to check
 # whether the entire project needs to be recompiled.
@@ -50,6 +54,8 @@ FILE_CC_INFO      = env_c_compiler
 FILE_CXX_INFO     = env_cxx_compiler
 COMPILER_SETTINGS = env_compiler_settings
 
+# Directory where Makefile template files are stored
+TEMPLATESDIR = $(FEASTBASEDIR)/templates
 
 
 ##############################################################################
@@ -164,9 +170,13 @@ SRCEXTRA      = kernel/Postprocessing/gmvwritef.c \
 		libraries/minisplib/src/numfac.f \
 		libraries/minisplib/src/symbfac.f
 
+# List of all libraries available (queried for purge* targets)
+ALLLIB        = amd blas lapack umfpack
+
 # libraries to be built (e.g. 'blas' if there is no system-wide blas;
 # on a typical system set this to 'metis umfpack' only)
-BUILDLIB      = umfpack amd
+# (Non-alphabetic order. Order should be like in linker step)
+BUILDLIB      = umfpack amd 
 
 # directories to look in for library archives
 LIBDIR        = -L$(OBJDIR)
@@ -175,7 +185,6 @@ LIBDIR        = -L$(OBJDIR) -L$(OBJDIR_LIB)
 endif
 
 # which libraries to link the application against
-#LIBS         := -lumfpack -lamd
 ifneq ($(strip $(BUILDLIB)),)
 # Split up string if multiple libraries are given
 LIBS         := $(patsubst %,-l%,$(BUILDLIB))
@@ -194,6 +203,12 @@ AR            =
 
 # path and arguments to 'ranlib'
 RANLIB        =
+
+# libraries to be built for SparseBanded BLAS benchmark
+# (e.g. 'blas' if there is no system-wide blas)
+SBB_BUILDLIB  =
+SBB_LIBS      =
+SBB_SRCEXTRA  = ztime.f
 
 
 
@@ -228,7 +243,7 @@ endif
 # The combination of <foo>-<bar>-<baz> should be a string returned by the script
 # bin/guess_id. In order to be able to present the user with a list of possible
 # build ID based on the result of a call of bin/guess_id, it is forbidden
-# to specify a catch-all rule like ".*-.*-.*-.*-.*-goto". The first three tokens
+# to specify a catch-all rule like ".*-.*-.*-.*-goto.*". The first three tokens
 # must be specified for every rule.
 
 # In order to check whether all six tokens that make up a valid build ID
@@ -249,14 +264,14 @@ ifeq ($(call match,$(ID),alpha-ev6-osf1-cf90-.*),yes)
 # compiler, local umfpack, local metis
 # No MPI wrappers installed on our alphas
 MPIWRAPPERS = NO
-include $(FEASTBASEDIR)/templates/alpha-ev6-osf1-generic.mk
-include $(FEASTBASEDIR)/templates/decf90-generic.mk
+include $(TEMPLATESDIR)/alpha-ev6-osf1-generic.mk
+include $(TEMPLATESDIR)/decf90-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
@@ -269,19 +284,19 @@ endif
 
 ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-.*-dmpi),yes)
 # Use Digital MPI
-include $(FEASTBASEDIR)/templates/dmpi-generic.mk
+include $(TEMPLATESDIR)/dmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 # On Alpha we had name conflicts with libmpi.a (Digital vs. LAM/MPI)
 # and hence renamed the LAM/MPI libmpi.a to libmpilam.a. So, we need to
 # override the generic LAM/MPI setting.
@@ -298,11 +313,12 @@ ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-xlf-.*-poempi),yes)
 # invokes the IBM XL Fortran compiler, uses POE MPI
 # local umfpack, local metis
 TOKEN6 := 1
-include $(FEASTBASEDIR)/templates/xlf-generic.mk
-include $(FEASTBASEDIR)/templates/ibm-powerpc_power4-aix-generic.mk
+include $(TEMPLATESDIR)/xlf-generic.mk
+include $(TEMPLATESDIR)/ibm-powerpc_power4-aix-generic.mk
 # The system provides a METIS library, but we have problems using it.
 # Ensure that we use our own METIS library by hard-coding the path.
 LIBS      = $(OBJDIR_LIB)/libmetis.a -lumfpack -lamd
+#SBB_LIBS := $(SBB_LIBS)
 endif
 
 ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-.*-essl.*),yes)
@@ -310,6 +326,8 @@ ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-.*-essl.*),yes)
 TOKEN5 := 1
 BUILDLIB := $(BUILDLIB) lapack
 LIBS     := $(LIBS) -llapack -lessl 
+SBB_BUILDLIB := $(SBB_BUILDLIB) lapack
+SBB_LIBS := $(SBB_LIBS) -llapack-lessl
 endif
 
 ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-.*-goto.*),yes)
@@ -317,17 +335,19 @@ ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-.*-goto.*),yes)
 TOKEN5 := 1
 BUILDLIB := $(BUILDLIB) lapack
 LIBS     := $(LIBS) -lblas_Goto -llapack
+SBB_BUILDLIB := $(SBB_BUILDLIB) lapack
+SBB_LIBS := $(SBB_LIBS) -lblas_Goto -llapack
 endif
 
 
 
 ################################ Itanium 2 #################################
 
-ifeq ($(call match,$(ID),ia64-itanium2-linux64-intel-blas-mpi),yes)
+ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-blas-mpi),yes)
 # invokes the intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/ia64-generic.mk
-include $(FEASTBASEDIR)/templates/intel64-generic.mk
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/intel64-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 # Add preprocessor flag to enable 64bit UMFPACK support.
 # UMFPACK documentation states to also add -DLP64, but there is no
 # reference to it in the UMFPACK 5.2 sources.
@@ -336,10 +356,10 @@ CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
 TOKEN6 := 1
 endif
 
-ifeq ($(call match,$(ID),ia64-itanium2-linux64-intel-mkl-mpi),yes)
+ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-mkl-mpi),yes)
 # invokes the intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/ia64-generic.mk
-include $(FEASTBASEDIR)/templates/intel64-generic.mk
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/intel64-generic.mk
 # Add preprocessor flag to enable 64bit UMFPACK support.
 # UMFPACK documentation states to also add -DLP64, but there is no
 # reference to it in the UMFPACK 5.2 sources.
@@ -347,6 +367,7 @@ CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
 CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
 LIBS     := $(LIBS) -L/opt/MathKeisan/MKL/lib/64 -lguide -lmkl_lapack64 -lmkl
 #LIBS     := $(LIBS) -L/nfs/home11/HLRS/xam/xamsbuij/intel/Compiler/11.0/074/mkl/lib/64 -lguide -lmkl_lapack -lmkl
+SBB_LIBS := $(SBB_LIBS) -L/opt/MathKeisan/MKL/lib/64 -lguide -lmkl_lapack64 -lmkl
 TOKEN5 := 1
 TOKEN6 := 1
 endif
@@ -355,17 +376,19 @@ endif
 
 ############################ Itanium 2 Dual Core #############################
 
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux64-g95-.*),yes)
+ifeq ($(call match,$(ID),ia64-itanium2x2-linux-g95-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 #CFLAGSF77:=$(CFLAGSF77) -fno-underscoring
 #CFLAGSF90:=$(CFLAGSF90) -fno-underscoring
 endif
 
 
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux64-gcc-.*),yes)
+ifeq ($(call match,$(ID),ia64-itanium2x2-linux-gcc-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -mtune=itanium2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -mtune=itanium2 $(CFLAGSF77)
@@ -379,32 +402,34 @@ endif
 endif
 
 
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux64-intel-.*),yes)
+ifeq ($(call match,$(ID),ia64-itanium2x2-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 endif
 
 
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux64-.*-mkl.*),yes)
+ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-mkl.*),yes)
 ifneq ($(strip $(INTEL_MKL_LIB)),)
 # Split up string if multiple directories are given
 LIBDIR   := $(LIBDIR) -L$(subst :, -L, $(INTEL_MKL_LIB))
 endif
 LIBS     := $(LIBS) -lmkl_lapack -lmkl -lguide -lpthread
+SBB_LIBS := $(SBB_LIBS) -lmkl_lapack -lmkl -lguide -lpthread
 TOKEN5 := 1
 endif
 
 
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux64-.*-goto.*),yes)
+ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux64-.*-.*-ompi),yes)
+ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-.*-ompi),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/ia64-generic.mk
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 # Add preprocessor flag to enable 64bit UMFPACK support.
 # UMFPACK documentation states to also add -DLP64, but there is no
 # reference to it in the UMFPACK 5.2 sources.
@@ -418,8 +443,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-g95-.*),yes)
 # invokes the G95 Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
@@ -433,8 +458,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-gcc-.*),yes)
 # invokes the gfortran Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
@@ -448,8 +473,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -xW $(CFLAGSF77LIBS)
 CFLAGSF77     := -xW $(CFLAGSF77)
@@ -463,8 +488,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-sunstudio-.*),yes)
 # invokes the Sunstudio Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/sunstudio-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
 # Architecture-specific optimisation missing!
 # DOM: sunstudio seems to do this automatically.
@@ -482,31 +507,31 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-.*-.*-mpich2),yes)
 # Use MPICH2
-include $(FEASTBASEDIR)/templates/mpich2-generic.mk
+include $(TEMPLATESDIR)/mpich2-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -515,10 +540,10 @@ endif
 
 ifeq ($(call match,$(ID),pc-turionx2-linux-g95-goto-ompi),yes)
 # invokes the G95 Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
@@ -535,8 +560,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
 # -mmx -m3dnow -mfpmath=sse -msse are automatically set by -march=athlon-xp
 CFLAGSF77LIBS := -march=athlon-xp $(CFLAGSF77LIBS)
@@ -549,8 +574,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 # -mmx -m3dnow -mfpmath=sse -msse are automatically set by -march=athlon-xp
 CFLAGSF77LIBS := -march=athlon-xp $(CFLAGSF77LIBS)
@@ -563,8 +588,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -axK $(CFLAGSF77LIBS) #-tpp6
 CFLAGSF77     := -axK $(CFLAGSF77)     #-tpp6
@@ -577,8 +602,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-pgi-.*),yes)
 # invokes the Portland Group Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/pgi-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -tp=athlonxp $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp=athlonxp $(CFLAGSF77)
@@ -590,31 +615,31 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-atlas.*),yes)
 # Use ATLAS BLAS
-include $(FEASTBASEDIR)/templates/atlasblas-generic.mk
+include $(TEMPLATESDIR)/atlasblas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -623,8 +648,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-g95-.*),yes)
 # invokes the GNU Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77LIBS)
 CFLAGSF77     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77)
@@ -638,8 +663,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 # optimal flags taken from script CPUFlags v0.7.2
 #
@@ -662,8 +687,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -xP $(CFLAGSF77LIBS)
 CFLAGSF77     := -xP $(CFLAGSF77)
@@ -677,25 +702,25 @@ endif
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -704,8 +729,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 # optimal flags taken from script CPUFlags v0.7.2
 #
@@ -728,8 +753,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -xP $(CFLAGSF77LIBS)
 CFLAGSF77     := -xP $(CFLAGSF77)
@@ -743,31 +768,31 @@ endif
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-.*-mpich2),yes)
 # Use MPICH2
-include $(FEASTBASEDIR)/templates/mpich2-generic.mk
+include $(TEMPLATESDIR)/mpich2-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -776,8 +801,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-coresolo-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
 # According to http://archives.gentoo.org/gentoo-amd64/msg_14402.xml
 # H.J. Lu from Intel, very prominent on gcc 4.x bugzilla, advices
@@ -799,8 +824,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-coresolo-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -xP $(CFLAGSF77LIBS)
 CFLAGSF77     := -xP $(CFLAGSF77)
@@ -814,25 +839,25 @@ endif
 
 ifeq ($(call match,$(ID),pc-coresolo-linux-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-coresolo-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-coresolo-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-coresolo-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -841,8 +866,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-opteron-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=opteron $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=opteron $(CFLAGSF77)
@@ -855,8 +880,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-opteron-linux-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=opteron $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=opteron $(CFLAGSF77)
@@ -868,8 +893,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-opteron-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -xW $(CFLAGSF77LIBS)
 CFLAGSF77     := -xW $(CFLAGSF77)
@@ -883,8 +908,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-opteron-linux-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/sunstudio-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
 # Architecture-specific optimisation missing!
 # DOM: sunstudio seems to do this automatically.
@@ -901,31 +926,31 @@ endif
 
 ifeq ($(call match,$(ID),pc-opteron-linux-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-opteron-linux-.*-.*-mpich2),yes)
 # Use MPICH2
-include $(FEASTBASEDIR)/templates/mpich2-generic.mk
+include $(TEMPLATESDIR)/mpich2-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-opteron-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-opteron-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-opteron-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -933,8 +958,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-opteronx2-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xW #-tpp7
 CFLAGSF77     := $(CFLAGSF77) -xW #-tpp7
@@ -947,19 +972,19 @@ endif
 
 ifeq ($(call match,$(ID),pc-opteronx2-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-opteronx2-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-opteronx2-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -968,8 +993,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xW #-tpp7
 CFLAGSF77     := $(CFLAGSF77) -xW #-tpp7
@@ -983,8 +1008,8 @@ endif
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
 # invokes the GNU g95 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
 CFLAGSF77     := $(CFLAGSF77) -m64
 CFLAGSF90     := $(CFLAGSF90) -m64
@@ -1002,8 +1027,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
 CFLAGSF77     := $(CFLAGSF77) -m64
 CFLAGSF90     := $(CFLAGSF90) -m64
@@ -1021,39 +1046,39 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/sunstudio-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Sun Studio seems to optimise automatically for the detected CPU.
 endif
 
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-.*-lanlmpi),yes)
 # Use LANL MPI
-include $(FEASTBASEDIR)/templates/lanlmpi-generic.mk
+include $(TEMPLATESDIR)/lanlmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-.*-mpich2),yes)
 # Use MPICH2
-include $(FEASTBASEDIR)/templates/mpich2-generic.mk
+include $(TEMPLATESDIR)/mpich2-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-.*),yes)
@@ -1071,8 +1096,8 @@ endif
 ifeq ($(call match,$(ID),pc64-opteron-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
 # invokes the GNU g95 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
 CFLAGSF77     := $(CFLAGSF77) -m64
 CFLAGSF90     := $(CFLAGSF90) -m64
@@ -1090,8 +1115,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
 CFLAGSF77     := $(CFLAGSF77) -m64
 CFLAGSF90     := $(CFLAGSF90) -m64
@@ -1109,8 +1134,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xW #-tpp7
 CFLAGSF77     := $(CFLAGSF77) -xW     #-tpp7
@@ -1123,8 +1148,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-pgi-.*),yes)
 # invokes the Portland Group Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/pgi-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -tp=k8-64
 CFLAGSF77     := $(CFLAGSF77) -tp=k8-64
@@ -1137,8 +1162,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-psc-.*),yes)
 # invokes the PathScale Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/pathscale-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
 CFLAGSF77     := $(CFLAGSF77) -m64
 CFLAGSF90     := $(CFLAGSF90) -m64
@@ -1156,8 +1181,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/sunstudio-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
 # Architecture-specific optimisation missing!
 # DOM: sunstudio seems to do this automatically.
@@ -1168,33 +1193,33 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-mpich),yes)
 # Use MPICH
-include $(FEASTBASEDIR)/templates/mpich-generic.mk
+include $(TEMPLATESDIR)/mpich-generic.mk
 endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-mpich2),yes)
 # Use MPICH2
-include $(FEASTBASEDIR)/templates/mpich2-generic.mk
+include $(TEMPLATESDIR)/mpich2-generic.mk
 endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-mvapich),yes)
 # Use MVAPICH
-include $(FEASTBASEDIR)/templates/mvapich-generic.mk
+include $(TEMPLATESDIR)/mvapich-generic.mk
 endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-optmpich),yes)
 # Use Allinea Opt MPI
-include $(FEASTBASEDIR)/templates/optmpich-generic.mk
+include $(TEMPLATESDIR)/optmpich-generic.mk
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
 #
 # Code compiles, but does not run with OPT 1.0rc4. Dynamic linker
@@ -1227,25 +1252,25 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-acml.*),yes)
 # Use AMD Core Math Library
-include $(FEASTBASEDIR)/templates/acml-generic.mk
+include $(TEMPLATESDIR)/acml-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-atlas.*),yes)
 # Use ATLAS BLAS
-include $(FEASTBASEDIR)/templates/atlasblas-generic.mk
+include $(TEMPLATESDIR)/atlasblas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -1263,8 +1288,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 CFLAGSF77LIBS := -m32 $(CFLAGSF77LIBS)
 CFLAGSF77     := -m32 $(CFLAGSF77)
 CFLAGSF90     := -m32 $(CFLAGSF90)
@@ -1282,13 +1307,13 @@ endif
 
 ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -1297,8 +1322,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium3-linux-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=pentium3 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium3 $(CFLAGSF77)
@@ -1310,8 +1335,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium3-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=pentium3 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium3 $(CFLAGSF77)
@@ -1324,8 +1349,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium3-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -xW $(CFLAGSF77LIBS)
 CFLAGSF77     := -xW $(CFLAGSF77)
@@ -1339,25 +1364,25 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium3-linux-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentium3-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentium3-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentium3-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -1366,8 +1391,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentiumm-linux-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=pentium-m $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium-m $(CFLAGSF77)
@@ -1379,19 +1404,19 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentiumm-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentiumm-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentiumm-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -1400,8 +1425,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium4-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=pentium4 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium4 $(CFLAGSF77)
@@ -1414,8 +1439,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium4-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -xN $(CFLAGSF77LIBS) #-tpp6
 CFLAGSF77     := -xN $(CFLAGSF77)     #-tpp6
@@ -1428,25 +1453,25 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium4-linux-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -1455,8 +1480,8 @@ endif
 
 ifeq ($(call match,$(ID),pc64-pentium4-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -xP $(CFLAGSF77LIBS)
 CFLAGSF77     := -xP $(CFLAGSF77)
@@ -1469,25 +1494,25 @@ endif
 
 ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-.*-lanlmpi),yes)
 # Use LANL MPI
-include $(FEASTBASEDIR)/templates/lanlmpi-generic.mk
+include $(TEMPLATESDIR)/lanlmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
@@ -1496,8 +1521,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=pentium4m $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium4m $(CFLAGSF77)
@@ -1510,8 +1535,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=pentium4m $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium4m $(CFLAGSF77)
@@ -1523,8 +1548,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/intel-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -xB $(CFLAGSF77LIBS)
 CFLAGSF77     := -xB $(CFLAGSF77)
@@ -1537,33 +1562,33 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/pc-generic.mk
-include $(FEASTBASEDIR)/templates/sunstudio-generic.mk
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
 #CFLAGSC       := -xc99 $(CFLAGSC)
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-goto.*),yes)
 # Use Goto BLAS
-include $(FEASTBASEDIR)/templates/gotoblas-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
@@ -1572,8 +1597,8 @@ endif
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-g95-blas.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
-include $(FEASTBASEDIR)/templates/sun4u-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
+include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 ifeq ($(call optimise), YES)
@@ -1589,9 +1614,9 @@ endif
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-g95-perf.*),yes)
 # invokes the GNU g95 compiler, uses LAM MPI, Perflib BLAS,
 # local umfpack, local metis
-include $(FEASTBASEDIR)/templates/sun4u-generic.mk
-include $(FEASTBASEDIR)/templates/g95-generic.mk
-include $(FEASTBASEDIR)/templates/sunperf-generic.mk
+include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+include $(TEMPLATESDIR)/sunperf-generic.mk
 CFLAGSC       := $(CFLAGSC) #-DNSUNPERF
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -mcpu=ultrasparc $(CFLAGSF77LIBS)
@@ -1605,21 +1630,21 @@ endif
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-.*-.*-lammpi),yes)
 # Use LAM/MPI
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, uses LAM MPI, local BLAS,
 # local umfpack, local metis
-include $(FEASTBASEDIR)/templates/sun4u-generic.mk
-include $(FEASTBASEDIR)/templates/sunstudio-generic.mk
+include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 # Have 32bit binaries built on Sun
@@ -1646,13 +1671,13 @@ endif
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-sunstudio-blas.*),yes)
 # Use self-compiled local BLAS
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-sunstudio-perf.*),yes)
 # Use Perflib BLAS,
-include $(FEASTBASEDIR)/templates/sunperf-generic.mk
+include $(TEMPLATESDIR)/sunperf-generic.mk
 # Is it necessary to replace the way Sunperf Library is included?
 # It works both ways! (SB)
 LIBS          := $(filter-out -lsunperf, $(LIBS)) -xlic_lib=sunperf
@@ -1665,10 +1690,10 @@ endif
 ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-blas-lammpi),yes)
 # invokes the Sun Studio Compiler suite, uses LAM MPI, local BLAS,
 # local umfpack, local metis
-include $(FEASTBASEDIR)/templates/sun4u-generic.mk
-include $(FEASTBASEDIR)/templates/sunstudio-generic.mk
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
-include $(FEASTBASEDIR)/templates/blas-generic.mk
+include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
+include $(TEMPLATESDIR)/blas-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 # For strange reasons the symbol dlamch_ is not found by LAPACK
@@ -1694,10 +1719,10 @@ endif
 ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-perf-ompi),yes)
 # invokes the Sun Studio Compiler suite, uses OpenMPI, Perflib BLAS,
 # local umfpack, local metis
-include $(FEASTBASEDIR)/templates/sun4u-generic.mk
-include $(FEASTBASEDIR)/templates/sunstudio-generic.mk
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
-include $(FEASTBASEDIR)/templates/sunperf-generic.mk
+include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
+include $(TEMPLATESDIR)/sunperf-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 # Have 64bit binaries built on Sun
@@ -1719,10 +1744,10 @@ endif
 ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-perf-lammpi),yes)
 # invokes the Sun Studio Compiler suite, uses LAM MPI, Perflib BLAS,
 # local umfpack, local metis
-include $(FEASTBASEDIR)/templates/sun4u-generic.mk
-include $(FEASTBASEDIR)/templates/sunstudio-generic.mk
-include $(FEASTBASEDIR)/templates/lammpi-generic.mk
-include $(FEASTBASEDIR)/templates/sunperf-generic.mk
+include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
+include $(TEMPLATESDIR)/lammpi-generic.mk
+include $(TEMPLATESDIR)/sunperf-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 # Have 64bit binaries built on Sun
@@ -1752,8 +1777,8 @@ MESSAGE := $(MESSAGE) \
 	    echo; \
 	    echo '*** Warning: The settings for this build ID have not been thoroughly tested yet'; \
 	    echo;
-include $(FEASTBASEDIR)/templates/sun4u-generic.mk
-include $(FEASTBASEDIR)/templates/sunstudio-generic.mk
+include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 # Have 64bit binaries built on Sun
@@ -1780,8 +1805,8 @@ MESSAGE := $(MESSAGE) \
 	    echo; \
 	    echo '*** Warning: The settings for this build ID have not been thoroughly tested yet'; \
 	    echo;
-include $(FEASTBASEDIR)/templates/sun4u-generic.mk
-include $(FEASTBASEDIR)/templates/gcc-generic.mk
+include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 ifeq ($(call optimise), YES)
@@ -1797,13 +1822,13 @@ endif
 
 ifeq ($(call match,$(ID),sun4v-sparcv9-sunos-.*-.*-ompi),yes)
 # Use OpenMPI
-include $(FEASTBASEDIR)/templates/openmpi-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 ifeq ($(call match,$(ID),sun4v-sparcv9-sunos-.*-perf.*),yes)
 # Use Perflib BLAS
-include $(FEASTBASEDIR)/templates/sunperf-generic.mk
+include $(TEMPLATESDIR)/sunperf-generic.mk
 endif
 
 
@@ -1811,10 +1836,10 @@ endif
 #################################### NEC #####################################
 
 ifeq ($(call match,$(ID),sx6-none-superux-f90-keisan-mpi),yes)
-TOKEN6 := 1
 TOKEN5 := 1
-include $(FEASTBASEDIR)/templates/necsx-generic.mk
-include $(FEASTBASEDIR)/templates/necsxcompiler-generic.mk
+TOKEN6 := 1
+include $(TEMPLATESDIR)/necsx-generic.mk
+include $(TEMPLATESDIR)/necsxcompiler-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -sx6 $(CFLAGSF77LIBS)
 CFLAGSF77     := -sx6 $(CFLAGSF77)
@@ -1826,14 +1851,15 @@ INC       =
 #BUILDLIB  = metis blas lapack umfpack amd
 BUILDLIB  = metis umfpack amd
 LIBS      = -lmetis -lumfpack -lamd -L/SX/opt/MathKeisan/lib -llapack -lblas
+SBB_LIBS  = -L/SX/opt/MathKeisan/lib -llapack -lblas
 MPILIBS   = -lmpi
 endif
 
 
 ifeq ($(call match,$(ID),sx8-none-superux-f90-.*-mpi),yes)
 TOKEN6 := 1
-include $(FEASTBASEDIR)/templates/necsx-generic.mk
-include $(FEASTBASEDIR)/templates/necsxcompiler-generic.mk
+include $(TEMPLATESDIR)/necsx-generic.mk
+include $(TEMPLATESDIR)/necsxcompiler-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -sx8 $(CFLAGSF77LIBS) #-ftrace
 CFLAGSF77     := -sx8 $(CFLAGSF77)  #-ftrace
@@ -1842,6 +1868,7 @@ CFLAGSC       := -sx8 $(CFLAGSC) #-ftrace
 LDFLAGS       := -sx8 $(LDFLAGS) #-ftrace
 endif
 INC       =
+SBB_LIBS  = -llapack -lblas
 endif
 
 

@@ -159,6 +159,10 @@ ifeq ($(strip $(ID)), ibm-powerpc_power4-aix-xlf-goto)
 ID:=$(strip $(ID))-poempi
 endif
 
+ifeq ($(strip $(ID)), pc-pentium4-linux64-intel-goto)
+ID:=$(strip $(ID))-lanlmpi
+endif
+
 ifeq ($(strip $(ID)), sx6-none-superux-f90-keisan)
 ID:=$(strip $(ID))-mpi
 endif
@@ -187,7 +191,7 @@ endif
 # case we have to cut the last two identifiers (specifying blas library implementation and
 # MPI environment). So, use current ID setting and cutting it will in any case give us 
 # what we need.
-LIBID:=$(shell echo "$(ID)" | LC_ALL=C perl -pe 's/^(\w+-\w+-\w+-\w+)-.*$$/$$1/;')
+LIBID:=$(shell echo "$(ID)" | LC_ALL=C perl -pe 's/^(\w+-\w+-\w+-\w+-\w+)(-\w+|)$$/$$1/;')
 
 
 # hack to have this target in all Makefiles, the dot is to not

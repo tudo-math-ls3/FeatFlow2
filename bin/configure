@@ -111,9 +111,14 @@ my $progname = &basename($0);
 # supplied on invocation of this script.
 #
 # version with relative paths
-my $FEASTBASEDIR = &abs_path(&dirname($0) . "/..");
+# is not available in FEAT2 as there is no general rule to set up the directory
+# structure of any application such that this script can be found via ../../bin.
 
 # version with absolute paths
+my $FEASTBASEDIR = &abs_path(&dirname($0) . "/..");
+
+
+# another version with absolute paths
 # (when changing to absolute paths again, be aware that copying of
 # included files to object directory may happen multiple times as
 # the file may get on the list with absolute and relative path)
@@ -212,7 +217,6 @@ use constant SRCLIST_GENERATED => " " .
                                   "\$(FILE_CC_INFO).version  \$(FILE_CC_INFO).ls " .
                                   "\$(FILE_CXX_INFO).version \$(FILE_CXX_INFO).ls " .
                                   "\$(COMPILER_SETTINGS)";
-#use constant PROGRAM_FILE      => "src/cc2d.f90";
 
 # List of files that should not be included in a Makefile ALTHOUGH
 # they are included into a source file via an 'include' statement.
@@ -233,7 +237,7 @@ use constant MUST_INCLUDE => "";
 # (This list typically consists of all files defining C preprocessor
 #  macros that need to be evaluated when being included into a
 #  Fortran source file.)
-use constant HEADER_FILES_TO_COPY =>
+my $HEADER_FILES_TO_COPY =
     "";
 
 
@@ -304,7 +308,7 @@ my %defaults = (
     OBJDIR              => "",
     OBJDIR_LIB          => "",
     OPT                 => "YES",
-    PROGRAMFILE         => "masterslave.f90",
+    PROGRAMFILE         => $FEASTBASEDIR . "/" . $SRCDIR_KERNEL . "/masterslave.f90",
     RANLIB              => "",
     RELINK_ALWAYS       => "YES",
     SRCEXTRA            => "",
@@ -459,10 +463,10 @@ if (! defined($cachedtests{'build-id'})) {
 # updating whenever this is modified. Simply search for the next occurence of
 # 'coproc-bail-out' (without the quotation marks)
 my $entry = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
-# no support for *-*-*-*-psc-*, *-*-*-*-sunstudio-*, sx*-none-superux-*-f90-*
+# no support for *-*-*-psc-*, *-*-*-sunstudio-*, sx*-none-superux-f90-*
 if ($#{$entry} >= 0 &&
-    ($buildID =~ m/^\w+-\w+-\w+-\w+-(psc|sunstudio)-\w+$/ ||
-     $buildID =~ m/^sx\w+-none-superux-\w+-f90-\w+$/)) {
+    ($buildID_lib =~ m/^\w+-\w+-\w+-(psc|sunstudio)-\w+$/ ||
+     $buildID_lib =~ m/^sx\w+-none-superux-f90-\w+$/)) {
     # Create an empty Makefile to prevent breaking compilation of
     # complete benchmark just because configuring one application
     # failed.
@@ -975,7 +979,6 @@ sub create_feastAppMakefile {
     }
 
     # Dependencies of each object file from application modules
-#    push @tmparray, ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'programfile'});
     foreach $entry ( @{$srclist_app} ) {
 	$path{$entry} = &concat_filename($SRCDIR_APP, $entry);
         $objectfiles_and_dependencies .=
@@ -983,6 +986,14 @@ sub create_feastAppMakefile {
 			   "\$(SRCDIR_APP)/" . $entry, 1, "o", "o",
 			   "\$(OBJDIR)") . "\n\n";
     }
+
+    # Dependency of program file
+    $entry = ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'});
+	$path{$entry} = $entry;
+        $objectfiles_and_dependencies .=
+	    &make_dep_list(\%dependencyLists, $path{$entry},
+			   $entry, 1, "o", "o",
+			   "\$(OBJDIR)") . "\n\n";
     print "done\n";
 
     # The instructions above ensure that for all FEAST source files
@@ -1002,7 +1013,7 @@ sub create_feastAppMakefile {
     # files again, the cached results of previous get_dependency() calls
     # are used. It makes a small difference (12-15% faster).
     my @modulesToParse;
-    push @modulesToParse, ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'programfile'});
+    push @modulesToParse, ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'});
     my %modulesParsed;
     my $i = -1;
     while ($i < $#modulesToParse) {
@@ -1203,34 +1214,45 @@ sub create_feastAppMakefile {
         &format_list("SRCLIST_KERNEL = ", 8, 70, SRCLIST_KERNEL, "\\\n", "\\") . "\n" .
         &format_list("SRCLIST_ARCH   = ", 8, 70, SRCLIST_ARCH, "\\\n", "\\") . "\n";
 
-    # Source file contain PROGRAM needs separate handling and is not to be
-    # included in Makefile's SRCLIST_APP variable.
+    # Source file containing the Fortran keyword PROGRAM needs separate handling and
+    # is not to be included in Makefile's SRCLIST_APP variable.
     # Convert array on the fly into a hash from which program file can be easily
     # deleted.
     my %srclist = ();
     map { $srclist{$_} = "" } @{$srclist_app};
-    delete $srclist{((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'programfile'})};
+    delete $srclist{((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'})};
 
     print MAKEFILE_HDL
 	&format_list("SRCLIST_APP    = ", 8, 70, join(' ', sort keys %srclist), "\\\n", "\\") . "\n";
     undef %srclist;
 
     print MAKEFILE_HDL
-        &format_list("PROGRAM_FILE   = ", 8, 70, ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'programfile'}), "\\\n", "\\") . "\n\n" .
-
-        "# Files included in source files that need to be evaluated by cpp\n" .
-        &format_list("INCLUDED_FILES_TO_COPY = ", 8, 70,
-		     HEADER_FILES_TO_COPY, "\\\n", "\\") . "\n";
+        &format_list("PROGRAM_FILE   = ", 8, 70, ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'}), "\\\n", "\\") . "\n\n";
 
     # The idea is to have only paths relative to FEASTBASEDIR.
     # Substitute absolute path information in @headerfiles accordingly.
     my @tmparray = ();
+    foreach $entry (split(/\s+/, $HEADER_FILES_TO_COPY)) {
+	my $file_PathUsingBasedir = $entry;
+	$file_PathUsingBasedir =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
+	push @tmparray, $file_PathUsingBasedir;
+    }
+    print MAKEFILE_HDL
+        "# Files included in source files that need to be copied, not evaluated by cpp\n" .
+        &format_list("INCLUDED_FILES_TO_COPY = ", 8, 70,
+		     join(' ', sort @tmparray), "\\\n", "\\") . "\n\n";
+    undef @tmparray;
+
+    # The idea is to have only paths relative to FEASTBASEDIR.
+    # Substitute absolute path information in @headerfiles accordingly.
+    @tmparray = ();
     foreach $entry (@headerfiles) {
 	my $file_PathUsingBasedir = $entry;
-	$file_PathUsingBasedir =~ s/$FEASTBASEDIR/\$(FEASTBASEDIR)/;
+	$file_PathUsingBasedir =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
 	push @tmparray, $file_PathUsingBasedir;
-    }    
+    }
     print MAKEFILE_HDL
+        "# Files included in source files that need to be evaluated by cpp\n" .
         &format_list("INCLUDED_FILES_TO_EVALUATE_WITH_CPP = ", 8, 70,
 		     join(' ', sort @tmparray), "\\\n", "\\") . "\n\n";
     undef @tmparray;
@@ -1240,14 +1262,14 @@ sub create_feastAppMakefile {
     print MAKEFILE_HDL
         "# List of all Fortran 77 source files\n" .
 	"SRCF77   = \$(filter %.f, \\\n" .
-	"\t\t\$(patsubst %, \$(SRCDIR_KERNEL)/%, \$(SRCLIST_KERNEL)) \\\n" .
-	"\t\t\$(patsubst %, \$(SRCDIR_ARCH)/%,   \$(SRCLIST_ARCH)) \\\n" .
-	"\t\t\$(patsubst %, \$(SRCDIR_APP)/%,    \$(SRCLIST_APP)))\n\n" .
+	"\t\t\$(SRCLIST_KERNEL:%=\$(SRCDIR_KERNEL)/%) \\\n" .
+	"\t\t\$(SRCLIST_ARCH:%=\$(SRCDIR_ARCH)/%) \\\n" .
+	"\t\t\$(SRCLIST_APP:%=\$(SRCDIR_APP)/%))\n\n" .
         "# List of all Fortran 90 source files (without program file)\n" .
 	"SRCF90   = \$(filter %.f90, \\\n" .
-	"\t\t\$(patsubst %, \$(SRCDIR_KERNEL)/%, \$(SRCLIST_KERNEL)) \\\n" .
-	"\t\t\$(patsubst %, \$(SRCDIR_ARCH)/%,   \$(SRCLIST_ARCH)) \\\n" .
-	"\t\t\$(patsubst %, \$(SRCDIR_APP)/%,    \$(SRCLIST_APP)))\n\n" .
+	"\t\t\$(SRCLIST_KERNEL:%=\$(SRCDIR_KERNEL)/%) \\\n" .
+	"\t\t\$(SRCLIST_ARCH:%=\$(SRCDIR_ARCH)/%) \\\n" .
+	"\t\t\$(SRCLIST_APP:%=\$(SRCDIR_APP)/%))\n\n" .
         "# List of all object files from Fortran 77 source files\n" .
         "OBJF77   = \$(patsubst %.f, \$(OBJDIR)/%.o, \$(notdir \$(SRCF77)))\n\n" .
         "# List of all object files from Fortran 90 source files (only modules)\n" .
@@ -1474,18 +1496,28 @@ sub create_feastAppMakefile {
         "# print an error message if removal failed. (The restriction to two\n" .
         "# levels is rather arbitrary. It's the least number of directory levels\n" .
         "# created by a FEAST Makefile. To show an error message unconditionally\n" .
-        "# is not desired as you would always get an error message at the end.)\n" .
+	"# is not desired as one would eventually always get an error message, at\n" .
+	"# least when trying to remove /)\n" .
+	"# The for loop is to deal with given directory wildcards like object/pc-*-*-*.\n" .
         "define remove_directory\n" .
-        "    \@dir=\$(dir); depth=0; \\\n" .
-        "    while test -d \$\${dir} -a \$\${dir} != '.' -a \$\${dir} != '/'; do \\\n" .
-        "\tif rmdir \$\${dir} 2>/dev/null; then \\\n" .
-        "\t    echo \"rmdir \$\${dir}\"; \\\n" .
-        "\t    dir=`dirname \$\${dir}`; \\\n" .
-        "\telse \\\n" .
-        "\t    test \$\${depth} -lt 2 && \$(print_directory_not_empty); \\\n" .
-        "\t    dir='.'; \\\n" .
-        "\tfi; \\\n" .
-        "\tdepth=`expr \$\${depth} + 1`; \\\n" .
+	"    \@rmdirFailures=\"\"; \\\n" .
+	"     for dir in \$(dir); do \\\n" .
+	"\tdepth=0; \\\n" .
+	"\twhile test -d \"\$\${dir}\" -a \"\$\${dir}\" != '.' -a \"\$\${dir}\" != '/'; do \\\n" .
+	"\t    if rmdir \"\$\${dir}\" 2>/dev/null; then \\\n" .
+	"\t\techo \"rmdir \$\${dir}\"; \\\n" .
+	"\t\tdir=`dirname \$\${dir}`; \\\n" .
+	"\t    else \\\n" .
+	"\t\ttest \$\${depth} -lt 2 && rmdirFailures=\"\$\${rmdirFailures} \$\${dir}\"; \\\n" .
+	"\t\tdir='.'; \\\n" .
+	"\t    fi; \\\n" .
+	"\t    depth=`expr \$\${depth} + 1`; \\\n" .
+	"\tdone; \\\n" .
+	"    done; \\\n" .
+	"    for dir in \$\${rmdirFailures}; do \\\n" .
+	"\tif test -d \"\$\${dir}\"; then \\\n" .
+	"\t    \$(print_directory_not_empty); \\\n" .
+	"\tfi; \\\n" .
         "    done\n\n" .
         "endef\n\n" .
         "# Function to be called if directory removal did not work unexpectedly.\n" .
@@ -1631,7 +1663,7 @@ sub create_feastAppMakefile {
         "endif\n" .
         "endif\n\n" .
 
-        "# NOw, override any compiler settings in case any token is unset\n" .
+        "# Now, override any compiler settings in case any token is unset\n" .
         "ifneq (\$(DETAIL),)\n" .
         "MESSAGE := \$(MESSAGE) \\\n" .
         "\t   echo; \\\n" .
@@ -1711,7 +1743,7 @@ sub create_feastAppMakefile {
         "##############################################################################\n" .
         "# Dependencies of header files to be copied or evaluated and stored in\n" .
         "# object directory\n\n";
-    foreach $entry (split(/\s+/, HEADER_FILES_TO_COPY)) {
+    foreach $entry (split(/\s+/, $HEADER_FILES_TO_COPY)) {
         print MAKEFILE_HDL
             &make_dep_list(\%dependencyLists, $entry,
                            "\$(SRCDIR_KERNEL)/" . &basename($entry), 0, "", "o",
@@ -1742,7 +1774,7 @@ sub create_feastAppMakefile {
 	    # The idea is to have only paths relative to FEASTBASEDIR.
 	    # Substitute absolute path information accordingly.
 	    my $file_PathUsingBasedir = $entry;
-	    $file_PathUsingBasedir =~ s/$FEASTBASEDIR/\$(FEASTBASEDIR)/;
+	    $file_PathUsingBasedir =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
 	    print MAKEFILE_HDL
 		&make_dep_list(\%dependencyLists, $entry,
 			       $file_PathUsingBasedir, 0, "", "o",
@@ -1855,8 +1887,8 @@ sub create_feastAppMakefile {
 
     # Generic rule for *.f files out of SRCEXTRA
 	"# Generic rule for *.f files out of SRCEXTRA\n" .
-	"\$(patsubst %.f, \$(OBJDIR)/%.o, \$(filter %.f, \$(notdir \$(SRCEXTRA)))): \$(patsubst %, \$(FEASTBASEDIR)/%, \$(SRCEXTRA))\n" .
-	"\t\$(F77) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA)) -o \$\@\n\n" .
+	"\$(patsubst %.f, \$(OBJDIR)/%.o, \$(filter %.f, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA:%=\$(FEASTBASEDIR)/%)\n" .
+	"\t\$(F77) \$(APPONLYFLAGS) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA)) -o \$\@\n\n" .
 
     # Generic rule for *.f90 files out of SRCEXTRA
 	"# Generic rule for *.f90 files out of SRCEXTRA\n" .
@@ -1865,18 +1897,18 @@ sub create_feastAppMakefile {
 	"#  such do not try to move a .mod file upon compilation as a workaround\n" .
 	"#  for compilers that do not create .mod files in the object directory,\n" .
 	"#  in the working directory.)\n" .
-	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))): \$(patsubst %, \$(FEASTBASEDIR)/%, \$(SRCEXTRA))\n" .
-	"\t\$(F90) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA)) -o \$\@\n\n" .
+	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA:%=\$(FEASTBASEDIR)/%)\n" .
+	"\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA)) -o \$\@\n\n" .
 
     # Generic rule for *.c files out of SRCEXTRA
 	"# Generic rule for *.c files out of SRCEXTRA\n" .
-	"\$(patsubst %.c, \$(OBJDIR)/%.o, \$(filter %.c, \$(notdir \$(SRCEXTRA)))): \$(patsubst %, \$(FEASTBASEDIR)/%, \$(SRCEXTRA))\n" .
+	"\$(patsubst %.c, \$(OBJDIR)/%.o, \$(filter %.c, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA:%=\$(FEASTBASEDIR)/%)\n" .
 	"\t\$(CC) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).c, \$(SRCEXTRA)) -o \$\@\n\n" .
 
     # Generic rule for *.cc files out of SRCEXTRA
 	"# Generic rule for *.cc files out of SRCEXTRA\n" .
-	"\$(patsubst %.cc, \$(OBJDIR)/%.o, \$(filter %.cc, \$(notdir \$(SRCEXTRA)))): \$(patsubst %, \$(FEASTBASEDIR)/%, \$(SRCEXTRA))\n" .
-	"\t\$(CXX) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA)) -o \$\@\n\n" .
+	"\$(patsubst %.cc, \$(OBJDIR)/%.o, \$(filter %.cc, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA:%=\$(FEASTBASEDIR)/%)\n" .
+	"\t\$(CXX) \$(APPONLYFLAGS) \$(CFLAGSCXX) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA)) -o \$\@\n\n" .
 
     # All files listed in $(SRCEXTRA) should be compiled, but depending on
     # its extension with a separate rule. Fortran, Fortran90, C and C++
@@ -2005,7 +2037,7 @@ sub create_feastAppMakefile {
         "# (But be utmost restrictive by only removing files created by a (recent) FEAST Makefile.)\n" .
         "purge:\tpurge-libs purge-app\n" .
         "\t\@echo \"# Removing Makefile\"\n" .
-        "\t-rm -f Makefile Makefile.bak\n\n" .
+        "\t-rm -f $MAKEFILE $MAKEFILE.bak\n\n" .
 
         "# Clean all FEAST object files for all architectures\n" .
         "# (But be utmost restrictive by only removing files created by a (recent) FEAST Makefile.)\n" .
@@ -2021,20 +2053,21 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Removing wrapped source files, object files and\"\n" .
         "\t\@echo \"# module information files.\"\n" .
         "\t-\$(foreach file, \\\n" .
-        "\t    \$(patsubst %.f,  \$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(notdir \$(SRCF77))) \\\n" .
-        &format_list("\t    \$(patsubst %,\$(PURGEDIR)*-*-*-*-*-*-*-opt*/%, ", 20, 70,
+        "\t    \$(patsubst %.f,  \$(PURGEDIR)*-*-*-*-*-opt*/%.o, \$(notdir \$(SRCF77))) \\\n" .
+        &format_list("\t    \$(patsubst %,\$(PURGEDIR)*-*-*-*-*-opt*/%, ", 20, 70,
                      "\$(notdir \$(SRCF90)) \$(notdir \$(PROGRAM_FILE)) " . SRCLIST_GENERATED .
+		     " \$(filter %.f90, \$(notdir \$(SRCEXTRA)))" .
 		     " \$(notdir \$(INCLUDED_FILES_TO_COPY)) \$(notdir \$(INCLUDED_FILES_TO_EVALUATE_WITH_CPP))", "\\\n", "\\") . ") \\\n" .
-        "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(notdir \$(SRCF90)) \$(notdir \$(PROGRAM_FILE))) \\\n" .
-        "\t    \$(patsubst %.f,  \$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(filter %.f,   \$(notdir \$(SRCEXTRA)))) \\\n" .
-        "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))) \\\n" .
-        "\t    \$(patsubst %.c,  \$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(filter %.c,   \$(notdir \$(SRCEXTRA)))) \\\n" .
-        "\t    \$(patsubst %.cc, \$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.o, \$(filter %.cc,  \$(notdir \$(SRCEXTRA)))) \\\n" .
-        "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-*-*-opt*/%.\$(MODEXTENSION), \\\n" .
+        "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-opt*/%.o, \$(notdir \$(SRCF90)) \$(notdir \$(PROGRAM_FILE))) \\\n" .
+        "\t    \$(patsubst %.f,  \$(PURGEDIR)*-*-*-*-*-opt*/%.o, \$(filter %.f,   \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-opt*/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t    \$(patsubst %.c,  \$(PURGEDIR)*-*-*-*-*-opt*/%.o, \$(filter %.c,   \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t    \$(patsubst %.cc, \$(PURGEDIR)*-*-*-*-*-opt*/%.o, \$(filter %.cc,  \$(notdir \$(SRCEXTRA)))) \\\n" .
+        "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-opt*/%.\$(MODEXTENSION), \\\n" .
         "\t\t\$(notdir \$(SRCF90)) \$(notdir \$(PROGRAM_FILE))), \\\n" .
         "\t    \$(remove_file))\n" .
         "\t\@echo \"# Removing object directories\"\n" .
-        "\t\$(foreach dir, \$(OBJDIR), \$(remove_directory))\n" .
+        "\t\$(foreach dir, \$(PURGEDIR)*-*-*-*-*-opt*, \$(remove_directory))\n" .
         "\t\@echo \"# Removing FEAST log and GMV & AVS output files\"\n" .
         "\t-rm -f feastlog.* *.gmv *.inp\n" .
         "\t\@echo \"# Removing autopartitioning, profiling and core file\"\n" .
@@ -2044,17 +2077,18 @@ sub create_feastAppMakefile {
         "# Clean all object files of all external libraries for all architectures\n" .
         "# (But be utmost restrictive by only removing files created by a (recent) FEAST Makefile.)\n" .
         "purge-libs: PURGEDIR = \$(dir \$(OBJDIR_LIB))\n" .
-        "purge-libs: \$(BUILDLIB:%=purge-%)\n" .
+	"# Ensure that all libraries are removed that have possibly been compiled\n" .
+        "purge-libs: \$(ALLLIB:%=purge-%)\n" .
         "        # Go to the directories that contain the architecture-specific\n" .
         "        # object sub-directories and delete in those sub-directories\n" .
         "        # * all libraries shipped with FEAST.\n" .
-        "\t\@echo \"# Removing metis, blas, lapack, umfpack and AMD libraries\"\n" .
+        "\t\@echo \"# Removing \$(ALLLIB) libraries\"\n" .
         "\t\@echo \"# for all build IDs\"\n" .
         "\t-\$(foreach file, \\\n" .
-        "\t    \$(patsubst %, \$(PURGEDIR)*-*-*-*-*-*-opt*/lib%.a, \$(BUILDLIB)) \\\n" .
-        &format_list("\t    \$(patsubst %, \$(PURGEDIR)*-*-*-*-*-*-opt*/%, ", 16, 70, SRCLIST_GENERATED, "\\\n", "\\") . "), \\\n" .
+        "\t    \$(patsubst %, \$(PURGEDIR)*-*-*-*-*-opt*/lib%.a, \$(ALLLIB)) \\\n" .
+        &format_list("\t    \$(patsubst %, \$(PURGEDIR)*-*-*-*-*-opt*/%, ", 16, 70, SRCLIST_GENERATED, "\\\n", "\\") . "), \\\n" .
         "\t    \$(remove_file))\n" .
-        "\t\$(foreach dir, \$(PURGEDIR)*-*-*-*-*-*-opt*, \$(remove_directory))\n\n";
+        "\t\$(foreach dir, \$(PURGEDIR)*-*-*-*-*-opt*, \$(remove_directory))\n\n";
 
     # shortcut to delete an object file in the current object directory
     # (useful if you do not want to remember that directory name)
@@ -2218,10 +2252,10 @@ sub create_feastAppMakefile {
     # Purge rule for every library
     print MAKEFILE_HDL
         "# Purge rule for every library\n" .
-        "\$(BUILDLIB:%=purge-%): PURGEDIR = \$(dir \$(OBJDIR_LIB))\n" .
-        "\$(BUILDLIB:%=purge-%):\n" .
+        "\$(ALLLIB:%=purge-%): PURGEDIR = \$(dir \$(OBJDIR_LIB))\n" .
+        "\$(ALLLIB:%=purge-%):\n" .
         "\t\@( cd \$(DIR) && \\\n" .
-        "\t    \$(MAKE) -f Makefile.FEAST OBJDIR=\"\$(PURGEDIR)*-*-*-*-*-*-opt*\" ";
+        "\t    \$(MAKE) -f Makefile.FEAST OBJDIR=\"\$(PURGEDIR)*-*-*-*-*-opt*\" ";
     $tmparray = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
     foreach $entry ( @{ $tmparray } ) {
 	print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
@@ -2889,7 +2923,7 @@ sub create_feastAppMakefile {
     # create tag file for emacs users
 	"# create tag file for emacs users\n" .
 	".PHONY: tags\n" .
-        "tags: \$(SRCF77) \$(SRCF90) \$(patsubst %, \$(FEASTBASEDIR)/%, \$(SRCEXTRA))\n" .
+        "tags: \$(SRCF77) \$(SRCF90) \$(SRCEXTRA:%=\$(FEASTBASEDIR)/%)\n" .
 	"\trm -f TAGS\n" .
 	"\tetags \$(filter %.c %.f %.f90,\$^)\n\n" .
 
@@ -3128,7 +3162,7 @@ sub get_buildID {
             print "retrieving default build ID... ";
 
 	    # Pass along the desired execution mode of the application.
-	    # If set to parallel mode, the build ID contains an additional 6th token 
+	    # If set to parallel mode, the build ID contains an additional 6th token
 	    # naming the MPI library.
 	    my $mode = (defined($cl{'MODE'})) ? $cl{'MODE'} : $defaults{'MODE'};
 
@@ -3154,7 +3188,7 @@ sub get_buildID {
 # Function: Determine build ID for libraries (do not check yet whether it's valid)
 sub get_buildID_lib {
     my $string = $buildID;
-    $string =~ s/^(\w+-\w+-\w+-\w+)-\w+-\w+/$1/;
+    $string =~ s/^(\w+-\w+-\w+-\w+-\w+)(-\w+|)$/$1/;
     return $string;
 }
 
@@ -3501,7 +3535,7 @@ sub make_dep_list {
             # Add to the list if not already on the list or in 'forbidden' lists
             unless ((join(' ', @headerfiles) =~ m/\Q$aux\E/) or
                     (DO_NOT_INCLUDE          =~ m/\Q$aux\E/) or
-                    (HEADER_FILES_TO_COPY    =~ m/\Q$aux\E/)) {
+                    ($HEADER_FILES_TO_COPY   =~ m/\Q$aux\E/)) {
                 push @headerfiles, $aux;
             }
 
@@ -3527,7 +3561,7 @@ sub print_statistics_about_feastAppMakefile {
     print "  Application name             : " .
 	( (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'} ) . "\n";
     print "  Application program file     : <" .
-	( (defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'programfile'} ) . ">\n";
+	( (defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'} ) . ">\n";
 
     print &format_list("  Application's source files   :", 33, 75,
 		       "<" . join("> <", @{$srclist_app}), "", "") . ">\n";
@@ -3541,12 +3575,14 @@ sub print_statistics_about_feastAppMakefile {
     # with something that works on the command line: ~ and build ID.
     $string =~ s/\$\(HOME\)/~/;
     $string =~ s/\$\(ID\)/$buildID/;
+    $string .= "-opt" . ((defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'});
     print "  Object files go to           : <$string>,\n";
     # Replace the symbolic names $(HOME) and $(ID), used in the Makefile,
     # with something that works on the command line: ~ and build ID.
     $string = $objdir_lib;
     $string =~ s/\$\(HOME\)/~/;
     $string =~ s/\$\(LIBID\)/$buildID_lib/;
+    $string .= "-opt" . ((defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'});
     print "                                 <$string>\n";
 
     print "  Optimisation level           : ";
