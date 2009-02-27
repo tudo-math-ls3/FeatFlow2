@@ -2456,8 +2456,8 @@ contains
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the first solution
-      ! vector is stored in the second quick access string.
+      ! This subroutine assumes that the name of the solution vector
+      ! is stored in the second quick access string.
 
       ! Retrieve solution vector from colletion and set pointer
       rsolution => collct_getvalue_vec(rcollection,&
