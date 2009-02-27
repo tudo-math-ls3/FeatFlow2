@@ -157,7 +157,7 @@ module optcontrolconvection
     logical, dimension(EL_MAXNDER) :: Bder
     
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), pointer :: Idofs
+    integer, dimension(:,:), pointer :: Idofs
     
     ! Allocateable arrays for the values of the basis functions - 
     ! for test and trial spaces.
@@ -191,10 +191,10 @@ module optcontrolconvection
     
     ! Local matrices, used during the assembly.
     ! Values and positions of values in the global matrix.
-    integer(PREC_DOFIDX), dimension(:,:,:), pointer :: Kentry
+    integer, dimension(:,:,:), pointer :: Kentry
     
     ! Additional contributions for the submatrices A11, A12, A21, A22 stemming from Newton.
-    integer(PREC_DOFIDX), dimension(:,:,:), pointer :: Kentry12
+    integer, dimension(:,:,:), pointer :: Kentry12
     
     ! Maximum velocity magnitude
     real(DP) :: dumax
@@ -2527,10 +2527,10 @@ contains
 
     ! local variables
     integer :: iel, idofe, jdofe, jcol0, jcol, jdfg
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol12
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld12
+    integer, dimension(:), pointer :: p_Kcol
+    integer, dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kcol12
+    integer, dimension(:), pointer :: p_Kld12
 
     ! Primal and dual velocity
     real(DP), dimension(:), pointer :: p_DpvelocityX, p_DpvelocityY
@@ -2871,7 +2871,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_ELEMENTIDX) :: ielset,ielmax
+  integer :: ielset,ielmax
   
   ! Matrix structure arrays
   real(DP), dimension(:), pointer :: p_Da11,p_Da22,p_Da44,p_Da55
@@ -3208,7 +3208,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_ELEMENTIDX) :: ielset,ielmax,idof,iel
+  integer :: ielset,ielmax,idof,iel
   real(dp) :: dweight2
   
   ! Matrix structure arrays
@@ -4477,7 +4477,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_ELEMENTIDX) :: ielset,ielmax
+  integer :: ielset,ielmax
   
   ! Local matrices
   real(DP), dimension(:,:,:), allocatable :: DentryA11
@@ -4784,7 +4784,7 @@ contains
     ! local variables
     real(DP) :: dlocalH,du1,du2,dunorm,dreLocal,dnuR,dumaxR
     integer :: iel
-    integer(PREC_DOFIDX) :: idof
+    integer :: idof
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
@@ -4863,9 +4863,9 @@ contains
   ! triangulation.
   
   ! Element where the local h should be calculated
-  integer(PREC_ELEMENTIDX), intent(IN)               :: JEL
+  integer, intent(IN)               :: JEL
   
-  integer(PREC_VERTEXIDX), dimension(TRIA_MAXNVE2D,*), intent(IN) :: Kvert
+  integer, dimension(TRIA_MAXNVE2D,*), intent(IN) :: Kvert
   real(DP), dimension(NDIM2D,*), intent(IN)          :: Dcorvg
   
   ! norm ||u||_T = mean velocity through element T=JEL
@@ -4879,7 +4879,7 @@ contains
   
   ! local variables
   real(DP) :: dlambda
-  integer(PREC_VERTEXIDX) :: NECK1,NECK2,NECK3,NECK4
+  integer :: NECK1,NECK2,NECK3,NECK4
   real(DP) :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
   real(DP) :: dalphaMax, dalpha
 
