@@ -12,8 +12,9 @@ program flagship
 
   use codire_application
   use euler_application
-  use mhd_application
+  use fparser
   use genoutput
+  use mhd_application
   use paramlist
   use signal
   use storage
@@ -37,6 +38,8 @@ program flagship
   
   ! Initialize Feat2 subsystem
   call system_init()
+  
+  ! Set system halt mode
   sys_haltmode = SYS_HALT_THROWFPE
 
   ! Initialize the output system
@@ -45,6 +48,9 @@ program flagship
 
   ! Initialize storage subsystem
   call storage_init(500, 100)
+
+  ! Initialize function parser
+  call fparser_init()
   
   ! Initialize signal handler for SIGINT and SIGQUIT
   call fsignal(SIGINT, signal_SIGINT)
@@ -113,6 +119,9 @@ program flagship
   
   ! Release parameter list
   call parlst_done(rparlist)
+
+  ! Release function parser
+  call fparser_done()
 
   ! Release storage
   call storage_info(.true.)
