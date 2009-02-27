@@ -11,6 +11,9 @@
 [Codire]
 ################################################################################
 
+# Position of the discretisation in the array of discretisations
+Discretisation = 1
+
 # Position of the velocity field data in the block vector structure
 VelocityField = 1
 

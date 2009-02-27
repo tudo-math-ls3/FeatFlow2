@@ -11,6 +11,9 @@
 [Euler]
 ################################################################################
 
+# Position of the discretisation in the array of discretisations
+Discretisation = 1
+
 # Position of the stabilization for the inviscid term
 InviscidAFC = 1
 
@@ -42,6 +45,9 @@ CoeffMatrix_CZ = 11
 ################################################################################
 [Transport]
 ################################################################################
+
+# Position of the discretisation in the array of discretisations
+Discretisation = 2
 
 # Position of the velocity field data in the block vector structure
 VelocityField = 1

@@ -119,7 +119,7 @@ sexactsolutionname =
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-ieltype = 1
+ieltype = -1
 
 # type of matrix format
 # 7 = matrix format 7
@@ -129,7 +129,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 0
+isystemformat = 1
 
 #-------------------------------------------------------------------------------
 
@@ -277,7 +277,7 @@ sexacttargetfuncname =
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-ieltype = 1
+ieltype = -1
 
 # type of matrix format
 # 7 = matrix format 7
@@ -334,7 +334,7 @@ istabilisation = 10
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.01
+dstepUCD = 0.0
 
 # file for UCD output of solution
 ucdsolution = out/z-pinchTVD
@@ -379,7 +379,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.0
+dfinalTime = 0.001
 
 # initial time step size
 dinitialStep = 0.001
@@ -430,10 +430,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 2
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 2
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -812,7 +812,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 0
+npreadapt = 1
 
 # number of adaptation steps
 nadapt = 0
@@ -824,16 +824,17 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 0
+nsubdividemax = 5
 
-# adaptation strategy: 1 = red-green
+# adaptation strategy
+# 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.15
+drefinementTolerance = 0.01
 
 # coarsening tolerance
-dcoarseningTolerance = 0.05
+dcoarseningTolerance = 0.001
 
 
 ################################################################################
@@ -847,13 +848,13 @@ dcoarseningTolerance = 0.05
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-ierrorestimator = 6
+ierrorestimator = 3
 
 # type or grid indicator
 # 0 = as is
 # 1 = equidistribution
 # 2 = logarithmic equidistribution
-igridindicator = 0
+igridindicator = 1
 
 # noise filter
 dnoisefilter = 0.05
