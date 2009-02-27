@@ -212,7 +212,7 @@ contains
       end if
       
       if (balloc) call storage_new ('glsys_assembleGlobal', 'Kld',  &
-                                    rlocalMatrix%NEQ+1_PREC_VECIDX, &
+                                    rlocalMatrix%NEQ+1, &
                                     ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kld,&
                                     ST_NEWBLOCK_ZERO)
       
@@ -321,7 +321,7 @@ contains
       end if
       
       if (balloc) call storage_new ('glsys_assembleGlobal', 'Kld',  &
-                                    rlocalMatrix%NEQ+1_PREC_VECIDX, &
+                                    rlocalMatrix%NEQ+1, &
                                     ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kld,&
                                     ST_NEWBLOCK_ZERO)
       

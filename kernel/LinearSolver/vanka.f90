@@ -1214,7 +1214,7 @@ contains
       !
       ! Call the actual VANKA to process the DOF's on each element.
       call vanka_general_double_mat79 (p_Dvector, p_Drhs, domega, &
-          rvankaGeneral%p_Rmatrices,IELmax-IELset+1_PREC_ELEMENTIDX,&
+          rvankaGeneral%p_Rmatrices,IELmax-IELset+1,&
           rvankaGeneral%p_IblockOffset,rvankaGeneral%nblocks,&
           rvankaGeneral%p_InDofsLocal,rvankaGeneral%ndofsPerElement,&
           rvankaGeneral%p_IelementDOFs)

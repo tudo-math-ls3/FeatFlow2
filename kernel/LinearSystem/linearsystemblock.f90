@@ -4802,7 +4802,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockDirect')
         call sys_halt()
       end if
-      rx%RvectorBlock(i)%NEQ = int(Isize(i)/rx%RvectorBlock(i)%NVAR, PREC_DOFIDX)
+      rx%RvectorBlock(i)%NEQ = Isize(i)/rx%RvectorBlock(i)%NVAR
       rx%RvectorBlock(i)%iidxFirstEntry = n
       n = n + rx%RvectorBlock(i)%NEQ
 

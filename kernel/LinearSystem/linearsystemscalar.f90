@@ -11385,7 +11385,7 @@ contains
       end if
 
       call storage_new ('lsyssc_auxcopy_Kld', 'Kld', &
-          NEQ+1_PREC_VECIDX, &
+          NEQ+1, &
           ST_INT, rdestMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
     end if
     call lsyssc_getbase_Kld (rdestMatrix,p_Kld2)
@@ -11646,7 +11646,7 @@ contains
       ! Create KCOL, KLD, KDiagonal
       call storage_new1D ('lsyssc_createDiagMatrix', 'KCOL', NEQ, &
           ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
-      call storage_new1D ('lsyssc_createDiagMatrix', 'KLD', NEQ+1_PREC_MATIDX, &
+      call storage_new1D ('lsyssc_createDiagMatrix', 'KLD', NEQ+1, &
           ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
       call storage_new1D ('lsyssc_createDiagMatrix', 'KDiagonal', NEQ, &
           ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ORDERED)
@@ -11655,7 +11655,7 @@ contains
       ! Create KCOL, KLD.
       call storage_new1D ('lsyssc_createDiagMatrix', 'KCOL', NEQ, &
           ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
-      call storage_new1D ('lsyssc_createDiagMatrix', 'KLD', NEQ+1_PREC_MATIDX, &
+      call storage_new1D ('lsyssc_createDiagMatrix', 'KLD', NEQ+1, &
           ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
           
     case DEFAULT

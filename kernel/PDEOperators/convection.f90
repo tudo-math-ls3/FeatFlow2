@@ -6638,7 +6638,7 @@ contains
           ! Use length of the way a particle travels
           do IEL=1,IELmax-IELset+1
             call getLocalDeltaHexaRay (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
-                        dweight1,dweight2,int(IEL+IELset-1,PREC_ELEMENTIDX),&
+                        dweight1,dweight2,IEL+IELset-1,&
                         DUMAXR,DlocalDelta(IEL),p_IverticesAtElement,&
                         p_DvertexCoords,Idofs(:,IEL),indof,dupsam,dre)
           end do ! IEL
@@ -6646,7 +6646,7 @@ contains
           ! Use volume of the cell
           do IEL=1,IELmax-IELset+1
             call getLocalDeltaHexaVol (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
-                        dweight1,dweight2,int(IEL+IELset-1,PREC_ELEMENTIDX),&
+                        dweight1,dweight2,IEL+IELset-1,&
                         DUMAXR,DlocalDelta(IEL),p_IverticesAtElement,&
                         p_DvertexCoords,Idofs(:,IEL),indof,dupsam,dre)
           end do ! IEL
@@ -8093,14 +8093,14 @@ contains
         if (clocalH .eq. 1) then
           do IEL=1,IELmax-IELset+1
             call getLocalDeltaHexaRay (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
-                        dweight1,dweight2, int(IEL+IELset-1,PREC_ELEMENTIDX),&
+                        dweight1,dweight2, IEL+IELset-1,&
                         DUMAXR,DlocalDelta(IEL),p_IverticesAtElement, &
                         p_DvertexCoords,Idofs(:,IEL),indof, dupsam,dre)
           end do ! IEL
         else
           do IEL=1,IELmax-IELset+1
             call getLocalDeltaHexaVol (u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
-                        dweight1,dweight2, int(IEL+IELset-1,PREC_ELEMENTIDX),&
+                        dweight1,dweight2, IEL+IELset-1,&
                         DUMAXR,DlocalDelta(IEL),p_IverticesAtElement, &
                         p_DvertexCoords,Idofs(:,IEL),indof, dupsam,dre)
           end do ! IEL
