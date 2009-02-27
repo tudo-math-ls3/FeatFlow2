@@ -50,15 +50,6 @@ program flagship
   call fsignal(SIGINT, signal_SIGINT)
   call fsignal(SIGQUIT, signal_SIGQUIT)
 
-  ! Get command line arguments
-  call get_command_argument(command_argument_count(), cbuffer)
-  sparameterfileName = adjustl(cbuffer)
-  
-  ! Initialize parameter list from file
-  call parlst_init(rparlist)
-  call parlst_readfromfile(rparlist, trim(sparameterfileName))
-  
-
   ! Print welcome screen
   call output_lbrk()
   call output_separator(OU_SEP_STAR)
@@ -72,7 +63,7 @@ program flagship
   call output_line('  Authors:  Dmitri Kuzmin, Matthias Moeller')
   call output_line('            Institute of Applied Mathematics')
   call output_line('            Dortmund University of Technology')
-  call output_line('            Vogelpothsweg 87, 44227 Dortmund, Germany')
+  call output_line('            Vogelpothsweg 87, 44227 Dortmund, Germany') 
   call output_separator(OU_SEP_STAR)
   call getenv('HOST',cbuffer); hostname = adjustl(cbuffer)
   call output_line('  Hostname:        '//trim(hostname))
@@ -80,6 +71,20 @@ program flagship
   call output_line('  Hosttype:        '//trim(hosttype))
   call getenv('USER',cbuffer); username = adjustl(cbuffer)
   call output_line('  Username:        '//trim(username))
+
+  ! Get command line arguments
+  if (command_argument_count() .eq. 0) then
+    call output_lbrk()
+    call output_line('  PARAMETERFILE missing!!!')
+    call output_lbrk()
+    stop
+  end if
+  
+  ! Initialize parameter list from file
+  call get_command_argument(command_argument_count(), cbuffer)
+  sparameterfileName = adjustl(cbuffer)
+  call parlst_init(rparlist)
+  call parlst_readfromfile(rparlist, trim(sparameterfileName))
   call parlst_getvalue_string(rparlist, '', "application", application)
   call sys_tolower(application)
   call output_line('  Application:     '//trim(application))
