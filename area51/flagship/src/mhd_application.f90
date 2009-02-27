@@ -61,6 +61,9 @@ module mhd_application
   use flagship_basic
   use fparser
   use genoutput
+  use graph
+  use hadaptaux
+  use hadaptivity
   use linearsystemblock
   use linearsystemscalar
   use mhd_basic
@@ -390,13 +393,14 @@ contains
     call parlst_getvalue_string(rparlist, ssectionNameEuler, 'inviscid', sinviscidName)
     
     ! Set additional problem descriptor
-    rproblemDescriptor%nafcstab      = 2   ! for inviscid and convective stabilization
-    rproblemDescriptor%nlmin         = nlmin
-    rproblemDescriptor%nlmax         = nlmax
-    rproblemDescriptor%nmatrixScalar = rproblemDescriptor%ndimension + 8
-    rproblemDescriptor%nmatrixBlock  = 2
-    rproblemDescriptor%nvectorScalar = 0
-    rproblemDescriptor%nvectorBlock  = 1   ! external velocity field
+    rproblemDescriptor%ndiscretisation = 2
+    rproblemDescriptor%nafcstab        = 2   ! for inviscid and convective stabilization
+    rproblemDescriptor%nlmin           = nlmin
+    rproblemDescriptor%nlmax           = nlmax
+    rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 8
+    rproblemDescriptor%nmatrixBlock    = 2
+    rproblemDescriptor%nvectorScalar   = 0
+    rproblemDescriptor%nvectorBlock    = 1   ! external velocity field
 
     ! Check if quadrilaterals should be converted to triangles
     call parlst_getvalue_int(rparlist, ssectionName, 'iconvtotria', iconvToTria, 0)
@@ -486,6 +490,7 @@ contains
 
     call parlst_getvalue_string(rparlist, ssectionName, 'application_euler', ssectionNameEuler)
     call parlst_getvalue_int(rparlist, ssectionNameEuler, 'isystemformat', isystemformat)
+    call parlst_getvalue_int(rparlist, ssectionNameEuler, 'isystemformat', isystemformat)
 
     ! Initialize the UCD exporter
     call flagship_initUCDexport(rproblemLevel, ucdsolution,&
@@ -500,7 +505,7 @@ contains
     ! Set pointers
     call lsysbl_getbase_double(rsolutionEuler, p_Dsolution)
     isize = size(p_Dsolution)/euler_getNVAR(rproblemLevel)
-    ndim  = rproblemLevel%rdiscretisation%ndimension
+    ndim  = rproblemLevel%rtriangulation%ndim
 
     ! Create auxiliary vectors
     select case(ndim)
@@ -666,6 +671,105 @@ contains
 
 !<subroutine>
 
+  subroutine mhd_adaptTriangulation(rhadapt, rtriangulationSrc, rindicator,&
+                                    rcollection, rtriangulationDest)
+
+!<description>
+    ! This subroutine performs h-adaptation for the given triangulation
+!</description>
+
+!<inputoutput>
+    ! adaptation structure
+    type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! source triangulation structure
+    type(t_triangulation), intent(INOUT), target :: rtriangulationSrc
+    
+    ! element-wise indicator
+    type(t_vectorScalar), intent(INOUT) :: rindicator
+
+    ! collection
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: destination triangulation structure
+    ! If it is not given, the source triangulation is updated
+    type(t_triangulation), intent(OUT), optional, target :: rtriangulationDest
+!</output>
+!</subroutine>
+    
+
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+    integer, dimension(1) :: Ivalue = 0
+    integer :: isystemFormat
+
+
+    ! Check if adaptation structure has been prepared
+    if (rhadapt%iSpec .eq. HADAPT_HAS_PARAMETERS) then
+      
+      ! Initialize adaptation structure from triangulation
+      call hadapt_initFromTriangulation(rhadapt, rtriangulationSrc)
+     
+    else
+     
+      ! Refresh adaptation structure
+      call hadapt_refreshAdaptation(rhadapt, rtriangulationSrc)
+      
+    end if
+
+    isystemFormat = collct_getvalue_int(rcollection, 'isystemformat')
+
+    select case (isystemFormat)
+
+    case (SYSTEM_INTERLEAVEFORMAT)
+
+      if (rtriangulationSrc%ndim .eq. NDIM2D) then
+        call mhd_hadaptCallbackScalar2D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call hadapt_performAdaptation(rhadapt, rindicator, rcollection, mhd_hadaptCallbackScalar2D)
+      else
+        call output_line('Invalid spatial dimension!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_adaptTriangulation')
+        call sys_halt()
+      end if
+
+    case (SYSTEM_BLOCKFORMAT)
+
+      if (rtriangulationSrc%ndim .eq. NDIM2D) then
+        call mhd_hadaptCallbackBlock2D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call hadapt_performAdaptation(rhadapt, rindicator, rcollection, mhd_hadaptCallbackBlock2D)
+      else
+        call output_line('Invalid spatial dimension!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_adaptTriangulation')
+        call sys_halt()
+      end if
+      
+    case DEFAULT
+
+      call output_line('Invalid type of system format!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_adaptTriangulation')
+      call sys_halt()
+    end select
+
+
+    ! Do we have a destination triangulation or should the source
+    ! triangulation structure be updated?
+    if (present(rtriangulationDest)) then
+      p_rtriangulation => rtriangulationDest
+    else
+      p_rtriangulation => rtriangulationSrc
+    end if
+
+    ! Generate raw mesh from adaptation structure
+    call hadapt_generateRawMesh(rhadapt, p_rtriangulation)
+
+  end subroutine mhd_adaptTriangulation
+
+  !*****************************************************************************
+
+!<subroutine>
+
     subroutine mhd_solveTransientPrimal(rappDescrEuler, rappDescrTransport, rparlist,&
                                         ssectionNameEuler, ssectionNameTransport,&
                                         rbdrCondEuler, rbdrCondTransport, rproblem,&
@@ -675,7 +779,7 @@ contains
                                         rcollectionEuler, rcollectionTransport)
 
 !<description>
-      ! This subroutine solves the transient primal simplified MHD problem
+      ! This subroutine solves the transient primal simplified MHD problem.
 !</description>
 
 !<input>
@@ -719,23 +823,56 @@ contains
 
     ! Pointer to the current multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
+    
+    ! Pointer to the discretisation structure
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+
+    ! Vector for the element-wise error distribution
+    type(t_vectorScalar) :: relementError
+
+    ! Structure for h-adaptation
+    type(t_hadapt) :: rhadapt
+
+    ! Structure for the sparsity pattern
+    type(t_graph) :: rgraph
+
+    ! Collection structure for h-adaptation
+    type(t_collection) :: rcollection
 
     ! section names
+    character(LEN=SYS_STRLEN) :: sadaptivityName
     character(LEN=SYS_STRLEN) :: soutputName
 
     ! local variables
-    real(dp) :: dstepUCD, dtimeUCD
-    integer :: templateMatrix, systemMatrix
+    real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
+    integer :: templateMatrix, systemMatrix, isystemFormat
+    integer :: discretisationEuler, discretisationTransport
+    integer :: isize, ipreadapt, npreadapt
     integer, external :: signal_SIGINT
     
     
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
 
-    !---------------------------------------------------------------------------
+
+    !--- compressible Euler model ----------------------------------------------
 
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescrEuler%rtimerPrePostprocess, STAT_TIMERSHORT)
+
+    ! Get position of discretisation structure
+    call parlst_getvalue_int(rparlist, ssectionNameEuler, 'discretisation', discretisationEuler)
+
+    ! Set pointer to discretisation structure
+    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisationEuler)
+
+    ! Create the solution vector
+    call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionEuler, .false., ST_DOUBLE)
+    if (p_rdiscretisation%ncomponents .ne. euler_getNVAR(p_rproblemLevel)) then
+      rsolutionEuler%RvectorBlock(1)%NVAR = euler_getNVAR(p_rproblemLevel)
+      isize = rsolutionEuler%NEQ*euler_getNVAR(p_rproblemLevel)
+      call lsysbl_resizeVectorBlock(rsolutionEuler, isize, .false., .false.)
+    end if
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call euler_initSolution(rparlist, ssectionNameEuler, p_rproblemLevel, 0.0_DP, rsolutionEuler)
@@ -768,12 +905,20 @@ contains
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rappDescrEuler%rtimerPrePostprocess)
     
-    !---------------------------------------------------------------------------
+
+    !--- scalar transport model ------------------------------------------------
 
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescrTransport%rtimerPrePostprocess, STAT_TIMERSHORT)
 
+    ! Get position of discretisation structure
+    call parlst_getvalue_int(rparlist, ssectionNameTransport, 'discretisation', discretisationTransport)
+
+    ! Set pointer to discretisation structure
+    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisationTransport)
+
     ! Initialize the solution vector and impose boundary conditions explicitly
+    call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionTransport, .false., ST_DOUBLE)
     call codire_initSolution(rparlist, ssectionNameTransport, p_rproblemLevel, 0.0_DP, rsolutionTransport)
     call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation, rsolutionTransport, 0.0_DP)
     
@@ -787,6 +932,142 @@ contains
     call stat_stopTimer(rappDescrTransport%rtimerPrePostprocess)
 
     
+    !---------------------------------------------------------------------------
+    ! Initialize the h-adaptation structure and perform pre-adaptation
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_string(rparlist, ssectionNameTransport, 'adaptivity', sadaptivityName, '')
+    if (trim(adjustl(sadaptivityName)) .ne. '') then
+
+      call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dstepAdapt', dstepAdapt)
+      call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dtimeAdapt', dtimeAdapt)
+      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'npreadapt', npreadapt)
+
+      if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
+
+        ! Initialize collection structure for the adaptation process
+        call collct_init(rcollection)
+
+        ! Initialize adaptation structure from parameter list
+        call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
+
+        ! Generate a dynamic graph for the sparsity pattern and attach
+        ! it to the collection structure which is used to pass this
+        ! type to the callback function for h-adaptation. Note that
+        ! the template matrix is the same for the compressible Euler
+        ! model and the scalar transport model. Therefore, the
+        ! template matrix is adopted from the transport Euler model.
+        templateMatrix = collct_getvalue_int(rcollectionTransport, 'templateMatrix')
+        call grph_createGraphFromMatrix(p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
+        call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
+        
+        ! Set the system format of the Euler model in the common collection structire
+        isystemFormat = collct_getvalue_int(rcollectionEuler, 'isystemFormat')
+        call collct_setvalue_int(rcollection, 'isystemFormat', isystemFormat, .true.)
+
+        ! Attach the primal solution vector from the Euler model to the collection
+        call collct_setvalue_vec(rcollection, 'solutionvectorEuler', rsolutionEuler, .true.)
+
+        ! Attach the primal solution vector from the scalar transport model to the collection
+        call collct_setvalue_vec(rcollection, 'solutionvectorTransport', rsolutionTransport, .true.)
+
+        
+        ! Perform pre-adaptation?
+        if (npreadapt > 0) then
+
+          ! Set the names of the template matrix and the solution vector
+          rcollection%SquickAccess(1) = 'sparsitypattern'
+          rcollection%SquickAccess(2) = 'solutionvectorEuler'
+          rcollection%SquickAccess(3) = 'solutionvectorTransport'
+          
+          ! Attach the primal solution vector to the collection structure
+          call collct_setvalue_vec(rcollection, 'solutionvectorEuler', rsolutionEuler, .true.)
+          call collct_setvalue_vec(rcollection, 'solutionvectorTransport', rsolutionTransport, .true.)
+
+          ! Perform number of pre-adaptation steps
+          do ipreadapt = 1, npreadapt
+            
+            ! Compute the error estimator using recovery techniques
+            call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+                                              rsolutionTransport, 0.0_DP, relementError, derror)
+
+            ! Perform h-adaptation and update the triangulation structure
+            call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
+                                        relementError, rcollection)
+            
+            ! Release element-wise error distribution
+            call lsyssc_releaseVector(relementError)
+
+            ! Generate standard mesh from raw mesh
+            call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+            
+            ! Update the template matrix according to the sparsity pattern
+            templateMatrix = collct_getvalue_int(rcollectionTransport, 'templateMatrix')
+            call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+
+            ! Re-initialize all constant coefficient matrices
+            call euler_initProblemLevel(rappDescrEuler, p_rproblemLevel, rcollectionEuler)
+            call codire_initProblemLevel(rappDescrTransport, p_rproblemLevel, rcollectionTransport)
+
+            ! Resize the solution vector for the Euler model accordingly
+            systemMatrix = collct_getvalue_int(rcollectionEuler, 'systemMatrix')
+            call lsysbl_resizeVecBlockIndMat(p_rproblemLevel%RmatrixBlock(systemMatrix),&
+                                             rsolutionEuler, .false., .true.)
+            
+            ! Resize the solution vector for the scalar transport model accordingly
+            call lsysbl_resizeVectorBlock(rsolutionTransport, &
+                p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+
+
+            ! Re-generate the initial solution vectors
+            call euler_initSolution(rparlist, ssectionnameEuler, p_rproblemLevel, 0.0_DP, rsolutionEuler)
+            call codire_initSolution(rparlist, ssectionnameTransport, p_rproblemLevel, 0.0_DP, rsolutionTransport)
+            
+            
+
+            ! Re-generate the initial solution vector and impose boundary conditions explicitly
+            select case(rappDescrEuler%ndimension)
+            case (NDIM1D)
+              call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
+                                             rsolutionEuler, 0.0_DP, rproblem%rboundary,&
+                                             euler_calcBoundaryvalues1d)
+              
+            case (NDIM2D)
+              call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
+                                             rsolutionEuler, 0.0_DP, rproblem%rboundary,&
+                                             euler_calcBoundaryvalues2d)
+            case (NDIM3D)
+              call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
+                                             rsolutionEuler, 0.0_DP, rproblem%rboundary,&
+                                             euler_calcBoundaryvalues3d)
+            end select
+            call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation,&
+                                             rsolutionTransport, 0.0_DP)
+          end do
+
+          ! Prepare internal data arrays of the solver structure
+          systemMatrix = collct_getvalue_int(rcollectionEuler, 'systemMatrix')
+          call flagship_updateSolverMatrix(p_rproblemLevel, rsolverEuler, systemMatrix,&
+                                           rappDescrEuler%isystemFormat, UPDMAT_ALL)
+          call solver_updateStructure(rsolverEuler)
+
+          ! Prepare internal data arrays of the solver structure
+          systemMatrix = collct_getvalue_int(rcollectionTransport, 'systemMatrix')
+          call flagship_updateSolverMatrix(p_rproblemLevel, rsolverTransport, systemMatrix,&
+                                           SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+          call solver_updateStructure(rsolverTransport)
+
+        end if   ! npreadapt > 0
+        
+      end if   ! dstepAdapt > 0
+      
+    else
+      
+      dstepAdapt = 0.0_DP
+      
+    end if
+
+
     !---------------------------------------------------------------------------
     ! Infinite time stepping loop
     !---------------------------------------------------------------------------
@@ -895,7 +1176,116 @@ contains
         
       end if
 
+
+      !-------------------------------------------------------------------------
+      ! Perform adaptation
+      !-------------------------------------------------------------------------
+
+      if ((dstepAdapt .gt. 0.0_DP) .and. (rtimestepTransport%dTime .ge. dtimeAdapt)) then
+      
+        ! Set time for next adaptation step
+        dtimeAdapt = dtimeAdapt + dstepAdapt
+
+        !-----------------------------------------------------------------------
+        ! Perform recovery-based error estimation
+        !-----------------------------------------------------------------------
+        
+        ! Start time measurement for error estimation
+        call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
+        
+        ! Compute the error estimator using recovery techniques
+        call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+                                          rsolutionTransport, rtimestepTransport%dTime, relementError, derror)
+        
+        ! Stop time measurement for error estimation
+        call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
+
+
+        !-------------------------------------------------------------------------
+        ! Perform h-adaptation
+        !-------------------------------------------------------------------------
+        
+        ! Start time measurement for mesh adaptation
+        call stat_startTimer(rappDescrTransport%rtimerAdaptation, STAT_TIMERSHORT)
+        
+        ! Set the names of the template matrix and the solution vector
+        rcollection%SquickAccess(1) = 'sparsitypattern'
+        rcollection%SquickAccess(2) = 'solutionvectorEuler'
+        rcollection%SquickAccess(3) = 'solutionvectorTransport'
+        
+        ! Attach the primal solution vector to the collection structure
+        ! Attach the primal solution vector to the collection structure
+          call collct_setvalue_vec(rcollection, 'solutionvectorEuler', rsolutionEuler, .true.)
+          call collct_setvalue_vec(rcollection, 'solutionvectorTransport', rsolutionTransport, .true.)
+        
+        ! Perform h-adaptation and update the triangulation structure
+        call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
+                                    relementError, rcollection)
+        
+        ! Release element-wise error distribution
+        call lsyssc_releaseVector(relementError)
+
+        ! Update the template matrix according to the sparsity pattern
+        call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+        
+        ! Stop time measurement for mesh adaptation
+        call stat_stopTimer(rappDescrTransport%rtimerAdaptation)
+
+
+        !-------------------------------------------------------------------------
+        ! Re-generate the discretization and coefficient matrices
+        !-------------------------------------------------------------------------
+        
+        ! Start time measurement for generation of the triangulation
+        call stat_startTimer(rappDescrTransport%rtimerTriangulation, STAT_TIMERSHORT)
+        
+        ! Generate standard mesh from raw mesh
+        call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+        
+        ! Stop time measurement for generation of the triangulation
+        call stat_stopTimer(rappDescrTransport%rtimerTriangulation)
+        
+        
+        ! Start time measurement for generation of constant coefficient matrices
+        call stat_startTimer(rappDescrTransport%rtimerAssemblyCoeff, STAT_TIMERSHORT)
+        
+        ! Re-initialize all constant coefficient matrices
+        call euler_initProblemLevel(rappDescrEuler, p_rproblemLevel, rcollectionEuler)
+        call codire_initProblemLevel(rappDescrTransport, p_rproblemLevel, rcollectionTransport)
+        
+        ! Resize the solution vector accordingly
+        systemMatrix = collct_getvalue_int(rcollectionEuler, 'systemMatrix')
+        call lsysbl_resizeVecBlockIndMat(p_rproblemLevel%RmatrixBlock(systemMatrix),&
+                                         rsolutionEuler, .false., .true.)
+
+        ! Resize the solution vector for the scalar transport model accordingly
+        call lsysbl_resizeVectorBlock(rsolutionTransport, &
+            p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+        
+        ! Prepare internal data arrays of the solver structure
+        systemMatrix = collct_getvalue_int(rcollectionEuler, 'systemMatrix')
+        call flagship_updateSolverMatrix(p_rproblemLevel, rsolverEuler, systemMatrix,&
+                                         rappDescrEuler%isystemFormat, UPDMAT_ALL)
+        call solver_updateStructure(rsolverEuler)
+
+        systemMatrix = collct_getvalue_int(rcollectionTransport, 'systemMatrix')
+        call flagship_updateSolverMatrix(p_rproblemLevel, rsolverTransport, systemMatrix,&
+                                         SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+        call solver_updateStructure(rsolverTransport)
+        
+        ! Stop time measurement for generation of constant coefficient matrices
+        call stat_stopTimer(rappDescrTransport%rtimerAssemblyCoeff)
+
+      end if
+
     end do timeloop
+
+
+    ! Release adaptation structure
+    if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
+      call hadapt_releaseAdaptation(rhadapt)
+      call grph_releaseGraph(rgraph)
+    end if
 
   end subroutine mhd_solveTransientPrimal
 
