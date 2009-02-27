@@ -25,6 +25,6 @@ module hadaptaux3d
 
   implicit none
 
-  public
+  private
 
 end module hadaptaux3d
