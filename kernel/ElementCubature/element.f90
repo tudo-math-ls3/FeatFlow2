@@ -1463,7 +1463,7 @@ contains
   
 !<function>  
 
-  integer(I32) function elem_igetShape(ielType) result(ishp)
+  integer(I32) function elem_igetShape(celement) result(ishp)
   
 !<description>
   ! This function returns the element shape identifier for a given element
@@ -1478,12 +1478,12 @@ contains
 
 !<input>
   ! Element identifier
-  integer(I32), intent(IN) :: ielType
+  integer(I32), intent(IN) :: celement
 !</input>
   
 !</function>
 
-    select case (elem_getPrimaryElement(ielType))
+    select case (elem_getPrimaryElement(celement))
     case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D)
       ! 1D Line
       ishp = BGEOM_SHAPE_LINE
