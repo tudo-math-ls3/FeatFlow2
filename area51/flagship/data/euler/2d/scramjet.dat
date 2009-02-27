@@ -649,7 +649,8 @@ dstepadapt = 5.0
 # maximum number of refinement levels
 nsubdividemax = 3
 
-# adaptation strategy: 1 = red-green
+# adaptation strategy
+# 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
