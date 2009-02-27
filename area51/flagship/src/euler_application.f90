@@ -109,9 +109,7 @@ module euler_application
   use genoutput
   use graph
   use groupfemsystem
-  use hadaptaux1d
-  use hadaptaux2d
-  use hadaptaux3d
+  use hadaptaux
   use hadaptivity
   use linearformevaluation
   use linearsystemblock
@@ -323,9 +321,6 @@ contains
     ! Release collection
     call collct_done(rcollection)
 
-    ! Release function parser
-    call fparser_done()
-
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
 
@@ -344,8 +339,8 @@ contains
   subroutine euler_initApplication(rparlist, ssectionName, rappDescriptor)
 
 !<description>
-    ! This subroutine initializes the application descriptor
-    ! by the parameter settings given by the parameter list
+    ! This subroutine initializes the application descriptor by the
+    ! parameter settings given by the parameter list
 !</description>
 
 !<input>
@@ -369,8 +364,7 @@ contains
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
 
-    ! Initialize function parser
-    call fparser_init()
+    ! Read in all constants and predefined expressions from the parameter file
     call fparser_parseFileForKeyword(sindatfileName, 'defconst', FPAR_CONSTANT)
     call fparser_parseFileForKeyword(sindatfileName, 'defexpr',  FPAR_EXPRESSION)
 
@@ -643,7 +637,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     
     ! Set additional problem descriptor
-    rproblemDescriptor%ndiscretisation = 1
+    rproblemDescriptor%ndiscretisation = 1   ! one discretisation
     rproblemDescriptor%nafcstab        = 1   ! for inviscid fluxes
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
@@ -654,9 +648,10 @@ contains
 
     ! Check if quadrilaterals should be converted to triangles
     call parlst_getvalue_int(rparlist, ssectionName, 'iconvtotria', iconvToTria, 0)
-    if (iconvToTria .ne. 0)&
-        rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
-                                        + PROBDESC_MSPEC_CONVTRIANGLES   
+    if (iconvToTria .ne. 0) then
+      rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
+                                      + PROBDESC_MSPEC_CONVTRIANGLES
+    end if
 
     ! Initialize problem structure
     call problem_initProblem(rproblemDescriptor, rproblem)
@@ -665,7 +660,7 @@ contains
     ! Initialize the stabilisation structure
     inviscidAFC = collct_getvalue_int(rcollection, 'inviscidAFC')
     
-    ! loop over all problem levels
+    ! Loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
 
@@ -724,7 +719,7 @@ contains
     type(t_boundary) , pointer :: p_rboundary
 
 
-    ! retrieve application specific parameters from the collection
+    ! Retrieve application specific parameters from the collection
     templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
     systemMatrix         = collct_getvalue_int(rcollection, 'systemmatrix')
     jacobianMatrix       = collct_getvalue_int(rcollection, 'jacobianmatrix')
@@ -737,116 +732,121 @@ contains
     discretisation       = collct_getvalue_int(rcollection, 'discretisation')
 
     ! Set pointers
-    p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
     p_rtriangulation  => rproblemLevel%rtriangulation
     p_rboundary       => rproblemLevel%p_rproblem%rboundary
 
-    
-    ! Initialize the discretization structure
-    if (p_rdiscretisation%ndimension .eq. 0) then
-      select case(rappDescriptor%isystemformat)
-      case (SYSTEM_INTERLEAVEFORMAT)
-        call spdiscr_initBlockDiscr(p_rdiscretisation, 1, rproblemLevel%rtriangulation)
-      case (SYSTEM_BLOCKFORMAT)
-        call spdiscr_initBlockDiscr(p_rdiscretisation,&
-                                    euler_getNVAR(rappDescriptor), p_rtriangulation)
-      case DEFAULT
-        call output_line('Unsupported system format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
-        call sys_halt()
-      end select
-    end if
 
-    ! Get spatial dimension
-    select case(p_rtriangulation%ndim)
-    case (NDIM1D)
-      select case(rappDescriptor%ieltype)
-      case (-1,1,11)
-        ! P1=Q1 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-        ! P2=Q2 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case DEFAULT
-        call output_line('Unsupproted element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
-        call sys_halt()
-      end select
-      
-    case (NDIM2D)
-      select case(rappDescriptor%ieltype)
-      case (1)
-        ! P1 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E001, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case (2)
-        ! P2 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E002, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case (11)
-        ! Q1 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E011, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case (12)
-        ! Q2 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E013, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case (-1)
-        ! mixed P1/Q1 finite elements
-        call spdiscr_initDiscr_triquad(p_rdiscretisation%RspatialDiscr(1), &
-                                       EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC,&
-                                       SPDISC_CUB_AUTOMATIC,&
-                                       p_rtriangulation, p_rboundary)
-      case (-2)
-        ! mixed P2/Q2 finite elements
-        call spdiscr_initDiscr_triquad(p_rdiscretisation%RspatialDiscr(1), &
-                                       EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC,&
-                                       SPDISC_CUB_AUTOMATIC,&
-                                       p_rtriangulation, p_rboundary)
-      case DEFAULT
-        call output_line('Unsupproted element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
-        call sys_halt()
-      end select
-      
-    case (NDIM3D)
-      select case(rappDescriptor%ieltype)
-      case (1)
-        ! P1 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E001_3D, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case (11)
-        ! Q1 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E010_3D, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case DEFAULT
-        call output_line('Unsupproted element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
-        call sys_halt()
-      end select
-      
-    case DEFAULT
-      call output_line('Invalid number of spatial dimensions',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
-      call sys_halt()
-    end select
+    ! Create discretisation structure
+    if (discretisation > 0) then
     
-    ! Duplicate scalar discretisation structure for block matrix format
-    if (rappDescriptor%isystemFormat .eq. SYSTEM_BLOCKFORMAT) then
-      do ivar = 2, euler_getNVAR(rappDescriptor)
-        call spdiscr_duplicateDiscrSc(&
-            p_rdiscretisation%RspatialDiscr(1),&
-            p_rdiscretisation%RspatialDiscr(ivar), .true.)
-      end do
+      ! Initialize the discretization structure
+      p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
+      if (p_rdiscretisation%ndimension .eq. 0) then
+        select case(rappDescriptor%isystemformat)
+        case (SYSTEM_INTERLEAVEFORMAT)
+          call spdiscr_initBlockDiscr(p_rdiscretisation, 1, rproblemLevel%rtriangulation)
+        case (SYSTEM_BLOCKFORMAT)
+          call spdiscr_initBlockDiscr(p_rdiscretisation,&
+                                      euler_getNVAR(rappDescriptor), p_rtriangulation)
+        case DEFAULT
+          call output_line('Unsupported system format!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+          call sys_halt()
+        end select
+      end if
+
+      ! Get spatial dimension
+      select case(p_rtriangulation%ndim)
+      case (NDIM1D)
+        select case(rappDescriptor%ieltype)
+        case (-1,1,11)
+          ! P1=Q1 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+          ! P2=Q2 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case DEFAULT
+          call output_line('Unsupproted element type!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+          call sys_halt()
+        end select
+        
+      case (NDIM2D)
+        select case(rappDescriptor%ieltype)
+        case (1)
+          ! P1 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E001, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case (2)
+          ! P2 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E002, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case (11)
+          ! Q1 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E011, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case (12)
+          ! Q2 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E013, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case (-1)
+          ! mixed P1/Q1 finite elements
+          call spdiscr_initDiscr_triquad(p_rdiscretisation%RspatialDiscr(1), &
+                                         EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC,&
+                                         SPDISC_CUB_AUTOMATIC,&
+                                         p_rtriangulation, p_rboundary)
+        case (-2)
+          ! mixed P2/Q2 finite elements
+          call spdiscr_initDiscr_triquad(p_rdiscretisation%RspatialDiscr(1), &
+                                         EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC,&
+                                         SPDISC_CUB_AUTOMATIC,&
+                                         p_rtriangulation, p_rboundary)
+        case DEFAULT
+          call output_line('Unsupproted element type!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+          call sys_halt()
+        end select
+        
+      case (NDIM3D)
+        select case(rappDescriptor%ieltype)
+        case (1)
+          ! P1 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E001_3D, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case (11)
+          ! Q1 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E010_3D, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case DEFAULT
+          call output_line('Unsupproted element type!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+          call sys_halt()
+        end select
+        
+      case DEFAULT
+        call output_line('Invalid number of spatial dimensions',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+        call sys_halt()
+      end select
+    
+      ! Duplicate scalar discretisation structure for block matrix format
+      if (rappDescriptor%isystemFormat .eq. SYSTEM_BLOCKFORMAT) then
+        do ivar = 2, euler_getNVAR(rappDescriptor)
+          call spdiscr_duplicateDiscrSc(&
+              p_rdiscretisation%RspatialDiscr(1),&
+              p_rdiscretisation%RspatialDiscr(ivar), .true.)
+        end do
+      end if
+
     end if
     
 
@@ -859,6 +859,7 @@ contains
                                       rappDescriptor%imatrixFormat,&
                                       rproblemLevel%Rmatrix(templateMatrix))
     end if
+
 
     ! Create system matrix
     if (systemMatrix > 0) then
@@ -1011,6 +1012,7 @@ contains
       end select
     end if
 
+
     ! Create consistent (and lumped) mass matrix as duplicate of the template matrix
     if (consistentMassMatrix > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(consistentMassMatrix),&
@@ -1041,6 +1043,7 @@ contains
       call lsyssc_lumpMatrixScalar(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                    LSYSSC_LUMP_DIAG)
     end if
+
     
     ! Create coefficient matrix (phi, dphi/dx) duplicate of the template matrix
     if (coeffMatrix_CX > 0) then
@@ -1057,6 +1060,7 @@ contains
       call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
                                       DER_DERIV3D_X, DER_FUNC)
     end if
+
     
     ! Create coefficient matrix (phi, dphi/dy) duplicate of the template matrix
     if (coeffMatrix_CY > 0) then
@@ -1073,6 +1077,7 @@ contains
       call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
                                       DER_DERIV3D_Y, DER_FUNC)
     end if
+
     
     ! Create coefficient matrix (phi, dphi/dz) duplicate of the template matrix
     if (coeffMatrix_CZ > 0) then
@@ -1089,8 +1094,6 @@ contains
       call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
                                       DER_DERIV3D_Z, DER_FUNC)
     end if
-    
-    
 
     ! Resize stabilization structures if necessary and remove the
     ! indicator for the subdiagonal edge structure. If they are
@@ -2092,9 +2095,9 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
 
-      call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dstepAdapt', dstepAdapt, 0.0_DP)
-      call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dtimeAdapt', dtimeAdapt, 0.0_DP)
-      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'npreadapt', npreadapt, 0)
+      call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dstepAdapt', dstepAdapt)
+      call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dtimeAdapt', dtimeAdapt)
+      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'npreadapt', npreadapt)
 
 
       if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
