@@ -341,6 +341,7 @@ contains
 
     ! local variables
     integer :: i
+    integer(I32) :: celement
     integer, dimension(2) :: Icomp
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
     type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
@@ -401,9 +402,9 @@ contains
       call sys_halt()
     end if
 
-    i = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
+    celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
     if ((rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) .or. &
-        (elem_getPrimaryElement(i) .ne. EL_Q1T)) then
+        (elem_getPrimaryElement(celement) .ne. EL_Q1T)) then
       print *,'UPWIND: Unsupported discretisation.'
       call sys_halt()
     end if
@@ -641,7 +642,7 @@ contains
     integer :: iel
     integer :: iv, ivt1,ivt2
     integer :: im1, im0, im2
-    integer I,II
+    integer :: I,II
     integer ia1, ia2, J, JJ, ia
     real(DP), dimension(4) :: DuALE1,DuALE2
 
@@ -1278,6 +1279,7 @@ contains
 
     ! local variables
     integer :: i,icomponent
+    integer(I32) :: celement
     real(DP), dimension(:), pointer :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
     real(DP), dimension(:), pointer :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
     
@@ -1307,7 +1309,7 @@ contains
       call sys_halt()
     end if
 
-    i = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
+    celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
     if (rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) then
       print *,'SD: Unsupported discretisation.'
       call sys_halt()
@@ -3469,6 +3471,7 @@ contains
 
     ! local variables
     integer :: i
+    integer(I32) :: celement
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
     type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
     real(DP), dimension(:), pointer :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
@@ -3566,7 +3569,7 @@ contains
       end if
     end if
 
-    i = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest% &
+    celement = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest% &
                 RelementDistr(1)%celement
     if (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
         .ne. SPDISC_UNIFORM) then
@@ -6018,6 +6021,7 @@ contains
 
     ! local variables
     integer :: i
+    integer(I32) :: celement
     integer, dimension(3) :: Icomp
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2,&
                                      p_rvelZ1,p_rvelZ2
@@ -6088,7 +6092,7 @@ contains
       call sys_halt()
     end if
 
-    i = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
+    celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
     if (rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) then
       print *,'SD: Unsupported discretisation.'
       call sys_halt()
@@ -7283,6 +7287,7 @@ contains
 
     ! local variables
     integer :: i
+    integer(I32) :: celement
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2,&
                                      p_rvelZ1,p_rvelZ2
     type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rsolZ,&
@@ -7429,7 +7434,7 @@ contains
       end if
     end if
 
-    i = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest% &
+    celement = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest% &
                 RelementDistr(1)%celement
     if (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
         .ne. SPDISC_UNIFORM) then

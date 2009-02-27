@@ -66,7 +66,7 @@ module vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -150,7 +150,7 @@ module vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -245,7 +245,7 @@ module vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -358,7 +358,7 @@ module vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Read from channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! Name of the file where to read from. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -496,7 +496,7 @@ module vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -628,7 +628,7 @@ module vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Read from channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! Name of the file where to read from. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -799,7 +799,7 @@ module vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -903,7 +903,7 @@ module vectorio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -1012,7 +1012,7 @@ module vectorio
   real(DP), dimension(:), intent(IN) :: Ddata
   
   ! output channel to use for output
-  integer(I32), intent(IN) :: ifile
+  integer, intent(IN) :: ifile
   
   ! Format string to use for the output; e.g. '(E20.10)'.
   ! If not specified, data is written to the file unformatted 
