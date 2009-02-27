@@ -7531,7 +7531,7 @@ contains
   subroutine mlprj_prolUniformEx3x_3D_double (DuCoarse,DuFine, &
                IfacesAtElementCoarse,IfacesAtElementFine,&
                IneighboursAtElementCoarse,IneighboursAtElementFine,&
-               NELcoarse,ielType)
+               NELcoarse,celement)
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
@@ -7558,7 +7558,7 @@ contains
   integer, intent(IN) :: NELcoarse
   
   ! Element type to use for prolongation
-  integer(I32), intent(IN) :: ielType
+  integer(I32), intent(IN) :: celement
 !</input>
   
 !<output>
@@ -7578,7 +7578,7 @@ contains
   
     ! Weights for the restriction; all coefficients are halfed, so dividing
     ! by 2 is not necessary in the calculation routines.
-    if (iand(ielType, int(2**16,I32)) .eq. 0) then
+    if (iand(celement, int(2**16,I32)) .eq. 0) then
       ! Weights for Ex31 element
       A1 =  0.458333333333333_DP   ! = 11/24
       A2 =  0.145833333333333_DP   ! =  7/48
@@ -7785,7 +7785,7 @@ contains
   subroutine mlprj_restUniformEx3x_3D_double (DuCoarse,DuFine, &
                IfacesAtElementCoarse,IfacesAtElementFine,&
                IneighboursAtElementCoarse,IneighboursAtElementFine,&
-               NELcoarse,ielType)
+               NELcoarse,celement)
   
 !<description>
   ! Restrict a defect vector from a fine grid to a coarse grid.
@@ -7812,7 +7812,7 @@ contains
   integer, intent(IN) :: NELcoarse
 
   ! Element type to use for prolongation
-  integer(I32), intent(IN) :: ielType
+  integer(I32), intent(IN) :: celement
 !</input>
   
 !<output>
@@ -7831,7 +7831,7 @@ contains
   
     ! Weights for the restriction; all coefficients are halfed, so dividing
     ! by 2 is not necessary in the calculation routines.
-    if (iand(ielType, int(2**16,I32)) .eq. 0) then
+    if (iand(celement, int(2**16,I32)) .eq. 0) then
       ! Weights for Ex31 element
       A1 =  0.458333333333333_DP   ! = 11/24
       A2 =  0.145833333333333_DP   ! =  7/48
@@ -8009,7 +8009,7 @@ contains
   subroutine mlprj_interpUniformEx3x_3D_dbl (DuCoarse,DuFine, &
                IfacesAtElementCoarse,IfacesAtElementFine,&
                IneighboursAtElementCoarse,IneighboursAtElementFine,&
-               NELcoarse,ielType)
+               NELcoarse,celement)
   
 !<description>
   ! Restrict a solution vector from a fine grid to a coarse grid.
@@ -8036,7 +8036,7 @@ contains
   integer, intent(IN) :: NELcoarse
 
   ! Element type to use for prolongation
-  integer(I32), intent(IN) :: ielType
+  integer(I32), intent(IN) :: celement
 !</input>
   
 !<output>
@@ -8055,7 +8055,7 @@ contains
   
     ! Weights for the restriction; all coefficients are halfed, so dividing
     ! by 2 is not necessary in the calculation routines.
-!    IF (IAND(ielType, 2**16) .EQ. 0) THEN
+!    IF (IAND(celement, 2**16) .EQ. 0) THEN
 !      ! Weights for Ex31 element
 !      A1 =  0.458333333333333_DP   ! = 11/24
 !      A2 =  0.145833333333333_DP   ! =  7/48
