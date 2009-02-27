@@ -184,7 +184,7 @@ contains
   !<input>
 
     ! line of calling error_print
-    integer(I32), intent(in) :: iline
+    integer, intent(in) :: iline
 
     ! file of calling error_print
     character(len=*), intent(in) :: sfile
