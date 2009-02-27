@@ -1504,8 +1504,7 @@ contains
 
 !<subroutine>
 
-  subroutine codire_initSolution(rparlist, ssectionName, rproblemLevel,&
-                                 dtime, rvector)
+  subroutine codire_initSolution(rparlist, ssectionName, rproblemLevel, dtime, rvector)
 
 !<description>
     ! This subroutine initializes the solution vector
@@ -1525,10 +1524,10 @@ contains
     real(DP), intent(IN) :: dtime
 !</input>
 
-!<output>
+!<inputoutput>
     ! solution vector
-    type(t_vectorBlock), intent(OUT) :: rvector
-!</output>
+    type(t_vectorBlock), intent(INOUT) :: rvector
+!</intputoutput>
 !</subroutine>
 
     ! section names
@@ -1536,13 +1535,12 @@ contains
     character(LEN=SYS_STRLEN) :: ssolutionName
 
     ! local variables
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_fparser) :: rfparser
     type(t_pgm) :: rpgm
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    integer :: isolutiontype, discretisation
+    integer :: isolutiontype
     integer :: iblock, ieq, neq, ndim
 
     ! symbolic variable names
@@ -1554,11 +1552,6 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
     call parlst_getvalue_string(rparlist, ssectionName, 'ssolutionname', ssolutionName)
     call parlst_getvalue_int(rparlist, ssectionName, 'isolutiontype', isolutiontype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
-    
-    ! Create new solution vector based on the spatial discretisation
-    p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
-    call lsysbl_createVectorBlock(p_rdiscretisation, rvector, .false., ST_DOUBLE)
 
     ! How should the solution be initialized?
     select case(isolutionType)
@@ -1694,8 +1687,7 @@ contains
 
 !<subroutine>
 
-  subroutine codire_initTargetFunc(rappDescriptor, rproblemLevel,&
-                                   dtime, rvector)
+  subroutine codire_initTargetFunc(rappDescriptor, rproblemLevel, dtime, rvector)
 
 !<description>
     ! This subroutine initializes the target functional which serves as
@@ -2776,8 +2768,11 @@ contains
     type(t_vectorBlock), intent(OUT) :: rsolution
 !</subroutine>
 
-    ! Pointer to the current multigrid level
+    ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! Pointer to the discretisation structure
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Vector for the right-hand side
     type(t_vectorBlock), target :: rrhs
@@ -2797,7 +2792,7 @@ contains
 
     ! local variables
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
-    integer :: templateMatrix, systemMatrix
+    integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, ipreadapt, npreadapt
     integer, external :: signal_SIGINT
 
@@ -2805,10 +2800,15 @@ contains
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
 
-    ! Set pointer to maximum problem level
+    ! Get position of discretisation structure
+    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+
+    ! Set pointer to maximum problem level and discretisation
     p_rproblemLevel => rproblem%p_rproblemLevelMax
+    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
     ! Initialize the solution vector and impose boundary conditions explicitly
+    call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
     call codire_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
     call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
 
@@ -2867,17 +2867,20 @@ contains
             ! Release element-wise error distribution
             call lsyssc_releaseVector(relementError)
 
-            ! Re-generate the initial solution vector and impose boundary conditions explicitly
-            call lsysbl_releaseVector(rsolution)
-            call codire_initSolution(rparlist, ssectionname, p_rproblemLevel, 0.0_DP, rsolution)
-            call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
-            
             ! Generate standard mesh from raw mesh
             call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
             ! Update the template matrix according to the sparsity pattern
             templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
             call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+
+            ! Resize the solution vector accordingly
+            call lsysbl_resizeVectorBlock(rsolution, &
+                p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+
+            ! Re-generate the initial solution vector and impose boundary conditions explicitly
+            call codire_initSolution(rparlist, ssectionname, p_rproblemLevel, 0.0_DP, rsolution)
+            call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
 
             ! Re-initialize all constant coefficient matrices
             call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
@@ -3038,8 +3041,8 @@ contains
         call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
         
         ! Resize the solution vector accordingly
-        call lsysbl_resizeVectorBlock(&
-            rsolution, p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+        call lsysbl_resizeVectorBlock(rsolution, &
+            p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
         
         ! Stop time measurement for mesh adaptation
         call stat_stopTimer(rappDescriptor%rtimerAdaptation)
@@ -3078,8 +3081,8 @@ contains
 
         ! Re-initialize the right-hand side vector
         if (rappDescriptor%irhstype > 0) then
-          call lsysbl_resizeVectorBlock(&
-              rrhs, p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+          call lsysbl_resizeVectorBlock(rrhs,&
+              p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
           call codire_initRHS(rappDescriptor, p_rproblemLevel, rtimestep%dTime, rrhs)
           rcollection%p_rvectorQuickAccess1 => rrhs
         end if
@@ -3154,8 +3157,11 @@ contains
 !</output>
 !</subroutine>
 
-    ! Pointer to the current multigrid level
+    ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! Pointer to the discretisation structure
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Vector for the right-hand side
     type(t_vectorBlock), target :: rrhs
@@ -3174,14 +3180,22 @@ contains
 
     ! local variables
     real(DP) :: derror
-    integer :: templateMatrix, systemMatrix
+    integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt
 
 
+    ! Start time measurement for pre-processing
+    call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
+
+    ! Get position of discretisation structure
+    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
+    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
     ! Initialize the solution vector and impose boundary conditions explicitly
+    call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
     call codire_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
     call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
 
@@ -3217,6 +3231,9 @@ contains
       nadapt = 0
 
     end if
+
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
 
     
     ! Adaptation loop
@@ -3401,8 +3418,11 @@ contains
 !</output>
 !</subroutine>
 
-    ! Pointer to the current multigrid level
+    ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! Pointer to the discretisation structure
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Vector for the right-hand side
     type(t_vectorBlock), target :: rrhs
@@ -3421,7 +3441,7 @@ contains
 
     ! local variables
     real(dp) :: derror
-    integer :: templateMatrix, systemMatrix
+    integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt
 
     
@@ -3435,10 +3455,15 @@ contains
     rtimestep%dfinalTime    = 1.0_DP
     rtimestep%theta         = 1.0_DP
 
+    ! Get position of discretisation structure
+    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
+    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
     ! Initialize the solution vector and impose boundary conditions explicitly
+    call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
     call codire_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
     call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)    
 
@@ -3671,8 +3696,11 @@ contains
 !</output>
 !</subroutine>
 
-    ! Pointer to the current multigrid level
+    ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! Pointer to the discretisation structure
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Vector for the linear target functional and the right-hand side
     type(t_vectorBlock), target :: rtargetFunc, rrhs
@@ -3691,7 +3719,7 @@ contains
 
     ! local variables
     real(dp) :: derror
-    integer :: templateMatrix, systemMatrix
+    integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt
 
 
@@ -3705,10 +3733,15 @@ contains
     rtimestep%dfinalTime    = 1.0_DP
     rtimestep%theta         = 1.0_DP
 
+    ! Get position of discretisation structure
+    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
+    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
     ! Initialize the solution vector and impose boundary conditions explicitly
+    call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionPrimal, .false., ST_DOUBLE)
     call codire_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolutionPrimal)
     call bdrf_filterVectorExplicit(rbdrCondPrimal, p_rproblemLevel%rtriangulation, rsolutionPrimal, 0.0_DP)
 
