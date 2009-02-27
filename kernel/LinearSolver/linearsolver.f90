@@ -5559,7 +5559,7 @@ contains
   integer, dimension(:), pointer :: p_Kcol
   real(DP), dimension(:), pointer :: p_DA
   type(t_matrixBlock), target :: rmatrixLocal
-  integer(I32) :: idupFlag
+  integer :: idupFlag
 
     ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
     ! of a call to the solver routines.
@@ -5628,8 +5628,8 @@ contains
     end if
 
     ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
-    call lsyssc_addIndex (rtempMatrix%h_Kcol,-1_I32)
-    call lsyssc_addIndex (rtempMatrix%h_Kld,-1_I32)
+    call lsyssc_addIndex (rtempMatrix%h_Kcol,-1)
+    call lsyssc_addIndex (rtempMatrix%h_Kld,-1)
     
     ! Get the data arrays.
     call lsyssc_getbase_Kcol (rtempMatrix,p_Kcol)
@@ -5807,8 +5807,8 @@ contains
     !CALL sys_halt()
 
     ! Modify Kcol/Kld of the matrix. Subtract 1 to get them 0-based.
-    call lsyssc_addIndex (rtempMatrix%h_Kcol,-1_I32)
-    call lsyssc_addIndex (rtempMatrix%h_Kld,-1_I32)
+    call lsyssc_addIndex (rtempMatrix%h_Kcol,-1)
+    call lsyssc_addIndex (rtempMatrix%h_Kld,-1)
     
     ! Get the data arrays.
     call lsyssc_getbase_Kcol (rtempMatrix,p_Kcol)
@@ -6246,12 +6246,12 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(I32) :: isubgroup,ierr,maxstr
+  integer :: isubgroup,maxstr
   type(t_matrixBlock), pointer :: p_rmatrix
   type(t_matrixScalar), pointer :: p_rmatrixSc
   integer, dimension(:), pointer :: p_Kld, p_Kcol
   real(DP), dimension(:), pointer :: p_DA
-  integer(I32) :: ifill
+  integer :: ifill,ierr
   real(DP) :: drelax
   
   type(t_MILUdecomp), pointer :: rMILUDecomp
@@ -6318,9 +6318,7 @@ contains
     drelax = rsolverNode%p_rsubnodeMILUs1x1%drelax
     
     call iluk_ilu(p_rmatrixSc%NEQ,p_DA,p_Kcol,p_Kld, &
-              ifill,drelax,&
-              ierr,&
-              rMILUDecomp)
+              ifill,drelax,ierr,rMILUDecomp)
               
    
     ! Error?
@@ -6463,7 +6461,7 @@ contains
   ! local variables
   real(DP), dimension(:), pointer :: p_Dd, p_lu
   integer :: lu,jlu,ilup
-  integer(I32), dimension(:), pointer :: p_jlu,p_ilup
+  integer, dimension(:), pointer :: p_jlu,p_ilup
 
     if (rd%cdataType .ne. ST_DOUBLE) then
       call output_line ('(M)ILU(s) only supports double precision vectors!', &
@@ -6497,7 +6495,7 @@ contains
     call storage_getbase_int(ilup, p_ilup)
     call storage_getbase_double(lu, p_lu)
 
-    call iluk_lusolt (int(size(p_Dd),I32),p_Dd,p_lu,p_jlu,p_ilup)
+    call iluk_lusolt (size(p_Dd),p_Dd,p_lu,p_jlu,p_ilup)
                  
   end subroutine
   
@@ -8600,7 +8598,7 @@ contains
         ST_DOUBLE, p_rsubnode%hDs, ST_NEWBLOCK_NOINIT)
     call storage_new('linsol_initStructureGMRES', 'Ds', idim, &
         ST_DOUBLE, p_rsubnode%hDc, ST_NEWBLOCK_NOINIT)
-    call storage_new('linsol_initStructureGMRES', 'Dq', idim+1_I32, &
+    call storage_new('linsol_initStructureGMRES', 'Dq', idim+1, &
         ST_DOUBLE,  p_rsubnode%hDq, ST_NEWBLOCK_NOINIT)
     
     ! Get the pointers

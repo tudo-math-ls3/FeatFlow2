@@ -543,7 +543,7 @@ contains
     type(t_discreteBCEntry), pointer :: p_rdiscrBCEntry
     type(t_discreteBCDirichlet), pointer :: p_rdirichlet
     real(DP), dimension(:), pointer             :: p_DdirichletValues
-    integer(I32), dimension(:), pointer         :: p_IdirichletDOFs
+    integer, dimension(:), pointer         :: p_IdirichletDOFs
     type(t_triangulation), pointer              :: p_rtria
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
     type(t_elementDistribution), pointer        :: p_relemDist
@@ -819,11 +819,11 @@ contains
 !</subroutine>
 
   ! local variables
-  logical binside,bfinish
+  logical :: binside,bfinish
   real(DP), dimension(:), pointer :: p_DvertexParameterValue
   real(DP), dimension(2) :: dbegin,dend
   real(DP) :: dmaxpar
-  integer(I32), dimension(:), pointer :: p_IboundaryCpIdx
+  integer, dimension(:), pointer :: p_IboundaryCpIdx
   integer :: i, ifoundRegions
   integer, dimension(2) :: Iindex
   
@@ -1012,7 +1012,7 @@ contains
   real(DP), dimension(:), pointer :: p_DedgeParameterValue
   real(DP), dimension(2) :: dbegin,dend
   real(DP) :: dmaxpar
-  integer(I32), dimension(:), pointer :: p_IboundaryCpIdx
+  integer, dimension(:), pointer :: p_IboundaryCpIdx
   integer :: i, ifoundRegions
   integer, dimension(2) :: Iindex
   
@@ -1170,25 +1170,25 @@ contains
 
   ! Array that receives a list of elements that touch the boundary region.
   ! Elements may be inside here more than once.
-  integer(I32), dimension(:), intent(OUT) :: IelList
+  integer, dimension(:), intent(OUT) :: IelList
 
   ! OPTIONAL: Index list. Receives for every element touching the BC region an index
   ! into the IelementsAtBoundary where the element can be found.
-  integer(I32), dimension(:), intent(OUT), optional :: IelListIdx
+  integer, dimension(:), intent(OUT), optional :: IelListIdx
   
   ! OPTIONAL: For each element on the boundary, local index of a vertex touching the
   ! boundary region. If more than one vertex touches it, the element is
   ! repeated in IelList and IvertexList contains all vertices that touch.
   ! If not present, elements that touch the boundary region only with a point
   ! are ignored.
-  integer(I32), dimension(:), intent(OUT), optional :: IvtLocal
+  integer, dimension(:), intent(OUT), optional :: IvtLocal
 
   ! OPTIONAL: For each element on the boundary, local index of an edge touching the
   ! boundary region. If more than one edge touches it, the element is
   ! repeated in IelList and IedgeList contains all edges that touch.
   ! If not present, elements that touch the boundary region only with an edge
   ! are ignored.
-  integer(I32), dimension(:), intent(OUT), optional :: IedgeLocal
+  integer, dimension(:), intent(OUT), optional :: IedgeLocal
   
 !</output>
 
@@ -1200,7 +1200,7 @@ contains
     integer, dimension(:), pointer :: p_IelementsAtBoundary, &
                p_IverticesAtBoundary, p_IedgesAtBoundary
     integer, dimension(:,:), pointer :: p_IverticesAtElement,p_IedgesAtElement
-    integer(I32), dimension(:), pointer :: p_IboundaryCpIdx
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer :: i,iidx,iel,ivt,iedge
     logical :: bvertexInside, bedgeInside
     
@@ -1360,24 +1360,24 @@ contains
     integer :: i,j,ilocalEdge,icount,ielidx
     integer(I32) :: ieltype
     integer :: ielement
-    integer(I32) :: iedge,ipoint1,ipoint2,NVT
+    integer :: iedge,ipoint1,ipoint2,NVT
     integer, dimension(1) :: Icomponents
     type(t_discreteBCDirichlet),pointer         :: p_rdirichletBCs
     type(t_triangulation), pointer              :: p_rtriangulation
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
-    integer(I32), dimension(:), pointer         :: p_IelementDistr
+    integer, dimension(:), pointer              :: p_IelementDistr
     integer, dimension(:,:), allocatable :: Idofs
     real(DP), dimension(:,:), allocatable       :: DdofValue
     real(DP), dimension(:), pointer             :: p_DedgeParameterValue,p_DvertexParameterValue
-    integer(I32), dimension(:,:), pointer       :: p_IedgesAtElement
-    integer(I32), dimension(:,:), pointer       :: p_IverticesAtElement
-    real(DP), dimension(:), pointer             :: p_IdirichletValues
-    integer(I32), dimension(:), pointer         :: p_IdirichletDOFs
-    integer(I32), dimension(:), pointer         :: p_IboundaryCpIdx
-    integer(I32), dimension(:), allocatable     :: IverticesAtBoundaryIdx
-    integer(I32), dimension(:), allocatable     :: IedgesAtBoundaryIdx
-    integer(I32), dimension(:), allocatable     :: IelementsAtBoundary
-    integer(I32), dimension(:), allocatable     :: IelementsAtBoundaryIdx
+    real(DP), dimension(:), pointer             :: p_DdirichletValues
+    integer, dimension(:,:), pointer            :: p_IedgesAtElement
+    integer, dimension(:,:), pointer            :: p_IverticesAtElement
+    integer, dimension(:), pointer              :: p_IdirichletDOFs
+    integer, dimension(:), pointer              :: p_IboundaryCpIdx
+    integer, dimension(:), allocatable          :: IverticesAtBoundaryIdx
+    integer, dimension(:), allocatable          :: IedgesAtBoundaryIdx
+    integer, dimension(:), allocatable          :: IelementsAtBoundary
+    integer, dimension(:), allocatable          :: IelementsAtBoundaryIdx
     
     real(DP), dimension(EL_MAXNDER)            :: Dvalues
     
@@ -1395,7 +1395,7 @@ contains
     ! List of element distributions in the discretisation structure
     type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
-    integer :: casmComplexity
+    integer(I32) :: casmComplexity
     
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
@@ -1979,15 +1979,15 @@ contains
       ! Allocate arrays for storing these DOF's and their values - if values are
       ! computed.
       call storage_new('bcasm_newDirichletBConRealBd', 'h_IdirichletDOFs', &
-                      int(icount,I32), ST_INT, p_rdirichletBCs%h_IdirichletDOFs, &
+                      icount, ST_INT, p_rdirichletBCs%h_IdirichletDOFs, &
                       ST_NEWBLOCK_NOINIT)
       call storage_getbase_int(p_rdirichletBCs%h_IdirichletDOFs,p_IdirichletDOFs)
       
       if (iand(casmComplexity,int(not(BCASM_DISCFORDEFMAT),I32)) .ne. 0) then
         call storage_new('bcasm_newDirichletBConRealBd', 'h_DdirichletValues', & 
-                        int(icount,I32), ST_DOUBLE, p_rdirichletBCs%h_DdirichletValues, &
+                        icount, ST_DOUBLE, p_rdirichletBCs%h_DdirichletValues, &
                         ST_NEWBLOCK_NOINIT)
-        call storage_getbase_double(p_rdirichletBCs%h_DdirichletValues,p_IdirichletValues)
+        call storage_getbase_double(p_rdirichletBCs%h_DdirichletValues,p_DdirichletValues)
       end if
       
       ! Transfer the DOF's and their values to these arrays.
@@ -1998,7 +1998,7 @@ contains
             icount = icount + 1
             p_IdirichletDOFs(icount) = abs(Idofs(I,J))
             if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-              p_IdirichletValues(icount) = DdofValue(I,J)
+              p_DdirichletValues(icount) = DdofValue(I,J)
             end if
           end if
         end do
@@ -2097,23 +2097,24 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,ieltype,icount
+    integer(I32) :: ieltype
+    integer :: i,icount
     type(t_discreteBCFeastMirror),pointer       :: p_rfeastMirrorBCs
     type(t_triangulation), pointer              :: p_rtriangulation
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
-    integer(I32), dimension(:,:), pointer       :: p_IverticesAtElement
+    integer, dimension(:,:), pointer            :: p_IverticesAtElement
     
-    integer(I32), dimension(:), pointer         :: p_ImirrorDOFs
+    integer, dimension(:), pointer              :: p_ImirrorDOFs
     
-    integer(I32), dimension(:), allocatable     :: IverticesAtBoundaryIdx
-    integer(I32), dimension(:), allocatable     :: IelementsAtBoundary
+    integer, dimension(:), allocatable          :: IverticesAtBoundaryIdx
+    integer, dimension(:), allocatable          :: IelementsAtBoundary
     
     type (t_boundaryregion) :: rboundaryRegionClosed
 
     integer ::iidx
     type(t_discreteBCEntry), pointer :: p_rdiscreteBCentry
     
-    integer :: casmComplexity
+    integer(I32) :: casmComplexity
     
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
@@ -2206,7 +2207,7 @@ contains
     end do
     
     ! Sort the array for quicker access.
-    call sort_i32(p_ImirrorDOFs)
+    call sort_int(p_ImirrorDOFs)
     
     ! p_ImirrorDOFs contains all BC's that have to be processed.
     ! But it does not contain all DOF's that are to be doubled in the matrix.
@@ -2232,7 +2233,7 @@ contains
     end do
     
     ! Sort the array for quicker access.
-    call sort_i32(p_ImirrorDOFs)
+    call sort_int(p_ImirrorDOFs)
     
     ! Clean up, finish
     deallocate(IverticesAtBoundaryIdx)
@@ -2323,30 +2324,30 @@ contains
     integer :: i,icount
     integer(I32) :: ieltype
     real(DP), dimension(EL_MAXNDER)            :: Dvalues
-    real(DP),dimension(NDIM2D)                  :: Dtangential,Dnormal
-    integer                     :: NVT,ipoint1,ipoint2
-    integer                    :: ielement
-    integer                       :: iedge
-    integer(I32), dimension(2)                  :: ImodifierSize
+    real(DP),dimension(NDIM2D)                 :: Dtangential,Dnormal
+    integer                                    :: NVT,ipoint1,ipoint2
+    integer                                    :: ielement
+    integer                                    :: iedge
+    integer, dimension(2)                      :: ImodifierSize
     
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
     type(t_triangulation), pointer              :: p_rtriangulation
-    integer, dimension(:,:), pointer       :: p_IedgesAtElement
-    integer, dimension(:,:), pointer     :: p_IverticesAtElement
+    integer, dimension(:,:), pointer            :: p_IedgesAtElement
+    integer, dimension(:,:), pointer            :: p_IverticesAtElement
     real(DP), dimension(:), pointer             :: p_DedgeParameterValue
     real(DP), dimension(:,:), pointer           :: p_DvertexCoords
     
     type(t_discreteBCpressureDrop), pointer     :: p_rpressureDropBCs
-    integer, dimension(:), pointer :: p_IpressureDropDOFs
+    integer, dimension(:), pointer              :: p_IpressureDropDOFs
     real(DP), dimension(:,:), pointer           :: p_Dmodifier
 
-    integer(I32), dimension(:), allocatable     :: IedgesAtBoundaryIdx
-    integer(I32), dimension(:), allocatable     :: IelementsAtBoundary
+    integer, dimension(:), allocatable          :: IedgesAtBoundaryIdx
+    integer, dimension(:), allocatable          :: IelementsAtBoundary
 
     integer ::iidx
     type(t_discreteBCEntry), pointer :: p_rdiscreteBCentry
 
-    integer :: casmComplexity
+    integer(I32) :: casmComplexity
     
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
@@ -2423,7 +2424,7 @@ contains
     call storage_new('bcasm_discrBCpressureDrop', 'h_IpressureDropDOFs', &
                     icount, ST_INT, p_rpressureDropBCs%h_IpressureDropDOFs, &
                     ST_NEWBLOCK_NOINIT)
-    ImodifierSize = (/int(NDIM2D,I32),icount/)
+    ImodifierSize = (/NDIM2D,icount/)
     call storage_new2D('bcasm_discrBCpressureDrop', 'h_Dmodifier', & 
                       ImodifierSize, ST_DOUBLE, p_rpressureDropBCs%h_Dmodifier, &
                       ST_NEWBLOCK_NOINIT)
@@ -2576,30 +2577,30 @@ contains
     integer :: i,icount
     integer(I32) :: ieltype
     real(DP),dimension(NDIM2D)                  :: Dtangential,Dnormal
-    integer                      :: NVT,ipoint1,ipoint2
-    integer                    :: ielement
-    integer                       :: iedge
-    integer(I32), dimension(2)                  :: InormalsSize
+    integer                                     :: NVT,ipoint1,ipoint2
+    integer                                     :: ielement
+    integer                                     :: iedge
+    integer, dimension(2)                       :: InormalsSize
     
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
     type(t_triangulation), pointer              :: p_rtriangulation
-    integer, dimension(:,:), pointer       :: p_IedgesAtElement
-    integer, dimension(:,:), pointer     :: p_IverticesAtElement
+    integer, dimension(:,:), pointer            :: p_IedgesAtElement
+    integer, dimension(:,:), pointer            :: p_IverticesAtElement
     real(DP), dimension(:), pointer             :: p_DedgeParameterValue
     real(DP), dimension(:,:), pointer           :: p_DvertexCoords
     
     type(t_discreteBCSlip), pointer             :: p_rslipBCs
-    integer, dimension(:), pointer :: p_IslipDOFs
+    integer, dimension(:), pointer              :: p_IslipDOFs
     real(DP), dimension(:,:), pointer           :: p_Dnormals
     real(DP) :: d
 
-    integer(I32), dimension(:), allocatable     :: IedgesAtBoundaryIdx
-    integer(I32), dimension(:), allocatable     :: IelementsAtBoundary
+    integer, dimension(:), allocatable          :: IedgesAtBoundaryIdx
+    integer, dimension(:), allocatable          :: IelementsAtBoundary
 
     integer ::iidx
     type(t_discreteBCEntry), pointer :: p_rdiscreteBCentry
 
-    integer :: casmComplexity
+    integer(I32) :: casmComplexity
     
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
@@ -2681,7 +2682,7 @@ contains
     call storage_new('bcasm_discrBCSlip', 'h_IpressureDropDOFs', &
                     icount, ST_INT, p_rslipBCs%h_IslipDOFs, &
                     ST_NEWBLOCK_NOINIT)
-    InormalsSize = (/int(NDIM2D,I32),icount/)
+    InormalsSize = (/NDIM2D,icount/)
     call storage_new2D('bcasm_discrBCSlip', 'h_Dnormals', & 
                       InormalsSize, ST_DOUBLE, p_rslipBCs%h_DnormalVectors, &
                       ST_NEWBLOCK_NOINIT)
@@ -2837,23 +2838,23 @@ contains
     integer :: nDOFs
     integer :: h_Ddofs, h_Idofs, i, j, iidx
     integer(I32) :: ieltype
-    integer(I32) :: nequations
+    integer :: nequations
     integer, dimension(2) :: IdofCount
     
-    integer(I32), dimension(:), pointer :: p_Idofs
+    integer, dimension(:), pointer :: p_Idofs
     real(DP), dimension(:,:), pointer   :: p_Ddofs
 
     type(t_discreteFBCDirichlet),pointer        :: p_rdirichletFBCs
     
-    integer(I32), dimension(FBCASM_MAXSIM), target      :: Isubset
-    integer, dimension(FBCASM_MAXSIM), target           :: Iinside
+    integer, dimension(FBCASM_MAXSIM), target      :: Isubset
+    integer, dimension(FBCASM_MAXSIM), target      :: Iinside
     real(DP), dimension(:,:,:), allocatable, target     :: p_Dsubset
-    integer(I32) :: isubsetStart, isubsetLength, icurrentDof
+    integer :: isubsetStart, isubsetLength, icurrentDof
     type(t_discreteFBCEntry), pointer :: p_rdiscreteFBCentry
     
     type(t_discreteFBCevaluation), dimension(DISCFBC_MAXDISCBC) :: Revaluation
     
-    integer :: casmComplexity
+    integer(I32) :: casmComplexity
     
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
@@ -3214,9 +3215,9 @@ contains
   contains
   
     pure subroutine fillsubset (istart, ilength, Isubset)
-    integer(I32), intent(IN) :: istart, ilength
-    integer(I32), dimension(:), intent(OUT) :: Isubset
-    integer(I32) :: i
+    integer, intent(IN) :: istart, ilength
+    integer, dimension(:), intent(OUT) :: Isubset
+    integer :: i
       do i=1,ilength
         Isubset(i) = istart-1+i
       end do
@@ -3316,7 +3317,7 @@ contains
   integer :: iregionNMT, itriaNMT
   integer :: iregionNAT, itriaNAT
   integer :: iregionNEL, itriaNEL
-  integer(I32), dimension(:), pointer :: p_IdofBitmap
+  integer, dimension(:), pointer :: p_IdofBitmap
   integer, dimension(:), pointer :: p_IelemAtVertIdx, p_IelemAtVert,&
     p_IelemAtEdgeIdx, p_IelemAtEdge, p_IelemDist
   integer, dimension(:,:), pointer :: p_IelemAtEdge2D, p_IelemAtFace,&
@@ -3656,7 +3657,7 @@ contains
         ! Let's check if we have already processed this dof.
         idofHigh = ishft(idof-1,-5) + 1
         idofMask = int(ishft(1,iand(idof-1,31)),I32)
-        if (iand(p_IdofBitmap(idofHigh),idofMask) .ne. 0) cycle
+        if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
         
         ! This is a new DOF for the list - so call the boundary values callback
         ! routine to calculate the value
@@ -3668,7 +3669,7 @@ contains
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
         
         ! And mark the DOF as 'processed' in the bitmap
-        p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+        p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
         
         ! Let's go for the next element adjacent to the vertice
       
@@ -3764,7 +3765,7 @@ contains
               ! Let's check if we have already processed this dof
               idofHigh = ishft(idof-1,-5) + 1
               idofMask = int(ishft(1,iand(idof-1,31)),I32)
-              if (iand(p_IdofBitmap(idofHigh),idofMask) .ne. 0) exit
+              if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) exit
               
               ! Okay, the DOF hasn't been set yet.
               ! So let's take care of the first Gauss point.
@@ -3788,7 +3789,7 @@ contains
               ! Add integral-mean DOF value
               call addDofToDirichletEntry(p_rdirichlet, idof, &
                   0.5_DP*(daux1+daux2), ndofs)
-              p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+              p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
               
               ! Calculate DOF of weighted integral-mean
               idof = IdofGlob(j+4)
@@ -3798,7 +3799,7 @@ contains
               ! Add weighted integral-mean DOF value
               call addDofToDirichletEntry(p_rdirichlet, idof, &
                   0.5_DP*G2P*(-daux1+daux2), ndofs)
-              p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+              p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
               
               ! That's it for this edge
               exit
@@ -3820,7 +3821,7 @@ contains
           ! Let's check if we have already processed this dof
           idofHigh = ishft(idof-1,-5) + 1
           idofMask = int(ishft(1,iand(idof-1,31)),I32)
-          if (iand(p_IdofBitmap(idofHigh),idofMask) .ne. 0) cycle
+          if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
           
           ! Calculate the coordinates of the edge midpoint
           Dcoord2D(1:2) = Q12 * (p_DvertexCoords(1:2, p_IvertsAtEdge(1,imt)) +&
@@ -3838,7 +3839,7 @@ contains
           call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
           
           ! And mark the DOF as 'processed' in the bitmap
-          p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+          p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
           
           ! Let's go for the next element adjacent to the edge
                 
@@ -3900,7 +3901,7 @@ contains
           ! Let's check if we have already processed this dof
           idofHigh = ishft(idof-1,-5) + 1
           idofMask = int(ishft(1,iand(idof-1,31)),I32)
-          if (iand(p_IdofBitmap(idofHigh),idofMask) .ne. 0) cycle
+          if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
           
           ! Calculate the coordinates of the edge midpoint
           Dcoord3D(1:3) = Q12 * (p_DvertexCoords(1:3, p_IvertsAtEdge(1,imt)) +&
@@ -3918,7 +3919,7 @@ contains
           call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
           
           ! And mark the DOF as 'processed' in the bitmap
-          p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+          p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
           
           ! Let's go for the next element adjacent to the edge
                 
@@ -3994,7 +3995,7 @@ contains
             ! Let's check if we have already processed this dof
             idofHigh = ishft(idof-1,-5) + 1
             idofMask = int(ishft(1,iand(idof-1,31)),I32)
-            if (iand(p_IdofBitmap(idofHigh),idofMask) .ne. 0) exit
+            if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) exit
 
             ! Okay, the DOF hasn't been set yet.
             ! So let's take care of the first Gauss point.
@@ -4047,7 +4048,7 @@ contains
             ! Add integral-mean DOF value
             call addDofToDirichletEntry(p_rdirichlet, idof, &
                 0.25_DP*(daux1+daux2+daux3+daux4), ndofs)
-            p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+            p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
 
             ! Calculate DOF of first weighted integral-mean
             idof = IdofGlob(6+2*(j-1)+1)
@@ -4057,7 +4058,7 @@ contains
             ! Add first weighted integral-mean DOF value
             call addDofToDirichletEntry(p_rdirichlet, idof, &
                0.25_DP*G2P*(-daux1+daux2+daux3-daux4), ndofs)
-            p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+            p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
 
             ! Calculate DOF of second weighted integral-mean
             idof = IdofGlob(6+2*(j-1)+2)
@@ -4067,7 +4068,7 @@ contains
             ! Add second weighted integral-mean DOF value
             call addDofToDirichletEntry(p_rdirichlet, idof, &
                0.25_DP*G2P*(-daux1-daux2+daux3+daux4), ndofs)
-            p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+            p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
             
             ! That's it for this face
             exit
@@ -4087,7 +4088,7 @@ contains
         ! Let's check if we have already processed this dof
         idofHigh = ishft(idof-1,-5) + 1
         idofMask = int(ishft(1,iand(idof-1,31)),I32)
-        if (iand(p_IdofBitmap(idofHigh),idofMask) .ne. 0) cycle
+        if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
         
         ! Calculate the coordinates of the face midpoint
         Dcoord3D(1:3) = Q14 * (p_DvertexCoords(1:3, p_IvertsAtFace(1,iat)) +&
@@ -4107,7 +4108,7 @@ contains
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
         
         ! And mark the DOF as 'processed' in the bitmap
-        p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),idofMask)
+        p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
         
         ! Let's go for the next element adjacent to the face
 

@@ -215,7 +215,7 @@ module discretefbc
     ! Usually, nvalues defines the number of entries in p_Iwhere where to evaluate;
     ! the actual size of p_Iwhere might be larger than nvalues, so the callback
     ! routine should orientate on nvalues.
-    integer(I32), dimension(:), pointer :: p_Iwhere => null()
+    integer, dimension(:), pointer :: p_Iwhere => null()
   
     ! A pointer to an array that accepts calculated values. The callback routine
     ! for evaluating on the fictitious boundary component must fill this

@@ -279,7 +279,7 @@ contains
 !</output>
 !</subroutine>
     
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     
     ! Set factor
     if (present(dfactor)) then

@@ -87,15 +87,15 @@ contains
     
     select case (cdataType)
     case (ST_INT)
-      call storage_new("stack_create","h_StackData",int(isize,I32),ST_INT,&
+      call storage_new("stack_create","h_StackData",isize,ST_INT,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT)
       
     case (ST_SINGLE)
-      call storage_new("stack_create","h_StackData",int(isize,I32),ST_SINGLE,&
+      call storage_new("stack_create","h_StackData",isize,ST_SINGLE,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT)
 
     case (ST_DOUBLE)
-      call storage_new("stack_create","h_StackData",int(isize,I32),ST_DOUBLE,&
+      call storage_new("stack_create","h_StackData",isize,ST_DOUBLE,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT)
       
     case DEFAULT
@@ -211,7 +211,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(:), pointer :: StackData
+    integer, dimension(:), pointer :: StackData
     
     if (rstack%h_StackData == ST_NOHANDLE) then
       call output_line('Invalid data type!',&
@@ -221,7 +221,7 @@ contains
     
     ! Double storage for stack if required
     if (rstack%istackSize == rstack%istackPosition) then
-      call storage_realloc("stack_pushbackInt",int(2*rstack%istackSize,I32),&
+      call storage_realloc("stack_pushbackInt",2*rstack%istackSize,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT,.true.)
       rstack%istackSize=2*rstack%istackSize
     end if
@@ -262,7 +262,7 @@ contains
 
     ! Double storage for stack if required
     if (rstack%istackSize == rstack%istackPosition) then
-      call storage_realloc("stack_pushbackSngl",int(2*rstack%istackSize,I32),&
+      call storage_realloc("stack_pushbackSngl",2*rstack%istackSize,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT,.true.)
       rstack%istackSize=2*rstack%istackSize
     end if
@@ -303,7 +303,7 @@ contains
 
     ! Double storage for stack if required
     if (rstack%istackSize == rstack%istackPosition) then
-      call storage_realloc("stack_pushbackDble",int(2*rstack%istackSize,I32),&
+      call storage_realloc("stack_pushbackDble",2*rstack%istackSize,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT,.true.)
       rstack%istackSize=2*rstack%istackSize
     end if
@@ -333,7 +333,7 @@ contains
 !</result>
 !</function>
 
-    integer(I32), dimension(:), pointer :: StackData
+    integer, dimension(:), pointer :: StackData
     
     if (.not.stack_isempty(rstack)) then
       call storage_getbase_int(rstack%h_StackData,StackData)
@@ -429,7 +429,7 @@ contains
 !</result>
 !</function>
 
-    integer(I32), dimension(:), pointer :: StackData
+    integer, dimension(:), pointer :: StackData
     
     if (.not.stack_isempty(rstack)) then
       call storage_getbase_int(rstack%h_StackData,StackData)

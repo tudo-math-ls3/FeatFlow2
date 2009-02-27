@@ -142,7 +142,7 @@ contains
   integer, dimension(:), intent(IN) :: IelementList
   
   ! Type of transformation from the reference element to the real element.
-  integer, intent(IN) :: ctrafoType
+  integer(I32), intent(IN) :: ctrafoType
   
   ! OPTIONAL: A set of npointsPerElement tuples (x,y) (or (x,y,z) in 3D) of the 
   ! points where to evaluate. These coordinates define on the reference element 
@@ -577,7 +577,7 @@ contains
   integer, intent(IN) :: ielement
   
   ! Type of transformation from the reference element to the real element.
-  integer, intent(IN) :: ctrafoType
+  integer(I32), intent(IN) :: ctrafoType
   
   ! OPTIONAL: A tuple (x,y) (or (x,y,z) in 3D) of the point where to evaluate.
   ! These coordinates define on the reference the coordinates of the cubature

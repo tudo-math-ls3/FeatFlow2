@@ -445,7 +445,7 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal
     integer :: itable,ieq,ia,ncols,ipred,ipos
-    integer(I32) :: isize
+    integer :: isize
     
     ! Check that matrix and graph have the same format
     select case(rscalarMatrix%cmatrixFormat)

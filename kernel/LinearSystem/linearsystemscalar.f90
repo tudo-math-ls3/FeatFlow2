@@ -4679,7 +4679,7 @@ contains
             rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
 
         call storage_new ('lsyssc_duplicateMatrix', 'KLD', &
-            rdestMatrix%NEQ+1_I32, ST_INT, &
+            rdestMatrix%NEQ+1, ST_INT, &
             rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
 
         call storage_new ('lsyssc_duplicateMatrix', 'Kdiagonal', &
@@ -4692,7 +4692,7 @@ contains
             rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
 
         call storage_new ('lsyssc_duplicateMatrix', 'KLD', &
-            rdestMatrix%NEQ+1_I32, ST_INT, &
+            rdestMatrix%NEQ+1, ST_INT, &
             rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
 
       case (LSYSSC_MATRIXD)
@@ -9484,20 +9484,20 @@ contains
   integer, intent(IN) :: h_Ix
 
   ! The value to add to every entry.
-  integer(I32) :: ivalue
+  integer :: ivalue
 
   ! OPTIONAL: Starting position of a part of the vector to modify; usually = 1
-  integer(I32), optional :: istartpos
+  integer, optional :: istartpos
 
   ! OPTIONAL: Length of the part of the vector to modify; <= SIZE(Ix)
-  integer(I32), optional :: ilength
+  integer, optional :: ilength
 
 !</input>
 
 !</subroutine>
     
     ! Actual length
-    integer(I32) :: iactlength,istart,i
+    integer :: iactlength,istart,i
     
     ! Vector
     integer, dimension(:), pointer :: p_Ix
@@ -10995,7 +10995,7 @@ contains
           ! matrix!
           call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                             ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1_I32, &
+          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
                             ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           
           ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
@@ -11044,7 +11044,7 @@ contains
           ! matrix!
           call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                             ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1_I32, &
+          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
                             ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
 
           ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
@@ -11112,7 +11112,7 @@ contains
           ! matrix!
           call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                             ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1_I32, &
+          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
                             ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
                             rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
@@ -11173,7 +11173,7 @@ contains
           ! matrix!
           call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                             ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1_I32, &
+          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
                             ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
                             rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&

@@ -128,10 +128,10 @@ contains
 
   !<input>
       ! Column numbers of the entries in the matrix.
-      integer(I32), dimension(:), intent(in) :: jlu
+      integer, dimension(:), intent(in) :: jlu
       
       ! Pointer to the entries of U of the LU decomposition
-      integer(I32), dimension(:), intent(in) :: uptr
+      integer, dimension(:), intent(in) :: uptr
       
       ! Matrix entries.
       real(DP), dimension(:), intent(in) :: lu
@@ -143,7 +143,7 @@ contains
   !</inputoutput>
       
       ! local variables
-      integer(I32) :: n,i,k
+      integer :: n,i,k
       real(DP) :: x_i
 
       if (n .le. 0)  return
@@ -1041,7 +1041,7 @@ contains
 
   !<input>
       ! The order of the matrix A.
-      integer(I32), intent(in) :: n
+      integer, intent(in) :: n
       
       ! Column pattern of the matrix to be factorised, in CSR format.
       integer, dimension(:), intent(in) :: colind
@@ -1050,21 +1050,21 @@ contains
       integer, dimension(:), intent(in) :: rwptr
 
       ! Level of fill-in allowed.
-      integer(I32), intent(in) :: levfill
+      integer, intent(in) :: levfill
       
       ! The maximum number of nonzero entries in the
       ! approximate factorization of a.  This is the amount of storage
       ! allocated for ijlu.
-      integer(I32), intent(in) :: nzmax
+      integer, intent(in) :: nzmax
       
     !</input>
       
     !<output>
       ! The actual number of entries in the approximate factors, plus one.
-      integer(I32), intent(out) :: nzlu
+      integer, intent(out) :: nzlu
 
       ! MSR structure arrays for the factorised matrix.
-      integer(I32), dimension(:), intent(out) :: ijlu,uptr
+      integer, dimension(:), intent(out) :: ijlu,uptr
       
       ! ierr is an error flag:
       !        ierr  = -i --> near zero pivot in step i.
@@ -1075,7 +1075,7 @@ contains
       
       ! Contains the actual number of elements in ldu, or the amount
       ! of additional storage needed for ldu
-      integer(I32), intent(out) ::  mneed
+      integer, intent(out) ::  mneed
     !</output>
     
     !<inputoutput>

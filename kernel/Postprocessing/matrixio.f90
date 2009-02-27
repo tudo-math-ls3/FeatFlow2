@@ -80,7 +80,7 @@ module matrixio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -136,7 +136,7 @@ module matrixio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -210,10 +210,10 @@ module matrixio
     
   !<input>
     ! number of rows
-    integer(I32), intent(IN) :: nrow
+    integer, intent(IN) :: nrow
     
     ! number of columns
-    integer(I32), intent(IN) :: ncol
+    integer, intent(IN) :: ncol
     
     ! matrix: array [1..nrow,1..ncol] of double
     real(DP), dimension(nrow,ncol), intent(IN) :: Da
@@ -228,7 +228,7 @@ module matrixio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -315,19 +315,19 @@ module matrixio
     
   !<input>
     ! number of rows
-    integer(I32), intent(IN) :: nrow
+    integer, intent(IN) :: nrow
     
     ! number of columns; must be =nrow for structure-7 matrices
-    integer(I32), intent(IN) :: ncol
+    integer, intent(IN) :: ncol
     
     ! matrix: array [1..na] of double
     real(DP), dimension(:), intent(IN) :: Da
     
     ! Column structure of the matrix
-    integer(I32), dimension(:), intent(IN) :: Icol
+    integer, dimension(:), intent(IN) :: Icol
     
     ! Row structure of the matrix
-    integer(I32), dimension(nrow+1), intent(IN) :: Irow
+    integer, dimension(nrow+1), intent(IN) :: Irow
     
     ! name of the matrix
     character(len=*), intent(IN) :: sarray
@@ -339,7 +339,7 @@ module matrixio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -462,7 +462,7 @@ module matrixio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -526,19 +526,19 @@ module matrixio
     
   !<input>
     ! number of rows
-    integer(I32), intent(IN) :: nrow
+    integer, intent(IN) :: nrow
     
     ! number of columns; must be =nrow for structure-7 matrices
-    integer(I32), intent(IN) :: ncol
+    integer, intent(IN) :: ncol
     
     ! matrix: array [1..na] of double
     real(DP), dimension(:), intent(IN) :: Da
     
     ! Column structure of the matrix
-    integer(I32), dimension(:), intent(IN) :: Icol
+    integer, dimension(:), intent(IN) :: Icol
     
     ! Row structure of the matrix
-    integer(I32), dimension(nrow+1), intent(IN) :: Irow
+    integer, dimension(nrow+1), intent(IN) :: Irow
     
     ! name of the matrix
     character(len=*), intent(IN) :: sarray
@@ -547,7 +547,7 @@ module matrixio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -630,7 +630,7 @@ module matrixio
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN) :: ifile
+    integer, intent(IN) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(IN) :: sfile
@@ -774,7 +774,7 @@ module matrixio
     ! local variables
     real(DP), dimension(:), pointer :: Da
     real(SP), dimension(:), pointer :: Fa
-    integer(I32), dimension(:), pointer :: Kld,Kcol
+    integer, dimension(:), pointer :: Kld,Kcol
     integer :: iunit,ieq
     real(DP) :: dthres
     character(LEN=10) :: cstat,cpos

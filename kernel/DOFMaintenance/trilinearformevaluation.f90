@@ -877,7 +877,7 @@ contains
         rintSubset%celement = p_elementDistrTrial%celement
         
         call fcoeff_buildTrilMatrixSc_sim (p_rdiscrTest,p_rdiscrTrial,rform, &
-                  IELmax-IELset+1_I32,ncubp,&
+                  IELmax-IELset+1,ncubp,&
                   rintSubset%p_revalElementSet%p_DpointsReal,&
                   p_IdofsTrial,IdofsTest,rintSubset, Dcoefficients,rcollection)
         call domint_doneIntegration(rintSubset)

@@ -123,7 +123,8 @@ contains
 
     ! local variables
     integer :: cnonmesh
-    integer :: ipoint,ieltype,indof,nve,ibas
+    integer :: ipoint,indof,nve,ibas
+    integer(I32) :: ieltype
     integer :: iel
     integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
@@ -374,7 +375,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipoint,ieltype,indof,nve,ibas,npoints
+    integer :: ipoint,indof,nve,ibas,npoints
+    integer(I32) :: ieltype
     integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
@@ -989,7 +991,8 @@ contains
 
     ! local variables
     logical :: bnonpar
-    integer :: ipoint,ieltype,indof,nve,ibas,iel
+    integer :: ipoint,indof,nve,ibas,iel
+    integer(I32) :: ieltype
     integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
@@ -1546,7 +1549,8 @@ contains
   real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
   integer :: indofTrial,npoints,nelements
   real(DP) :: dval
-  integer :: iel,ipoint,ibas,ieltyp
+  integer :: iel,ipoint,ibas
+  integer(I32) :: ieltyp
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
   integer, dimension(:,:), pointer :: p_IdofsTrial

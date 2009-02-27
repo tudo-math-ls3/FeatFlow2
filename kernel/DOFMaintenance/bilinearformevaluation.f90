@@ -48,11 +48,11 @@ module bilinearformevaluation
   type t_matrixmem
     ! A pointer to a 1D memory block of integers - receives the
     ! column identifiers of a matrix
-    integer(I32), dimension(:), pointer :: p_Icol
+    integer, dimension(:), pointer :: p_Icol
     
     ! A pointer to a 1D memory block of integers - receives 
     ! indices of next entries in the list of each line in the matrix
-    integer(I32), dimension(:), pointer :: p_Iindx
+    integer, dimension(:), pointer :: p_Iindx
   end type
   
 !</typeblock>
@@ -126,7 +126,7 @@ contains
   ! OPTIONAL: An initial guess about how much memory the matrix needs. If set 
   ! to 0 or not given, an initial guess of 16*NEQ (but at least 10000 matrix 
   ! entries) is assumed.
-  integer(I32), intent(IN), optional :: imemGuess
+  integer, intent(IN), optional :: imemGuess
 !</input>
 
 !<output>
@@ -138,7 +138,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(I32) :: imem
+  integer :: imem
   integer :: ccType
   
   imem = 0
@@ -434,7 +434,7 @@ contains
 
   ! An initial guess about how much memory the matrix needs. If set to 0,
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
-  integer(I32), intent(IN) :: imemGuess
+  integer, intent(IN) :: imemGuess
   
 !</input>
 
@@ -463,7 +463,7 @@ contains
   
   ! Pointer to current KCOL memory block,
   ! pointer to current index memory block
-  integer(I32), dimension(:), pointer :: p_Icol, p_Iindx
+  integer, dimension(:), pointer :: p_Icol, p_Iindx
   
   ! Number of currently allocated pointers in Ihmemblock
   integer :: iblocks
@@ -489,7 +489,7 @@ contains
   integer, parameter :: NmemBlkCount = 5
 
   ! Pointer to KLD, KCOL, diagonal
-  integer(I32), dimension(:), pointer :: p_KLD, p_KCOL, p_Kdiagonal
+  integer, dimension(:), pointer :: p_KLD, p_KCOL, p_Kdiagonal
   
   ! Size of memory currently allocated
   integer :: iallocated
@@ -507,7 +507,7 @@ contains
   type(t_triangulation), pointer :: p_rtriangulation
   
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList
+  integer, dimension(:), pointer :: p_IelementList
   
   ! Current element distribution
   type(t_elementDistribution), pointer :: p_relementDistrTest
@@ -555,7 +555,7 @@ contains
   
   ! Allocate KLD...
   call storage_new1D ('bilf_createMatStructure9_conf', 'KLD', &
-                      NEQ+1_I32, ST_INT, rmatrixScalar%h_KLD, &
+                      NEQ+1, ST_INT, rmatrixScalar%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
   ! matrix construction routine!
@@ -1178,7 +1178,7 @@ contains
   
   ! An initial guess about how much memory the matrix needs. If set to 0,
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
-  integer(I32), intent(IN) :: imemGuess
+  integer, intent(IN) :: imemGuess
 
 !</input>
 
@@ -1208,7 +1208,7 @@ contains
   
   ! Pointer to current KCOL memory block,
   ! pointer to current index memory block
-  integer(I32), dimension(:), pointer :: p_Icol, p_Iindx
+  integer, dimension(:), pointer :: p_Icol, p_Iindx
   
   ! Number of currently allocated pointers in Ihmemblock
   integer :: iblocks
@@ -1228,7 +1228,7 @@ contains
   integer, parameter :: NmemBlkCount = 5
 
   ! Pointer to KLD, KCOL, diagonal
-  integer(I32), dimension(:), pointer :: p_KLD, p_KCOL, p_Kdiagonal
+  integer, dimension(:), pointer :: p_KLD, p_KCOL, p_Kdiagonal
   
   ! Size of memory currently allocated
   integer :: iallocated
@@ -1248,7 +1248,7 @@ contains
   type(t_triangulation), pointer :: p_rtriangulation
   
   ! A pointer to an element-number list
-  integer(I32), dimension(:), pointer :: p_IelementList
+  integer, dimension(:), pointer :: p_IelementList
   
   ! Current element distribution
   type(t_elementDistribution), pointer :: p_relementDistrTest
@@ -1301,7 +1301,7 @@ contains
   
   ! Allocate KLD...
   call storage_new1D ('bilf_createMatStructure9_uni', 'KLD', &
-                      NEQ+1_I32, ST_INT, rmatrixScalar%h_KLD, &
+                      NEQ+1, ST_INT, rmatrixScalar%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
   ! matrix construction routine!
@@ -3758,7 +3758,7 @@ contains
   integer :: NEQ
   
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoType
+  integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
@@ -4252,7 +4252,7 @@ contains
         rintSubset%p_IdofsTrial => p_IdofsTrial
         rintSubset%celement = p_relementDistrTrial%celement
         call fcoeff_buildMatrixSc_sim (p_rdiscrTest,p_rdiscrTrial,rform, &
-                  IELmax-IELset+1_I32,ncubp,&
+                  IELmax-IELset+1,ncubp,&
                   revalElementSet%p_DpointsReal,&
                   p_IdofsTrial,IdofsTest,rintSubset, Dcoefficients,rcollection)
         call domint_doneIntegration (rintSubset)

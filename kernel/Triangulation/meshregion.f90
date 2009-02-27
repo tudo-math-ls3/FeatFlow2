@@ -177,7 +177,7 @@ module meshregion
 !<input>
   ! The nodal property array from which the index array is to be
   ! calculated.
-  integer(I32), dimension(:), intent(IN)           :: IpropArray
+  integer, dimension(:), intent(IN)                :: IpropArray
   
   ! The offset of the first entry in the nodal property array.
   integer, intent(IN)                              :: ioff
@@ -191,12 +191,12 @@ module meshregion
   ! OPTIONAL: An array holding all allowed nodal properties that
   ! are to be added into the index array. If not given, all entries
   ! with nodal property > 0 are added.
-  integer(I32), dimension(:), optional, intent(IN) :: IallowedProp
+  integer, dimension(:), optional, intent(IN)      :: IallowedProp
 !</input>
 
 !<output>
   ! A storage handle to the created index array.
-  integer(I32), intent(OUT)                        :: h_IidxArray
+  integer, intent(OUT)                             :: h_IidxArray
   
   ! The number of entries in the created index array.
   integer, intent(OUT)                             :: inumEntries
@@ -286,7 +286,7 @@ module meshregion
 !<input>
   ! The nodal property array from which the index array is to be
   ! calculated.
-  integer(I32), dimension(:), intent(IN)           :: IpropArray
+  integer, dimension(:), intent(IN)                :: IpropArray
   
   ! The offset of the first entry in the nodal property array.
   integer, intent(IN)                              :: ioff
@@ -301,12 +301,12 @@ module meshregion
   ! OPTIONAL: An array holding all allowed nodal properties that
   ! are to be added into the index array. If not given, all entries
   ! with nodal property > 0 are added.
-  integer(I32), dimension(:), optional, intent(IN) :: IallowedProp
+  integer, dimension(:), optional, intent(IN)      :: IallowedProp
 !</input>
 
 !<output>
   ! A storage handle to the created index array.
-  integer(I32), intent(OUT)                        :: h_IidxArray
+  integer, intent(OUT)                             :: h_IidxArray
   
   ! The number of entries in the created index array.
   integer, intent(OUT)                             :: inumEntries
@@ -919,7 +919,7 @@ module meshregion
 
 !</subroutine>
   
-  integer(I32), dimension(:), allocatable :: Imap
+  integer, dimension(:), allocatable :: Imap
   integer, dimension(:), pointer :: p_IedgeIdx, p_IvertIdx
   integer, dimension(:,:), pointer :: p_IvertsAtEdge
   integer, dimension(1) :: IallowedProp
@@ -1085,7 +1085,7 @@ module meshregion
 
 !</subroutine>
   
-  integer(I32), dimension(:), allocatable :: Imap
+  integer, dimension(:), allocatable :: Imap
   integer, dimension(:), pointer :: p_IfaceIdx, p_IvertIdx
   integer, dimension(:,:), pointer :: p_IvertsAtFace
   integer, dimension(1) :: IallowedProp
@@ -1257,7 +1257,7 @@ module meshregion
 
 !</subroutine>
   
-  integer(I32), dimension(:), allocatable :: Imap
+  integer, dimension(:), allocatable :: Imap
   integer, dimension(:), pointer :: p_IfaceIdx, p_IedgeIdx
   integer, dimension(:,:), pointer :: p_IedgesAtFace
   integer, dimension(1) :: IallowedProp

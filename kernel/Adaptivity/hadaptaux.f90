@@ -669,7 +669,7 @@ contains
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:,:), pointer :: p_Ddata
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
 
     ! Check if coordinates exists
     if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .ne.&
@@ -1291,7 +1291,7 @@ contains
     integer, dimension(:), pointer    :: p_IboundaryCpIdx
     integer, dimension(:), pointer    :: p_IverticesAtBoundary
     integer, dimension(:,:), pointer  :: p_IneighboursAtBoundary
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     integer :: ioff,lvbd,ivbdStart,ivbdEnd,ibct,h_IneighboursAtBoundary
     
     ! Check if handle are not empty
@@ -1373,7 +1373,7 @@ contains
     ! The convertion routine 1D -> 2D
     
     subroutine convert_pointer(isize, ptr_1d, ptr_2d)
-      integer(I32), intent(IN)                 :: isize
+      integer, intent(IN)                 :: isize
       real(DP), dimension(1,isize), intent(IN), target :: ptr_1d
       real(DP), dimension(:,:), pointer                :: ptr_2d
       
@@ -1422,7 +1422,7 @@ contains
     real(DP), dimension(:), pointer :: p_DvertexParameterValue
     integer, dimension(:), pointer  :: p_IboundaryCpIdx
     integer, dimension(:), pointer  :: p_IverticesAtBoundary
-    integer(I32) :: isize
+    integer :: isize
     integer :: ioff,lvbd,ivbdStart,ivbdEnd,ibct
 
     ! Check if boundary data exists

@@ -206,7 +206,7 @@ contains
   integer :: NEQ
   
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoType
+  integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
@@ -468,9 +468,9 @@ contains
       rintSubset%celement = p_elementDistribution%celement
       
       call fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
-                IELmax-IELset+1_I32,ncubp,revalElementSet%p_DpointsReal, &
+                IELmax-IELset+1,ncubp,revalElementSet%p_DpointsReal, &
                 IdofsTest,rintSubset, &
-                Dcoefficients(:,:,1:IELmax-IELset+1_I32),rcollection)
+                Dcoefficients(:,:,1:IELmax-IELset+1),rcollection)
       
       ! Release the domain integratino subset again
       call domint_doneIntegration(rintSubset)

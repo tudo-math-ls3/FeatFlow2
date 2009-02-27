@@ -681,7 +681,7 @@ end subroutine
 
 !<output>
   ! An integer for the return value.
-  integer(I32),           intent(OUT) :: iisInObject
+  integer,           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -690,7 +690,7 @@ end subroutine
   real(DP), dimension(3) :: DrelCoords
   
   ! some other temporary variables
-  integer(I32) :: i, iisInSubObject
+  integer :: i, iisInSubObject
   
     ! Transform to local coordinate system
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
@@ -1412,7 +1412,7 @@ end subroutine
 
 !<output>
   ! An integer for the return value.
-  integer(I32),           intent(OUT) :: iisInObject
+  integer,           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -1595,7 +1595,7 @@ end subroutine
   real(DP), dimension(:,:), pointer :: p_Dvertices
   real(DP) :: dstep, dangle, dradius
   
-  integer(I32), dimension(2) :: Isize
+  integer, dimension(2) :: Isize
   
     ! Calculate angle step
     dstep = (SYS_PI * 2.0_DP) / real(ndesiredVerticeCount, DP)
@@ -1868,7 +1868,7 @@ end subroutine
 
 !<output>
   ! An integer for the return value.
-  integer(I32),           intent(OUT) :: iisInObject
+  integer,           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -2130,7 +2130,7 @@ end subroutine
   real(DP), dimension(:,:), pointer :: p_Dvertices
   real(DP) :: dedge
 
-  integer(I32), dimension(2), parameter :: Isize = (/ 2, 4 /)  
+  integer, dimension(2), parameter :: Isize = (/ 2, 4 /)  
   
     ! Get edge length
     dedge = rgeomObject%rsquare%dlength * 0.5_DP
@@ -2414,7 +2414,7 @@ end subroutine
 
 !<output>
   ! An integer for the return value.
-  integer(I32),           intent(OUT) :: iisInObject
+  integer,           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -2816,7 +2816,7 @@ end subroutine
   real(DP), dimension(:,:), pointer :: p_Dvertices
   real(DP) :: dstep, dangle, dradiusX, dradiusY
   
-  integer(I32), dimension(2) :: Isize
+  integer, dimension(2) :: Isize
   
     ! Calculate angle step
     dstep = (SYS_PI * 2.0_DP) / real(ndesiredVerticeCount, DP)
@@ -3136,7 +3136,7 @@ end subroutine
 
 !<output>
   ! An integer for the return value.
-  integer(I32),           intent(OUT) :: iisInObject
+  integer,           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -3370,7 +3370,7 @@ end subroutine
   real(DP), dimension(:,:), pointer :: p_Dvertices
   real(DP) :: dedgeX, dedgeY
   
-  integer(I32), dimension(2), parameter :: Isize = (/ 2, 4 /)
+  integer, dimension(2), parameter :: Isize = (/ 2, 4 /)
   
     ! Get edge lengths
     dedgeX = rgeomObject%rrectangle%Dlength(1) * 0.5_DP
@@ -3687,7 +3687,7 @@ end subroutine
 
 !<output>
   ! An integer for the return value.
-  integer(I32),           intent(OUT) :: iisInObject
+  integer,           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -3753,7 +3753,7 @@ end subroutine
 
 !<output>
   ! An integer for the return value.
-  integer(I32),           intent(OUT) :: iisInObject
+  integer,           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -4148,7 +4148,7 @@ end subroutine
   
   real(DP), dimension(:,:), pointer :: p_Dvertices
   
-  integer(I32), dimension(2) :: Isize
+  integer, dimension(2) :: Isize
   
     ! Get number of vertices
     inumVerts = ubound(rgeomObject%rpolygon%p_Dvertices, 2)
@@ -4459,7 +4459,7 @@ end subroutine
 !<output>
   ! An integer storing the number of objects where the point is inside
   ! the object's geometry.
-  integer(I32),           intent(OUT) :: iisInObject
+  integer,           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -4513,7 +4513,7 @@ end subroutine
   ! the object's geometry.
   ! The lower and upper bounds of the array are assumed to be the same as the ones
   ! for the coordinate array.
-  integer(I32), dimension(:), intent(OUT) :: IisInObject
+  integer, dimension(:), intent(OUT) :: IisInObject
 !</output>
 
 !</subroutine>
@@ -5111,7 +5111,7 @@ end subroutine
 
 !<output>
   ! An integer for the return value.
-  integer(I32),           intent(OUT) :: iisInObject
+  integer,           intent(OUT) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -5183,7 +5183,7 @@ end subroutine
   integer, dimension(:,:), pointer :: p_Ivertices1
   real(DP) :: dstep, dangle, dradius,s,t
   
-  integer(I32), dimension(2) :: Isize1,Isize2
+  integer, dimension(2) :: Isize1,Isize2
   
     ! Calculate angle step
     ! dstep = (SYS_PI * 2.0_DP) / real(ndesiredVerticeCount, DP)
@@ -5388,7 +5388,7 @@ end subroutine
   real(DP), dimension(:,:), pointer :: p_Dvertices
   integer, dimension(:,:), pointer :: p_Ivertices1
   
-  integer(I32), dimension(2) :: Isize1,Isize2
+  integer, dimension(2) :: Isize1,Isize2
   
   
   ! get the handles of the octa
