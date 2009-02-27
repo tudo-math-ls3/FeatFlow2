@@ -147,9 +147,7 @@ module codire_application
   use genoutput
   use graph
   use groupfemscalar
-  use hadaptaux1d
-  use hadaptaux2d
-  use hadaptaux3d
+  use hadaptaux
   use hadaptivity
   use linearformevaluation
   use linearsystemblock
@@ -314,8 +312,8 @@ contains
       call parlst_getvalue_string(rparlist, 'codire', 'algorithm', algorithm)
       call parlst_getvalue_string(rparlist, 'codire', 'indatfile', sindatfileName)
       
-      ! The boundary condition for the primal problem is required for all 
-      ! solution strategies so initialize it from the parameter file
+      ! The boundary conditions for the primal problem are required for all 
+      ! solution strategies. So initialize them from the parameter file.
       call parlst_getvalue_string(rparlist, 'codire', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
@@ -425,9 +423,6 @@ contains
     ! Release collection
     call collct_done(rcollection)
 
-    ! Release function parser
-    call fparser_done()
-
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
 
@@ -446,8 +441,8 @@ contains
   subroutine codire_initApplication(rparlist, ssectionName, rappDescriptor)
 
 !<description>
-    ! This subroutine initializes the application descriptor
-    ! by the parameter settings given by the parameter list
+    ! This subroutine initializes the application descriptor by the
+    ! parameter settings given by the parameter list
 !</description>
 
 !<input>
@@ -480,8 +475,7 @@ contains
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
 
-    ! Initialize function parser
-    call fparser_init()
+    ! Read in all constants and predefined expressions from the parameter file
     call fparser_parseFileForKeyword(sindatfileName, 'defconst', FPAR_CONSTANT)
     call fparser_parseFileForKeyword(sindatfileName, 'defexpr',  FPAR_EXPRESSION)
 
@@ -512,39 +506,49 @@ contains
     
     ! Initialize the function parser for the velocity field if required
     if (rappDescriptor%ivelocitytype .ne. VELOCITY_ZERO) then
+      
       call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname', svelocityName, '')
       if (trim(svelocityName) .ne. '') then
         call flagship_readParserFromFile(sindatfileName, '['//trim(svelocityName)//']',&
                                          cvariables, rappDescriptor%rfparserVelocityField)
       end if
+      
     end if
 
     ! Initialize the function parser for the diffusion tensor if required
     if (rappDescriptor%idiffusiontype .ne. DIFFUSION_ZERO) then
+      
       call parlst_getvalue_string(rparlist, ssectionName, 'sdiffusionname', sdiffusionName)
       call flagship_readParserFromFile(sindatfileName, '['//trim(sdiffusionName)//']',&
                                        cvariables, rappDescriptor%rfparserDiffusionTensor)
+
     end if
 
     ! Initialize the function parser for the reactive term if required
     if (rappDescriptor%ireactiontype .ne. REACTION_ZERO) then
+
       call parlst_getvalue_string(rparlist, ssectionName, 'sreactionname', sreactionName)
       call flagship_readParserFromFile(sindatfileName, '['//trim(sreactionName)//']',&
                                        cvariables, rappDescriptor%rfparserReaction)
+
     end if
 
     ! Initialize the function parser for the right-hand side if required
     if (rappDescriptor%irhstype .ne. RHS_ZERO) then
+
       call parlst_getvalue_string(rparlist, ssectionName, 'srhsname', srhsName)
       call flagship_readParserFromFile(sindatfileName, '['//trim(srhsName)//']',&
                                        cvariables, rappDescriptor%rfparserRHS)
+
     end if
 
     ! Initialize the function parser for the target functional if required
     if (rappDescriptor%itargetfunctype .ne. TFUNC_ZERO) then
+
       call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncName)
       call flagship_readParserFromFile(sindatfileName, '['//trim(stargetfuncName)//']',&
                                        cvariables, rappDescriptor%rfparserTargetFunc)
+
     end if
 
   end subroutine codire_initApplication
@@ -858,7 +862,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     
     ! Set additional problem descriptor
-    rproblemDescriptor%ndiscretisation = 1
+    rproblemDescriptor%ndiscretisation = 1   ! one discretisation
     rproblemDescriptor%nafcstab        = 2   ! for convective and diffusive stabilization
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
@@ -869,9 +873,10 @@ contains
 
     ! Check if quadrilaterals should be converted to triangles
     call parlst_getvalue_int(rparlist, ssectionName, 'iconvtotria', iconvToTria, 0)
-    if (iconvToTria .ne. 0)&
-        rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
-                                        + PROBDESC_MSPEC_CONVTRIANGLES   
+    if (iconvToTria .ne. 0) then
+      rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
+                                      + PROBDESC_MSPEC_CONVTRIANGLES
+    end if
 
     ! Initialize problem structure
     call problem_initProblem(rproblemDescriptor, rproblem)
@@ -881,7 +886,7 @@ contains
     convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
     diffusionAFC  = collct_getvalue_int(rcollection, 'diffusionAFC')
     
-    ! loop over all problem levels
+    ! Loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
 
@@ -948,7 +953,7 @@ contains
     type(t_boundary) , pointer :: p_rboundary
     
     
-    ! retrieve application specific parameters from the collection
+    ! Retrieve application specific parameters from the collection
     templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
     systemMatrix         = collct_getvalue_int(rcollection, 'systemmatrix')
     jacobianMatrix       = collct_getvalue_int(rcollection, 'jacobianmatrix')
@@ -963,99 +968,104 @@ contains
     diffusionAFC         = collct_getvalue_int(rcollection, 'diffusionAFC')
     discretisation       = collct_getvalue_int(rcollection, 'discretisation')
 
-    
     ! Set pointers
-    p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
     p_rtriangulation  => rproblemLevel%rtriangulation
     p_rboundary       => rproblemLevel%p_rproblem%rboundary
 
-    ! Initialize the discretization structure
-    if (p_rdiscretisation%ndimension .eq. 0) then
-      call spdiscr_initBlockDiscr(p_rdiscretisation, 1, p_rtriangulation)
-    end if
-    
-    ! Get spatial dimension
-    select case(p_rdiscretisation%ndimension)
-    case (NDIM1D)
-      select case(rappDescriptor%ieltype)
-      case (-1,1,11)
-        ! P1=Q1 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-        ! P2=Q2 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case DEFAULT
-        call output_line('Unsupproted element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
-        call sys_halt()
-      end select
+
+    ! Create discretisation structure
+    if (discretisation > 0) then
       
-    case (NDIM2D)
-      select case(rappDescriptor%ieltype)
-      case (1)
-        ! P1 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E001, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case (2)
-        ! P2 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E002, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case (11)
-        ! Q1 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E011, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case (12)
-        ! Q2 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E013, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case (-1)
-        ! mixed P1/Q1 finite elements
-        call spdiscr_initDiscr_triquad(p_rdiscretisation%RspatialDiscr(1), &
-                                       EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC,&
-                                       SPDISC_CUB_AUTOMATIC,&
-                                       p_rtriangulation, p_rboundary)
-      case (-2)
-        ! mixed P2/Q2 finite elements
-        call spdiscr_initDiscr_triquad(p_rdiscretisation%RspatialDiscr(1), &
-                                       EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC,&
-                                       SPDISC_CUB_AUTOMATIC,&
-                                       p_rtriangulation, p_rboundary)
-      case DEFAULT
-        call output_line('Unsupproted element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
-        call sys_halt()
-      end select
+      ! Initialize the discretization structure
+      p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
+      if (p_rdiscretisation%ndimension .eq. 0) then
+        call spdiscr_initBlockDiscr(p_rdiscretisation, 1, p_rtriangulation)
+      end if
       
-    case (NDIM3D)
-      select case(rappDescriptor%ieltype)
-      case (1)
-        ! P1 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E001_3D, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case (11)
-        ! Q1 finite elements
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                      EL_E010_3D, SPDISC_CUB_AUTOMATIC,&
-                                      p_rtriangulation, p_rboundary)
-      case DEFAULT
-        call output_line('Unsupproted element type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
-        call sys_halt()
-      end select
+      ! Get spatial dimension
+      select case(p_rdiscretisation%ndimension)
+      case (NDIM1D)
+        select case(rappDescriptor%ieltype)
+        case (-1,1,11)
+          ! P1=Q1 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+          ! P2=Q2 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case DEFAULT
+          call output_line('Unsupproted element type!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
+          call sys_halt()
+        end select
         
-    case DEFAULT
-      call output_line('Invalid number of spatial dimensions',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
-      call sys_halt()
-    end select
+      case (NDIM2D)
+        select case(rappDescriptor%ieltype)
+        case (1)
+          ! P1 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E001, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case (2)
+          ! P2 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E002, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case (11)
+          ! Q1 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E011, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case (12)
+          ! Q2 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E013, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case (-1)
+          ! mixed P1/Q1 finite elements
+          call spdiscr_initDiscr_triquad(p_rdiscretisation%RspatialDiscr(1), &
+                                         EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC,&
+                                         SPDISC_CUB_AUTOMATIC,&
+                                         p_rtriangulation, p_rboundary)
+        case (-2)
+          ! mixed P2/Q2 finite elements
+          call spdiscr_initDiscr_triquad(p_rdiscretisation%RspatialDiscr(1), &
+                                         EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC,&
+                                         SPDISC_CUB_AUTOMATIC,&
+                                         p_rtriangulation, p_rboundary)
+        case DEFAULT
+          call output_line('Unsupproted element type!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
+          call sys_halt()
+        end select
+      
+      case (NDIM3D)
+        select case(rappDescriptor%ieltype)
+        case (1)
+          ! P1 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E001_3D, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case (11)
+          ! Q1 finite elements
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
+                                        EL_E010_3D, SPDISC_CUB_AUTOMATIC,&
+                                        p_rtriangulation, p_rboundary)
+        case DEFAULT
+          call output_line('Unsupproted element type!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
+          call sys_halt()
+        end select
+        
+      case DEFAULT
+        call output_line('Invalid number of spatial dimensions',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
+        call sys_halt()
+      end select
+
+    end if
 
 
     ! If the template matrix has no structure data then generate the
@@ -1067,6 +1077,7 @@ contains
                                       rappDescriptor%imatrixFormat,&
                                       rproblemLevel%Rmatrix(templateMatrix))
     end if
+
 
     ! Create system matrix as duplicate of the template matrix
     if (systemMatrix > 0) then
@@ -1082,6 +1093,7 @@ contains
       end if
     end if
 
+
     ! Create transport matrix as duplicate of the template matrix
     if (transportMatrix > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(transportMatrix),&
@@ -1095,6 +1107,7 @@ contains
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       end if
     end if
+
 
     ! Create Jacobian matrix. This is a little bit tricky. If the
     ! Jacobian matrix has the same sparsity pattern as the template
@@ -1127,6 +1140,7 @@ contains
       end if     
     end if
     
+
     ! Create consistent (and lumped) mass matrix as duplicate of the template matrix
     if (consistentMassMatrix > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(consistentMassMatrix),&
@@ -1158,6 +1172,7 @@ contains
                                    LSYSSC_LUMP_DIAG)
     end if
     
+
     ! Create diffusion matrix as duplicate of the template matrix
     if (coeffMatrix_S > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_S),&
@@ -1189,6 +1204,7 @@ contains
       end select
     end if
     
+
     ! Create coefficient matrix (phi, dphi/dx) duplicate of the template matrix
     if (coeffMatrix_CX > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CX),&
@@ -1205,6 +1221,7 @@ contains
                                       DER_DERIV3D_X, DER_FUNC)
     end if
     
+
     ! Create coefficient matrix (phi, dphi/dy) duplicate of the template matrix
     if (coeffMatrix_CY > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CY),&
@@ -1221,6 +1238,7 @@ contains
                                       DER_DERIV3D_Y, DER_FUNC)
     end if
     
+
     ! Create coefficient matrix (phi, dphi/dz) duplicate of the template matrix
     if (coeffMatrix_CZ > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
@@ -1237,7 +1255,8 @@ contains
                                       DER_DERIV3D_Z, DER_FUNC)
     end if
 
-    ! Resize stabilization structures if necessary and remove the
+
+    ! Resize stabilization structure if necessary and remove the
     ! indicator for the subdiagonal edge structure. If they are
     ! needed, then they are re-generated on-the-fly.
     if (convectionAFC > 0) then
@@ -1253,6 +1272,8 @@ contains
       end if
     end if
 
+
+    ! The same applies to the diffusive stabilization structure
     if (diffusionAFC > 0) then
       if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
         call gfsc_initStabilisation(rproblemLevel%Rmatrix(templateMatrix),&
@@ -1504,10 +1525,10 @@ contains
     real(DP), intent(IN) :: dtime
 !</input>
 
-!<inputoutput>
+!<output>
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rvector
-!</inputoutput>
+    type(t_vectorBlock), intent(OUT) :: rvector
+!</output>
 !</subroutine>
 
     ! section names
@@ -1625,7 +1646,7 @@ contains
 
 !<intputoutput>
     ! right-hand side vector
-    type(t_vectorBlock), intent(inOUT) :: rvector
+    type(t_vectorBlock), intent(INOUT) :: rvector
 !</inputoutput>
 !</subroutine>
 
@@ -2311,7 +2332,7 @@ contains
     !---------------------------------------------------------------------------
     ! Perform recovery-based error estimation
     !---------------------------------------------------------------------------
-    
+
     ! What type of error estimator are we?
     select case(ierrorEstimator)
 
@@ -2746,12 +2767,13 @@ contains
     ! solver struchture
     type(t_solver), intent(INOUT), target :: rsolver
 
-    ! primal solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
-
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection    
 !</inputoutput>
+
+!<output>
+    ! primal solution vector
+    type(t_vectorBlock), intent(OUT) :: rsolution
 !</subroutine>
 
     ! Pointer to the current multigrid level
@@ -2803,9 +2825,9 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
 
-      call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dstepAdapt', dstepAdapt, 0.0_DP)
-      call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dtimeAdapt', dtimeAdapt, 0.0_DP)
-      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'npreadapt', npreadapt, 0)
+      call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dstepAdapt', dstepAdapt)
+      call parlst_getvalue_double(rparlist, trim(sadaptivityName), 'dtimeAdapt', dtimeAdapt)
+      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'npreadapt', npreadapt)
 
 
       if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
@@ -2846,20 +2868,20 @@ contains
             call lsyssc_releaseVector(relementError)
 
             ! Re-generate the initial solution vector and impose boundary conditions explicitly
+            call lsysbl_releaseVector(rsolution)
             call codire_initSolution(rparlist, ssectionname, p_rproblemLevel, 0.0_DP, rsolution)
             call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
             
+            ! Generate standard mesh from raw mesh
+            call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+
+            ! Update the template matrix according to the sparsity pattern
+            templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
+            call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+
+            ! Re-initialize all constant coefficient matrices
+            call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
           end do
-
-          ! Generate standard mesh from raw mesh
-          call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
-
-          ! Update the template matrix according to the sparsity pattern
-          templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
-          call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
-
-          ! Re-initialize all constant coefficient matrices
-          call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
           
           ! Prepare internal data arrays of the solver structure
           systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
@@ -3122,12 +3144,14 @@ contains
     ! solver struchture
     type(t_solver), intent(INOUT), target :: rsolver
 
-    ! primal solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
-
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
+
+!<output>
+    ! primal solution vector
+    type(t_vectorBlock), intent(OUT) :: rsolution
+!</output>
 !</subroutine>
 
     ! Pointer to the current multigrid level
@@ -3149,6 +3173,7 @@ contains
     character(LEN=SYS_STRLEN) :: sadaptivityName
 
     ! local variables
+    real(DP) :: derror
     integer :: templateMatrix, systemMatrix
     integer :: nlmin, iadapt, nadapt
 
@@ -3167,7 +3192,7 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
 
-      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt, 0)
+      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt)
 
       if (nadapt > 0) then
 
@@ -3246,7 +3271,9 @@ contains
       ! Start time measurement for error estimation
       call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
 
-      ! HERE WE NEED TO IMPLEMENT THE RECOVERY-BASED INDICATOR
+      ! Compute the error estimator using recovery techniques
+      call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
+                                        rsolution, 1.0_DP, relementError, derror)
 
       ! Stop time measurement for error estimation
       call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
@@ -3364,12 +3391,14 @@ contains
     ! solver struchture
     type(t_solver), intent(INOUT), target :: rsolver
 
-    ! primal solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
-
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection    
 !</inputoutput>
+
+!<output>
+    ! primal solution vector
+    type(t_vectorBlock), intent(OUT) :: rsolution
+!</output>
 !</subroutine>
 
     ! Pointer to the current multigrid level
@@ -3420,7 +3449,7 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
 
-      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt, 0)
+      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt)
 
       if (nadapt > 0) then
 
@@ -3629,15 +3658,17 @@ contains
     ! solver struchture
     type(t_solver), intent(INOUT), target :: rsolver
 
-    ! primal solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolutionPrimal
-
-    ! dual solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolutionDual
-
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
+
+!<output>
+    ! primal solution vector
+    type(t_vectorBlock), intent(OUT) :: rsolutionPrimal
+
+    ! dual solution vector
+    type(t_vectorBlock), intent(OUT) :: rsolutionDual
+!</output>
 !</subroutine>
 
     ! Pointer to the current multigrid level
@@ -3688,7 +3719,7 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
 
-      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt, 0)
+      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt)
 
       if (nadapt > 0) then
         
