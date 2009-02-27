@@ -303,7 +303,7 @@ contains
   integer :: NEQ
   
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoType
+  integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.

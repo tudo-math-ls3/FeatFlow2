@@ -977,7 +977,7 @@ contains
     type(t_evalElementSet) :: revalElementSet
     
     ! Type of transformation from the reference to the real element 
-    integer :: ctrafoType
+    integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
@@ -1525,7 +1525,7 @@ contains
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! Type of transformation from the reference to the real element 
-    integer :: ctrafoType
+    integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
@@ -2076,7 +2076,7 @@ contains
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! Type of transformation from the reference to the real element 
-    integer :: ctrafoType
+    integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
@@ -2740,7 +2740,7 @@ contains
     real(DP), dimension(CUB_MAXCUBP) :: Domega1D
     real(DP), dimension(:,:,:), allocatable :: Dvalues
     real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcoord
-    integer :: ncubp,ipoint,ieltype
+    integer :: ncubp,ipoint,celement
     integer(I32) :: icoordSystem
     real(DP) :: dlen,dpar1,dpar2
     
@@ -2855,8 +2855,8 @@ contains
       call storage_getbase_int (rdiscretisation%h_IelementDistr,&
           p_IelementDistr)
       do iel = 1,NEL
-        ieltype = p_RelementDistribution(p_IelementDistr(Ielements(iel)))%celement
-        icoordSystem = elem_igetCoordSystem(ieltype)
+        celement = p_RelementDistribution(p_IelementDistr(Ielements(iel)))%celement
+        icoordSystem = elem_igetCoordSystem(celement)
         call trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(iel), &
             ncubp, Dxi1D, Dxi2D(:,:,iel))
       end do
@@ -2913,9 +2913,9 @@ contains
 
           ! Transform the cubature points
           do ipoint = 1,ncubp
-            ieltype = p_RelementDistribution(&
+            celement = p_RelementDistribution(&
                 p_IelementDistr(Ielements(iel)))%celement
-            ctrafoType = elem_igetTrafoType(ieltype)
+            ctrafoType = elem_igetTrafoType(celement)
             call trafo_calcRealCoords (ctrafoType,Dcoord,&
                 DpointsRef(:,ipoint,iel),Dpoints(:,ipoint,iel))
           end do
@@ -3315,7 +3315,7 @@ contains
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
     
     ! Type of transformation from the reference to the real element 
-    integer :: ctrafoType
+    integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
@@ -3836,7 +3836,7 @@ contains
     real(DP), dimension(NDIM3D) :: DmassCenter
     
     ! Type of transformation from the reference to the real element 
-    integer :: ctrafoType
+    integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
@@ -4411,7 +4411,7 @@ contains
       type(t_evalElementSet) :: revalElementSet
       
       ! Type of transformation from the reference to the real element 
-      integer :: ctrafoType
+      integer(I32) :: ctrafoType
       
       ! Element evaluation tag; collects some information necessary for evaluating
       ! the elements.

@@ -429,7 +429,7 @@ contains
     type(t_evalElementSet) :: revalElementSet
     
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTrial
+    integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! Type of transformation from the reference to the real element 
     integer(I32) :: ctrafoType

@@ -111,20 +111,20 @@
 !#   An "element" in the sense of this library focuses on one single
 !#   polygon, not on the whole patch.
 !#
-!# 2.) What does the variable 'ieltyp' mean, which must be passed to
+!# 2.) What does the variable 'celement' mean, which must be passed to
 !#   the element subroutines?
 !#
 !#   This variable identifies the type of the element. For example
-!#   ieltyp=EL_Q1 identifies a Q1-element.
+!#   celement=EL_Q1 identifies a Q1-element.
 !#
 !# 3.) I wrote a subroutine which works for a special element family. More 
 !#   precisely for example, my routine works for all variants of $\tilde Q_1$.
 !#   Do I really have to check all element types at the beginning of the
 !#   routine? That would be legthy!?! Like in
 !#
-!#    SUBROUTINE abc (ieltype)
+!#    SUBROUTINE abc (celement)
 !#    ...
-!#      IF ( (ieltype .NE. EL_E030) .AND. (ieltype .NE. EL_EM30) ...) THEN
+!#      IF ( (celement .NE. EL_E030) .AND. (celement .NE. EL_EM30) ...) THEN
 !#        CALL sys_halt()
 !#      END IF
 !#
@@ -133,9 +133,9 @@
 !#   identifying all elements 'of the same type'. The above can be
 !#   shortened this way to:
 !#
-!#    SUBROUTINE abc (ieltype)
+!#    SUBROUTINE abc (celement)
 !#    ...
-!#      IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1T) THEN
+!#      IF (elem_getPrimaryElement(celement) .NE. EL_Q1T) THEN
 !#        CALL sys_halt()
 !#      END IF
 !#
@@ -146,11 +146,11 @@
 !#   Of course, for 'standard' elements, elem_getPrimaryElement does nothing.
 !#   So writing for $Q_1$ for example,
 !#
-!#      IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1) THEN
+!#      IF (elem_getPrimaryElement(celement) .NE. EL_Q1) THEN
 !#
 !#   is exactly the same as
 !#
-!#      IF (ieltype .NE. EL_Q1) THEN
+!#      IF (celement .NE. EL_Q1) THEN
 !#
 !#   but the first version is cleaner :-)
 !#
@@ -215,11 +215,11 @@
 !#   except for bit 0..7, i.e. to check whether an element is Q1~, one can use
 !#   elem_getPrimaryElement, which masks out all unimportant bits with IAND:
 !#
-!#     if ( elem_getPrimaryElement(ieltype) .EQ. EL_Q1T ) then ...
+!#     if ( elem_getPrimaryElement(celement) .EQ. EL_Q1T ) then ...
 !#
 !#   or to check all variants
 !#
-!#     if ( (ieltype .eq. EL_E030) .OR. (ieltype .eq. EL_EM30). OR. ...) then ...
+!#     if ( (celement .eq. EL_E030) .OR. (celement .eq. EL_EM30). OR. ...) then ...
 !# 
 !#   When it's clear that it's a $\tilde Q_1$ element, one can have a closer
 !#   look which variant it is -- if this is necessary.
@@ -755,7 +755,7 @@ contains
 
 !<function>  
 
-  elemental integer(I32) function elem_igetNDofLoc(ieltype)
+  elemental integer(I32) function elem_igetNDofLoc(celement)
 
 !<description>
   ! This function returns for a given element type the number of local
@@ -765,7 +765,7 @@ contains
 !<input>    
 
   ! The element type identifier.
-  integer(I32), intent(IN) :: ieltype
+  integer(I32), intent(IN) :: celement
 
 !</input>
 
@@ -775,7 +775,7 @@ contains
 
 !</function>
 
-    select case (elem_getPrimaryElement(ieltype))
+    select case (elem_getPrimaryElement(celement))
     
     ! -= 1D element types =-
     case (EL_P0_1D)
@@ -792,7 +792,7 @@ contains
       elem_igetNDofLoc = 4
     case (EL_PN_1D)
       ! local DOFs for 1D Pn
-      elem_igetNDofLoc = 1 + iand(ishft(ieltype,-16),255_I32)
+      elem_igetNDofLoc = 1 + iand(ishft(celement,-16),255_I32)
     ! -= 2D element types =-
     case (EL_P0, EL_Q0)
       ! local DOFs for Q0
@@ -875,7 +875,7 @@ contains
 
 !<subroutine>  
 
-  pure subroutine elem_igetNDofLocAssignment(ieltype, &
+  pure subroutine elem_igetNDofLocAssignment(celement, &
       ndofAtVertices, ndofAtEdges, ndofAtFaces, ndofAtElement)
 
 !<description>
@@ -885,7 +885,7 @@ contains
 
 !<input>    
   ! The element type identifier.
-  integer(I32), intent(IN) :: ieltype
+  integer(I32), intent(IN) :: celement
 !</input>
 
 !<output>
@@ -914,7 +914,7 @@ contains
     ndofAtFaces    = 0
     ndofAtElement  = 0
 
-    select case (elem_getPrimaryElement(ieltype))
+    select case (elem_getPrimaryElement(celement))
     
     ! -= 1D element types =-
     case (EL_P0_1D)
@@ -933,7 +933,7 @@ contains
     case (EL_PN_1D)
       ! local DOFs for Pn
       ndofAtVertices = 2
-      ndofAtElement = iand(ishft(ieltype,-16),255_I32)-1
+      ndofAtElement = iand(ishft(celement,-16),255_I32)-1
     ! -= 2D element types =-
     case (EL_P0, EL_Q0)
       ! local DOFs for Q0
@@ -1024,7 +1024,7 @@ contains
 
 !<function>  
 
-  elemental integer function elem_igetNVE(ieltype)
+  elemental integer function elem_igetNVE(celement)
 
 !<description>
   ! This function returns for a given element type the number of vertices
@@ -1035,7 +1035,7 @@ contains
 !<input>    
 
   ! The element type identifier.
-  integer(I32), intent(IN) :: ieltype
+  integer(I32), intent(IN) :: celement
 
 !</input>
 
@@ -1048,7 +1048,7 @@ contains
 
     ! NVE coincides with that NVE from the transformation.
     ! Use the transformation routine to determine that value!
-    elem_igetNVE = trafo_igetNVE(elem_igetTrafoType(ieltype))
+    elem_igetNVE = trafo_igetNVE(elem_igetTrafoType(celement))
 
   end function
 
@@ -1056,7 +1056,7 @@ contains
 
 !<function>  
 
-  elemental integer(I32) function elem_igetCoordSystem(ieltype)
+  elemental integer(I32) function elem_igetCoordSystem(celement)
 
 !<description>
   ! This function returns for a given element type the type of the coordinate
@@ -1070,18 +1070,18 @@ contains
 !<input>    
 
   ! The element type identifier.
-  integer(I32), intent(IN) :: ieltype
+  integer(I32), intent(IN) :: celement
 
 !</input>
 
 !<result>
-  ! The type of the coordinate system the element ieltype acts on. One of
+  ! The type of the coordinate system the element celement acts on. One of
   ! the TRAFO_CS_xxxx constants from the transformation module.
 !</result>
 
 !</function>
 
-    select case (iand(ieltype,EL_ELNRMASK+EL_NONPARAMETRIC))
+    select case (iand(celement,EL_ELNRMASK+EL_NONPARAMETRIC))
     ! 1D Element types
     case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D)
       ! Line elements
@@ -1127,7 +1127,7 @@ contains
 
 !<function>  
 
-  elemental integer(I32) function elem_igetTrafoType(ieltype)
+  elemental integer(I32) function elem_igetTrafoType(celement)
 
 !<description>
   ! This function returns the typical type of transformation, a specific 
@@ -1137,7 +1137,7 @@ contains
 
 !<input>    
   ! The element type identifier.
-  integer(I32), intent(IN) :: ieltype
+  integer(I32), intent(IN) :: celement
 !</input>
 
 !<result>
@@ -1146,7 +1146,7 @@ contains
 
 !</function>
 
-    select case (elem_getPrimaryElement(ieltype))
+    select case (elem_getPrimaryElement(celement))
     
     case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D)
       ! Linear line transformation, 1D
@@ -1189,7 +1189,7 @@ contains
 
 !<function>  
 
-  elemental integer function elem_igetDimension(ieltype)
+  elemental integer function elem_igetDimension(celement)
 
 !<description>
   ! This function returns the dimensional constant that specifies which
@@ -1198,7 +1198,7 @@ contains
 
 !<input>    
   ! The element type identifier.
-  integer(I32), intent(IN) :: ieltype
+  integer(I32), intent(IN) :: celement
 !</input>
 
 !<result>
@@ -1209,7 +1209,7 @@ contains
 !</function>
 
     ! The dimension is encoded in two bits in the element quantifier!
-    elem_igetDimension = ishft(iand(ieltype,EL_DIMENSION),-8)
+    elem_igetDimension = ishft(iand(celement,EL_DIMENSION),-8)
 
   end function
 
@@ -1217,7 +1217,7 @@ contains
 
 !<function>  
 
-  elemental integer function elem_getMaxDerivative(ieltype)
+  elemental integer function elem_getMaxDerivative(celement)
 
 !<description>
   ! This function determines for a given element type the maximum derivative
@@ -1228,7 +1228,7 @@ contains
 !<input>    
 
   ! The element type identifier.
-  integer(I32), intent(IN) :: ieltype
+  integer(I32), intent(IN) :: celement
 
 !</input>
 
@@ -1239,7 +1239,7 @@ contains
 
 !</function>
 
-    select case (elem_getPrimaryElement(ieltype))
+    select case (elem_getPrimaryElement(celement))
     
     ! -= 1D elements =-
     case (EL_P0_1D)
@@ -1332,11 +1332,11 @@ contains
 
 !<function>  
 
-  elemental integer(I32) function elem_getEvaluationTag(ieltype)
+  elemental integer(I32) function elem_getEvaluationTag(celement)
 
 !<description>
   ! Returns for a given element its 'evaluation tag'. This tag is a bitfield
-  ! that defines for element ieltype which information have to be prepared
+  ! that defines for element celement which information have to be prepared
   ! to evaluate it in a set of points.
   !
   ! If more that one finite element has to be evaluated in the same points,
@@ -1347,16 +1347,16 @@ contains
 
 !<input>    
   ! The element type identifier.
-  integer(I32), intent(IN) :: ieltype
+  integer(I32), intent(IN) :: celement
 !</input>
 
 !<result>
-  ! The 'evaluation tag' of element type ieltype.
+  ! The 'evaluation tag' of element type celement.
 !</result>
 
 !</function>
 
-    select case (elem_getPrimaryElement(ieltype))
+    select case (elem_getPrimaryElement(celement))
     case (EL_P0_1D, EL_P0, EL_P0_3D)
       ! No information about Jacobian necessary
       elem_getEvaluationTag = 0
@@ -1375,7 +1375,7 @@ contains
     elem_getEvaluationTag = &
       ior(elem_getEvaluationTag,EL_EVLTAG_COORDS)
 
-    if (elem_isNonparametric(ieltype)) then
+    if (elem_isNonparametric(celement)) then
       ! Standard nonparametric element.
       ! Calculate real coordinates (for the element)
       elem_getEvaluationTag = &
@@ -1392,11 +1392,11 @@ contains
   
 !<function>  
 
-  elemental logical function elem_isNonparametric (ieltyp) result (inonpar)
+  elemental logical function elem_isNonparametric (celement) result (inonpar)
 
   !<description>
   
-  ! Determines whether an element ieltyp is parametric or nonparametric.
+  ! Determines whether an element celement is parametric or nonparametric.
   
   !</description>
   
@@ -1408,13 +1408,13 @@ contains
   !<input>
   
   ! Element type qualifier.
-  integer(I32), intent(IN) :: ieltyp
+  integer(I32), intent(IN) :: celement
   
   !</input>
  
 !</function>
  
-    inonpar = iand(ieltyp,EL_NONPARAMETRIC) .ne. 0
+    inonpar = iand(celement,EL_NONPARAMETRIC) .ne. 0
   
   end function
 
@@ -1422,13 +1422,13 @@ contains
   
 !<function>  
 
-  elemental integer(I32) function elem_getPrimaryElement (ieltyp) result (iresult)
+  elemental integer(I32) function elem_getPrimaryElement (celement) result (iresult)
 
 !<description>
   ! Determines the 'primary' element type identifier. For standard elements
-  ! like $Q_1$, there is usually ieltyp=elem_getPrimaryElement(ieltyp).
+  ! like $Q_1$, there is usually celement=elem_getPrimaryElement(celement).
   ! But some elements like $\tilde Q_1$ have different modifications,
-  ! which are encoded in ieltyp. In this case, elem_getPrimaryElement
+  ! which are encoded in celement. In this case, elem_getPrimaryElement
   ! returns the element identifier of the element without any
   ! modification; this can be seen as 'standard' or 'primary' element
   ! type.
@@ -1440,13 +1440,13 @@ contains
 !</description>
   
 !<result>
-  ! The identifier of the 'standard' element, ieltyp refers to.
+  ! The identifier of the 'standard' element, celement refers to.
 !</result>
   
   !<input>
   
   ! Element type qualifier.
-   integer(I32), intent(IN) :: ieltyp
+   integer(I32), intent(IN) :: celement
   
   !</input>
  
@@ -1455,7 +1455,7 @@ contains
     ! To get the standard identifier, we just have to mask out all bits
     ! except for bit 0..9. These 10 bits encode the standard element
     ! identifier plus dimension.
-    iresult = iand(ieltyp,EL_ELNRMASK)
+    iresult = iand(celement,EL_ELNRMASK)
   
   end function
 
@@ -1525,18 +1525,18 @@ contains
 !**************************************************************************
 ! Generic element routines
 ! The following two routines define a generic element. Depending on
-! the element type identifier ieltyp, the right element is called.
+! the element type identifier celement, the right element is called.
  
 !<subroutine>  
 
-  subroutine elem_generic1 (ieltyp, Dcoords, Djac, ddetj, Bder, &
+  subroutine elem_generic1 (celement, Dcoords, Djac, ddetj, Bder, &
                                 Dpoint, Dbas, ItwistIndex)
 
 !<description>
   ! DEPRECATED!!!
   ! This subroutine calculates the values of the basic functions of the
   ! finite element at the given point on the reference element. 
-  ! ieltyp defines the element type that is used. Depending on
+  ! celement defines the element type that is used. Depending on
   ! the type of the element (parametric or nonparametric), dx
   ! and dy must be given either on the reference element or on the
   ! real element.
@@ -1544,7 +1544,7 @@ contains
 
 !<input>
   ! Element type identifier.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
@@ -1616,7 +1616,7 @@ contains
   type(t_evalElementSet) :: reval
 
     ! Take care of the 1D PN element
-    if(elem_getPrimaryElement(ieltyp) .eq. EL_PN_1D) then
+    if(elem_getPrimaryElement(celement) .eq. EL_PN_1D) then
       
       bwrapSim2 = .true.
     
@@ -1624,84 +1624,84 @@ contains
     
       ! Choose the right element subroutine to call.
       bwrapSim2 = .false.
-      select case (ieltyp)
+      select case (celement)
       ! 1D elements
       case (EL_P0_1D)
-        call elem_P0_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_P0_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_P1_1D)
-        call elem_P1_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_P1_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_P2_1D)
-        call elem_P2_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_P2_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_S31_1D)
-        call elem_S31_1D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_S31_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
 
       ! 2D elements
       case (EL_P0)
-        call elem_P0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_P0 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_P1)
-        call elem_P1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_P1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_P2)
-        call elem_P2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_P2 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_P1T)
-        call elem_P1T (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_P1T (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q0)
-        call elem_Q0 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_Q0 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q1)
-        call elem_Q1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_Q1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q2)
-        call elem_Q2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_Q2 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q2H_2D)
         bwrapSim2 = .true.
       case (EL_QP1)
-        call elem_QP1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_QP1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
-        call elem_EM30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_EM30 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM30_NEW)
         bwrapSim2 = .true.
       case (EL_E030)
-        call elem_E030 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_E030 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EB30)
-        call elem_EB30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_EB30 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM31)
-        call elem_EM31 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_EM31 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_E031)
-        call elem_E031 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_E031 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_E050)
-        call elem_E050 (ieltyp, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_E050 (celement, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EB50)
-        call elem_EB50 (ieltyp, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_EB50 (celement, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM50)
         bwrapSim2 = .true.
 
       ! 3D elements
       case (EL_P0_3D)
-        call elem_P0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_P0_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_P1_3D)
-        call elem_P1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_P1_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q0_3D)
-        call elem_Q0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_Q0_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q1_3D)
-        call elem_Q1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_Q1_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q2_3D)
         bwrapSim2 = .true.
       case (EL_QP1_3D)
         bwrapSim2 = .true.
       case (EL_Y0_3D)
-        call elem_Y0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_Y0_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Y1_3D)
-        call elem_Y1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_Y1_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_R0_3D)
-        call elem_R0_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_R0_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_R1_3D)
-        call elem_R1_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_R1_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM30_3D)
-        call elem_EM30_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_EM30_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM30_NEW_3D)
         bwrapSim2 = .true.
       case (EL_E030_3D)
-        call elem_E030_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_E030_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_E031_3D)
-        call elem_E031_3D (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        call elem_E031_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM50_3D)
         bwrapSim2 = .true.
       case (EL_E050_3D)
@@ -1736,7 +1736,7 @@ contains
     reval%p_Dcoords => Dcoords2
     reval%p_Djac => Djac2
     reval%p_Ddetj => Ddetj2
-    if(iand(ieltyp,EL_NONPARAMETRIC) .ne. 0) then
+    if(iand(celement,EL_NONPARAMETRIC) .ne. 0) then
       reval%p_DpointsReal => Dpoints2
     else
       reval%p_DpointsRef => Dpoints2
@@ -1744,7 +1744,7 @@ contains
     reval%p_ItwistIndex => ItwistIndex2
     
     ! Call sim2-wrapper
-    call elem_generic_sim2(ieltyp, reval, Bder, Dbas2)
+    call elem_generic_sim2(celement, reval, Bder, Dbas2)
     
     ! Copy results to Dbas
     Dbas(:,:) = Dbas2(:,:,1,1)
@@ -1754,16 +1754,16 @@ contains
 !**************************************************************************
 ! Generic element routines
 ! The following two routines define a generic element. Depending on
-! the element type identifier ieltyp, the right element is called.
+! the element type identifier celement, the right element is called.
  
 !<subroutine>  
 
-  subroutine elem_generic2 (ieltyp, revalElement, Bder, Dbas)
+  subroutine elem_generic2 (celement, revalElement, Bder, Dbas)
 
 !<description>
   ! This subroutine calculates the values of the basic functions of the
   ! finite element at the given point on the reference element. 
-  ! ieltyp defines the element type that is used. Depending on
+  ! celement defines the element type that is used. Depending on
   ! the type of the element (parametric or nonparametric), dx
   ! and dy must be given either on the reference element or on the
   ! real element.
@@ -1771,7 +1771,7 @@ contains
 
 !<input>
   ! Element type identifier.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! t_evalElement-structure that contains cell-specific information and
   ! coordinates of the evaluation point. revalElementSet must be prepared
@@ -1801,101 +1801,101 @@ contains
 ! </subroutine>
 
     ! Choose the right element subroutine to call.
-    select case (ieltyp)
+    select case (celement)
     ! 1D elements
     case (EL_P0_1D)
-      call elem_P0_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_P0_1D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_P1_1D)
-      call elem_P1_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_P1_1D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_P2_1D)
-      call elem_P2_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_P2_1D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_S31_1D)
-      call elem_S31_1D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_S31_1D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
 
     ! 2D elements
     case (EL_P0)
-      call elem_P0 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_P0 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_P1)
-      call elem_P1 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_P1 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_P2)
-      call elem_P2 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_P2 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_P1T)
-      call elem_P1T (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_P1T (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_Q0)
-      call elem_Q0 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_Q0 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_Q1)
-      call elem_Q1 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_Q1 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_Q2)
-      call elem_Q2 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_Q2 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_QP1)
-      call elem_QP1 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_QP1 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
-      call elem_EM30 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_EM30 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
     case (EL_E030)
-      call elem_E030 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_E030 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_EB30)
-      call elem_EB30 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_EB30 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_EM31)
-      call elem_EM31 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_EM31 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
     case (EL_E031)
-      call elem_E031 (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_E031 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_E050)
-      call elem_E050 (ieltyp, revalElement%Dcoords, revalElement%itwistIndex, &
+      call elem_E050 (celement, revalElement%Dcoords, revalElement%itwistIndex, &
           revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_EB50)
-      call elem_EB50 (ieltyp, revalElement%Dcoords, revalElement%itwistIndex, &
+      call elem_EB50 (celement, revalElement%Dcoords, revalElement%itwistIndex, &
           revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
 
     ! 3D elements
     case (EL_P0_3D)
-      call elem_P0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_P0_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_P1_3D)
-      call elem_P1_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_P1_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_Q0_3D)
-      call elem_Q0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_Q0_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_Q1_3D)
-      call elem_Q1_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_Q1_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_Y0_3D)
-      call elem_Y0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_Y0_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_Y1_3D)
-      call elem_Y1_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_Y1_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_R0_3D)
-      call elem_R0_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_R0_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_R1_3D)
-      call elem_R1_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_R1_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_EM30_3D)
-      call elem_EM30_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_EM30_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_E030_3D)
-      call elem_E030_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_E030_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_E031_3D)
-      call elem_E031_3D (ieltyp, revalElement%Dcoords, revalElement%Djac, &
+      call elem_E031_3D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
 
     case default
@@ -1911,7 +1911,7 @@ contains
   
 !<subroutine>  
 
-  subroutine elem_generic_mult (ieltyp, Dcoords, Djac, Ddetj, &
+  subroutine elem_generic_mult (celement, Dcoords, Djac, Ddetj, &
                                      Bder, Dbas, npoints, Dpoints, itwistIndex)
 
 !<description>
@@ -1921,7 +1921,7 @@ contains
 
 !<input>
   ! Element type identifier
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(IN) :: npoints
@@ -1984,74 +1984,74 @@ contains
   integer :: i
 
     ! Choose the right element subroutine to call.
-    select case (ieltyp)
+    select case (celement)
     case (EL_P0_1D)
-      call elem_P0_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_P0_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_P1_1D)
-      call elem_P1_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_P1_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_P2_1D)
-      call elem_P2_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_P2_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_S31_1D)
-      call elem_S31_1D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_S31_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
       
     ! 2D elements
     case (EL_P0)
-      call elem_P0_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_P0_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_P1)
-      call elem_P1_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_P1_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_P2)
-      call elem_P2_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_P2_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_P1T)
-      call elem_P1T_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_P1T_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_Q0)
-      call elem_Q0_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_Q0_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_Q1)
-      call elem_Q1_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_Q1_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_EM30, EL_EM30_UNPIVOTED ,EL_EM30_UNSCALED)
-      call elem_EM30_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_EM30_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_E030)
-      call elem_E030_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_E030_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_EB30)
-      call elem_EB30_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_EB30_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_EM31)
-      call elem_EM31_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_EM31_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_E031)
-      call elem_E031_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_E031_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_E050)
-      call elem_E050_mult (ieltyp, Dcoords, itwistIndex,Djac, Ddetj, Bder, Dbas, &
+      call elem_E050_mult (celement, Dcoords, itwistIndex,Djac, Ddetj, Bder, Dbas, &
                            npoints, Dpoints)
     case (EL_EB50)
-      call elem_EB50_mult (ieltyp, Dcoords, itwistIndex,Djac, Ddetj, Bder, Dbas, &
+      call elem_EB50_mult (celement, Dcoords, itwistIndex,Djac, Ddetj, Bder, Dbas, &
                            npoints, Dpoints)
 
     ! 3D elements
     case (EL_P0_3D)
-      call elem_P0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_P0_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_P1_3D)
-      call elem_P1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_P1_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_Q0_3D)
-      call elem_Q0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_Q0_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_Q1_3D)
-      call elem_Q1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_Q1_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_Y0_3D)
-      call elem_Y0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_Y0_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_Y1_3D)
-      call elem_Y1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_Y1_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_R0_3D)
-      call elem_R0_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_R0_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_R1_3D)
-      call elem_R1_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_R1_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_EM30_3D)
-      call elem_EM30_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_EM30_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_E030_3D)
-      call elem_E030_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_E030_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_E031_3D)
-      call elem_E031_3D_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+      call elem_E031_3D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
 
     case default
       ! Compatibility handling: evaluate all points separately
       do i=1,npoints
-        call elem_generic (ieltyp, Dcoords, Djac(:,i), Ddetj(i), Bder, &
+        call elem_generic (celement, Dcoords, Djac(:,i), Ddetj(i), Bder, &
                            Dpoints(:,i), Dbas(:,:,i), ItwistIndex)
       end do
     end select
@@ -2062,7 +2062,7 @@ contains
   
 !<subroutine>  
 
-  subroutine elem_generic_sim1 (ieltyp, Dcoords, Djac, Ddetj, &
+  subroutine elem_generic_sim1 (celement, Dcoords, Djac, Ddetj, &
                                Bder, Dbas, npoints, nelements, Dpoints, ItwistIndex)
 
 !<description>
@@ -2074,7 +2074,7 @@ contains
 
 !<input>
   ! Element type identifier
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(IN) :: npoints
@@ -2121,8 +2121,8 @@ contains
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected 
-  ! - on the reference element, if ieltyp identifies a parametric element
-  ! - on the real element, if ieltyp identifies a nonparametric element
+  ! - on the reference element, if celement identifies a parametric element
+  ! - on the real element, if celement identifies a nonparametric element
   ! It's assumed that:
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
@@ -2156,111 +2156,111 @@ contains
   integer :: i
 
     ! Choose the right element subroutine to call.
-    select case (ieltyp)
+    select case (celement)
     ! 1D elements
     case (EL_P0_1D)
-      call elem_P0_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_P0_1D_sim (celement, Dcoords, Djac, Ddetj, &
                            Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_P1_1D)
-      call elem_P1_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_P1_1D_sim (celement, Dcoords, Djac, Ddetj, &
                            Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_P2_1D)
-      call elem_P2_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_P2_1D_sim (celement, Dcoords, Djac, Ddetj, &
                            Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_S31_1D)
-      call elem_S31_1D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_S31_1D_sim (celement, Dcoords, Djac, Ddetj, &
                             Bder, Dbas, npoints, nelements, Dpoints)
 
     ! 2D elements
     case (EL_P0)
-      call elem_P0_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_P0_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_P1)
-      call elem_P1_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_P1_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_P2)
-      call elem_P2_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_P2_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_P1T)
-      call elem_P1T_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_P1T_sim (celement, Dcoords, Djac, Ddetj, &
                          Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_Q0)
-      call elem_Q0_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_Q0_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_Q1)
-      call elem_Q1_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_Q1_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_Q2)
-      call elem_Q2_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_Q2_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
-      call elem_EM30_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_EM30_sim (celement, Dcoords, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_E030)
-      call elem_E030_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_E030_sim (celement, Dcoords, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_EB30)
-      call elem_EB30_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_EB30_sim (celement, Dcoords, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_EM31)
-      call elem_EM31_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_EM31_sim (celement, Dcoords, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_E031)
-      call elem_E031_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_E031_sim (celement, Dcoords, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_E050)
-      call elem_E050_sim (ieltyp, Dcoords, ItwistIndex, Djac, Ddetj, &
+      call elem_E050_sim (celement, Dcoords, ItwistIndex, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_EB50)
-      call elem_EB50_sim (ieltyp, Dcoords, ItwistIndex, Djac, Ddetj, &
+      call elem_EB50_sim (celement, Dcoords, ItwistIndex, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
 
     ! 3D elements
     case (EL_P0_3D)
-      call elem_P0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_P0_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_P1_3D)
-      call elem_P1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_P1_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_Q0_3D)
-      call elem_Q0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_Q0_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_Q1_3D)
-      call elem_Q1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_Q1_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_Y0_3D)
-      call elem_Y0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_Y0_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_Y1_3D)
-      call elem_Y1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_Y1_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_R0_3D)
-      call elem_R0_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_R0_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_R1_3D)
-      call elem_R1_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_R1_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_EM30_3D)
-      call elem_EM30_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_EM30_3D_sim (celement, Dcoords, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_E030_3D)
-      call elem_E030_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_E030_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_E031_3D)
-      call elem_E031_3D_sim (ieltyp, Dcoords, Djac, Ddetj, &
+      call elem_E031_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
 
     case default
       ! Compatibility handling: evaluate on all elements separately
       if (present(ItwistIndex)) then
         do i=1,nelements
-          call elem_generic_mult (ieltyp, Dcoords(:,:,i),&
+          call elem_generic_mult (celement, Dcoords(:,:,i),&
               Djac(:,:,i), Ddetj(:,i), &
               Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i), ItwistIndex(i))
         end do
       else
         do i=1,nelements
-          call elem_generic_mult (ieltyp, Dcoords(:,:,i),&
+          call elem_generic_mult (celement, Dcoords(:,:,i),&
               Djac(:,:,i), Ddetj(:,i), &
               Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i))
         end do
@@ -2273,7 +2273,7 @@ contains
   
 !<subroutine>  
 
-  subroutine elem_generic_sim2 (ieltyp, revalElementSet, Bder, Dbas)
+  subroutine elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -2288,7 +2288,7 @@ contains
   type(t_evalElementSet), intent(IN) :: revalElementSet
 
   ! Element type identifier
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
@@ -2315,36 +2315,36 @@ contains
   integer :: i
   
     ! Take care of the 1D PN element
-    if(elem_getPrimaryElement(ieltyp) .eq. EL_PN_1D) then
-      call elem_eval_PN_1D(ieltyp, revalElementSet, Bder, Dbas)
+    if(elem_getPrimaryElement(celement) .eq. EL_PN_1D) then
+      call elem_eval_PN_1D(celement, revalElementSet, Bder, Dbas)
       return
     end if
 
     ! Choose the right element subroutine to call.
-    select case (ieltyp)
+    select case (celement)
     
     ! *****************************************************
     ! 1D line elements
     case (EL_P0_1D)
-      call elem_P0_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_P0_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_P1_1D)
-      call elem_P1_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_P1_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_P2_1D)
-      call elem_P2_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_P2_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_S31_1D)
-      call elem_S31_1D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_S31_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
@@ -2352,25 +2352,25 @@ contains
     ! *****************************************************
     ! 2D triangle elements
     case (EL_P0)
-      call elem_P0_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_P0_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_P1)
-      call elem_P1_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_P1_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_P2)
-      call elem_P2_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_P2_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_P1T)
-      call elem_P1T_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_P1T_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
@@ -2378,93 +2378,93 @@ contains
     ! *****************************************************
     ! 2D quadrilateral elements
     case (EL_Q0)
-      call elem_Q0_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_Q0_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_Q1)
-      call elem_Q1_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_Q1_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
       
       ! New implementation
-      !call elem_eval_Q1_2D(ieltyp, revalElementSet, Bder, Dbas)
+      !call elem_eval_Q1_2D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_Q2)
-      call elem_Q2_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_Q2_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
 
     case (EL_Q2H_2D)
-      call elem_eval_Q2H_2D(ieltyp, revalElementSet, Bder, Dbas)
+      call elem_eval_Q2H_2D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
-      call elem_EM30_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_EM30_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal)
     
     case (EL_EM30_NEW)
       ! new implementation of 2D EM30
-      call elem_eval_EM30_2D(ieltyp, revalElementSet, Bder, Dbas)
+      call elem_eval_EM30_2D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_E030)
-      call elem_E030_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_E030_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_EB30)
-      call elem_EB30_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_EB30_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
 
     case (EL_EM31)
-      call elem_EM31_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_EM31_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal)
     
     case (EL_E031)
-      call elem_E031_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_E031_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_E050)
-      call elem_E050_sim (ieltyp, revalElementSet%p_Dcoords,&
+      call elem_E050_sim (celement, revalElementSet%p_Dcoords,&
         revalElementSet%p_ItwistIndex, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_EB50)
-      !call elem_EB50_sim (ieltyp, revalElementSet%p_Dcoords,&
+      !call elem_EB50_sim (celement, revalElementSet%p_Dcoords,&
       !  revalElementSet%p_ItwistIndex, &
       !  revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
       !  Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
       !  revalElementSet%p_DpointsRef)
 
       ! New implementation
-      call elem_eval_EB50_2D(ieltyp, revalElementSet, Bder, Dbas)
+      call elem_eval_EB50_2D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_EM50)
-      call elem_eval_EM50_2D(ieltyp, revalElementSet, Bder, Dbas)
+      call elem_eval_EM50_2D(celement, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 3D tetrahedron elements
     case (EL_P0_3D)
-      call elem_P0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_P0_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_P1_3D)
-      call elem_P1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_P1_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
@@ -2472,78 +2472,78 @@ contains
     ! *****************************************************
     ! 3D hexahedron elements
     case (EL_Q0_3D)
-      call elem_Q0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_Q0_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_Q1_3D)
-      call elem_Q1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_Q1_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
 
     case (EL_Q2_3D)
-      call elem_eval_Q2_3D(ieltyp, revalElementSet, Bder, Dbas)
+      call elem_eval_Q2_3D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_QP1_3D)
-      call elem_eval_QP1_3D(ieltyp, revalElementSet, Bder, Dbas)
+      call elem_eval_QP1_3D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_EM30_3D)
-      call elem_EM30_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_EM30_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal)
 
     case (EL_EM30_NEW_3D)
       ! new implementation of 3D EM30
-      call elem_eval_EM30_3D(ieltyp, revalElementSet, Bder, Dbas)
+      call elem_eval_EM30_3D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_E030_3D)
-      call elem_E030_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_E030_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_E031_3D)
-      call elem_E031_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_E031_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
         
     case (EL_E050_3D)
-      call elem_eval_E050_3D(ieltyp, revalElementSet, Bder, Dbas)
+      call elem_eval_E050_3D(celement, revalElementSet, Bder, Dbas)
         
     case (EL_EM50_3D)
-      call elem_eval_EM50_3D(ieltyp, revalElementSet, Bder, Dbas)
+      call elem_eval_EM50_3D(celement, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 3D pyramid elements
     case (EL_Y0_3D)
-      call elem_Y0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_Y0_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_Y1_3D)
-      !call elem_Y1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      !call elem_Y1_3D_sim (celement, revalElementSet%p_Dcoords, &
       !  revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
       !  Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
       !  revalElementSet%p_DpointsRef)
 
       ! New implementation
-      call elem_eval_Y1_3D(ieltyp, revalElementSet, Bder, Dbas)
+      call elem_eval_Y1_3D(celement, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 3D prism elements
     case (EL_R0_3D)
-      call elem_R0_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_R0_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
     case (EL_R1_3D)
-      call elem_R1_3D_sim (ieltyp, revalElementSet%p_Dcoords, &
+      call elem_R1_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
@@ -2553,32 +2553,32 @@ contains
     case default
       ! Compatibility handling: evaluate on all elements separately
       if (associated(revalElementSet%p_ItwistIndex)) then
-        if (elem_isNonparametric(ieltyp)) then
+        if (elem_isNonparametric(celement)) then
           do i=1,revalElementSet%nelements
-            call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+            call elem_generic_mult (celement, revalElementSet%p_Dcoords(:,:,i),&
                 revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
                 Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
                 revalElementSet%p_DpointsReal(:,:,i), revalElementSet%p_ItwistIndex(i))
           end do
         else
           do i=1,revalElementSet%nelements
-            call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+            call elem_generic_mult (celement, revalElementSet%p_Dcoords(:,:,i),&
                 revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
                 Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
                 revalElementSet%p_DpointsRef(:,:,i), revalElementSet%p_ItwistIndex(i))
           end do
         end if
       else
-        if (elem_isNonparametric(ieltyp)) then
+        if (elem_isNonparametric(celement)) then
           do i=1,revalElementSet%nelements
-            call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+            call elem_generic_mult (celement, revalElementSet%p_Dcoords(:,:,i),&
                 revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
                 Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
                 revalElementSet%p_DpointsReal(:,:,i))
           end do
         else
           do i=1,revalElementSet%nelements
-            call elem_generic_mult (ieltyp, revalElementSet%p_Dcoords(:,:,i),&
+            call elem_generic_mult (celement, revalElementSet%p_Dcoords(:,:,i),&
                 revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
                 Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
                 revalElementSet%p_DpointsRef(:,:,i))

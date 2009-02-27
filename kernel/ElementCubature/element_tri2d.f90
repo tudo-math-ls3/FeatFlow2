@@ -117,7 +117,7 @@ contains
  
 !<subroutine>  
 
-  pure subroutine elem_P0 (ieltyp, Dcoords, Djac, ddetj, Bder, &
+  pure subroutine elem_P0 (celement, Dcoords, Djac, ddetj, Bder, &
                            Dpoint, Dbas)
 
 !<description>
@@ -127,7 +127,7 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_Q0.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
@@ -188,7 +188,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_P0_mult (ieltyp, Dcoords, Djac, Ddetj, &
+  pure subroutine elem_P0_mult (celement, Dcoords, Djac, Ddetj, &
                                 Bder, Dbas, npoints, Dpoints)
 
 !<description>
@@ -198,7 +198,7 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P0.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(IN) :: npoints
@@ -265,7 +265,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_P0_sim (ieltyp, Dcoords, Djac, Ddetj, &
+  pure subroutine elem_P0_sim (celement, Dcoords, Djac, Ddetj, &
                                Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
@@ -277,7 +277,7 @@ contains
 !<input>
 
   ! Element type identifier. Must be =EL_P0.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(IN) :: npoints
@@ -361,7 +361,7 @@ contains
  
 !<subroutine>  
 
-  pure subroutine elem_P1 (ieltyp, Dcoords, Djac, ddetj, Bder, &
+  pure subroutine elem_P1 (celement, Dcoords, Djac, ddetj, Bder, &
                            Dpoint, Dbas)
 
 !<description>
@@ -371,7 +371,7 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P1.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
@@ -474,7 +474,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_P1_mult (ieltyp, Dcoords, Djac, Ddetj, &
+  pure subroutine elem_P1_mult (celement, Dcoords, Djac, Ddetj, &
                                 Bder, Dbas, npoints, Dpoints)
 
 !<description>
@@ -485,7 +485,7 @@ contains
   !<input>
 
   ! Element type identifier. Must be =EL_P1.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(IN) :: npoints
@@ -593,7 +593,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_P1_sim (ieltyp, Dcoords, Djac, Ddetj, &
+  pure subroutine elem_P1_sim (celement, Dcoords, Djac, Ddetj, &
                                Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
@@ -604,7 +604,7 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P1.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
 
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(IN) :: npoints
@@ -739,7 +739,7 @@ contains
  
 !<subroutine>  
 
-  pure subroutine elem_P2 (ieltyp, Dcoords, Djac, ddetj, Bder, &
+  pure subroutine elem_P2 (celement, Dcoords, Djac, ddetj, Bder, &
                            Dpoint, Dbas)
 
 !<description>
@@ -749,7 +749,7 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P1.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
@@ -866,7 +866,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_P2_mult (ieltyp, Dcoords, Djac, Ddetj, &
+  pure subroutine elem_P2_mult (celement, Dcoords, Djac, Ddetj, &
                                 Bder, Dbas, npoints, Dpoints)
 
 !<description>
@@ -877,7 +877,7 @@ contains
   !<input>
 
   ! Element type identifier. Must be =EL_P2.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(IN) :: npoints
@@ -1011,7 +1011,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_P2_sim (ieltyp, Dcoords, Djac, Ddetj, &
+  pure subroutine elem_P2_sim (celement, Dcoords, Djac, Ddetj, &
                                Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
@@ -1022,7 +1022,7 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P2.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
 
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(IN) :: npoints
@@ -1191,7 +1191,7 @@ contains
  
 !<subroutine>  
 
-  pure subroutine elem_P1T (ieltyp, Dcoords, Djac, ddetj, Bder, &
+  pure subroutine elem_P1T (celement, Dcoords, Djac, ddetj, Bder, &
                             Dpoint, Dbas)
 
 !<description>
@@ -1201,7 +1201,7 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P1T.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
@@ -1306,7 +1306,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_P1T_mult (ieltyp, Dcoords, Djac, Ddetj, &
+  pure subroutine elem_P1T_mult (celement, Dcoords, Djac, Ddetj, &
                                  Bder, Dbas, npoints, Dpoints)
 
 !<description>
@@ -1317,7 +1317,7 @@ contains
   !<input>
 
   ! Element type identifier. Must be =EL_P1T.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(IN) :: npoints
@@ -1425,7 +1425,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_P1T_sim (ieltyp, Dcoords, Djac, Ddetj, &
+  pure subroutine elem_P1T_sim (celement, Dcoords, Djac, Ddetj, &
                                 Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
@@ -1436,7 +1436,7 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P1T.
-  integer(I32), intent(IN)  :: ieltyp
+  integer(I32), intent(IN)  :: celement
 
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(IN) :: npoints

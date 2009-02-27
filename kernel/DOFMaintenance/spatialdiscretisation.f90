@@ -882,7 +882,7 @@ contains
   
 !<subroutine>
 
-  subroutine spdiscr_initDiscr_simple (rspatialDiscr,ieltyp, ccubType,&
+  subroutine spdiscr_initDiscr_simple (rspatialDiscr,celement, ccubType,&
                                        rtriangulation, rboundary)
   
 !<description>
@@ -896,7 +896,7 @@ contains
 
 !<input>
   ! The element type identifier that is to be used for all elements.
-  integer(I32), intent(IN) :: ieltyp
+  integer(I32), intent(IN) :: celement
   
   ! Cubature formula CUB_xxxx to use for calculating integrals.
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
@@ -926,7 +926,7 @@ contains
   ! Automatically determine cubature formula if necessary  
   ccub = ccubType
   if (ccub .eq. SPDISC_CUB_AUTOMATIC) &
-      ccub = spdiscr_getStdCubature(ieltyp)
+      ccub = spdiscr_getStdCubature(celement)
   
   ! Do we have a structure?
   if (rspatialDiscr%ndimension .ne. 0) then
@@ -944,14 +944,14 @@ contains
   end if
   rspatialDiscr%ccomplexity      =  SPDISC_UNIFORM
   
-  ! All trial elements are ieltyp:
+  ! All trial elements are celement:
   
 !  CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_ItrialElements', &
 !        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
 !        ST_NEWBLOCK_NOINIT)
 !  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
 !  DO i=1,rtriangulation%NEL
-!    p_Iarray(i) = ieltyp
+!    p_Iarray(i) = celement
 !  END DO
   rspatialDiscr%h_IelementDistr = ST_NOHANDLE
   
@@ -961,17 +961,17 @@ contains
   p_relementDistr => rspatialDiscr%RelementDistr(1)
   
   ! Initialise FE space for that block
-  p_relementDistr%celement        = ieltyp
+  p_relementDistr%celement        = celement
   p_relementDistr%ccubTypeBilForm = ccub
   p_relementDistr%ccubTypeLinForm = ccub
   p_relementDistr%ccubTypeEval    = ccub
   
   ! Get the typical transformation used with the element
-  p_relementDistr%ctrafoType = elem_igetTrafoType(ieltyp)
+  p_relementDistr%ctrafoType = elem_igetTrafoType(celement)
   
   ! Check the cubature formula against the element distribution.
   ! This stops the program if this is not fulfilled.
-  call spdiscr_checkCubature(ccub,ieltyp)
+  call spdiscr_checkCubature(ccub,celement)
 
   ! Initialise an 'identity' array containing the numbers of all elements.
   ! This list defines the sequence how elements are processed, e.g. in the
@@ -1216,7 +1216,7 @@ contains
   
 !<subroutine>
 
-  subroutine spdiscr_deriveSimpleDiscrSc (rsourceDiscr, ieltyp, ccubType, &
+  subroutine spdiscr_deriveSimpleDiscrSc (rsourceDiscr, celement, ccubType, &
                                           rdestDiscr)
   
 !<description>
@@ -1227,7 +1227,7 @@ contains
   ! type and cubature formula are changed according to the parameters.
   !
   ! The new discretisation will also be a uniform discretisation based
-  ! on the element ieltyp. It's not a complete new structure, but a
+  ! on the element celement. It's not a complete new structure, but a
   ! 'derived' structure, i.e. it uses the same dynamic information
   ! (element lists) as rsourceDiscr.
 !</description>
@@ -1238,7 +1238,7 @@ contains
 
   ! The element type identifier that is to be used for all elements
   ! in the new discretisation structure
-  integer(I32), intent(IN) :: ieltyp
+  integer(I32), intent(IN) :: celement
   
   ! Cubature formula to use for calculating integrals
   ! in the new discretisation structure
@@ -1266,7 +1266,7 @@ contains
   ! Automatically determine cubature formula if necessary  
   ccub = ccubType
   if (ccub .eq. SPDISC_CUB_AUTOMATIC) &
-      ccub = spdiscr_getStdCubature(ieltyp)
+      ccub = spdiscr_getStdCubature(celement)
   
   ! Check that the source discretisation structure is valid.
   if (rsourceDiscr%ndimension .le. 0) then
@@ -1284,7 +1284,7 @@ contains
   end if
   
   if (elem_igetDimension(rsourceDiscr%RelementDistr(1)%celement) .ne. &
-      elem_igetDimension(ieltyp)) then
+      elem_igetDimension(celement)) then
     call output_line ('Element dimension different!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')  
     call sys_halt()
@@ -1296,7 +1296,7 @@ contains
   if (ccub .ne. SPDISC_CUB_NOCHANGE) then
     ! Check the cubature formula against the element distribution.
     ! This stops the program if this is not fulfilled.
-    call spdiscr_checkCubature(ccub,ieltyp)
+    call spdiscr_checkCubature(ccub,celement)
   end if
   
   ! Copy the source structure to the destination.
@@ -1308,8 +1308,8 @@ contains
   rdestDiscr%RelementDistr(1:rdestDiscr%inumFESpaces) = &
       rsourceDiscr%RelementDistr(1:rsourceDiscr%inumFESpaces)
 
-  ! Change the element type of all trial functions to ieltyp
-  rdestDiscr%RelementDistr(1)%celement = ieltyp
+  ! Change the element type of all trial functions to celement
+  rdestDiscr%RelementDistr(1)%celement = celement
   
   ! Init the cubature rule
   if (ccub .eq. SPDISC_CUB_NOCHANGE) then
@@ -1327,7 +1327,7 @@ contains
   end if
   
   ! Get the typical transformation used with the element
-  rdestDiscr%RelementDistr(1)%ctrafoType = elem_igetTrafoType(ieltyp)
+  rdestDiscr%RelementDistr(1)%ctrafoType = elem_igetTrafoType(celement)
   
   ! Mark the new discretisation structure as 'copy', to prevent
   ! the dynamic information to be released.
@@ -1352,7 +1352,7 @@ contains
   ! type and cubature formula are changed according to the parameters.
   !
   ! The new discretisation will also be a uniform discretisation based
-  ! on the element ieltyp. It's not a complete new structure, but a
+  ! on the element celement. It's not a complete new structure, but a
   ! 'derived' structure, i.e. it uses the same dynamic information
   ! (element lists) as rsourceDiscr.
 !</description>

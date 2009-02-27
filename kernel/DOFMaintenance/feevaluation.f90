@@ -124,7 +124,7 @@ contains
     ! local variables
     integer :: cnonmesh
     integer :: ipoint,indof,nve,ibas
-    integer(I32) :: ieltype
+    integer(I32) :: celement
     integer :: iel
     integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
@@ -156,20 +156,20 @@ contains
     if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
       
       ! Element type
-      ieltype = rvectorScalar%p_rspatialDiscr%&
+      celement = rvectorScalar%p_rspatialDiscr%&
           RelementDistr(1)%celement
 
       ! Get the number of local DOF's for trial and test functions
-      indof = elem_igetNDofLoc(ieltype)
+      indof = elem_igetNDofLoc(celement)
       
       ! Number of vertices on the element
-      nve = elem_igetNVE(ieltype)
+      nve = elem_igetNVE(celement)
       
       ! Type of transformation from/to the reference element
-      ctrafoType = elem_igetTrafoType(ieltype)
+      ctrafoType = elem_igetTrafoType(celement)
       
       ! Get the element evaluation tag; necessary for the preparation of the element
-      cevaluationTag = elem_getEvaluationTag(ieltype)
+      cevaluationTag = elem_getEvaluationTag(celement)
       
       nullify(p_IelementDistr)
     else
@@ -258,19 +258,19 @@ contains
     
       ! Get the type of the element iel
       if (associated(p_IelementDistr)) then
-        ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
+        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
 
         ! Get the number of local DOF's for trial and test functions
-        indof = elem_igetNDofLoc(ieltype)
+        indof = elem_igetNDofLoc(celement)
         
         ! Number of vertices on the element
-        nve = elem_igetNVE(ieltype)
+        nve = elem_igetNVE(celement)
         
         ! Type of transformation from/to the reference element
-        ctrafoType = elem_igetTrafoType(ieltype)
+        ctrafoType = elem_igetTrafoType(celement)
         
         ! Get the element evaluation tag; necessary for the preparation of the element
-        cevaluationTag = elem_getEvaluationTag(ieltype)
+        cevaluationTag = elem_getEvaluationTag(celement)
       end if
         
       ! Calculate the global DOF's on that element into IdofsTest.
@@ -293,7 +293,7 @@ contains
 
       ! Call the element to calculate the values of the basis functions
       ! in the point.
-      call elem_generic2 (ieltype, revalElement, Bder, Dbas)
+      call elem_generic2 (celement, revalElement, Bder, Dbas)
       
       ! Combine the basis functions to get the function value.
       dval = 0.0_DP
@@ -376,7 +376,7 @@ contains
 
     ! local variables
     integer :: ipoint,indof,nve,ibas,npoints
-    integer(I32) :: ieltype
+    integer(I32) :: celement
     integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
@@ -419,26 +419,26 @@ contains
     if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
       
       ! Element type
-      ieltype = p_RelementDistribution(1)%celement
+      celement = p_RelementDistribution(1)%celement
 
     else
       call storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
           p_IelementDistr)
 
-      ieltype = p_RelementDistribution(p_IelementDistr(ielement))%celement
+      celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
     end if
 
     ! Get the number of local DOF's for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
     
     ! Number of vertices on the element
-    nve = elem_igetNVE(ieltype)
+    nve = elem_igetNVE(celement)
     
     ! Type of transformation from/to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
     
     ! Get the element evaluation tag; necessary for the preparation of the element
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
 
     ! Get the data vector
     select case (rvectorScalar%cdataType)
@@ -490,7 +490,7 @@ contains
 
       ! Call the element to calculate the values of the basis functions
       ! in the point.
-      call elem_generic2 (ieltype, revalElement, Bder, Dbas)
+      call elem_generic2 (celement, revalElement, Bder, Dbas)
       
       dval = 0.0_DP
       if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
@@ -529,7 +529,7 @@ contains
 !<subroutine>
 
   subroutine fevl_evaluate_mult2 (rvectorScalar, Dcoords, Djac, Ddetj, &
-                  ieltyp, IdofsTrial, npoints,  Dpoints, iderType,&
+                  celement, IdofsTrial, npoints,  Dpoints, iderType,&
                   Dvalues, ItwistIndex)
                                       
 !<description>
@@ -546,10 +546,10 @@ contains
   type(t_vectorScalar), intent(IN)               :: rvectorScalar
   
   ! The FE function must be discretised with the same trial functions on all
-  ! elements where it should be evaluated here. ieltyp defines the type
+  ! elements where it should be evaluated here. celement defines the type
   ! of FE trial function that was used for the discretisation on those 
   ! elements that we are concerning here.
-  integer(I32), intent(IN)                       :: ieltyp
+  integer(I32), intent(IN)                       :: celement
 
   ! A list of the corner vertices of the element.
   ! array [1..NDIM2D,1..TRIA_MAXNVE2D] of double
@@ -576,8 +576,8 @@ contains
   ! Array with coordinates of the points where to evaluate.
   ! DIMENSION(NDIM2D,npoints).
   ! The coordinates are expected 
-  ! - on the reference element, if ieltyp identifies a parametric element
-  ! - on the real element, if ieltyp identifies a nonparametric element
+  ! - on the reference element, if celement identifies a parametric element
+  ! - on the real element, if celement identifies a nonparametric element
   ! It's assumed that:
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
@@ -620,11 +620,11 @@ contains
   Bder(iderType) = .true.
   
   ! Allocate memory for the basis function values
-  indofTrial = elem_igetNDofLoc(ieltyp)
-  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(ieltyp),npoints))
+  indofTrial = elem_igetNDofLoc(celement)
+  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(celement),npoints))
   
   ! Evaluate the basis functions
-  call elem_generic_mult (ieltyp, Dcoords, Djac, Ddetj, &
+  call elem_generic_mult (celement, Dcoords, Djac, Ddetj, &
                          Bder, DbasTrial, npoints, Dpoints, itwistIndex)  
   
   if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
@@ -723,7 +723,7 @@ contains
 !
 !    ! local variables
 !    LOGICAL :: bnonpar
-!    INTEGER :: ipoint,ieltype,indof,nve,ibas,iel,ndim,ntwistsize
+!    INTEGER :: ipoint,celement,indof,nve,ibas,iel,ndim,ntwistsize
 !    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
 !    LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
 !    REAL(DP) :: dval
@@ -770,19 +770,19 @@ contains
 !    IF (rvectorScalar%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNIFORM) THEN
 !      
 !      ! Element type
-!      ieltype = p_RelementDistribution(1)%celement
+!      celement = p_RelementDistribution(1)%celement
 !
 !      ! Get the number of local DOF's for trial and test functions
-!      indof = elem_igetNDofLoc(ieltype)
+!      indof = elem_igetNDofLoc(celement)
 !      
 !      ! Number of vertices on the element
-!      nve = elem_igetNVE(ieltype)
+!      nve = elem_igetNVE(celement)
 !      
 !      ! Type of transformation from/to the reference element
-!      ctrafoType = elem_igetTrafoType(ieltype)
+!      ctrafoType = elem_igetTrafoType(celement)
 !      
 !      ! Element nonparametric?
-!      bnonpar = elem_isNonparametric(ieltype)
+!      bnonpar = elem_isNonparametric(celement)
 !      
 !      NULLIFY(p_IelementDistr)
 !    ELSE
@@ -810,19 +810,19 @@ contains
 !    IF (ASSOCIATED(p_IelementDistr)) THEN
 !      ! As all elements have the same type, we get the element
 !      ! characteristics by checking the first element.
-!      ieltype = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
+!      celement = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
 !
 !      ! Get the number of local DOF's for trial and test functions
-!      indof = elem_igetNDofLoc(ieltype)
+!      indof = elem_igetNDofLoc(celement)
 !      
 !      ! Number of vertices on the element
-!      nve = elem_igetNVE(ieltype)
+!      nve = elem_igetNVE(celement)
 !      
 !      ! Type of transformation from/to the reference element
-!      ctrafoType = elem_igetTrafoType(ieltype)
+!      ctrafoType = elem_igetTrafoType(celement)
 !      
 !      ! Element nonparametric?
-!      bnonpar = elem_isNonparametric(ieltype)
+!      bnonpar = elem_isNonparametric(celement)
 !      
 !    END IF
 !      
@@ -858,12 +858,12 @@ contains
 !    ndim = UBOUND(Dcoord,1)
 !    ALLOCATE(Djac(ndim*ndim,UBOUND(Dpoints,2),UBOUND(Dpoints,3)))
 !    ALLOCATE(Ddetj(UBOUND(Dpoints,2),UBOUND(Dpoints,3)))
-!    CALL trafo_calctrafo_sim (elem_igetTrafoType(ieltype),SIZE(Ielements),&
+!    CALL trafo_calctrafo_sim (elem_igetTrafoType(celement),SIZE(Ielements),&
 !        UBOUND(Dpoints,2),Dcoord,&
 !        p_DpointsRef,Djac,Ddetj)    
 !  
 !    ! Does the element need twist indices?
-!    ntwistsize = elem_getTwistIndexSize(ieltype)
+!    ntwistsize = elem_getTwistIndexSize(celement)
 !
 !    ! If necessary, calculate the twist index array. The element may need it.
 !    ! We always allocate so that we have something we can pass to the element...
@@ -875,14 +875,14 @@ contains
 !
 !    ! Calculate the values of the basis functions in the given points.
 !    ALLOCATE(Dbas(indof,&
-!             elem_getMaxDerivative(ieltype),&
+!             elem_getMaxDerivative(celement),&
 !             UBOUND(Dpoints,2), UBOUND(Dpoints,3)))
 !    IF (bnonpar) THEN
-!      CALL elem_generic_sim (ieltype, Dcoord, Djac, Ddetj, &
+!      CALL elem_generic_sim (celement, Dcoord, Djac, Ddetj, &
 !                           Bder, Dbas, UBOUND(Dpoints,2), UBOUND(Dpoints,3), &
 !                           Dpoints,ItwistIndex)    
 !    ELSE
-!      CALL elem_generic_sim (ieltype, Dcoord, Djac, Ddetj, &
+!      CALL elem_generic_sim (celement, Dcoord, Djac, Ddetj, &
 !                           Bder, Dbas, UBOUND(Dpoints,2), UBOUND(Dpoints,3), &
 !                           p_DpointsRef,ItwistIndex)    
 !    END IF
@@ -992,7 +992,7 @@ contains
     ! local variables
     logical :: bnonpar
     integer :: ipoint,indof,nve,ibas,iel
-    integer(I32) :: ieltype
+    integer(I32) :: celement
     integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
@@ -1031,19 +1031,19 @@ contains
     if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
       
       ! Element type
-      ieltype = p_RelementDistribution(1)%celement
+      celement = p_RelementDistribution(1)%celement
 
       ! Get the number of local DOF's for trial and test functions
-      indof = elem_igetNDofLoc(ieltype)
+      indof = elem_igetNDofLoc(celement)
       
       ! Number of vertices on the element
-      nve = elem_igetNVE(ieltype)
+      nve = elem_igetNVE(celement)
       
       ! Type of transformation from/to the reference element
-      ctrafoType = elem_igetTrafoType(ieltype)
+      ctrafoType = elem_igetTrafoType(celement)
       
       ! Element nonparametric?
-      bnonpar = elem_isNonparametric(ieltype)
+      bnonpar = elem_isNonparametric(celement)
       
       nullify(p_IelementDistr)
     else
@@ -1071,19 +1071,19 @@ contains
     if (associated(p_IelementDistr)) then
       ! As all elements have the same type, we get the element
       ! characteristics by checking the first element.
-      ieltype = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
+      celement = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
 
       ! Get the number of local DOF's for trial and test functions
-      indof = elem_igetNDofLoc(ieltype)
+      indof = elem_igetNDofLoc(celement)
       
       ! Number of vertices on the element
-      nve = elem_igetNVE(ieltype)
+      nve = elem_igetNVE(celement)
       
       ! Type of transformation from/to the reference element
-      ctrafoType = elem_igetTrafoType(ieltype)
+      ctrafoType = elem_igetTrafoType(celement)
       
       ! Element nonparametric?
-      bnonpar = elem_isNonparametric(ieltype)
+      bnonpar = elem_isNonparametric(celement)
       
     end if
       
@@ -1118,7 +1118,7 @@ contains
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag. 
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
     
     ! Don't create coordinates on the reference/real element; we do this manually!
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
@@ -1138,9 +1138,9 @@ contains
     
     ! Calculate the values of the basis functions in the given points.
     allocate(Dbas(indof,&
-             elem_getMaxDerivative(ieltype),&
+             elem_getMaxDerivative(celement),&
              ubound(Dpoints,2), size(Ielements)))
-    call elem_generic_sim2 (ieltype, revalElementSet, Bder, Dbas)
+    call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
              
     ! Calculate the desired values. We loop over all points and all elements
     if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
@@ -1200,7 +1200,7 @@ contains
 !<subroutine>
 
   subroutine fevl_evaluate_sim2 (rvectorScalar, Dcoords, Djac, Ddetj, &
-                  ieltyp, IdofsTrial, npoints,  nelements, Dpoints, iderType,&
+                  celement, IdofsTrial, npoints,  nelements, Dpoints, iderType,&
                   Dvalues,ItwistIndexEdges)
                                       
 !<description>
@@ -1222,10 +1222,10 @@ contains
   type(t_vectorScalar), intent(IN)              :: rvectorScalar
   
   ! The FE function must be discretised with the same trial functions on all
-  ! elements where it should be evaluated here. ieltyp defines the type
+  ! elements where it should be evaluated here. celement defines the type
   ! of FE trial function that was used for the discretisation on those 
   ! elements that we are concerning here.
-  integer(I32), intent(IN)                      :: ieltyp
+  integer(I32), intent(IN)                      :: celement
 
   ! A list of the corner vertices of all elements in progress.
   ! array [1..NDIM2D,1..TRIA_MAXNVE2D,1..Number of elements] of double
@@ -1255,8 +1255,8 @@ contains
   ! Array with coordinates of the points where to evaluate.
   ! DIMENSION(NDIM2D,npoints,nelements).
   ! The coordinates are expected 
-  ! - on the reference element, if ieltyp identifies a parametric element
-  ! - on the real element, if ieltyp identifies a nonparametric element
+  ! - on the reference element, if celement identifies a parametric element
+  ! - on the real element, if celement identifies a nonparametric element
   ! It's assumed that:
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
@@ -1299,11 +1299,11 @@ contains
   Bder(iderType) = .true.
   
   ! Allocate memory for the basis function values
-  indofTrial = elem_igetNDofLoc(ieltyp)
-  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(ieltyp),npoints,nelements))
+  indofTrial = elem_igetNDofLoc(celement)
+  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(celement),npoints,nelements))
   
   ! Evaluate the basis functions
-  call elem_generic_sim (ieltyp, Dcoords, Djac, Ddetj, &
+  call elem_generic_sim (celement, Dcoords, Djac, Ddetj, &
                          Bder, DbasTrial, npoints, nelements, Dpoints,ItwistIndexEdges)  
   
   if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
@@ -1364,7 +1364,7 @@ contains
 !<subroutine>
 
   subroutine fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  ieltyp, IdofsTrial, iderType, Dvalues)
+                  celement, IdofsTrial, iderType, Dvalues)
                                       
 !<description>
   ! This routine allows to evaluate a finite element solution vector
@@ -1372,7 +1372,7 @@ contains
   ! discretisation.
   ! revalElementScalar must specify all information about where and how
   ! to evaluate; e.g. the coordinates of the evaluation points are
-  ! to be found here. The routine will then evaluate the element ieltyp
+  ! to be found here. The routine will then evaluate the element celement
   ! in these points.
   !
   ! This routine is specialised to evaluate in multiple elements. For this
@@ -1391,10 +1391,10 @@ contains
   type(t_vectorScalar), intent(IN)              :: rvectorScalar
   
   ! The FE function must be discretised with the same trial functions on all
-  ! elements where it should be evaluated here. ieltyp defines the type
+  ! elements where it should be evaluated here. celement defines the type
   ! of FE trial function that was used for the discretisation on those 
   ! elements that we are concerning here.
-  integer(I32), intent(IN)                      :: ieltyp
+  integer(I32), intent(IN)                      :: celement
 
   ! An array accepting the DOF's on all elements in the trial space
   ! of the FE function.
@@ -1431,11 +1431,11 @@ contains
   Bder(iderType) = .true.
   
   ! Allocate memory for the basis function values
-  indofTrial = elem_igetNDofLoc(ieltyp)
-  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(ieltyp),npoints,nelements))
+  indofTrial = elem_igetNDofLoc(celement)
+  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(celement),npoints,nelements))
   
   ! Evaluate the basis functions
-  call elem_generic_sim2 (ieltyp, revalElementSet, Bder, DbasTrial)
+  call elem_generic_sim2 (celement, revalElementSet, Bder, DbasTrial)
   
   if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
   
@@ -1550,7 +1550,7 @@ contains
   integer :: indofTrial,npoints,nelements
   real(DP) :: dval
   integer :: iel,ipoint,ibas
-  integer(I32) :: ieltyp
+  integer(I32) :: celement
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
   integer, dimension(:,:), pointer :: p_IdofsTrial
@@ -1563,20 +1563,20 @@ contains
   Bder(iderType) = .true.
   
   ! Get the currently active element
-  ieltyp = rvectorScalar%p_rspatialDiscr%RelementDistr( &
+  celement = rvectorScalar%p_rspatialDiscr%RelementDistr( &
       rdomainIntSubset%ielementDistribution)%celement
   
   ! Allocate memory for the basis function values
-  indofTrial = elem_igetNDofLoc(ieltyp)
-  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(ieltyp),npoints,nelements))
+  indofTrial = elem_igetNDofLoc(celement)
+  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(celement),npoints,nelements))
   
   ! Evaluate the basis functions
-  call elem_generic_sim2 (ieltyp, rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+  call elem_generic_sim2 (celement, rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
   
   ! Get the pointer to the trail DOF's.
   ! If the IdofsTrial in the domain subset fits to our current element,
   ! take that. Otherwise, we have to compute the actual DOF's.
-  if (rdomainIntSubset%celement .eq. ieltyp) then
+  if (rdomainIntSubset%celement .eq. celement) then
     p_IdofsTrial => rdomainIntSubset%p_IdofsTrial
   else
     allocate (p_IdofsTrial(indofTrial,nelements))
@@ -1635,7 +1635,7 @@ contains
   ! Release memory, finish
   deallocate(DbasTrial)
   
-  if (rdomainIntSubset%celement .ne. ieltyp) then
+  if (rdomainIntSubset%celement .ne. celement) then
     deallocate (p_IdofsTrial)
   end if
 

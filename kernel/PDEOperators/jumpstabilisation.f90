@@ -162,7 +162,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_DOFIDX) :: irow, jcol, idof
+  integer :: irow, jcol, idof
   integer :: IMT
   integer :: ivt1,ivt2,NVT
   integer :: IEL
@@ -175,12 +175,12 @@ contains
   real(DP), dimension(:), pointer :: p_Da
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTempl
-  integer(PREC_DOFIDX), dimension(EL_MAXNBAS*2), target :: Idofs
+  integer, dimension(:,:), allocatable, target :: IdofsTempl
+  integer, dimension(EL_MAXNBAS*2), target :: Idofs
   
   ! Arrays saving the local DOF numbers belonging to the global
   ! DOF numbers in Idofs
-  integer(PREC_DOFIDX), dimension(EL_MAXNBAS*2),target :: IlocalDofs
+  integer, dimension(EL_MAXNBAS*2),target :: IlocalDofs
   
   ! Renumbering strategy for local DOF's
   integer, dimension(EL_MAXNBAS), target :: IlocalDofRenum
@@ -217,11 +217,11 @@ contains
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  integer(PREC_DOFIDX), dimension(:), allocatable :: Kentry
+  integer, dimension(:), allocatable :: Kentry
   real(DP), dimension(:), allocatable :: Dentry
 
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoType
+  integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
@@ -776,7 +776,7 @@ contains
 
 
   ! local variables
-  integer(PREC_DOFIDX) :: irow, jcol, idof
+  integer :: irow, jcol, idof
   integer :: IMT
   integer :: ivt1,ivt2,NVT
   integer :: IEL
@@ -788,12 +788,12 @@ contains
   integer, dimension(:), pointer :: p_Kcol
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTempl
-  integer(PREC_DOFIDX), dimension(EL_MAXNBAS*2), target :: Idofs
+  integer, dimension(:,:), allocatable, target :: IdofsTempl
+  integer, dimension(EL_MAXNBAS*2), target :: Idofs
   
   ! Arrays saving the local DOF numbers belonging to the global
   ! DOF numbers in Idofs
-  integer(PREC_DOFIDX), dimension(EL_MAXNBAS*2),target :: IlocalDofs
+  integer, dimension(EL_MAXNBAS*2),target :: IlocalDofs
   
   ! Renumbering strategy for local DOF's
   integer, dimension(EL_MAXNBAS), target :: IlocalDofRenum
@@ -830,7 +830,7 @@ contains
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  integer(PREC_DOFIDX), dimension(:), allocatable :: Kentry
+  integer, dimension(:), allocatable :: Kentry
   real(DP), dimension(:), allocatable :: Dentry
 
   ! An element evaluation set for evaluating elements.
@@ -857,7 +857,7 @@ contains
   logical, dimension(EL_MAXNDER) :: Bder
 
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoType
+  integer(I32) :: ctrafoType
   
   ! Data arrays for the vectors
   real(DP), dimension(:), pointer :: p_Dx1,p_Dy1

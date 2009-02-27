@@ -252,7 +252,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     type(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
     type(t_vectorBlock) :: rgradient,rgradientRef
-    integer :: imethod,isubmethod,idim,ccub,ieltyp,i
+    integer :: imethod,isubmethod,idim,ccub,celement,i
 
     ! Some basic checks:
     
@@ -307,33 +307,33 @@ contains
           
           select case(rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement)
           case (EL_P1_1D)
-            ieltyp = EL_P0_1D
+            celement = EL_P0_1D
           case (EL_P2_1D)
-            ieltyp = EL_P1_1D
+            celement = EL_P1_1D
             
           case (EL_P1_2D)
-            ieltyp = EL_P0_2D
+            celement = EL_P0_2D
           case (EL_P2_2D)
-            ieltyp = EL_P1_2D
+            celement = EL_P1_2D
           case (EL_P3_2D)
-            ieltyp = EL_P2_2D
+            celement = EL_P2_2D
 
           case (EL_Q1_2D)
-            ieltyp = EL_Q0_2D
+            celement = EL_Q0_2D
           case (EL_Q2_2D)
-            ieltyp = EL_Q1_2D
+            celement = EL_Q1_2D
           case (EL_Q3_2D)
-            ieltyp = EL_Q2_2D
+            celement = EL_Q2_2D
 
           case (EL_P1_3D)
-            ieltyp = EL_P0_3D
+            celement = EL_P0_3D
           case (EL_P2_3D)
-            ieltyp = EL_P1_3D
+            celement = EL_P1_3D
 
           case (EL_Q1_3D)
-            ieltyp = EL_Q0_3D
+            celement = EL_Q0_3D
           case (EL_Q2_3D)
-            ieltyp = EL_Q1_3D
+            celement = EL_Q1_3D
             
           case DEFAULT
             call output_line('Unsupported element type!',&
@@ -342,14 +342,14 @@ contains
           end select
           
           ! Compute natural cubature rule
-          ccub = spdiscr_getStdCubature(ieltyp)
+          ccub = spdiscr_getStdCubature(celement)
           
           ! Adjust element distribution
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement        = ieltyp
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement        = celement
           rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeBilForm = ccub
           rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeLinForm = ccub
           rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeEval    = ccub
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(ieltyp)
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(celement)
         end do
       end do
       
@@ -401,33 +401,33 @@ contains
           
           select case(rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement)
           case (EL_P1_1D)
-            ieltyp = EL_P0_1D
+            celement = EL_P0_1D
           case (EL_P2_1D)
-            ieltyp = EL_P1_1D
+            celement = EL_P1_1D
             
           case (EL_P1_2D)
-            ieltyp = EL_P0_2D
+            celement = EL_P0_2D
           case (EL_P2_2D)
-            ieltyp = EL_P1_2D
+            celement = EL_P1_2D
           case (EL_P3_2D)
-            ieltyp = EL_P2_2D
+            celement = EL_P2_2D
 
           case (EL_Q1_2D)
-            ieltyp = EL_Q0_2D
+            celement = EL_Q0_2D
           case (EL_Q2_2D)
-            ieltyp = EL_Q1_2D
+            celement = EL_Q1_2D
           case (EL_Q3_2D)
-            ieltyp = EL_Q2_2D
+            celement = EL_Q2_2D
 
           case (EL_P1_3D)
-            ieltyp = EL_P0_3D
+            celement = EL_P0_3D
           case (EL_P2_3D)
-            ieltyp = EL_P1_3D
+            celement = EL_P1_3D
 
           case (EL_Q1_3D)
-            ieltyp = EL_Q0_3D
+            celement = EL_Q0_3D
           case (EL_Q2_3D)
-            ieltyp = EL_Q1_3D
+            celement = EL_Q1_3D
             
           case DEFAULT
             call output_line('Unsupported element type!',&
@@ -436,14 +436,14 @@ contains
           end select
           
           ! Compute natural cubature rule
-          ccub = spdiscr_getStdCubature(ieltyp)
+          ccub = spdiscr_getStdCubature(celement)
           
           ! Adjust element distribution
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement        = ieltyp
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement        = celement
           rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeBilForm = ccub
           rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeLinForm = ccub
           rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeEval    = ccub
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(ieltyp)
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(celement)
         end do
       end do
 
@@ -458,13 +458,13 @@ contains
           
           select case(rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%celement)
           case (EL_P1_2D)
-            ieltyp = EL_P1T_2D
+            celement = EL_P1T_2D
          
           case (EL_Q1_2D)
-            ieltyp = EL_Q1T_2D
+            celement = EL_Q1T_2D
 
           case (EL_Q1_3D)
-            ieltyp = EL_Q1T_3D
+            celement = EL_Q1T_3D
             
           case DEFAULT
             call output_line('Unsupported element type!',&
@@ -473,14 +473,14 @@ contains
           end select
           
           ! Compute natural cubature rule
-          ccub = spdiscr_getStdCubature(ieltyp)
+          ccub = spdiscr_getStdCubature(celement)
           
           ! Adjust element distribution
-          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%celement        = ieltyp
+          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%celement        = celement
           rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeBilForm = ccub
           rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeLinForm = ccub
           rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeEval    = ccub
-          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(ieltyp)
+          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(celement)
         end do
       end do
       
@@ -566,7 +566,7 @@ contains
     integer :: indofTrial,indofDest
     
     ! Type of transformation from the reference to the real element 
-    integer :: ctrafoType
+    integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
@@ -3960,10 +3960,10 @@ contains
     !**************************************************************    
     ! Initialise the cubature formula for the destination FE space
 
-    subroutine calc_cubatureDest(ieltyp,ncubp, Dxi, Domega)
+    subroutine calc_cubatureDest(celement,ncubp, Dxi, Domega)
       
       ! Element type identifier.
-      integer, intent(IN) :: ieltyp
+      integer, intent(IN) :: celement
 
       ! Number of cubature points
       integer, intent(OUT) :: ncubp
@@ -3974,7 +3974,7 @@ contains
       ! Cubature weights of the cubature points
       real(DP), dimension(:), intent(OUT) :: Domega
       
-      select case (ieltyp)
+      select case (celement)
       case (EL_P0)
         call cub_getCubPoints(CUB_G1_T, ncubp, Dxi, Domega)
       case (EL_Q0)

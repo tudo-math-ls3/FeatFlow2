@@ -1358,7 +1358,7 @@ contains
 
     ! local variables
     integer :: i,j,ilocalEdge,icount,ielidx
-    integer(I32) :: ieltype
+    integer(I32) :: celement
     integer :: ielement
     integer :: iedge,ipoint1,ipoint2,NVT
     integer, dimension(1) :: Icomponents
@@ -1443,8 +1443,8 @@ contains
           p_IelementDistr)
     else
       ! All elements are of the samne type. Get it in advance.
-      ieltype = p_rspatialDiscretisation%RelementDistr(1)%celement
-      nve = elem_igetNVE (ieltype)
+      celement = p_rspatialDiscretisation%RelementDistr(1)%celement
+      nve = elem_igetNVE (celement)
     end if
     
     ! Get a new BC entry
@@ -1529,10 +1529,10 @@ contains
       I = IelementsAtBoundaryIdx (ielidx)
 
       ! Get the element type in case we don't have a uniform triangulation.
-      ! Otherwise, ieltype was set to the trial element type above.
+      ! Otherwise, celement was set to the trial element type above.
       if (p_rspatialDiscretisation%ccomplexity .ne. SPDISC_UNIFORM) then
-        ieltype = p_RelementDistribution(p_IelementDistr(ielement))%celement
-        nve = elem_igetNVE (ieltype)
+        celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
+        nve = elem_igetNVE (celement)
       end if
         
       ilocaledge = 0
@@ -1568,7 +1568,7 @@ contains
       ! boundary. Then, we ask our computation routine to calculate
       ! the necessary value and translate them into a DOF value.
       ! All DOF values are collected later.
-      select case (elem_getPrimaryElement(ieltype))
+      select case (elem_getPrimaryElement(celement))
       
       case (EL_P0,EL_Q0)
         ! Nice element, only one DOF :-)
@@ -1775,7 +1775,7 @@ contains
         ! The Q1T-element has different variants. Check which variant we have
         ! and choose the right way to calculate boundary values.
       
-        if (iand(ieltype,int(2**16,I32)) .ne. 0) then
+        if (iand(celement,int(2**16,I32)) .ne. 0) then
         
           ! Integral mean value based element.
           !
@@ -2097,7 +2097,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: ieltype
+    integer(I32) :: celement
     integer :: i,icount
     type(t_discreteBCFeastMirror),pointer       :: p_rfeastMirrorBCs
     type(t_triangulation), pointer              :: p_rtriangulation
@@ -2149,8 +2149,8 @@ contains
       call sys_halt()
     end if
     
-    ieltype = p_rspatialDiscretisation%RelementDistr(1)%celement
-    if (elem_getPrimaryElement(ieltype) .ne. EL_Q1) then
+    celement = p_rspatialDiscretisation%RelementDistr(1)%celement
+    if (elem_getPrimaryElement(celement) .ne. EL_Q1) then
       print *,'Discrete FEAST mirror boundary conditions currently only supported'
       print *,'for Q1 element!'
       call sys_halt()
@@ -2322,7 +2322,7 @@ contains
 
     ! local variables
     integer :: i,icount
-    integer(I32) :: ieltype
+    integer(I32) :: celement
     real(DP), dimension(EL_MAXNDER)            :: Dvalues
     real(DP),dimension(NDIM2D)                 :: Dtangential,Dnormal
     integer                                    :: NVT,ipoint1,ipoint2
@@ -2375,8 +2375,8 @@ contains
       call sys_halt()
     end if
 
-    ieltype = p_rspatialDiscretisation%RelementDistr(1)%celement
-    if (elem_getPrimaryElement(ieltype) .ne. EL_Q1T) then
+    celement = p_rspatialDiscretisation%RelementDistr(1)%celement
+    if (elem_getPrimaryElement(celement) .ne. EL_Q1T) then
       print *,'Discrete pressure drop boundary conditions currently only supported'
       print *,'for Q1~ element!'
       call sys_halt()
@@ -2390,7 +2390,7 @@ contains
     ! For easier access:
     p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
 
-    ! Note: All elements are of the same type ieltyp.
+    ! Note: All elements are of the same type celement.
     !
     ! We have pressure drop boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPPRESSUREDROP
@@ -2575,7 +2575,7 @@ contains
 
     ! local variables
     integer :: i,icount
-    integer(I32) :: ieltype
+    integer(I32) :: celement
     real(DP),dimension(NDIM2D)                  :: Dtangential,Dnormal
     integer                                     :: NVT,ipoint1,ipoint2
     integer                                     :: ielement
@@ -2630,8 +2630,8 @@ contains
       call sys_halt()
     end if
 
-    ieltype = p_rspatialDiscretisation%RelementDistr(1)%celement
-    if (elem_getPrimaryElement(ieltype) .ne. EL_Q1T) then
+    celement = p_rspatialDiscretisation%RelementDistr(1)%celement
+    if (elem_getPrimaryElement(celement) .ne. EL_Q1T) then
       print *,'Discrete Slip boundary conditions currently only supported'
       print *,'for Q1~ element!'
       call sys_halt()
@@ -2645,7 +2645,7 @@ contains
     ! For easier access:
     p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
 
-    ! Note: All elements are of the same type ieltyp.
+    ! Note: All elements are of the same type celement.
     !
     ! We have pressure drop boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPSLIP
@@ -2837,7 +2837,7 @@ contains
     
     integer :: nDOFs
     integer :: h_Ddofs, h_Idofs, i, j, iidx
-    integer(I32) :: ieltype
+    integer(I32) :: celement
     integer :: nequations
     integer, dimension(2) :: IdofCount
     
@@ -2873,7 +2873,7 @@ contains
     p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
 
     ! All elements are of the samne type. Get it in advance.
-    ieltype = p_rspatialDiscretisation%RelementDistr(1)%celement
+    celement = p_rspatialDiscretisation%RelementDistr(1)%celement
     
     ! Get a new FBC entry
     call bcasm_newFBCentry (rdiscreteFBC,iidx)
@@ -2925,10 +2925,10 @@ contains
     if(p_rspatialDiscretisation%ndimension .eq. NDIM2D)then
     
       ! Calculate values in the vertices for Q1,Q2,P1,P2
-      if ((ieltype .eq. EL_P1) .or. &
-          (ieltype .eq. EL_Q1) .or. &
-          (ieltype .eq. EL_P2) .or. &
-          (ieltype .eq. EL_Q2)) then
+      if ((celement .eq. EL_P1) .or. &
+          (celement .eq. EL_Q1) .or. &
+          (celement .eq. EL_P2) .or. &
+          (celement .eq. EL_Q2)) then
       
         ! Let's start to collect values. This is a rather element-dependent
         ! part. At first, loop through the vertices in case we have a
@@ -2988,7 +2988,7 @@ contains
       end if ! end if el_typ
     
       ! Calculate values in the face midpoints / / integral mean values for Q1~
-      if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
+      if (elem_getPrimaryElement(celement) .eq. EL_Q1T) then
       
         ! Let's start to collect values. This is a rather element-dependent
         ! part. At first, loop through the vertices in case we have a
@@ -3003,8 +3003,8 @@ contains
           
           ! Fill the evaluation structure with data for the callback routine
           do i=1,nequations
-            if ((ieltype .eq. EL_E031) .or. &
-                (ieltype .eq. EL_EM31)) then
+            if ((celement .eq. EL_E031) .or. &
+                (celement .eq. EL_EM31)) then
               Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCMID
             else
               Revaluation(i)%cinfoNeeded = DISCFBC_NEEDINTMEAN
@@ -3056,7 +3056,7 @@ contains
     
     ! q2,q1,q1t
     if(p_rspatialDiscretisation%ndimension .eq. NDIM3D)then
-      if(elem_getPrimaryElement(ieltype) .eq. EL_Q1_3D)then      
+      if(elem_getPrimaryElement(celement) .eq. EL_Q1_3D)then      
       
         ! Let's start to collect values. This is a rather element-dependent
         ! part. At first, loop through the vertices in case we have a
@@ -3116,7 +3116,7 @@ contains
       end if
       
       ! Calculate values in the face midpoints / / integral mean values for Q1~
-      if(elem_getPrimaryElement(ieltype) .eq. EL_Q1T_3D)then
+      if(elem_getPrimaryElement(celement) .eq. EL_Q1T_3D)then
       
         ! Let's start to collect values. This is a rather element-dependent
         ! part. 
@@ -3130,8 +3130,8 @@ contains
           
           ! Fill the evaluation structure with data for the callback routine
           do i=1,nequations
-            if ((ieltype .eq. EL_E031) .or. &
-                (ieltype .eq. EL_EM31)) then
+            if ((celement .eq. EL_E031) .or. &
+                (celement .eq. EL_EM31)) then
               Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCFACEMID
             else
               Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFACEINTMEAN

@@ -142,7 +142,7 @@ module sortstrategy
     logical :: bisUniform
     
     ! Element type; only valid if the corresponding discretisation is uniform.
-    integer(I32) :: ieltype
+    integer(I32) :: celement
     
     ! Pointer to the identifier for the element distribution of an element.
     ! Only valid if the corresponding discretisation is not uniform.
@@ -1537,7 +1537,7 @@ contains
       integer, dimension(size(Rdiscretisation)) :: Ielement
       type(t_levelHirarchy), dimension(size(Rdiscretisation)) :: Rhierarchy
       integer :: ilev,ndof,ieldistr,idof
-      integer(I32) :: ieltype
+      integer(I32) :: celement
       integer :: ipos
       integer :: ielcoarse
       logical :: bisUniform
@@ -1561,7 +1561,7 @@ contains
         
         if (bisUniform) then
           ! One element type for all elements
-          Rhierarchy(ilev)%ieltype = &
+          Rhierarchy(ilev)%celement = &
               Rdiscretisation(ilev)%RelementDistr(1)%celement
         else
           ! A different element type for every element.
@@ -1630,14 +1630,14 @@ contains
           ! Get the DOF's of that element.
           ! For that purpose, we need the element type.
           if (Rhierarchy(ilev)%bisUniform) then
-            ieltype = Rhierarchy(ilev)%ieltype
+            celement = Rhierarchy(ilev)%celement
           else
             ! Get the element distribution and from that the element type.
             ieldistr = Rhierarchy(ilev)%p_IelementDistr(Ielement(ilev))
-            ieltype = Rdiscretisation(ilev)%RelementDistr(ieldistr)%celement
+            celement = Rdiscretisation(ilev)%RelementDistr(ieldistr)%celement
           end if
           
-          ndof = elem_igetNDofLoc(ieltype)
+          ndof = elem_igetNDofLoc(celement)
           call dof_locGlobMapping(Rdiscretisation(ilev), Ielement(ilev),  Idofs)
           
           ! Check the DOF's. All DOF's we don't have yet, we collect into the

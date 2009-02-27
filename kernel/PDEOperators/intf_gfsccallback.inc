@@ -22,7 +22,7 @@ use dofmapping
 !<input>
   real(DP),               intent(IN)  :: u_i,u_j
   real(DP), dimension(:), intent(IN)  :: C_ij,C_ji
-  integer(PREC_DOFIDX),   intent(IN)  :: i,j
+  integer,   intent(IN)  :: i,j
 !</input>
 
 !<output>
