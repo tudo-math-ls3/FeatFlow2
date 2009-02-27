@@ -434,15 +434,17 @@ contains
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the first solution
-      ! vector is stored in the second quick access string.
+      ! This subroutine assumes that the name of the solution of the
+      ! Euler model is stored in the second quick access string and
+      ! the name of the solution of the scalar transport model ost
+      ! storen in the third quick access string.
 
       ! Retrieve solution vectors from colletion and set pointer
-      rsolutionTransport => collct_getvalue_vec(rcollection,&
+       rsolutionEuler     => collct_getvalue_vec(rcollection,&
                                            trim(rcollection%SquickAccess(2)))
-      rsolutionEuler     => collct_getvalue_vec(rcollection,&
+      rsolutionTransport => collct_getvalue_vec(rcollection,&
                                            trim(rcollection%SquickAccess(3)))
-
+     
       ! Check if solution is stored in interleave format
       if (rsolutionEuler%nblocks .ne. 1) then
         call output_line('Vector is not in interleave format!',&
@@ -451,8 +453,8 @@ contains
       end if
 
       ! Set pointers
-      call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
       call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
+      call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
       
       ! Call the general callback function
       call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
@@ -460,9 +462,9 @@ contains
       
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vectors
-      nullify(rsolutionTransport, p_DsolutionTransport)
       nullify(rsolutionEuler, p_DsolutionEuler)
-
+      nullify(rsolutionTransport, p_DsolutionTransport)
+      
       ! Call the general callback function
       call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
       
@@ -608,15 +610,17 @@ contains
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the first solution
-      ! vector is stored in the second quick access string.
+      ! This subroutine assumes that the name of the solution of the
+      ! Euler model is stored in the second quick access string and
+      ! the name of the solution of the scalar transport model ost
+      ! storen in the third quick access string.
 
       ! Retrieve solution vectors from colletion and set pointer
-      rsolutionTransport => collct_getvalue_vec(rcollection,&
+       rsolutionEuler     => collct_getvalue_vec(rcollection,&
                                            trim(rcollection%SquickAccess(2)))
-      rsolutionEuler     => collct_getvalue_vec(rcollection,&
+      rsolutionTransport => collct_getvalue_vec(rcollection,&
                                            trim(rcollection%SquickAccess(3)))
-
+      
       ! Check if solution is stored in interleave format
       if (rsolutionEuler%nblocks .ne. NVAR2D) then
         call output_line('Vector is not in block format!',&
@@ -625,8 +629,8 @@ contains
       end if
 
       ! Set pointers
-      call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
       call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
+      call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
       
       ! Call the general callback function
       call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
@@ -634,9 +638,9 @@ contains
       
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vectors
-      nullify(rsolutionTransport, p_DsolutionTransport)
       nullify(rsolutionEuler, p_DsolutionEuler)
-
+      nullify(rsolutionTransport, p_DsolutionTransport)
+      
       ! Call the general callback function
       call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
       
