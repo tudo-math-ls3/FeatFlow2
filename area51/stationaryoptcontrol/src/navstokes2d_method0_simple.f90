@@ -260,7 +260,7 @@ contains
     real(dp), dimension(:), pointer :: p_DdataX,p_DdataY,p_DdataP
     type(t_optcoperator) :: roptcoperator
     
-    logical, parameter :: bnewmethod = .false.
+    logical, parameter :: bnewmethod = .true.
     
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dx,p_Dy
@@ -618,7 +618,7 @@ contains
     type(t_bilinearForm) :: rbilinearForm
     type(t_optcoperator) :: roptcoperator
     
-    integer, parameter :: inewmethod = 0
+    integer, parameter :: inewmethod = 2
     
     if ((inewmethod .eq. 2) .and. rparams%bnewton) then
       if (.not. lsysbl_isSubmatrixPresent(rmatrixBlock,1,1)) then
@@ -1737,7 +1737,7 @@ contains
   
     ! local variables
     real(dp), dimension(:), pointer :: p_Ddata
-    integer(i32), dimension(:), allocatable :: p_Idofs
+    integer, dimension(:), allocatable :: p_Idofs
     integer :: i,nviolate
     real(dp) :: du
     
