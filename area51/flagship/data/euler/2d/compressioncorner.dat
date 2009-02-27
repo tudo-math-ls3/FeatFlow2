@@ -686,12 +686,6 @@ dnoisefilter = 0.001
 # absolute filter
 dabsfilter = 0.0001
 
-# refinement tolerance
-drefinementTolerance = 0.5
-
-# coarsening tolerance
-dcoarseningTolerance = 0.2
-
 # number of protection layers
 nprotectLayers = 0
 

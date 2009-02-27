@@ -129,7 +129,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 1
+isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -334,7 +334,7 @@ istabilisation = 10
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.0
+dstepUCD = 0.005
 
 # file for UCD output of solution
 ucdsolution = out/z-pinchTVD
@@ -379,7 +379,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0001
+dfinalTime = 0.01
 
 # initial time step size
 dinitialStep = 0.001
@@ -821,7 +821,7 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.01
+dstepadapt = 0.005
 
 # maximum number of refinement levels
 nsubdividemax = 6
@@ -862,14 +862,8 @@ dnoisefilter = 0.05
 # absolute filter
 dabsfilter = 0.01
 
-# refinement tolerance
-drefinementTolerance = 0.3
-
-# coarsening tolerance
-dcoarseningTolerance = 0.1
-
 # number of protection layers
-nprotectLayers = 2
+nprotectLayers = 0
 
 # tolerance for protection layers
 dprotectLayerTolerance = 0.0
