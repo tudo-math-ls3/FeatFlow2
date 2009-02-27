@@ -1192,13 +1192,11 @@ contains
     character(LEN=SYS_STRLEN) :: ssolutionName
 
     ! local variables
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_fparser) :: rfparser
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    integer :: discretisation,isolutiontype, isystemformat
-    integer :: isize, iblock, ivar, nvar, ieq, neq, ndim
+    integer :: isolutiontype, icomp, iblock, ivar, nvar, ieq, neq, ndim
 
     ! symbolic variable names
     character(LEN=*), dimension(4), parameter ::&
@@ -1209,29 +1207,7 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
     call parlst_getvalue_string(rparlist, ssectionName, 'ssolutionname', ssolutionName)
     call parlst_getvalue_int(rparlist, ssectionName, 'isolutiontype', isolutiontype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'isystemformat', isystemformat)
-    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
 
-    ! Create new solution vector based on the spatial discretisation
-    p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
-    
-    select case(isystemformat)
-    case (SYSTEM_INTERLEAVEFORMAT)
-      call lsysbl_createVectorBlock(p_rdiscretisation, rvector, .false., ST_DOUBLE)
-      
-      rvector%RvectorBlock(1)%NVAR = euler_getNVAR(rproblemLevel)
-      isize = rvector%NEQ*euler_getNVAR(rproblemLevel)
-      call lsysbl_resizeVectorBlock(rvector, isize, .false., .false.)
-      
-    case (SYSTEM_BLOCKFORMAT)
-      call lsysbl_createVectorBlock(p_rdiscretisation, rvector, .false., ST_DOUBLE)
-
-    case DEFAULT
-      call output_line('Unsupported system format!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'euler_initSolution')
-      call sys_halt()
-    end select
-      
     
     ! How should the solution be initialized?
     select case(isolutionType)
@@ -1249,47 +1225,42 @@ contains
       call storage_getbase_double2D(&
           rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
       
-      ndim = rproblemLevel%rtriangulation%ndim
-      
-      ! Initialize variable values
+      ! Initialization
       Dvalue = 0.0_DP
+      icomp  = 0
+      ndim   = size(p_DvertexCoords, 1)
       
-      select case(isystemformat)
-      case (SYSTEM_INTERLEAVEFORMAT)
-        ! Get number of equations of first scalar subvector
-        neq  = rvector%RvectorBlock(1)%NEQ
-        nvar = rvector%RvectorBlock(1)%NVAR
-        call lsyssc_getbase_double(rvector%RvectorBlock(1), p_Ddata)
+      ! Loop over all blocks of the global solution vector
+      do iblock = 1, rvector%nblocks
 
-        ! Loop over all equations of scalar subvector
+        ! Set pointer to data array
+        call lsyssc_getbase_double(rvector%RvectorBlock(iblock), p_Ddata)
+
+        ! Initialization for scalar subvectir
+        neq  = rvector%RvectorBlock(iblock)%NEQ
+        nvar = rvector%RvectorBlock(iblock)%NVAR
+
+        ! Loop over all equations of the scalar subvector
         do ieq = 1, neq
+
+          ! Set coordinates and evalution time
           Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
           Dvalue(NDIM3D+1) = dtime
-          
+
           ! Loop over all variables of the solution vector
           do ivar = 1, nvar
-            call fparser_evalFunction(rfparser, ivar, Dvalue, p_Ddata((ieq-1)*nvar+ivar))
-          end do
-        end do
-        
-      case (SYSTEM_BLOCKFORMAT)
-        ! Loop over all blocks of the solution vector
-        do iblock = 1, rvector%nblocks
-          
-          ! Get number of equations of scalar subvector
-          neq = rvector%RvectorBlock(iblock)%NEQ
-          call lsyssc_getbase_double(rvector%RvectorBlock(iblock), p_Ddata)
-          
-          ! Loop over all equations of scalar subvector
-          do ieq = 1, neq
-            Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
-            Dvalue(NDIM3D+1) = dtime
-            call fparser_evalFunction(rfparser, iblock, Dvalue, p_Ddata(ieq))
-          end do
-        end do
-        
-      end select
-      
+            
+            call fparser_evalFunction(rfparser, icomp+ivar, Dvalue, p_Ddata((ieq-1)*nvar+ivar))
+            
+          end do   ! ivar
+
+        end do   ! ieq
+
+        ! Increase component number for next subvector
+        icomp = icomp+nvar
+
+      end do   ! iblock
+            
       call fparser_release(rfparser)
 
 
@@ -2036,8 +2007,11 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! Pointer to the current multigrid level
+    ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! Pointer to the discretisation structure
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
@@ -2054,18 +2028,30 @@ contains
 
     ! local variables
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
-    integer :: templateMatrix, systemMatrix
-    integer :: ipreadapt, npreadapt
+    integer :: templateMatrix, systemMatrix, discretisation
+    integer :: isize, ipreadapt, npreadapt
     integer, external :: signal_SIGINT
 
 
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
 
+    ! Get position of discretisation structure
+    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
+    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
-    ! Initialize the solution vector and impose boundary conditions explicitly
+    ! Initialize the solution vector 
+    call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
+    if (p_rdiscretisation%ncomponents .ne. euler_getNVAR(p_rproblemLevel)) then
+      rsolution%RvectorBlock(1)%NVAR = euler_getNVAR(p_rproblemLevel)
+      isize = rsolution%NEQ*euler_getNVAR(p_rproblemLevel)
+      call lsysbl_resizeVectorBlock(rsolution, isize, .false., .false.)
+    end if
+    
+    ! Impose boundary conditions explicitly
     call euler_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
     select case(rappDescriptor%ndimension)
     case (NDIM1D)
@@ -2137,6 +2123,21 @@ contains
             ! Release element-wise error distribution
             call lsyssc_releaseVector(relementError)
 
+            ! Generate standard mesh from raw mesh
+            call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+            
+            ! Update the template matrix according to the sparsity pattern
+            templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
+            call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+            
+            ! Re-initialize all constant coefficient matrices
+            call euler_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+
+            ! Resize the solution vector accordingly
+            systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+            call lsysbl_resizeVecBlockIndMat(p_rproblemLevel%RmatrixBlock(systemMatrix),&
+                                             rsolution, .false., .true.)
+
             ! Re-generate the initial solution vector and impose boundary conditions explicitly
             call euler_initSolution(rparlist, ssectionname, p_rproblemLevel, 0.0_DP, rsolution)
             select case(rappDescriptor%ndimension)
@@ -2153,18 +2154,7 @@ contains
                                              rsolution, 0.0_DP, rproblem%rboundary,&
                                              euler_calcBoundaryvalues3d)
             end select
-
           end do
-
-          ! Generate standard mesh from raw mesh
-          call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
-          
-          ! Update the template matrix according to the sparsity pattern
-          templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
-          call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
-          
-          ! Re-initialize all constant coefficient matrices
-          call euler_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
 
           ! Prepare internal data arrays of the solver structure
           systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
