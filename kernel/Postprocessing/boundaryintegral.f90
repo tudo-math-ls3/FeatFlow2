@@ -180,22 +180,22 @@ contains
 
     ! local variables
     integer(I32), dimension(:), allocatable :: IelementOrientation
-    integer(PREC_ELEMENTIDX), dimension(:), allocatable :: Ielements
+    integer, dimension(:), allocatable :: Ielements
     real(DP), dimension(:,:), allocatable :: DedgePosition
     
     integer :: ibdc,ibdcoffset,iedge,ilocaledge,nve
-    integer(PREC_ELEMENTIDX) :: NEL,NELbdc,iel
+    integer :: NEL,NELbdc,iel
     integer(I32) :: ctrafoType
     
     ! The triangulation structure - to shorten some things...
     integer(I32), dimension(:), pointer :: p_IboundaryCpIdx
-    integer(PREC_EDGEIDX), dimension(:), pointer :: p_IedgesAtBoundary
-    integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtBoundary
+    integer, dimension(:), pointer :: p_IedgesAtBoundary
+    integer, dimension(:), pointer :: p_IelementsAtBoundary
     real(DP), dimension(:), pointer :: p_DedgeParameterValue
     real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
     real(DP), dimension(:), pointer :: p_DvertexParameterValue
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
 
     ! Arrays for cubature points
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
@@ -545,7 +545,7 @@ contains
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(IN) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
@@ -564,7 +564,7 @@ contains
 
     ! local variables
     type(t_vectorScalar), pointer :: p_rvector
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
 
     ! Get the vector with the FE function from the collection
     p_rvector => collct_getvalue_vecsca (rcollection, 'vector')
@@ -689,7 +689,7 @@ contains
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(IN) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
@@ -708,7 +708,7 @@ contains
 
     ! local variables
     type(t_vectorScalar), pointer :: p_rvector
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
     integer :: ipoint
     real(DP), dimension(:,:), allocatable :: DderivX,DderivY
     real(DP) :: dnx,dny,dminPar,dmaxPar,dt

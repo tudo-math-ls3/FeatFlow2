@@ -155,8 +155,8 @@ module matrixio
 
   ! local variables
   real(DP), dimension(:), pointer :: p_DA
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
   real(dp) :: dthres
 
   ! Replace small values by zero
@@ -476,8 +476,8 @@ module matrixio
 
   ! local variables
   real(DP), dimension(:), pointer :: p_DA
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
 
   ! Depending on the matrix format, choose the right routine for writing
   select case (rmatrix%cmatrixFormat)
@@ -1005,9 +1005,9 @@ module matrixio
     ! SPY CSR matrix in double precision
     
     subroutine do_spy_mat79matD_double(neq,ncols,nvar,Kld,Kcol,Da,dthres)
-      integer(PREC_MATIDX), dimension(:), intent(IN)  :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)  :: Kcol
-      integer(PREC_VECIDX), intent(IN)                :: neq,ncols
+      integer, dimension(:), intent(IN)  :: Kld
+      integer, dimension(:), intent(IN)  :: Kcol
+      integer, intent(IN)                :: neq,ncols
       integer, intent(IN)                             :: nvar
       real(DP), dimension(nvar,*), intent(IN), optional :: Da
       real(DP), intent(IN), optional :: dthres
@@ -1042,9 +1042,9 @@ module matrixio
     ! SPY CSR matrix in single precision
     
     subroutine do_spy_mat79matD_single(neq,ncols,nvar,Kld,Kcol,Fa,dthres)
-      integer(PREC_MATIDX), dimension(:), intent(IN)  :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)  :: Kcol
-      integer(PREC_VECIDX), intent(IN)                :: neq,ncols
+      integer, dimension(:), intent(IN)  :: Kld
+      integer, dimension(:), intent(IN)  :: Kcol
+      integer, intent(IN)                :: neq,ncols
       integer, intent(IN)                             :: nvar
       real(SP), dimension(nvar,*), intent(IN), optional :: Fa
       real(DP), intent(IN), optional :: dthres
@@ -1079,9 +1079,9 @@ module matrixio
     ! SPY CSR matrix in double precision
     
     subroutine do_spy_mat79mat1_double(neq,ncols,nvar,mvar,Kld,Kcol,Da,dthres)
-      integer(PREC_MATIDX), dimension(:), intent(IN)  :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)  :: Kcol
-      integer(PREC_VECIDX), intent(IN)                :: neq,ncols
+      integer, dimension(:), intent(IN)  :: Kld
+      integer, dimension(:), intent(IN)  :: Kcol
+      integer, intent(IN)                :: neq,ncols
       integer, intent(IN)                             :: nvar,mvar
       real(DP), dimension(nvar,mvar,*), intent(IN), optional :: Da
       real(DP), intent(IN), optional :: dthres
@@ -1120,9 +1120,9 @@ module matrixio
     ! SPY CSR matrix in double precision
     
     subroutine do_spy_mat79mat1_single(neq,ncols,nvar,mvar,Kld,Kcol,Fa,dthres)
-      integer(PREC_MATIDX), dimension(:), intent(IN)  :: Kld
-      integer(PREC_VECIDX), dimension(:), intent(IN)  :: Kcol
-      integer(PREC_VECIDX), intent(IN)                :: neq,ncols
+      integer, dimension(:), intent(IN)  :: Kld
+      integer, dimension(:), intent(IN)  :: Kcol
+      integer, intent(IN)                :: neq,ncols
       integer, intent(IN)                             :: nvar,mvar
       real(SP), dimension(nvar,mvar,*), intent(IN), optional :: Fa
       real(DP), intent(IN), optional :: dthres
@@ -1161,7 +1161,7 @@ module matrixio
     ! SPY full matrix in double precision
     
     subroutine do_spy_mat1_double(neq,ncols,Da,dthres)
-      integer(PREC_VECIDX), intent(IN) :: neq,ncols
+      integer, intent(IN) :: neq,ncols
       real(DP), dimension(:), intent(IN), optional :: Da
       real(DP), intent(IN), optional :: dthres
       real(DP) :: ddata
@@ -1191,7 +1191,7 @@ module matrixio
     ! SPY full matrix in single precision
     
     subroutine do_spy_mat1_single(neq,ncols,Fa,dthres)
-      integer(PREC_VECIDX), intent(IN) :: neq,ncols
+      integer, intent(IN) :: neq,ncols
       real(SP), dimension(:), intent(IN), optional :: Fa
       real(DP), intent(IN), optional :: dthres
       real(SP) :: fdata

@@ -414,7 +414,7 @@ contains
     type(t_elementDistribution), pointer :: p_relementDistribution
     
     ! Number of elements in the current element distribution
-    integer(PREC_ELEMENTIDX) :: NEL
+    integer :: NEL
 
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:), allocatable :: Dcoefficients

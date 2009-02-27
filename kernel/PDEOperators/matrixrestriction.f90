@@ -92,27 +92,27 @@ contains
     ! local variables
     integer(I32) :: i1,i2
     integer :: iedge,iedge1,iedge2,iedge4,jedge,jedge1,jedge2,jedge4
-    integer(PREC_ELEMENTIDX) :: iel,iadj1,iadj2,iadj4,iel1,iel2,jadj2,jadj4,jel1,jel2
-    integer(PREC_EDGEIDX) :: imid1,imid2,imid3,imid4,imid5
-    integer(PREC_EDGEIDX) :: im1,im2,im3,im4,im5,im6,im7,im8,im9,im10,im11,im12
-    integer(PREC_VERTEXIDX) :: nvt1,nvt2
-    integer(PREC_MATIDX) :: ild
+    integer :: iel,iadj1,iadj2,iadj4,iel1,iel2,jadj2,jadj4,jel1,jel2
+    integer :: imid1,imid2,imid3,imid4,imid5
+    integer :: im1,im2,im3,im4,im5,im6,im7,im8,im9,im10,im11,im12
+    integer :: nvt1,nvt2
+    integer :: ild
     type(t_triangulation), pointer :: p_rtriaCoarse,p_rtriaFine
     real(DP), dimension(NDIM2D,TRIA_MAXNVE2D) :: dcoords
     real(DP), dimension(0:TRIA_MAXNME2D) :: daspectRatio
-    integer(PREC_ELEMENTIDX), dimension(TRIA_MAXNME2D) :: Iiel
-    integer(PREC_ELEMENTIDX), dimension(0:TRIA_MAXNME2D) :: ielAdjacent
+    integer, dimension(TRIA_MAXNME2D) :: Iiel
+    integer, dimension(0:TRIA_MAXNME2D) :: ielAdjacent
     real(DP) :: dval1,dval2,dval3,dval4,dval5
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElementCoarse
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElementFine
+    integer, dimension(:,:), pointer :: p_IneighboursAtElementCoarse
+    integer, dimension(:,:), pointer :: p_IneighboursAtElementFine
     real(DP), dimension(:,:), pointer                 :: p_DvertexCoordsCoarse
-    integer(PREC_EDGEIDX), dimension(:,:), pointer    :: p_IedgesAtElementCoarse
-    integer(PREC_EDGEIDX), dimension(:,:), pointer    :: p_IedgesAtElementFine
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer   :: p_IverticesAtElementCoarse
+    integer, dimension(:,:), pointer    :: p_IedgesAtElementCoarse
+    integer, dimension(:,:), pointer    :: p_IedgesAtElementFine
+    integer, dimension(:,:), pointer   :: p_IverticesAtElementCoarse
     
-    integer(PREC_MATIDX), dimension(:), pointer       :: p_KldCoarse,p_KldFine
-    integer(PREC_MATIDX), dimension(:), pointer       :: p_KdiagonalCoarse,p_KdiagonalFine
-    integer(PREC_VECIDX), dimension(:), pointer       :: p_KcolCoarse,p_KcolFine
+    integer, dimension(:), pointer       :: p_KldCoarse,p_KldFine
+    integer, dimension(:), pointer       :: p_KdiagonalCoarse,p_KdiagonalFine
+    integer, dimension(:), pointer       :: p_KcolCoarse,p_KcolFine
     real(DP), dimension(:), pointer                   :: p_DaCoarse,p_DaFine
     real(DP) :: dv1,dv2,dv3,dv4,dv5,dv6,dv7,dv8,dv9,dv10,dv11,dv12
     
@@ -808,23 +808,23 @@ contains
     pure integer function getXYindex (IX, IY, Kcol, Kld)
 
       ! input: column number to search for
-      integer(PREC_VECIDX), intent(IN) :: IX
+      integer, intent(IN) :: IX
 
       ! input: row number where to search
-      integer(PREC_VECIDX), intent(IN) :: IY
+      integer, intent(IN) :: IY
 
       ! input: Column structure of the matrix
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol
+      integer, dimension(:), intent(IN) :: Kcol
       
       ! input: Row structure of the matrix
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld
+      integer, dimension(:), intent(IN) :: Kld
     
       ! result: index of entry (ix,iy) in the matrix array.
       ! =-1, if the entry does not exist.
     
       ! local variables:
-      integer(PREC_MATIDX) :: ild
-      integer(PREC_VECIDX) :: icol
+      integer :: ild
+      integer :: icol
       
       ! Look through row IY:
 

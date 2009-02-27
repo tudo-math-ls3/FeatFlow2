@@ -340,7 +340,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_ELEMENTIDX) :: i
+    integer :: i
     integer, dimension(2) :: Icomp
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
     type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
@@ -5510,7 +5510,7 @@ contains
   real(DP), intent(IN) :: dupsam
   
   ! List of elements where the Ddelta should be calculated
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
+  integer, dimension(:), intent(IN) :: Ielements
   
   ! Array with global degrees of freedom on the elements
   integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: Idofs
@@ -5525,7 +5525,7 @@ contains
   real(DP) :: dlocalH,du1,du2,dunorm,dreLoc
   integer :: iel,ielidx
   integer(PREC_DOFIDX) :: idof
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   real(DP), dimension(:), pointer :: p_DelementVolume
 
@@ -5691,9 +5691,9 @@ contains
   ! triangulation.
   
   ! Element where the local h should be calculated
-  integer(PREC_ELEMENTIDX), intent(IN)               :: JEL
+  integer, intent(IN)               :: JEL
   
-  integer(PREC_VERTEXIDX), dimension(TRIA_MAXNVE2D,*), intent(IN) :: Kvert
+  integer, dimension(TRIA_MAXNVE2D,*), intent(IN) :: Kvert
   real(DP), dimension(NDIM2D,*), intent(IN)          :: Dcorvg
   
   ! norm ||u||_T = mean velocity through element T=JEL
@@ -5707,7 +5707,7 @@ contains
   
   ! local variables
   real(DP) :: dlambda
-  integer(PREC_VERTEXIDX) :: NECK1,NECK2,NECK3,NECK4
+  integer :: NECK1,NECK2,NECK3,NECK4
   real(DP) :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
   real(DP) :: dalphaMax, dalpha
 

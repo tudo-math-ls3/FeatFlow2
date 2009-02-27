@@ -540,7 +540,7 @@ contains
   type(t_triangulation), intent(IN) :: rtriangulation
   
   ! Number of the element whose information is to be fetched.
-  integer(PREC_ELEMENTIDX), intent(IN) :: iel
+  integer, intent(IN) :: iel
 !</input>
 
 !<output>
@@ -676,7 +676,7 @@ contains
   
   ! Array with element numbers whose coordinates should be extracted into
   ! Dcoords.
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
+  integer, dimension(:), intent(IN) :: Ielements
 !</input>
 
 !<output>
@@ -693,7 +693,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer :: ipoint
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
 
     ! What type of transformation do we have? First decide on the dimension,
     ! then on the actual ID.

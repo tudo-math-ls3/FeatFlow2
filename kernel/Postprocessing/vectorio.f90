@@ -79,7 +79,7 @@ module vectorio
     ! OPTIONAL: Permutation for unsorting.
     ! If specified, this permutation tells how to unsort a vector before
     ! writing it to the file.
-    integer(PREC_VECIDX), dimension(:), optional :: Ipermutation
+    integer, dimension(:), optional :: Ipermutation
   !</input>
     
 !</subroutine>
@@ -166,7 +166,7 @@ module vectorio
     ! OPTIONAL: Permutation for sorting.
     ! If specified, this permutation tells how to unsort a vector before
     ! writing it to the file.
-    integer(PREC_VECIDX), dimension(:), optional :: Ipermutation
+    integer, dimension(:), optional :: Ipermutation
   !</input>
   
   !<output>
@@ -265,7 +265,7 @@ module vectorio
 
     ! local variables
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer, dimension(:), pointer :: p_Ipermutation
     integer :: cf,nchar
 
     character(len=128) :: S
@@ -397,9 +397,9 @@ module vectorio
 
     ! local variables
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer, dimension(:), pointer :: p_Ipermutation
     integer :: cf,nchar
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
 
     character(len=15) :: sarrayname,sformat
     character(len=6) :: sformatChar,S
@@ -516,7 +516,7 @@ module vectorio
 
     ! local variables
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer, dimension(:), pointer :: p_Ipermutation
     integer :: cf,nchar,I
 
     character(len=128) :: S
@@ -667,10 +667,10 @@ module vectorio
 
     ! local variables
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer, dimension(:), pointer :: p_Ipermutation
     integer :: cf,nchar,nblocks,i
-    integer(PREC_VECIDX) :: NEQ
-    integer(PREC_VECIDX), dimension(:), allocatable :: IblockSize
+    integer :: NEQ
+    integer, dimension(:), allocatable :: IblockSize
 
     character(len=15) :: sarrayname,sformat
     character(len=6) :: sformatChar,S
@@ -819,7 +819,7 @@ module vectorio
 
     ! local variables
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer, dimension(:), pointer :: p_Ipermutation
     integer :: cf,nchar
 
     character(len=128) :: S
@@ -923,7 +923,7 @@ module vectorio
 
     ! local variables
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Ipermutation
+    integer, dimension(:), pointer :: p_Ipermutation
     integer :: cf,nchar,iblock
 
     character(len=128) :: S
@@ -1022,7 +1022,7 @@ module vectorio
   ! OPTIONAL: Permutation for unsorting.
   ! If specified, this permutation tells how to unsort a vector before
   ! writing it to the file.
-  integer(PREC_VECIDX), dimension(:), optional :: Ipermutation
+  integer, dimension(:), optional :: Ipermutation
 !</input>
 
 !</subroutine>

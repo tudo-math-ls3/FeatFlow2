@@ -19,10 +19,10 @@
   integer, intent(IN) :: iOperation
 
   ! Array of vertices involved in the adaptivity step
-  integer(PREC_VERTEXIDX), dimension(:), intent(IN) :: Ivertices
+  integer, dimension(:), intent(IN) :: Ivertices
 
   ! Array of elements involved in the adaptivity step
-  integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
+  integer, dimension(:), intent(IN) :: Ielements
 !</input>
 !</subroutine>
 

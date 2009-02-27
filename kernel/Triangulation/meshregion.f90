@@ -123,16 +123,16 @@ module meshregion
     integer(I32) :: cshareFlags = 0
     
     ! Number of vertices in the mesh region.
-    integer(PREC_VERTEXIDX) :: NVT = 0
+    integer :: NVT = 0
     
     ! Number of edges in the mesh region (only 2D/3D).
-    integer(PREC_EDGEIDX) :: NMT = 0
+    integer :: NMT = 0
     
     ! Number of faces in the mesh region (only 3D).
-    integer(PREC_FACEIDX) :: NAT = 0
+    integer :: NAT = 0
     
     ! Number of elements in the mesh region.
-    integer(PREC_ELEMENTIDX) :: NEL = 0
+    integer :: NEL = 0
     
     ! Handle to integer array holding the indices of all vertices which
     ! belong to this mesh region.
@@ -533,7 +533,7 @@ module meshregion
   ! Some local variables
   integer :: idim,i,idx
   integer, dimension(:), pointer :: p_Ihit, p_Iindex
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IvertsAtCell
+  integer, dimension(:,:), pointer :: p_IvertsAtCell
   real(DP), dimension(:,:), pointer :: p_Dcoords, p_Dverts
   
     ! Hang in the triangulation

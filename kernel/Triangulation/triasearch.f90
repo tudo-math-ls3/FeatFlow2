@@ -80,13 +80,13 @@ contains
   real(DP), dimension(:,:), intent(IN) :: DvertexCoords
   
   ! Vertices Adjacent to the elements in the triangulation.
-  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 !</input>
   
 !<output>
   ! Number of the element containing the point Dpoint.
   ! =0 if no element contains the point.
-  integer(PREC_ELEMENTIDX), intent(OUT) :: iel
+  integer, intent(OUT) :: iel
 !</output>
   
 !</subroutine>
@@ -151,14 +151,14 @@ contains
 !<output>
   ! Number of the element containing the point Dpoint.
   ! =0 if no element contains the point.
-  integer(PREC_ELEMENTIDX), intent(OUT) :: iel
+  integer, intent(OUT) :: iel
 !</output>
   
 !</subroutine>
     
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
 
     call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
     call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
@@ -189,12 +189,12 @@ contains
   real(DP), dimension(:,:), intent(IN) :: DvertexCoords
   
   ! Vertices Adjacent to the elements in the triangulation.
-  integer(PREC_VERTEXIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement
 !</input>
   
 !<output>
   ! Number of the element which midpoint is closest to Dpoint.
-  integer(PREC_ELEMENTIDX), intent(OUT) :: iel
+  integer, intent(OUT) :: iel
 !</output>
   
 !</subroutine>
@@ -202,7 +202,7 @@ contains
     ! local variables
     real(DP), dimension(ubound(DvertexCoords,1)) :: Dmidpoint
     integer :: ive
-    integer(PREC_ELEMENTIDX) :: ielcur
+    integer :: ielcur
     real(DP) :: ddist,dmindist
   
     select case (ubound(Dpoint,1))
@@ -262,14 +262,14 @@ contains
 !<output>
   ! Number of the element containing the point Dpoint.
   ! =0 if no element contains the point.
-  integer(PREC_ELEMENTIDX), intent(OUT) :: iel
+  integer, intent(OUT) :: iel
 !</output>
   
 !</subroutine>
     
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
 
     call storage_getbase_double2d (&
         rtriangulation%h_DvertexCoords,p_DvertexCoords)
@@ -310,13 +310,13 @@ contains
   real(DP), dimension(:,:) :: DvertexCoords
   
   ! Vertices adjacent to an element in the mesh
-  integer(PREC_VERTEXIDX), dimension(:,:) :: IverticesAtElement
+  integer, dimension(:,:) :: IverticesAtElement
   
   ! Edges adjacent to an element in the mesh
-  integer(PREC_EDGEIDX), dimension(:,:) :: IedgesAtElement
+  integer, dimension(:,:) :: IedgesAtElement
   
   ! Neighbours around an element in the mesh
-  integer(PREC_ELEMENTIDX), dimension(:,:) :: IneighboursAtElement
+  integer, dimension(:,:) :: IneighboursAtElement
 
 !</input>
 
@@ -325,7 +325,7 @@ contains
   !           =0: Choose element automatically.
   ! On output: Number of the element containing the point Dpoint.
   !            =0 if the element was not found.
-  integer(PREC_ELEMENTIDX), intent(INOUT) :: iel
+  integer, intent(INOUT) :: iel
 !</inputoutput>
   
 !<output>
@@ -354,7 +354,7 @@ contains
 !</subroutine>
     
     integer :: imaxIter,ite
-    integer(PREC_ELEMENTIDX) :: ielold
+    integer :: ielold
     real(DP), dimension(2,4) :: DcornerCoords
     integer :: ive,nnve
     logical :: bcheck
@@ -500,7 +500,7 @@ contains
   !           =0: Choose element automatically.
   ! On output: Number of the element containing the point Dpoint.
   !            =0 if the element was not found.
-  integer(PREC_ELEMENTIDX), intent(INOUT) :: iel
+  integer, intent(INOUT) :: iel
 !</inputoutput>
   
 !<output>
@@ -529,9 +529,9 @@ contains
 !</subroutine>
     
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement
     
     ! Get triangulation arrays
     call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
@@ -577,7 +577,7 @@ contains
 !<inputoutput>
   ! Number of the element on the finest mesh containing the point Dpoint.
   ! =0 if the element was not found.
-  integer(PREC_ELEMENTIDX), intent(OUT) :: iel
+  integer, intent(OUT) :: iel
 !</inputoutput>
   
 !</subroutine>

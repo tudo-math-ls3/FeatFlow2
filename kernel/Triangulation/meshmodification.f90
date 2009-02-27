@@ -67,7 +67,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     integer(I32), dimension(:), pointer :: p_InodalProperty
     real(DP) :: dh,dhdist
-    integer(PREC_VERTEXIDX) :: ivt
+    integer :: ivt
 
     ! Mesh width
     dh = 1.0_DP/(sqrt(real(rtriangulation%NVT,DP))-1.0_DP)

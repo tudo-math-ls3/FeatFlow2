@@ -163,15 +163,15 @@ contains
 
   ! local variables
   integer(PREC_DOFIDX) :: irow, jcol, idof
-  integer(PREC_EDGEIDX) :: IMT
-  integer(PREC_VERTEXIDX) :: ivt1,ivt2,NVT
-  integer(PREC_ELEMENTIDX) :: IEL
+  integer :: IMT
+  integer :: ivt1,ivt2,NVT
+  integer :: IEL
   integer :: IELcount,IDOFE, JDOFE, i, NVE, iedge
   real(DP) :: dval,dedgelength,dedgeweight,dphidx,dphidy,dpsidx,dpsidy,dcoeff
   
   ! Pointer to KLD, KCOL, DA
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
   real(DP), dimension(:), pointer :: p_Da
   
   ! An allocateable array accepting the DOF's of a set of elements.
@@ -195,11 +195,11 @@ contains
   type(t_triangulation), pointer :: p_rtriangulation
   
   ! Some triangulation arrays we need frequently
-  integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
-  integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IelementsAtEdge
-  integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+  integer, dimension(:,:), pointer :: p_IneighboursAtElement
+  integer, dimension(:,:), pointer :: p_IelementsAtEdge
+  integer, dimension(:,:), pointer :: p_IedgesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtEdge
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   
   ! Current element distribution
@@ -777,15 +777,15 @@ contains
 
   ! local variables
   integer(PREC_DOFIDX) :: irow, jcol, idof
-  integer(PREC_EDGEIDX) :: IMT
-  integer(PREC_VERTEXIDX) :: ivt1,ivt2,NVT
-  integer(PREC_ELEMENTIDX) :: IEL
+  integer :: IMT
+  integer :: ivt1,ivt2,NVT
+  integer :: IEL
   integer :: IELcount,IDOFE, JDOFE, i, NVE, iedge
   real(DP) :: dval,dedgelength,dedgeweight,dphidx,dphidy,dpsidx,dpsidy,dcoeff
   
   ! Pointer to KLD, KCOL
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
   
   ! An allocateable array accepting the DOF's of a set of elements.
   integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTempl
@@ -808,11 +808,11 @@ contains
   type(t_triangulation), pointer :: p_rtriangulation
   
   ! Some triangulation arrays we need frequently
-  integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
-  integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IelementsAtEdge
-  integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-  integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+  integer, dimension(:,:), pointer :: p_IneighboursAtElement
+  integer, dimension(:,:), pointer :: p_IelementsAtEdge
+  integer, dimension(:,:), pointer :: p_IedgesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtEdge
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   
   ! Current element distribution

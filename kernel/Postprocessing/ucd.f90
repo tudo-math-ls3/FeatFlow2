@@ -511,10 +511,10 @@ contains
     integer :: i,j,k,ivt,off,numNewElem
     real(DP) :: dx
     real(DP), dimension(:,:), pointer :: p_DvertexCoords, p_DnewVerts
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IvertsAtEdge
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_InewVertsAtElement
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IvertsAtElement
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IvertsAtEdge
+    integer, dimension(:,:), pointer :: p_InewVertsAtElement
+    integer, dimension(:,:), pointer :: p_IvertsAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(2) :: I_dim
     logical :: bedgeMids, belemMids, brefined
     
@@ -1227,7 +1227,7 @@ contains
 
   ! local variables
   integer(I32), dimension(:), pointer :: p_Idata
-  integer(PREC_ELEMENTIDX) :: NEL
+  integer :: NEL
 
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
       call output_line ('Export structure not initialised!', &
@@ -1301,9 +1301,9 @@ contains
 
   ! local variables
   integer(I32), dimension(:), pointer :: p_Idata
-  integer(PREC_ELEMENTIDX) :: NEL
-  integer(PREC_EDGEIDX) :: NMT
-  integer(PREC_VERTEXIDX) :: NVT
+  integer :: NEL
+  integer :: NMT
+  integer :: NVT
 
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
       call output_line ('Export structure not initialised!', &
@@ -1446,15 +1446,15 @@ contains
     
     ! local variables
     integer :: mfile,i,j,k,icoor
-    integer(PREC_VERTEXIDX) :: ivt,ivt1,ivt2,nnodes
-    integer(PREC_EDGEIDX) :: imt
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: ivt,ivt1,ivt2,nnodes
+    integer :: imt
+    integer :: iel
     real(DP), dimension(:), pointer :: p_Ddata
     integer(I32), dimension(:), pointer :: p_Idata
     real(DP), dimension(:,:), pointer :: p_DvertexCoords,p_Ddata2D
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge 
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge 
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP) :: dx
     
       mfile = rexport%iunit
@@ -2310,15 +2310,15 @@ contains
     
     ! local variables
     integer :: i,j,k,icoor
-    integer(PREC_VERTEXIDX) :: ivt,ivt1,ivt2,nnodes,nvt,nverts,matnum
-    integer(PREC_EDGEIDX) :: imt
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: ivt,ivt1,ivt2,nnodes,nvt,nverts,matnum
+    integer :: imt
+    integer :: iel
     real(DP), dimension(:), pointer :: p_Ddata
     integer(I32), dimension(:), pointer :: p_Idata
     real(DP), dimension(:,:), pointer :: p_DvertexCoords,p_Ddata2D
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtEdge 
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge 
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
 
     integer :: nod2ids(2), nod3ids(3), nod4ids(4), nod5ids(5), nod6ids(6), nod8ids(8)
     real, dimension(:), allocatable :: X,Y,Z,VAR
@@ -3384,7 +3384,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DvertexCoords, p_DvertexRefined, &
         p_Ddata2D
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:), pointer :: p_IcellMaterial
     real(DP), dimension(1:3) :: Dvert
     character(LEN=SYS_STRLEN) :: sdl
@@ -3674,8 +3674,8 @@ contains
     real(DP), dimension(:,:), pointer :: p_DvertexCoords, p_DvertexRefined, &
         p_Ddata2D
     real(DP), dimension(:), pointer :: p_Ddata, p_Dx, p_Dy, p_Dz
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:), allocatable :: p_InumVertsPerCell
     real(DP), dimension(1:3) :: Dvert
     character(LEN=SYS_STRLEN) :: sdl
@@ -4617,7 +4617,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP) :: dv
-    integer(PREC_ELEMENTIDX) :: iel
+    integer :: iel
 
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
       call output_line ('Export structure not initialised!',&
@@ -5891,16 +5891,16 @@ contains
     
       ! local variables
       integer(I32), dimension(:), pointer :: p_InodalProperty
-      integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
-      integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-      integer(PREC_ELEMENTIDX), dimension(:,:), pointer :: p_IneighboursAtElement
-      integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertex
-      integer(PREC_ELEMENTIDX), dimension(:), pointer :: p_IelementsAtVertexIdx
-      integer(PREC_VERTEXIDX), dimension(:), pointer :: p_IverticesAtBoundary
-      integer(PREC_VERTEXIDX), dimension(:), allocatable :: IverticesAtBoundary
+      integer, dimension(:,:), pointer :: p_IverticesAtElement
+      integer, dimension(:,:), pointer :: p_IedgesAtElement
+      integer, dimension(:,:), pointer :: p_IneighboursAtElement
+      integer, dimension(:), pointer :: p_IelementsAtVertex
+      integer, dimension(:), pointer :: p_IelementsAtVertexIdx
+      integer, dimension(:), pointer :: p_IverticesAtBoundary
+      integer, dimension(:), allocatable :: IverticesAtBoundary
       integer(I32), dimension(:), pointer :: p_IboundaryCpIdx
-      integer(PREC_VERTEXIDX) :: ivt,ivt2
-      integer(PREC_ELEMENTIDX) :: iel,ielidx
+      integer :: ivt,ivt2
+      integer :: iel,ielidx
       integer :: ive,iveprevious,ivenext,nbct,nve,nvbd,ivbd,ibctidx,icurrentbc
       real(DP), dimension(:), pointer :: p_DvertexParameterValue
       

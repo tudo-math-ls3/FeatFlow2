@@ -2588,7 +2588,7 @@ contains
   real(DP), dimension(:), pointer :: p_Ddata2dp
   real(SP), dimension(:), pointer :: p_Fdata1dp
   real(SP), dimension(:), pointer :: p_Fdata2dp
-  ! INTEGER(PREC_VECIDX) :: i
+  ! integer :: i
   real(DP) :: res
 
   ! The vectors must be compatible to each other.

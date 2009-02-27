@@ -55,7 +55,7 @@
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    integer(PREC_ELEMENTIDX), dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(IN) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
