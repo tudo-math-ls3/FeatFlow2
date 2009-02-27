@@ -98,7 +98,7 @@
 !#      -> Restricts some block-vector from fine to coarse grid
 !#
 !# 26.) solver_copySolver
-!#      -> Copy input/output parameters from one solver to another solver
+!#      -> Copies input/output parameters from one solver to another solver
 !#
 !# The following auxiliary routines are available:
 !#
