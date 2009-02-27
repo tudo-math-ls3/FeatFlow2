@@ -107,7 +107,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 0
+isystemformat = 1
 
 #-------------------------------------------------------------------------------
 
@@ -202,7 +202,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.01
+dfinalTime = 0.001
 
 # initial time step size
 dinitialStep = 0.001

@@ -683,7 +683,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 5
+npreadapt = 3
 
 # number of adaptation steps
 nadapt = 0
@@ -692,10 +692,10 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.0
+dstepadapt = 0.001
 
 # maximum number of refinement levels
-nsubdividemax = 10
+nsubdividemax = 5
 
 # adaptation strategy
 # 1 = red-green
