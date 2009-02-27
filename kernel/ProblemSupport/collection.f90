@@ -188,7 +188,7 @@
 !#  by new data types / structures unless you are absolutely sure that this 
 !#  is relevant for all users and that you won't get circular dependencies!
 !#
-!# USE THE COLLECTION IS AN INDEX
+!# USE THE COLLECTION AS AN INDEX
 !#
 !#  Although it's possible to use the collection as a data container for most
 !#  (if not all) of your information, you should not use the collection
