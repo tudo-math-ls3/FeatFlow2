@@ -1,7 +1,10 @@
-! This file describes the interface for a callback routine that is used
-! as a hit-test routine for calculating the index arrays of a mesh region
-! structure.
-interface
+  ! -*- mode: f90; -*-
+  
+  ! This file describes the interface for a callback routine that is used
+  ! as a hit-test routine for calculating the index arrays of a mesh region
+  ! structure.
+
+  interface
 
 !<subroutine>
   

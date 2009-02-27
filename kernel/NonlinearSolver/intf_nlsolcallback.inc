@@ -1,3 +1,5 @@
+  ! -*- mode: f90; -*-
+  
   ! This file describes the interfaces of the callback routines of the nonlinear
   ! defect-correction loop solver.
 

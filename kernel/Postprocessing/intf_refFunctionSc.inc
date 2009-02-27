@@ -1,3 +1,5 @@
+  ! -*- mode: f90; -*-
+  
   ! This file describes the interface for a coefficient function that is called
   ! during the matrix assembly of scalar vectors.
   

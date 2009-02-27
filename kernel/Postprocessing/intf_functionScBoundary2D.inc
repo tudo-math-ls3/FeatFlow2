@@ -1,3 +1,5 @@
+  ! -*- mode: f90; -*-
+  
   ! This file describes the interface for a function that is used in 
   ! bdint_scalarBoundary2D to calculate integral values on the boundary.
   

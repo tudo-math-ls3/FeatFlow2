@@ -1,8 +1,10 @@
-! This file describes the interface for the subroutine that
-! calculates the function values of the monitor function
-! used in grid deformation
+  ! -*- mode: f90; -*-
+  
+  ! This file describes the interface for the subroutine that
+  ! calculates the function values of the monitor function
+  ! used in grid deformation
 
-interface
+  interface
 
 !<subroutine>  
   SUBROUTINE def_monitorfct(DvertexCoords,Dentries)

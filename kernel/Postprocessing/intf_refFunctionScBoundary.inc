@@ -1,3 +1,5 @@
+  ! -*- mode: f90; -*-
+  
   ! This file describes the interface for a reference function that
   ! is used in pperr_scalarBoundary2D to calculate errors on the boundary.
   

@@ -1,17 +1,19 @@
-! This file describes the interfaces of the callback routines
-! of the discrete operators for hyperbolic systems
+  ! -*- mode: f90; -*-
+  
+  ! This file describes the interfaces of the callback routines
+  ! of the discrete operators for hyperbolic systems
 
-! ***************************************************************************
+  ! ***************************************************************************
 
-interface
+  interface
 
-! ***************************************************************************
+    ! ***************************************************************************
 
 !<subroutine>
 
-subroutine fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij, istatus)
+  subroutine fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij, istatus)
 
-use fsystem
+    use fsystem
 
 !<description>
     ! This subroutine computes the characteristic transformation variables.
@@ -50,15 +52,15 @@ use fsystem
 
 !</subroutine>
 
-end subroutine fcb_calcCharacteristics
+  end subroutine fcb_calcCharacteristics
 
 ! ***************************************************************************
 
 !<subroutine>
 
-subroutine fcb_calcFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine fcb_calcFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
 
-use fsystem
+  use fsystem
 
 !<description>
     ! This subroutine computes the internodal fluxes.
@@ -90,15 +92,15 @@ use fsystem
 
 !</subroutine>
 
-end subroutine fcb_calcFlux
+  end subroutine fcb_calcFlux
 
 ! ***************************************************************************
 
 !<subroutine>
 
-subroutine fcb_calcRawFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, istatus)
+  subroutine fcb_calcRawFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, istatus)
 
-use fsystem
+  use fsystem
 
 !<description>
     ! This subroutine computes the internodal fluxes.
@@ -120,15 +122,15 @@ use fsystem
 
 !</subroutine>
 
-end subroutine fcb_calcRawFlux
+  end subroutine fcb_calcRawFlux
 
 ! ***************************************************************************
 
 !<subroutine>
 
-subroutine fcb_calcMatrix(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine fcb_calcMatrix(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
 
-use fsystem
+  use fsystem
 
 !<description>
     ! This subroutine computes the local matrices.
@@ -156,6 +158,6 @@ use fsystem
 
 !</subroutine>
 
-end subroutine fcb_calcMatrix
+  end subroutine fcb_calcMatrix
 
 end interface
