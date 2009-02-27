@@ -9,7 +9,6 @@ include $(FEATFLOW)/Globals.mk
 
 # Overwrite compiler flags
 BLASLIB = -L$(GOTOBLAS_LIB) -lgoto -lpthread
-OPTFLAGS= -O3 -xT
 
 # application include dirs
 INCDIR = -I./src -I./src/kernel
