@@ -158,6 +158,9 @@ module problem
     ! Minimum problem level
     integer :: nlmin
 
+    ! Number of discretisations
+    integer :: ndiscretisation
+
     ! Number of AFC stabilisations
     integer :: nafcstab
 
@@ -253,8 +256,8 @@ module problem
     ! Triangulation structure
     type(t_triangulation) :: rtriangulation
 
-    ! Discretization structure
-    type(t_blockDiscretisation) :: rdiscretisation
+    ! Array of discretization structure
+    type(t_blockDiscretisation), dimension(:), pointer :: Rdiscretisation => null()
 
     ! Array of AFC stabilisations
     type(t_afcstab), dimension(:), pointer :: Rafcstab => null()
@@ -369,6 +372,8 @@ contains
                                       rproblem%rboundary)
 
     ! Allocate matrices, vectors and stabilisations
+    if (rproblemDescriptor%ndiscretisation .gt. 0)&
+        allocate(rproblemLevel%Rdiscretisation(rproblemDescriptor%ndiscretisation))
     if (rproblemDescriptor%nmatrixScalar .gt. 0)&
         allocate(rproblemLevel%Rmatrix(rproblemDescriptor%nmatrixScalar))
     if (rproblemDescriptor%nmatrixBlock .gt. 0)&
@@ -401,6 +406,8 @@ contains
                                         rproblem%rboundary)
 
       ! Allocate matrices, vectors and stabilisations
+      if (rproblemDescriptor%ndiscretisation .gt. 0)&
+        allocate(rproblemLevel%Rdiscretisation(rproblemDescriptor%ndiscretisation))
       if (rproblemDescriptor%nmatrixScalar .gt. 0)&
           allocate(rproblemLevel%Rmatrix(rproblemDescriptor%nmatrixScalar))
       if (rproblemDescriptor%nmatrixBlock .gt. 0)&
@@ -844,40 +851,47 @@ contains
     ! Release triangulation structure
     call tria_done(rproblemLevel%rtriangulation)
 
-    ! Release discretization structure
-    call spdiscr_releaseBlockDiscr(rproblemLevel%rdiscretisation)
+    ! Release discretization structures
+    if (associated(rproblemLevel%Rdiscretisation)) then
+      do i = lbound(rproblemLevel%Rdiscretisation,1),&
+             ubound(rproblemLevel%Rdiscretisation,1)
+        call spdiscr_releaseBlockDiscr(rproblemLevel%Rdiscretisation(i))
+      end do
+      deallocate(rproblemLevel%Rdiscretisation)
+    end if
     
     ! Release all scalar matrices
-    if (associated(rproblemLevel%rmatrix)) then
-      do i = lbound(rproblemLevel%rmatrix,1), ubound(rproblemLevel%rmatrix,1)
-        call lsyssc_releaseMatrix(rproblemLevel%rmatrix(i))
+    if (associated(rproblemLevel%Rmatrix)) then
+      do i = lbound(rproblemLevel%Rmatrix,1),&
+             ubound(rproblemLevel%Rmatrix,1)
+        call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(i))
       end do
       deallocate(rproblemLevel%Rmatrix)
     end if
     
     ! Release all block matries
-    if (associated(rproblemLevel%rmatrixBlock)) then
-      do i = lbound(rproblemLevel%rmatrixBlock,1),&
-             ubound(rproblemLevel%rmatrixBlock,1)
-        call lsysbl_releaseMatrix(rproblemLevel%rmatrixBlock(i))
+    if (associated(rproblemLevel%RmatrixBlock)) then
+      do i = lbound(rproblemLevel%RmatrixBlock,1),&
+             ubound(rproblemLevel%RmatrixBlock,1)
+        call lsysbl_releaseMatrix(rproblemLevel%RmatrixBlock(i))
       end do
       deallocate(rproblemLevel%RmatrixBlock)
     end if
     
     ! Release all scalar vectors
-    if (associated(rproblemLevel%rvector)) then
-      do i = lbound(rproblemLevel%rvector,1),&
-             ubound(rproblemLevel%rvector,1)
-        call lsyssc_releaseVector(rproblemLevel%rvector(i))
+    if (associated(rproblemLevel%Rvector)) then
+      do i = lbound(rproblemLevel%Rvector,1),&
+             ubound(rproblemLevel%Rvector,1)
+        call lsyssc_releaseVector(rproblemLevel%Rvector(i))
       end do
       deallocate(rproblemLevel%Rvector)
     end if
     
     ! Release all block vectors
-    if (associated(rproblemLevel%rvectorBlock)) then
-      do i = lbound(rproblemLevel%rvectorBlock,1),&
-             ubound(rproblemLevel%rvectorBlock,1)
-        call lsysbl_releaseVector(rproblemLevel%rvectorBlock(i))
+    if (associated(rproblemLevel%RvectorBlock)) then
+      do i = lbound(rproblemLevel%RvectorBlock,1),&
+             ubound(rproblemLevel%RvectorBlock,1)
+        call lsysbl_releaseVector(rproblemLevel%RvectorBlock(i))
       end do
       deallocate(rproblemLevel%RvectorBlock)
     end if
