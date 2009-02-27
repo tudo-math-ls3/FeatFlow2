@@ -161,7 +161,7 @@ module afcstabilisation
     integer :: iSpec                                   = AFCSTAB_UNDEFINED
 
     ! Number of equations of the sparsity pattern
-    integer(PREC_VECIDX) :: NEQ                        = 0
+    integer :: NEQ                        = 0
 
     ! Number of local variables; in general scalar solution vectors of
     ! size NEQ posses NEQ entries. However, scalar vectors can be interleaved,
@@ -171,32 +171,32 @@ module afcstabilisation
     integer :: NVAR                                    = 1
 
     ! Number of edges of the sparsity pattern
-    integer(PREC_VECIDX) :: NEDGE                      = 0
+    integer :: NEDGE                      = 0
 
     ! Maximum number of edges adjacent to one vertex. 
     ! This corresponds to the maximum number of nonzero row entries.
-    integer(PREC_VECIDX) :: NNVEDGE                    = 0
+    integer :: NNVEDGE                    = 0
 
     ! Handle to index pointer for superdiagonal edge numbers
-    ! INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: IsuperdiagonalEdgesIdx
+    ! integer, DIMENSION(:), POINTER :: IsuperdiagonalEdgesIdx
     ! The numbers IsuperdiagonalEdgesIdx(i):IsuperdiagonalEdgesIdx(i+1)-1
     ! denote the edge numbers of the ith vertex which are located in
     ! the upper right triangular matrix.
     integer :: h_IsuperdiagonalEdgesIdx                    = ST_NOHANDLE
 
     ! Handle to vertices at edge structure
-    ! INTEGER(PREC_MATIDX), DIMENSION(:,:), POINTER :: IverticesAtEdge
+    ! integer, DIMENSION(:,:), POINTER :: IverticesAtEdge
     ! IverticesAtEdge(1:2,1:NEDGE) : the two end-points of the edge
     ! IverticesAtEdge(3:4,1:NEDGE) : the two matrix position that
     !                                correspond to the edge
     integer :: h_IverticesAtEdge                       = ST_NOHANDLE
 
     ! Handle to index pointer for subdiagonal edge numbers
-    ! INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: IsubdiagonalEdgesIdx
+    ! integer, DIMENSION(:), POINTER :: IsubdiagonalEdgesIdx
     integer :: h_IsubdiagonalEdgesIdx                  = ST_NOHANDLE
 
     ! Handle to the subdiagonal edge numbers
-    ! INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: IsubdiagonalEdges
+    ! integer, DIMENSION(:), POINTER :: IsubdiagonalEdges
     integer :: h_IsubdiagonalEdges                     = ST_NOHANDLE
 
     ! Handle to coefficient at edge structure
@@ -401,10 +401,10 @@ contains
 
 !<input>
     ! number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
 
     ! number of edges
-    integer(PREC_VECIDX), intent(IN) :: nedge   
+    integer, intent(IN) :: nedge   
 !</input>
 
 !<inputoutput>
@@ -599,7 +599,7 @@ contains
 !<output>
     ! Pointer to the index pointer for superdiagonal edge numbers.
     ! NULL() if the discrete operator does not provide it.
-    integer(PREC_VECIDX), dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
 !</output>
 !</subroutine>
 
@@ -633,7 +633,7 @@ contains
 !<output>
     ! Pointer to the vertices at edge structure
     ! NULL() if the discrete operator does not provide it.
-    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
 !</output>
 !</subroutine>
 
@@ -669,7 +669,7 @@ contains
     ! Pointer to the index pointer for 
     ! subdiagonal edge numbers
     ! NULL() if the discrete operator does not provide it.
-    integer(PREC_MATIDX), dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
 !</output>
 !</subroutine>
 
@@ -703,7 +703,7 @@ contains
 !<output>
     ! Pointer to the subdiagonal edge numbers
     ! NULL() if the discrete operator does not provide it.
-    integer(PREC_MATIDX), dimension(:), pointer :: p_IsubdiagonalEdges
+    integer, dimension(:), pointer :: p_IsubdiagonalEdges
 !</output>
 !</subroutine>
 
@@ -771,13 +771,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IverticesAtEdge
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_IsuperdiagonalEdgesIdx
-    integer(PREC_MATIDX), dimension(:), pointer   :: p_IsubdiagonalEdges
-    integer(PREC_VECIDX), dimension(:), pointer   :: p_IsubdiagonalEdgesIdx
-    integer(PREC_MATIDX) :: iedge,nedge,istor
-    integer(PREC_VECIDX) :: ieq,jeq,neq
-    integer(I32)         :: isize
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer   :: p_IsuperdiagonalEdgesIdx
+    integer, dimension(:), pointer   :: p_IsubdiagonalEdges
+    integer, dimension(:), pointer   :: p_IsubdiagonalEdgesIdx
+    integer :: iedge,nedge,istor
+    integer :: ieq,jeq,neq
+    integer :: isize
 
     ! Check if edge-based data structure is prepared
     if (iand(rafcstab%iSpec,AFCSTAB_EDGESTRUCTURE) .eq. 0) then

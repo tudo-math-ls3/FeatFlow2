@@ -131,12 +131,12 @@ module boundary
   ! The startpoint (point with min. parameter value) belongs
   ! to the boundary segment. If not set, the point with the
   ! min. parameter value does not belong to the boundary segment.
-  integer(I32), parameter :: BDR_PROP_WITHSTART = 2**0
+  integer, parameter :: BDR_PROP_WITHSTART = 2**0
 
   ! The endpoint (point with min. parameter value) belongs
   ! to the boundary segment. If not set, the point with the
   ! max. parameter value does not belong to the boundary segment.
-  integer(I32), parameter :: BDR_PROP_WITHEND = 2**1
+  integer, parameter :: BDR_PROP_WITHEND = 2**1
 
 !</constantblock>
 
@@ -203,7 +203,7 @@ module boundary
 
     ! Bitfield specifying properties of the region. A combination
     ! of BDR_PROP_xxxx constants.
-    integer(I32) :: iproperties = BDR_PROP_WITHSTART
+    integer :: iproperties = BDR_PROP_WITHSTART
   
   end type t_boundaryRegion
   
@@ -404,7 +404,7 @@ module boundary
 !</function>
 
     real(DP),dimension(:),pointer :: p_DmaxPar
-    integer(I32),dimension(:),pointer :: p_IsegCount
+    integer,dimension(:),pointer :: p_IsegCount
 
     !if iboundCompIdx exceeds the total number of boundary components or is negative, abort
     if ((iboundCompIdx .gt. rboundary%iboundarycount) .or. (iboundCompIdx.lt.0)) then
@@ -463,7 +463,7 @@ module boundary
   
 !</function>
 
-    integer(I32),dimension(:),pointer :: p_IsegCount
+    integer,dimension(:),pointer :: p_IsegCount
 
     !if iboundCompIdx exceeds the total number of boundary components or is negative, abort
     if ((iboundCompIdx .gt. rboundary%iboundarycount) .or. (iboundCompIdx.lt.0)) then
@@ -512,8 +512,8 @@ module boundary
     ! Input channel for reading
     integer :: iunit
     integer :: ibcomponent, isegment, ibct,ihandle
-    integer(I32), dimension(:), pointer :: p_IsegInfo, p_IsegCount
-    integer(I32), dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
+    integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
+    integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
     real(DP), dimension(:), pointer :: p_DsegInfo, p_DmaxPar
     integer :: ityp, nspline, npar
     integer :: isegrel
@@ -537,28 +537,28 @@ module boundary
     ! Allocate an array containing handles. Each handle refers
     ! to integer data for a boundary component.
     call storage_new1D("boundary_read_prm", "h_Idbldatavec_handles", &
-                       int(rboundary%iboundarycount,I32), ST_INT, &
+                       rboundary%iboundarycount, ST_INT, &
                        rboundary%h_Idbldatavec_handles, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(rboundary%h_Idbldatavec_handles, p_IdbleSegInfo_handles)
     
     ! Allocate an array containing of handles. Each handle refers
     ! to integer data for a boundary component.
     call storage_new("boundary_read_prm", "h_Iintdatavec_handles", &
-                     int(rboundary%iboundarycount,I32), ST_INT, &
+                     rboundary%iboundarycount, ST_INT, &
                      rboundary%h_Iintdatavec_handles, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(rboundary%h_Iintdatavec_handles, p_IintSegInfo_handles)
 
     ! Allocate an array containing the maximum parameter values for each
     ! boundary component in length-parametrisation
     call storage_new("boundary_read_prm", "h_DmaxPar", &
-                     int(rboundary%iboundarycount,I32), ST_DOUBLE, &
+                     rboundary%iboundarycount, ST_DOUBLE, &
                      rboundary%h_DmaxPar, ST_NEWBLOCK_ZERO)
     call storage_getbase_double(rboundary%h_DmaxPar, p_DmaxPar)
 
     ! Allocate an array containing the number of boundary segments in each
     ! boundary component
     call storage_new("boundary_read_prm", "h_IsegCount", &
-                     int(rboundary%iboundarycount,I32), ST_INT, &
+                     rboundary%iboundarycount, ST_INT, &
                      rboundary%h_IsegCount, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(rboundary%h_IsegCount, p_IsegCount)
 
@@ -587,7 +587,7 @@ module boundary
       ! of segments indicates * 2.
       
       call storage_new("boundary_read_prm", "h_Isegcount", &
-                       int(2*p_IsegCount(ibct),I32), ST_INT, &
+                       2*p_IsegCount(ibct), ST_INT, &
                        ihandle, ST_NEWBLOCK_ZERO)
       p_IintSegInfo_handles(ibct) = ihandle
       call storage_getbase_int(ihandle, p_IsegInfo)
@@ -655,7 +655,7 @@ module boundary
       ! boundary segments:
       
       call storage_new("boundary_read_prm", "h_IdbleSegInfo_handles", &
-                       int(idblemem,I32), ST_DOUBLE, &
+                       idblemem, ST_DOUBLE, &
                        ihandle, ST_NEWBLOCK_ZERO)
       p_IdbleSegInfo_handles(ibct) = ihandle
       
@@ -794,7 +794,7 @@ module boundary
 
     ! local variables
     integer :: i,ihandle
-    integer(I32), dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
+    integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
 
     ! Check if data arrays are allocated
     if ((rboundary%h_Iintdatavec_handles .ne. ST_NOHANDLE) .and.&
@@ -848,7 +848,7 @@ module boundary
 
 !<input>
   ! Segment-count array
-  integer(I32), dimension(:), intent(IN) :: IsegCount
+  integer, dimension(:), intent(IN) :: IsegCount
 
   ! Array wirth maximum parameter values for all BC's
   real(DP), dimension(:), intent(IN) :: DmaxPar
@@ -857,7 +857,7 @@ module boundary
   integer, intent(IN) :: iboundCompIdx
   
   ! Type of parametrisation, format of dpar (0-1, length par.,...)
-  integer(I32), intent(IN) :: cpar
+  integer, intent(IN) :: cpar
 !</input>
 
 !<inputoutput>
@@ -904,14 +904,14 @@ module boundary
 
 !<input>
     ! Integer segment array for segment counter
-    integer(I32), dimension(:), intent(IN) :: IsegCount
+    integer, dimension(:), intent(IN) :: IsegCount
 
     ! Double precision array defining the maximum parameter values
     ! of each boundary component
     real(DP), dimension(:), intent(IN) :: DmaxPar
 
     ! Integer segment info array
-    integer(I32), dimension(:), intent(IN) :: IsegInfo
+    integer, dimension(:), intent(IN) :: IsegInfo
     
     ! Double precision segment info array
     real(DP), dimension(:), intent(IN) :: DsegInfo
@@ -1099,8 +1099,8 @@ module boundary
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
-    integer(I32), dimension(:), pointer :: p_IsegInfo, p_IsegCount
+    integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
+    integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     integer :: cpar ! local copy of cparType
     
@@ -1238,8 +1238,8 @@ module boundary
 !</function>
 
     ! local variables
-    integer(I32), dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
-    integer(I32), dimension(:), pointer :: p_IsegInfo, p_IsegCount
+    integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
+    integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     
     real(DP) :: dpar, dcurrentpar, dendpar, dparloc, dseglength, dtmax
@@ -1406,8 +1406,8 @@ module boundary
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
-    integer(I32), dimension(:), pointer :: p_IsegInfo, p_IsegCount
+    integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
+    integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     
     real(DP) :: dpar, dcurrentpar, dendpar, dparloc, dseglength, dtmax
@@ -1582,8 +1582,8 @@ module boundary
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
-    integer(I32), dimension(:), pointer :: p_IsegInfo, p_IsegCount
+    integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
+    integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     
     real(DP) :: dcurrentpar, dendpar, dmaxpar
@@ -1893,8 +1893,8 @@ module boundary
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
-    integer(I32), dimension(:), pointer :: p_IsegInfo, p_IsegCount
+    integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
+    integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     integer :: cpar ! local copy of cparType
     integer :: cnormalMeanCalc

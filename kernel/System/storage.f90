@@ -2097,7 +2097,7 @@ contains
 !<output>
 
   ! The pointer associated to the handle.
-  integer(I32), dimension(:), pointer :: p_Iarray
+  integer, dimension(:), pointer :: p_Iarray
 
 !</output>
 

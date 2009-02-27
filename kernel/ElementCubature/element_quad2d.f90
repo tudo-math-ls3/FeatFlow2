@@ -5530,10 +5530,10 @@ contains
   ! itwistIndex is a bitfield. Each bit specifies the orientation of an edge.
   ! We use the bit to calculate a "1.0" if the edge has positive orientation
   ! and "-1.0" if it has negative orientation.
-  d5 = real(1-iand(ishft(itwistIndex, 1),2),DP)
-  d6 = real(1-iand(ishft(itwistIndex, 0),2),DP)
-  d7 = real(1-iand(ishft(itwistIndex,-1),2),DP)
-  d8 = real(1-iand(ishft(itwistIndex,-2),2),DP)
+  d5 = real(1-iand(int(ishft(itwistIndex, 1)),2),DP)
+  d6 = real(1-iand(int(ishft(itwistIndex, 0)),2),DP)
+  d7 = real(1-iand(int(ishft(itwistIndex,-1)),2),DP)
+  d8 = real(1-iand(int(ishft(itwistIndex,-2)),2),DP)
     
   ! Remark: The Q2~-element always computes function value and 1st derivatives.
   ! That's even faster than when using three IF commands for preventing
@@ -5762,10 +5762,10 @@ contains
   ! itwistIndex is a bitfield. Each bit specifies the orientation of an edge.
   ! We use the bit to calculate a "1.0" if the edge has positive orientation
   ! and "-1.0" if it has negative orientation.
-  d5 = real(1-iand(ishft(itwistIndex, 1),2),DP)
-  d6 = real(1-iand(ishft(itwistIndex, 0),2),DP)
-  d7 = real(1-iand(ishft(itwistIndex,-1),2),DP)
-  d8 = real(1-iand(ishft(itwistIndex,-2),2),DP)
+  d5 = real(1-iand(int(ishft(itwistIndex, 1)),2),DP)
+  d6 = real(1-iand(int(ishft(itwistIndex, 0)),2),DP)
+  d7 = real(1-iand(int(ishft(itwistIndex,-1)),2),DP)
+  d8 = real(1-iand(int(ishft(itwistIndex,-2)),2),DP)
       
   !if function values are desired
   !IF (Bder(DER_FUNC)) THEN
@@ -5899,7 +5899,7 @@ contains
   ! List of twist indices. For every edge/face on every cell, the twist
   ! index defines the orientation of the edge/face.
   ! Array with DIMENSION(1:NVE/NVA,nelements)
-  integer, dimension(:), intent(IN) :: ItwistIndex
+  integer(I32), dimension(:), intent(IN) :: ItwistIndex
 
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -5995,10 +5995,10 @@ contains
       ! ItwistIndex(.) is a bitfield. Each bit specifies the orientation of an edge.
       ! We use the bit to calculate a "1.0" if the edge has positive orientation
       ! and "-1.0" if it has negative orientation.
-      d5 = real(1-iand(ishft(ItwistIndex(j), 1),2),DP)
-      d6 = real(1-iand(ishft(ItwistIndex(j), 0),2),DP)
-      d7 = real(1-iand(ishft(ItwistIndex(j),-1),2),DP)
-      d8 = real(1-iand(ishft(ItwistIndex(j),-2),2),DP)
+      d5 = real(1-iand(int(ishft(ItwistIndex(j), 1)),2),DP)
+      d6 = real(1-iand(int(ishft(ItwistIndex(j), 0)),2),DP)
+      d7 = real(1-iand(int(ishft(ItwistIndex(j),-1)),2),DP)
+      d8 = real(1-iand(int(ishft(ItwistIndex(j),-2)),2),DP)
     
       do i=1,npoints
         dx = Dpoints(1,i,j)
@@ -6029,10 +6029,10 @@ contains
       ! ItwistIndex(.) is a bitfield. Each bit specifies the orientation of an edge.
       ! We use the bit to calculate a "1.0" if the edge has positive orientation
       ! and "-1.0" if it has negative orientation.
-      d5 = real(1-iand(ishft(ItwistIndex(j), 1),2),DP)
-      d6 = real(1-iand(ishft(ItwistIndex(j), 0),2),DP)
-      d7 = real(1-iand(ishft(ItwistIndex(j),-1),2),DP)
-      d8 = real(1-iand(ishft(ItwistIndex(j),-2),2),DP)
+      d5 = real(1-iand(int(ishft(ItwistIndex(j), 1)),2),DP)
+      d6 = real(1-iand(int(ishft(ItwistIndex(j), 0)),2),DP)
+      d7 = real(1-iand(int(ishft(ItwistIndex(j),-1)),2),DP)
+      d8 = real(1-iand(int(ishft(ItwistIndex(j),-2)),2),DP)
       
       !x- and y-derivatives on reference element
       do i=1,npoints
@@ -6273,10 +6273,10 @@ contains
   ! itwistIndex(.) is a bitfield. Each bit specifies the orientation of an edge.
   ! We use the bit to calculate a "1.0" if the edge has positive orientation
   ! and "-1.0" if it has negative orientation.
-  d5 = real(1-iand(ishft(itwistIndex, 1),2),DP)
-  d6 = real(1-iand(ishft(itwistIndex, 0),2),DP)
-  d7 = real(1-iand(ishft(itwistIndex,-1),2),DP)
-  d8 = real(1-iand(ishft(itwistIndex,-2),2),DP)
+  d5 = real(1-iand(int(ishft(itwistIndex, 1)),2),DP)
+  d6 = real(1-iand(int(ishft(itwistIndex, 0)),2),DP)
+  d7 = real(1-iand(int(ishft(itwistIndex,-1)),2),DP)
+  d8 = real(1-iand(int(ishft(itwistIndex,-2)),2),DP)
     
   ! Remark: The Q2~-element always computes function value and 1st derivatives.
   ! That's even faster than when using three IF commands for preventing
@@ -6516,10 +6516,10 @@ contains
   ! itwistIndex is a bitfield. Each bit specifies the orientation of an edge.
   ! We use the bit to calculate a "1.0" if the edge has positive orientation
   ! and "-1.0" if it has negative orientation.
-  d5 = real(1-iand(ishft(itwistIndex, 1),2),DP)
-  d6 = real(1-iand(ishft(itwistIndex, 0),2),DP)
-  d7 = real(1-iand(ishft(itwistIndex,-1),2),DP)
-  d8 = real(1-iand(ishft(itwistIndex,-2),2),DP)
+  d5 = real(1-iand(int(ishft(itwistIndex, 1)),2),DP)
+  d6 = real(1-iand(int(ishft(itwistIndex, 0)),2),DP)
+  d7 = real(1-iand(int(ishft(itwistIndex,-1)),2),DP)
+  d8 = real(1-iand(int(ishft(itwistIndex,-2)),2),DP)
       
   !if function values are desired
   !IF (Bder(DER_FUNC)) THEN
@@ -6660,7 +6660,7 @@ contains
   ! List of twist indices. For every edge/face on every cell, the twist
   ! index defines the orientation of the edge/face.
   ! Array with DIMENSION(1:NVE/NVA,nelements)
-  integer, dimension(:), intent(IN) :: ItwistIndex
+  integer(I32), dimension(:), intent(IN) :: ItwistIndex
 
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -6758,10 +6758,10 @@ contains
       ! ItwistIndex(.) is a bitfield. Each bit specifies the orientation of an edge.
       ! We use the bit to calculate a "1.0" if the edge has positive orientation
       ! and "-1.0" if it has negative orientation.
-      d5 = real(1-iand(ishft(ItwistIndex(j), 1),2),DP)
-      d6 = real(1-iand(ishft(ItwistIndex(j), 0),2),DP)
-      d7 = real(1-iand(ishft(ItwistIndex(j),-1),2),DP)
-      d8 = real(1-iand(ishft(ItwistIndex(j),-2),2),DP)
+      d5 = real(1-iand(int(ishft(ItwistIndex(j), 1)),2),DP)
+      d6 = real(1-iand(int(ishft(ItwistIndex(j), 0)),2),DP)
+      d7 = real(1-iand(int(ishft(ItwistIndex(j),-1)),2),DP)
+      d8 = real(1-iand(int(ishft(ItwistIndex(j),-2)),2),DP)
     
       do i=1,npoints
         dx = Dpoints(1,i,j)
@@ -6793,10 +6793,10 @@ contains
       ! ItwistIndex(.) is a bitfield. Each bit specifies the orientation of an edge.
       ! We use the bit to calculate a "1.0" if the edge has positive orientation
       ! and "-1.0" if it has negative orientation.
-      d5 = real(1-iand(ishft(ItwistIndex(j), 1),2),DP)
-      d6 = real(1-iand(ishft(ItwistIndex(j), 0),2),DP)
-      d7 = real(1-iand(ishft(ItwistIndex(j),-1),2),DP)
-      d8 = real(1-iand(ishft(ItwistIndex(j),-2),2),DP)
+      d5 = real(1-iand(int(ishft(ItwistIndex(j), 1)),2),DP)
+      d6 = real(1-iand(int(ishft(ItwistIndex(j), 0)),2),DP)
+      d7 = real(1-iand(int(ishft(ItwistIndex(j),-1)),2),DP)
+      d8 = real(1-iand(int(ishft(ItwistIndex(j),-2)),2),DP)
       
       !x- and y-derivatives on reference element
       do i=1,npoints
@@ -8290,10 +8290,10 @@ contains
       
         ! Get the twist indices for this element.
         itwist = reval%p_ItwistIndex(j)
-        Dtw(1) = real(1-iand(ishft(itwist, 1),2),DP)
-        Dtw(2) = real(1-iand(ishft(itwist, 0),2),DP)
-        Dtw(3) = real(1-iand(ishft(itwist,-1),2),DP)
-        Dtw(4) = real(1-iand(ishft(itwist,-2),2),DP)
+        Dtw(1) = real(1-iand(int(ishft(itwist, 1)),2),DP)
+        Dtw(2) = real(1-iand(int(ishft(itwist, 0)),2),DP)
+        Dtw(3) = real(1-iand(int(ishft(itwist,-1)),2),DP)
+        Dtw(4) = real(1-iand(int(ishft(itwist,-2)),2),DP)
 
         ! Loop through all points on the current element
         do i = 1, reval%npointsPerElement
@@ -8337,10 +8337,10 @@ contains
       
         ! Get the twist indices for this element.
         itwist = reval%p_ItwistIndex(j)
-        Dtw(1) = real(1-iand(ishft(itwist, 1),2),DP)
-        Dtw(2) = real(1-iand(ishft(itwist, 0),2),DP)
-        Dtw(3) = real(1-iand(ishft(itwist,-1),2),DP)
-        Dtw(4) = real(1-iand(ishft(itwist,-2),2),DP)
+        Dtw(1) = real(1-iand(int(ishft(itwist, 1)),2),DP)
+        Dtw(2) = real(1-iand(int(ishft(itwist, 0)),2),DP)
+        Dtw(3) = real(1-iand(int(ishft(itwist,-1)),2),DP)
+        Dtw(4) = real(1-iand(int(ishft(itwist,-2)),2),DP)
 
         ! Loop through all points on the current element
         do i = 1, reval%npointsPerElement
@@ -8538,10 +8538,10 @@ contains
       
         ! Get the twist indices for this element.
         itwist = reval%p_ItwistIndex(j)
-        Dtw(1) = real(1-iand(ishft(itwist, 1),2),DP)
-        Dtw(2) = real(1-iand(ishft(itwist, 0),2),DP)
-        Dtw(3) = real(1-iand(ishft(itwist,-1),2),DP)
-        Dtw(4) = real(1-iand(ishft(itwist,-2),2),DP)
+        Dtw(1) = real(1-iand(int(ishft(itwist, 1)),2),DP)
+        Dtw(2) = real(1-iand(int(ishft(itwist, 0)),2),DP)
+        Dtw(3) = real(1-iand(int(ishft(itwist,-1)),2),DP)
+        Dtw(4) = real(1-iand(int(ishft(itwist,-2)),2),DP)
 
         ! Loop through all points on the current element
         do i = 1, reval%npointsPerElement
@@ -8586,10 +8586,10 @@ contains
       
         ! Get the twist indices for this element.
         itwist = reval%p_ItwistIndex(j)
-        Dtw(1) = real(1-iand(ishft(itwist, 1),2),DP)
-        Dtw(2) = real(1-iand(ishft(itwist, 0),2),DP)
-        Dtw(3) = real(1-iand(ishft(itwist,-1),2),DP)
-        Dtw(4) = real(1-iand(ishft(itwist,-2),2),DP)
+        Dtw(1) = real(1-iand(int(ishft(itwist, 1)),2),DP)
+        Dtw(2) = real(1-iand(int(ishft(itwist, 0)),2),DP)
+        Dtw(3) = real(1-iand(int(ishft(itwist,-1)),2),DP)
+        Dtw(4) = real(1-iand(int(ishft(itwist,-2)),2),DP)
 
         ! Loop through all points on the current element
         do i = 1, reval%npointsPerElement
@@ -8927,10 +8927,10 @@ contains
 
       ! Prepare twist indices
       itwist = reval%p_ItwistIndex(iel)
-      Dtwist(1) = real(1-iand(ishft(itwist, 1),2),DP)
-      Dtwist(2) = real(1-iand(ishft(itwist, 0),2),DP)
-      Dtwist(3) = real(1-iand(ishft(itwist,-1),2),DP)
-      Dtwist(4) = real(1-iand(ishft(itwist,-2),2),DP)
+      Dtwist(1) = real(1-iand(int(ishft(itwist, 1)),2),DP)
+      Dtwist(2) = real(1-iand(int(ishft(itwist, 0)),2),DP)
+      Dtwist(3) = real(1-iand(int(ishft(itwist,-1)),2),DP)
+      Dtwist(4) = real(1-iand(int(ishft(itwist,-2)),2),DP)
 
       ! Clear coefficient matrix
       Da = 0.0_DP

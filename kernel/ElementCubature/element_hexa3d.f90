@@ -5032,12 +5032,12 @@ contains
       
         ! Get the six twist matrices for this element
         itwist = reval%p_ItwistIndex(j)
-        Dtm(:,:,1) = Dtwist(:,:,iand(ishft(itwist,-12),7))
-        Dtm(:,:,2) = Dtwist(:,:,iand(ishft(itwist,-15),7))
-        Dtm(:,:,3) = Dtwist(:,:,iand(ishft(itwist,-18),7))
-        Dtm(:,:,4) = Dtwist(:,:,iand(ishft(itwist,-21),7))
-        Dtm(:,:,5) = Dtwist(:,:,iand(ishft(itwist,-24),7))
-        Dtm(:,:,6) = Dtwist(:,:,iand(ishft(itwist,-27),7))
+        Dtm(:,:,1) = Dtwist(:,:,iand(int(ishft(itwist,-12)),7))
+        Dtm(:,:,2) = Dtwist(:,:,iand(int(ishft(itwist,-15)),7))
+        Dtm(:,:,3) = Dtwist(:,:,iand(int(ishft(itwist,-18)),7))
+        Dtm(:,:,4) = Dtwist(:,:,iand(int(ishft(itwist,-21)),7))
+        Dtm(:,:,5) = Dtwist(:,:,iand(int(ishft(itwist,-24)),7))
+        Dtm(:,:,6) = Dtwist(:,:,iand(int(ishft(itwist,-27)),7))
       
         ! Loop through all points on the current element
         do i = 1, reval%npointsPerElement
@@ -5100,12 +5100,12 @@ contains
       
         ! Get the six twist matrices for this element
         itwist = reval%p_ItwistIndex(j)
-        Dtm(:,:,1) = Dtwist(:,:,iand(ishft(itwist,-12),7))
-        Dtm(:,:,2) = Dtwist(:,:,iand(ishft(itwist,-15),7))
-        Dtm(:,:,3) = Dtwist(:,:,iand(ishft(itwist,-18),7))
-        Dtm(:,:,4) = Dtwist(:,:,iand(ishft(itwist,-21),7))
-        Dtm(:,:,5) = Dtwist(:,:,iand(ishft(itwist,-24),7))
-        Dtm(:,:,6) = Dtwist(:,:,iand(ishft(itwist,-27),7))
+        Dtm(:,:,1) = Dtwist(:,:,iand(int(ishft(itwist,-12)),7))
+        Dtm(:,:,2) = Dtwist(:,:,iand(int(ishft(itwist,-15)),7))
+        Dtm(:,:,3) = Dtwist(:,:,iand(int(ishft(itwist,-18)),7))
+        Dtm(:,:,4) = Dtwist(:,:,iand(int(ishft(itwist,-21)),7))
+        Dtm(:,:,5) = Dtwist(:,:,iand(int(ishft(itwist,-24)),7))
+        Dtm(:,:,6) = Dtwist(:,:,iand(int(ishft(itwist,-27)),7))
 
         ! Loop through all points on the current element
         do i = 1, reval%npointsPerElement
@@ -5568,12 +5568,12 @@ contains
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Get the six twist matrices for this element
       itwist = reval%p_ItwistIndex(iel)
-      Dtm(:,:,1) = Dtwist(:,:,iand(ishft(itwist,-12),7))
-      Dtm(:,:,2) = Dtwist(:,:,iand(ishft(itwist,-15),7))
-      Dtm(:,:,3) = Dtwist(:,:,iand(ishft(itwist,-18),7))
-      Dtm(:,:,4) = Dtwist(:,:,iand(ishft(itwist,-21),7))
-      Dtm(:,:,5) = Dtwist(:,:,iand(ishft(itwist,-24),7))
-      Dtm(:,:,6) = Dtwist(:,:,iand(ishft(itwist,-27),7))
+      Dtm(:,:,1) = Dtwist(:,:,iand(int(ishft(itwist,-12)),7))
+      Dtm(:,:,2) = Dtwist(:,:,iand(int(ishft(itwist,-15)),7))
+      Dtm(:,:,3) = Dtwist(:,:,iand(int(ishft(itwist,-18)),7))
+      Dtm(:,:,4) = Dtwist(:,:,iand(int(ishft(itwist,-21)),7))
+      Dtm(:,:,5) = Dtwist(:,:,iand(int(ishft(itwist,-24)),7))
+      Dtm(:,:,6) = Dtwist(:,:,iand(int(ishft(itwist,-27)),7))
       
       ! Clear coefficient matrix
       Da = 0.0_DP

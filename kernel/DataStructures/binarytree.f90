@@ -363,7 +363,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(2) :: Isize1,Isize2
+    integer, dimension(2) :: Isize1,Isize2
     
     ! Set factor
     if (present(dfactor)) then
@@ -672,7 +672,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     integer :: j
 
     ! Check if tree has correct data format
@@ -778,7 +778,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     integer :: j
 
     ! Check if tree has correct data format
@@ -884,7 +884,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     integer :: j
 
     ! Check if tree has correct data format
@@ -984,7 +984,7 @@ contains
     real(DP), dimension(:), pointer :: p_DKey
     real(SP), dimension(:), pointer :: p_FKey
     integer,  dimension(:), pointer :: p_IKey
-    integer(I32) :: isize
+    integer :: isize
     integer :: j,iorder
 
     ! Check if handle needs to be (re-)allocated
@@ -1512,8 +1512,8 @@ contains
     real(DP), dimension(:,:), pointer :: p_DData2D
     real(SP), dimension(:,:), pointer :: p_FData2D
     integer,  dimension(:,:), pointer :: p_IData2D
-    integer(I32), dimension(2) :: Isize
-    integer(I32) :: iisize
+    integer, dimension(2) :: Isize
+    integer :: iisize
     integer :: idimension,idatatype
     
     ! Check if handle is already associated
@@ -1868,7 +1868,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     integer :: j,iorder
 
     ! Check if auxiliary double data is available
@@ -2157,7 +2157,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     integer :: j,iorder
 
     ! Check if auxiliary single data is available
@@ -2446,7 +2446,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     integer :: j,iorder
 
     ! Check if auxiliary integer data is available

@@ -792,7 +792,7 @@ contains
       elem_igetNDofLoc = 4
     case (EL_PN_1D)
       ! local DOFs for 1D Pn
-      elem_igetNDofLoc = 1 + iand(ishft(ieltype,-16),255)
+      elem_igetNDofLoc = 1 + iand(ishft(ieltype,-16),255_I32)
     ! -= 2D element types =-
     case (EL_P0, EL_Q0)
       ! local DOFs for Q0
@@ -933,7 +933,7 @@ contains
     case (EL_PN_1D)
       ! local DOFs for Pn
       ndofAtVertices = 2
-      ndofAtElement = iand(ishft(ieltype,-16),255)-1
+      ndofAtElement = iand(ishft(ieltype,-16),255_I32)-1
     ! -= 2D element types =-
     case (EL_P0, EL_Q0)
       ! local DOFs for Q0

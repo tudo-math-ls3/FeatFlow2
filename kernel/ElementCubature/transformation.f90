@@ -555,7 +555,7 @@ contains
 !</subroutine>
 
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
 
     ! What type of transformation do we have? First decide on the dimension,
     ! then on the actual ID.
@@ -691,7 +691,7 @@ contains
 !</subroutine>
 
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer :: ipoint
     integer(PREC_ELEMENTIDX) :: iel
 

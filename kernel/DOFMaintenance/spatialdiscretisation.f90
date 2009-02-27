@@ -919,7 +919,7 @@ contains
 
   ! local variables
   integer :: i
-  integer(I32), dimension(:), pointer :: p_Iarray
+  integer, dimension(:), pointer :: p_Iarray
   type(t_elementDistribution), pointer :: p_relementDistr
   integer :: ccub
 
@@ -1800,11 +1800,11 @@ contains
      call output_lbrk()
      call output_line ('ElementDistribution:')
      call output_line ('--------------------')
-     call output_line ('ielement:        '//trim(sys_siL(relementDistr%celement,15)))
+     call output_line ('ielement:        '//trim(sys_siL(int(relementDistr%celement),15)))
      call output_line ('ccubTypeBilForm: '//trim(sys_siL(relementDistr%ccubTypeBilForm,15)))
      call output_line ('ccubTypeLinForm: '//trim(sys_siL(relementDistr%ccubTypeLinForm,15)))
      call output_line ('ccubTypeEval:    '//trim(sys_siL(relementDistr%ccubTypeEval,15)))
-     call output_line ('ctrafoType:      '//trim(sys_siL(relementDistr%ctrafoType,15)))
+     call output_line ('ctrafoType:      '//trim(sys_siL(int(relementDistr%ctrafoType),15)))
      call output_line ('NEL:             '//trim(sys_siL(relementDistr%NEL,15)))
      call output_line ('h_IelementList:  '//trim(sys_siL(relementDistr%h_IelementList,15)))
 

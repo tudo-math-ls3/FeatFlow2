@@ -53,7 +53,7 @@ contains
 !<input>
     ! A list of row numbers of all the rows which are to be replaced
     ! by unit vectors.
-    integer(PREC_MATIDX), intent(IN), dimension(:) :: Irows
+    integer, intent(IN), dimension(:) :: Irows
 !</input>
 
 !<inputoutput>
@@ -84,14 +84,14 @@ contains
     
     subroutine replaceLines_format9 (rmatrix,Irows)
       
-      integer(PREC_MATIDX), intent(IN), dimension(:) :: Irows
+      integer, intent(IN), dimension(:) :: Irows
       type(t_matrixScalar), intent(INOUT) :: rmatrix
       
       ! local variables
-      integer(PREC_MATIDX) :: irow
+      integer :: irow
       real(DP), dimension(:), pointer :: p_DA
       real(SP), dimension(:), pointer :: p_FA
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kld,p_Kdiagonal
+      integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
       
       ! Get Kld and Kdiagonal
       call lsyssc_getbase_Kld(rmatrix,p_Kld)
@@ -152,12 +152,12 @@ contains
     
     subroutine replaceLines_format7 (rmatrix,Irows)
       
-      integer(PREC_MATIDX), intent(IN), dimension(:) :: Irows
+      integer, intent(IN), dimension(:) :: Irows
       type(t_matrixScalar), intent(INOUT) :: rmatrix
       
       ! local variables
-      integer(PREC_MATIDX) :: irow
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+      integer :: irow
+      integer, dimension(:), pointer :: p_Kld
       real(DP), dimension(:), pointer :: p_DA
       real(SP), dimension(:), pointer :: p_FA
       
@@ -231,7 +231,7 @@ contains
 !<input>
     ! A list of row numbers of all the rows which are to be replaced
     ! by unit vectors.
-    integer(PREC_MATIDX), intent(IN), dimension(:) :: Irows
+    integer, intent(IN), dimension(:) :: Irows
 !</input>
 
 !<inputoutput>
@@ -262,14 +262,14 @@ contains
     
     subroutine removeOffdiags_format9 (rmatrix,Irows)
       
-      integer(PREC_MATIDX), intent(IN), dimension(:) :: Irows
+      integer, intent(IN), dimension(:) :: Irows
       type(t_matrixScalar), intent(INOUT) :: rmatrix
       
       ! local variables
-      integer(PREC_MATIDX) :: irow
+      integer :: irow
       real(DP), dimension(:), pointer :: p_DA
       real(SP), dimension(:), pointer :: p_FA
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kld,p_Kdiagonal
+      integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
       real(DP) :: ddiag,fdiag
       
       ! Get Kld and Kdiagonal
@@ -327,12 +327,12 @@ contains
     
     subroutine removeOffdiags_format7 (rmatrix,Irows)
       
-      integer(PREC_MATIDX), intent(IN), dimension(:) :: Irows
+      integer, intent(IN), dimension(:) :: Irows
       type(t_matrixScalar), intent(INOUT) :: rmatrix
       
       ! local variables
-      integer(PREC_MATIDX) :: irow
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+      integer :: irow
+      integer, dimension(:), pointer :: p_Kld
       real(DP), dimension(:), pointer :: p_DA
       real(SP), dimension(:), pointer :: p_FA
       
@@ -388,7 +388,7 @@ contains
 !<input>
     ! A list of row numbers of all the rows which are to be replaced
     ! by unit vectors.
-    integer(PREC_MATIDX), intent(IN), dimension(:) :: Irows
+    integer, intent(IN), dimension(:) :: Irows
 !</input>
 
 !<inputoutput>
@@ -417,14 +417,14 @@ contains
     
     subroutine replaceLinesZero_format97 (rmatrix,Irows)
       
-      integer(PREC_MATIDX), intent(IN), dimension(:) :: Irows
+      integer, intent(IN), dimension(:) :: Irows
       type(t_matrixScalar), intent(INOUT) :: rmatrix
     
       ! local variables
-      integer(PREC_MATIDX) :: irow
+      integer :: irow
       real(DP), dimension(:), pointer :: p_DA
       real(SP), dimension(:), pointer :: p_FA
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kld,p_Kdiagonal
+      integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
       
       ! Get Kld and Kdiagonal
       call lsyssc_getbase_Kld(rmatrix,p_Kld)
@@ -476,7 +476,7 @@ contains
 
 !<input>
     ! A list of row numbers of all the rows which are to be merged.
-    integer(PREC_MATIDX), intent(IN), dimension(:,:) :: Irows
+    integer, intent(IN), dimension(:,:) :: Irows
     
     ! OPTIONAL: If bsymmetric=.TRUE. the sparsity pattern will be symmetric
     logical, intent(IN), optional                    :: bsymmetric
@@ -490,9 +490,9 @@ contains
 !</subroutine>
 
     ! local variables
-     integer(PREC_VECIDX), dimension(:), pointer :: p_Kld,p_ImergeWithRow
-     integer(PREC_MATIDX), dimension(:), pointer :: p_Kcol
-     integer(PREC_MATIDX) :: ieq,ild,jld,irow,jrow,icol,jcol,naIncr
+     integer, dimension(:), pointer :: p_Kld,p_ImergeWithRow
+     integer, dimension(:), pointer :: p_Kcol
+     integer :: ieq,ild,jld,irow,jrow,icol,jcol,naIncr
      integer              :: h_ImergeWithRow
 
     ! Check, if matrix is not a copy of another matrix or if resize is to be enforced
@@ -612,12 +612,12 @@ contains
 
     subroutine mergeLines_format7(rmatrix, ImergeWithRow)
       type(t_matrixScalar), intent(INOUT)            :: rmatrix
-      integer(PREC_MATIDX), intent(IN), dimension(:) :: ImergeWithRow
+      integer, intent(IN), dimension(:) :: ImergeWithRow
       
       ! local variables
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kld
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kcol
-      integer(PREC_MATIDX) :: ieq,jeq,ild,jld,irow,jrow,icol,jcol,na,naIncr
+      integer, dimension(:), pointer :: p_Kld
+      integer, dimension(:), pointer :: p_Kcol
+      integer :: ieq,jeq,ild,jld,irow,jrow,icol,jcol,na,naIncr
 
       ! Get Kld and Kcol
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
@@ -779,12 +779,12 @@ contains
 
     subroutine mergeLines_format9(rmatrix, ImergeWithRow)
       type(t_matrixScalar), intent(INOUT)            :: rmatrix
-      integer(PREC_MATIDX), intent(IN), dimension(:) :: ImergeWithRow
+      integer, intent(IN), dimension(:) :: ImergeWithRow
       
       ! local variables
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kld,p_Kdiagonal
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kcol
-      integer(PREC_MATIDX) :: ieq,jeq,ild,jld,irow,jrow,icol,jcol,na,naIncr
+      integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
+      integer, dimension(:), pointer :: p_Kcol
+      integer :: ieq,jeq,ild,jld,irow,jrow,icol,jcol,na,naIncr
       
       ! Get Kld, Kcol and Kdiagonal
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
@@ -932,13 +932,13 @@ contains
 
     subroutine mergeColumns_format7(rmatrix, ImergeWithRow)
       type(t_matrixScalar), intent(INOUT)            :: rmatrix
-      integer(PREC_MATIDX), intent(IN), dimension(:) :: ImergeWithRow
+      integer, intent(IN), dimension(:) :: ImergeWithRow
       
       ! local variables
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kld
-      integer(PREC_VECIDX), dimension(:), pointer :: p_KldAux
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kcol,p_KcolAux
-      integer(PREC_MATIDX) :: ieq,ild,jld,jjld,icol,jcol,na,naIncr,idxIncr,iidxIncr
+      integer, dimension(:), pointer :: p_Kld
+      integer, dimension(:), pointer :: p_KldAux
+      integer, dimension(:), pointer :: p_Kcol,p_KcolAux
+      integer :: ieq,ild,jld,jjld,icol,jcol,na,naIncr,idxIncr,iidxIncr
       integer              :: h_KldAux,h_KcolAux
 
       ! Allocate temporal memory
@@ -1073,13 +1073,13 @@ contains
 
     subroutine mergeColumns_format9(rmatrix, ImergeWithRow)
       type(t_matrixScalar), intent(INOUT)            :: rmatrix
-      integer(PREC_MATIDX), intent(IN), dimension(:) :: ImergeWithRow
+      integer, intent(IN), dimension(:) :: ImergeWithRow
       
       ! local variables
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kld,p_Kdiagonal
-      integer(PREC_VECIDX), dimension(:), pointer :: p_KldAux
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kcol,p_KcolAux
-      integer(PREC_MATIDX) :: ieq,ild,jld,jjld,icol,jcol,na,naIncr,idxIncr,iidxIncr
+      integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
+      integer, dimension(:), pointer :: p_KldAux
+      integer, dimension(:), pointer :: p_Kcol,p_KcolAux
+      integer :: ieq,ild,jld,jjld,icol,jcol,na,naIncr,idxIncr,iidxIncr
       integer              :: h_KldAux,h_KcolAux
 
       ! Allocate temporal memory
@@ -1232,7 +1232,7 @@ contains
     ! to be replaced by unit vectors. These numbers are not global DOF's 
     ! but the starting indices relative to the block row iblockRow
     ! (e.g. "1" identifies the first row in the block row iblockrow).
-    integer(PREC_MATIDX), intent(IN), dimension(:) :: Irows
+    integer, intent(IN), dimension(:) :: Irows
   !</input>
 
   !<inputoutput>

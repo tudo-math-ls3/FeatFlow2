@@ -6180,7 +6180,7 @@ p_InodalPropertyDest = -4711
 
     ! Allocate memory for InodalProperty 
     call storage_new ('tria_generateSubdomain', 'KNPR', &
-        int(rtriaDest%NVT,I32), ST_INT, &
+        rtriaDest%NVT, ST_INT, &
         rtriaDest%h_InodalProperty, ST_NEWBLOCK_ZERO)
 
     ! Get pointers to the nodal property array
@@ -7018,7 +7018,7 @@ p_InodalPropertyDest = -4711
 
       ! Allocate memory for IverticesAtBoundary.
       call storage_new ('genRawBoundary2D', &
-          'KVBD', int(rtriangulation%NVBD,I32), &
+          'KVBD', rtriangulation%NVBD, &
           ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
           
       ! Allocate memory for the boundary component index vector.
@@ -8353,7 +8353,7 @@ p_InodalPropertyDest = -4711
           ! at which our local edge starts, then the corresponding twist bit
           ! is 0, otherwise it is 1.
           if(ivt .ne. p_IverticesAtelement(imt,iel)) then
-            itwist = ior(itwist, ishft(1,imt-1))
+            itwist = ior(itwist, int(ishft(1,imt-1),I32))
           end if
         
         end do ! imt
@@ -8446,7 +8446,7 @@ p_InodalPropertyDest = -4711
           do imt = 1, TRIA_NNETET3D
             if(p_IverticesAtEdge(1,p_IedgesAtElement(imt,iel)) .ne. &
                p_IverticesAtElement(Itev(imt),iel)) then
-               itwist = ior(itwist,ishft(1,imt-1))
+               itwist = ior(itwist,int(ishft(1,imt-1),I32))
              end if
           end do ! imt
           
@@ -8465,9 +8465,9 @@ p_InodalPropertyDest = -4711
             ! Calculate orientation
             if(p_IverticesAtFace(mod(ivt,Itav(iat))+1,iface) .ne. &
               p_IverticesAtElement(Itfn(iat),iel)) then
-              itwist = ior(itwist, ishft(ivt+3,9+3*iat))
+              itwist = ior(itwist, int(ishft(ivt+3,9+3*iat),I32))
             else
-              itwist = ior(itwist, ishft(ivt-1,9+3*iat))
+              itwist = ior(itwist, int(ishft(ivt-1,9+3*iat),I32))
             end if
           end do ! iat
         
@@ -8478,7 +8478,7 @@ p_InodalPropertyDest = -4711
           do imt = 1, TRIA_NNEPYR3D
             if(p_IverticesAtEdge(1,p_IedgesAtElement(imt,iel)) .ne. &
                p_IverticesAtElement(Iyev(imt),iel)) then
-               itwist = ior(itwist,ishft(1,imt-1))
+               itwist = ior(itwist,int(ishft(1,imt-1),I32))
              end if
           end do ! imt
 
@@ -8497,9 +8497,9 @@ p_InodalPropertyDest = -4711
             ! Calculate orientation
             if(p_IverticesAtFace(mod(ivt,Iyav(iat))+1,iface) .ne. &
               p_IverticesAtElement(Iyfn(iat),iel)) then
-              itwist = ior(itwist, ishft(ivt+3,9+3*iat))
+              itwist = ior(itwist, int(ishft(ivt+3,9+3*iat),I32))
             else
-              itwist = ior(itwist, ishft(ivt-1,9+3*iat))
+              itwist = ior(itwist, int(ishft(ivt-1,9+3*iat),I32))
             end if
           end do ! iat
 
@@ -8510,7 +8510,7 @@ p_InodalPropertyDest = -4711
           do imt = 1, TRIA_NNEPRIS3D
             if(p_IverticesAtEdge(1,p_IedgesAtElement(imt,iel)) .ne. &
                p_IverticesAtElement(Irev(imt),iel)) then
-               itwist = ior(itwist,ishft(1,imt-1))
+               itwist = ior(itwist,int(ishft(1,imt-1),I32))
              end if
           end do ! imt
           
@@ -8529,9 +8529,9 @@ p_InodalPropertyDest = -4711
             ! Calculate orientation
             if(p_IverticesAtFace(mod(ivt,Irav(iat))+1,iface) .ne. &
               p_IverticesAtElement(Irfn(iat),iel)) then
-              itwist = ior(itwist, ishft(ivt+3,9+3*iat))
+              itwist = ior(itwist, int(ishft(ivt+3,9+3*iat),I32))
             else
-              itwist = ior(itwist, ishft(ivt-1,9+3*iat))
+              itwist = ior(itwist, int(ishft(ivt-1,9+3*iat),I32))
             end if
           end do ! iat
 
@@ -8542,7 +8542,7 @@ p_InodalPropertyDest = -4711
           do imt = 1, TRIA_NNEHEXA3D
             if(p_IverticesAtEdge(1,p_IedgesAtElement(imt,iel)) .ne. &
                p_IverticesAtElement(Ihev(imt),iel)) then
-               itwist = ior(itwist,ishft(1,imt-1))
+               itwist = ior(itwist,int(ishft(1,imt-1),I32))
              end if
           end do ! imt
           
@@ -8561,9 +8561,9 @@ p_InodalPropertyDest = -4711
             ! Calculate orientation
             if(p_IverticesAtFace(mod(ivt,Ihav(iat))+1,iface) .ne. &
               p_IverticesAtElement(Ihfn(iat),iel)) then
-              itwist = ior(itwist, ishft(ivt+3,9+3*iat))
+              itwist = ior(itwist, int(ishft(ivt+3,9+3*iat),I32))
             else
-              itwist = ior(itwist, ishft(ivt-1,9+3*iat))
+              itwist = ior(itwist, int(ishft(ivt-1,9+3*iat),I32))
             end if
           end do ! iat
 
@@ -10037,7 +10037,7 @@ p_InodalPropertyDest = -4711
 
     ! Allocate memory for InodalProperty 
     call storage_new ('tria_readRawTriangulation1D', 'KNPR', &
-        int(rtriangulation%NVT,I32), ST_INT, &
+        rtriangulation%NVT, ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
     
     ! Get the pointer to the InodalProperty array
@@ -11136,7 +11136,7 @@ p_InodalPropertyDest = -4711
 
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IneighboursAtElement .eq. ST_NOHANDLE) then
-      Isize = (/nnve,int(rtriangulation%NEL,I32)/)
+      Isize = (/nnve,rtriangulation%NEL/)
       call storage_new2D ('tria_genNeighboursAtElement2D', 'KADJ', &
           Isize, ST_INT, &
           rtriangulation%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT)

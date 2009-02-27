@@ -163,7 +163,7 @@ contains
     case (EL_PN_1D)
       ! DOF's in the vertices + cells
       NDFG_uniform1D = rtriangulation%NVT + rtriangulation%NEL * &
-                       iand(ishft(ieltype,-16),255)
+                       iand(ishft(ieltype,-16),255_I32)
     end select
     
     end function
@@ -493,7 +493,7 @@ contains
       case (EL_PN_1D)
         ! DOF's in the vertices
         call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
-        call dof_locGlobUniMult_PN_1D(iand(ishft(ieltype,-16),255), &
+        call dof_locGlobUniMult_PN_1D(iand(int(ishft(ieltype,-16)),255), &
             p_rtriangulation%NVT, p_rtriangulation%NEL, p_2darray, IelIdx, IdofGlob)
         return
       end select
@@ -1977,8 +1977,8 @@ contains
         // sys_siL(i,8) &
         // sys_siL(p_relementDistr%NEL,16) &
         // sys_siL(elem_igetNVE(p_relementDistr%celement),6) &
-        // sys_siL(iand(elem_getPrimaryElement(p_relementDistr%celement),&
-                   not(EL_DIMENSION)),16) )
+        // sys_siL(int(iand(elem_getPrimaryElement(p_relementDistr%celement),&
+                   not(EL_DIMENSION))),16) )
       
     end do
     

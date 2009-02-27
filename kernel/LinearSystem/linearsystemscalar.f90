@@ -477,7 +477,7 @@ module linearsystemscalar
     ! Length of the vector; not necessarily = SIZE(p_Ddata), as this
     ! scalar vector might be a subvector of a larger vector allocated
     ! on the heap!
-    integer(PREC_VECIDX) :: NEQ = 0
+    integer :: NEQ = 0
     
     ! Number of local variables; in general, scalar vectors of size
     ! NEQ posses NEQ entries. However, scalar vectors can be
@@ -528,7 +528,7 @@ module linearsystemscalar
     ! Start position of the vector data in the array identified by
     ! h_Ddata. Normally = 1. Can be set to > 1 if the vector is a subvector
     ! in a larger memory block allocated on the heap.
-    integer(PREC_VECIDX) :: iidxFirstEntry = 1
+    integer :: iidxFirstEntry = 1
     
     ! Integer tags. This array of integer values can be used to store
     ! auxiliary tags which depend on the application.
@@ -578,21 +578,21 @@ module linearsystemscalar
     integer(I32) :: imatrixSpec = LSYSSC_MSPEC_STANDARD
     
     ! Number of elements in the matrix
-    integer(PREC_MATIDX) :: NA  = 0
+    integer :: NA  = 0
     
     ! Number of equations = rows in the matrix.
     ! Remark: When the application sets the LSYSSC_MSPEC_TRANSPOSED flag
     !  in imatrixSpec to indicate a transposed matrix, this has to be 
     !  exchanged with NCOLS to indicate the number of equations in the
     !  transposed matrix!
-    integer(PREC_VECIDX) :: NEQ = 0
+    integer :: NEQ = 0
 
     ! Number of columns in the matrix.
     ! Remark: When the application sets the LSYSSC_MSPEC_TRANSPOSED flag
     !  in imatrixSpec to indicate a transposed matrix, this has to be 
     !  exchanged with NROWS to indicate the number of columns in the
     !  transposed matrix!
-    integer(PREC_VECIDX) :: NCOLS = 0
+    integer :: NCOLS = 0
 
     ! Number of variables for interleaved matrix.
     ! Remark: When an interleaved matrix is defined, then each
@@ -648,7 +648,7 @@ module linearsystemscalar
     integer :: h_DA = ST_NOHANDLE
     
     ! Format-7 and Format-9: Handle identifying the column structure
-    !INTEGER(PREC_MATIDX), DIMENSION(:), POINTER    :: KCOL       => NULL()
+    !integer, DIMENSION(:), POINTER    :: KCOL       => NULL()
     integer :: h_Kcol = ST_NOHANDLE
     
     ! Format-7 and Format-9: Handle identifying the row structure
@@ -847,7 +847,7 @@ contains
 
 !</subroutine>
 
-  integer(PREC_VECIDX) :: NCOLS
+  integer :: NCOLS
 
   ! We assume that we are not compatible
   if (present(bcompatible)) bcompatible = .false.
@@ -1044,7 +1044,7 @@ contains
 
 !</subroutine>
 
-    integer(PREC_DOFIDX) :: NEQ
+    integer :: NEQ
 
     ! We assume that we are compatible
     if (present(bcompatible)) bcompatible = .true.
@@ -1562,7 +1562,7 @@ contains
 !<input>
   
   ! Desired length of the vector
-  integer(PREC_VECIDX), intent(IN)                  :: NEQ
+  integer, intent(IN)                  :: NEQ
 
   ! Whether to fill the vector with zero initially
   logical, intent(IN)                               :: bclear
@@ -1572,7 +1572,7 @@ contains
   integer, intent(IN), optional                     :: cdataType  
 
   ! OPTIONAL: Maximum length of the vector
-  integer(PREC_VECIDX), intent(IN), optional        :: NEQMAX
+  integer, intent(IN), optional        :: NEQMAX
   
 !</input>
 
@@ -1584,7 +1584,7 @@ contains
 !</subroutine>
 
   integer ::cdata
-  integer(PREC_VECIDX) :: isize
+  integer :: isize
 
     cdata = ST_DOUBLE
     if (present(cdataType)) cdata=cdataType
@@ -1633,7 +1633,7 @@ contains
 !<input>
   
   ! Desired length of the vector
-  integer(PREC_VECIDX), intent(IN)                  :: NEQ
+  integer, intent(IN)                  :: NEQ
 
   ! Desired number of local variables
   integer, intent(IN)                               :: NVAR
@@ -1646,7 +1646,7 @@ contains
   integer, intent(IN), optional                     :: cdataType  
 
   ! OPTIONAL: Maximum length of the vector
-  integer(PREC_VECIDX), intent(IN), optional        :: NEQMAX
+  integer, intent(IN), optional        :: NEQMAX
   
 !</input>
 
@@ -1658,7 +1658,7 @@ contains
 !</subroutine>
 
   integer ::cdata
-  integer(PREC_VECIDX) :: isize
+  integer :: isize
 
     cdata = ST_DOUBLE
     if (present(cdataType)) cdata=cdataType
@@ -1723,7 +1723,7 @@ contains
   integer, intent(IN),optional                     :: cdataType
 
   ! OPTIONAL: Maximum length of the vector
-  integer(PREC_VECIDX), intent(IN), optional       :: NEQMAX
+  integer, intent(IN), optional       :: NEQMAX
 !</input>
 
 !<output>
@@ -1735,7 +1735,7 @@ contains
 !</subroutine>
 
   integer :: cdata
-  integer(PREC_VECIDX) :: NEQ
+  integer :: NEQ
   logical :: bcl
   
   cdata = ST_DOUBLE
@@ -1795,7 +1795,7 @@ contains
   integer, intent(IN),optional                     :: cdataType
 
   ! OPTIONAL: Maximum length of the vector
-  integer(PREC_VECIDX), intent(IN), optional       :: NEQMAX
+  integer, intent(IN), optional       :: NEQMAX
 !</input>
 
 !<output>
@@ -1807,7 +1807,7 @@ contains
 !</subroutine>
 
   integer :: cdata
-  integer(PREC_VECIDX) :: NEQ
+  integer :: NEQ
   logical :: bcl
   
   cdata = ST_DOUBLE
@@ -1873,7 +1873,7 @@ contains
 
     ! local variables
     integer :: cdata
-    integer(PREC_VECIDX) :: NEQ, NCOLS
+    integer :: NEQ, NCOLS
 
     cdata = ST_DOUBLE
     if (present(cdataType)) cdata = cdataType
@@ -1949,7 +1949,7 @@ contains
 !<input>
 
     ! Desired length of the vector
-    integer(PREC_VECIDX), intent(IN)           :: NEQ  
+    integer, intent(IN)           :: NEQ  
 
     ! Whether to fill the vector with zero initially
     logical, intent(IN)                        :: bclear
@@ -1958,7 +1958,7 @@ contains
     logical, intent(IN), optional              :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
-    integer(PREC_VECIDX), intent(IN), optional :: NEQMAX
+    integer, intent(IN), optional :: NEQMAX
 
 !</input>
 
@@ -1971,7 +1971,7 @@ contains
 
 !</subroutine>
 
-    integer(PREC_VECIDX) :: iNEQ,isize
+    integer :: iNEQ,isize
     logical :: bdocopy
 
     ! Check, that vector is not a copy of another (possibly larger) vector
@@ -2100,7 +2100,7 @@ contains
 
 !</subroutine>
 
-    integer(PREC_VECIDX) :: isize,iNEQMAX
+    integer :: isize,iNEQMAX
 
     ! Check, if vector is a copy of another (possibly larger) vector
     if (rvector%bisCopy) then
@@ -2259,13 +2259,13 @@ contains
 !<input>
 
     ! Desired number of equations
-    integer(PREC_VECIDX), intent(IN)           :: NEQ
+    integer, intent(IN)           :: NEQ
 
     ! Desired number of columns
-    integer(PREC_VECIDX), intent(IN)           :: NCOLS
+    integer, intent(IN)           :: NCOLS
 
     ! Desired number of elements
-    integer(PREC_MATIDX), intent(IN)           :: NA
+    integer, intent(IN)           :: NA
 
     ! Whether to fill the matrix with zero initially
     logical, intent(IN)                        :: bclear
@@ -2274,13 +2274,13 @@ contains
     logical, intent(IN), optional              :: bcopy
 
     ! OPTIONAL: Maximum number of equations
-    integer(PREC_VECIDX), intent(IN), optional :: NEQMAX
+    integer, intent(IN), optional :: NEQMAX
 
     ! OPTIONAL: Maximum number of columns
-    integer(PREC_VECIDX), intent(IN), optional :: NCOLSMAX
+    integer, intent(IN), optional :: NCOLSMAX
 
     ! OPTIONAL: Maximum number of elements
-    integer(PREC_MATIDX), intent(IN), optional :: NAMAX
+    integer, intent(IN), optional :: NAMAX
 
     ! OPTIONAL: Wether to enforce resize even if matrix is copied from another matrix
     logical, intent(IN), optional              :: bforce
@@ -2297,8 +2297,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX) :: iNA,isize,isizeNew
-    integer(PREC_VECIDX) :: iNEQ,iNCOLS
+    integer :: iNA,isize,isizeNew
+    integer :: iNEQ,iNCOLS
     logical :: bdocopy,bdoresize,btransposed
 
     ! Check if resize should be forced
@@ -2807,7 +2807,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX) :: isize,isizeTmp
+    integer :: isize,isizeTmp
     logical :: bdocopy,bdoresize
 
     ! Check if resize should be forced
@@ -3548,13 +3548,13 @@ contains
     real(DP), intent(IN)                              :: cx
     real(DP), intent(IN)                              :: cy
     type(t_vectorScalar), intent(INOUT)               :: ry
-    integer(PREC_VECIDX), intent(IN)                  :: NEQ
+    integer, intent(IN)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_MATIDX) :: ia
-    integer(PREC_VECIDX) :: irow,icol
+    integer, dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kcol
+    integer :: ia
+    integer :: irow,icol
     real(DP) :: dt
 
       ! Get the matrix
@@ -3660,12 +3660,12 @@ contains
     subroutine lsyssc_qLAX79doubledouble (DA,Kcol,Kld,Dx,Dy,cx,cy,NEQ)
 
     ! The matrix
-    integer(PREC_VECIDX), dimension(*), intent(IN) :: KCOL
-    integer(PREC_MATIDX), dimension(*), intent(IN) :: KLD
+    integer, dimension(*), intent(IN) :: KCOL
+    integer, dimension(*), intent(IN) :: KLD
     real(DP), dimension(*), intent(IN) :: DA
     
     ! Size of the vectors
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
 
     ! The vectors
     real(DP), dimension(*), intent(IN) :: Dx
@@ -3674,8 +3674,8 @@ contains
     ! Multiplication factors for the vectors.
     real(DP) :: cx,cy
     
-    integer(PREC_MATIDX) :: ia
-    integer(PREC_VECIDX) :: irow,icol
+    integer :: ia
+    integer :: irow,icol
     real(DP) :: dtmp
 
       ! Perform the multiplication
@@ -3767,12 +3767,12 @@ contains
     real(DP), intent(IN)                              :: cx
     real(DP), intent(IN)                              :: cy
     type(t_vectorScalar), intent(INOUT)               :: ry
-    integer(PREC_VECIDX), intent(IN)                  :: NEQ
+    integer, intent(IN)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_VECIDX) :: irow,icol,ia
+    integer, dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kcol
+    integer :: irow,icol,ia
     real(DP) :: dtmp
     integer :: ivar,jvar
     integer :: NVAR
@@ -3910,12 +3910,12 @@ contains
     real(DP), intent(IN)                              :: cx
     real(DP), intent(IN)                              :: cy
     type(t_vectorScalar), intent(INOUT)               :: ry
-    integer(PREC_VECIDX), intent(IN)                  :: NEQ
+    integer, intent(IN)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_VECIDX) :: irow,icol,ia
+    integer, dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kcol
+    integer :: irow,icol,ia
     real(DP) :: dtmp
     integer :: ivar,jvar
     integer :: NVAR
@@ -4039,11 +4039,11 @@ contains
     real(DP), intent(IN)                              :: cx
     real(DP), intent(IN)                              :: cy
     type(t_vectorScalar), intent(INOUT)               :: ry
-    integer(PREC_VECIDX), intent(IN)                  :: NEQ
+    integer, intent(IN)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     real(DP) :: dtmp
-    integer(PREC_VECIDX) :: irow
+    integer :: irow
     integer :: ivar,NVAR
 
       ! Get the matrix - it's an 1D array
@@ -4155,13 +4155,13 @@ contains
     real(DP), intent(IN)                              :: cx
     real(DP), intent(IN)                              :: cy
     type(t_vectorScalar), intent(INOUT)               :: ry
-    integer(PREC_VECIDX), intent(IN)                  :: NEQ
+    integer, intent(IN)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_MATIDX) :: ia
-    integer(PREC_VECIDX) :: irow,icol
+    integer, dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kcol
+    integer :: ia
+    integer :: irow,icol
     real(DP) :: dtmp
 
       ! Get the matrix
@@ -4314,7 +4314,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_VECIDX) :: ioffset,cdataType
+    integer :: ioffset,cdataType
     logical :: bisCopy
     integer :: h_Ddata
     
@@ -4434,7 +4434,7 @@ contains
     type(t_vectorScalar), intent(INOUT) :: ry
 
       ! local variables
-      integer(PREC_VECIDX) :: NEQ,NVAR
+      integer :: NEQ,NVAR
     
       NEQ = rx%NEQ
       NVAR= rx%NVAR
@@ -4614,7 +4614,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX) :: isize
+    integer :: isize
   
     ! What do we have to do for the structure?
     select case (cdupStructure)
@@ -4770,11 +4770,11 @@ contains
         select case(rsourceMatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
           call storage_new('lsyssc_duplicateMatrix', 'DA', &
-              int(rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NVAR,I32), &
+              rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NVAR, &
               rsourceMatrix%cdataType, rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
         case (LSYSSC_MATRIXD)
           call storage_new('lsyssc_duplicateMatrix', 'DA', &
-              int(rdestMatrix%NA*rdestMatrix%NVAR,I32),rsourceMatrix%cdataType, &
+              rdestMatrix%NA*rdestMatrix%NVAR,rsourceMatrix%cdataType, &
               rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
         case DEFAULT
           print *, 'lsyssc_duplicateMatrix: wrong matrix format of interleaved matrix'
@@ -5117,8 +5117,8 @@ contains
 
       ! local variables
       integer(I32) :: iflag,iflag2
-      integer(PREC_MATIDX) :: isize
-      integer(PREC_VECIDX) :: NEQ
+      integer :: isize
+      integer :: NEQ
       logical :: bremove 
     
       ! Overwrite structural data
@@ -5678,8 +5678,8 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_Ddata
     real(SP), dimension(:), pointer :: p_Fdata
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kdiagonal
-    integer(PREC_VECIDX) :: i
+    integer, dimension(:), pointer :: p_Kdiagonal
+    integer :: i
 
     if (rmatrix%NEQ .le. 0) return ! Empty matrix
 
@@ -5822,15 +5822,15 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_VECIDX) :: i
+  integer :: i
   integer :: ihandle
   real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kld,p_Kdiagonal
+  integer, dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
   logical :: bentries,bstrucOwner,bentryOwner
-  integer(PREC_MATIDX) :: NA,iA
-  integer(PREC_VECIDX) :: j,nrows,ncols
-  integer(I32) :: h_Da,h_Kcol,h_Kld,h_Kdiagonal
+  integer :: NA,iA
+  integer :: j,nrows,ncols
+  integer :: h_Da,h_Kcol,h_Kld,h_Kdiagonal
 
   ! Matrix is already in that format.
   if (rmatrix%cmatrixFormat .eq. cmatrixFormat) return
@@ -6443,18 +6443,18 @@ contains
 
 !<input>
   ! Row structure in the matrix
-  integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld
+  integer, dimension(:), intent(IN) :: Kld
 
   ! Column structure of the matrix
-  integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Kcol
+  integer, dimension(:), intent(INOUT) :: Kcol
 
   ! Dimension of the matrix
-  integer(I32), intent(IN) :: neq
+  integer, intent(IN) :: neq
 !</input>
 
 !<output>
   ! Pointers to the diagonal entries of the matrix.
-  integer(PREC_MATIDX), dimension(:), intent(OUT) :: Kdiagonal
+  integer, dimension(:), intent(OUT) :: Kdiagonal
 !</output>
 
 !</subroutine>
@@ -6499,10 +6499,10 @@ contains
 
 !<input>
   ! Row pointer in the matrix
-  integer(PREC_VECIDX), dimension(:), intent(IN) :: Kld
+  integer, dimension(:), intent(IN) :: Kld
 
   ! Dimension of the matrix
-  integer(I32), intent(IN) :: neq
+  integer, intent(IN) :: neq
 
   ! Dimension of the interleaved submatrices (if any)
   integer, intent(IN), optional :: nintl
@@ -6516,12 +6516,12 @@ contains
   
   ! On input:  the column numbers to be resorted,
   ! On output: the resorted column numbers
-  integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Kcol
+  integer, dimension(:), intent(INOUT) :: Kcol
 !</inputoutput>
 
 !<output>
   ! Pointers to the diagonal entries of the matrix.
-  integer(PREC_MATIDX), dimension(:), intent(OUT) :: Kdiagonal
+  integer, dimension(:), intent(OUT) :: Kdiagonal
 !</output>
 
 !</subroutine>
@@ -6539,7 +6539,7 @@ contains
     if (present(nintl)) then
 
       ! Allocate memory for auxiliary vector
-      call storage_new1D ('lsyssc_sortCSRdouble', 'Daux', int(nintl,I32), &
+      call storage_new1D ('lsyssc_sortCSRdouble', 'Daux', nintl, &
           ST_DOUBLE, h_Daux,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double(h_Daux,Daux)
       
@@ -6661,13 +6661,13 @@ contains
 
 !<input>
   ! Row pointer in the matrix
-  integer(PREC_VECIDX), dimension(:), intent(IN) :: Kld
+  integer, dimension(:), intent(IN) :: Kld
 
   ! Dimension of the matrix
-  integer(I32), intent(IN) :: neq
+  integer, intent(IN) :: neq
 
   ! Pointers to the diagonal entries of the matrix.
-  integer(PREC_MATIDX), dimension(:), intent(IN) :: Kdiagonal
+  integer, dimension(:), intent(IN) :: Kdiagonal
 
   ! Dimension of the interleave submatrices (if any)
   integer, intent(IN), optional :: nintl
@@ -6681,7 +6681,7 @@ contains
   
   ! On input:  the column numbers to be resorted,
   ! On output: the resorted column numbers
-  integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Kcol
+  integer, dimension(:), intent(INOUT) :: Kcol
 !</inputoutput>
 
 !</subroutine>
@@ -6699,7 +6699,7 @@ contains
     if (present(nintl)) then
 
       ! Allocate memory for auxiliary vector
-      call storage_new1D ('lsyssc_sortCSRdouble', 'Daux', int(nintl,I32), &
+      call storage_new1D ('lsyssc_sortCSRdouble', 'Daux', nintl, &
           ST_DOUBLE, h_Daux,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double(h_Daux,Daux)
 
@@ -6952,10 +6952,10 @@ contains
 
   ! local variables
   integer :: h_Iperm
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
+  integer, dimension(:), pointer :: p_Iperm
   real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
   real(SP), dimension(:), pointer :: p_Fdata,p_Fdata2
-  integer(PREC_VECIDX) :: NEQ
+  integer :: NEQ
   
     ! Desired sorting strategy and currently active sorting strategy identical?
     if (.not. present(h_IsortPermutation)) then
@@ -7225,8 +7225,8 @@ contains
 
   ! local variables
   integer :: h_Iperm, isortStrat
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Iperm
-  integer(PREC_VECIDX) :: NEQ
+  integer, dimension(:), pointer :: p_Iperm
+  integer :: NEQ
   type(t_matrixScalar), pointer :: p_rmatrix
   logical :: bsortEntriesTmp
   
@@ -7375,10 +7375,10 @@ contains
     type(t_matrixScalar), intent(INOUT) :: rmatrix
     
     ! The transformation to use
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Itr1
+    integer, dimension(:), intent(IN) :: Itr1
     
     ! The inverse transformation
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Itr2
+    integer, dimension(:), intent(IN) :: Itr2
     
     ! TRUE  = sort matrix structure + entries
     ! FALSE = sort only matrix structure
@@ -7386,12 +7386,12 @@ contains
     
     ! local variables
     
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld,p_KldTmp,p_Kdiag
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol,p_KcolTmp
+    integer, dimension(:), pointer :: p_Kld,p_KldTmp,p_Kdiag
+    integer, dimension(:), pointer :: p_Kcol,p_KcolTmp
     real(DP), dimension(:), pointer :: p_Ddata,p_DdataTmp
     real(SP), dimension(:), pointer :: p_Fdata,p_FdataTmp
     type(t_matrixScalar) :: rtempMatrix
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     
       NEQ = rmatrix%NEQ
     
@@ -7672,22 +7672,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     real(DP), dimension(:), intent(IN) :: DaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -7697,20 +7697,20 @@ contains
     real(DP), dimension(:), intent(OUT) :: Da
 
     ! Column structure of destination matrix
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(OUT) :: Icol
     
     ! Row positions of destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(OUT) :: Ild
     
 !</output>
     
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
 
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -7800,22 +7800,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     real(SP), dimension(:), intent(IN) :: FaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -7825,20 +7825,20 @@ contains
     real(SP), dimension(:), intent(OUT) :: Fa
 
     ! Column structure of destination matrix
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(OUT) :: Icol
     
     ! Row positions of destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(OUT) :: Ild
     
 !</output>
     
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
     
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -7927,22 +7927,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     integer, dimension(:), intent(IN) :: IaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -7952,20 +7952,20 @@ contains
     integer, dimension(:), intent(OUT) :: Ia
 
     ! Column structure of destination matrix
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(OUT) :: Icol
     
     ! Row positions of destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(OUT) :: Ild
     
 !</output>
     
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
     
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -8055,22 +8055,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     real(DP), dimension(:), intent(IN) :: DaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -8084,10 +8084,10 @@ contains
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
 
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -8170,22 +8170,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     real(SP), dimension(:), intent(IN) :: FaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -8199,10 +8199,10 @@ contains
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
     
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -8284,22 +8284,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     integer, dimension(:), intent(IN) :: IaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -8313,10 +8313,10 @@ contains
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
     
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -8397,37 +8397,37 @@ contains
 !<input>
 
     ! Number of equations
-    integer(PREC_VECIDX) , intent(IN) :: neq
+    integer , intent(IN) :: neq
 
     ! Permutation of 1..neq describing how to resort
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing how to sort
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
 !<inputoutput>
 
     ! Column description of matrix
-    integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Icol
+    integer, dimension(:), intent(INOUT) :: Icol
 
     ! Row description of matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(INOUT) :: Ild
+    integer, dimension(neq+1), intent(INOUT) :: Ild
     
     ! Column structure of source matrix -> resorted matrix
-    integer(PREC_VECIDX), dimension(:), intent(INOUT) :: IcolH
+    integer, dimension(:), intent(INOUT) :: IcolH
     
     ! Row positions of source matrix -> resorted matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(INOUT) :: IldH
+    integer, dimension(neq+1), intent(INOUT) :: IldH
     
 !</inputoutput>
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -8509,22 +8509,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     real(DP), dimension(:), intent(IN) :: DaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -8534,23 +8534,23 @@ contains
     real(DP), dimension(:), intent(OUT) :: Da
 
     ! Column structure of destination matrix
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(OUT) :: Icol
     
     ! Row positions of destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(OUT) :: Ild
     
     ! Positions of diagonal elements in the destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Idiag
+    integer, dimension(neq+1), intent(OUT) :: Idiag
     
 !</output>
     
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -8646,22 +8646,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     real(SP), dimension(:), intent(IN) :: FaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -8671,23 +8671,23 @@ contains
     real(SP), dimension(:), intent(OUT) :: Fa
 
     ! Column structure of destination matrix
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(OUT) :: Icol
     
     ! Row positions of destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(OUT) :: Ild
     
     ! Positions of diagonal elements in the destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Idiag
+    integer, dimension(neq+1), intent(OUT) :: Idiag
     
 !</output>
     
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -8783,22 +8783,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     integer, dimension(:), intent(IN) :: IaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -8808,23 +8808,23 @@ contains
     integer, dimension(:), intent(OUT) :: Ia
 
     ! Column structure of destination matrix
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(OUT) :: Icol
     
     ! Row positions of destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(OUT) :: Ild
     
     ! Positions of diagonal elements in the destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Idiag
+    integer, dimension(neq+1), intent(OUT) :: Idiag
     
 !</output>
     
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -8921,22 +8921,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     real(DP), dimension(:), intent(IN) :: DaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -8950,10 +8950,10 @@ contains
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -9038,22 +9038,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     real(SP), dimension(:), intent(IN) :: FaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
@@ -9067,10 +9067,10 @@ contains
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -9155,22 +9155,22 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Source matrix
     integer, dimension(:), intent(IN) :: IaH
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
 
@@ -9184,10 +9184,10 @@ contains
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -9272,42 +9272,42 @@ contains
 !<input>
     
     ! Number of equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
     
     ! Column structure of source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(IN) :: IcolH
     
     ! Row positions of source matrix
-    integer(PREC_VECIDX), dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(IN) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(IN) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer(PREC_VECIDX), dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(IN) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Column structure of destination matrix
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(OUT) :: Icol
     
     ! Row positions of destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(OUT) :: Ild
     
     ! Positions of diagonal elements in the destination matrix
-    integer(PREC_MATIDX), dimension(neq+1), intent(OUT) :: Idiag
+    integer, dimension(neq+1), intent(OUT) :: Idiag
     
 !</output>
     
 !</subroutine>
     
     !local variables
-    integer(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
+    integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
-    integer(I32), dimension(:), allocatable :: Ih1, Ih2
+    integer, dimension(:), allocatable :: Ih1, Ih2
   
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
@@ -9396,16 +9396,16 @@ contains
 !<inputoutput>
       
     ! column vector
-    integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Ih1
+    integer, dimension(:), intent(INOUT) :: Ih1
       
     ! row vector; same size as Ih1
-    integer(PREC_VECIDX), dimension(size(Ih1)), intent(INOUT) :: Ih2
+    integer, dimension(size(Ih1)), intent(INOUT) :: Ih2
       
 !</inputoutput>
 !</subroutine>
     
     !local variables
-    integer(PREC_VECIDX) :: iaux, icomp
+    integer :: iaux, icomp
     logical :: bmore
     
     bmore = .true.
@@ -9500,7 +9500,7 @@ contains
     integer(I32) :: iactlength,istart,i
     
     ! Vector
-    integer(I32), dimension(:), pointer :: p_Ix
+    integer, dimension(:), pointer :: p_Ix
     
     ! Get the array
     call storage_getbase_int (h_Ix,p_Ix)
@@ -9545,7 +9545,7 @@ contains
   ! OPTIONAL: If the MAX norm is to calculate, this returns the
   ! position of the largest element. If another norm is to be
   ! calculated, the result is undefined.
-  integer(I32), intent(OUT), optional :: iposMax
+  integer, intent(OUT), optional :: iposMax
 !</output>
 
 !<result>
@@ -9622,8 +9622,8 @@ contains
 
   ! local variables
   integer :: h_Idiag,ivar,NVAR
-  integer(PREC_VECIDX) :: i
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kdiag
+  integer :: i
+  integer, dimension(:), pointer :: p_Kdiag
   real(DP), dimension(:), pointer :: p_Da, p_Dvec, p_Dvec2
   real(SP), dimension(:), pointer :: p_Fa, p_Fvec, p_Fvec2
   real(DP) :: dmyscale
@@ -10250,9 +10250,9 @@ contains
 !  TYPE(t_matrixScalar) :: rtempMatrix
 !  REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
 !  REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
-!  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolSource,p_KcolDest
-!  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldSource,p_KldDest
-!  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalSource,p_KdiagonalDest
+!  integer, DIMENSION(:), POINTER :: p_KcolSource,p_KcolDest
+!  integer, DIMENSION(:), POINTER :: p_KldSource,p_KldDest
+!  integer, DIMENSION(:), POINTER :: p_KdiagonalSource,p_KdiagonalDest
 !  
 !  ! Is it possible at all to copy the matrix? Both matrices must have
 !  ! the same size, otherwise the memory does not fit.
@@ -10401,30 +10401,30 @@ contains
     
 !<input>
     ! Number of rows in the source matrix
-    integer(PREC_VECIDX), intent(IN) :: nrow
+    integer, intent(IN) :: nrow
     
     ! Number of columns in the source matrix
-    integer(PREC_VECIDX), intent(IN) :: ncol
+    integer, intent(IN) :: ncol
     
     ! Column structure of the source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Icol
+    integer, dimension(:), intent(IN) :: Icol
     
     ! Row structure of the source matrix
-    integer(PREC_MATIDX), dimension(nrow+1), intent(IN) :: Irow
+    integer, dimension(nrow+1), intent(IN) :: Irow
 !</input>
     
 !<output>
     ! Column structure of the destination matrix
     ! The array must be of the same size as Icol!
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: IcolDest
+    integer, dimension(:), intent(OUT) :: IcolDest
 
     ! Row structure of the destination matrix
-    integer(PREC_MATIDX), dimension(ncol+1), intent(OUT) :: IrowDest
+    integer, dimension(ncol+1), intent(OUT) :: IrowDest
 !</output>
     
 !<inputoutput>
     ! Auxiliary array of size ncol
-    integer(PREC_VECIDX), dimension(ncol), intent(INOUT) :: Itmp
+    integer, dimension(ncol), intent(INOUT) :: Itmp
 !</inputoutput>
 !</subroutine>
     
@@ -10492,20 +10492,20 @@ contains
     
 !<input>
     ! Number of rows in the source matrix
-    integer(PREC_VECIDX), intent(IN) :: nrow
+    integer, intent(IN) :: nrow
     
     ! Number of columns in the source matrix
-    integer(PREC_VECIDX), intent(IN) :: ncol
+    integer, intent(IN) :: ncol
     
     ! The entries of the source matrix
     real(DP), dimension(:), intent(IN) :: Da
     
     ! Column structure of the source matrix
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Icol
+    integer, dimension(:), intent(IN) :: Icol
     
     ! Row structure of the source matrix.
     ! DIMENSION(nrow+1)
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: Irow
+    integer, dimension(:), intent(IN) :: Irow
 !</input>
     
 !<output>
@@ -10515,17 +10515,17 @@ contains
     
     ! Column structure of the destination matrix
     ! The array must be of the same size as Icol!
-    integer(PREC_VECIDX), dimension(:), intent(OUT) :: IcolDest
+    integer, dimension(:), intent(OUT) :: IcolDest
 
     ! Row structure of the destination matrix.
     ! DIMENSION(ncol+1)
-    integer(PREC_MATIDX), dimension(:), intent(OUT) :: IrowDest
+    integer, dimension(:), intent(OUT) :: IrowDest
 !</output>
     
 !<inputoutput>
     ! Auxiliary array.
     ! DIMENSION(ncol)
-    integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Itmp
+    integer, dimension(:), intent(INOUT) :: Itmp
 !</inputoutput>
   
 !</subroutine>
@@ -10610,7 +10610,7 @@ contains
     
 !<input>
     ! Number of rows/columns/equations
-    integer(PREC_VECIDX), intent(IN) :: neq
+    integer, intent(IN) :: neq
 !</input>
   
 !<output>
@@ -10624,10 +10624,10 @@ contains
     real(DP), dimension(:), intent(INOUT), optional :: Da
     
     ! Matrix column structure
-    integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Icol
+    integer, dimension(:), intent(INOUT) :: Icol
     
     ! Matrix row structure
-    integer(PREC_MATIDX), dimension(neq+1), intent(INOUT) :: Irow
+    integer, dimension(neq+1), intent(INOUT) :: Irow
 !</inputoutput>
 !</subroutine>
     
@@ -10871,11 +10871,11 @@ contains
 
     ! local variables
     integer :: itrans, h_Itemp
-    integer(PREC_VECIDX) :: ntemp
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolSource,p_KcolDest
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldSource,p_KldDest
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kdiagonal
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Itemp
+    integer :: ntemp
+    integer, dimension(:), pointer :: p_KcolSource,p_KcolDest
+    integer, dimension(:), pointer :: p_KldSource,p_KldDest
+    integer, dimension(:), pointer :: p_Kdiagonal
+    integer, dimension(:), pointer :: p_Itemp
     real(DP), dimension(:), pointer :: p_DaSource,p_DaDest
     
     itrans = LSYSSC_TR_ALL
@@ -11322,7 +11322,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kcol1,p_Kcol2
+    integer, dimension(:), pointer :: p_Kcol1,p_Kcol2
   
     if (rsourceMatrix%h_Kcol .eq. rdestMatrix%h_Kcol) then
       ! Eehm... forget it.
@@ -11366,7 +11366,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kld1,p_Kld2
+    integer, dimension(:), pointer :: p_Kld1,p_Kld2
     integer :: NEQ
   
     if (rsourceMatrix%h_Kld .eq. rdestMatrix%h_Kld) then
@@ -11420,7 +11420,7 @@ contains
 !</subroutine>
   
     ! local variables
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kdiag1,p_Kdiag2
+    integer, dimension(:), pointer :: p_Kdiag1,p_Kdiag2
     integer :: NEQ
   
     if (rsourceMatrix%h_Kdiagonal .eq. rdestMatrix%h_Kdiagonal) then
@@ -11487,7 +11487,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_MATIDX) :: NA
+  integer :: NA
   integer :: cdType,NVAR
   real(SP), dimension(:), pointer :: p_Fa
   real(DP), dimension(:), pointer :: p_Da
@@ -11553,10 +11553,10 @@ contains
         select case (rmatrixScalar%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
           call storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
-              int(NA*NVAR*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
+              NA*NVAR*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
         case (LSYSSC_MATRIXD)
           call storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
-              int(NA*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
+              NA*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
         case DEFAULT
           print *, 'lsyssc_allocEmptyMatrix: Unsupported interl&
               &eave matrix format'
@@ -11567,10 +11567,10 @@ contains
         select case (rmatrixScalar%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
           call storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
-              int(NA*NVAR*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
+              NA*NVAR*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
         case (LSYSSC_MATRIXD)
           call storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
-              int(NA*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
+              NA*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
         case DEFAULT
           print *, 'lsyssc_allocEmptyMatrix: Unsupported interl&
               &eave matrix format'
@@ -11622,7 +11622,7 @@ contains
   integer, intent(IN) :: cmatrixFormat
   
   ! Number of equations, the matrix should hold.
-  integer(PREC_MATIDX), intent(IN) :: NEQ
+  integer, intent(IN) :: NEQ
 !</input>
 
 !<inputoutput>
@@ -11680,14 +11680,14 @@ contains
 
 !<input>
   ! Number of rows in the matrix
-  integer(PREC_VECIDX), intent(IN) :: NEQ
+  integer, intent(IN) :: NEQ
   
   ! Whether to initialise the matrix with zero or not.
   logical, intent(IN) :: bclear
   
   ! OPTIONAL: Number of columns in the matrix. If not specified, NEQ=nrows
   ! is assumed.
-  integer(PREC_VECIDX), intent(IN), optional :: ncols
+  integer, intent(IN), optional :: ncols
   
   ! OPTIONAL: Data type of the entries. A ST_xxxx constant. 
   ! Default is ST_DOUBLE.
@@ -11761,9 +11761,9 @@ contains
 !</subroutine>
  
   ! local variables
-  integer(PREC_MATIDX) :: irow,icol,j
-  integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-  integer(PREC_MATIDX), dimension(:), pointer :: p_Kdiagonal, p_Kld
+  integer :: irow,icol,j
+  integer, dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kdiagonal, p_Kld
   real(DP), dimension(:), pointer :: p_Da
   real(SP), dimension(:), pointer :: p_Fa
   logical :: bconvert
@@ -11924,10 +11924,10 @@ contains
     type(t_matrixScalar), intent(INOUT) :: rmatrix
     
     ! local variables
-    integer(PREC_MATIDX) :: irow
+    integer :: irow
     real(DP), dimension(:), pointer :: p_DA
     real(SP), dimension(:), pointer :: p_FA
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kld,p_Kdiagonal
+    integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     real(DP) :: ddiag,fdiag
     
     ! Get Kld and Kdiagonal
@@ -11988,8 +11988,8 @@ contains
     type(t_matrixScalar), intent(INOUT) :: rmatrix
     
     ! local variables
-    integer(PREC_MATIDX) :: irow
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
+    integer :: irow
+    integer, dimension(:), pointer :: p_Kld
     real(DP), dimension(:), pointer :: p_DA
     real(SP), dimension(:), pointer :: p_FA
 
@@ -12037,7 +12037,7 @@ contains
     type(t_matrixScalar), intent(INOUT) :: rmatrix
     
     ! local variables
-    integer(PREC_MATIDX) :: irow,icol
+    integer :: irow,icol
     real(DP), dimension(:), pointer :: p_DA
     real(SP), dimension(:), pointer :: p_FA
     real(DP) :: ddata
@@ -12205,8 +12205,8 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: DaA,DaB,DaC,Daux
     real(SP), dimension(:), pointer :: FaA,FaB,FaC,Faux
-    integer(PREC_VECIDX), dimension(:), pointer :: KcolA,KcolB,KcolC,Kaux
-    integer(PREC_MATIDX), dimension(:), pointer :: KldA,KldB,KldC,KdiagonalC
+    integer, dimension(:), pointer :: KcolA,KcolB,KcolC,Kaux
+    integer, dimension(:), pointer :: KldA,KldB,KldC,KdiagonalC
     integer :: h_Kaux,h_Daux,h_Faux
     logical :: bfast
 
@@ -13047,7 +13047,7 @@ contains
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m,k
+      integer, intent(IN) :: n,m,k
       real(DP), dimension(m,n), intent(IN)    :: Da1
       real(DP), dimension(k,m), intent(IN)    :: Da2
       real(DP), dimension(k,n), intent(INOUT) :: Da3
@@ -13071,7 +13071,7 @@ contains
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m,k
+      integer, intent(IN) :: n,m,k
       real(DP), dimension(m,n), intent(IN)    :: Da1
       real(SP), dimension(k,m), intent(IN)    :: Fa2
       real(DP), dimension(k,n), intent(INOUT) :: Da3
@@ -13092,7 +13092,7 @@ contains
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m,k
+      integer, intent(IN) :: n,m,k
       real(SP), dimension(m,n), intent(IN)    :: Fa1
       real(DP), dimension(k,m), intent(IN)    :: Da2
       real(DP), dimension(k,n), intent(INOUT) :: Da3
@@ -13113,7 +13113,7 @@ contains
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m,k
+      integer, intent(IN) :: n,m,k
       real(SP), dimension(m,n), intent(IN)    :: Fa1
       real(SP), dimension(k,m), intent(IN)    :: Fa2
       real(SP), dimension(k,n), intent(INOUT) :: Fa3
@@ -13133,7 +13133,7 @@ contains
 
     subroutine do_matDmat1mul_doubledouble(n,m,Da1,Da2,Da3)
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m
+      integer, intent(IN) :: n,m
       real(DP), dimension(n), intent(IN)    :: Da1
       real(DP), dimension(m,n), intent(IN)    :: Da2
       real(DP), dimension(m,n), intent(INOUT) :: Da3
@@ -13157,7 +13157,7 @@ contains
 
     subroutine do_matDmat1mul_singledouble(n,m,Fa1,Da2,Da3)
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m
+      integer, intent(IN) :: n,m
       real(SP), dimension(n), intent(IN)    :: Fa1
       real(DP), dimension(m,n), intent(IN)    :: Da2
       real(DP), dimension(m,n), intent(INOUT) :: Da3
@@ -13181,7 +13181,7 @@ contains
 
     subroutine do_matDmat1mul_doublesingle(n,m,Da1,Fa2,Da3)
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m
+      integer, intent(IN) :: n,m
       real(DP), dimension(n), intent(IN)    :: Da1
       real(SP), dimension(m,n), intent(IN)    :: Fa2
       real(DP), dimension(m,n), intent(INOUT) :: Da3
@@ -13205,7 +13205,7 @@ contains
 
     subroutine do_matDmat1mul_singlesingle(n,m,Fa1,Fa2,Fa3)
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m
+      integer, intent(IN) :: n,m
       real(SP), dimension(n), intent(IN)    :: Fa1
       real(SP), dimension(m,n), intent(IN)    :: Fa2
       real(SP), dimension(m,n), intent(INOUT) :: Fa3
@@ -13229,7 +13229,7 @@ contains
 
     subroutine do_mat1matDmul_doubledouble(n,m,Da1,Da2,Da3)
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m
+      integer, intent(IN) :: n,m
       real(DP), dimension(m,n), intent(IN)    :: Da1
       real(DP), dimension(m),   intent(IN)    :: Da2
       real(DP), dimension(m,n), intent(INOUT) :: Da3
@@ -13253,7 +13253,7 @@ contains
 
     subroutine do_mat1matDmul_singledouble(n,m,Fa1,Da2,Da3)
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m
+      integer, intent(IN) :: n,m
       real(SP), dimension(m,n), intent(IN)    :: Fa1
       real(DP), dimension(m),   intent(IN)    :: Da2
       real(DP), dimension(m,n), intent(INOUT) :: Da3
@@ -13277,7 +13277,7 @@ contains
 
     subroutine do_mat1matDmul_doublesingle(n,m,Da1,Fa2,Da3)
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m
+      integer, intent(IN) :: n,m
       real(DP), dimension(m,n), intent(IN)    :: Da1
       real(SP), dimension(m),   intent(IN)    :: Fa2
       real(DP), dimension(m,n), intent(INOUT) :: Da3
@@ -13301,7 +13301,7 @@ contains
 
     subroutine do_mat1matDmul_singlesingle(n,m,Fa1,Fa2,Fa3)
       
-      integer(PREC_DOFIDX), intent(IN) :: n,m
+      integer, intent(IN) :: n,m
       real(SP), dimension(m,n), intent(IN)    :: Fa1
       real(SP), dimension(m),   intent(IN)    :: Fa2
       real(SP), dimension(m,n), intent(INOUT) :: Fa3
@@ -13329,11 +13329,11 @@ contains
       real(DP), dimension(:), intent(IN)    :: Da1
       real(DP), dimension(:), intent(IN)    :: Da2
       real(DP), dimension(:), intent(INOUT) :: Da3
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld2
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol2
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
-      integer(PREC_DOFIDX), intent(IN) :: neq
+      integer, dimension(:), intent(IN) :: Kld2
+      integer, dimension(:), intent(IN) :: Kcol2
+      integer, dimension(:), intent(IN), optional :: Kld3
+      integer, dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
       
@@ -13374,11 +13374,11 @@ contains
       real(SP), dimension(:), intent(IN)    :: Fa1
       real(DP), dimension(:), intent(IN)    :: Da2
       real(DP), dimension(:), intent(INOUT) :: Da3
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld2
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol2
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
-      integer(PREC_DOFIDX), intent(IN) :: neq
+      integer, dimension(:), intent(IN) :: Kld2
+      integer, dimension(:), intent(IN) :: Kcol2
+      integer, dimension(:), intent(IN), optional :: Kld3
+      integer, dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
       
@@ -13419,11 +13419,11 @@ contains
       real(DP), dimension(:), intent(IN)    :: Da1
       real(SP), dimension(:), intent(IN)    :: Fa2
       real(DP), dimension(:), intent(INOUT) :: Da3
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld2
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol2
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
-      integer(PREC_DOFIDX), intent(IN) :: neq
+      integer, dimension(:), intent(IN) :: Kld2
+      integer, dimension(:), intent(IN) :: Kcol2
+      integer, dimension(:), intent(IN), optional :: Kld3
+      integer, dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
       
@@ -13464,11 +13464,11 @@ contains
       real(SP), dimension(:), intent(IN)    :: Fa1
       real(SP), dimension(:), intent(IN)    :: Fa2
       real(SP), dimension(:), intent(INOUT) :: Fa3
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld2
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol2
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
-      integer(PREC_DOFIDX), intent(IN) :: neq
+      integer, dimension(:), intent(IN) :: Kld2
+      integer, dimension(:), intent(IN) :: Kcol2
+      integer, dimension(:), intent(IN), optional :: Kld3
+      integer, dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
       
@@ -13509,11 +13509,11 @@ contains
       real(DP), dimension(:), intent(IN)    :: Da1
       real(DP), dimension(:), intent(IN)    :: Da2
       real(DP), dimension(:), intent(INOUT) :: Da3
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld1
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol1
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
-      integer(PREC_DOFIDX), intent(IN) :: neq
+      integer, dimension(:), intent(IN) :: Kld1
+      integer, dimension(:), intent(IN) :: Kcol1
+      integer, dimension(:), intent(IN), optional :: Kld3
+      integer, dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN) :: neq
       
       integer :: ieq,ild1,ild3,ildend3
       
@@ -13554,11 +13554,11 @@ contains
       real(SP), dimension(:), intent(IN)    :: Fa1
       real(DP), dimension(:), intent(IN)    :: Da2
       real(DP), dimension(:), intent(INOUT) :: Da3
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld1
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol1
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
-      integer(PREC_DOFIDX), intent(IN) :: neq
+      integer, dimension(:), intent(IN) :: Kld1
+      integer, dimension(:), intent(IN) :: Kcol1
+      integer, dimension(:), intent(IN), optional :: Kld3
+      integer, dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN) :: neq
       
       integer :: ieq,ild1,ild3,ildend3
       
@@ -13599,11 +13599,11 @@ contains
       real(DP), dimension(:), intent(IN)    :: Da1
       real(SP), dimension(:), intent(IN)    :: Fa2
       real(DP), dimension(:), intent(INOUT) :: Da3
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld1
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol1
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
-      integer(PREC_DOFIDX), intent(IN) :: neq
+      integer, dimension(:), intent(IN) :: Kld1
+      integer, dimension(:), intent(IN) :: Kcol1
+      integer, dimension(:), intent(IN), optional :: Kld3
+      integer, dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN) :: neq
 
       integer :: ieq,ild1,ild3,ildend3
       
@@ -13644,11 +13644,11 @@ contains
       real(SP), dimension(:), intent(IN)    :: Fa1
       real(SP), dimension(:), intent(IN)    :: Fa2
       real(SP), dimension(:), intent(INOUT) :: Fa3
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld1
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol1
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
-      integer(PREC_DOFIDX), intent(IN) :: neq
+      integer, dimension(:), intent(IN) :: Kld1
+      integer, dimension(:), intent(IN) :: Kcol1
+      integer, dimension(:), intent(IN), optional :: Kld3
+      integer, dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN) :: neq
 
       integer :: ieq,ild1,ild3,ildend3
 
@@ -13692,9 +13692,9 @@ contains
     function do_mat79mat79mul_computeNA(KldA,KcolA,neq,KldB,KcolB&
         &,Kaux) result(NA)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KcolA,KldB,KcolB
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Kaux
-      integer(PREC_DOFIDX), intent(IN) :: neq
+      integer, dimension(:), intent(IN) :: KldA,KcolA,KldB,KcolB
+      integer, dimension(:), intent(INOUT) :: Kaux
+      integer, intent(IN) :: neq
       integer :: NA
 
       integer :: ieq,jeq,ild,irow,icol,idg,ndg,last
@@ -13753,12 +13753,12 @@ contains
     subroutine do_mat79mat79mul_symb(n,m,l,KldA,KcolA,KldB,KcolB,KldC&
         &,KcolC,Kindex,KdiagonalC)
 
-      integer(PREC_DOFIDX), intent(IN) :: n,m,l
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA,KcolB
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: KldC,Kindex
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: KcolC
-      integer(PREC_MATIDX), dimension(:), intent(INOUT), optional :: KdiagonalC
+      integer, intent(IN) :: n,m,l
+      integer, dimension(:), intent(IN) :: KldA,KldB
+      integer, dimension(:), intent(IN) :: KcolA,KcolB
+      integer, dimension(:), intent(INOUT) :: KldC,Kindex
+      integer, dimension(:), intent(INOUT) :: KcolC
+      integer, dimension(:), intent(INOUT), optional :: KdiagonalC
 
       integer :: i,j,k,istart,ilength,jj,jk,kaux,ioff
 
@@ -13881,11 +13881,11 @@ contains
     subroutine do_mat79mat79mul_numb_dbledble(n,m,l,KldA,KcolA&
         &,DaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
-      integer(PREC_DOFIDX), intent(IN) :: n,m,l
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA,KcolB
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: KldC
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: KcolC
+      integer, intent(IN) :: n,m,l
+      integer, dimension(:), intent(IN) :: KldA,KldB
+      integer, dimension(:), intent(IN) :: KcolA,KcolB
+      integer, dimension(:), intent(INOUT) :: KldC
+      integer, dimension(:), intent(INOUT) :: KcolC
       real(DP), dimension(:), intent(IN)    :: DaA
       real(DP), dimension(:), intent(IN)    :: DaB
       real(DP), dimension(:), intent(INOUT) :: DaC,Dtemp
@@ -13936,11 +13936,11 @@ contains
     subroutine do_mat79mat79mul_numb_sngldble(n,m,l,KldA,KcolA&
         &,FaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
-      integer(PREC_DOFIDX), intent(IN) :: n,m,l
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA,KcolB
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: KldC
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: KcolC
+      integer, intent(IN) :: n,m,l
+      integer, dimension(:), intent(IN) :: KldA,KldB
+      integer, dimension(:), intent(IN) :: KcolA,KcolB
+      integer, dimension(:), intent(INOUT) :: KldC
+      integer, dimension(:), intent(INOUT) :: KcolC
       real(SP), dimension(:), intent(IN)    :: FaA
       real(DP), dimension(:), intent(IN)    :: DaB
       real(DP), dimension(:), intent(INOUT) :: DaC,Dtemp
@@ -13991,11 +13991,11 @@ contains
     subroutine do_mat79mat79mul_numb_dblesngl(n,m,l,KldA,KcolA&
         &,DaA,KldB,KcolB,FaB,KldC,KcolC,DaC,Dtemp)
 
-      integer(PREC_DOFIDX), intent(IN) :: n,m,l
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA,KcolB
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: KldC
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: KcolC
+      integer, intent(IN) :: n,m,l
+      integer, dimension(:), intent(IN) :: KldA,KldB
+      integer, dimension(:), intent(IN) :: KcolA,KcolB
+      integer, dimension(:), intent(INOUT) :: KldC
+      integer, dimension(:), intent(INOUT) :: KcolC
       real(DP), dimension(:), intent(IN)    :: DaA
       real(SP), dimension(:), intent(IN)    :: FaB
       real(DP), dimension(:), intent(INOUT) :: DaC,Dtemp
@@ -14046,11 +14046,11 @@ contains
     subroutine do_mat79mat79mul_numb_snglsngl(n,m,l,KldA,KcolA&
         &,FaA,KldB,KcolB,FaB,KldC,KcolC,FaC,Ftemp)
 
-      integer(PREC_DOFIDX), intent(IN) :: n,m,l
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA,KcolB
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: KldC
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: KcolC
+      integer, intent(IN) :: n,m,l
+      integer, dimension(:), intent(IN) :: KldA,KldB
+      integer, dimension(:), intent(IN) :: KcolA,KcolB
+      integer, dimension(:), intent(INOUT) :: KldC
+      integer, dimension(:), intent(INOUT) :: KcolC
       real(SP), dimension(:), intent(IN)    :: FaA
       real(SP), dimension(:), intent(IN)    :: FaB
       real(SP), dimension(:), intent(INOUT) :: FaC,Ftemp
@@ -14151,8 +14151,8 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: DaA,DaB,DaC
     real(SP), dimension(:), pointer :: FaA,FaB,FaC
-    integer(PREC_MATIDX), dimension(:), pointer :: KldA,KldB,KldC,KdiagonalC,Kaux
-    integer(PREC_VECIDX), dimension(:), pointer :: KcolA,KcolB,KcolC
+    integer, dimension(:), pointer :: KldA,KldB,KldC,KdiagonalC,Kaux
+    integer, dimension(:), pointer :: KcolA,KcolB,KcolC
     integer :: h_Kaux,isizeIntl
     logical :: bfast
 
@@ -14769,7 +14769,7 @@ contains
           rmatrixC%cinterleavematrixFormat = rmatrixB%cinterleavematrixFormat
           rmatrixC%NA = rmatrixB%NA
           rmatrixC%NVAR = rmatrixB%NVAR
-          call storage_new('lsyssc_matrixLinearComb','h_Da',int(isizeIntl*rmatrixC%NA,I32),&
+          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
               rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
@@ -15404,7 +15404,7 @@ contains
           rmatrixC%cinterleavematrixFormat = rmatrixA%cinterleavematrixFormat
           rmatrixC%NA = rmatrixA%NA
           rmatrixC%NVAR = rmatrixA%NVAR
-          call storage_new('lsyssc_matrixLinearComb','h_Da',int(isizeIntl*rmatrixC%NA,I32),&
+          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
               rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
@@ -15616,7 +15616,7 @@ contains
           
           ! Compute number of nonzero matrix entries: NA
           rmatrixC%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,rmatrixA%NCOLS,KldA,KcolA,KldB,KcolB,Kaux)
-          call storage_new('lsyssc_matrixLinearComb','h_Da',int(isizeIntl*rmatrixC%NA,I32),&
+          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
               rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
           call storage_realloc('lsyssc_matrixLinearComb',rmatrixC%NA,&
               rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.false.)
@@ -15815,12 +15815,12 @@ contains
 
     subroutine do_mat1matDadd_doubledouble(neq,ncols,Da1,c1,Da2,c2,Da3)
 
-      integer(PREC_DOFIDX), intent(IN)              :: neq,ncols
+      integer, intent(IN)              :: neq,ncols
       real(DP), intent(IN)                          :: c1,c2
       real(DP), dimension(ncols,neq), intent(IN)    :: Da1
       real(DP), dimension(neq), intent(IN)          :: Da2
       real(DP), dimension(ncols,neq), intent(INOUT) :: Da3
-      integer(PREC_DOFIDX)                          :: ieq
+      integer                          :: ieq
 
       call DCOPY(int(neq*ncols),Da1,1,Da3,1)
       call DSCAL(int(neq*ncols),c1,Da3,1)
@@ -15849,12 +15849,12 @@ contains
 
     subroutine do_mat1matDadd_singledouble(neq,ncols,Fa1,c1,Da2,c2,Da3)
 
-      integer(PREC_DOFIDX), intent(IN)              :: neq,ncols
+      integer, intent(IN)              :: neq,ncols
       real(DP), intent(IN)                          :: c1,c2
       real(SP), dimension(ncols,neq), intent(IN)    :: Fa1
       real(DP), dimension(neq), intent(IN)          :: Da2
       real(DP), dimension(ncols,neq), intent(INOUT) :: Da3
-      integer(PREC_DOFIDX)                          :: ieq,icols
+      integer                          :: ieq,icols
 
 !%OMP  parallel do &
 !%OMP& default(shared) &
@@ -15890,12 +15890,12 @@ contains
 
     subroutine do_mat1matDadd_doublesingle(neq,ncols,Da1,c1,Fa2,c2,Da3)
 
-      integer(PREC_DOFIDX), intent(IN)              :: neq,ncols
+      integer, intent(IN)              :: neq,ncols
       real(DP), intent(IN)                          :: c1,c2
       real(DP), dimension(ncols,neq), intent(IN)    :: Da1
       real(SP), dimension(neq), intent(IN)          :: Fa2
       real(DP), dimension(ncols,neq), intent(INOUT) :: Da3
-      integer(PREC_DOFIDX) :: ieq
+      integer :: ieq
 
       call DCOPY(int(neq*ncols),Da1,1,Da3,1)
       call DSCAL(int(neq*ncols),c1,Da3,1)
@@ -15924,12 +15924,12 @@ contains
 
     subroutine do_mat1matDadd_singlesingle(neq,ncols,Fa1,c1,Fa2,c2,Fa3)
 
-      integer(PREC_DOFIDX), intent(IN) :: neq,ncols
+      integer, intent(IN) :: neq,ncols
       real(DP), intent(IN) :: c1,c2
       real(SP), dimension(ncols,neq), intent(IN)    :: Fa1
       real(SP), dimension(neq), intent(IN)      :: Fa2
       real(SP), dimension(ncols,neq), intent(INOUT) :: Fa3
-      integer(PREC_DOFIDX) :: ieq
+      integer :: ieq
 
       call SCOPY(int(neq*ncols),Fa1,1,Fa3,1)
       call SSCAL(int(neq*ncols),real(c1,SP),Fa3,1)
@@ -15963,14 +15963,14 @@ contains
       ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      integer(PREC_DOFIDX), intent(IN)               :: neq,ncols
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld2
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol2
+      integer, intent(IN)               :: neq,ncols
+      integer, dimension(:), intent(IN) :: Kld2
+      integer, dimension(:), intent(IN) :: Kcol2
       real(DP), intent(IN)                           :: c1,c2
       real(DP), dimension(ncols,neq), intent(IN)     :: Da1
       real(DP), dimension(:), intent(IN)             :: Da2
       real(DP), dimension(ncols,neq), intent(INOUT)  :: Da3
-      integer(PREC_DOFIDX) :: ild,ieq,icol
+      integer :: ild,ieq,icol
 
       call DCOPY(int(neq*ncols),Da1,1,Da3,1)
       call DSCAL(int(neq*ncols),c1,Da3,1)
@@ -16008,14 +16008,14 @@ contains
       ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      integer(PREC_DOFIDX), intent(IN)               :: neq,ncols
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld2
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol2
+      integer, intent(IN)               :: neq,ncols
+      integer, dimension(:), intent(IN) :: Kld2
+      integer, dimension(:), intent(IN) :: Kcol2
       real(DP), intent(IN)                           :: c1,c2
       real(SP), dimension(ncols,neq), intent(IN)     :: Fa1
       real(DP), dimension(:), intent(IN)             :: Da2
       real(DP), dimension(ncols,neq), intent(INOUT)  :: Da3
-      integer(PREC_DOFIDX) :: ild,ieq,icol
+      integer :: ild,ieq,icol
 
 !%OMP  parallel do &
 !%OMP& default(shared) &
@@ -16048,14 +16048,14 @@ contains
       ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      integer(PREC_DOFIDX), intent(IN)               :: neq,ncols
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld2
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol2
+      integer, intent(IN)               :: neq,ncols
+      integer, dimension(:), intent(IN) :: Kld2
+      integer, dimension(:), intent(IN) :: Kcol2
       real(DP), intent(IN)                           :: c1,c2
       real(DP), dimension(ncols,neq), intent(IN)     :: Da1
       real(SP), dimension(:), intent(IN)             :: Fa2
       real(DP), dimension(ncols,neq), intent(INOUT)  :: Da3
-      integer(PREC_DOFIDX) :: ild,ieq,icol
+      integer :: ild,ieq,icol
 
       call DCOPY(int(neq*ncols),Da1,1,Da3,1)
       call DSCAL(int(neq*ncols),c1,Da3,1)
@@ -16093,14 +16093,14 @@ contains
       ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      integer(PREC_DOFIDX), intent(IN)               :: neq,ncols
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld2
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol2
+      integer, intent(IN)               :: neq,ncols
+      integer, dimension(:), intent(IN) :: Kld2
+      integer, dimension(:), intent(IN) :: Kcol2
       real(DP), intent(IN)                           :: c1,c2
       real(SP), dimension(ncols,neq), intent(IN)     :: Fa1
       real(SP), dimension(:), intent(IN)             :: Fa2
       real(SP), dimension(ncols,neq), intent(INOUT)  :: Fa3
-      integer(PREC_DOFIDX) :: ild,ieq,icol
+      integer :: ild,ieq,icol
       
       call SCOPY(int(neq*ncols),Fa1,1,Fa3,1)
       call SSCAL(int(neq*ncols),real(c1,SP),Fa3,1)
@@ -16134,21 +16134,21 @@ contains
     subroutine do_mat79matDadd_doubledouble(Kld1,Kcol1,nvar,mvar,neq,&
         Da1,c1,Da2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
       
-      integer(PREC_DOFIDX), intent(IN)                         :: neq
+      integer, intent(IN)                         :: neq
       integer, intent(IN)                                      :: nvar,mvar
-      integer(PREC_MATIDX), intent(IN), optional               :: na
-      integer(PREC_MATIDX), dimension(:), intent(IN)           :: Kld1
-      integer(PREC_VECIDX), dimension(:), intent(IN)           :: Kcol1
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3,Kdiag3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN), optional               :: na
+      integer, dimension(:), intent(IN)           :: Kld1
+      integer, dimension(:), intent(IN)           :: Kcol1
+      integer, dimension(:), intent(IN), optional :: Kld3,Kdiag3
+      integer, dimension(:), intent(IN), optional :: Kcol3
       real(DP), intent(IN)                                     :: c1,c2
       real(DP), dimension(nvar,mvar,*), intent(IN)             :: Da1
       real(DP), dimension(:), intent(IN)                       :: Da2
       real(DP), dimension(nvar,mvar,*), intent(INOUT)          :: Da3
       
-      integer(PREC_DOFIDX) :: ieq
-      integer(PREC_VECIDX) :: ild1,ild3,ildend3
-      integer(PREC_MATIDX) :: icol1,icol3
+      integer :: ieq
+      integer :: ild1,ild3,ildend3
+      integer :: icol1,icol3
       integer :: ivar
 
       if (present(Kld3) .and. present(Kcol3)) then
@@ -16256,21 +16256,21 @@ contains
     subroutine do_mat79matDadd_singledouble(Kld1,Kcol1,nvar,mvar,neq,&
         Fa1,c1,Da2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
       
-      integer(PREC_DOFIDX), intent(IN)                         :: neq
+      integer, intent(IN)                         :: neq
       integer, intent(IN)                                      :: nvar,mvar
-      integer(PREC_MATIDX), intent(IN), optional               :: na
-      integer(PREC_MATIDX), dimension(:), intent(IN)           :: Kld1
-      integer(PREC_VECIDX), dimension(:), intent(IN)           :: Kcol1
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3,Kdiag3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN), optional               :: na
+      integer, dimension(:), intent(IN)           :: Kld1
+      integer, dimension(:), intent(IN)           :: Kcol1
+      integer, dimension(:), intent(IN), optional :: Kld3,Kdiag3
+      integer, dimension(:), intent(IN), optional :: Kcol3
       real(DP), intent(IN)                                     :: c1,c2
       real(SP), dimension(nvar,mvar,*), intent(IN)             :: Fa1
       real(DP), dimension(:), intent(IN)                       :: Da2
       real(DP), dimension(nvar,mvar,*), intent(INOUT)          :: Da3
 
-      integer(PREC_DOFIDX) :: ieq
-      integer(PREC_VECIDX) :: ild1,ild3,ildend3
-      integer(PREC_MATIDX) :: icol1,icol3,ia
+      integer :: ieq
+      integer :: ild1,ild3,ildend3
+      integer :: icol1,icol3,ia
       integer :: ivar
       
       if (present(Kld3) .and. present(Kcol3)) then
@@ -16383,21 +16383,21 @@ contains
     subroutine do_mat79matDadd_doublesingle(Kld1,Kcol1,nvar,mvar,neq,&
         Da1,c1,Fa2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
 
-      integer(PREC_DOFIDX), intent(IN)                         :: neq
+      integer, intent(IN)                         :: neq
       integer, intent(IN)                                      :: nvar,mvar
-      integer(PREC_MATIDX), intent(IN), optional               :: na
-      integer(PREC_MATIDX), dimension(:), intent(IN)           :: Kld1
-      integer(PREC_VECIDX), dimension(:), intent(IN)           :: Kcol1
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3,Kdiag3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN), optional               :: na
+      integer, dimension(:), intent(IN)           :: Kld1
+      integer, dimension(:), intent(IN)           :: Kcol1
+      integer, dimension(:), intent(IN), optional :: Kld3,Kdiag3
+      integer, dimension(:), intent(IN), optional :: Kcol3
       real(DP), intent(IN)                                     :: c1,c2
       real(DP), dimension(nvar,mvar,*), intent(IN)             :: Da1
       real(SP), dimension(:), intent(IN)                       :: Fa2
       real(DP), dimension(nvar,mvar,*), intent(INOUT)          :: Da3
 
-      integer(PREC_DOFIDX) :: ieq
-      integer(PREC_VECIDX) :: ild1,ild3,ildend3
-      integer(PREC_MATIDX) :: icol1,icol3
+      integer :: ieq
+      integer :: ild1,ild3,ildend3
+      integer :: icol1,icol3
       integer :: ivar
       
       if (present(Kld3) .and. present(Kcol3)) then
@@ -16507,21 +16507,21 @@ contains
     subroutine do_mat79matDadd_singlesingle(Kld1,Kcol1,nvar,mvar,neq,&
         Fa1,c1,Fa2,c2,Fa3,Kld3,Kcol3,Kdiag3,na)
 
-      integer(PREC_DOFIDX), intent(IN)                         :: neq
+      integer, intent(IN)                         :: neq
       integer, intent(IN)                                      :: nvar,mvar
-      integer(PREC_MATIDX), intent(IN), optional               :: na
-      integer(PREC_MATIDX), dimension(:), intent(IN)           :: Kld1
-      integer(PREC_VECIDX), dimension(:), intent(IN)           :: Kcol1
-      integer(PREC_MATIDX), dimension(:), intent(IN), optional :: Kld3,Kdiag3
-      integer(PREC_VECIDX), dimension(:), intent(IN), optional :: Kcol3
+      integer, intent(IN), optional               :: na
+      integer, dimension(:), intent(IN)           :: Kld1
+      integer, dimension(:), intent(IN)           :: Kcol1
+      integer, dimension(:), intent(IN), optional :: Kld3,Kdiag3
+      integer, dimension(:), intent(IN), optional :: Kcol3
       real(DP), intent(IN)                                     :: c1,c2
       real(SP), dimension(nvar,mvar,*), intent(IN)             :: Fa1
       real(SP), dimension(:), intent(IN)                       :: Fa2
       real(SP), dimension(nvar,mvar,*), intent(INOUT)          :: Fa3
 
-      integer(PREC_DOFIDX) :: ieq
-      integer(PREC_VECIDX) :: ild1,ild3,ildend3
-      integer(PREC_MATIDX) :: icol1,icol3
+      integer :: ieq
+      integer :: ild1,ild3,ildend3
+      integer :: icol1,icol3
       integer :: ivar
       
       if (present(Kld3) .and. present(Kcol3)) then
@@ -16631,10 +16631,10 @@ contains
     function do_mat79mat79add_computeNA(neq,ncols,KldA,KcolA,KldB&
         &,KcolB,Kaux) result(NA)
 
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolB,KcolA
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: Kaux
-      integer(PREC_DOFIDX), intent(IN) :: neq,ncols
+      integer, dimension(:), intent(IN) :: KldA,KldB
+      integer, dimension(:), intent(IN) :: KcolB,KcolA
+      integer, dimension(:), intent(INOUT) :: Kaux
+      integer, intent(IN) :: neq,ncols
       integer :: NA
       
       integer :: ieq,jeq,ild,icol,idg,ndg,last
@@ -16700,13 +16700,13 @@ contains
     subroutine do_mat79mat79add_symb(neq,ncols,KldA,KcolA,cmatrixFormatA,&
         &KldB,KcolB,cmatrixFormatB,KldC,KcolC,Kdiagonal)
 
-      integer(PREC_DOFIDX), intent(IN) :: neq,ncols
+      integer, intent(IN) :: neq,ncols
       integer, intent(IN) :: cmatrixFormatA,cmatrixFormatB
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA,KcolB
-      integer(PREC_MATIDX), dimension(:), intent(INOUT) :: KldC
-      integer(PREC_VECIDX), dimension(:), intent(INOUT) :: KcolC
-      integer(PREC_MATIDX), dimension(:), intent(INOUT), optional :: Kdiagonal
+      integer, dimension(:), intent(IN) :: KldA,KldB
+      integer, dimension(:), intent(IN) :: KcolA,KcolB
+      integer, dimension(:), intent(INOUT) :: KldC
+      integer, dimension(:), intent(INOUT) :: KcolC
+      integer, dimension(:), intent(INOUT), optional :: Kdiagonal
       
       integer :: ieq,ildA,ildB,ildC,ildendA,ildendB,icolA,icolB,icolC
 
@@ -16824,18 +16824,18 @@ contains
     subroutine do_mat79mat79add_numb_dbledble(isizeIntl,neq,ncols,&
         KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      integer(PREC_DOFIDX), intent(IN)               :: neq,ncols
+      integer, intent(IN)               :: neq,ncols
       integer, intent(IN)                            :: isizeIntl
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA,KcolB,KcolC
+      integer, dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
+      integer, dimension(:), intent(IN) :: KcolA,KcolB,KcolC
       real(DP), intent(IN)                           :: cA,cB
       real(DP), dimension(isizeIntl,*), intent(IN)   :: DaA
       real(DP), dimension(isizeIntl,*), intent(IN)   :: DaB
       real(DP), dimension(isizeIntl,*), intent(INOUT):: DaC
       
-      integer(PREC_DOFIDX) :: ieq
-      integer(PREC_VECIDX) :: ildA,ildB,ildC,ildendA,ildendB,ildendC
-      integer(PREC_MATIDX) :: icolA,icolB,icolC,idiagC
+      integer :: ieq
+      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+      integer :: icolA,icolB,icolC,idiagC
 
       ! Loop over all ROWS
       do ieq=1,neq
@@ -16998,18 +16998,18 @@ contains
     subroutine do_mat79mat79add_numb_dblesngl(isizeIntl,neq,ncols,&
         KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      integer(PREC_DOFIDX), intent(IN)               :: neq,ncols
+      integer, intent(IN)               :: neq,ncols
       integer, intent(IN)                            :: isizeIntl
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA,KcolB,KcolC
+      integer, dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
+      integer, dimension(:), intent(IN) :: KcolA,KcolB,KcolC
       real(DP), intent(IN)                           :: cA,cB
       real(DP), dimension(isizeIntl,*), intent(IN)   :: DaA
       real(SP), dimension(isizeIntl,*), intent(IN)   :: FaB
       real(DP), dimension(isizeIntl,*), intent(INOUT):: DaC
       
-      integer(PREC_DOFIDX) :: ieq
-      integer(PREC_VECIDX) :: ildA,ildB,ildC,ildendA,ildendB,ildendC
-      integer(PREC_MATIDX) :: icolA,icolB,icolC,idiagC
+      integer :: ieq
+      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+      integer :: icolA,icolB,icolC,idiagC
       
       ! Loop over all ROWS
       do ieq=1,neq
@@ -17172,18 +17172,18 @@ contains
     subroutine do_mat79mat79add_numb_sngldble(isizeIntl,neq,ncols,&
         KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      integer(PREC_DOFIDX), intent(IN)               :: neq,ncols
+      integer, intent(IN)               :: neq,ncols
       integer, intent(IN)                            :: isizeIntl
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA,KcolB,KcolC
+      integer, dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
+      integer, dimension(:), intent(IN) :: KcolA,KcolB,KcolC
       real(DP), intent(IN)                           :: cA,cB
       real(SP), dimension(isizeIntl,*), intent(IN)   :: FaA
       real(DP), dimension(isizeIntl,*), intent(IN)   :: DaB
       real(DP), dimension(isizeIntl,*), intent(INOUT):: DaC
 
-      integer(PREC_DOFIDX) :: ieq
-      integer(PREC_VECIDX) :: ildA,ildB,ildC,ildendA,ildendB,ildendC
-      integer(PREC_MATIDX) :: icolA,icolB,icolC,idiagC
+      integer :: ieq
+      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+      integer :: icolA,icolB,icolC,idiagC
       
       ! Loop over all ROWS
       do ieq=1,neq
@@ -17346,18 +17346,18 @@ contains
     subroutine do_mat79mat79add_numb_snglsngl(isizeIntl,neq,ncols,&
         KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,FaC)
       
-      integer(PREC_DOFIDX), intent(IN)               :: neq,ncols
+      integer, intent(IN)               :: neq,ncols
       integer, intent(IN)                            :: isizeIntl
-      integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
-      integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA,KcolB,KcolC
+      integer, dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
+      integer, dimension(:), intent(IN) :: KcolA,KcolB,KcolC
       real(DP), intent(IN)                           :: cA,cB
       real(SP), dimension(isizeIntl,*), intent(IN)   :: FaA
       real(SP), dimension(isizeIntl,*), intent(IN)   :: FaB
       real(SP), dimension(isizeIntl,*), intent(INOUT):: FaC
       
-      integer(PREC_DOFIDX) :: ieq
-      integer(PREC_VECIDX) :: ildA,ildB,ildC,ildendA,ildendB,ildendC
-      integer(PREC_MATIDX) :: icolA,icolB,icolC,idiagC
+      integer :: ieq
+      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+      integer :: icolA,icolB,icolC,idiagC
       
       ! Loop over all ROWS
       do ieq=1,neq
@@ -17612,7 +17612,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_MATIDX) :: isize
+    integer :: isize
 
     call output_line ('ScalarMatrix:')
     call output_line ('-------------')
@@ -17620,7 +17620,7 @@ contains
     call output_line ('cmatrixFormat:           '//trim(sys_siL(rmatrix%cmatrixFormat,15)))
     call output_line ('cinterleavematrixFormat: '//trim(sys_siL(rmatrix%cinterleaveMatrixFormat,15)))
     call output_line ('cdataType:               '//trim(sys_siL(rmatrix%cdataType,15)))
-    call output_line ('imatrixSpec:             '//trim(sys_siL(rmatrix%imatrixSpec,15)))
+    call output_line ('imatrixSpec:             '//trim(sys_siL(int(rmatrix%imatrixSpec),15)))
     call output_line ('NA:                      '//trim(sys_siL(rmatrix%NA,15)))
     call output_line ('NEQ:                     '//trim(sys_siL(rmatrix%NEQ,15)))
     call output_line ('NCOLS:                   '//trim(sys_siL(rmatrix%NCOLS,15)))
@@ -17684,7 +17684,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(PREC_VECIDX) :: isize
+    integer :: isize
 
     call output_line ('ScalarVector:')
     call output_line ('-------------')
@@ -17998,7 +17998,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer     :: p_Ddata1,p_Ddata2
     real(SP), dimension(:), pointer     :: p_Fdata1,p_Fdata2
-    integer(I32), dimension(:), pointer :: p_Idata1,p_Idata2
+    integer, dimension(:), pointer :: p_Idata1,p_Idata2
     
     ! Source vector must not be stored in interleave format
     if (rvector1%NVAR .ne. 1) then
@@ -18072,10 +18072,10 @@ contains
     subroutine do_spreadDble(Ddata1, NVAR, NEQ, Ddata2)
       real(DP), dimension(:), intent(IN)         :: Ddata1
       integer, intent(IN)                        :: NVAR
-      integer(PREC_DOFIDX), intent(IN)           :: NEQ
+      integer, intent(IN)           :: NEQ
       real(DP), dimension(NVAR,NEQ), intent(OUT) :: Ddata2
 
-      integer(PREC_DOFIDX) :: ieq
+      integer :: ieq
 
       do ieq = 1, NEQ
         Ddata2(:,ieq) = Ddata1(ieq)
@@ -18087,10 +18087,10 @@ contains
     subroutine do_spreadSngl(Fdata1, NVAR, NEQ, Fdata2)
       real(SP), dimension(:), intent(IN)         :: Fdata1
       integer, intent(IN)                        :: NVAR
-      integer(PREC_DOFIDX), intent(IN)           :: NEQ
+      integer, intent(IN)           :: NEQ
       real(SP), dimension(NVAR,NEQ), intent(OUT) :: Fdata2
 
-      integer(PREC_DOFIDX) :: ieq
+      integer :: ieq
 
       do ieq = 1, NEQ
         Fdata2(:,ieq) = Fdata1(ieq)
@@ -18100,12 +18100,12 @@ contains
     !**************************************************************
 
     subroutine do_spreadInt(Idata1, NVAR, NEQ, Idata2)
-      integer(I32), dimension(:), intent(IN)         :: Idata1
+      integer, dimension(:), intent(IN)         :: Idata1
       integer, intent(IN)                            :: NVAR
-      integer(PREC_DOFIDX), intent(IN)               :: NEQ
-      integer(I32), dimension(NVAR,NEQ), intent(OUT) :: Idata2
+      integer, intent(IN)               :: NEQ
+      integer, dimension(NVAR,NEQ), intent(OUT) :: Idata2
 
-      integer(PREC_DOFIDX) :: ieq
+      integer :: ieq
 
       do ieq = 1, NEQ
         Idata2(:,ieq) = Idata1(ieq)
@@ -18138,7 +18138,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer     :: p_Ddata1,p_Ddata2
     real(SP), dimension(:), pointer     :: p_Fdata1,p_Fdata2
-    integer(I32), dimension(:), pointer :: p_Idata1,p_Idata2
+    integer, dimension(:), pointer :: p_Idata1,p_Idata2
 
     ! Source matrices must not be stored in interleave format
     if (rmatrix1%NVAR .ne. 1) then
@@ -18225,10 +18225,10 @@ contains
     subroutine do_spreadDble(Ddata1, NVAR, MVAR, NA, Ddata2)
       real(DP), dimension(:), intent(IN)             :: Ddata1
       integer, intent(IN)                            :: NVAR,MVAR
-      integer(PREC_MATIDX), intent(IN)               :: NA
+      integer, intent(IN)                            :: NA
       real(DP), dimension(NVAR,MVAR,NA), intent(OUT) :: Ddata2
 
-      integer(PREC_MATIDX) :: ia
+      integer :: ia
 
       do ia = 1, NA
         Ddata2(:,:,ia) = Ddata1(ia)
@@ -18240,10 +18240,10 @@ contains
     subroutine do_spreadSngl(Fdata1, NVAR, MVAR, NA, Fdata2)
       real(SP), dimension(:), intent(IN)             :: Fdata1
       integer, intent(IN)                            :: NVAR,MVAR
-      integer(PREC_MATIDX), intent(IN)               :: NA
+      integer, intent(IN)                            :: NA
       real(SP), dimension(NVAR,MVAR,NA), intent(OUT) :: Fdata2
 
-      integer(PREC_MATIDX) :: ia
+      integer :: ia
 
       do ia = 1, NA
         Fdata2(:,:,ia) = Fdata1(ia)
@@ -18253,12 +18253,12 @@ contains
     !**************************************************************
 
     subroutine do_spreadInt(Idata1, NVAR, MVAR, NA, Idata2)
-      integer(I32), dimension(:), intent(IN)             :: Idata1
-      integer, intent(IN)                                :: NVAR,MVAR
-      integer(PREC_MATIDX), intent(IN)                   :: NA
-      integer(I32), dimension(NVAR,MVAR,NA), intent(OUT) :: Idata2
+      integer, dimension(:), intent(IN)     :: Idata1
+      integer, intent(IN)                   :: NVAR,MVAR
+      integer, intent(IN)                   :: NA
+      integer, dimension(NVAR,MVAR,NA), intent(OUT) :: Idata2
 
-      integer(PREC_MATIDX) :: ia
+      integer :: ia
 
       do ia = 1, NA
         Idata2(:,:,ia) = Idata1(ia)
@@ -18294,7 +18294,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer     :: p_Ddata1,p_Ddata2
     real(SP), dimension(:), pointer     :: p_Fdata1,p_Fdata2
-    integer(I32), dimension(:), pointer :: p_Idata1,p_Idata2
+    integer, dimension(:), pointer :: p_Idata1,p_Idata2
 
     ! Source vector must be stored in interleave format
     if (rvector1%NVAR .lt. ivar) then
@@ -18375,11 +18375,11 @@ contains
     subroutine do_packDble(Ddata1, NVAR, NEQ, ivar, Ddata2)
       real(DP), dimension(NVAR,NEQ), intent(IN) :: Ddata1
       integer, intent(IN)                       :: NVAR
-      integer(PREC_DOFIDX), intent(IN)          :: NEQ
+      integer, intent(IN)          :: NEQ
       integer, intent(IN)                       :: ivar
       real(DP), dimension(:), intent(OUT)       :: Ddata2
 
-      integer(PREC_DOFIDX) :: ieq
+      integer :: ieq
 
       do ieq = 1, NEQ
         Ddata2(ieq) = Ddata1(ivar,ieq)
@@ -18391,11 +18391,11 @@ contains
     subroutine do_packSngl(Fdata1, NVAR, NEQ, ivar, Fdata2)
       real(SP), dimension(NVAR,NEQ), intent(IN) :: Fdata1
       integer, intent(IN)                       :: NVAR
-      integer(PREC_DOFIDX), intent(IN)          :: NEQ
+      integer, intent(IN)          :: NEQ
       integer, intent(IN)                       :: ivar
       real(SP), dimension(:), intent(OUT)       :: Fdata2
 
-      integer(PREC_DOFIDX) :: ieq
+      integer :: ieq
 
       do ieq = 1, NEQ
         Fdata2(ieq) = Fdata1(ivar,ieq)
@@ -18405,13 +18405,13 @@ contains
     !**************************************************************
 
     subroutine do_packInt(Idata1, NVAR, NEQ, ivar, Idata2)
-      integer(I32), dimension(NVAR,NEQ), intent(IN) :: Idata1
+      integer, dimension(NVAR,NEQ), intent(IN)      :: Idata1
       integer, intent(IN)                           :: NVAR
-      integer(PREC_DOFIDX), intent(IN)              :: NEQ
+      integer, intent(IN)                           :: NEQ
       integer, intent(IN)                           :: ivar
-      integer(I32), dimension(:), intent(OUT)       :: Idata2
+      integer, dimension(:), intent(OUT)            :: Idata2
 
-      integer(PREC_DOFIDX) :: ieq
+      integer :: ieq
 
       do ieq = 1, NEQ
         Idata2(ieq) = Idata1(ivar,ieq)

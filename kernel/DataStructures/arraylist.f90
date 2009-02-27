@@ -354,7 +354,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     
     ! Set factor
     if (present(dfactor)) then
@@ -643,7 +643,7 @@ contains
     real(DP), dimension(:), pointer :: p_DData
     real(SP), dimension(:), pointer :: p_FData
     integer,  dimension(:), pointer :: p_IData
-    integer(I32) :: isize
+    integer :: isize
 
     ! Transform the content of the list to h_Data
     if (h_Data .eq. ST_NOHANDLE) then
@@ -709,7 +709,7 @@ contains
     real(DP), dimension(:), pointer :: p_DData
     real(SP), dimension(:), pointer :: p_FData
     integer,  dimension(:), pointer :: p_IData
-    integer(I32) :: isize
+    integer :: isize
 
     ! Transform the content of the arraylist and the 
     ! table to h_Data and h_Table, respectively

@@ -995,7 +995,7 @@ contains
   !
   ! Allocate one large vector holding all data.
   call storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', &
-                      int(isize*iblocks,I32), cdata, &
+                      isize*iblocks, cdata, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
   
@@ -2187,7 +2187,7 @@ contains
 
   ! local variables
   integer :: h_Ddata, cdataType
-  integer(I32) :: isize,NEQ,i
+  integer :: isize,NEQ,i
   integer :: ioffset
   logical :: bisCopy
   type(t_vectorScalar), dimension(:), pointer :: p_rblocks
@@ -2663,7 +2663,7 @@ contains
   ! OPTIONAL: If the MAX norm is to calculate, this returns the
   ! position of the largest element. If another norm is to be
   ! calculated, the result is undefined.
-  integer(I32), intent(OUT), optional :: iposMax
+  integer, intent(OUT), optional :: iposMax
 !</output>
 
 !<result>
@@ -2730,7 +2730,7 @@ contains
   ! OPTIONAL: For each subvector: if the MAX norm is to calculate, 
   ! this returns the position of the largest element in that subvector. 
   ! If another norm is to be calculated, the result is undefined.
-  integer(I32), dimension(:), intent(OUT), optional :: IposMax
+  integer, dimension(:), intent(OUT), optional :: IposMax
 !</output>
 
 !<result>
@@ -3826,7 +3826,7 @@ contains
       ry%RvectorBlock(1:ry%nblocks)%bisCopy = .true.
             
       ! Create the starting positions of the subvectors.
-      call updateIndex (ry,1_PREC_VECIDX)
+      call updateIndex (ry,1)
     
     end subroutine
 
@@ -4707,7 +4707,7 @@ contains
     type(t_vectorBlock)                 :: rxTmp
     real(DP), dimension(:), pointer     :: p_Ddata,p_DdataTmp
     real(SP), dimension(:), pointer     :: p_Fdata,p_FDataTmp
-    integer(I32), dimension(:), pointer :: p_Idata,p_IdataTmp
+    integer, dimension(:), pointer      :: p_Idata,p_IdataTmp
     integer :: iNEQ,iisize,i,n
     logical              :: bdocopy
 
@@ -5053,7 +5053,7 @@ contains
     type(t_vectorBlock)                 :: rxTmp
     real(DP), dimension(:), pointer     :: p_Ddata,p_DdataTmp
     real(SP), dimension(:), pointer     :: p_Fdata,p_FDataTmp
-    integer(I32), dimension(:), pointer :: p_Idata,p_IdataTmp
+    integer, dimension(:), pointer :: p_Idata,p_IdataTmp
     integer :: isize,i,j,n
     logical              :: bdocopy
 

@@ -1665,7 +1665,7 @@ contains
   integer :: i,j,k,n
   
     ! Get the degree of the element
-    n = iand(ishft(celement,-16),255)+1
+    n = iand(int(ishft(celement,-16)),255)+1
 
     ! Calculate function values?
     if(Bder(DER_FUNC1D)) then

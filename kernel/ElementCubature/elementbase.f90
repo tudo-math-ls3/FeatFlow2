@@ -106,7 +106,7 @@ implicit none
     real(DP), dimension(NDIM3D) :: DpointReal
     
     ! Twist index entry of the element.
-    integer :: itwistIndex
+    integer(I32) :: itwistIndex
 
   end type
 
@@ -180,7 +180,7 @@ implicit none
     
     ! Twist index array of the elements.
     ! Array with DIMENSION(nelements)
-    integer, dimension(:), pointer :: p_ItwistIndex => null()
+    integer(I32), dimension(:), pointer :: p_ItwistIndex => null()
   
     ! .TRUE., if the array with coordinates on the reference element
     ! is maintained by the caller; prevents release of memory in the

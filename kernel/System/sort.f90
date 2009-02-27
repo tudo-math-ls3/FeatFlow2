@@ -15,7 +15,7 @@
 !#     -> Sort an integer array
 !#
 !# 2.) sort_i32
-!#     -> Sort an integer(I32) array
+!#     -> Sort an integer array
 !#
 !# 3.) sort_sp
 !#     -> Sorts a single precision array
@@ -635,14 +635,14 @@ contains
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    integer(I32), dimension(:), intent(INOUT), target, optional :: Itemp
+    integer, dimension(:), intent(INOUT), target, optional :: Itemp
 
     !</input>
 
     !<inoutput>
 
     ! integer array to be sorted
-    integer(i32),dimension(:) :: Iarray
+    integer,dimension(:) :: Iarray
 
     !optional mapping vector (if more than 1 vector may be sorted)
     integer, dimension(:), optional :: Imapping
@@ -650,7 +650,7 @@ contains
 !</subroutine>
 
     integer :: hhandle,hhandle2
-    integer(I32), dimension(:), pointer :: p_Itemp,p_Itemp2
+    integer, dimension(:), pointer :: p_Itemp,p_Itemp2
 
     !if the optional argument csortMethod is present
     if (present(csortMethod)) then
@@ -704,9 +704,9 @@ contains
 
     subroutine reheap(Iarray, istart, istop, Imapping)
       integer::istart,istop
-      integer(i32),dimension(1:istop)::Iarray
+      integer,dimension(1:istop)::Iarray
       integer,dimension(1:istop), optional:: Imapping
-      integer(i32)::t1,t2
+      integer::t1,t2
       integer :: i1, i2
       integer::i,j
       !if(istop.eq.start) return ! nothing to correct
@@ -776,9 +776,9 @@ contains
 
 
     subroutine heapsort(Iarray, Imapping)
-      integer(i32),dimension(:)::Iarray
+      integer,dimension(:)::Iarray
       integer, dimension(:), optional :: Imapping
-      integer(i32)::t
+      integer::t
       integer :: t2
       integer :: i,n
       n=ubound(Iarray,1)
@@ -819,9 +819,9 @@ contains
 
 
     recursive subroutine quicksort(Iarray, Imapping)
-      integer(i32),dimension(:)::Iarray
+      integer,dimension(:)::Iarray
       integer, dimension(:), optional :: Imapping
-      integer(i32)::t,temp
+      integer::t,temp
 
       integer :: t2, temp2
 
@@ -930,9 +930,9 @@ contains
 
 
     subroutine insertsort(Iarray, Imapping)
-      integer(i32),dimension(:)::Iarray
+      integer,dimension(:)::Iarray
       integer, dimension(:), optional :: Imapping
-      integer(i32)::t
+      integer::t
       integer :: t2
       integer::i,j
 
@@ -973,9 +973,9 @@ contains
 
 
     recursive subroutine mergesort(Iarray, Itemp, Imapping, ImappingTemp)
-      integer(I32),dimension(:)::Iarray
-      integer(I32),dimension(:)::Itemp
-      integer(I32), dimension(:), optional :: Imapping,ImappingTemp
+      integer,dimension(:)::Iarray
+      integer,dimension(:)::Itemp
+      integer, dimension(:), optional :: Imapping,ImappingTemp
       integer::imid, ilen
       integer::ilo,iend_lo,istart_hi
       integer :: idest
@@ -1331,7 +1331,7 @@ contains
     real(dp), dimension(:), intent(INOUT) :: Darray
 
     !optional mapping vector (if more than 1 vector may be sorted)
-    integer(i32), dimension(:), intent(INOUT), optional :: Imapping
+    integer, dimension(:), intent(INOUT), optional :: Imapping
 
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..inode). If not specified, the array is 
@@ -1343,7 +1343,7 @@ contains
 
     integer :: hhandle,hhandle2
     real(DP), dimension(:), pointer :: p_Dtemp
-    integer(I32), dimension(:), pointer :: p_Itemp2
+    integer, dimension(:), pointer :: p_Itemp2
 
     !if the optional argument csortMethod is present
     if (present(csortMethod)) then
@@ -1403,7 +1403,7 @@ contains
     subroutine reheap(Darray, istart, istop, Imapping)
       integer::istart,istop
       real(dp),dimension(1:istop)::Darray
-      integer(i32),dimension(1:istop), optional:: Imapping
+      integer,dimension(1:istop), optional:: Imapping
       real(dp)::t1,t2
       integer :: i1, i2
       integer::i,j
@@ -1475,7 +1475,7 @@ contains
 
     subroutine heapsort(Darray, Imapping)
       real(dp), dimension(:) :: Darray
-      integer(i32), dimension(:), optional :: Imapping
+      integer, dimension(:), optional :: Imapping
       real(dp)::t
       integer :: t2
       integer :: i,n
@@ -1518,7 +1518,7 @@ contains
 
     recursive subroutine quicksort(Darray, Imapping)
       real(dp), dimension(:) :: Darray
-      integer(i32), dimension(:), optional :: Imapping
+      integer, dimension(:), optional :: Imapping
       real(dp)::t, temp
       integer :: t2, temp2
       integer::l,u,i,j
@@ -1626,7 +1626,7 @@ contains
 
     subroutine insertsort(Darray, Imapping)
       real(dp), dimension(:) :: Darray
-      integer(i32), dimension(:), optional :: Imapping
+      integer, dimension(:), optional :: Imapping
 
       real(dp)::t
       integer :: t2
@@ -1672,7 +1672,7 @@ contains
     recursive subroutine mergesort(Darray, Dtemp, Imapping, ImappingTemp)
       real(DP),dimension(:)::Darray
       real(DP),dimension(:)::Dtemp
-      integer(i32), dimension(:), optional :: Imapping,ImappingTemp
+      integer, dimension(:), optional :: Imapping,ImappingTemp
       integer::imid, ilen
       integer::ilo,iend_lo,istart_hi
       integer :: idest
@@ -1826,24 +1826,24 @@ contains
     integer, intent(IN) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
-    integer(I32), optional, intent(IN) :: cmethod
+    integer, optional, intent(IN) :: cmethod
     
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..nindex,inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    integer(I32), dimension(:,:), intent(INOUT), target, optional :: Itemp
+    integer, dimension(:,:), intent(INOUT), target, optional :: Itemp
   !</input>
     
   !<inputoutput>
     ! 2D array containing the n nodes Ielem(1..nindex,inode)
-    integer(I32), dimension(:,:), intent(INOUT) :: Ielem
+    integer, dimension(:,:), intent(INOUT) :: Ielem
   !</inputoutput>
 !</subroutine>
 
-    integer(I32) :: nindex,nnode
+    integer :: nindex,nnode
     integer, dimension(2) :: Isize
     integer :: hhandle
-    integer(I32), dimension(:,:), pointer :: p_Itemp
+    integer, dimension(:,:), pointer :: p_Itemp
         
     nindex = ubound(Ielem,1)
     nnode = ubound(Ielem,2)
@@ -1884,9 +1884,9 @@ contains
     contains
 
     subroutine reheap(istart, istop)
-      integer(I32), intent(IN) :: istart, istop
-      integer(I32)::ielem1, ielem2
-      integer(I32)::i,j, k, idx
+      integer, intent(IN) :: istart, istop
+      integer::ielem1, ielem2
+      integer::i,j, k, idx
 
       if(istop.eq.istart) return
       ! Follow patho of bigger children
@@ -1923,7 +1923,7 @@ contains
 
     subroutine heapsort()
     
-      integer(I32) :: i, t
+      integer :: i, t
       
       ! Heap creation phase (Maxheap)
       do i=ishft(nnode,-1), 1, -1
@@ -1938,9 +1938,9 @@ contains
     end subroutine heapsort
     
     recursive subroutine quicksort (ilower, iupper)
-      integer(I32), intent(IN) :: ilower, iupper
+      integer, intent(IN) :: ilower, iupper
       
-      integer(I32) :: l, u, i, j, t
+      integer :: l, u, i, j, t
       real(DP) :: r
       
       l = ilower
@@ -1981,9 +1981,9 @@ contains
     end subroutine quicksort
     
     subroutine insertSort(ilower, iupper)
-      integer(I32), intent(IN) :: ilower, iupper
+      integer, intent(IN) :: ilower, iupper
       
-      integer(I32) :: i, j, k, idx, t, istop
+      integer :: i, j, k, idx, t, istop
       
       istop = ilower-1
       do i=ilower+1, iupper
@@ -2008,10 +2008,10 @@ contains
       ! British Columbia.
       ! Porting to F90 by J-P Moreau, Paris.
     
-      integer(I32), intent(IN) :: ilow, ihigh
+      integer, intent(IN) :: ilow, ihigh
       
-      integer(I32) :: imid, iend_lo, istart_hi, ilo, ihi
-      integer(I32) :: idx,idest
+      integer :: imid, iend_lo, istart_hi, ilo, ihi
+      integer :: idx,idest
       
       ! Nothing to sort
       if (ilow .ge. ihigh) return
@@ -2081,9 +2081,9 @@ contains
     subroutine swapNode(i,j)
       ! Swaps node Ielem(:,i) and Ielem(:,j)
       
-      integer(I32), intent(IN) :: i, j
+      integer, intent(IN) :: i, j
       
-      integer(I32) :: idx, t
+      integer :: idx, t
       
       do idx=1, nindex
         t            = Ielem(idx,i)
@@ -2095,9 +2095,9 @@ contains
 
     subroutine circShiftRight(j,i)
       ! Circular shift of Ielem(:,j:i) one to the right
-      integer(I32), intent(IN) :: i, j
+      integer, intent(IN) :: i, j
       
-      integer(I32) :: k, t, idx
+      integer :: k, t, idx
       
       do idx=1, nindex
         t = Ielem(idx,i)
@@ -2130,7 +2130,7 @@ contains
     integer, intent(IN) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
-    integer(I32), optional, intent(IN) :: cmethod
+    integer, optional, intent(IN) :: cmethod
     
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Delem(1..nindex,inode). If not specified, the array is 
@@ -2144,7 +2144,7 @@ contains
   !</inputoutput>
 !</subroutine>
 
-    integer(I32) :: nindex,nnode
+    integer :: nindex,nnode
     integer, dimension(2) :: Isize
     integer :: hhandle
     real(DP), dimension(:,:), pointer :: p_Dtemp
@@ -2189,9 +2189,9 @@ contains
     contains
 
     subroutine reheap(istart, istop)
-      integer(I32), intent(IN) :: istart, istop
+      integer, intent(IN) :: istart, istop
       real(DP) :: delem1, delem2
-      integer(I32) :: i,j, k, idx
+      integer :: i,j, k, idx
 
       if(istop.eq.istart) return
       ! Follow patho of bigger children
@@ -2228,7 +2228,7 @@ contains
 
     subroutine heapsort()
     
-      integer(I32) :: i, t
+      integer :: i, t
       
       ! Heap creation phase (Maxheap)
       do i=ishft(nnode,-1), 1, -1
@@ -2243,9 +2243,9 @@ contains
     end subroutine heapsort
     
     recursive subroutine quicksort (ilower, iupper)
-      integer(I32), intent(IN) :: ilower, iupper
+      integer, intent(IN) :: ilower, iupper
       
-      integer(I32) :: l, u, i, j
+      integer :: l, u, i, j
       real(DP) :: t
       real(DP) :: r
       
@@ -2287,9 +2287,9 @@ contains
     end subroutine quicksort
     
     subroutine insertSort(ilower, iupper)
-      integer(I32), intent(IN) :: ilower, iupper
+      integer, intent(IN) :: ilower, iupper
       
-      integer(I32) :: i, j, k, idx, istop
+      integer :: i, j, k, idx, istop
       real(DP) :: t
       
       istop = ilower-1
@@ -2315,10 +2315,10 @@ contains
       ! British Columbia.
       ! Porting to F90 by J-P Moreau, Paris.
     
-      integer(I32), intent(IN) :: ilow, ihigh
+      integer, intent(IN) :: ilow, ihigh
       
-      integer(I32) :: imid, iend_lo, istart_hi, ilo, ihi
-      integer(I32) :: idx,idest
+      integer :: imid, iend_lo, istart_hi, ilo, ihi
+      integer :: idx,idest
       
       ! Nothing to sort
       if (ilow .ge. ihigh) return
@@ -2388,9 +2388,9 @@ contains
     subroutine swapNode(i,j)
       ! Swaps node Delem(:,i) and Delem(:,j)
       
-      integer(I32), intent(IN) :: i, j
+      integer, intent(IN) :: i, j
       
-      integer(I32) :: idx
+      integer :: idx
       real(DP) :: t
       
       do idx=1, nindex
@@ -2403,9 +2403,9 @@ contains
 
     subroutine circShiftRight(j,i)
       ! Circular shift of Delem(:,j:i) one to the right
-      integer(I32), intent(IN) :: i, j
+      integer, intent(IN) :: i, j
       
-      integer(I32) :: k, idx
+      integer :: k, idx
       real(DP) :: t
       
       do idx=1, nindex
@@ -2439,7 +2439,7 @@ contains
     integer, intent(IN) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
-    integer(I32), optional, intent(IN) :: cmethod
+    integer, optional, intent(IN) :: cmethod
     
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Delem(1..nindex,inode). If not specified, the array is 
@@ -2453,7 +2453,7 @@ contains
   !</inputoutput>
 !</subroutine>
 
-    integer(I32) :: nindex,nnode
+    integer :: nindex,nnode
     integer, dimension(2) :: Isize
     integer :: hhandle
     real(SP), dimension(:,:), pointer :: p_Stemp
@@ -2497,9 +2497,9 @@ contains
     contains
 
     subroutine reheap(istart, istop)
-      integer(I32), intent(IN) :: istart, istop
+      integer, intent(IN) :: istart, istop
       real(SP) :: selem1, selem2
-      integer(I32) :: i,j, k, idx
+      integer :: i,j, k, idx
 
       if(istop.eq.istart) return
       ! Follow patho of bigger children
@@ -2536,7 +2536,7 @@ contains
 
     subroutine heapsort()
     
-      integer(I32) :: i, t
+      integer :: i, t
       
       ! Heap creation phase (Maxheap)
       do i=ishft(nnode,-1), 1, -1
@@ -2551,9 +2551,9 @@ contains
     end subroutine heapsort
     
     recursive subroutine quicksort (ilower, iupper)
-      integer(I32), intent(IN) :: ilower, iupper
+      integer, intent(IN) :: ilower, iupper
       
-      integer(I32) :: l, u, i, j
+      integer :: l, u, i, j
       real(SP) :: t
       real(DP) :: r
       
@@ -2595,9 +2595,9 @@ contains
     end subroutine quicksort
     
     subroutine insertSort(ilower, iupper)
-      integer(I32), intent(IN) :: ilower, iupper
+      integer, intent(IN) :: ilower, iupper
       
-      integer(I32) :: i, j, k, idx, istop
+      integer :: i, j, k, idx, istop
       real(SP) :: t
       
       istop = ilower-1
@@ -2623,10 +2623,10 @@ contains
       ! British Columbia.
       ! Porting to F90 by J-P Moreau, Paris.
     
-      integer(I32), intent(IN) :: ilow, ihigh
+      integer, intent(IN) :: ilow, ihigh
       
-      integer(I32) :: imid, iend_lo, istart_hi, ilo, ihi
-      integer(I32) :: idx,idest
+      integer :: imid, iend_lo, istart_hi, ilo, ihi
+      integer :: idx,idest
       
       ! Nothing to sort
       if (ilow .ge. ihigh) return
@@ -2696,9 +2696,9 @@ contains
     subroutine swapNode(i,j)
       ! Swaps node Selem(:,i) and Selem(:,j)
       
-      integer(I32), intent(IN) :: i, j
+      integer, intent(IN) :: i, j
       
-      integer(I32) :: idx
+      integer :: idx
       real(SP) :: t
       
       do idx=1, nindex
@@ -2711,9 +2711,9 @@ contains
 
     subroutine circShiftRight(j,i)
       ! Circular shift of Selem(:,j:i) one to the right
-      integer(I32), intent(IN) :: i, j
+      integer, intent(IN) :: i, j
       
-      integer(I32) :: k, idx
+      integer :: k, idx
       real(SP) :: t
       
       do idx=1, nindex
