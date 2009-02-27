@@ -382,7 +382,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName,&
                              'isystemPrecond', rappDescriptor%isystemPrecond)
     call parlst_getvalue_int(rparlist, ssectionName,&
-                             'ieltype', rappDescriptor%ieltype)
+                             'celement', rappDescriptor%celement)
     call parlst_getvalue_int(rparlist, ssectionName,&
                              'imatrixformat', rappDescriptor%imatrixFormat)
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -435,8 +435,8 @@ contains
                              rappDescriptor%isystemCoupling, .true.)
     call collct_setvalue_int(rcollection, 'isystemPrecond',&
                              rappDescriptor%isystemPrecond, .true.)
-    call collct_setvalue_int(rcollection, 'ieltype',&
-                             rappDescriptor%ieltype, .true.)
+    call collct_setvalue_int(rcollection, 'celement',&
+                             rappDescriptor%celement, .true.)
     call collct_setvalue_int(rcollection, 'imatrixformat',&
                              rappDescriptor%imatrixFormat, .true.)
     call collct_setvalue_int(rcollection, 'isystemformat',&
@@ -758,7 +758,7 @@ contains
       ! Get spatial dimension
       select case(p_rtriangulation%ndim)
       case (NDIM1D)
-        select case(rappDescriptor%ieltype)
+        select case(rappDescriptor%celement)
         case (-1,1,11)
           ! P1=Q1 finite elements
           call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
@@ -775,7 +775,7 @@ contains
         end select
         
       case (NDIM2D)
-        select case(rappDescriptor%ieltype)
+        select case(rappDescriptor%celement)
         case (1)
           ! P1 finite elements
           call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
@@ -815,7 +815,7 @@ contains
         end select
         
       case (NDIM3D)
-        select case(rappDescriptor%ieltype)
+        select case(rappDescriptor%celement)
         case (1)
           ! P1 finite elements
           call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &

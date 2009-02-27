@@ -194,7 +194,7 @@ module euler_basic
     integer :: isystemPrecond
 
     ! Type of the element(s)
-    integer :: ieltype
+    integer :: celement
 
     ! Matrix format
     integer :: imatrixFormat

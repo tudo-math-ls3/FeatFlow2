@@ -142,7 +142,7 @@ trifile = grids/2d/rect_2x1.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-ieltype = -1
+celement = -1
 
 # convert mesh to triangular mesh?
 iconvToTria = 0

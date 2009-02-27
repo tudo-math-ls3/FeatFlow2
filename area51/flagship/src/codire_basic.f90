@@ -207,7 +207,7 @@ module codire_basic
     integer :: itargetfunctype
 
     ! Type of the element(s)
-    integer :: ieltype
+    integer :: celement
 
     ! Matrix format
     integer :: imatrixFormat
