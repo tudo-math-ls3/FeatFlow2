@@ -2222,6 +2222,7 @@ contains
       
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
+      ! Resize solution vector
       if (rsolution%NEQ .ne. NVAR1D*Ivertices(1)) then
         call lsysbl_resizeVectorBlock(rsolution, NVAR1D*Ivertices(1), .false., .true.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
@@ -2339,6 +2340,7 @@ contains
       
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
+      ! Resize solution vector
       if (rsolution%NEQ .ne. NVAR1D*Ivertices(1)) then
         call lsysbl_resizeVectorBlock(rsolution, NVAR1D*Ivertices(1), .false., .true.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
