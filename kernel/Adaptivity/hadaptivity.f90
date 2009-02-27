@@ -66,11 +66,11 @@ module hadaptivity
   use boundary
   use collection
   use fsystem
+  use hadaptaux
   use hadaptaux1d
   use hadaptaux2d
   use hadaptaux3d
   use io
-  use linearsystemscalar
   use list
   use octree
   use paramlist
@@ -103,7 +103,7 @@ contains
 
 !<subroutine>
 
-  subroutine hadapt_initFromParameterlist(rhadapt, rparlist, ssection)
+  subroutine hadapt_initFromParameterlist(rhadapt, rparlist, ssectionName)
 
 !<description>
     ! This subroutine initializes the adaptivity structure
@@ -115,7 +115,7 @@ contains
     type(t_parlist), intent(IN) :: rparlist
 
     ! name of the section
-    character(LEN=*), intent(IN) :: ssection
+    character(LEN=*), intent(IN) :: ssectionName
 !</input>
 
 !<output>
@@ -125,13 +125,13 @@ contains
 !</subroutine>
 
     ! Get mandatory parameters from list
-    call parlst_getvalue_int   (rparlist, ssection, "nsubdividemax",&
+    call parlst_getvalue_int   (rparlist, ssectionName, "nsubdividemax",&
                                 rhadapt%nsubdividemax)
-    call parlst_getvalue_int   (rparlist, ssection, "iadaptationStrategy",&
+    call parlst_getvalue_int   (rparlist, ssectionName, "iadaptationStrategy",&
                                 rhadapt%iadaptationStrategy)
-    call parlst_getvalue_double(rparlist, ssection, "drefinementTolerance",&
+    call parlst_getvalue_double(rparlist, ssectionName, "drefinementTolerance",&
                                 rhadapt%drefinementTolerance)
-    call parlst_getvalue_double(rparlist, ssection, "dcoarseningTolerance",&
+    call parlst_getvalue_double(rparlist, ssectionName , "dcoarseningTolerance",&
                                 rhadapt%dcoarseningTolerance)
 
     ! Initialize data
