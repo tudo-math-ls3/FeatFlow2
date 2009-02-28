@@ -1418,8 +1418,8 @@ contains
     real(DP), dimension(ndofsPerElement,ndofsPerElement) :: Daa
     real(DP), dimension(ndofsPerElement)                 :: Dff
     real(DP) :: dscale
-    integer(I32), dimension(ndofsPerElement) :: Ipiv
-    integer(I32) :: iinfo
+    integer, dimension(ndofsPerElement) :: Ipiv
+    integer :: iinfo
     
     ! Quickly check the matrices if one of them is saved transposed.
     ! VANKA does not support transposed matrices; would kill computational
