@@ -306,12 +306,12 @@ contains
   
 !<subroutine>
 
-  subroutine spdiscr_checkCubature (ccubType,ielementType)
+  subroutine spdiscr_checkCubature (ccubType,celement)
   
 !<description>
   
   ! This routine checks if the cubature formula of type icubType can be applied
-  ! to the elements of the type ielementType.
+  ! to the elements of the type celement.
   ! If this is not possible, an error is thrown.
   
 !</description>
@@ -321,7 +321,7 @@ contains
   integer, intent(IN)                       :: ccubType
   
   ! The element type the cubature formula should be checked against
-  integer(I32), intent(IN)                       :: ielementType
+  integer(I32), intent(IN)                       :: celement
 !</input>
   
 !</subroutine>
@@ -330,7 +330,7 @@ contains
   integer(I32) :: ishapeEL, ishapeCUB
   
     ! Get the shape identifiers for both the element and the cubature formula
-    ishapeEL = elem_igetShape(ielementType)
+    ishapeEL = elem_igetShape(celement)
     ishapeCUB = cub_igetShape(ccubType)
     
     ! The element and cubature formula are compatible if both shapes are equal,
@@ -346,8 +346,8 @@ contains
 !
 !  ! Get from the element distribution the trial space and from that
 !  ! the number of vertices, the element expects.
-!  NVE = elem_igetNVE(ielementType)
-!  idim = elem_igetDimension(ielementType)
+!  NVE = elem_igetNVE(celement)
+!  idim = elem_igetDimension(celement)
 !  
 !  bcompatible = .true.
 !  
@@ -384,7 +384,7 @@ contains
   ! Q2T with bubble does not work with G1X1, Trapezoidal rule and
   ! G2X2 -- Laplace matrices would be indefinite because of the definition
   ! of the bubble function!
-  if (ielementType .eq. EL_Q2TB) then
+  if (celement .eq. EL_Q2TB) then
     if ((ccubType .ge. 201) .and. (ccubType .le. 204)) bcompatible = .false.
   end if
 
@@ -400,7 +400,7 @@ contains
   
 !<function>
 
-  integer function spdiscr_getLumpCubature (ielementType) result (ccubType)
+  integer function spdiscr_getLumpCubature (celement) result (ccubType)
   
 !<description>
   ! This routine tries to determine a cubature formula identifier according
@@ -410,7 +410,7 @@ contains
 
 !<input>
   ! An element type identifier
-  integer(I32), intent(IN)                       :: ielementType
+  integer(I32), intent(IN)                       :: celement
 !</input>
 
 !<result>
@@ -420,10 +420,10 @@ contains
   
 !</function>
 
-    select case (elem_igetDimension(ielementType))
+    select case (elem_igetDimension(celement))
     case (NDIM1D)
     
-      select case (elem_getPrimaryElement(ielementType))
+      select case (elem_getPrimaryElement(celement))
       case (EL_P0_1D)
         ! Use Gauss-1
         ccubType = CUB_G1_1D
@@ -446,7 +446,7 @@ contains
 
     case (NDIM2D)
     
-      select case (elem_getPrimaryElement(ielementType))
+      select case (elem_getPrimaryElement(celement))
       case (EL_P0)
         ! Use Gauss 1X1
         ccubType = CUB_G1_T
@@ -477,7 +477,7 @@ contains
       
     case (NDIM3D)
 
-      select case (elem_getPrimaryElement(ielementType))
+      select case (elem_getPrimaryElement(celement))
       case (EL_P0_3D)
         ! Use Gauss 1X1
         ccubType = CUB_G1_3D_T
@@ -517,7 +517,7 @@ contains
   
 !<function>
 
-  integer function spdiscr_getStdCubature (ielementType) result (ccubType)
+  integer function spdiscr_getStdCubature (celement) result (ccubType)
   
 !<description>
   ! This routine returns a standard cubature formula for an element which
@@ -527,20 +527,20 @@ contains
 
 !<input>
   ! An element type identifier
-  integer(I32), intent(IN)                       :: ielementType
+  integer(I32), intent(IN)                       :: celement
 !</input>
 
 !<result>
   ! A standard cubature formula for the assembly of matrices/vectors
-  ! with the specified element ielementType.
+  ! with the specified element celement.
 !</result>
   
 !</function>
 
-    select case (elem_igetDimension(ielementType))
+    select case (elem_igetDimension(celement))
     case (NDIM1D)
     
-      select case (elem_getPrimaryElement(ielementType))
+      select case (elem_getPrimaryElement(celement))
       case (EL_P0_1D)
         ! 1-point Gauss
         ccubType = CUB_G1_1D
@@ -563,7 +563,7 @@ contains
 
     case (NDIM2D)
     
-      select case (elem_getPrimaryElement(ielementType))
+      select case (elem_getPrimaryElement(celement))
       case (EL_P0)
         ! Use Gauss 1X1
         ccubType = CUB_G1_T
@@ -610,7 +610,7 @@ contains
       
     case (NDIM3D)
 
-      select case (elem_getPrimaryElement(ielementType))
+      select case (elem_getPrimaryElement(celement))
       case (EL_Q0_3D)
         ! 1x1 Gauss formula
         ccubType = CUB_G1_3D

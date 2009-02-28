@@ -252,7 +252,8 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     type(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
     type(t_vectorBlock) :: rgradient,rgradientRef
-    integer :: imethod,isubmethod,idim,ccub,celement,i
+    integer :: imethod,isubmethod,idim,ccub,i
+    integer(I32) :: celement
 
     ! Some basic checks:
     
@@ -3963,7 +3964,7 @@ contains
     subroutine calc_cubatureDest(celement,ncubp, Dxi, Domega)
       
       ! Element type identifier.
-      integer, intent(IN) :: celement
+      integer(I32), intent(IN) :: celement
 
       ! Number of cubature points
       integer, intent(OUT) :: ncubp

@@ -85,8 +85,8 @@ contains
     
     ! local variables
     character(LEN=80) :: cbuffer
-    integer,      dimension(:,:), pointer :: p_Idata
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(:,:), pointer :: p_Idata
+    integer, dimension(2) :: Isize
     integer :: cf,ix,iy
     
     if (ifile .eq. 0) then
@@ -241,8 +241,8 @@ contains
 
     ! local variables
     integer, dimension(:,:), pointer :: p_Idata
-    real(DP)     :: x,y,xmin,ymin,xmax,ymax
-    integer(I32) :: ivt,nvt,ix,iy
+    real(DP) :: x,y,xmin,ymin,xmax,ymax
+    integer :: ivt,nvt,ix,iy
 
     ! Set pointer for image data
     call storage_getbase_int2D(rpgm%h_Idata, p_Idata)
@@ -303,8 +303,8 @@ contains
 
     ! local variables
     integer, dimension(:,:), pointer :: p_Idata
-    real(DP)     :: x,y,xmin,ymin,xmax,ymax
-    integer(I32) :: ivt,nvt,ix,iy
+    real(DP) :: x,y,xmin,ymin,xmax,ymax
+    integer :: ivt,nvt,ix,iy
 
     ! Set pointer for image data
     call storage_getbase_int2D(rpgm%h_Idata, p_Idata)

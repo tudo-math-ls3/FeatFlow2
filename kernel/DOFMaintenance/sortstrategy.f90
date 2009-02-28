@@ -685,30 +685,30 @@ contains
     !<input>
     
     ! Number of equations
-    integer(I32), intent(IN)                   :: neq
+    integer, intent(IN)                   :: neq
     
     ! Row description of matrix
-    integer(I32), dimension(neq+1), intent(IN) :: Ild
+    integer, dimension(neq+1), intent(IN) :: Ild
     
     ! Auxiliary vector, calculated with cmsort_calcColumnNumbering
-    integer(I32), dimension(:), intent(IN)     :: Icon
+    integer, dimension(:), intent(IN)     :: Icon
     !</input>
     
     !<output>
     
     ! The permutation vector that describes how the solution vector
     ! has to be restored
-    integer(I32), dimension(neq), intent(OUT) :: Itr1
+    integer, dimension(neq), intent(OUT) :: Itr1
     
     ! Describes how a resorted vector can be sorted back 
-    integer(I32), dimension(neq), intent(OUT) :: Itr2
+    integer, dimension(neq), intent(OUT) :: Itr2
 
     !</output>    
 
   !</subroutine>
     
     ! local variables
-    integer(I32) :: ineqIdx, icount, ildIdx, icolIdx
+    integer :: ineqIdx, icount, ildIdx, icolIdx
     
 !    DO icount=1, neq
 !      IF (Itr1(icount) .EQ. 0) Itr1(icount) = icount
@@ -1024,11 +1024,11 @@ contains
     !     the end for the X-coordinate.
     
     real(DP), dimension(:,:), intent(IN) :: Dcoords
-    integer(I32), dimension(:), intent(OUT) :: Ipermutation
+    integer, dimension(:), intent(OUT) :: Ipermutation
     integer, intent(IN) :: idirection
     
       ! local variables
-      integer(I32), dimension(2) :: Isize
+      integer, dimension(2) :: Isize
       integer :: h_Dsort
       integer :: i
       real(DP), dimension(:,:), pointer :: p_Dsort
@@ -1071,7 +1071,7 @@ contains
       ! The first element in each ndim+2-tupel is now the permutation.
       ! Do a type conversion to int to get it.
       do i=1,Isize(2)
-        Ipermutation(i) = int(p_Dsort(1,i),I32)
+        Ipermutation(i) = p_Dsort(1,i)
       end do
       
       ! Release the temp array, that's it.
@@ -1530,7 +1530,7 @@ contains
       type(t_triangulation), pointer :: p_rtriaCoarse,p_rtria
       integer :: NEQ
       integer :: hmarker
-      integer(I32), dimension(:), pointer :: p_Imarker
+      integer, dimension(:), pointer :: p_Imarker
       integer, dimension(EL_MAXNBAS) :: Idofs
       integer, dimension(size(Rdiscretisation)) :: IpatchIndex
       integer, dimension(size(Rdiscretisation)) :: ImaxIndex
@@ -1707,13 +1707,13 @@ contains
     
   !<input>
     ! A permutation.
-    integer(I32), dimension(:), intent(IN) :: IpermutationSource
+    integer, dimension(:), intent(IN) :: IpermutationSource
   !</input>
     
   !<output>
     ! An array of the same size as IpermutationSource. Receives the inverse
     ! permutation.
-    integer(I32), dimension(:), intent(OUT) :: IpermutationDest
+    integer, dimension(:), intent(OUT) :: IpermutationDest
   !</output>    
 
   !</subroutine>

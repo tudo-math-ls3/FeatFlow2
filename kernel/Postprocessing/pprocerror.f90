@@ -225,7 +225,8 @@ contains
   real(DP), dimension(:), pointer :: p_DerrL2, p_DerrH1, p_DerrL1
   
   ! Some other local variables
-  integer :: i,j,k,NEL,ieldist,ndofs,ncubp,ctrafo,ccubature,iel,ider
+  integer :: i,j,k,NEL,ieldist,ndofs,ncubp,ccubature,iel,ider
+  integer(I32) :: ctrafoType
   integer :: NELtodo,NELdone,NELbatchSize
   integer(I32) :: cevalTag, celement
   real(DP) :: derrL2, derrH1, derrL1, dom, daux, daux2
@@ -427,7 +428,7 @@ contains
       ndofs = elem_igetNDofLoc(celement)
       
       ! Get the trafo
-      ctrafo = elem_igetTrafoType(celement)
+      ctrafoType = elem_igetTrafoType(celement)
       
       ! Get the evaluation tag
       cevalTag = elem_getEvaluationTag(celement)
@@ -445,7 +446,7 @@ contains
       ! Allocate the arrays for the cubature formula
       ncubp = cub_igetNumPts(ccubature)
       allocate(Domega(ncubp))
-      allocate(DcubPts(trafo_igetReferenceDimension(ctrafo),ncubp))
+      allocate(DcubPts(trafo_igetReferenceDimension(ctrafoType),ncubp))
       
       ! Get the cubature formula
       call cub_getCubature(ccubature,DcubPts, Domega)
@@ -480,7 +481,7 @@ contains
         
         ! Prepare the element for evaluation
         call elprep_prepareSetForEvaluation (reval, cevalTag, p_rtria, &
-            p_IcurElemList, ctrafo, DcubPts)
+            p_IcurElemList, ctrafoType, DcubPts)
         p_Ddetj => reval%p_Ddetj
         
         ! Remove the ref-points eval tag for the next loop iteration
@@ -2715,7 +2716,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(:), allocatable :: IelementOrientation
+    integer, dimension(:), allocatable :: IelementOrientation
     integer, dimension(:), allocatable :: Ielements
     real(DP), dimension(:,:), allocatable :: DedgePosition
     
@@ -2740,12 +2741,13 @@ contains
     real(DP), dimension(CUB_MAXCUBP) :: Domega1D
     real(DP), dimension(:,:,:), allocatable :: Dvalues
     real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcoord
-    integer :: ncubp,ipoint,celement
-    integer(I32) :: icoordSystem
+    integer :: ncubp,ipoint
+    integer(I32) :: celement
+    integer :: icoordSystem
     real(DP) :: dlen,dpar1,dpar2
     
     ! Arrays for element distributions for every element
-    integer(I32), dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelementDistr
 
     ! List of element distributions in the discretisation structure
     type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution

@@ -199,7 +199,7 @@ contains
   real(DP), dimension(NDIM2D,CUB_MAXCUBP_1D) :: DpointsRef,DpointsReal
   
   ! Coordinate system for U and P element
-  integer :: ctrafoU, ctrafoP
+  integer(I32) :: ctrafoU, ctrafoP
   
   ! U/P element parametric or nonparametric
   logical :: bnonparU,bnonparP
@@ -628,7 +628,7 @@ contains
   real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi2D
   
   ! Coordinate system for U and P element
-  integer :: ctrafoU, ctrafoP
+  integer(I32) :: ctrafoU, ctrafoP
   
   ! U/P element parametric or nonparametric
   logical :: bnonparU, bnonparP
@@ -1108,7 +1108,7 @@ contains
   real(DP), dimension(NDIM3D,CUB_MAXCUBP_2D) :: DpointsRef,DpointsReal
   
   ! Coordinate system for U and P element
-  integer :: ctrafoU, ctrafoP
+  integer(I32) :: ctrafoU, ctrafoP
   
   ! U/P element parametric or nonparametric
   logical :: bnonparU,bnonparP

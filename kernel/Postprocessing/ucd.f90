@@ -1215,7 +1215,7 @@ contains
   ! Array with as many elements as NEL in the triangulation. For every
   ! element i, Imaterials(i) specifies the element material id that
   ! should be assigned to that cell.
-  integer(I32), intent(IN), dimension(:) :: Imaterials
+  integer, intent(IN), dimension(:) :: Imaterials
 !</input>
   
 !<inputoutput>
@@ -1226,7 +1226,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(I32), dimension(:), pointer :: p_Idata
+  integer, dimension(:), pointer :: p_Idata
   integer :: NEL
 
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
@@ -1280,12 +1280,12 @@ contains
   ! Array with as many elements as NVT in the triangulation. For every
   ! vertex i, ImaterialsVert(i) specifies the vertex material id that
   ! should be assigned to that vertex.
-  integer(I32), intent(IN), dimension(:) :: ImaterialsVert
+  integer, intent(IN), dimension(:) :: ImaterialsVert
 
   ! OPTIONAL: Array with as many elements as NMT in the triangulation. 
   ! For every edge i, ImaterialsMid(i) specifies the material id
   ! that should be assigned to the corresponding edge midpoint.
-  integer(I32), intent(IN), dimension(:), optional :: ImaterialsMid
+  integer, intent(IN), dimension(:), optional :: ImaterialsMid
 
   ! OPTIONAL: Array with as many elements as NEL in the triangulation. 
   ! For every element i, ImaterialsElem(i) specifies the material id
@@ -1293,14 +1293,14 @@ contains
   ! Note: The material of the element midpoint need not to coincide
   !  with the material of the element -- which is specified
   !  in ucd_setCellMaterial!
-  integer(I32), intent(IN), dimension(:), optional :: ImaterialsElem
+  integer, intent(IN), dimension(:), optional :: ImaterialsElem
 
 !</input>
 
 !</subroutine>
 
   ! local variables
-  integer(I32), dimension(:), pointer :: p_Idata
+  integer, dimension(:), pointer :: p_Idata
   integer :: NEL
   integer :: NMT
   integer :: NVT
@@ -1343,7 +1343,7 @@ contains
     ! Create a new hImaterials handle if it does not exist.
     if (rexport%hIvertexMaterial .eq. ST_NOHANDLE) then
       call storage_new ('ucd_setVertexMaterial','hIvertexMaterial',&
-          int(rexport%nvertices,I32),ST_INT,rexport%hIvertexMaterial,ST_NEWBLOCK_ZERO)
+          rexport%nvertices,ST_INT,rexport%hIvertexMaterial,ST_NEWBLOCK_ZERO)
     end if
 
     call storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
@@ -1450,7 +1450,7 @@ contains
     integer :: imt
     integer :: iel
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(I32), dimension(:), pointer :: p_Idata
+    integer, dimension(:), pointer :: p_Idata
     real(DP), dimension(:,:), pointer :: p_DvertexCoords,p_Ddata2D
     integer, dimension(:,:), pointer :: p_IverticesAtEdge 
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -2314,7 +2314,7 @@ contains
     integer :: imt
     integer :: iel
     real(DP), dimension(:), pointer :: p_Ddata
-    integer(I32), dimension(:), pointer :: p_Idata
+    integer, dimension(:), pointer :: p_Idata
     real(DP), dimension(:,:), pointer :: p_DvertexCoords,p_Ddata2D
     integer, dimension(:,:), pointer :: p_IverticesAtEdge 
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -4119,7 +4119,7 @@ contains
 
 !</subroutine>
 
-    integer(I32), dimension(:), pointer :: p_IvariableSpec 
+    integer(I32), dimension(:), pointer :: p_IvariableSpec
     integer, dimension(:), pointer :: p_Hvariables,p_IvariableBase
     character(LEN=SYS_NAMELEN), dimension(:), pointer :: p_SvariableNames
     integer :: nsize
@@ -4228,10 +4228,10 @@ contains
     allocate(p_Hpolygons(nsize+16))
     if (rexport%hpolygonMaterial .eq. ST_NOHANDLE) then
       call storage_new ('ucd_morePolygons','hpolygonMaterial',&
-          int(nsize+16,I32),ST_INT,&
+          nsize+16,ST_INT,&
           rexport%hpolygonMaterial,ST_NEWBLOCK_ZERO)
     else
-      call storage_realloc ('ucd_morePolygons', int(nsize+16,I32), &
+      call storage_realloc ('ucd_morePolygons', nsize+16, &
           rexport%hpolygonMaterial, ST_NEWBLOCK_ZERO)
     end if
     
@@ -4351,7 +4351,7 @@ contains
     
     ! Allocate a new vector for the data
     call storage_new ('ucd_addVariableVertexBased','hvariable',&
-        int(rexport%nvertices,I32),ST_DOUBLE,&
+        rexport%nvertices,ST_DOUBLE,&
         rexport%p_Hvariables(rexport%nvariables),&
         ST_NEWBLOCK_ZERO)
     
@@ -4641,7 +4641,7 @@ contains
     
     ! Allocate a new vector for the data
     call storage_new ('ucd_addVariableVertexBased','hvariable',&
-        int(rexport%ncells,I32),ST_DOUBLE,&
+        rexport%ncells,ST_DOUBLE,&
         rexport%p_Hvariables(rexport%nvariables),&
         ST_NEWBLOCK_ZERO)
         
@@ -4713,9 +4713,9 @@ contains
 !</subroutine>
 
     ! local varables
-    integer(I32), dimension(2) :: Ilength
+    integer, dimension(2) :: Ilength
     real(DP), dimension(:,:), pointer :: p_Ddata
-    integer(I32), dimension(:), pointer :: p_Idata
+    integer, dimension(:), pointer :: p_Idata
 
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
       call output_line ('Export structure not initialised!',&
@@ -4780,7 +4780,7 @@ contains
 !</subroutine>
 
     ! local varables
-    integer(I32), dimension(2) :: Ilength
+    integer, dimension(2) :: Ilength
     real(DP), dimension(:,:), pointer :: p_Ddata
 
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
@@ -4902,7 +4902,7 @@ contains
     
     ! Allocate a new vector for the data
     call storage_new ('ucd_addTracerVariable','hvariable',&
-        int(rexport%ntracers,I32),ST_DOUBLE,&
+        rexport%ntracers,ST_DOUBLE,&
         rexport%p_HtracerVariables(rexport%ntracerVariables),&
         ST_NEWBLOCK_ZERO)
         
@@ -5444,7 +5444,7 @@ contains
     type(t_ucdExport), intent(INOUT) :: rexport
     
       ! Local variables
-      integer(I32) :: iel,ivt
+      integer :: iel,ivt
       integer :: ilinelen,ios,itype,imaterial
       logical :: bfinish
       character(LEN=SYS_STRLEN) :: skey,sline,sname
@@ -5713,13 +5713,13 @@ contains
     
       ! Local variables
       integer :: ilinelen,ios,ntracers,n,i,nve,ive
-      integer(I32) :: nmaxnve
+      integer :: nmaxnve
       character(LEN=SYS_STRLEN) :: skey,sdummy,sline
       real(DP), dimension(:), allocatable :: Dx,Dy,Dz
-      integer(I32), dimension(:,:), allocatable :: IverticesAtElement
+      integer, dimension(:,:), allocatable :: IverticesAtElement
       real(DP), dimension(:,:), pointer :: p_Ddata2D
-      integer(I32), dimension(:,:), pointer :: p_Idata2D
-      integer(I32), dimension(2) :: Isize
+      integer, dimension(:,:), pointer :: p_Idata2D
+      integer, dimension(2) :: Isize
 
       ! Do we have a "nodes x" or a "nodes fromfile" command?
       read(scommand,*) skey,sdummy
@@ -5761,7 +5761,7 @@ contains
       end do
       
       ! Allocate memory for the coordinates with the storage-system
-      Isize = (/rtriangulation%ndim,int(rtriangulation%NVT,I32)/)
+      Isize = (/rtriangulation%ndim,rtriangulation%NVT/)
       call storage_new2D ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
           rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
       
@@ -5838,7 +5838,7 @@ contains
       
       ! All elements read in. Create the actual IverticesAtElement.
 
-      Isize = (/nmaxnve,int(rtriangulation%NEL,I32)/)
+      Isize = (/nmaxnve,rtriangulation%NEL/)
       call storage_new2D ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
           rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
           
@@ -5890,7 +5890,7 @@ contains
       type(t_triangulation), intent(INOUT) :: rtriangulation
     
       ! local variables
-      integer(I32), dimension(:), pointer :: p_InodalProperty
+      integer, dimension(:), pointer :: p_InodalProperty
       integer, dimension(:,:), pointer :: p_IverticesAtElement
       integer, dimension(:,:), pointer :: p_IedgesAtElement
       integer, dimension(:,:), pointer :: p_IneighboursAtElement
@@ -5898,7 +5898,7 @@ contains
       integer, dimension(:), pointer :: p_IelementsAtVertexIdx
       integer, dimension(:), pointer :: p_IverticesAtBoundary
       integer, dimension(:), allocatable :: IverticesAtBoundary
-      integer(I32), dimension(:), pointer :: p_IboundaryCpIdx
+      integer, dimension(:), pointer :: p_IboundaryCpIdx
       integer :: ivt,ivt2
       integer :: iel,ielidx
       integer :: ive,iveprevious,ivenext,nbct,nve,nvbd,ivbd,ibctidx,icurrentbc
@@ -5906,7 +5906,7 @@ contains
       
       ! Allocate memory for the arrays 
       call storage_new ('tria_read_tri2D', 'KNPR', &
-          int(rtriangulation%NVT,I32), ST_INT, &
+          rtriangulation%NVT, ST_INT, &
           rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
       
       ! Get the pointer to some arrays
@@ -5952,7 +5952,7 @@ contains
       
       ! Allocate memory for IverticesAtBoundary.
       call storage_new ('tria_generateBasicBoundary', &
-          'KVBD', int(rtriangulation%NVBD,I32), &
+          'KVBD', rtriangulation%NVBD, &
           ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
 
       call storage_getbase_int(&
@@ -6042,7 +6042,7 @@ contains
       ! Allocate memory for the boundary component index vector.
       ! Initialise that with zero!
       call storage_new ('tria_generateBasicBoundary', &
-          'KBCT', int(rtriangulation%NBCT+1,I32), &
+          'KBCT', rtriangulation%NBCT+1, &
           ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
       call storage_getbase_int (&
@@ -6064,7 +6064,7 @@ contains
       
       ! Allocate memory for  and DvertexParameterValue
       call storage_new ('tria_generateBasicBoundary', &
-          'DVBDP', int(rtriangulation%NVBD,I32), &
+          'DVBDP', rtriangulation%NVBD, &
           ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
       
       ! Get the array where to store boundary parameter values.
@@ -6153,7 +6153,7 @@ contains
   ! have to accept the data of the variable.
   !
   ! If the variable is unknown, -1 is returned.
-  integer(I32), intent(OUT), optional :: nlength
+  integer, intent(OUT), optional :: nlength
   
   ! OPTIONAL: Type of data. One of the UCD_BASE_xxxx flags.
   ! =UCD_BASE_ELEMENT: element based data.

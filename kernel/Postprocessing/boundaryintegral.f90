@@ -179,7 +179,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32), dimension(:), allocatable :: IelementOrientation
+    integer, dimension(:), allocatable :: IelementOrientation
     integer, dimension(:), allocatable :: Ielements
     real(DP), dimension(:,:), allocatable :: DedgePosition
     
@@ -188,7 +188,7 @@ contains
     integer(I32) :: ctrafoType
     
     ! The triangulation structure - to shorten some things...
-    integer(I32), dimension(:), pointer :: p_IboundaryCpIdx
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer, dimension(:), pointer :: p_IedgesAtBoundary
     integer, dimension(:), pointer :: p_IelementsAtBoundary
     real(DP), dimension(:), pointer :: p_DedgeParameterValue
@@ -204,7 +204,7 @@ contains
     real(DP), dimension(:,:), allocatable :: Dvalues
     real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcoord
     integer :: ncubp,ipoint
-    integer(I32) :: icoordSystem
+    integer :: icoordSystem
     real(DP) :: dlen,dpar1,dpar2
 
     real(DP), dimension(:,:), allocatable :: DpointPar

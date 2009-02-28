@@ -76,7 +76,7 @@ contains
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
 
     ! Pointer to nodal property
-    integer(I32), dimension(:), pointer :: p_InodalProperty
+    integer, dimension(:), pointer :: p_InodalProperty
 
     ! Handle for nodal coefficients
     integer :: h_Dcoefficients
@@ -194,7 +194,7 @@ contains
       real(DP), dimension(:,:), intent(IN) :: DvertexCoords
       integer, dimension(:,:), intent(IN) :: IverticesAtElement
       integer, dimension(:,:), intent(IN) :: IneighboursAtElement
-      integer(I32), dimension(:), intent(IN) :: InodalProperty
+      integer, dimension(:), intent(IN) :: InodalProperty
       real(DP), intent(IN) :: dweight,dfilter
       integer, intent(IN) :: NEL,NVT
 
