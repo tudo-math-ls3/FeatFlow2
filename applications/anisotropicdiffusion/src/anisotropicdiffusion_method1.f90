@@ -132,7 +132,7 @@ contains
     real(DP) :: dmeshDistortion
     
     ! Element type of the discretisation
-    integer :: ieltype
+    integer(I32) :: ieltype
     
     ! Whether to convert to triangle mesh
     integer :: iconvertToTriangleMesh

@@ -135,7 +135,7 @@ contains
     real(DP) :: dmeshDistortion
     
     ! Element type of the discretisation
-    integer :: ieltype
+    integer(I32) :: ieltype
 
     ! Type of error estimator
     integer :: ierrorestimator

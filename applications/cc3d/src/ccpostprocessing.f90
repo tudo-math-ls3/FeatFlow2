@@ -411,7 +411,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ieltype
+    integer(I32) :: ieltype
     type(t_matrixScalar) :: rBmatrix
     type(t_vectorScalar), target :: rtempVector
     

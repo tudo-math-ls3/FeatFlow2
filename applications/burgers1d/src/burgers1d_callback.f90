@@ -133,7 +133,8 @@ contains
   
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution
-    integer :: ieltyp,ieldistr
+    integer(I32) :: ieltyp
+    integer :: ieldistr
     real(DP), dimension(npointsPerElement,nelements) :: Dvalues
     real(DP) :: nu
 
