@@ -1217,11 +1217,13 @@ module linearsolver
 
     ! Handle for symbolic factorisation.
     ! This is not a FEAT-Handle!
-    integer(I32) :: isymbolic = 0
+    integer :: isymbolic = 0
+!    integer(I32) :: isymbolic = 0
 
     ! Handle for numeric factorisation
     ! This is not a FEAT-Handle!
-    integer(I32) :: inumeric = 0
+    integer :: inumeric = 0
+!    integer(I32) :: inumeric = 0
     
     ! Handle to a temporary vector for storing the solution
     type(t_vectorBlock) :: rtempVector
@@ -5555,8 +5557,8 @@ contains
   integer :: isubgroup
   type(t_matrixScalar), pointer :: p_rmatrix
   type(t_matrixScalar) :: rtempMatrix
-  integer(I32), dimension(:), pointer :: p_Kld32
-  integer(I32), dimension(:), pointer :: p_Kcol32
+!  integer(I32), dimension(:), pointer :: p_Kld32
+!  integer(I32), dimension(:), pointer :: p_Kcol32
   integer, dimension(:), pointer :: p_Kld
   integer, dimension(:), pointer :: p_Kcol
   real(DP), dimension(:), pointer :: p_DA
@@ -5642,19 +5644,19 @@ contains
     
     ! Currently, we support only 32 bit integers in UMFPACK;
     ! if necessary, convert!
-    if (KIND(0) .ne. KIND(0_I32)) then
-      call storage_setdatatype(rtempMatrix%h_Kcol,ST_INT32)
-      call storage_setdatatype(rtempMatrix%h_Kld,ST_INT32)
-          
-      call storage_getbase_int32 (rtempMatrix%h_Kcol,p_Kcol32)
-      call storage_getbase_int32 (rtempMatrix%h_Kld,p_Kld32)
-      
-      ! Perform a symbolic factorization...
-      call UMF4SYM(rtempMatrix%NEQ,rtempMatrix%NEQ,p_Kld32,p_Kcol32,p_Da, &
-                  rsolverNode%p_rsubnodeUMFPACK4%isymbolic,&
-                  rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,&
-                  Dinfo)
-    else
+!    if (KIND(0) .ne. KIND(0_I32)) then
+!      call storage_setdatatype(rtempMatrix%h_Kcol,ST_INT32)
+!      call storage_setdatatype(rtempMatrix%h_Kld,ST_INT32)
+!          
+!      call storage_getbase_int32 (rtempMatrix%h_Kcol,p_Kcol32)
+!      call storage_getbase_int32 (rtempMatrix%h_Kld,p_Kld32)
+!      
+!      ! Perform a symbolic factorization...
+!      call UMF4SYM(rtempMatrix%NEQ,rtempMatrix%NEQ,p_Kld32,p_Kcol32,p_Da, &
+!                  rsolverNode%p_rsubnodeUMFPACK4%isymbolic,&
+!                  rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,&
+!                  Dinfo)
+!    else
       call storage_getbase_int (rtempMatrix%h_Kcol,p_Kcol)
       call storage_getbase_int (rtempMatrix%h_Kld,p_Kld)
       
@@ -5663,7 +5665,7 @@ contains
                   rsolverNode%p_rsubnodeUMFPACK4%isymbolic,&
                   rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,&
                   Dinfo)
-    end if
+!    end if
                  
     ! Check Dinfo(1) if there is an error
     select case (int(Dinfo(1)))
@@ -5736,8 +5738,8 @@ contains
   type(t_matrixScalar) :: rtempMatrix
   real(DP), dimension(:), pointer :: p_DA
 
-  integer(I32), dimension(:), pointer :: p_Kld32
-  integer(I32), dimension(:), pointer :: p_Kcol32
+!  integer(I32), dimension(:), pointer :: p_Kld32
+!  integer(I32), dimension(:), pointer :: p_Kcol32
   integer, dimension(:), pointer :: p_Kld
   integer, dimension(:), pointer :: p_Kcol
 
@@ -5837,20 +5839,20 @@ contains
     
     ! Currently, we support only 32 bit integers in UMFPACK;
     ! if necessary, convert!
-    if (KIND(0) .ne. KIND(0_I32)) then
-      call storage_setdatatype(rtempMatrix%h_Kcol,ST_INT32)
-      call storage_setdatatype(rtempMatrix%h_Kld,ST_INT32)
-
-      call storage_getbase_int32 (rtempMatrix%h_Kcol,p_Kcol32)
-      call storage_getbase_int32 (rtempMatrix%h_Kld,p_Kld32)
-      
-      ! Perform a numeric factorization...
-      call UMF4NUM(p_Kld32,p_Kcol32,p_Da, &
-              rsolverNode%p_rsubnodeUMFPACK4%isymbolic,&
-              rsolverNode%p_rsubnodeUMFPACK4%inumeric,&
-              rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,&
-              Dinfo)
-    else
+!    if (KIND(0) .ne. KIND(0_I32)) then
+!      call storage_setdatatype(rtempMatrix%h_Kcol,ST_INT32)
+!      call storage_setdatatype(rtempMatrix%h_Kld,ST_INT32)
+!
+!      call storage_getbase_int32 (rtempMatrix%h_Kcol,p_Kcol32)
+!      call storage_getbase_int32 (rtempMatrix%h_Kld,p_Kld32)
+!      
+!      ! Perform a numeric factorization...
+!      call UMF4NUM(p_Kld32,p_Kcol32,p_Da, &
+!              rsolverNode%p_rsubnodeUMFPACK4%isymbolic,&
+!              rsolverNode%p_rsubnodeUMFPACK4%inumeric,&
+!              rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,&
+!              Dinfo)
+!    else
       call storage_getbase_int (rtempMatrix%h_Kcol,p_Kcol)
       call storage_getbase_int (rtempMatrix%h_Kld,p_Kld)
       
@@ -5860,7 +5862,7 @@ contains
               rsolverNode%p_rsubnodeUMFPACK4%inumeric,&
               rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,&
               Dinfo)
-    end if
+!    end if
             
     ! Check Dinfo(1) if there is an error
     select case (int(Dinfo(1)))
