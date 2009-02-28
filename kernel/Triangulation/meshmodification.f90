@@ -52,7 +52,7 @@ contains
   ! If not specified, the nodal property array from rtriangulation is used,
   ! thus all points in the inner are disturbed while all points on the
   ! boundary are kept as they are.
-  integer(I32), dimension(:), intent(IN), optional, target :: InodalProperty
+  integer, dimension(:), intent(IN), optional, target :: InodalProperty
 !</input>
 
 !<inputoutput>
@@ -65,12 +65,17 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    integer(I32), dimension(:), pointer :: p_InodalProperty
+    integer, dimension(:), pointer :: p_InodalProperty
     real(DP) :: dh,dhdist
-    integer :: ivt
+    integer :: ivt,ndim,i
+    
+    ! Get the dimension of the mesh
+    ndim = rtriangulation%ndim
+    if((ndim .le. 0) .or. (ndim .gt. 3)) return
 
     ! Mesh width
-    dh = 1.0_DP/(sqrt(real(rtriangulation%NVT,DP))-1.0_DP)
+    !dh = 1.0_DP/(sqrt(real(rtriangulation%NVT,DP))-1.0_DP)
+    dh = 1.0_DP/((real(rtriangulation%NVT,DP)**(1.0_DP/real(ndim,DP)))-1.0_DP)
     
     ! Amount of distortion
     dhdist = damount * dh
@@ -90,8 +95,15 @@ contains
     
       ! Only modify inner points.
       if (p_InodalProperty(ivt) .eq. 0) then
-        p_DvertexCoords(:,ivt) = &
-          p_DvertexCoords(:,ivt) + real((-1)**mod(ivt,17),DP)*dhdist
+        
+        !p_DvertexCoords(:,ivt) = &
+          !p_DvertexCoords(:,ivt) + real((-1)**mod(ivt,17),DP)*dhdist
+        
+        do i = 1, ndim
+          p_DvertexCoords(i,ivt) = &
+            p_DvertexCoords(i,ivt) + real((-1)**mod(ivt+(7*i),17),DP)*dhdist
+        end do
+        
       end if
     
     end do
