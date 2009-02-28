@@ -442,7 +442,7 @@ module collection
     character, dimension(:), pointer :: p_svalue => null()
     
     ! Integer value
-    integer(I32) :: ivalue = 0
+    integer :: ivalue = 0
     
     ! Double precision value 
     real(DP)     :: dvalue = 0.0_DP
@@ -499,7 +499,7 @@ module collection
     type(t_filterChain), dimension(:), pointer  :: p_RfilterChain => null()
 
     ! Pointer to an integer precision array
-    integer(I32), dimension(:), pointer         :: p_Iarray => null()
+    integer, dimension(:), pointer              :: p_Iarray => null()
 
     ! Pointer to an real precision array
     real(DP), dimension(:), pointer             :: p_Darray => null()
@@ -2463,8 +2463,8 @@ contains
   
 !<function>
 
-  integer(I32) function collct_getvalue_int (rcollection, sparameter, &
-                                             ilevel, ssectionName, bexists) result(value)
+  integer function collct_getvalue_int (rcollection, sparameter, &
+                                        ilevel, ssectionName, bexists) result(value)
 !<description>
   ! Returns the the parameter sparameter as integer.
   ! An error is thrown if the value is of the wrong type.
@@ -4519,7 +4519,7 @@ contains
   character(LEN=*), intent(IN) :: sparameter
   
   ! The value of the parameter.
-  integer(I32), dimension(:), intent(IN) :: value
+  integer, dimension(:), intent(IN) :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
