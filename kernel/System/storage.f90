@@ -91,6 +91,8 @@
 !# 17.) storage_restoreFpdbObject
 !#      -> Restores the storage management from an ObjectItem
 !#
+!# 18.) storage_setdatatype
+!#      -> Change the data type of a memory block behind a handle
 !# </purpose>
 !##############################################################################
 
@@ -10882,4 +10884,89 @@ contains
 
   end subroutine storage_restoreFpdbObject
   
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_setdatatype (ihandle, ctype, rheap)
+
+!<description>
+  ! Converts an array to another data type.
+  ! Note that this usually involves a reallocation of the
+  ! memory and probably a loss in accuracy.
+  ! Not all conversions are possible.
+  ! Converting to/from a string is not possible.
+!</description>
+
+!<input>
+  ! Handle of the memory block to be releases
+  integer, intent(IN) :: ihandle
+
+  ! Target Datatype of the array identified by ihandle.
+  integer, intent(IN) :: ctype
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+!</input>
+
+!</subroutine>
+
+  ! local variables.
+  type(t_storageBlock), pointer :: p_rheap
+  type(t_storageNode), pointer :: p_rnode
+  integer :: inewhandle,isize1d
+  integer, dimension(2) :: isize2d
+  type(t_storageNode) :: rtempnode
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .le. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_setdatatype')
+      call sys_halt()
+    end if
+
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    
+    if ((ctype .eq. ST_CHAR) .or. (p_rnode%idataType .eq. ST_CHAR)) then
+      call output_line ('Converting to/from a string is not allowed!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_setdatatype')
+      call sys_halt()
+    end if
+    
+    ! Probably nothing to do.
+    if (ctype .eq. p_rnode%idataType) return
+
+    ! Copy our storage node to an empty storage node.
+    select case (p_rnode%idimension)
+    case (1)
+      call storage_getsize (ihandle,isize1d,rheap)
+      call storage_new ('storage_setdatatype', p_rnode%sname, isize1d, &
+          ctype, inewhandle, ST_NEWBLOCK_NOINIT, rheap)
+    case (2)
+      call storage_getsize (ihandle,Isize2d,rheap)
+      call storage_new ('storage_setdatatype', p_rnode%sname, isize2D, &
+          ctype, inewhandle, ST_NEWBLOCK_NOINIT, rheap)
+    end select
+    
+    ! Copy the data. This will do the data conversion.
+    call storage_copy (ihandle,inewhandle)
+    
+    ! Exchange the two storage nodes.
+    rtempnode = p_rheap%p_Rdescriptors(ihandle)
+    p_rheap%p_Rdescriptors(ihandle) = p_rheap%p_Rdescriptors(inewhandle)
+    p_rheap%p_Rdescriptors(inewhandle) = rtempnode
+    
+    ! Release th old node which has now the new handle as number.
+    call storage_free (inewhandle)
+  
+  end subroutine storage_setdatatype
+
 end module storage
