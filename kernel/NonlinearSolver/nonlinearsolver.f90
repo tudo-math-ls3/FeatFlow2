@@ -857,7 +857,7 @@ contains
     else
       ! Calculate the norm of the defect:
       DvecNorm = 0.0_DP
-      DvecNorm = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm(1:nblocks))
+      DvecNorm(1:nblocks) = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm(1:nblocks))
       where (.not.((DvecNorm .ge. 1D-99) .and. (DvecNorm .le. 1D99))) 
         DvecNorm = 0.0_DP
       end where
