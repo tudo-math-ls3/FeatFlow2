@@ -259,7 +259,7 @@ contains
   
     ! Arrays for the Cuthill McKee renumbering strategy
     integer, dimension(1) :: H_Iresort 
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Iresort
+    integer, dimension(:), pointer :: p_Iresort
     
     i=rproblem%ilvmax
       

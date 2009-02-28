@@ -930,7 +930,7 @@ contains
     integer :: NLMIN,NLMAX
     integer :: i
     real(DP) :: d
-    integer(PREC_VECIDX) :: imaxmem
+    integer :: imaxmem
     character(LEN=PARLST_MLDATA) :: ssolverName,sstring
     type(t_spatialDiscretisation), pointer :: p_rdiscr
 

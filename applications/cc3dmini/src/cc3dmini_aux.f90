@@ -49,7 +49,7 @@ contains
    type(t_triangulation), pointer :: p_rtria
    integer, dimension(:), pointer :: p_IfaceIdx
    integer, dimension(:), allocatable :: IfacesInMR
-   integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IvertsAtFace
+   integer, dimension(:,:), pointer :: p_IvertsAtFace
    real(DP), dimension(:,:), pointer :: p_Dcoords
    integer :: i, iface, iNAT
    real(DP) :: dx

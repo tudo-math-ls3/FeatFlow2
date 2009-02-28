@@ -90,7 +90,7 @@ contains
 
     ! Arrays for the Cuthill McKee renumbering strategy
     integer, dimension(1) :: H_Iresort 
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Iresort
+    integer, dimension(:), pointer :: p_Iresort
 
     ! Parameters from the DAT file
     real(DP) :: alpha11,alpha12,alpha21,alpha22,beta1,beta2,gamma

@@ -1124,7 +1124,7 @@ contains
       ! local variables
       real(DP) :: dnewton
       integer :: ilev,icol
-      integer(PREC_MATIDX), dimension(1) :: Irows = (/1/)
+      integer, dimension(1) :: Irows = (/1/)
       type(t_matrixBlock), pointer :: p_rmatrix,p_rmatrixFine
       type(t_vectorScalar), pointer :: p_rvectorTemp
       type(t_vectorBlock), pointer :: p_rvectorFine,p_rvectorCoarse

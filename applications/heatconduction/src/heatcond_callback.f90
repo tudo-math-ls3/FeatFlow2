@@ -103,11 +103,11 @@ contains
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -188,7 +188,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.

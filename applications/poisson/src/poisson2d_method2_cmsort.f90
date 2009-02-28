@@ -242,7 +242,7 @@ contains
   
     ! Arrays for the Cuthill McKee renumbering strategy
     integer, dimension(1) :: h_Iresort,IsortStrategy
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Iresort
+    integer, dimension(:), pointer :: p_Iresort
     
     ! Ask the problem structure to give us the discretisation structure
     p_rdiscretisation => rproblem%RlevelInfo(1)%p_rdiscretisation

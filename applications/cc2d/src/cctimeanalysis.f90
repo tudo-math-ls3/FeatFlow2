@@ -178,7 +178,7 @@ contains
     ! local variables
     real(DP) :: dtmp
     real(DP), dimension(3) :: Dnorms1,Dnorms2
-    integer(PREC_VECIDX), dimension(3) :: Cnorms
+    integer, dimension(3) :: Cnorms
     type(t_timeError),target :: rtimeErrorLocal
 
     ! Calculate d:=u2-u1
@@ -298,10 +298,10 @@ contains
 
     ! local variables
     real(DP), dimension(3) :: Dnorms1
-    integer(PREC_VECIDX), dimension(3) :: Cnorms
+    integer, dimension(3) :: Cnorms
     type(t_timeDerivatives),target :: rtimeNormLocal
     type(t_timeDerivatives), pointer :: p_rtimeNorm
-    integer(PREC_VECIDX) :: nequ,neqp
+    integer :: nequ,neqp
 
     ! Write the results of the time error analysis either to the local analysis
     ! block or to the one given as parameter.

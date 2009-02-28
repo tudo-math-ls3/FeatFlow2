@@ -1375,7 +1375,7 @@ contains
     ! local variables
     integer :: ilvmin,ilvmax
     integer :: i
-    integer(PREC_VECIDX) :: imaxmem
+    integer :: imaxmem
 
     ! Error indicator during initialisation of the solver
     integer :: ierror    

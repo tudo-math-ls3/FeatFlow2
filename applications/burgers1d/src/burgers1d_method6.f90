@@ -284,7 +284,7 @@ contains
   
     ! Arrays for the Cuthill McKee renumbering strategy
     integer, dimension(1) :: H_Iresort 
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Iresort
+    integer, dimension(:), pointer :: p_Iresort
     
     do i=rproblem%ilvmin,rproblem%ilvmax
       ! Ask the problem structure to give us the discretisation structure
@@ -961,7 +961,7 @@ contains
     ! An interlevel projection structure for changing levels
     type(t_interlevelProjectionBlock) :: rprojection
     
-    integer(PREC_VECIDX) :: imaxmem
+    integer :: imaxmem
     
     ! Min/Max level?
     ilvmin = rproblem%ilvmin

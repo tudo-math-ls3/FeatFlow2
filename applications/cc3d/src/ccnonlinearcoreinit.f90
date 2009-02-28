@@ -705,7 +705,7 @@ contains
     ! local variables
     integer :: NLMIN,NLMAX
     integer :: i
-    integer(PREC_VECIDX) :: imaxmem
+    integer :: imaxmem
     character(LEN=PARLST_MLDATA) :: ssolverName,sstring
 
     ! At first, ask the parameters in the INI/DAT file which type of 
