@@ -601,7 +601,7 @@ module collection
     ! No long life information should be stored here. Long-life
     ! information should be named and added as such to the collection 
     ! directly. The collection itself does not maintain this array!
-    integer(I32), dimension(COLLCT_QALENGTH) :: IquickAccess = 0
+    integer, dimension(COLLCT_QALENGTH) :: IquickAccess = 0
   
     ! USER DEFINED:
     ! Quick-access array for reals. This is a short, temporary
