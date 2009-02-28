@@ -435,7 +435,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ieltype
+    integer(I32) :: ieltype
     type(t_matrixScalar) :: rBmatrix
     type(t_vectorScalar), target :: rtempVector
     
@@ -532,7 +532,8 @@ contains
     type(t_ucdExport) :: rexport
     
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
-    integer :: ioutputUCD,ieltype,ilevelUCD
+    integer :: ioutputUCD,ilevelUCD
+    integer(I32) :: ieltype
     
     character(SYS_STRLEN) :: sfile,sfilename
     

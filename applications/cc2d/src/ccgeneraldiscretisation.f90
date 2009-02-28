@@ -324,7 +324,7 @@ contains
   integer, parameter :: nequations = 3
   
   ! local variables
-  integer :: ieltypeUV, ieltypeP
+  integer(I32) :: ieltypeUV, ieltypeP
   
     ! Initialise the element type identifiers according to ielementType
     select case (ielementType)
@@ -456,7 +456,7 @@ contains
   integer, parameter :: nequations = 3
   
   ! local variables
-  integer :: ieltypeUV, ieltypeP
+  integer(I32) :: ieltypeUV, ieltypeP
   
     ! Initialise the element type identifiers according to ielementType
     select case (ielementType)
@@ -1139,7 +1139,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: istart,ctypeInitialSolution
+    integer :: istart,ctypeInitialSolution
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
@@ -1427,7 +1427,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: idestLevel
+    integer :: idestLevel
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfileString
