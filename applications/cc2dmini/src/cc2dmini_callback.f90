@@ -428,7 +428,7 @@ contains
     type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
     
     ! The element number on the boundary which is currently being processed
-    integer(I32), intent(IN)                                    :: ielement
+    integer, intent(IN)                                         :: ielement
     
     ! The type of information, the routine should calculate. One of the
     ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has

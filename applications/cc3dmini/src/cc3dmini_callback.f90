@@ -511,7 +511,7 @@ contains
 !    TYPE(t_boundaryRegion), INTENT(IN)                          :: rboundaryRegion
 !    
 !    ! The element number on the boundary which is currently being processed
-!    INTEGER(I32), INTENT(IN)                                    :: ielement
+!    integer, intent(IN)                                         :: ielement
 !    
 !    ! The type of information, the routine should calculate. One of the
 !    ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
