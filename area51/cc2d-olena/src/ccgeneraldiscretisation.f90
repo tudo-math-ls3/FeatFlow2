@@ -1175,7 +1175,7 @@ contains
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
     integer :: ilev,ierror
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     type(t_linearForm) :: rlinform
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
@@ -1463,7 +1463,7 @@ contains
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfileString
     integer :: ilev
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     logical :: bformatted
 
