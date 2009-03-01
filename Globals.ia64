@@ -5,6 +5,11 @@
 # This file contains compiler settings for CPUID: ia64
 ########################################################################
 
+# Note: The -DDLONG compiler switch defines a symbol that compiles
+# UMFPACK for 64 bit integers. This is necessary to correctly interact
+# with a 64 bit BLAS library -- and directly leads to support for
+# more than 4GB RAM on 64 bit machines.
+
 ########################################################################
 # IA64  /w ??? compiler
 ########################################################################
@@ -16,8 +21,8 @@ FC=f90
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer \
 -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   = -pipe
-CCFLAGS   = -pipe
-CPPFLAGS   = -pipe
+CCFLAGS   = -pipe -DDLONG
+CPPFLAGS   = -pipe -DDLONG
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
@@ -34,8 +39,8 @@ FC=ifort
 AR=xiar
 OPTFLAGS  = -fast
 FCFLAGS   = -module $(MODDIR)
-CCFLAGS   = 
-CPPFLAGS   = 
+CCFLAGS   = -DDLONG
+CPPFLAGS   = -DDLONG
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
@@ -50,8 +55,8 @@ CPP=c++
 FC=f90
 OPTFLAGS  = +O4 +Ofaster +U77
 FCFLAGS   = 
-CCFLAGS   = 
-CPPFLAGS   = 
+CCFLAGS   = -DDLONG
+CPPFLAGS   = -DDLONG
 BLASLIB   = -llapack
 LAPACKLIB = -llapack
 GENERIC   = 0
@@ -66,8 +71,8 @@ CPP=c++
 FC=f90
 OPTFLAGS  = +O4 +Ofaster +U77
 FCFLAGS   = 
-CCFLAGS   = 
-CPPFLAGS   = 
+CCFLAGS   = -DDLONG
+CPPFLAGS   = -DDLONG
 BLASLIB   = -llapack
 LAPACKLIB = -llapack
 GENERIC   = 0
