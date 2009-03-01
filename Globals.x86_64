@@ -13,8 +13,8 @@ FC=g95
 OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations
 OPTFLAGSFDEBUG = -O0 -g
 FCFLAGS   = -pipe -fmod=$(MODDIR)
-CCFLAGS   = -pipe
-CPPFLAGS  = -pipe
+CCFLAGS   = -pipe -DDLONG
+CPPFLAGS  = -pipe -DDLONG
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 1
@@ -32,8 +32,8 @@ FC=g95
 OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations
 OPTFLAGSFDEBUG = -O0 -g -Wall -fbounds-check -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
-CCFLAGS   = -pipe
-CPPFLAGS  = -pipe
+CCFLAGS   = -pipe -DDLONG
+CPPFLAGS  = -pipe -DDLONG
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 1
@@ -238,8 +238,8 @@ CPP=g++
 FC=g95
 OPTFLAGS  = 
 FCFLAGS   = -mcmodel=medium -m64 -fmod=$(MODDIR)
-CCFLAGS   = -mcmodel=medium -m64
-CPPFLAGS  = -mcmodel=medium -m64
+CCFLAGS   = -mcmodel=medium -m64 -DDLONG
+CPPFLAGS  = -mcmodel=medium -m64 -DDLONG
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
@@ -256,8 +256,8 @@ FC=g95
 OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
 OPTFLAGSFDEBUG = -O0 -g -Wall -fbounds-check -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
-CCFLAGS   = -pipe
-CPPFLAGS  = -pipe
+CCFLAGS   = -pipe -DDLONG
+CPPFLAGS  = -pipe -DDLONG
 BLASLIB   =
 LAPACKLIB =
 GENERIC   = 0 
