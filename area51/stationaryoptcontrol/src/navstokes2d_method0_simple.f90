@@ -137,7 +137,10 @@ module navstokes2d_method0_simple
     real(dp) :: dt
     
     ! Stabilisation parameter
-    real(dp) :: dupsam
+    real(dp) :: dupsamPrimal
+
+    ! Stabilisation parameter
+    real(dp) :: dupsamDual
     
     ! Pure Dirichlet problem
     logical :: bpureDirichlet
@@ -298,8 +301,8 @@ contains
           .true.)
 
       ! Initialise the operator structure for what we need.
-      roptcoperator%dupsamPrimal = rparams%dupsam
-      roptcoperator%dupsamDual = rparams%dupsam
+      roptcoperator%dupsamPrimal = rparams%dupsamPrimal
+      roptcoperator%dupsamDual = rparams%dupsamDual
       
       ! Timestep-weights
       if (rparams%bemulateTimestep) then
@@ -2085,7 +2088,8 @@ contains
       
       do icurrentupsam = 1,size(Dupsam)
       
-        rparams%dupsam = Dupsam(icurrentupsam)
+        rparams%dupsamPrimal = Dupsam(icurrentupsam)
+        rparams%dupsamDual = 0.0_DP
       
         do icurrentalpha = 1,size(Dalpha)
 
