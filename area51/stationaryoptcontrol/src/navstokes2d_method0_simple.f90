@@ -2264,6 +2264,17 @@ contains
               
               ! Release solver data and structure
               call linsol_doneData (p_rsolverNode)
+              
+              select case(ilinearsolver)
+              case (1)
+                do ilevel = NLMIN+1,NLMAX
+                  ! Delete the interlevel projection structure
+                  call mlprj_initProjectionDiscr (Rlevel(ilevel)%rprojection,&
+                      Rlevel(ilevel)%rdiscretisation)
+                end do
+              
+              end select
+                          
               ! Sum up the correction to the current solution.
               call lsysbl_vectorLinearComb (rdefectBlock,rvectorBlock,1.0_DP,1.0_DP)
               
