@@ -191,7 +191,7 @@ contains
       call parlst_getvalue_double(rparlist, ssectionName, "theta", rtimestep%theta)
       
       ! Allocate array of temporal vectors
-      allocate(rtimestep%RtempVectors(2))
+      allocate(rtimestep%RtempVectors(1))
 
     case (TSTEP_RK_SCHEME)
       ! Multilevel Runge-Kutta scheme
@@ -648,12 +648,12 @@ contains
   
   subroutine tstep_performThetaStepScalar(rproblemLevel, rtimestep, rsolver,&
                                           rsolution, fcb_nlsolverCallback,&
-                                          rcollection, rrhs)
+                                          rcollection, rb)
 
 !<description>
     ! This subroutine performs one step by means of the two-level theta-scheme
     !
-    !   $$ Mu^{n+1}-\theta\Delta t N(u^{n+1}) = Mu^n+(1-\theta)\Delta t N(u^n) + rhs $$
+    !   $$ Mu^{n+1}-\theta\Delta t N(u^{n+1}) = Mu^n+(1-\theta)\Delta t N(u^n) + b $$
     !
     ! to advance the solution from time level $t^n$ to time level $t^{n+1}$.
     ! In the above equation $M$ denotes the mass matrix, and $N(\cdot)$ is an
@@ -673,7 +673,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), intent(IN), optional :: rrhs
+    type(t_vectorScalar), intent(IN), optional :: rb
 !</input>
 
 !<inputoutput>
@@ -695,19 +695,19 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock) :: rsolutionBlock, rrhsBlock
+    type(t_vectorBlock) :: rsolutionBlock, rbBlock
 
     
-    if (present(rrhs)) then
+    if (present(rb)) then
 
       ! Call block version with right-hand side vector
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-      call lsysbl_createVecFromScalar(rrhs, rrhsBlock)
+      call lsysbl_createVecFromScalar(rb, rbBlock)
       call tstep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
                                        rsolutionBlock, fcb_nlsolverCallback,&
-                                       rcollection, rrhsBlock)
+                                       rcollection, rbBlock)
       call lsysbl_releaseVector(rsolutionBlock)
-      call lsysbl_releaseVector(rrhsBlock)
+      call lsysbl_releaseVector(rbBlock)
 
     else
       
@@ -728,12 +728,12 @@ contains
 
   subroutine tstep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
                                          rsolution, fcb_nlsolverCallback,&
-                                         rcollection, rrhs)
+                                         rcollection, rb)
 
 !<description>
     ! This subroutine performs one step by means of the two-level theta-scheme
     !
-    !   $$ Mu^{n+1}-\theta\Delta t N(u^{n+1}) = Mu^n+(1-\theta)\Delta t N(u^n) + rhs $$
+    !   $$ Mu^{n+1}-\theta\Delta t N(u^{n+1}) = Mu^n+(1-\theta)\Delta t N(u^n) + b $$
     !
     ! to advance the solution from time level $t^n$ to time level $t^{n+1}$.
     ! In the above equation $M$ denotes the mass matrix, and $N(\cdot)$ is an
@@ -751,7 +751,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand sode vector
-    type(t_vectorBlock), intent(IN), optional :: rrhs
+    type(t_vectorBlock), intent(IN), optional :: rb
 !</input>
 
 !<inputoutput>
@@ -775,9 +775,7 @@ contains
     ! local variables
     type(t_solver), pointer :: p_rsolver
     type(t_vectorBlock), pointer :: p_rsolutionRef, p_rsolutionAux
-    type(t_vectorBlock), pointer :: p_rsolutionInitial, p_rconstRHS
-    integer(I32) :: ioperationSpec
-    integer :: istatus
+    type(t_vectorBlock), pointer :: p_rsolutionInitial
     logical :: bcompatible, breject
     
     ! Set pointer to nonlinear solver
@@ -790,17 +788,15 @@ contains
     end if
 
     ! Set pointers to temporal vectors
-    p_rconstRHS        => rtimestep%RtempVectors(1)
-    p_rsolutionInitial => rtimestep%RtempVectors(2)
+    p_rsolutionInitial => rtimestep%RtempVectors(1)
 
     ! ... and check if vectors are compatible
     call lsysbl_isVectorCompatible(rsolution, p_rsolutionInitial, bcompatible)
     if (.not.bcompatible) then
       call lsysbl_resizeVectorBlock(p_rsolutionInitial, rsolution, .false.)
-      call lsysbl_resizeVectorBlock(p_rconstRHS, rsolution, .false.)
     end if
 
-    ! Save the given solution vector to the temporal vector If the
+    ! Save the given solution vector to the temporal vector. If the
     ! computed time step is not accepted, then the backup of the
     ! given solution vector is used to recalculate the time step
     call lsysbl_copyVector(rsolution, p_rsolutionInitial)
@@ -809,8 +805,8 @@ contains
     ! Set pointers to temporal vectors for the computation of an
     ! auxiliary solution by means of local substepping
     if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
-      p_rsolutionRef => rtimestep%p_rautoController%RtempVectors(2)
-      p_rsolutionAux => rtimestep%p_rautoController%RtempVectors(3)
+      p_rsolutionRef => rtimestep%p_rautoController%RtempVectors(1)
+      p_rsolutionAux => rtimestep%p_rautoController%RtempVectors(2)
 
       ! ... and check if vectors are compatible
       call lsysbl_isVectorCompatible(rsolution, p_rsolutionRef, bcompatible)
@@ -819,7 +815,7 @@ contains
         call lsysbl_resizeVectorBlock(p_rsolutionAux, rsolution, .false.)
       end if
 
-      ! Make a backup copy of the solution vector (really, it is already there)
+      ! Make a backup copy of the solution vector
       call lsysbl_copyVector(rsolution, p_rsolutionRef)
     end if
     
@@ -843,25 +839,10 @@ contains
         call output_lbrk()
       end if
 
-      
-      ! Initialize the constant right-hand side vector
-      if (present(rrhs)) then
-        call lsysbl_copyVector(rrhs, p_rconstRHS)
-      else
-        call lsysbl_clearVector(p_rconstRHS)
-      end if
-
-      ! Compute the explicit right-hand side vector
-      ioperationSpec = NLSOL_OPSPEC_CALCRHS
-      
-      call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
-                                rsolution, p_rsolutionInitial, p_rconstRHS,&
-                                0, ioperationSpec, rcollection, istatus)
-
       ! Solve the nonlinear algebraic system in the time interval (t^n, t^{n+1})
       call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
                                 rsolution, p_rsolutionInitial,&
-                                fcb_nlsolverCallback, rcollection, p_rconstRHS)
+                                fcb_nlsolverCallback, rcollection, rb)
 
       ! Adjust status information of top-most solver
       call solver_copySolver(p_rsolver, rsolver, .false., .true.)
@@ -951,7 +932,7 @@ contains
 
   subroutine tstep_performRKStepScalar(rproblemLevel, rtimestep, rsolver,&
                                        rsolution, fcb_nlsolverCallback,&
-                                       rcollection, rrhs)
+                                       rcollection, rb)
 
 !<description>
     ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
@@ -964,7 +945,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), intent(IN), optional :: rrhs
+    type(t_vectorScalar), intent(IN), optional :: rb
 !</input>
 
 !<inputoutput>
@@ -986,20 +967,20 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock) :: rrhsBlock
+    type(t_vectorBlock) :: rbBlock
     type(t_vectorBlock) :: rsolutionBlock
 
 
-    if (present(rrhs)) then
+    if (present(rb)) then
     
-      call lsysbl_createVecFromScalar(rrhs, rrhsBlock)
+      call lsysbl_createVecFromScalar(rb, rbBlock)
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
 
       call tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
                                     rsolutionBlock, fcb_nlsolverCallback,&
-                                    rcollection, rrhsBlock)
+                                    rcollection, rbBlock)
 
-      call lsysbl_releaseVector(rrhsBlock)
+      call lsysbl_releaseVector(rbBlock)
       call lsysbl_releaseVector(rsolutionBlock)
 
     else
@@ -1021,7 +1002,7 @@ contains
 
   subroutine tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
                                       rsolution,  fcb_nlsolverCallback,&
-                                      rcollection, rrhs)
+                                      rcollection, rb)
 
 !<description>
     ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
@@ -1035,7 +1016,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(IN), optional :: rrhs
+    type(t_vectorBlock), intent(IN), optional :: rb
 !</input>
 
 !<inputoutput>
@@ -1060,7 +1041,7 @@ contains
     ! local variables
     type(t_solver), pointer :: p_rsolver
     type(t_vectorBlock), pointer :: p_rsolutionInitial, p_rsolutionRef, p_rsolutionAux
-    type(t_vectorBlock), pointer :: p_rconstRHS, p_raux
+    type(t_vectorBlock), pointer :: p_rconstB, p_raux
     integer(I32) :: ioperationSpec
     integer :: istep, istatus
     logical :: bcompatible,breject
@@ -1077,14 +1058,14 @@ contains
     
     ! Set pointers to temporal vector
     p_rsolutionInitial => rtimestep%RtempVectors(1)
-    p_rconstRHS        => rtimestep%RtempVectors(2)
+    p_rconstB        => rtimestep%RtempVectors(2)
     p_raux             => rtimestep%RtempVectors(3)
     
     ! Check if vectors are compatible
     call lsysbl_isVectorCompatible(rsolution, p_rsolutionInitial, bcompatible)
     if (.not.bcompatible) then
       call lsysbl_resizeVectorBlock(p_rsolutionInitial, rsolution, .false.)
-      call lsysbl_resizeVectorBlock(p_rconstRHS, rsolution, .false.)
+      call lsysbl_resizeVectorBlock(p_rconstB, rsolution, .false.)
       call lsysbl_resizeVectorBlock(p_raux, rsolution, .false.)
     end if
 
@@ -1137,34 +1118,38 @@ contains
         end if
          
         ! Initialize the constant right-hand side vector
-        if (present(rrhs)) then
-          call lsysbl_copyVector(rrhs, p_rconstRHS)
+        if (present(rb)) then
+          call lsysbl_copyVector(rb, p_rconstB)
         else
-          call lsysbl_clearVector(p_rconstRHS)
+          call lsysbl_clearVector(p_rconstB)
         end if
         
         ! Compute the explicit right-hand side vector and the residual
         ioperationSpec = NLSOL_OPSPEC_CALCRHS +&
                          NLSOL_OPSPEC_CALCRESIDUAL
 
-        call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
-                                  rsolution, p_rsolutionInitial, p_rconstRHS,&
-                                  0, ioperationSpec, rcollection, istatus)
+
+        print *, "Not working"
+        stop
+
+!!$        call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
+!!$                                  rsolution, p_rsolutionInitial, p_rconstB,&
+!!$                                  0, ioperationSpec, rcollection, istatus)
 
 !!$         ! Compute the new right-hand side
-!!$         call fcb_calcRHS(rproblemLevel, rtimestep, p_rsolver, rsolution,&
-!!$                          p_rsolutionInitial, p_rrhs, istep, rcollection)
+!!$         call fcb_calcB(rproblemLevel, rtimestep, p_rsolver, rsolution,&
+!!$                          p_rsolutionInitial, p_rb, istep, rcollection)
 !!$         
 !!$         ! Apply given right-hand side vector
-!!$         if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rrhs, 1._DP, 1._DP)
+!!$         if (present(rb)) call lsysbl_vectorLinearComb(rb, p_rb, 1._DP, 1._DP)
 !!$         
 !!$         ! Impose boundary conditions
 !!$         call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
-!!$                              rsolution, p_rrhs, p_rsolutionInitial, rcollection)
+!!$                              rsolution, p_rb, p_rsolutionInitial, rcollection)
 
-         ! Call linear multigrid to solve A*u=rhs
+         ! Call linear multigrid to solve A*u=b
          call lsysbl_clearVector(p_raux)
-         call linsol_solveMultigrid(rproblemLevel, p_rsolver, p_raux, p_rconstRHS)
+         call linsol_solveMultigrid(rproblemLevel, p_rsolver, p_raux, p_rconstB)
 
          ! Add increment to solution vector
          call lsysbl_vectorLinearComb(p_raux, p_rsolutionInitial, 1._DP, 1._DP, rsolution)
@@ -1198,19 +1183,19 @@ contains
           end if
           
 !!$          ! Compute the new right-hand side
-!!$          call fcb_calcRHS(rproblemLevel, rtimestep, p_rsolver, p_rsolutionRef,&
-!!$                           p_rsolutionInitial, p_rrhs, istep, rcollection)
+!!$          call fcb_calcB(rproblemLevel, rtimestep, p_rsolver, p_rsolutionRef,&
+!!$                           p_rsolutionInitial, p_rb, istep, rcollection)
 !!$          
 !!$          ! Apply given right-hand side vector
-!!$          if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rrhs, 1._DP, 1._DP)
+!!$          if (present(rb)) call lsysbl_vectorLinearComb(rb, p_rb, 1._DP, 1._DP)
 !!$          
 !!$          ! Impose boundary conditions
 !!$          call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
-!!$                               p_rsolutionRef, p_rrhs, p_rsolutionInitial, rcollection)
+!!$                               p_rsolutionRef, p_rb, p_rsolutionInitial, rcollection)
           
-          ! Call linear multigrid to solve A*u=rhs
+          ! Call linear multigrid to solve A*u=b
           call lsysbl_clearVector(p_raux)
-          call linsol_solveMultigrid(rproblemLevel, p_rsolver, p_raux, p_rconstRHS)
+          call linsol_solveMultigrid(rproblemLevel, p_rsolver, p_raux, p_rconstB)
           
           ! Add increment to solution vector
           call lsysbl_vectorLinearComb(p_raux, p_rsolutionInitial, 1._DP, 1._DP, p_rsolutionRef)
@@ -1242,19 +1227,19 @@ contains
 
           
 !!$          ! Compute the new right-hand side
-!!$          call fcb_calcRHS(rproblemLevel, rtimestep, p_rsolver, p_rsolutionRef,&
-!!$                           p_rsolutionAux, p_rrhs, istep, rcollection)
+!!$          call fcb_calcB(rproblemLevel, rtimestep, p_rsolver, p_rsolutionRef,&
+!!$                           p_rsolutionAux, p_rb, istep, rcollection)
 !!$          
 !!$          ! Apply given right-hand side vector
-!!$          if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, p_rrhs, 1._DP, 1._DP)
+!!$          if (present(rb)) call lsysbl_vectorLinearComb(rb, p_rb, 1._DP, 1._DP)
 !!$          
 !!$          ! Impose boundary conditions
 !!$          call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
-!!$                               p_rsolutionRef, p_rrhs, p_rsolutionAux, rcollection)
+!!$                               p_rsolutionRef, p_rb, p_rsolutionAux, rcollection)
           
-          ! Call linear multigrid to solve A*u=rhs
+          ! Call linear multigrid to solve A*u=b
           call lsysbl_clearVector(p_raux)
-          call linsol_solveMultigrid(rproblemLevel, p_rsolver, p_raux, p_rconstRHS)
+          call linsol_solveMultigrid(rproblemLevel, p_rsolver, p_raux, p_rconstB)
           
           ! Add increment to solution vector
           call lsysbl_vectorLinearComb(p_raux, p_rsolutionAux, 1._DP, 1._DP, p_rsolutionRef)
@@ -1307,7 +1292,7 @@ contains
 
   subroutine tstep_performPseudoSteppingBlock(rproblemLevel, rtimestep, rsolver,&
                                               rsolution, fcb_nlsolverCallback,&
-                                              rcollection, rrhs)
+                                              rcollection, rb)
 
 !<description>
     ! This subroutine performs pseudo time-stepping to compute the
@@ -1322,7 +1307,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand sode vector
-    type(t_vectorBlock), intent(IN), optional :: rrhs
+    type(t_vectorBlock), intent(IN), optional :: rb
 !</input>
 
 !<inputoutput>
@@ -1355,14 +1340,14 @@ contains
         ! Adopt explicit Runge-Kutta scheme
         call tstep_performRKStep(rproblemLevel, rtimestep, rsolver,&
                                  rsolution, fcb_nlsolverCallback,&
-                                 rcollection, rrhs)
+                                 rcollection, rb)
         
       case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver,&
                                     rsolution, fcb_nlsolverCallback,&
-                                    rcollection, rrhs)
+                                    rcollection, rb)
 
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -1391,7 +1376,7 @@ contains
 
   subroutine tstep_performPseudoSteppingScalar(rproblemLevel, rtimestep, rsolver,&
                                                rsolution, fcb_nlsolverCallback,&
-                                               rcollection, rrhs)
+                                               rcollection, rb)
 
 !<description>
     ! This subroutine performs pseudo time-stepping to compute the
@@ -1406,7 +1391,7 @@ contains
     include 'intf_solvercallback.inc'
     
     ! OPTIONAL: constant right-hand sode vector
-    type(t_vectorScalar), intent(IN), optional :: rrhs
+    type(t_vectorScalar), intent(IN), optional :: rb
 !</input>
 
 !<inputoutput>
@@ -1438,14 +1423,14 @@ contains
         ! Adopt explicit Runge-Kutta scheme
         call tstep_performRKStep(rproblemLevel, rtimestep, rsolver,&
                                  rsolution, fcb_nlsolverCallback,&
-                                 rcollection, rrhs)
+                                 rcollection, rb)
         
       case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver,&
                                     rsolution, fcb_nlsolverCallback,&
-                                    rcollection, rrhs)
+                                    rcollection, rb)
           
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
