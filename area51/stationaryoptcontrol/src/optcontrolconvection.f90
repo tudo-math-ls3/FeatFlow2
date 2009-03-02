@@ -2483,6 +2483,45 @@ contains
 
 !<subroutine>
 
+  subroutine conv_strdiffOptC2ddoneasm (roptcassemblyinfo)
+  
+!<description>
+  ! Clean up the roptcassemblyinfo structure.
+!</description>
+
+!<inputoutput>
+  ! Structure collecting information about the assembly.
+  type(t_optcassemblyinfo), intent(inout) :: roptcassemblyinfo
+!</inputoutput>
+
+!</subroutine>
+
+    deallocate(roptcassemblyinfo%Dbas)
+    deallocate(roptcassemblyinfo%Idofs)
+    deallocate(roptcassemblyinfo%DlocalDeltaPrimal)
+    deallocate(roptcassemblyinfo%DlocalDeltaDual)
+    deallocate(roptcassemblyinfo%Kentry)
+    deallocate(roptcassemblyinfo%Kentry12)
+    
+    ! Allocate memory for the velocites in the cubature points.
+    deallocate(roptcassemblyinfo%Dpvel)
+    deallocate(roptcassemblyinfo%Ddvel)
+    deallocate(roptcassemblyinfo%DpvelXderiv)
+    deallocate(roptcassemblyinfo%DpvelYderiv)
+    deallocate(roptcassemblyinfo%DdvelXderiv)
+    deallocate(roptcassemblyinfo%DdvelYderiv)
+    
+    deallocate(roptcassemblyinfo%p_DcubPtsRef)
+
+    ! Clean up of the element set.
+    call elprep_releaseElementSet(roptcassemblyinfo%revalElementSet)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine conv_strdiffOptC2dinitelemset (rvelmatrix,rvelmatrixoffdiag,&
       rvelocityVectorPrimal,rvelocityVectorDual,&
       roptcoperator,roptcassemblyinfo,istartElement,iendElement)
@@ -2794,45 +2833,6 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-
-  subroutine conv_strdiffOptC2ddoneasm (roptcassemblyinfo)
-  
-!<description>
-  ! Clean up the roptcassemblyinfo structure.
-!</description>
-
-!<inputoutput>
-  ! Structure collecting information about the assembly.
-  type(t_optcassemblyinfo), intent(inout) :: roptcassemblyinfo
-!</inputoutput>
-
-!</subroutine>
-
-    deallocate(roptcassemblyinfo%Dbas)
-    deallocate(roptcassemblyinfo%Idofs)
-    deallocate(roptcassemblyinfo%DlocalDeltaPrimal)
-    deallocate(roptcassemblyinfo%DlocalDeltaDual)
-    deallocate(roptcassemblyinfo%Kentry)
-    deallocate(roptcassemblyinfo%Kentry12)
-    
-    ! Allocate memory for the velocites in the cubature points.
-    deallocate(roptcassemblyinfo%Dpvel)
-    deallocate(roptcassemblyinfo%Ddvel)
-    deallocate(roptcassemblyinfo%DpvelXderiv)
-    deallocate(roptcassemblyinfo%DpvelYderiv)
-    deallocate(roptcassemblyinfo%DdvelXderiv)
-    deallocate(roptcassemblyinfo%DdvelYderiv)
-    
-    deallocate(roptcassemblyinfo%p_DcubPtsRef)
-
-    ! Clean up of the element set.
-    call elprep_releaseElementSet(roptcassemblyinfo%revalElementSet)
-
-  end subroutine
-  
-  ! ***************************************************************************
-
-!<subroutine>
   subroutine conv_strdiffOptC2dgetMatrix (rmatrix,roptcoperator,dweight,&
       rvelocityVectorPrimal,rvelocityVectorDual)
 !<description>
@@ -3105,7 +3105,6 @@ contains
       if (associated(p_Da25)) &                     
         call incorporateLocalMatrix (DentryA25,p_Da25,roptcassemblyinfo%Kentry,dweight)
       
-
     end do ! ielset
     !%OMP end do 
     
@@ -3130,6 +3129,8 @@ contains
     if (allocated(DentryA24)) deallocate(DentryA24)
     if (allocated(DentryA15)) deallocate(DentryA15)
                
+    call conv_strdiffOptC2ddoneasm (roptcassemblyinfo)
+
   contains
     
     subroutine incorporateLocalMatrix (DaLocal,Da,Kentry,dweight)
@@ -4350,6 +4351,8 @@ contains
     if (allocated(DentryA24)) deallocate(DentryA24)
     if (allocated(DentryA15)) deallocate(DentryA15)
                
+    call conv_strdiffOptC2ddoneasm (roptcassemblyinfo)
+
   contains
   
     subroutine incorporateLocalMatVecCol (DaLocal,Da,Kentry,Dvelocity,ivelcomp,idof,dweight,Dtemp,&
@@ -4684,6 +4687,8 @@ contains
     deallocate(DentryA24)
     deallocate(DentryA15)
                
+    call conv_strdiffOptC2ddoneasm (roptcassemblyinfo)
+
   contains
     
     subroutine calcDefect (DaLocal,KcolLocal,Dx,Dd,dweight,dmin,dmax)
