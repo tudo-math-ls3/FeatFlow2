@@ -790,7 +790,7 @@ module solveraux
   type t_solverDefcor
 
     ! Temporal vectors
-    type(t_vectorBlock), dimension(2) :: RtempVectors
+    type(t_vectorBlock), dimension(3) :: RtempVectors
   end type t_solverDefcor
 
 !</typeblock>
@@ -819,7 +819,7 @@ module solveraux
     real(DP) :: dperturbationStrategy = 0.0_DP
 
     ! Temporal vectors
-    type(t_vectorBlock), dimension(4) :: RtempVectors
+    type(t_vectorBlock), dimension(5) :: RtempVectors
   end type t_solverNewton
 
 !</typeblock>
