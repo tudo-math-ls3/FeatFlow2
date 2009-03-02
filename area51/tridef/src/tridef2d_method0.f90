@@ -122,33 +122,42 @@ contains
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
     call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+
+    ! griddeformation setup
+    call griddef_deformationInit(rgriddefInfo,rtriangulation,NLMIN,NLMAX,rboundary,1)                 
+    
+    do iloop=NLMIN,NLMAX
+      call griddef_buildHGrid(rgriddefInfo,rtriangulation,iloop)
+    end do
+    
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
     call spdiscr_initBlockDiscr (rdiscretisation,1,&
-                                   rtriangulation, rboundary)
+                                   rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation,&
+                                   rboundary)
+
+    call spdiscr_initBlockDiscr (rdiscretisation,1,&
+                                   rtriangulation,&
+                                   rboundary)
+
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                   EL_E011,CUB_G2X2,rtriangulation, rboundary)
-    
-    ! Discretisation is set up, now go for the griddeformation
-    call griddef_deformationInit(rgriddefInfo,rtriangulation,NLMIN,NLMAX,rboundary,10)                 
-    
-    do iloop=NLMIN,NLMAX
-      call griddef_buildHGrid(rgriddefInfo,rtriangulation,iloop)
-    end do
+                                   EL_E011,CUB_G2X2,&
+                                   rtriangulation,&
+                                   rboundary)
+                                   
     
     ! Deform
     call griddef_performDeformation(rgriddefInfo, rgriddefWork,idummy,&
-                                     rdiscretisation,&
                                     .TRUE., .FALSE., .FALSE., &
-                                    .FALSE., NLMAX, 0, 0,rboundary,&
-                                    tridef2d_monitorfct)    
+                                    .FALSE., NLMAX, 0, 0,&
+                                    tridef2d_monitorfct,rdiscretisation)    
                  
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
@@ -206,7 +215,7 @@ contains
     
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
-    call spdiscr_releaseBlockDiscr(rdiscretisation)
+!    call spdiscr_releaseBlockDiscr(rdiscretisation)
     
     
     call lsysbl_releaseVector(rvectorAreaBlockQ0)
