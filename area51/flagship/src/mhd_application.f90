@@ -828,7 +828,7 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Vector for the element-wise error distribution
-    type(t_vectorScalar) :: relementError
+    type(t_vectorScalar) :: relementError1, relementError2
 
     ! Structure for h-adaptation
     type(t_hadapt) :: rhadapt
@@ -847,9 +847,11 @@ contains
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, isystemFormat
     integer :: discretisationEuler, discretisationTransport
-    integer :: isize, ipreadapt, npreadapt
+    integer :: isize, ipreadapt, npreadapt, nerrorvariable
     integer, external :: signal_SIGINT
     
+type(t_ucdExport) :: rexport
+real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
     
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
@@ -875,20 +877,21 @@ contains
     end if
 
     ! Initialize the solution vector and impose boundary conditions explicitly
-    call euler_initSolution(rparlist, ssectionNameEuler, p_rproblemLevel, 0.0_DP, rsolutionEuler)
+    call euler_initSolution(rparlist, ssectionNameEuler, p_rproblemLevel,&
+                            rtimestepEuler%dinitialTime, rsolutionEuler)
     select case(rappDescrEuler%ndimension)
     case (NDIM1D)
       call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
-                                     rsolutionEuler, 0.0_DP, rproblem%rboundary,&
-                                     euler_calcBoundaryvalues1d)
+                                     rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                     rproblem%rboundary, euler_calcBoundaryvalues1d)
     case (NDIM2D)
       call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
-                                     rsolutionEuler, 0.0_DP, rproblem%rboundary,&
-                                     euler_calcBoundaryvalues2d)
+                                     rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                     rproblem%rboundary, euler_calcBoundaryvalues2d)
     case (NDIM3D)
       call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
-                                     rsolutionEuler, 0.0_DP, rproblem%rboundary,&
-                                     euler_calcBoundaryvalues3d)
+                                     rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                     rproblem%rboundary, euler_calcBoundaryvalues3d)
     end select
     
     ! Initialize timer for intermediate UCD exporter
@@ -919,8 +922,10 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionTransport, .false., ST_DOUBLE)
-    call codire_initSolution(rparlist, ssectionNameTransport, p_rproblemLevel, 0.0_DP, rsolutionTransport)
-    call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation, rsolutionTransport, 0.0_DP)
+    call codire_initSolution(rparlist, ssectionNameTransport, p_rproblemLevel,&
+                             rtimestepTransport%dinitialTime, rsolutionTransport)
+    call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation,&
+                                   rsolutionTransport, rtimestepTransport%dinitialTime)
     
     ! Attach the boundary condition to the solver structure
     call solver_setBoundaryCondition(rsolverTransport, rbdrCondTransport, .true.)
@@ -983,20 +988,43 @@ contains
           ! Attach the primal solution vector to the collection structure
           call collct_setvalue_vec(rcollection, 'solutionvectorEuler', rsolutionEuler, .true.)
           call collct_setvalue_vec(rcollection, 'solutionvectorTransport', rsolutionTransport, .true.)
+         
 
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
             
             ! Compute the error estimator using recovery techniques
             call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-                                              rsolutionTransport, 0.0_DP, relementError, derror)
+                                              rsolutionTransport, rtimestepEuler%dinitialTime,&
+                                              relementError1, derror)
+
+            ! Compute the error estimator using recovery techniques
+            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                             relementError2, derror)
+
+            call lsyssc_getbase_double(relementError1, p_Ddata1)
+            call lsyssc_getbase_double(relementError2, p_Ddata2)
+            
+            p_Ddata1 = max(p_Ddata1, p_Ddata2)
+
+!!$            call ucd_startGMV(rexport, UCD_FLAG_STANDARD,&
+!!$                              p_rproblemLevel%rtriangulation,&
+!!$                              'out/error.gmv')
+!!$
+!!$            call lsyssc_getbase_double(relementError, p_Ddata)
+!!$            call ucd_addVariableElementBased (rexport, 'e', UCD_VAR_STANDARD, p_Ddata)
+!!$            call ucd_write  (rexport)
+!!$            call ucd_release(rexport)
+!!$            pause
 
             ! Perform h-adaptation and update the triangulation structure
             call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                        relementError, rcollection)
+                                        relementError1, rcollection)
             
             ! Release element-wise error distribution
-            call lsyssc_releaseVector(relementError)
+            call lsyssc_releaseVector(relementError1)
+            call lsyssc_releaseVector(relementError2)
 
             ! Generate standard mesh from raw mesh
             call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
@@ -1020,8 +1048,10 @@ contains
 
 
             ! Re-generate the initial solution vectors
-            call euler_initSolution(rparlist, ssectionnameEuler, p_rproblemLevel, 0.0_DP, rsolutionEuler)
-            call codire_initSolution(rparlist, ssectionnameTransport, p_rproblemLevel, 0.0_DP, rsolutionTransport)
+            call euler_initSolution(rparlist, ssectionnameEuler, p_rproblemLevel,&
+                                    rtimestepEuler%dinitialTime, rsolutionEuler)
+            call codire_initSolution(rparlist, ssectionnameTransport, p_rproblemLevel,&
+                                     rtimestepTransport%dinitialTime, rsolutionTransport)
             
             
 
@@ -1029,20 +1059,20 @@ contains
             select case(rappDescrEuler%ndimension)
             case (NDIM1D)
               call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
-                                             rsolutionEuler, 0.0_DP, rproblem%rboundary,&
-                                             euler_calcBoundaryvalues1d)
+                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                             rproblem%rboundary, euler_calcBoundaryvalues1d)
               
             case (NDIM2D)
               call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
-                                             rsolutionEuler, 0.0_DP, rproblem%rboundary,&
-                                             euler_calcBoundaryvalues2d)
+                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                             rproblem%rboundary, euler_calcBoundaryvalues2d)
             case (NDIM3D)
               call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
-                                             rsolutionEuler, 0.0_DP, rproblem%rboundary,&
-                                             euler_calcBoundaryvalues3d)
+                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                             rproblem%rboundary, euler_calcBoundaryvalues3d)
             end select
             call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation,&
-                                             rsolutionTransport, 0.0_DP)
+                                             rsolutionTransport, rtimestepTransport%dinitialTime)
           end do
 
           ! Prepare internal data arrays of the solver structure
@@ -1195,11 +1225,28 @@ contains
         
         ! Compute the error estimator using recovery techniques
         call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-                                          rsolutionTransport, rtimestepTransport%dTime, relementError, derror)
+                                          rsolutionTransport, rtimestepTransport%dTime,&
+                                          relementError1, derror)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
 
+
+        ! Start time measurement for error estimation
+        call stat_startTimer(rappDescrEuler%rtimerErrorEstimation, STAT_TIMERSHORT)
+        
+        ! Compute the error estimator using recovery techniques
+        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+                                         rsolutionEuler, rtimestepEuler%dTime,&
+                                         relementError2, derror)
+        
+        ! Stop time measurement for error estimation
+        call stat_stopTimer(rappDescrEuler%rtimerErrorEstimation)
+
+        call lsyssc_getbase_double(relementError1, p_Ddata1)
+        call lsyssc_getbase_double(relementError2, p_Ddata2)
+        
+        p_Ddata1 = max(p_Ddata1, p_Ddata2)
 
         !-------------------------------------------------------------------------
         ! Perform h-adaptation
@@ -1220,10 +1267,11 @@ contains
         
         ! Perform h-adaptation and update the triangulation structure
         call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                    relementError, rcollection)
+                                    relementError1, rcollection)
         
         ! Release element-wise error distribution
-        call lsyssc_releaseVector(relementError)
+        call lsyssc_releaseVector(relementError1)
+        call lsyssc_releaseVector(relementError2)
 
         ! Update the template matrix according to the sparsity pattern
         call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
