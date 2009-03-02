@@ -2190,8 +2190,6 @@ contains
                 ! Project down the solution vector; this is the evaluation point for
                 ! the matrix.
                 if (ilevel .lt. NLMAX) then
-                  call mlprj_initProjectionDiscr(rprojection,Rlevel(ilevel+1)%rdiscretisation)
-                  
                   ! Abuse the defect vector as temp vector
                   call mlprj_performInterpolation (rprojection,Rlevel(ilevel)%rtempVector, &
                                                   Rlevel(ilevel+1)%rtempVector,rdefectBlock%RvectorBlock(1))
