@@ -371,13 +371,13 @@ contains
       ! nonlinearities.
       !
       ! Primal Defect
-      rstreamlineDiffPrimalDef%dupsam = rparams%dupsam
+      rstreamlineDiffPrimalDef%dupsam = rparams%dupsamPrimal
       rstreamlineDiffPrimalDef%dnu = rparams%dnu
       rstreamlineDiffPrimalDef%ddelta = 1.0_DP
       rstreamlineDiffPrimalDef%dnewton = 0.0_DP
 
       ! Dual Defect
-      rstreamlineDiffDualDef%dupsam = rparams%dupsam
+      rstreamlineDiffDualDef%dupsam = rparams%dupsamDual
       rstreamlineDiffDualDef%dnu = rparams%dnu
       rstreamlineDiffDualDef%ddelta = -1.0_DP
       rstreamlineDiffDualDef%dnewtonTransposed = 1.0_DP
@@ -685,8 +685,8 @@ contains
       call lsysbl_clearMatrix (rmatrixBlock)
     
       ! Initialise the operator structure for what we need.
-      roptcoperator%dupsamPrimal = rparams%dupsam
-      roptcoperator%dupsamDual = rparams%dupsam
+      roptcoperator%dupsamPrimal = rparams%dupsamPrimal
+      roptcoperator%dupsamDual = rparams%dupsamDual
       
       ! Timestep-weights
       if (rparams%bemulateTimestep) then
@@ -869,8 +869,8 @@ contains
       call lsysbl_clearMatrix (rmatrixBlock)
     
       ! Initialise the operator structure for what we need.
-      roptcoperator%dupsamPrimal = rparams%dupsam
-      roptcoperator%dupsamDual = rparams%dupsam
+      roptcoperator%dupsamPrimal = rparams%dupsamPrimal
+      roptcoperator%dupsamDual = rparams%dupsamDual
       
       ! Timestep-weights
       if (rparams%bemulateTimestep) then
@@ -991,21 +991,21 @@ contains
     else
 
       ! Primal preconditioner
-      rstreamlineDiffPrimal%dupsam = rparams%dupsam
+      rstreamlineDiffPrimal%dupsam = rparams%dupsamPrimal
       rstreamlineDiffPrimal%dnu = rparams%dnu
       rstreamlineDiffPrimal%ddelta = 1.0_DP
       rstreamlineDiffPrimal%dnewton = 0.0_DP
       if (rparams%bnewton) rstreamlineDiffPrimal%dnewton = 1.0_DP
 
       ! Dual preconditioner, velocity block
-      rstreamlineDiffDual%dupsam = rparams%dupsam
+      rstreamlineDiffDual%dupsam = rparams%dupsamDual
       rstreamlineDiffDual%dnu = rparams%dnu
       rstreamlineDiffDual%ddelta = -1.0_DP
       !if (rparams%bnewton) 
       rstreamlineDiffDual%dnewtonTransposed = 1.0_DP
 
       ! Dual preconditioner, reactive mass matrix block
-      rstreamlineDiffDualR%dupsam = rparams%dupsam
+      rstreamlineDiffDualR%dupsam = rparams%dupsamDual
       rstreamlineDiffDualR%dnu = rparams%dnu
       rstreamlineDiffDualR%ddelta = 0.0_DP
       if (rparams%bnewton) then
@@ -2107,7 +2107,7 @@ contains
               call output_line ('maxre  = '//sys_siL(Imaxre(icurrentmaxre),10))
               call output_line ('re     = '//sys_siL(Ire(icurrentre),10))
               call output_line ('alpha  = '//sys_sdL(rparams%dalpha,10))
-              call output_line ('dupsam = '//sys_sdL(rparams%dupsam,10))
+              call output_line ('dupsam = '//sys_sdL(rparams%dupsamPrimal,10))
              
             end if
 
