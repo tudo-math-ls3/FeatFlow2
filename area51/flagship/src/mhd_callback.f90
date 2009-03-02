@@ -60,7 +60,7 @@ contains
 
   subroutine mhd_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
                                   rsolution, rsolutionInitial,&
-                                  rrhs, rres, istep, ioperationSpec,&
+                                  rvector, istep, ioperationSpec,&
                                   rcollection, istatus)
 
 !<description>
@@ -93,11 +93,8 @@ contains
     type(t_vectorBlock), intent(INOUT) :: rsolution
     
     ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
-    
-    ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
-    
+    type(t_vectorBlock), intent(INOUT) :: rvector
+        
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
@@ -131,17 +128,17 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
-      call euler_calcResidual(rproblemLevel, rtimestep, rsolver,&
-                              rsolution, rsolutionInitial,&
-                              rrhs, rres, istep, rcollection)
+!!$      call euler_calcResidual(rproblemLevel, rtimestep, rsolver,&
+!!$                              rsolution, rsolutionInitial,&
+!!$                              rrhs, rres, istep, rcollection)
       
       ! Get solution from scalar transport model
       p_rsolutionTransport => rcollection%p_rvectorQuickAccess1
       
-      ! Set pointer to global solution vectors
-      call lsysbl_getbase_double(rsolution, p_DdataEuler)
-      call lsysbl_getbase_double(rres, p_DdataResidual)
-      call lsysbl_getbase_double(p_rsolutionTransport, p_DdataTransport)
+!!$      ! Set pointer to global solution vectors
+!!$      call lsysbl_getbase_double(rsolution, p_DdataEuler)
+!!$      call lsysbl_getbase_double(rres, p_DdataResidual)
+!!$      call lsysbl_getbase_double(p_rsolutionTransport, p_DdataTransport)
       
       ! Get lumped mass matrix
       lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
@@ -180,8 +177,8 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
-      call euler_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                             rsolution, rsolutionInitial, rres, rcollection)
+!!$      call euler_setBoundary(rproblemLevel, rtimestep, rsolver,&
+!!$                             rsolution, rsolutionInitial, rres, rcollection)
     end if
 
     ! Set status flag
@@ -212,8 +209,8 @@ contains
       
       
       ! Compute the scaling parameter
-!!$      dscale = -dstep * 12.0 * (1.0-dtime**4) * dtime**2
-      dscale = -dstep * 12.0 * dtime*dtime
+      dscale = -dstep * 12.0 * (1.0-dtime**4) * dtime**2
+!!$      dscale = -dstep * 12.0 * dtime*dtime
       
       ! Loop over all nodal values
       do ieq = 1, neq
@@ -280,8 +277,8 @@ contains
       
       
       ! Compute the scaling parameter
-!!$      dscale = -dstep * 12.0 * (1.0-dtime**4) * dtime**2
-      dscale = -dstep * 12.0 * dtime*dtime
+      dscale = -dstep * 12.0 * (1.0-dtime**4) * dtime**2
+!!$      dscale = -dstep * 12.0 * dtime*dtime
       
       ! Loop over all nodal values
       do ieq = 1, neq

@@ -72,9 +72,8 @@ contains
 !<subroutine>
 
   subroutine euler_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, rsolutionInitial,&
-                                    rrhs, rres, istep, ioperationSpec,&
-                                    rcollection, istatus)
+                                    rsolution, rsolutionInitial, rvector,&
+                                    istep, ioperationSpec, rcollection, istatus)
 
 !<description>
     ! This subroutine is called by the nonlinear solver and it is responsible
@@ -106,11 +105,8 @@ contains
     type(t_vectorBlock), intent(INOUT) :: rsolution
     
     ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
-    
-    ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
-    
+    type(t_vectorBlock), intent(INOUT) :: rvector
+        
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
@@ -124,21 +120,28 @@ contains
 
     ! Do we have to calculate the preconditioner?
     ! --------------------------------------------------------------------------
-    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) .or.&
-        (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0)) then
+    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
       
       call euler_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
                                     rsolution, rcollection)
     end if
     
     
-    ! Do we have to calculate the residual and the constant right-hand side
+    ! Do we have to calculate the constant right-hand side?
+    ! --------------------------------------------------------------------------
+    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
+
+      call euler_calcrhs(rproblemLevel, rtimestep, rsolver,&
+                         rsolution, rvector, rcollection)
+    end if
+
+    ! Do we have to calculate the residual
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
       call euler_calcResidual(rproblemLevel, rtimestep, rsolver,&
                               rsolution, rsolutionInitial,&
-                              rrhs, rres, istep, rcollection)
+                              rvector, istep, rcollection)
     end if
     
     
@@ -147,7 +150,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
       call euler_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                             rsolution, rsolutionInitial, rres, rcollection)
+                             rsolution, rsolutionInitial, rvector, rcollection)
     end if
     
     
@@ -698,6 +701,44 @@ contains
 
 !<subroutine>
 
+  subroutine euler_calcRHS(rproblemLevel, rtimestep, rsolver,&
+                           rsolution, rrhs, rcollection)
+
+!<description>
+    ! This subroutine computes the constant right-hand side vector
+    ! 
+    !  $$ b^n = [M+(1-\theta)\Delta t K^n]u^n $$
+!</description>
+
+!<input>
+    ! time-stepping structure
+    type(t_timestep), intent(IN) :: rtimestep
+
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: rsolution
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(INOUT) :: rsolver
+
+    ! right-hand side vector
+    type(t_vectorBlock), intent(INOUT) :: rrhs
+
+    ! collection
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+  end subroutine euler_calcRHS
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine euler_calcResidual(rproblemLevel, rtimestep, rsolver,&
                                 rsolution, rsolutionInitial, rrhs, rres, ite, rcollection)
 
@@ -1052,7 +1093,7 @@ contains
           
       case (AFCSTAB_FEMTVD)
 
-        ! Compute th elow-order residual + FEM-TVD stabilization
+        ! Compute the low-order residual + FEM-TVD stabilization
         !
         !   $ res = res + dt*theta*L(U^{(m)})*U^{(m)} + F(U^{(m)}) $
 
