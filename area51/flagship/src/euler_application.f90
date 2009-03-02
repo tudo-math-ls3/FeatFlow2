@@ -2052,20 +2052,21 @@ contains
     end if
     
     ! Initialize the solution vector and impose boundary conditions explicitly
-    call euler_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
+    call euler_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+                            rtimestep%dinitialTime, rsolution)
     select case(rappDescriptor%ndimension)
     case (NDIM1D)
       call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
-                                     rsolution, 0.0_DP, rproblem%rboundary,&
-                                     euler_calcBoundaryvalues1d)
+                                     rsolution, rtimestep%dinitialTime,&
+                                     rproblem%rboundary, euler_calcBoundaryvalues1d)
     case (NDIM2D)
       call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
-                                     rsolution, 0.0_DP, rproblem%rboundary,&
-                                     euler_calcBoundaryvalues2d)
+                                     rsolution, rtimestep%dinitialTime,&
+                                     rproblem%rboundary, euler_calcBoundaryvalues2d)
     case (NDIM3D)
       call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
-                                     rsolution, 0.0_DP, rproblem%rboundary,&
-                                     euler_calcBoundaryvalues3d)
+                                     rsolution, rtimestep%dinitialTime,&
+                                     rproblem%rboundary, euler_calcBoundaryvalues3d)
     end select
 
     ! Initialize timer for intermediate UCD exporter
@@ -2114,7 +2115,8 @@ contains
 
             ! Compute the error estimator using recovery techniques
             call euler_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                             rsolution, 0.0_DP, relementError, derror)
+                                             rsolution, rtimestep%dinitialTime,&
+                                             relementError, derror)
 
             ! Perform h-adaptation and update the triangulation structure
             call euler_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
@@ -2139,20 +2141,21 @@ contains
                                              rsolution, .false., .true.)
 
             ! Re-generate the initial solution vector and impose boundary conditions explicitly
-            call euler_initSolution(rparlist, ssectionname, p_rproblemLevel, 0.0_DP, rsolution)
+            call euler_initSolution(rparlist, ssectionname, p_rproblemLevel,&
+                                    rtimestep%dinitialTime, rsolution)
             select case(rappDescriptor%ndimension)
             case (NDIM1D)
               call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
-                                             rsolution, 0.0_DP, rproblem%rboundary,&
-                                             euler_calcBoundaryvalues1d)
+                                             rsolution, rtimestep%dinitialTime,&
+                                             rproblem%rboundary, euler_calcBoundaryvalues1d)
             case (NDIM2D)
               call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
-                                             rsolution, 0.0_DP, rproblem%rboundary,&
-                                             euler_calcBoundaryvalues2d)
+                                             rsolution, rtimestep%dinitialTime,&
+                                             rproblem%rboundary, euler_calcBoundaryvalues2d)
             case (NDIM3D)
               call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
-                                             rsolution, 0.0_DP, rproblem%rboundary,&
-                                             euler_calcBoundaryvalues3d)
+                                             rsolution, rtimestep%dinitialTime,&
+                                             rproblem%rboundary, euler_calcBoundaryvalues3d)
             end select
           end do
 
