@@ -2265,16 +2265,6 @@ contains
               ! Release solver data and structure
               call linsol_doneData (p_rsolverNode)
               
-              select case(ilinearsolver)
-              case (1)
-                do ilevel = NLMIN+1,NLMAX
-                  ! Delete the interlevel projection structure
-                  call mlprj_initProjectionDiscr (Rlevel(ilevel)%rprojection,&
-                      Rlevel(ilevel)%rdiscretisation)
-                end do
-              
-              end select
-                          
               ! Sum up the correction to the current solution.
               call lsysbl_vectorLinearComb (rdefectBlock,rvectorBlock,1.0_DP,1.0_DP)
               
@@ -2291,6 +2281,16 @@ contains
             ! Release the solver node and all subnodes attached to it (if at all):
             call linsol_releaseSolver (p_rsolverNode)
             
+            select case(ilinearsolver)
+            case (1)
+              do ilevel = NLMIN+1,NLMAX
+                ! Delete the interlevel projection structure
+                call mlprj_initProjectionDiscr (Rlevel(ilevel)%rprojection,&
+                    Rlevel(ilevel)%rdiscretisation)
+              end do
+            
+            end select
+                        
             if (ioutputlevel .ge. 2) then
               call output_lbrk()
             end if
@@ -2454,7 +2454,6 @@ contains
             call ucd_addVariableVertexBased (rexport,'errorx',UCD_VAR_STANDARD, p_DdataX)
             call ucd_addVariableVertexBased (rexport,'errory',UCD_VAR_STANDARD, p_DdataY)
             
-
             ! Write the file to disc, that's it.
             call ucd_write (rexport)
             call ucd_release (rexport)

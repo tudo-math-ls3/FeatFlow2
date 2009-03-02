@@ -2511,6 +2511,9 @@ contains
     deallocate(roptcassemblyinfo%DdvelXderiv)
     deallocate(roptcassemblyinfo%DdvelYderiv)
     
+    deallocate(roptcassemblyinfo%DpvelDofs)
+    deallocate(roptcassemblyinfo%DdvelDofs)
+    
     deallocate(roptcassemblyinfo%p_DcubPtsRef)
 
     ! Clean up of the element set.
