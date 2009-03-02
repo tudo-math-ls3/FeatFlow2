@@ -35,7 +35,7 @@ SIN(_ang*_pi/180)
 [diffusiontensor]
 NCOMP
 1
-1e-3
+-1e-3
 
 
 # Specify the boundary conditions for the primal problem

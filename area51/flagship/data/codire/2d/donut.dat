@@ -36,7 +36,8 @@ sdualbdrcondname = boundary_conditions_dual
 ndimension = 2
 
 # solution algorithm
-algorithm = stationary_primaldual
+algorithm = transient_primal
+#stationary_primaldual
 
 #-------------------------------------------------------------------------------
 
@@ -239,7 +240,7 @@ ucderror = out/donut_error
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -267,13 +268,13 @@ dinitialTime = 0.0
 dfinalTime = 1.0
 
 # initial time step size
-dinitialStep = 1.0
+dinitialStep = 0.01
 
 # lower bound for the admissible time step
-dminStep = 1.0
+dminStep = 0.01
 
 # upper bound for the admissible time step
-dmaxStep = 1.0
+dmaxStep = 0.01
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -297,7 +298,7 @@ depsRel = 0.0
 depsAbs = 0.0
 
 # tolerance for steady state convergence
-depsSteady = 0.0
+depsSteady = 1e-12
 
 
 ################################################################################
@@ -315,7 +316,7 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 5
 
 # maximum multigrid level number
 nlmax = 5
@@ -436,7 +437,7 @@ depsStag = 0.0
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 4
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -700,7 +701,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 1
+nadapt = 0
 
 # time for grid adaptivity
 dtimeadapt = 0.0

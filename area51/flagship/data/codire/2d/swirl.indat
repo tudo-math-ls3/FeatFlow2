@@ -28,14 +28,14 @@ NCOMP
 if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0)
 
 # Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
+[velocityfield_timedependent]
 NCOMP
 2
 SIN(_pi*x)^2*SIN(2*_pi*y)*COS(_pi*t/_Tfin)
 -SIN(_pi*y)^2*SIN(2*_pi*x)*COS(_pi*t/_Tfin)
 
 # Specify the initial velocity by logical expressions and solution values
-[initial_velocity_aux]
+[velocityfield_constant]
 NCOMP
 2
 SIN(_pi*x)^2*SIN(2*_pi*y)

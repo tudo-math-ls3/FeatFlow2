@@ -674,7 +674,7 @@ dcoarseningTolerance = 0.1
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-ierrorestimator = 7
+ierrorestimator = 6
 
 # type or grid indicator
 # 0 = as is

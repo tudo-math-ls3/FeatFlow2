@@ -250,7 +250,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.001
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 0.001
@@ -301,10 +301,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 3
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 3
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -692,10 +692,10 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.001
+dstepadapt = 0.01
 
 # maximum number of refinement levels
-nsubdividemax = 5
+nsubdividemax = 3
 
 # adaptation strategy
 # 1 = red-green
@@ -737,7 +737,7 @@ dnoisefilter = 0.2
 dabsfilter = 0.001
 
 # number of protection layers
-nprotectLayers = 0
+nprotectLayers = 2
 
 # tolerance for protection layers
-dprotectLayerTolerance = 0.0
+dprotectLayerTolerance = 0.01
