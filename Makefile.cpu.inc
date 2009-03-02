@@ -690,12 +690,12 @@ ifeq ($(call match,$(ID),pc-coreduo-linux-intel-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xP $(CFLAGSF77LIBS)
-CFLAGSF77     := -xP $(CFLAGSF77)
-CFLAGSF90     := -xP $(CFLAGSF90)
-CFLAGSC       := -xP $(CFLAGSC)
-CFLAGSCXX     := -xP $(CFLAGSCXX)
-LDFLAGS       := -xP $(LDFLAGS)
+CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
+CFLAGSF77     := -xT $(CFLAGSF77)
+CFLAGSF90     := -xT $(CFLAGSF90)
+CFLAGSC       := -xT $(CFLAGSC)
+CFLAGSCXX     := -xT $(CFLAGSCXX)
+LDFLAGS       := -xT $(LDFLAGS)
 endif
 endif
 
@@ -756,12 +756,12 @@ ifeq ($(call match,$(ID),pc64-coreduo-linux-intel-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xP $(CFLAGSF77LIBS)
-CFLAGSF77     := -xP $(CFLAGSF77)
-CFLAGSF90     := -xP $(CFLAGSF90)
-CFLAGSC       := -xP $(CFLAGSC)
-CFLAGSCXX     := -xP $(CFLAGSCXX)
-LDFLAGS       := -xP $(LDFLAGS)
+CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
+CFLAGSF77     := -xT $(CFLAGSF77)
+CFLAGSF90     := -xT $(CFLAGSF90)
+CFLAGSC       := -xT $(CFLAGSC)
+CFLAGSCXX     := -xT $(CFLAGSCXX)
+LDFLAGS       := -xT $(LDFLAGS)
 endif
 endif
 
