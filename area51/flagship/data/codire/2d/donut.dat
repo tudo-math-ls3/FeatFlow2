@@ -36,8 +36,7 @@ sdualbdrcondname = boundary_conditions_dual
 ndimension = 2
 
 # solution algorithm
-algorithm = transient_primal
-#stationary_primaldual
+algorithm = stationary_primaldual
 
 #-------------------------------------------------------------------------------
 
@@ -456,7 +455,7 @@ nmaxIterations = 1000
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 3
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration

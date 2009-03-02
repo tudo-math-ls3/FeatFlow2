@@ -48,8 +48,8 @@ y
 [targetfunctional]
 NCOMP
 1
-if(x >= 0.9 & x <= 1.1, 1, 0)
-#if(@sqr2 < _eps, _C/exp(@abs/_eps/_eps-1),0)
+if(@sqr2 < _eps, _C/exp(@abs/_eps/_eps-1),0)
+#if(x >= 0.9 & x <= 1.1, 1, 0)
 
 
 # Specify the exact quantity of interest
