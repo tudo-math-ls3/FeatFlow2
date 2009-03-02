@@ -1935,7 +1935,8 @@ contains
     rparams%dt = 1.0_DP
     
     ! Stabilisation parameter
-    rparams%dupsam = 0.7_DP
+    rparams%dupsamPrimal = 0.7_DP
+    rparams%dupsamDual = 0.7_DP
     
     ! TRUE: Use Newton iteration
     rparams%bnewton = .true.
