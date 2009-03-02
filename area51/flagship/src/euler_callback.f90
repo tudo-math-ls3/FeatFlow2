@@ -72,7 +72,7 @@ contains
 !<subroutine>
 
   subroutine euler_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, rsolutionInitial, rvector,&
+                                    rsolution, rsolutionInitial, rrhs, rres,&
                                     istep, ioperationSpec, rcollection, istatus)
 
 !<description>
@@ -105,7 +105,10 @@ contains
     type(t_vectorBlock), intent(INOUT) :: rsolution
     
     ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rvector
+    type(t_vectorBlock), intent(INOUT) :: rrhs
+
+    ! residual vector
+    type(t_vectorBlock), intent(INOUT) :: rres
         
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection
@@ -127,13 +130,13 @@ contains
     end if
     
     
-    ! Do we have to calculate the constant right-hand side?
-    ! --------------------------------------------------------------------------
-    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-
-      call euler_calcrhs(rproblemLevel, rtimestep, rsolver,&
-                         rsolution, rvector, rcollection)
-    end if
+!!$    ! Do we have to calculate the constant right-hand side?
+!!$    ! --------------------------------------------------------------------------
+!!$    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
+!!$
+!!$      call euler_calcrhs(rproblemLevel, rtimestep, rsolver,&
+!!$                         rsolution, rvector, rcollection)
+!!$    end if
 
     ! Do we have to calculate the residual
     ! --------------------------------------------------------------------------
@@ -141,7 +144,7 @@ contains
       
       call euler_calcResidual(rproblemLevel, rtimestep, rsolver,&
                               rsolution, rsolutionInitial,&
-                              rvector, istep, rcollection)
+                              rrhs, rres, istep, rcollection)
     end if
     
     
@@ -150,7 +153,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
       call euler_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                             rsolution, rsolutionInitial, rvector, rcollection)
+                             rsolution, rsolutionInitial, rres, rcollection)
     end if
     
     
@@ -701,46 +704,9 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcRHS(rproblemLevel, rtimestep, rsolver,&
-                           rsolution, rrhs, rcollection)
-
-!<description>
-    ! This subroutine computes the constant right-hand side vector
-    ! 
-    !  $$ b^n = [M+(1-\theta)\Delta t K^n]u^n $$
-!</description>
-
-!<input>
-    ! time-stepping structure
-    type(t_timestep), intent(IN) :: rtimestep
-
-    ! solution vector
-    type(t_vectorBlock), intent(IN) :: rsolution
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
-
-    ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
-
-    ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
-
-    ! collection
-    type(t_collection), intent(INOUT) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-  end subroutine euler_calcRHS
-
-  !*****************************************************************************
-
-!<subroutine>
-
   subroutine euler_calcResidual(rproblemLevel, rtimestep, rsolver,&
-                                rsolution, rsolutionInitial, rrhs, rres, ite, rcollection)
+                                rsolution, rsolutionInitial,&
+                                rrhs, rres, ite, rcollection)
 
 !<description>
     ! This subroutine computes the nonlinear residual vector and the
@@ -1132,7 +1098,8 @@ contains
 !<subroutine>
 
   subroutine euler_calcRHS(rproblemLevel, rtimestep, rsolver,&
-                           rsolution, rsolutionInitial, rrhs, istep, rcollection)
+                           rsolution, rsolutionInitial,&
+                           rrhs, istep, rcollection)
 
 !<description>
     ! This subroutine computes the right-hand side vector

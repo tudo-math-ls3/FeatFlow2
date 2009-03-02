@@ -6,14 +6,15 @@
 !# <purpose>
 !# This application solves the generic time-dependent conservation law
 !#
-!#   $$\frac{\partial u}{\partial t}+\nabla\cdot{\bf f}(u)=s(u)$$
+!#   $$\frac{\partial u}{\partial t}+\nabla\cdot{\bf f}(u)+r(u) = b$$
 !#
 !# for a scalar quantity $u$ in the domain $\Omega$ in 1D, 2D and 3D.
 !# The (possibly nonlinear) flux function ${\bf f}(u)$ can be
 !#
 !#   $${\bf f}(u):={\bf v}u-D\nabla u$$
 !#
-!# whereby $\bf v$ denotes an externally given velocity profile. 
+!# whereby $\bf v$ denotes an externally given velocity profile.
+!#
 !# The physical diffusion tensor
 !#
 !#   $$D=\left[\begin{array}{ccc}
@@ -22,16 +23,20 @@
 !#       d_{31} & d_{32} & d_{33}
 !#       \end{array}\right]$$
 !#
-!# may by anitotropic and it can also reduce to the scalar coefficient
+!# may by anisotropic and it can also reduce to the scalar coefficient
 !#
 !#   $$D=dI,\quad d_{ij}=0\,\forall j\ne i$$
 !#
 !# Moreover, ${\bf f}(u)$ can also be defined such that
 !#
-!#   $$\nabl\cdot{\bf f}(u):=u_t+\frac{\partial f(u)}{\partial x}$$
+!#   $$\nabla\cdot{\bf f}(u):=u_t+\frac{\partial f(u)}{\partial x}$$
 !#
 !# that is, the above equation stands for a 1d or 2d conservation
 !# law which is solved in the space-time domain $\Omega=$.
+!#
+!# The reactive term $r(u)$ is ignored at the moment.
+!#
+!# The load vector $b$ is constant throughout the simulation.
 !#
 !# The spatial discretization is perform by means of the algebraic
 !# flux correction (AFC) paradigm by Kuzmin, Moeller and Turek. In
@@ -1997,7 +2002,7 @@ contains
     ! Calculate the standard Galerkin residual
     call codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
                              rsolutionPrimal, rsolutionPrimal,&
-                             rvector, 0, rcollection)
+                             rvector, rvector, 0, rcollection)
     
     ! Add contribution from the constant right-hand side
     if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, rvector, 1.0_DP, 1.0_DP)
@@ -2732,7 +2737,7 @@ contains
       !
       ! for the scalar quantity $u$ in the domain $\Omega$. Here,
       ! ${\bf f}(u)$ denotes the flux term and r(u) and b are the
-      ! reacitve term ans the right-hand side vector, respectively.
+      ! reacitve term and the right-hand side vector, respectively.
 !</description>
 
 !<input>
@@ -2804,7 +2809,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
 
     ! Set pointer to maximum problem level and discretisation
-    p_rproblemLevel => rproblem%p_rproblemLevelMax
+    p_rproblemLevel   => rproblem%p_rproblemLevelMax
     p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
     ! Initialize the solution vector and impose boundary conditions explicitly
@@ -2914,10 +2919,10 @@ contains
                           rtimestep%dinitialTime, rrhs)
     end if
 
-    ! Calculate the velocity field
+    ! Calculate the initial velocity field
     nlmin = solver_getMinimumMultigridlevel(rsolver)
     call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
-                                  rtimestep%dtime, rcollection, nlmin)
+                                  rtimestep%dinitialTime, rcollection, nlmin)
     
     ! Attach the boundary condition to the solver structure
     call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
@@ -2952,12 +2957,13 @@ contains
         
       case (TSTEP_RK_SCHEME)
         
-        ! Adopt explicit Runge-Kutta scheme
         if (rappDescriptor%irhstype > 0) then
+          ! Explicit Runge-Kutta scheme with non-zero right-hand side vector
           call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
                                    rsolution, codire_nlsolverCallback,&
                                    rcollection, rrhs)
         else
+          ! Explicit Runge-Kutta scheme without right-hand side vector
           call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
                                    rsolution, codire_nlsolverCallback,&
                                    rcollection)
@@ -2965,12 +2971,13 @@ contains
         
       case (TSTEP_THETA_SCHEME)
         
-        ! Adopt two-level theta-scheme
         if (rappDescriptor%irhstype > 0) then
+          ! Two-level theta-scheme with non-zero right-hand side vector
           call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
                                       rsolution, codire_nlsolverCallback,&
                                       rcollection, rrhs)
         else
+          ! Two-level theta-scheme without right-hand side vector
           call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
                                       rsolution, codire_nlsolverCallback,&
                                       rcollection)
@@ -3012,7 +3019,7 @@ contains
 
 
       !-------------------------------------------------------------------------
-      ! Perform adaptation
+      ! Perform mesh adaptation
       !-------------------------------------------------------------------------
 
       if ((dstepAdapt .gt. 0.0_DP) .and. (rtimestep%dTime .ge. dtimeAdapt)) then
@@ -3075,7 +3082,8 @@ contains
         call stat_startTimer(rappDescriptor%rtimerTriangulation, STAT_TIMERSHORT)
         
         ! Generate standard mesh from raw mesh
-        call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+        call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation,&
+                                          rproblem%rboundary)
         
         ! Stop time measurement for generation of the triangulation
         call stat_stopTimer(rappDescriptor%rtimerTriangulation)
@@ -3096,14 +3104,14 @@ contains
         ! Re-calculate the velocity field
         nlmin = solver_getMinimumMultigridlevel(rsolver)
         call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
-                                      rtimestep%dtime, rcollection, nlmin)
+                                      rtimestep%dTime, rcollection, nlmin)
 
         ! Re-initialize the right-hand side vector
         if (rappDescriptor%irhstype > 0) then
           call lsysbl_resizeVectorBlock(rrhs,&
               p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
           call codire_initRHS(rappDescriptor, p_rproblemLevel,&
-                              rtimestep%dTime, rrhs)
+                              rtimestep%dinitialTime, rrhs)
         end if
 
         ! Stop time measurement for generation of constant coefficient matrices
@@ -3114,7 +3122,7 @@ contains
         ! Re-calculate the time-dependent velocity field
         nlmin = solver_getMinimumMultigridlevel(rsolver)
         call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
-                                      rtimestep%dtime, rcollection, nlmin)
+                                      rtimestep%dTime, rcollection, nlmin)
        
       end if
       
@@ -3275,7 +3283,7 @@ contains
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
       call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
-                                    rtimestep%dtime, rcollection, nlmin)
+                                    rtimestep%dTime, rcollection, nlmin)
 
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
@@ -3549,7 +3557,7 @@ contains
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
       call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
-                                    rtimestep%dtime, rcollection, nlmin)
+                                    rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
@@ -3775,7 +3783,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
 
     ! Set pointer to maximum problem level
-    p_rproblemLevel => rproblem%p_rproblemLevelMax
+    p_rproblemLevel   => rproblem%p_rproblemLevelMax
     p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
     ! Initialize the solution vector and impose boundary conditions explicitly
@@ -3834,7 +3842,7 @@ contains
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
       call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
-                                    rtimestep%dtime, rcollection, nlmin)
+                                    rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
@@ -3893,11 +3901,6 @@ contains
       ! Start time measurement for solution procedure
       call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
       
-      ! Calculate the velocity field
-      nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
-                                    rtimestep%dtime, rcollection, nlmin)
-
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCondDual, .true.)
       
@@ -3936,7 +3939,7 @@ contains
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
       call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
-                                    rtimestep%dtime, rcollection, nlmin)
+                                    rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
