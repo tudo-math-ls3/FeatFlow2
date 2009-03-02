@@ -1856,7 +1856,6 @@ contains
     type(t_filterChain), dimension(3), target :: RfilterChain
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     type(t_linsolMGLevelInfo2), pointer     :: p_rlevelInfo
-    type(t_interlevelProjectionBlock) :: rprojection
 
     ! NLMAX receives the level where we want to solve.
     integer :: NLMIN,NLMAX
@@ -2191,17 +2190,13 @@ contains
                 ! the matrix.
                 if (ilevel .lt. NLMAX) then
                   ! Abuse the defect vector as temp vector
-                  call mlprj_performInterpolation (rprojection,Rlevel(ilevel)%rtempVector, &
-                                                  Rlevel(ilevel+1)%rtempVector,rdefectBlock%RvectorBlock(1))
+                  call mlprj_performInterpolation (Rlevel(ilevel+1)%rprojection,&
+                      Rlevel(ilevel)%rtempVector, Rlevel(ilevel+1)%rtempVector,rdefectBlock%RvectorBlock(1))
                 end if
               
                 call getSystemMatrix (RmatrixBlock(ilevel),Rlevel(ilevel)%rtempVector,rparams,Rlevel(ilevel),&
                     .false.,ilinearsolver .eq. 0)
                 call matfil_discreteBC (RmatrixBlock(ilevel),Rlevel(ilevel)%rdiscreteBC)
-                
-                if (ilevel .lt. NLMAX) then
-                  call mlprj_doneProjection(rprojection)
-                end if
               end do
 
               ! Calculate the nonlinear defect
