@@ -18,9 +18,8 @@
 !<subroutine>
 
     subroutine fcb_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, rsolutionInitial,&
-                                    rvector, istep, ioperationSpec,&
-                                    rcollection, istatus)
+                                    rsolution, rsolutionInitial, rrhs, rres,&
+                                    istep, ioperationSpec, rcollection, istatus)
 
       use collection
       use linearsystemblock
@@ -52,8 +51,11 @@
       ! solution vector
       type(t_vectorBlock), intent(INOUT) :: rsolution
 
-      ! vector to calculate
-      type(t_vectorBlock), intent(INOUT) :: rvector
+      ! right-hand side vector
+      type(t_vectorBlock), intent(INOUT) :: rrhs
+
+      ! residual vector
+      type(t_vectorBlock), intent(INOUT) :: rres
 
       ! collection structure
       type(t_collection), intent(INOUT) :: rcollection
