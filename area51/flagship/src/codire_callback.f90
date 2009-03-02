@@ -493,7 +493,7 @@ contains
     end if
           
     
-    ! Do we have to calculate the residual and the constant right-hand side
+    ! Do we have to calculate the residual
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
