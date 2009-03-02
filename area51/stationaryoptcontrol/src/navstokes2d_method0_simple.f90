@@ -2278,8 +2278,7 @@ contains
             case (1)
               do ilevel = NLMIN+1,NLMAX
                 ! Delete the interlevel projection structure
-                call mlprj_initProjectionDiscr (Rlevel(ilevel)%rprojection,&
-                    Rlevel(ilevel)%rdiscretisation)
+                call mlprj_doneProjection (Rlevel(ilevel)%rprojection)
               end do
             
             end select
