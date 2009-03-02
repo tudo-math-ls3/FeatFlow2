@@ -33,7 +33,7 @@
 !#     -> Calculates the nonlinear residual vector
 !#
 !# 8.) codire_calcRHS
-!#     -> Calculates the right-hand side vector
+!#     -> Calculates the constant right-hand side vector
 !#
 !# 9.) codire_setBoundary
 !#     -> Imposes boundary conditions for nonlinear solver
@@ -424,9 +424,8 @@ contains
 !<subroutine>
 
   subroutine codire_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                     rsolution, rsolutionInitial,&
-                                     rrhs, rres, istep, ioperationSpec,&
-                                     rcollection, istatus)
+                                     rsolution, rsolutionInitial, rvector,&
+                                     istep, ioperationSpec, rcollection, istatus)
 
 !<description>
     ! This subroutine is called by the nonlinear solver and it is responsible
@@ -456,13 +455,10 @@ contains
     
     ! solution vector
     type(t_vectorBlock), intent(INOUT) :: rsolution
-    
-    ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
-    
-    ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
-    
+        
+    ! vector to calculate
+    type(t_vectorBlock), intent(INOUT) :: rvector
+
     ! collection structure
     type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
@@ -476,25 +472,35 @@ contains
     ! local variables
     integer :: jacobianMatrix
 
-
+    
     ! Do we have to calculate the preconditioner?
     ! --------------------------------------------------------------------------
-    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) .or.&
+    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND)  .ne. 0) .or.&
+        (iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)      .ne. 0) .or.&
         (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0)) then
-      
+     
       call codire_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
                                      rsolution, rcollection)
     end if
+
     
+    ! Do we have to calculate the constant right-hand side?
+    ! --------------------------------------------------------------------------
+    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
+
+      call codire_calcrhs(rproblemLevel, rtimestep, rsolver,&
+                          rsolution, rvector, rcollection)
+    end if
+          
     
     ! Do we have to calculate the residual and the constant right-hand side
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
-      
+
       call codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
                                rsolution, rsolutionInitial,&
-                               rrhs, rres, istep, rcollection)
-    end if
+                               rvector, istep, rcollection)
+     end if
     
     
     ! Do we have to calculate the Jacobian operator?
@@ -511,7 +517,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
       call codire_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                              rsolution, rsolutionInitial, rres, rcollection)
+                              rsolution, rsolutionInitial, rvector, rcollection)
     end if
     
 
@@ -520,9 +526,10 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
       
       jacobianMatrix = collct_getvalue_int(rcollection, 'jacobianMatrix')
+
       call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
-                               rrhs%RvectorBlock(1), rres%RvectorBlock(1),&
-                               1.0_DP, 1.0_DP)
+                               rsolution%RvectorBlock(1),&
+                               rvector%RvectorBlock(1), 1.0_DP, 1.0_DP)
     end if
     
     
@@ -573,7 +580,7 @@ contains
     integer :: convectionAFC, diffusionAFC, velocityfield
     integer :: primaldual
 
-
+    
     ! Check if the preconditioner has to be updated and return otherwise.
     if (iand(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE) .eq. 0) return
     
@@ -1746,17 +1753,123 @@ contains
 
 !<subroutine>
 
+  subroutine codire_calcRHS(rproblemLevel, rtimestep, rsolver,&
+                            rsolution, rrhs, rcollection)
+
+!<description>
+    ! This subroutine computes the constant right-hand side vector
+    ! 
+    !  $$ b^n = [M+(1-\theta)\Delta t K^n]u^n $$
+!</description>
+
+!<input>
+    ! time-stepping structure
+    type(t_timestep), intent(IN) :: rtimestep
+
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: rsolution
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(INOUT) :: rsolver
+
+    ! right-hand side vector
+    type(t_vectorBlock), intent(INOUT) :: rrhs
+
+    ! collection
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    type(t_timer), pointer :: rtimer
+    real(DP) :: dscale
+    integer :: transportMatrix, consistentMassMatrix, lumpedMassMatrix
+    integer :: imasstype
+
+
+    ! Start time measurement for right-hand side evaluation
+    rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
+    call stat_startTimer(rtimer, STAT_TIMERSHORT)
+
+
+    ! Get parameters from collection which are required unconditionally
+    transportMatrix = collct_getvalue_int(rcollection, 'transportmatrix')
+    imasstype       = collct_getvalue_int(rcollection, 'imasstype')
+
+    ! Compute scaling parameter
+    dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
+
+    select case(imasstype)
+    case (MASS_LUMPED)
+        
+      ! Compute the transport part of the right-hand side
+      !
+      !   $  rhs = (1-theta)*dt*L(u^n)*u^n $
+      
+      if (dscale > 0.0_DP) then
+        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
+                                 rsolution%rvectorBlock(1),&
+                                 rrhs%RvectorBlock(1), dscale, 1.0_DP)
+      end if
+      
+      ! Apply the lumped mass matrix to the solution
+      !
+      !   $ rhs = M_L*u^n + rhs $
+      
+      lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+      
+      call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                               rsolution%RvectorBlock(1),&
+                               rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP)
+      
+    case (MASS_CONSISTENT)
+      
+      ! Compute the transport part of the right-hand side
+      !
+      !   $  rhs = (1-theta)*dt*L(u^n)*u^n $
+      
+      if (dscale > 0.0_DP) then
+        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
+                                 rsolution%rvectorBlock(1),&
+                                 rrhs%RvectorBlock(1), dscale, 1.0_DP)
+      end if
+      
+      ! Apply the consistent mass matrix to the solution
+      !
+      !   $ rhs = M_L*u^n + rhs $
+        
+      consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+      
+      call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(ConsistentMassMatrix),&
+                               rsolution%RvectorBlock(1),&
+                               rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP)
+
+    end select
+
+    ! Stop time measurement for right-hand side evaluation
+    call stat_stopTimer(rtimer)
+
+  end subroutine codire_calcRHS
+    
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
-                                 rsolution, rsolutionInitial, rrhs, rres, ite, rcollection)
+                                 rsolution, rsolutionInitial, rres,&
+                                 ite, rcollection)
 
 !<description>
     ! This subroutine computes the nonlinear residual vector
     ! 
     !   $$ r^{(m)} = b^n - [M-\theta\Delta t K^{(m)}]u^{(m)} $$
     !
-    !  and the constant right-hand side (only in the zeroth iteration)
-    !
-    !  $$ b^n = [M+(1-\theta)\Delta t K^n]u^n $$
+    ! where the constant right-hind side b^n needs to be calculated elsewhere.
 !</description>
 
 !<input>
@@ -1780,9 +1893,6 @@ contains
     ! solver structure
     type(t_solver), intent(INOUT) :: rsolver
 
-    ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
-
     ! residual vector
     type(t_vectorBlock), intent(INOUT) :: rres
 
@@ -1793,410 +1903,140 @@ contains
     
     ! local variables
     type(t_timer), pointer :: rtimer
-    integer :: transportMatrix
-    integer :: consistentMassMatrix, lumpedMassMatrix
+    real(DP) :: dscale
+    integer :: transportMatrix, consistentMassMatrix, lumpedMassMatrix
     integer :: convectionAFC, diffusionAFC
-    integer :: imasstype,imassantidiffusiontype
+    integer :: imasstype, imassantidiffusiontype
+    logical :: binit
 
     
-!!$    ! For nonlinear conservation laws, the global system operator
-!!$    ! needs to be updated in each nonlinear iteration. The update
-!!$    ! routine is written such that it first determines if the problem
-!!$    ! is nonlinear and returns without matrix update otherwise.
-!!$    call codire_calcPreconditioner(rproblemLevel, rtimestep, rsolver, rsolution, rcollection)
-
-
     ! Start time measurement for residual/rhs evaluation
     rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
     call stat_startTimer(rtimer, STAT_TIMERSHORT)
 
     ! Get parameters from collection which are required unconditionally
-    transportMatrix      = collct_getvalue_int(rcollection, 'transportmatrix')
-    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
-    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+    transportMatrix = collct_getvalue_int(rcollection, 'transportmatrix')
+    imasstype       = collct_getvalue_int(rcollection, 'imasstype')
 
-    ! Are we in the zeroth iteration?
-    if (ite .eq. 0) then
+    ! Compute scaling parameter
+    dscale = rtimestep%theta * rtimestep%dStep
 
-      !-------------------------------------------------------------------------
-      ! In the first nonlinear iteration update we compute
-      !
-      ! - the residual $ res = dt*L(u^n)*u^n+f(u^n,u^n) $ and
-      !
-      ! - the right hand side $ rhs = [M+(1-theta)*dt*L^n]*u^n $
-      !
-      !-------------------------------------------------------------------------
+    select case(imasstype)
+    case (MASS_LUMPED)
       
-      imasstype = collct_getvalue_int(rcollection, 'imasstype')
+      ! Compute the transport part of the residual
+      !
+      !   $ res^{(m)} = rhs - [M_L - dt*theta*L(u^{(m)})] * u^{(m)} $
       
-      select case(imasstype)
-      case (MASS_LUMPED)
-        
-        ! Compute the initial low-order residual
-        !
-        !   $  res^{(0)} = dt*L(u^n)*u^n $
-        
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 rtimestep%dStep, 0.0_DP)
+      call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
+                               rsolution%rvectorBlock(1),&
+                               rres%RvectorBlock(1), dscale, 1.0_DP)
 
-        ! Compute the constant right-hand side, whereby the force vector
-        ! is already given in the right-hand side vector
-        !
-        !   $ rhs = M_L*u^n+(1-theta)*res^{(0)} $
+      ! Apply the lumped mass matrix to the solution
 
-        if (rtimestep%theta .lt. 1.0_DP) then
-          call lsysbl_copyVector(rres, rrhs)
+      lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+      
+      call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                               rsolution%RvectorBlock(1),&
+                               rres%RvectorBlock(1), -1.0_DP, 1.0_DP)
+
+    case (MASS_CONSISTENT)
+        
+      ! Compute the transport part of the residual
+      !
+      !   $ res^{(m)} = rhs - [M_C - dt*theta*L(u^{(m)})] * u^{(m)} $
+
+      call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
+                               rsolution%rvectorBlock(1),&
+                               rres%RvectorBlock(1), dscale, 1.0_DP)
+
+      ! Apply the consistent mass matrix to the solution
+
+      consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+      
+      call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
+                               rsolution%RvectorBlock(1),&
+                               rres%RvectorBlock(1), -1.0_DP, 1.0_DP)
+
+    case DEFAULT
+      
+      ! Compute the transport part of the residual
+      !
+      !   $ res^{(m)} = rhs + L(u^{(m)})*u^{(m)} $
+      
+      call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
+                               rsolution%rvectorBlock(1),&
+                               rres%RvectorBlock(1), 1.0_DP, 1.0_DP)
+    end select
+
+
+    ! Perform algebraic flux correction for the convective term if required
+    !
+    !   $ res = res + f^*(u^(m),u^n) $
+    
+    convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
+    
+    if (convectionAFC > 0) then
+      
+      select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+      case (AFCSTAB_FEMFCT,&
+            AFCSTAB_FEMFCT_CLASSICAL)
+        
+        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
+        consistentMassMatrix   = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+        lumpedMassMatrix       = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+
+        binit = (ite .eq. 0)
+
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                     rsolution, rtimestep%theta, rtimestep%dStep, binit,&
+                                     rres, rproblemLevel%Rafcstab(convectionAFC),&
+                                     rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                                     rsolution, rtimestep%theta, rtimestep%dStep, binit,&
+                                     rres, rproblemLevel%Rafcstab(convectionAFC))
         end if
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                 rsolution%RvectorBlock(1),&
-                                 rrhs%RvectorBlock(1),&
-                                 1.0_DP, 1.0_DP-rtimestep%theta)
-
-      case (MASS_CONSISTENT)
-        ! Compute the initial low-order residual
-        !
-        !   $  res^{(0)} = dt*L(u^n)*u^n $
         
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 rtimestep%dStep, 0.0_DP)
+      case (AFCSTAB_FEMTVD)
+        call gfsc_buildResidualTVD(rsolution, rtimestep%dStep, rres,&
+                                   rproblemLevel%Rafcstab(convectionAFC))
         
-        ! Compute the constant right-hand side, whereby the force vector
-        ! is already given in the right-hand side vector
-        !
-        !   $ rhs = M_C*u^n+(1-theta)*res $
-
-        if (rtimestep%theta .lt. 1.0_DP) then
-          call lsysbl_copyVector(rres, rrhs)
-        end if
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                 rsolution%RvectorBlock(1),&
-                                 rrhs%RvectorBlock(1),&
-                                 1.0_DP, 1.0_DP-rtimestep%theta)
-
-      case DEFAULT
-        ! Compute the initial low-order residual
-        !
-        !   $  res^{(0)} = L(u^n)*u^n $
-
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 1.0_DP, 0.0_DP)
-      end select
-     
-
-      ! Perform algebraic flux correction for the convective term if required
-      !
-      !   $ res^{(0)} = res^{(0)} + f(u^n,u^n) $
-
-      convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
-
-      if (convectionAFC > 0) then
-
-        ! What kind of stabilisation should be applied?
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-          
-        case (AFCSTAB_FEMFCT,&
-              AFCSTAB_FEMFCT_CLASSICAL)
-
-          imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
-          
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                       rsolution, rtimestep%theta, rtimestep%dStep, .true.,&
-                                       rres, rproblemLevel%Rafcstab(convectionAFC),&
-                                       rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                       rsolution, rtimestep%theta, rtimestep%dStep, .true.,&
-                                       rres, rproblemLevel%Rafcstab(convectionAFC))
-          end if
-          
-        case (AFCSTAB_FEMTVD)
-          call gfsc_buildResidualTVD(rsolution, rtimestep%dStep, rres,&
-                                     rproblemLevel%Rafcstab(convectionAFC))
-          
-        case (AFCSTAB_FEMGP)
-          call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                    rsolution, rsolutionInitial, rtimestep%theta, rtimestep%dStep,&
-                                    rres, rproblemLevel%Rafcstab(convectionAFC))
-        end select
-
-      end if   ! convectionAFC > 0
-
-      
-      ! Perform algebraic flux correction for the diffusive term if required
-      !
-      !   $ res^{(0)} = res^{(0)} + g(u^n,u^n) $
-
-      diffusionAFC = collct_getvalue_int(rcollection, 'diffusionAFC')
-
-      if (diffusionAFC > 0) then
+      case (AFCSTAB_FEMGP)
         
-        ! What kind of stabilisation should be applied?
-        select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
-          
-        case (AFCSTAB_SYMMETRIC)
-          call gfsc_buildResidualSymm(rsolution, 1.0_DP, rres, rproblemLevel%Rafcstab(diffusionAFC))
-        end select
-      
-      end if   ! diffusionAFC > 0
+        consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
 
-
-    else   ! ite > 0
-
-      !-------------------------------------------------------------------------
-      ! In all subsequent nonlinear iterations only the residual vector is
-      ! updated, using the right-hand side vector from the first iteration
-      !-------------------------------------------------------------------------
-
-      imasstype = collct_getvalue_int(rcollection, 'imasstype')
-
-      select case(imasstype)
-      case (MASS_LUMPED)
-        
-        ! Compute the low-order residual
-        !
-        !   $ res^{(m)} = rhs - [M_L - dt*theta*L(u^{(m)})]*u^{(m)} $
-
-        call lsysbl_copyVector(rrhs, rres)
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 rtimestep%theta*rtimestep%dStep, 1.0_DP)
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                 rsolution%RvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 -1.0_DP, 1.0_DP)
-      case (MASS_CONSISTENT)
-        
-        ! Compute the low-order residual
-        !
-        !   $ res^{(m)} = rhs - [M_C - dt*theta*L(u^{(m)})]*u^{(m)} $
-
-        call lsysbl_copyVector(rrhs, rres)
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 rtimestep%theta*rtimestep%dStep, 1.0_DP)
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                 rsolution%RvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 -1.0_DP, 1.0_DP)
-      case DEFAULT
-        
-        ! Compute the low-order residual
-        !
-        !   $ res^{(m)} = L(u^{(m)})*u^{(m)} $
-        
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 1.0_DP, 0.0_DP)
+        call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
+                                  rsolution, rsolutionInitial, rtimestep%theta, rtimestep%dStep,&
+                                  rres, rproblemLevel%Rafcstab(convectionAFC))
       end select
 
+    end if   ! convectionAFC > 0
 
-      ! Perform algebraic flux correction for the convective term if required
-      !
-      !   $ res = res + f^*(u^(m),u^n) $
 
-      convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
-
-      if (convectionAFC > 0) then
-
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-        case (AFCSTAB_FEMFCT,&
-              AFCSTAB_FEMFCT_CLASSICAL)
-        
-          imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
-          
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                       rsolution, rtimestep%theta, rtimestep%dStep, .false.,&
-                                       rres, rproblemLevel%Rafcstab(convectionAFC),&
-                                       rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                       rsolution, rtimestep%theta, rtimestep%dStep, .false.,&
-                                       rres, rproblemLevel%Rafcstab(convectionAFC))
-          end if
-          
-        case (AFCSTAB_FEMTVD)
-          call gfsc_buildResidualTVD(rsolution, rtimestep%dStep, rres,&
-                                     rproblemLevel%Rafcstab(convectionAFC))
-          
-        case (AFCSTAB_FEMGP)
-          call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                    rsolution, rsolutionInitial, rtimestep%theta, rtimestep%dStep,&
-                                    rres, rproblemLevel%Rafcstab(convectionAFC))
-        end select
-
-      end if   ! convectionAFC > 0
-
+    ! Perform algebraic flux correction for the diffusive term if required
+    !
+    !   $ res = res + g^*(u^n+1,u^n) $
+    
+    diffusionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
+    
+    if (diffusionAFC > 0) then
       
-      ! Perform algebraic flux correction for the diffusive term if required
-      !
-      !   $ res = res + g^*(u^n+1,u^n) $
-
-      diffusionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
-
-      if (diffusionAFC > 0) then
-        
-        ! What kind of stabilisation should be applied?
-        select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
           
-        case (AFCSTAB_SYMMETRIC)
-          call gfsc_buildResidualSymm(rsolution, 1.0_DP, rres, rproblemLevel%Rafcstab(diffusionAFC))
-        end select
+      case (AFCSTAB_SYMMETRIC)
+        call gfsc_buildResidualSymm(rsolution, 1.0_DP, rres, rproblemLevel%Rafcstab(diffusionAFC))
+      end select
       
-      end if   ! diffusionAFC > 0
-
-    end if   ! ite = 0
+    end if   ! diffusionAFC > 0
 
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(rtimer)
     
   end subroutine codire_calcResidual
-
-  !*****************************************************************************
-  
-!<subroutine>
-
-  subroutine codire_calcRHS(rproblemLevel, rtimestep, rsolver,&
-                            rsolution, rsolutionInitial, rrhs, istep, rcollection)
-
-!<description>
-    ! This subroutine computes the right-hand side vector
-    ! used in the explicit Lax-Wendroff time-stepping scheme
-!</description>
-
-!<input>
-    ! time-stepping structure
-    type(t_timestep), intent(IN) :: rtimestep
-
-    ! solution vector
-    type(t_vectorBlock), intent(IN) :: rsolution
-
-    ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
-
-    ! number of explicit step
-    integer, intent(IN) :: istep
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
-
-    ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
-
-    ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
-
-    ! collection
-    type(t_collection), intent(INOUT) :: rcollection
-!</inputoutput>
-!</subroutine>
-    
-    ! local variables
-    type(t_timer), pointer :: rtimer
-    real(DP) :: dweight
-    integer :: transportMatrix
-    integer :: consistentMassMatrix, lumpedMassMatrix
-    integer :: convectionAFC, diffusionAFC
-    integer :: imasstype,imassantidiffusiontype
-
-
-    ! Start time measurement for residual/rhs evaluation
-    rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
-    call stat_startTimer(rtimer, STAT_TIMERSHORT)
-
-    ! For nonlinear conservation laws, the global system operator
-    ! needs to be updated in each nonlinear iteration. The update 
-    ! routine is written such that it first determines if the problem
-    ! is nonlinear and returns without matrix update otherwise.
-    call codire_calcPreconditioner(rproblemLevel, rtimestep, rsolver, rsolution, rcollection)
-
-
-    ! Get parameters from collection which are required unconditionally
-    transportMatrix      = collct_getvalue_int(rcollection, 'transportmatrix')
-    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
-    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
-
-
-    ! Compute the right-hand side
-    !
-    !   $ rhs = weight*(1-theta)*dt*L(u)*u $
-
-    dweight = rtimestep%DmultistepWeights(istep)*&
-              rtimestep%dStep*(1.0_DP-rtimestep%theta)
-    call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                             rsolution%rvectorBlock(1),&
-                             rrhs%RvectorBlock(1), dweight, 0.0_DP)
-
-
-    ! Perform algebraic flux correction for the convective term if required
-    !
-    !   $ rhs = rhs + f^*(u^n+1,u^n) $
-
-    convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
-       
-    ! What kind of stabilisation should be applied?
-    select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-          
-    case (AFCSTAB_FEMFCT,&
-          AFCSTAB_FEMFCT_CLASSICAL)
-
-      dweight = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
-      imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
-
-      ! Should we apply consistent mass antidiffusion?
-      if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-        call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                   rsolution, rtimestep%theta, dweight, .true., rrhs,&
-                                   rproblemLevel%Rafcstab(convectionAFC),&
-                                   rproblemLevel%Rmatrix(consistentMassMatrix))
-      else
-        call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                   rsolution, rtimestep%theta, dweight, .true., rrhs,&
-                                   rproblemLevel%Rafcstab(convectionAFC))
-      end if
-          
-    case (AFCSTAB_FEMTVD)
-      call gfsc_buildResidualTVD(rsolution, dweight, rrhs,&
-                                 rproblemLevel%Rafcstab(convectionAFC))
-
-    case (AFCSTAB_FEMGP)
-      call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                rsolution, rsolutionInitial, rtimestep%theta, dweight, rrhs,&
-                                rproblemLevel%Rafcstab(convectionAFC))
-    end select
-
-
-    ! Perform algebraic flux correction for the diffusive term if required
-    !
-    !   $ rhs = rhs + g^*(u^n+1,u^n) $
-
-    diffusionAFC = collct_getvalue_int(rcollection, 'diffusionAFC')
-    
-    ! What kind of stabilisation should be applied?
-    select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
-          
-    case (AFCSTAB_SYMMETRIC)
-      call gfsc_buildResidualSymm(rsolution, 1.0_DP, rrhs, rproblemLevel%Rafcstab(diffusionAFC))
-    end select
-    
-    ! Stop time measurement for residual/rhs evaluation
-    call stat_stopTimer(rtimer)
-    
-  end subroutine codire_calcRHS
 
   !*****************************************************************************
 
@@ -2239,7 +2079,7 @@ contains
     ! local variables
     integer :: imatrix
 
-
+    
     select case(rsolver%iprecond)
     case (NLSOL_PRECOND_BLOCKD,&
           NLSOL_PRECOND_DEFCOR, &
@@ -2311,8 +2151,8 @@ contains
 
     
     ! Check if the velocity "vector" needs to be generated explicitly
-    if ((rappDescriptor%ivelocitytype .ne. VELOCITY_CONSTANT) .and.&
-        (rappDescriptor%ivelocitytype .ne. VELOCITY_TIMEDEP)) return
+    if ((abs(rappDescriptor%ivelocitytype) .ne. VELOCITY_CONSTANT) .and.&
+        (abs(rappDescriptor%ivelocitytype) .ne. VELOCITY_TIMEDEP)) return
 
     ! Get parameter from collection
     velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
