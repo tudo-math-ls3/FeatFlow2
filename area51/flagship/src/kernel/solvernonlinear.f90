@@ -110,7 +110,7 @@ contains
 
   subroutine nlsol_solveMultigridScalar(rproblemLevel, rtimestep, rsolver,&
                                         rsolution, rsolutionInitial,& 
-                                        fcb_nlsolverCallback, rcollection)
+                                        fcb_nlsolverCallback, rcollection, rrhs)
 
 !<description>
     ! This subroutine solves the nonlinear system
@@ -122,6 +122,9 @@ contains
 !<input>
     ! Initial solution vector
     type(t_vectorScalar), intent(IN) :: rsolutionInitial
+
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorScalar), intent(IN), optional :: rrhs
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -146,22 +149,44 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_vectorBlock) :: rrhsBlock
     type(t_vectorBlock) :: rsolutionBlock
     type(t_vectorBlock) :: rsolutionInitialBlock
     
     
-    ! Convert scalar vectors into block vectors
-    call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-    call lsysbl_createVecFromScalar(rsolutionInitial, rsolutionInitialBlock)
+    if (present(rrhs)) then
+      
+      ! Convert scalar vectors into block vectors
+      call lsysbl_createVecFromScalar(rrhs, rrhsBlock)
+      call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
+      call lsysbl_createVecFromScalar(rsolutionInitial, rsolutionInitialBlock)
+      
+      ! Apply block-version of nonlinear multigrid with right-hand side vector
+      call nlsol_solveMultigridBlock(rproblemLevel, rtimestep, rsolver,&
+                                     rsolutionBlock, rsolutionInitialBlock,&
+                                     fcb_nlsolverCallback, rcollection, rrhsBlock)
     
-    ! Apply block-version of nonlinear multigrid
-    call nlsol_solveMultigridBlock(rproblemLevel, rtimestep, rsolver,&
-                                   rsolutionBlock, rsolutionInitialBlock,&
-                                   fcb_nlsolverCallback, rcollection)
+      ! Release temporal block vectors
+      call lsysbl_releaseVector(rrhsBlock)
+      call lsysbl_releaseVector(rsolutionBlock)
+      call lsysbl_releaseVector(rsolutionInitialBlock)
+
+    else
+
+      ! Convert scalar vectors into block vectors
+      call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
+      call lsysbl_createVecFromScalar(rsolutionInitial, rsolutionInitialBlock)
+      
+      ! Apply block-version of nonlinear multigrid without right-hand side vector
+      call nlsol_solveMultigridBlock(rproblemLevel, rtimestep, rsolver,&
+                                     rsolutionBlock, rsolutionInitialBlock,&
+                                     fcb_nlsolverCallback, rcollection)
     
-    ! Release temporal block vectors
-    call lsysbl_releaseVector(rsolutionBlock)
-    call lsysbl_releaseVector(rsolutionInitialBlock)
+      ! Release temporal block vectors
+      call lsysbl_releaseVector(rsolutionBlock)
+      call lsysbl_releaseVector(rsolutionInitialBlock)
+
+    end if
     
   end subroutine nlsol_solveMultigridScalar
 
@@ -171,7 +196,7 @@ contains
 
   subroutine nlsol_solveMultigridBlock(rproblemLevel, rtimestep, rsolver,&
                                        rsolution, rsolutionInitial,&
-                                       fcb_nlsolverCallback, rcollection)
+                                       fcb_nlsolverCallback, rcollection, rrhs)
 
 !<description>
     ! This subroutine solves the nonlinear system
@@ -182,6 +207,9 @@ contains
 !<input>
     ! Initial solution vector
     type(t_vectorBlock), intent(IN) :: rsolutionInitial
+
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorBlock), intent(IN), optional :: rrhs
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -223,7 +251,7 @@ contains
       case (NLSOL_SOLVER_FIXEDPOINT)
         call nlsol_solveFixedPoint(rproblemLevel, rtimestep, rsolver,&
                                    rsolution, rsolutionInitial,&
-                                   fcb_nlsolverCallback, rcollection)
+                                   fcb_nlsolverCallback, rcollection, rrhs)
         
       case DEFAULT
         call output_line('Invalid solver type!',&
@@ -267,7 +295,7 @@ contains
         case (NLSOL_SOLVER_FIXEDPOINT)
           call nlsol_solveFixedPoint(rproblemLevel, rtimestep, p_solverNonlinear,&
                                      rsolution, rsolutionInitial,&
-                                     fcb_nlsolverCallback, rcollection)
+                                     fcb_nlsolverCallback, rcollection, rrhs)
           
         case DEFAULT
           call output_line('Invalid solver type!',&
@@ -289,7 +317,7 @@ contains
           mgcycle = merge(1, 2, p_solverMultigrid%icycle .eq. 1)
           call nlsol_solveTwogrid(rproblemLevel, rtimestep, rsolver,&
                                   rsolution, rsolutionInitial,&
-                                  fcb_nlsolverCallback, rcollection)
+                                  fcb_nlsolverCallback, rcollection, rrhs)
           
           if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
             call output_lbrk()
@@ -360,7 +388,7 @@ contains
 
   recursive subroutine nlsol_solveTwogrid(rproblemLevel, rtimestep, rsolver,&
                                           rsolution, rsolutionInitial,&
-                                          fcb_nlsolverCallback, rcollection)
+                                          fcb_nlsolverCallback, rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one nonlinear two-grid step of nonlinear multigrid.
@@ -369,6 +397,9 @@ contains
 !<input>
     ! Initial solution vector
     type(t_vectorBlock), intent(IN) :: rsolutionInitial
+
+    ! OPTIONAL: : constant right-hand side vector
+    type(t_vectorBlock), intent(IN), optional :: rrhs
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -403,7 +434,7 @@ contains
 
   subroutine nlsol_solveFixedpointScalar(rproblemLevel, rtimestep, rsolver,&
                                          rsolution, rsolutionInitial,&
-                                         fcb_nlsolverCallback, rcollection)
+                                         fcb_nlsolverCallback, rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one nonlinear step to solve the system
@@ -423,6 +454,9 @@ contains
 !<input>
     ! Initial solution vector
     type(t_vectorScalar), intent(IN) :: rsolutionInitial
+
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorScalar), intent(IN), optional :: rrhs
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -447,22 +481,44 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_vectorBlock) :: rrhsBlock
     type(t_vectorBlock) :: rsolutionBlock
     type(t_vectorBlock) :: rsolutionInitialBlock
     
     
-    ! Convert scalar vectors into block vectors
-    call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-    call lsysbl_createVecFromScalar(rsolutionInitial, rsolutionInitialBlock)
-    
-    ! Call block version
-    call nlsol_solveFixedpointBlock(rproblemLevel, rtimestep, rsolver,&
-                                    rsolutionBlock, rsolutionInitialBlock,&
-                                    fcb_nlsolverCallback, rcollection)
-    
-    ! Release temporal block vectors
-    call lsysbl_releaseVector(rsolutionBlock)
-    call lsysbl_releaseVector(rsolutionInitialBlock)
+    if (present(rrhs)) then
+      
+      ! Convert scalar vectors into block vectors
+      call lsysbl_createVecFromScalar(rrhs, rrhsBlock)
+      call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
+      call lsysbl_createVecFromScalar(rsolutionInitial, rsolutionInitialBlock)
+      
+      ! Call block version with right-hand side vector
+      call nlsol_solveFixedpointBlock(rproblemLevel, rtimestep, rsolver,&
+                                      rsolutionBlock, rsolutionInitialBlock,&
+                                      fcb_nlsolverCallback, rcollection, rrhsBlock)
+      
+      ! Release temporal block vectors
+      call lsysbl_releaseVector(rrhsBlock)
+      call lsysbl_releaseVector(rsolutionBlock)
+      call lsysbl_releaseVector(rsolutionInitialBlock)
+
+    else
+      
+      ! Convert scalar vectors into block vectors
+      call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
+      call lsysbl_createVecFromScalar(rsolutionInitial, rsolutionInitialBlock)
+      
+      ! Call block version without right-hand side vector
+      call nlsol_solveFixedpointBlock(rproblemLevel, rtimestep, rsolver,&
+                                      rsolutionBlock, rsolutionInitialBlock,&
+                                      fcb_nlsolverCallback, rcollection)
+      
+      ! Release temporal block vectors
+      call lsysbl_releaseVector(rsolutionBlock)
+      call lsysbl_releaseVector(rsolutionInitialBlock)
+
+    end if
 
   end subroutine nlsol_solveFixedpointScalar
 
@@ -472,7 +528,7 @@ contains
   
   subroutine nlsol_solveFixedpointBlock(rproblemLevel, rtimestep, rsolver,&
                                         rsolution, rsolutionInitial, &
-                                        fcb_nlsolverCallback, rcollection)
+                                        fcb_nlsolverCallback, rcollection, rrhs)
 
 !<description>
     ! This subroutine performs one nonlinear step to solve the system
@@ -488,6 +544,9 @@ contains
 !<input>
     ! Initial solution vector
     type(t_vectorBlock), intent(IN) :: rsolutionInitial
+    
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorBlock), intent(IN), optional :: rrhs
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -512,17 +571,16 @@ contains
 !</subroutine>
     
     ! local variables
-    type(t_vectorBlock), pointer :: p_rrhs
     type(t_vectorBlock), pointer :: p_rres
     type(t_vectorBlock), pointer :: p_raux
     type(t_vectorBlock), pointer :: p_rufs
     type(t_vectorBlock), pointer :: p_rresfs
-    type(t_solver), pointer :: p_rsolver,p_rsolverLinear
+    type(t_solver), pointer :: p_rsolver, p_rsolverLinear
     type(t_solver) :: rsolverTemp
-    real(DP) :: eta,drtlm,drtjs,redfac,doldDefect
+    real(DP) :: eta, drtlm, drtjs, redfac, doldDefect
     integer(I32) :: ioperationSpec
-    integer :: iiterations,iblock,ibacktrackingsteps,istatus
-    logical :: bstagnate,bcompatible
+    integer :: iiterations, iblock, ibacktrackingsteps, istatus
+    logical :: bstagnate, bcompatible
 
     
     ! Set pointer to nonlinear solver
@@ -565,29 +623,34 @@ contains
     select case(p_rsolver%iprecond)
 
     case(NLSOL_PRECOND_BLOCKD,&
-         NLSOL_PRECOND_DEFCOR) !! NLSOL_PRECOND_NEWTON_FAILED
+         NLSOL_PRECOND_DEFCOR,&
+         NLSOL_PRECOND_NEWTON_FAILED)
 
       ! Set pointers
-      p_rrhs => p_rsolver%p_solverDefcor%rTempVectors(1)
-      p_rres => p_rsolver%p_solverDefcor%rTempVectors(2)
-      p_raux => p_rsolver%p_solverDefcor%rTempVectors(3)
+      p_rres => p_rsolver%p_solverDefcor%rTempVectors(1)
+      p_raux => p_rsolver%p_solverDefcor%rTempVectors(2)
 
       ! Check if compatible vectors are available.
       call lsysbl_isVectorCompatible(rsolution, p_rres, bcompatible)
       if (.not.bcompatible) then
         call lsysbl_resizeVectorBlock(p_rres, rsolution, .false.)
-        call lsysbl_resizeVectorBlock(p_rrhs, rsolution, .false.)
         call lsysbl_resizeVectorBlock(p_raux, rsolution, .false.)
       end if
+
+      ! Apply the constant right-hand side if present
+      if (present(rrhs)) then
+        call lsysbl_copyVector(rrhs, p_rres)
+      else
+        call lsysbl_clearVector(p_rres)
+      end if
       
-      ! Compute the initial residual, the constant 
-      ! right-hand side and the preconditioner
+      ! Compute the preconditioner and the initial residual
       ioperationSpec = NLSOL_OPSPEC_CALCPRECOND +&
                        NLSOL_OPSPEC_CALCRESIDUAL
       
       call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
-                                rsolution, rsolutionInitial, p_rrhs,&
-                                p_rres, 0, ioperationSpec, rcollection, istatus)
+                                rsolution, rsolutionInitial, p_rres,&
+                                0, ioperationSpec, rcollection, istatus)
 
       ! Check callback function status
       if (istatus < 0) then
@@ -600,31 +663,34 @@ contains
     case(NLSOL_PRECOND_NEWTON)
       
       ! Set pointers
-      p_rrhs   => p_rsolver%p_solverNewton%rTempVectors(1)
-      p_rres   => p_rsolver%p_solverNewton%rTempVectors(2)
-      p_raux   => p_rsolver%p_solverNewton%rTempVectors(3)
-      p_rufs   => p_rsolver%p_solverNewton%rTempVectors(4)
-      p_rresfs => p_rsolver%p_solverNewton%rTempVectors(5)
+      p_rres   => p_rsolver%p_solverNewton%rTempVectors(1)
+      p_raux   => p_rsolver%p_solverNewton%rTempVectors(2)
+      p_rufs   => p_rsolver%p_solverNewton%rTempVectors(3)
+      p_rresfs => p_rsolver%p_solverNewton%rTempVectors(4)
 
       ! Check if compatible vectors are available.
       call lsysbl_isVectorCompatible(rsolution, p_rres, bcompatible)
       if (.not.bcompatible) then
         call lsysbl_resizeVectorBlock(p_rres,   rsolution, .false.)
-        call lsysbl_resizeVectorBlock(p_rrhs,   rsolution, .false.)
         call lsysbl_resizeVectorBlock(p_raux,   rsolution, .false.)
         call lsysbl_resizeVectorBlock(p_rufs,   rsolution, .false.)
         call lsysbl_resizeVectorBlock(p_rresfs, rsolution, .false.)
       end if
 
-      ! Compute the initial residual, the constant right-hand side and
-      ! impose boundary conditions in the solution vector. Moreover,
-      ! the Jacobian operator needs to be calculates
+      ! Apply the constant right-hand side if present
+      if (present(rrhs)) then
+        call lsysbl_copyVector(rrhs, p_rres)
+      else
+        call lsysbl_clearVector(p_rres)
+      end if
+
+      ! Compute the initial residual, and the Jacobian operator
       ioperationSpec = NLSOL_OPSPEC_CALCRESIDUAL +&
                        NLSOL_OPSPEC_CALCJACOBIAN
 
       call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
-                                rsolution, rsolutionInitial, p_rrhs,&
-                                p_rres, 0, ioperationSpec, rcollection, istatus)
+                                rsolution, rsolutionInitial, p_rres,&
+                                0, ioperationSpec, rcollection, istatus)
 
       ! Check callback function status
       if (istatus < 0) then
@@ -725,15 +791,21 @@ contains
         else
           call lsysbl_vectorLinearComb(p_raux, rsolution, p_rsolver%domega, 1.0_DP)
         end if
+
+        ! Apply the constant right-hand side if present
+        if (present(rrhs)) then
+          call lsysbl_copyVector(rrhs, p_rres)
+        else
+          call lsysbl_clearVector(p_rres)
+        end if
         
-        ! Compute the initial residual, the constant 
-        ! right-hand side and the preconditioner
+        ! Compute the residual and the preconditioner
         ioperationSpec = NLSOL_OPSPEC_CALCPRECOND +&
                          NLSOL_OPSPEC_CALCRESIDUAL
 
         call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
-                                  rsolution, rsolutionInitial, p_rrhs,&
-                                  p_rres, iiterations, ioperationSpec,&
+                                  rsolution, rsolutionInitial, p_rres,&
+                                  iiterations, ioperationSpec,&
                                   rcollection, istatus)
         
         ! Check callback function status
@@ -782,14 +854,20 @@ contains
           call lsysbl_vectorLinearComb(p_raux, rsolution, p_rsolver%domega, 1.0_DP)
         end if
 
-        ! Compute the initial residual, the constant 
-        ! right-hand side and the preconditioner
+        ! Apply the constant right-hand side if present
+        if (present(rrhs)) then
+          call lsysbl_copyVector(rrhs, p_rres)
+        else
+          call lsysbl_clearVector(p_rres)
+        end if
+
+        ! Compute the residual and the preconditioner
         ioperationSpec = NLSOL_OPSPEC_CALCPRECOND +&
                          NLSOL_OPSPEC_CALCRESIDUAL
 
         call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
-                                  rsolution, rsolutionInitial, p_rrhs,&
-                                  p_rres, iiterations, ioperationSpec,&
+                                  rsolution, rsolutionInitial, p_rres,&
+                                  iiterations, ioperationSpec,&
                                   rcollection, istatus)
         
         ! Check callback function status
@@ -851,10 +929,11 @@ contains
         call lsysbl_copyVector(p_rres, p_rresfs)
         
         ioperationSpec = NLSOL_OPSPEC_APPLYJACOBIAN
+
         call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
-                                  rsolution, rsolutionInitial, p_raux,&
-                                  p_rresfs, 0, ioperationSpec, rcollection, istatus)
-!!!$        call fcb_applyJacobian(rproblemLevel, p_raux, p_rresfs, 1.0_DP, 1.0_DP, rcollection)
+                                  p_rresfs, p_raux, p_rresfs,&
+                                  0, ioperationSpec, rcollection, istatus)
+
         drtlm = lsysbl_scalarProduct(p_rres, p_rresfs)
 
         ! Comput the value G(U).T.*J(U)*dU
@@ -867,30 +946,28 @@ contains
         ! Backtracking
         call nlsol_backtracking(rproblemLevel, rtimestep, p_rsolver,&
                                 rsolution, rsolutionInitial, p_rufs, p_raux,&
-                                p_rrhs, p_rres, p_rresfs, fcb_nlsolverCallback,&
+                                p_rres, p_rresfs, fcb_nlsolverCallback,&
                                 doldDefect, drtjs, eta, redfac, iiterations,&
-                                rcollection, istatus)
+                                rcollection, istatus, rrhs)
         
         ! Perform failsave defect correction if required
         if (istatus < 0) then
           
-          ! Calculate the preconditioner and set boundary conditions
+          ! Calculate the preconditioner
           ioperationSpec = NLSOL_OPSPEC_CALCPRECOND
           call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
-                                    rsolution, rsolutionInitial, p_rrhs,&
-                                    p_rres, iiterations, ioperationSpec,&
+                                    rsolution, rsolutionInitial, p_rres,&
+                                    iiterations, ioperationSpec,&
                                     rcollection, istatus)
-!!$          call fcb_calcJacobian(rproblemLevel, rtimestep, p_rsolver,&
-!!$                                rsolution, rsolutionInitial, .true., rcollection)
-          p_rsolver%iprecond = NLSOL_PRECOND_NEWTON_FAILED
 
-!!$          ! Impose boundary conditions
-!!$          call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
-!!$                               rsolution, p_rres, rsolutionInitial, rcollection)
-!!$          if (rcollection%Iquickaccess(1) < 0) then
-!!$            p_rsolver%istatus = SV_INF_DEF
-!!$            return
-!!$          end if
+          ! Check callback function status
+          if (istatus < 0) then
+            p_rsolver%istatus = SV_INF_DEF
+            rsolver%istatus   = SV_INF_DEF
+            return
+          end if
+
+          p_rsolver%iprecond = NLSOL_PRECOND_NEWTON_FAILED
           
           goto 1  ! ugly but quickest way
 
@@ -902,20 +979,17 @@ contains
             ! Calculate the Jacobian matrix and impose boundary conditions
             ioperationSpec = NLSOL_OPSPEC_CALCJACOBIAN
             call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
-                                      rsolution, rsolutionInitial, p_rrhs,&
-                                      p_rres, iiterations, ioperationSpec,&
+                                      rsolution, rsolutionInitial, p_rres,&
+                                      iiterations, ioperationSpec,&
                                       rcollection, istatus)
                                       
-!!$              call fcb_calcJacobian(rproblemLevel, rtimestep, p_rsolver, rsolution, rsolutionInitial, .false., rcollection)
-!!$          
-!!$          ! Impose boundary conditions
-!!$          call fcb_setBoundary(rproblemLevel, rtimestep, p_rsolver,&
-!!$                               rsolution, p_rres, rsolutionInitial, rcollection)
-!!$          if (rcollection%Iquickaccess(1) < 0) then
-!!$            p_rsolver%istatus = SV_INF_DEF
-!!$            return
-!!$          end if
-
+            ! Check callback function status
+            if (istatus < 0) then
+              p_rsolver%istatus = SV_INF_DEF
+              rsolver%istatus   = SV_INF_DEF
+              return
+            end if
+            
           end if
           
         end if
@@ -1004,9 +1078,9 @@ contains
 !<subroutine>
 
   subroutine nlsol_backtracking(rproblemLevel, rtimestep, rsolver,&
-                              rsolution, rsolutionInitial, rsolutionFailsave, raux, rrhs,&
-                              rres, rresFailsave, fcb_nlsolverCallback, doldDefect,&
-                              drtjs, eta, redfac, iiterations, rcollection, istatus)
+                                rsolution, rsolutionInitial, rsolutionFailsave, raux,&
+                                rres, rresFailsave, fcb_nlsolverCallback, doldDefect,&
+                                drtjs, eta, redfac, iiterations, rcollection, istatus, rrhs)
 
 !<description>
     ! This subroutine performs backtracking for the (inexact) Newton
@@ -1025,6 +1099,9 @@ contains
 
     ! iteration number
     integer, intent(IN) :: iiterations
+
+    ! OPTIONAL: constant right-hand side
+    type(t_vectorBlock), intent(IN), optional :: rrhs
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -1045,9 +1122,6 @@ contains
     
     ! failsave copy of last solution vector
     type(t_vectorBlock), intent(INOUT) :: rsolutionFailsave
-
-    ! constant right-hand side
-    type(t_vectorBlock), intent(INOUT) :: rrhs
     
     ! new residual vector
     type(t_vectorBlock), intent(INOUT) :: rres
@@ -1112,10 +1186,19 @@ contains
         call lsysbl_vectorLinearComb(raux, rsolutionFailsave, rsolver%domega, 1.0_DP, rsolution)
       end if
       
+      call lsysbl_copyVector(rrhs, rres)
+
+      if (present(rrhs)) then
+        call lsysbl_copyVector(rrhs, rres)
+      else
+        call lsysbl_clearVector(rres)
+      end if
+
       ! Compute new provisional defect
       ioperationSpec = NLSOL_OPSPEC_CALCRESIDUAL
+
       call fcb_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                rsolution, rsolutionInitial, rrhs, rres,&
+                                rsolution, rsolutionInitial, rres,&
                                 iiterations, ioperationSpec, rcollection, istatus)
       
       if (istatus < 0) exit backtrack
