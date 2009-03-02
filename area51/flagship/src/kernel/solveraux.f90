@@ -310,17 +310,20 @@ module solveraux
   ! Nonlinear solver requires calculation of preconditioner
   integer(I32), parameter, public :: NLSOL_OPSPEC_CALCPRECOND    = 2**0
 
+  ! Nonlinear solver requires calculation of constant rhs vector
+  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCRHS        = 2**1
+
   ! Nonlinear solver requires calculation of residual vector
-  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCRESIDUAL   = 2**1
+  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCRESIDUAL   = 2**2
 
   ! Nonlinear solver requires calculation of boundary conditions
-  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCBDRCOND    = 2**2
+  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCBDRCOND    = 2**3
 
   ! Nonlinear solver requires calculation of Jacobian operator
-  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCJACOBIAN   = 2**3
+  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCJACOBIAN   = 2**4
 
   ! Nonlinear solver requires application of Jacobian operator
-  integer(I32), parameter, public :: NLSOL_OPSPEC_APPLYJACOBIAN  = 2**4
+  integer(I32), parameter, public :: NLSOL_OPSPEC_APPLYJACOBIAN  = 2**5  
 !</constantblock>
 
 
@@ -787,7 +790,7 @@ module solveraux
   type t_solverDefcor
 
     ! Temporal vectors
-    type(t_vectorBlock), dimension(3) :: RtempVectors
+    type(t_vectorBlock), dimension(2) :: RtempVectors
   end type t_solverDefcor
 
 !</typeblock>
@@ -816,7 +819,7 @@ module solveraux
     real(DP) :: dperturbationStrategy = 0.0_DP
 
     ! Temporal vectors
-    type(t_vectorBlock), dimension(5) :: RtempVectors
+    type(t_vectorBlock), dimension(4) :: RtempVectors
   end type t_solverNewton
 
 !</typeblock>
