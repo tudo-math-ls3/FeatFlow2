@@ -2167,7 +2167,7 @@ contains
       
     else
       call output_line ('Discretisation does not support precomputed DOF''s!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'dof_precomputemapping')  
+                        OU_CLASS_ERROR,OU_MODE_STD,'dof_precomputeDofMapping')  
       call sys_halt()
     end if
 
