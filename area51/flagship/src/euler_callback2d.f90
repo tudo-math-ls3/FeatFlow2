@@ -105,22 +105,11 @@ contains
   
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkin2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxGalerkin2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
-    ! Galerkin discretization in 2D. Two different versions are
-    ! implemented:
-    !
-    ! 1.) The Galerkin flux is computed as follows:
-    !          $F_{ij}=c_{ij}\cdot(F_i-F_j)$ 
-    !     and
-    !          $F_{ji}=c_{ji}\cdot(F_j-F_i)$
-    !
-    ! 2.) The Galerkin flux is computed as follows:
-    !          $F_{ij}=(A_{ij}+S_{ij})(U_i-U_j)$
-    !     and
-    !          $F_{ji}=(A_{ij}-S_{ij})(U_i-U_j)$
+    ! Galerkin discretization in 2D without resorting to matrix-vector.
 !</description>
 
 !<input>
@@ -134,158 +123,73 @@ contains
     real(DP), intent(IN) :: dscale
 !</input>
 
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
-
 !<output>
     ! inviscid fluxes
     real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
 !</output>
 !</subroutine>
+    
+    ! local variables
+    real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
 
-#ifdef EVALFLUXES
-    ! local variables for evaluating the fluxes directly
-    real(DP), dimension(NVAR2D) :: F1_i, F2_i, F1_j,F2_j
-    real(DP) :: p_i,p_j
-#else
-    ! local variables for evaluating the matrices and fluxes 
-    real(DP), dimension(NVAR2D,NVAR2D) :: Roe
-    real(DP), dimension(NVAR2D) :: Diff,Daux
-    real(DP), dimension(NDIM2D) :: a,s
-    real(DP) :: aux,aux1,aux2,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
-#endif
-
-#ifdef EVALFLUXES
     !---------------------------------------------------------------------------
-    ! Evaluate the Galerkin fluxes directly
-    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes
+    !
+    !      / rho*u       \              / rho*v     \
+    ! F1 = | rho*u*u + p |   and   F2 = | rho*u*v   |
+    !      | rho*u*v     |              | rho*v*v+p |
+    !      \ rho*u*H     /              \ rho*v*H   /
+    !
+    ! Here, we do not compute the pressure p and the enthalpy H but we
+    ! calculate the fluxes from the conservative variables as follows:
+    !
+    !      / U2                             \
+    ! F1 = | -G14*aux1-G2*(aux2+U4)         |
+    !      | U3*aux3                        |
+    !      \ (gamma*U4-G2*(aux1+aux2))*aux3 /
+    !
+    !      / U3                             \
+    ! F2 = | U3*aux3 = U2*aux4              |
+    !      | -G14*aux2-G2*(aux1+U4)         |
+    !      \ (gamma*U4-G2*(aux1+aux2))*aux4 /
+    !
+    ! where the auxiliary values are defined as follows:
+    !
+    ! aux1 = U2*U2/U1 = aux3*U2
+    ! aux2 = U3*U3/U1 = aux4*U3
+    ! aux3 = U2/U1
+    ! aux4 = U3/U1
+    !
+    ! and the predefined constants are given by:
+    !
+    ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2
+    !
+    ! The auxiliary quantities aux[1-4] and aux[5-8] are used 
+    ! for the values in nodes i and j, respectively.
+    ! ---------------------------------------------------------------------------
 
-    ! Compute nodal pressure values
-    p_i = G1*(U_i(4)-0.5_DP*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/U_i(1))
-    p_j = G1*(U_j(4)-0.5_DP*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/U_j(1))
+    ! Compute auxiliary values
+    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
+    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
+    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
+    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    
+    ! Compute fluxes for x-direction
+    dF1_ij(1) = U_i(2)                             -  U_j(2)
+    dF1_ij(2) = -G14*aux1-G2*(aux2+U_i(4))         - (-G14*aux5-G2*(aux6+U_j(4)))
+    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
 
-    ! Compute fluxes for nodes i
-    F1_i(1) = U_i(2)
-    F1_i(2) = U_i(2)*U_i(2)/U_i(1) + p_i
-    F1_i(3) = U_i(3)*U_i(2)/U_i(1)
-    F1_i(4) = (U_i(4)+p_i)*U_i(2)/U_i(1)
-
-    F2_i(1) = U_i(3)
-    F2_i(2) = U_i(2)*U_i(3)/U_i(1)
-    F2_i(3) = U_i(3)*U_i(3)/U_i(1) + p_i
-    F2_i(4) = (U_i(4)+p_i)*U_i(3)/U_i(1)
-
-    ! Compute fluxes for nodes j
-    F1_j(1) = U_j(2)
-    F1_j(2) = U_j(2)*U_j(2)/U_j(1) + p_j
-    F1_j(3) = U_j(3)*U_j(2)/U_j(1)
-    F1_j(4) = (U_j(4)+p_j)*U_j(2)/U_j(1)
-
-    F2_j(1) = U_j(3)
-    F2_j(2) = U_j(2)*U_j(3)/U_j(1)
-    F2_j(3) = U_j(3)*U_j(3)/U_j(1) + p_j
-    F2_j(4) = (U_j(4)+p_j)*U_j(3)/U_j(1)
+    ! Compute fluxes for y-direction
+    dF2_ij(1) = U_i(3)                             - U_j(3)
+    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF2_ij(3) = -G14*aux2-G2*(aux1+U_i(4))         - (-G14*aux6-G2*(aux5+U_j(4)))
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
 
     ! Assembly fluxes
-    F_ij = dscale * (C_ij(1)*(F1_i-F1_j) + C_ij(2)*(F2_i-F2_j))
-    F_ji = dscale * (C_ji(1)*(F1_j-F1_i) + C_ji(2)*(F2_j-F2_i))
-
-#else
-    !---------------------------------------------------------------------------
-    ! Evaluate the matrices and multiply them with the solution difference
-    !---------------------------------------------------------------------------
-
-    ! Compute solution difference
-    Diff = U_i-U_j
-
-    ! Compute Roe mean values
-    aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-    u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1.0_DP)
-    v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1.0_DP)
-
-    hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-    hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-    H_ij = (aux*hi+hj)/(aux+1.0_DP)
-
-    ! Compute coefficients
-    a = 0.5_DP*(C_ij-C_ji)
-    s = 0.5_DP*(C_ij+C_ji)
-
-    ! Compute auxiliary variables
-    aux1 = u_ij*a(1) + v_ij*a(2)
-    aux2 = u_ij*s(1) + v_ij*s(2)
-    u2   = u_ij*u_ij
-    v2   = v_ij*v_ij
-    uv   = u_ij*v_ij
-    q_ij = 0.5_DP*(u2+v2)
-
-    ! Compute Roe matrix for the skew-symmetric/interior part
-    Roe(1,1) =   0.0_DP
-    Roe(2,1) =   (G1*q_ij-u2)*a(1)   - uv*a(2)
-    Roe(3,1) = - uv*a(1)             + (G1*q_ij-v2)*a(2)
-    Roe(4,1) =   (G1*q_ij-H_ij)*aux1
-    
-    Roe(1,2) =   a(1)
-    Roe(2,2) =   aux1-G6*u_ij*a(1)
-    Roe(3,2) =   v_ij*a(1)           - G1*u_ij*a(2)
-    Roe(4,2) =   (H_ij-G1*u2)*a(1)   - G1*uv*a(2)
-    
-    Roe(1,3) =                         a(2)
-    Roe(2,3) = - G1*v_ij*a(1)        + u_ij*a(2)
-    Roe(3,3) =                         aux1-G6*v_ij*a(2)
-    Roe(4,3) = - G1*uv*a(1)          + (H_ij-G1*v2)*a(2)
-
-    Roe(1,4) =   0.0_DP
-    Roe(2,4) =   G1*a(1)
-    Roe(3,4) =                         G1*a(2)
-    Roe(4,4) =   GAMMA*aux1
-
-    ! Compute Roe*(u_i-u_j) for skew-symmetric/interior part
-    call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
-                    NVAR2D, Diff, 1, 0.0_DP, F_ij, 1)
-
-    ! Check if boundary integral vanishes
-    if (abs(s(1))+abs(s(2)) .gt. SYS_EPSREAL) then
-
-      ! Compute Roe matrix for the symmetric/boundary part
-      Roe(1,1) =   0.0_DP
-      Roe(2,1) =   (G1*q_ij-u2)*s(1)   - uv*s(2)
-      Roe(3,1) = - uv*s(1)             + (G1*q_ij-v2)*s(2)
-      Roe(4,1) =   (G1*q_ij-H_ij)*aux2
-      
-      Roe(1,2) =   s(1)
-      Roe(2,2) =   aux2-G6*u_ij*s(1)
-      Roe(3,2) =   v_ij*s(1)           - G1*u_ij*s(2)
-      Roe(4,2) =   (H_ij-G1*u2)*s(1)   - G1*uv*s(2)
-      
-      Roe(1,3) =                         s(2)
-      Roe(2,3) = - G1*v_ij*s(1)        + u_ij*s(2)
-      Roe(3,3) =                         aux2-G6*v_ij*s(2)
-      Roe(4,3) = - G1*uv*s(1)          + (H_ij-G1*v2)*s(2)
-      
-      Roe(1,4) =   0.0_DP
-      Roe(2,4) =   G1*s(1)
-      Roe(3,4) =                         G1*s(2)
-      Roe(4,4) =   GAMMA*aux2
-      
-      ! Compute Roe*(u_i-u_j) for symmetric/boundary part
-      call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
-                      NVAR2D, Diff, 1, 0.0_DP, Daux, 1)
-
-      ! Assemble fluxes from skew-symmetric and symmetric parts
-      F_ji = F_ij-Daux
-      F_ij = F_ij+Daux
-
-    else
-      
-      ! Assemble fluxes only skew-symmetric part
-      F_ji = F_ij
-
-    end if
-
-#endif
+    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
 
   end subroutine euler_calcFluxGalerkin2d
 
@@ -293,15 +197,12 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTVD2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxTVD2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
-    ! discretization in 2D. Two different versions are implemented:
-    !
-    ! This is actually the skew-symmetic part of the standard
-    ! Galerkin discretization:
-    !      $F_{ij}=A_{ij}(U_j-U_i)=F_{ji}$
+    ! discretization in 2D. The symmetric boundary contributions
+    ! are neglected and incorporated in the antidiffusive flux.
 !</description>
 
 !<input>
@@ -314,11 +215,6 @@ contains
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! inviscid fluxes
@@ -327,59 +223,40 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(NVAR2D,NVAR2D) :: Roe
+    real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: aux,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
+    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
 
-    ! Compute solution difference
-    Diff = U_i-U_j
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes
+    ! For a detailed description of algorithm and the definition of auxiliary
+    ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
+    !---------------------------------------------------------------------------
+    
+    ! Compute auxiliary values
+    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
+    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
+    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
+    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    
+    ! Compute fluxes for x-direction
+    dF1_ij(1) = U_i(2)                             -  U_j(2)
+    dF1_ij(2) = -G14*aux1-G2*(aux2+U_i(4))         - (-G14*aux5-G2*(aux6+U_j(4)))
+    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
 
-    ! Compute Roe mean values
-    aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-    u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1.0_DP)
-    v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1.0_DP)
+    ! Compute fluxes for y-direction
+    dF2_ij(1) = U_i(3)                             - U_j(3)
+    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF2_ij(3) = -G14*aux2-G2*(aux1+U_i(4))         - (-G14*aux6-G2*(aux5+U_j(4)))
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
 
-    hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-    hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-    H_ij = (aux*hi+hj)/(aux+1.0_DP)
-
-    ! Compute coefficients
+    ! Compute skew-symmetric coefficient
     a = 0.5_DP*(C_ij-C_ji)
 
-    ! Compute auxiliary variables
-    aux  = u_ij*a(1) + v_ij*a(2)
-    u2   = u_ij*u_ij
-    v2   = v_ij*v_ij
-    uv   = u_ij*v_ij
-    q_ij = 0.5_DP*(u2+v2)
-
-    ! Compute Roe matrix
-    Roe(1,1) =   0.0_DP
-    Roe(2,1) =   (G1*q_ij-u2)*a(1)  - uv*a(2)
-    Roe(3,1) = - uv*a(1)            + (G1*q_ij-v2)*a(2)
-    Roe(4,1) =   (G1*q_ij-H_ij)*aux
-    
-    Roe(1,2) =   a(1)
-    Roe(2,2) =   aux-G6*u_ij*a(1)
-    Roe(3,2) =   v_ij*a(1)          - G1*u_ij*a(2)
-    Roe(4,2) =   (H_ij-G1*u2)*a(1)  - G1*uv*a(2)
-    
-    Roe(1,3) =                        a(2)
-    Roe(2,3) = - G1*v_ij*a(1)       + u_ij*a(2)
-    Roe(3,3) =                        aux-G6*v_ij*a(2)
-    Roe(4,3) = - G1*uv*a(1)         + (H_ij-G1*v2)*a(2)
-
-    Roe(1,4) =   0.0_DP
-    Roe(2,4) =   G1*a(1)
-    Roe(3,4) =                        G1*a(2)
-    Roe(4,4) =   GAMMA*aux
-
-    ! Compute Roe*(u_j-u_i) for skew-symmetric part
-    call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
-                    NVAR2D, Diff, 1, 0.0_DP, F_ij, 1)
-
-    ! Assemble fluxes
+    ! Assembly fluxes and exploit skew-symmetry of a_ij and F_ij
+    F_ij = dscale * (a(1)*dF1_ij + a(2)*dF2_ij)
     F_ji = F_ij
 
   end subroutine euler_calcFluxTVD2d
@@ -388,23 +265,11 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxScalarDiss2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxScalarDiss2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 2D using scalar dissipation.
-    !
-    ! This is actually the standard Galerkin discretization
-    ! plus some artificial viscosities
-    !      $F_{ij}=(A_{ij)+S_{ij}-D_{ij})(U_i-U_j)$
-    ! and
-    !      $F_{ji}=(A_{ij}-S_{ij}+D_{ij})(U_i-U_j)$
-    !
-    ! The alternative version computes the Galerkin flues
-    ! directly in terms of fluxes and adds artificial viscosities
-    !       $F_{ij}=c_{ij}\cdot(F_i-F_j)-D_{ij}(U_i-U_j)$
-    ! and
-    !       $F_{ji}=c_{ji}\cdot(F_j-F_i)+D_{ij}(U_i-U_j)$
 !</description>
 
 !<input>
@@ -417,11 +282,6 @@ contains
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! inviscid fluxes
@@ -430,163 +290,90 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(NVAR2D,NVAR2D) :: Roe
-    real(DP), dimension(NVAR2D) :: Diff,Daux
-    real(DP), dimension(NDIM2D) :: a,s
-    real(DP) :: aux,aux1,aux2,u2,v2,uv,hi,hj,d_ij,cs_ij,H_ij,q_ij,u_ij,v_ij
+    real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+    real(DP), dimension(NVAR2D) :: Diff
+    real(DP), dimension(NDIM2D) :: a
+    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
 
-#ifdef EVALFLUXES
-    ! additional local variables for evaluating the Galerkin fluxes directly
-    real(DP), dimension(NVAR2D) :: F1_i, F2_i, F1_j,F2_j
-    real(DP) :: p_i,p_j
-#endif
-
-#ifdef EVALFLUXES
     !---------------------------------------------------------------------------
-    ! Evaluate the Galerkin fluxes directly
+    ! Evaluate the Galerkin fluxes
+    ! For a detailed description of algorithm and the definition of auxiliary
+    ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
+    
+    ! Compute auxiliary values
+    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
+    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
+    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
+    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    
+    ! Compute fluxes for x-direction
+    dF1_ij(1) = U_i(2)                             -  U_j(2)
+    dF1_ij(2) = -G14*aux1-G2*(aux2+U_i(4))         - (-G14*aux5-G2*(aux6+U_j(4)))
+    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
 
-    ! Compute nodal pressure values
-    p_i = G1*(U_i(4)-0.5_DP*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/U_i(1))
-    p_j = G1*(U_j(4)-0.5_DP*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/U_j(1))
-
-    ! Compute fluxes for nodes i
-    F1_i(1) = U_i(2)
-    F1_i(2) = U_i(2)*U_i(2)/U_i(1) + p_i
-    F1_i(3) = U_i(3)*U_i(2)/U_i(1)
-    F1_i(4) = (U_i(4)+p_i)*U_i(2)/U_i(1)
-
-    F2_i(1) = U_i(3)
-    F2_i(2) = U_i(2)*U_i(3)/U_i(1)
-    F2_i(3) = U_i(3)*U_i(3)/U_i(1) + p_i
-    F2_i(4) = (U_i(4)+p_i)*U_i(3)/U_i(1)
-
-    ! Compute fluxes for nodes j
-    F1_j(1) = U_j(2)
-    F1_j(2) = U_j(2)*U_j(2)/U_j(1) + p_j
-    F1_j(3) = U_j(3)*U_j(2)/U_j(1)
-    F1_j(4) = (U_j(4)+p_j)*U_j(2)/U_j(1)
-
-    F2_j(1) = U_j(3)
-    F2_j(2) = U_j(2)*U_j(3)/U_j(1)
-    F2_j(3) = U_j(3)*U_j(3)/U_j(1) + p_j
-    F2_j(4) = (U_j(4)+p_j)*U_j(3)/U_j(1)
+    ! Compute fluxes for y-direction
+    dF2_ij(1) = U_i(3)                             - U_j(3)
+    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF2_ij(3) = -G14*aux2-G2*(aux1+U_i(4))         - (-G14*aux6-G2*(aux5+U_j(4)))
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
 
     ! Assembly fluxes
-    F_ij = dscale * (C_ij(1)*(F1_i-F1_j) + C_ij(2)*(F2_i-F2_j))
-    F_ji = dscale * (C_ji(1)*(F1_j-F1_i) + C_ji(2)*(F2_j-F2_i))
+    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
 
-#endif
 
-    ! Compute solution difference
-    Diff = U_i-U_j
+    !---------------------------------------------------------------------------
+    ! Evaluate the scalar dissipation 
+    !---------------------------------------------------------------------------
+
+    ! Compute skew-symmetric coefficient
+    a = 0.5_DP*(C_ij-C_ji)
+
+#ifdef RUSANOV_FLUX
+
+    ! Compute enthalpy
+    hi = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
+    hj = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
+
+    ! Compute auxiliary variables
+    aux  = sqrt(a(1)*a(1)+a(2)*a(2))
+    aux1 = aux3*a(1) + aux4*a(2)
+    aux2 = aux7*a(1) + aux8*a(2)
+    aux5 = sqrt(max(-G1*(0.5_DP*(aux3*aux3+aux4*aux4)-hi), SYS_EPSREAL))
+    aux6 = sqrt(max(-G1*(0.5_DP*(aux7*aux7+aux8*aux8)-hj), SYS_EPSREAL))
+    
+    ! Scalar dissipation for the Rusanov flux
+    d_ij = dscale*max( abs(aux1) + aux5*aux, abs(aux2) + aux6*aux)
+#else
 
     ! Compute Roe mean values
     aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
     u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1.0_DP)
     v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1.0_DP)
+    q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
     hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
     hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
     H_ij = (aux*hi+hj)/(aux+1.0_DP)
 
-    ! Compute coefficient
-    a = 0.5_DP*(C_ij-C_ji)
-    s = 0.5_DP*(C_ij+C_ji)
-
     ! Compute auxiliary variables
-    aux1  = u_ij*a(1) + v_ij*a(2)
-    aux2  = u_ij*s(1) + v_ij*s(2)
-    u2    = u_ij*u_ij
-    v2    = v_ij*v_ij
-    uv    = u_ij*v_ij
-    q_ij  = 0.5_DP*(u2+v2)
-    cs_ij = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
-
-#ifndef EVALFLUXES
-    !---------------------------------------------------------------------------
-    ! Evaluate the matrices and multiply them with the solution difference
-    !---------------------------------------------------------------------------
-
-    ! Compute Roe matrix for the skew-symmetric part
-    Roe(1,1) =   0.0_DP
-    Roe(2,1) =   (G1*q_ij-u2)*a(1)  - uv*a(2)
-    Roe(3,1) = - uv*a(1)            + (G1*q_ij-v2)*a(2)
-    Roe(4,1) =   (G1*q_ij-H_ij)*aux1
-    
-    Roe(1,2) =   a(1)
-    Roe(2,2) =   aux1-G6*u_ij*a(1)
-    Roe(3,2) =   v_ij*a(1)          - G1*u_ij*a(2)
-    Roe(4,2) =   (H_ij-G1*u2)*a(1)  - G1*uv*a(2)
-    
-    Roe(1,3) =                        a(2)
-    Roe(2,3) = - G1*v_ij*a(1)       + u_ij*a(2)
-    Roe(3,3) =                        aux1-G6*v_ij*a(2)
-    Roe(4,3) = - G1*uv*a(1)         + (H_ij-G1*v2)*a(2)
-
-    Roe(1,4) =   0.0_DP
-    Roe(2,4) =   G1*a(1)
-    Roe(3,4) =                        G1*a(2)
-    Roe(4,4) =   GAMMA*aux1
-
-    ! Compute Roe*(u_i-u_j) for skew-symmetric/interior part
-    call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
-                    NVAR2D, Diff, 1, 0.0_DP, F_ij, 1)
-#endif
+    aux  = a(1)*a(1)+a(2)*a(2)
+    aux1 = u_ij*a(1) + v_ij*a(2)
+    aux2 = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
 
     ! Scalar dissipation
-    d_ij = dscale*(abs(aux1) + cs_ij*sqrt(a(1)*a(1)+a(2)*a(2)))
+    d_ij = dscale*(abs(aux1) + aux2*aux)
 
-#ifdef EVALFLUXES
+#endif
+
+    ! Multiply the solution difference by the artificial diffusion factor
+    Diff = d_ij*(U_j-U_i)
+
     ! Add the artificial diffusion to the fluxes
-    F_ji = F_ji+d_ij*Diff
-    F_ij = F_ij-d_ij*Diff
-#else
-    ! Build flux F_ji and add the artificial diffusion
-    F_ji = F_ij+d_ij*Diff
-    F_ij = F_ij-d_ij*Diff
-#endif
-
-#ifndef EVALFLUXES
-    !---------------------------------------------------------------------------
-    ! Evaluate the matrices for the boundary part
-    ! and multiply them with the solution difference
-    !---------------------------------------------------------------------------
-
-    ! Check if boundary integral vanishes
-    if (abs(s(1))+abs(s(2)) .ne. 0.0_DP) then
-
-      ! Compute Roe matrix for the symmetric part (if required)
-      Roe(1,1) =   0.0_DP
-      Roe(2,1) =   (G1*q_ij-u2)*s(1)   - uv*s(2)
-      Roe(3,1) = - uv*s(1)             + (G1*q_ij-v2)*s(2)
-      Roe(4,1) =   (G1*q_ij-H_ij)*aux2
-      
-      Roe(1,2) =   s(1)
-      Roe(2,2) =   aux2-G6*u_ij*s(1)
-      Roe(3,2) =   v_ij*s(1)           - G1*u_ij*s(2)
-      Roe(4,2) =   (H_ij-G1*u2)*s(1)   - G1*uv*s(2)
-      
-      Roe(1,3) =                         s(2)
-      Roe(2,3) = - G1*v_ij*s(1)        + u_ij*s(2)
-      Roe(3,3) =                         aux2-G6*v_ij*s(2)
-      Roe(4,3) = - G1*uv*s(1)          + (H_ij-G1*v2)*s(2)
-      
-      Roe(1,4) =   0.0_DP
-      Roe(2,4) =   G1*s(1)
-      Roe(3,4) =                         G1*s(2)
-      Roe(4,4) =   GAMMA*aux2
-      
-      ! Compute Roe*(u_i-u_j) for symmetric/boundary part
-      call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
-                      NVAR2D, Diff, 1, 0.0_DP, Daux, 1)
-
-      ! Add the boundary contribution to the fluxes
-      F_ij = F_ij+Daux
-      F_ji = F_ji-Daux
-
-    end if
-
-#endif
+    F_ij = F_ij+Diff
+    F_ji = F_ji-Diff
 
   end subroutine euler_calcFluxScalarDiss2d
 
@@ -594,23 +381,11 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTensorDiss2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxTensorDiss2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 2D using tensorial dissipation.
-    !
-    ! This is actually the standard Galerkin discretization
-    ! plus some artificial viscosities
-    !      $F_{ij}=(A_{ij)+S_{ij}-D_{ij})(U_i-U_j)$
-    ! and
-    !      $F_{ji}=(A_{ij}-S_{ij}+D_{ij})(U_i-U_j)$
-    !
-    ! The alternative version computes the Galerkin flues
-    ! directly in terms of fluxes and adds artificial viscosities
-    !       $F_{ij}=c_{ij}\cdot(F_i-F_j)-D_{ij}(U_i-U_j)$
-    ! and
-    !       $F_{ji}=c_{ji}\cdot(F_j-F_i)+D_{ij}(U_i-U_j)$
 !</description>
 
 !<input>
@@ -623,11 +398,6 @@ contains
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! inviscid fluxes
@@ -637,53 +407,45 @@ contains
 
     ! local variables
     real(DP), dimension(NVAR2D,NVAR2D) :: Roe,L_ij,R_ij,D_ij
-    real(DP), dimension(NVAR2D) :: Diff,Daux
-    real(DP), dimension(NDIM2D) :: a,s
-    real(DP) :: aux,aux1,aux2,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
+    real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij,Diff,Daux
+    real(DP), dimension(NDIM2D) :: a
+    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    real(DP) :: aux,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
     real(DP) :: l1,l2,l3,l4,vel,cnrm,cx,cy,c2,cs_ij
 
-#ifdef EVALFLUXES
-    ! additional local variables for evaluating the Galerkin fluxes directly
-    real(DP), dimension(NVAR2D) :: F1_i, F2_i, F1_j,F2_j
-    real(DP) :: p_i,p_j
-#endif
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes
+    ! For a detailed description of algorithm and the definition of auxiliary
+    ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
+    !---------------------------------------------------------------------------
     
-#ifdef EVALFLUXES
-    !---------------------------------------------------------------------------
-    ! Evaluate the Galerkin fluxes directly
-    !---------------------------------------------------------------------------
+    ! Compute auxiliary values
+    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
+    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
+    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
+    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    
+    ! Compute fluxes for x-direction
+    dF1_ij(1) = U_i(2)                             -  U_j(2)
+    dF1_ij(2) = -G14*aux1-G2*(aux2+U_i(4))         - (-G14*aux5-G2*(aux6+U_j(4)))
+    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
 
-    ! Compute nodal pressure values
-    p_i = G1*(U_i(4)-0.5_DP*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/U_i(1))
-    p_j = G1*(U_j(4)-0.5_DP*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/U_j(1))
-
-    ! Compute fluxes for nodes i
-    F1_i(1) = U_i(2)
-    F1_i(2) = U_i(2)*U_i(2)/U_i(1) + p_i
-    F1_i(3) = U_i(3)*U_i(2)/U_i(1)
-    F1_i(4) = (U_i(4)+p_i)*U_i(2)/U_i(1)
-
-    F2_i(1) = U_i(3)
-    F2_i(2) = U_i(2)*U_i(3)/U_i(1)
-    F2_i(3) = U_i(3)*U_i(3)/U_i(1) + p_i
-    F2_i(4) = (U_i(4)+p_i)*U_i(3)/U_i(1)
-
-    ! Compute fluxes for nodes j
-    F1_j(1) = U_j(2)
-    F1_j(2) = U_j(2)*U_j(2)/U_j(1) + p_j
-    F1_j(3) = U_j(3)*U_j(2)/U_j(1)
-    F1_j(4) = (U_j(4)+p_j)*U_j(2)/U_j(1)
-
-    F2_j(1) = U_j(3)
-    F2_j(2) = U_j(2)*U_j(3)/U_j(1)
-    F2_j(3) = U_j(3)*U_j(3)/U_j(1) + p_j
-    F2_j(4) = (U_j(4)+p_j)*U_j(3)/U_j(1)
+    ! Compute fluxes for y-direction
+    dF2_ij(1) = U_i(3)                             - U_j(3)
+    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF2_ij(3) = -G14*aux2-G2*(aux1+U_i(4))         - (-G14*aux6-G2*(aux5+U_j(4)))
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
 
     ! Assembly fluxes
-    F_ij = dscale * (C_ij(1)*(F1_i-F1_j) + C_ij(2)*(F2_i-F2_j))
-    F_ji = dscale * (C_ji(1)*(F1_j-F1_i) + C_ji(2)*(F2_j-F2_i))
+    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
 
-#endif
+    
+    !---------------------------------------------------------------------------
+    ! Evaluate the tensorial dissipation 
+    !---------------------------------------------------------------------------
 
     ! Compute solution difference
     Diff = U_i-U_j
@@ -698,48 +460,14 @@ contains
 
     ! Compute coefficient
     a = 0.5_DP*(C_ij-C_ji)
-    s = 0.5_DP*(C_ij+C_ji)
-
+    
     ! Compute auxiliary variables
     aux1  = u_ij*a(1) + v_ij*a(2)
-    aux2  = u_ij*s(1) + v_ij*s(2)
     u2    = u_ij*u_ij
     v2    = v_ij*v_ij
     uv    = u_ij*v_ij
     q_ij  = 0.5_DP*(u2+v2)
-
-#ifndef EVALFLUXES
-    !---------------------------------------------------------------------------
-    ! Evaluate the matrices for the internal part
-    ! and multiply them with the solution difference
-    !---------------------------------------------------------------------------
-
-    ! Compute Roe matrix for the skew-symmetric part
-    Roe(1,1) =   0.0_DP
-    Roe(2,1) =   (G1*q_ij-u2)*a(1)  - uv*a(2)
-    Roe(3,1) = - uv*a(1)            + (G1*q_ij-v2)*a(2)
-    Roe(4,1) =   (G1*q_ij-H_ij)*aux1
-    
-    Roe(1,2) =   a(1)
-    Roe(2,2) =   aux1-G6*u_ij*a(1)
-    Roe(3,2) =   v_ij*a(1)          - G1*u_ij*a(2)
-    Roe(4,2) =   (H_ij-G1*u2)*a(1)  - G1*uv*a(2)
-    
-    Roe(1,3) =                        a(2)
-    Roe(2,3) = - G1*v_ij*a(1)       + u_ij*a(2)
-    Roe(3,3) =                        aux1-G6*v_ij*a(2)
-    Roe(4,3) = - G1*uv*a(1)         + (H_ij-G1*v2)*a(2)
-
-    Roe(1,4) =   0.0_DP
-    Roe(2,4) =   G1*a(1)
-    Roe(3,4) =                        G1*a(2)
-    Roe(4,4) =   GAMMA*aux1
-
-    ! Compute Roe*(u_i-u_j) for skew-symmetric/interior part
-    call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
-                    NVAR2D, Diff, 1, 0.0_DP, F_ij, 1)
-#endif
-    
+   
     ! Characteristic velocity
     cnrm = sqrt(a(1)*a(1)+a(2)*a(2))
     if (cnrm .ne. 0.0_DP) then
@@ -837,66 +565,11 @@ contains
       call DGEMV('n', NVAR2D, NVAR2D, dscale, D_ij,&
                       NVAR2D, Diff, 1, 0.0_DP, Daux, 1)
 
-#ifdef EVALFLUXES
       ! Add the artificial diffusion to the fluxes
       F_ji = F_ji+Daux
       F_ij = F_ij-Daux
-#else
-      ! Build flux F_ji and add the artificial diffusion
-      F_ji = F_ij+Daux
-      F_ij = F_ij-Daux
-#endif
-
-    else
-
-#ifndef EVALFLUXES
-      ! Build flux F_ji and neglect diffusive contribution
-      F_ji = F_ij
-#endif
 
     end if
-    
-#ifndef EVALFLUXES
-    !---------------------------------------------------------------------------
-    ! Evaluate the matrices for the boundary part
-    ! and multiply them with the solution difference
-    !---------------------------------------------------------------------------
-
-    ! Check if boundary integral vanishes
-    if (abs(s(1))+abs(s(2)) .gt. SYS_EPSREAL) then
-      
-      ! Compute Roe matrix for the symmetric part (if required)
-      Roe(1,1) =   0.0_DP
-      Roe(2,1) =   (G1*q_ij-u2)*s(1)   - uv*s(2)
-      Roe(3,1) = - uv*s(1)             + (G1*q_ij-v2)*s(2)
-      Roe(4,1) =   (G1*q_ij-H_ij)*aux2
-      
-      Roe(1,2) =   s(1)
-      Roe(2,2) =   aux2-G6*u_ij*s(1)
-      Roe(3,2) =   v_ij*s(1)           - G1*u_ij*s(2)
-      Roe(4,2) =   (H_ij-G1*u2)*s(1)   - G1*uv*s(2)
-      
-      Roe(1,3) =                         s(2)
-      Roe(2,3) = - G1*v_ij*s(1)        + u_ij*s(2)
-      Roe(3,3) =                         aux2-G6*v_ij*s(2)
-      Roe(4,3) = - G1*uv*s(1)          + (H_ij-G1*v2)*s(2)
-      
-      Roe(1,4) =   0.0_DP
-      Roe(2,4) =   G1*s(1)
-      Roe(3,4) =                         G1*s(2)
-      Roe(4,4) =   GAMMA*aux2
-      
-      ! Compute Roe*(u_i-u_j) for symmetric/boundary part
-      call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
-                      NVAR2D, diff, 1, 0.0_DP, Daux, 1)
-
-      ! Add the boundary contribution to the fluxes
-      F_ij = F_ij+Daux
-      F_ji = F_ji-Daux
-      
-    end if
-
-#endif
 
   end subroutine euler_calcFluxTensorDiss2d
 
@@ -904,7 +577,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcRawFluxFCT2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, istatus)
+  subroutine euler_calcRawFluxFCT2d(U_i, U_j, C_ij, C_ji, dscale, F_ij)
 
 !<description>
     ! This subroutine computes the raw antidiffusive flux
@@ -921,11 +594,6 @@ contains
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! inviscid fluxes
@@ -1001,7 +669,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixGalerkinDiag2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices in 2D
@@ -1014,11 +682,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -1061,7 +724,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixGalerkin2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the local Roe matrices in 2D
@@ -1074,11 +737,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -1169,7 +827,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixScalarDissDiag2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -1183,11 +841,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -1243,7 +896,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixScalarDiss2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the local Roe matrices
@@ -1257,11 +910,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -1333,7 +981,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixTensorDissDiag2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -1347,11 +995,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -1500,7 +1143,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixTensorDiss2d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -1514,11 +1157,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -1665,7 +1303,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcCharacteristics2d(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij, istatus)
+  subroutine euler_calcCharacteristics2d(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
 
 !<description>
     ! This subroutine computes the characteristic variables in 2D
@@ -1678,11 +1316,6 @@ contains
     ! weighting vector
     real(DP), dimension(:), intent(IN) :: Dweight
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! vector of characteristic variables
@@ -1856,8 +1489,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcBoundaryvalues2d(DbdrNormal, DpointNormal,&
-                                        DbdrValue, ibdrCondType, Du, Du0, istatus)
+  subroutine euler_calcBoundaryvalues2d(DbdrNormal, DpointNormal, DbdrValue,&
+                                        ibdrCondType, Du, Du0, istatus)
 
 !<description>
     ! This subroutine computes the boundary values for a given node in 2D
@@ -1890,10 +1523,9 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: rho,v1,v2,p,E,c,v1_0,v2_0       ! primitive variables
-    real(DP) :: v1_b,v2_b,vn_b,vn,vt,pstar      ! velocities and boundary values
-    real(DP) :: ps,Ts,p0,Ms,mr                  ! thermodynamic quantities
     real(DP), dimension(NVAR2D) :: W,Wu,Winf    ! Riemann invariants, eigenvalues, etc.
+    real(DP) :: rho,v1,v2,p,E,c,v1_0,v2_0       ! primitive variables
+    real(DP) :: v1_b,v2_b,vn_b,vn,vt,pstar,ps   ! velocities and boundary values
     real(DP) :: cup,f,fd,ge,qrt                 ! auxiliary variables ...
     real(DP) :: pold,ppv,prat,ptl,ptr,vdiff,vm  ! ... for the Riemann solver
     real(DP) :: auxA,auxB,aux,dnx2,dny2,dnxy
