@@ -433,6 +433,11 @@ contains
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)
       end do
+
+    case ('EFFECTIVE_ENERGY')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(nvar, ieq)
+      end do
       
     case ('PRESSURE')
       select case (nvar)
@@ -572,6 +577,11 @@ contains
     case ('ENERGY')
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)
+      end do
+
+    case ('EFFECTIVE_ENERGY')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(ieq, nvar)
       end do
       
     case ('PRESSURE')
