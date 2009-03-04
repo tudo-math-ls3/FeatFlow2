@@ -145,13 +145,13 @@ contains
     ! calculate the fluxes from the conservative variables as follows:
     !
     !      / U2                             \
-    ! F1 = | -G14*aux1-G2*(aux2+U4)         |
+    ! F1 = | G1*U4-G14*aux1-G2*aux2         |
     !      | U3*aux3                        |
     !      \ (gamma*U4-G2*(aux1+aux2))*aux3 /
     !
     !      / U3                             \
     ! F2 = | U3*aux3 = U2*aux4              |
-    !      | -G14*aux2-G2*(aux1+U4)         |
+    !      | G1*U4-G14*aux2-G2*aux1         |
     !      \ (gamma*U4-G2*(aux1+aux2))*aux4 /
     !
     ! where the auxiliary values are defined as follows:
@@ -163,7 +163,7 @@ contains
     !
     ! and the predefined constants are given by:
     !
-    ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2
+    ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
     !
     ! The auxiliary quantities aux[1-4] and aux[5-8] are used 
     ! for the values in nodes i and j, respectively.
@@ -176,15 +176,15 @@ contains
     aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
     
     ! Compute fluxes for x-direction
-    dF1_ij(1) = U_i(2)                             -  U_j(2)
-    dF1_ij(2) = -G14*aux1-G2*(aux2+U_i(4))         - (-G14*aux5-G2*(aux6+U_j(4)))
+    dF1_ij(1) = U_i(2)                             - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
     dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                             - U_j(3)
     dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = -G14*aux2-G2*(aux1+U_i(4))         - (-G14*aux6-G2*(aux5+U_j(4)))
+    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
     dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
 
     ! Assembly fluxes
@@ -242,14 +242,14 @@ contains
     
     ! Compute fluxes for x-direction
     dF1_ij(1) = U_i(2)                             -  U_j(2)
-    dF1_ij(2) = -G14*aux1-G2*(aux2+U_i(4))         - (-G14*aux5-G2*(aux6+U_j(4)))
+    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
     dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                             - U_j(3)
     dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = -G14*aux2-G2*(aux1+U_i(4))         - (-G14*aux6-G2*(aux5+U_j(4)))
+    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
     dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
 
     ! Compute skew-symmetric coefficient
@@ -309,15 +309,15 @@ contains
     aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
     
     ! Compute fluxes for x-direction
-    dF1_ij(1) = U_i(2)                             -  U_j(2)
-    dF1_ij(2) = -G14*aux1-G2*(aux2+U_i(4))         - (-G14*aux5-G2*(aux6+U_j(4)))
+    dF1_ij(1) = U_i(2)                             - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
     dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                             - U_j(3)
     dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = -G14*aux2-G2*(aux1+U_i(4))         - (-G14*aux6-G2*(aux5+U_j(4)))
+    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
     dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
 
     ! Assembly fluxes
@@ -428,14 +428,14 @@ contains
     
     ! Compute fluxes for x-direction
     dF1_ij(1) = U_i(2)                             -  U_j(2)
-    dF1_ij(2) = -G14*aux1-G2*(aux2+U_i(4))         - (-G14*aux5-G2*(aux6+U_j(4)))
+    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
     dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                             - U_j(3)
     dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = -G14*aux2-G2*(aux1+U_i(4))         - (-G14*aux6-G2*(aux5+U_j(4)))
+    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
     dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
 
     ! Assembly fluxes
