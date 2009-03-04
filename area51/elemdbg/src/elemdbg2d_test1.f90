@@ -308,6 +308,11 @@ contains
       rerror%p_DerrorL2 => Derror(1:1,ilvl)
       rerror%p_DerrorH1 => Derror(2:2,ilvl)
       call pperr_scalarVec(rerror, getReferenceFunction2D)
+      
+      ! Print the errors
+      call output_line('Errors (L2/H1): ' // &
+          trim(sys_sdEP(Derror(1,ilvl),20,12)) // &
+          trim(sys_sdEP(Derror(2,ilvl),20,12)))
 
       ! Clean up this level
       call linsol_doneData (p_rsolver)

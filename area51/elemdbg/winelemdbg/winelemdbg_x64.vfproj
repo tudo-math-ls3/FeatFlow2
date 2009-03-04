@@ -51,8 +51,10 @@
 		<File RelativePath="..\src\elemdbg2d_callback.f90"/>
 		<File RelativePath="..\src\elemdbg2d_test1.f90"/></Filter>
 		<Filter Name="3D">
+		<File RelativePath="..\src\disto3d_aux.f90"/>
 		<File RelativePath="..\src\elemdbg3d_callback.f90"/>
-		<File RelativePath="..\src\elemdbg3d_test1.f90"/></Filter>
+		<File RelativePath="..\src\elemdbg3d_test1.f90"/>
+		<File RelativePath="..\src\elemdbg3d_test2.f90"/></Filter>
 		<Filter Name="main">
 		<File RelativePath="..\src\elemdbg.f90"/></Filter></Filter></Files>
 	<Globals/></VisualStudioProject>

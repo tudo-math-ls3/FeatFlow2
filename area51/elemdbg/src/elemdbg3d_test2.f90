@@ -1,13 +1,13 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> elemdbg3d_test1 </name>
+!# <name> elemdbg3d_test2 </name>
 !# ****************************************************************************
 !#
 !# <purpose>
 !# </purpose>
 !##############################################################################
 
-module elemdbg3d_test1
+module elemdbg3d_test2
 
   use fsystem
   use genoutput
@@ -28,6 +28,7 @@ module elemdbg3d_test1
   use meshmodification
     
   use elemdbg3d_callback
+  use disto3d_aux
   
   implicit none
 
@@ -37,7 +38,7 @@ contains
 
 !<subroutine>
 
-  subroutine elemdbg3d_1(rparam, sConfigSection, itest)
+  subroutine elemdbg3d_2(rparam, sConfigSection, itest)
   type(t_parlist), intent(INOUT) :: rparam
   character(LEN=*), intent(IN) :: sConfigSection
   integer, intent(IN) :: itest
@@ -47,8 +48,8 @@ contains
 
 !</subroutine>
 
-  type(t_triangulation) :: rtriangulation
-  type(t_blockDiscretisation) :: rdiscretisation
+  type(t_triangulation) :: rtria
+  type(t_blockDiscretisation) :: rdiscr
   type(t_linearForm) :: rlinform
   type(t_matrixBlock) :: rmatrix
   type(t_vectorBlock), target :: rvecSol, rvecRhs, rvectmp
@@ -58,11 +59,12 @@ contains
   type(t_matrixBlock), dimension(1) :: Rmatrices
   type(t_errorScVec) :: rerror
   integer :: NLMIN,NLMAX,ierror,ilvl
-  real(DP), dimension(:,:), allocatable, target :: Derror
+  real(DP), dimension(:), allocatable, target :: Dvol
+  real(DP), dimension(:,:), allocatable, target :: Derror,Ddev
   integer, dimension(:,:), allocatable :: Istat
-  integer :: isolver, ioutput, nmaxiter,ccubature
+  integer :: isolver, ioutput, nmaxiter,ccubature,idistType,idistLevel,idistLvl
   integer(I32) :: celement, cshape
-  real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2
+  real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2, dsecDist
   character(LEN=64) :: selement,scubature
 
     ! Fetch minimum and maximum levels
@@ -71,12 +73,21 @@ contains
     
     if((NLMIN .lt. 1) .or. (NLMAX .lt. NLMIN)) then
       call output_line('Invalid NLMIN/NLMAX parameters',&
-           OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+           OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_2')
       call sys_halt()
     end if
+    
+    ! Fetch mesh distortion type
+    call parlst_getvalue_int(rparam, sConfigSection, 'IDISTTYPE', idistType, 2)
 
-    ! Fetch mesh distortion parameter
-    call parlst_getvalue_double(rparam, sConfigSection, 'DMESHDISTORT', ddist, 0.0_DP)
+    ! Fetch mesh distortion level
+    call parlst_getvalue_int(rparam, sConfigSection, 'IDISTLEVEL', idistLevel, 0)
+
+    ! Fetch primary mesh distortion parameter
+    call parlst_getvalue_double(rparam, sConfigSection, 'DMESHDISTORT', ddist, 0.1_DP)
+
+    ! Fetch secondary mesh distortion parameter
+    call parlst_getvalue_double(rparam, sConfigSection, 'DSECDISTORT', dsecDist, 0.0_DP)
     
     ! Fetch element and cubature rule
     call parlst_getvalue_string(rparam, sConfigSection, 'SELEMENT', selement, '')
@@ -106,68 +117,96 @@ contains
     cshape = elem_igetShape(celement)
     if(cshape .ne. cub_igetShape(ccubature)) then
       call output_line('Element and cubature formula incompatible!', &
-        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_2')
       call sys_halt()
     end if
     
     ! Allocate arrays
     allocate(Derror(6,NLMIN:NLMAX))
     allocate(Istat(6,NLMIN:NLMAX))
+    allocate(Ddev(4,NLMIN:NLMAX))
+    allocate(Dvol(NLMIN:NLMAX))
     
     call output_separator(OU_SEP_STAR)
-    call output_line('ELEMENT-DEBUGGER: 3D TEST #1')
+    call output_line('ELEMENT-DEBUGGER: 3D TEST #2')
     call output_line('============================')
     ! Print out that we are going to do:
     select case(itest)
-    case(301)
-      call output_line('System.........: L2-projection')
-    case(302)
-      call output_line('System.........: Poisson')
+    case(311)
+      call output_line('System.............: L2-projection')
+    case(312)
+      call output_line('System.............: Poisson')
     case default
       call output_line('Invalid ITEST parameter', &
-        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_2')
       call sys_halt()
     end select
     select case(cshape)
     case(BGEOM_SHAPE_HEXA)
-      call output_line('Coarse Mesh....: CUBE.tri')
+      call output_line('Coarse Mesh........: CUBE.tri')
     case(BGEOM_SHAPE_PRISM)
-      call output_line('Coarse Mesh....: PRISM.tri')
+      call output_line('Prism elements are not yet supported!', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_2')
+      call sys_halt()
     case(BGEOM_SHAPE_TETRA)
       call output_line('Tetrahedron elements are not yet supported!', &
-        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_2')
       call sys_halt()
     case(BGEOM_SHAPE_PYRA)
       call output_line('Pyramid elements are not yet supported!', &
-        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_2')
       call sys_halt()
     case default
       call output_line('Element is not a valid 3D element!', &
-        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_2')
       call sys_halt()
     end select
-    call output_line('NLMIN..........: ' // trim(sys_siL(NLMIN,4)))
-    call output_line('NLMAX..........: ' // trim(sys_siL(NLMAX,4)))
-    call output_line('Mesh-Distortion: ' // trim(sys_sdL(ddist,8)))
-    call output_line('Element........: ' // trim(selement))
-    call output_line('Cubature rule..: ' // trim(scubature))
+    call output_line('NLMIN..............: ' // trim(sys_siL(NLMIN,4)))
+    call output_line('NLMAX..............: ' // trim(sys_siL(NLMAX,4)))
+    select case(idistType)
+    case(0)
+      ! no distortion => nothing else to print
+    case(1)
+      call output_line('Distortion Type....: coordinate-based')
+    case(2)
+      call output_line('Distortion Type....: index-based')
+    case(3)
+      call output_line('Distortion Type....: XY-plane-wise index-based')
+    case(4)
+      call output_line('Distortion Type....: XZ-plane-wise index-based')
+    case(5)
+      call output_line('Distortion Type....: YZ-plane-wise index-based')
+    case default
+      call output_line('Invalid IDISTTYPE parameter', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_2')
+      call sys_halt()
+    end select
+    if(idistType .ne. 0) then
+      call output_line('Distortion Level...: ' // trim(sys_siL(idistLevel,4)))
+      call output_line('Mesh Distortion....: ' // trim(sys_sdL(ddist,8)))
+    end if
+    if((idistType .ge. 3) .and. (idistType .le. 5)) then
+      call output_line('Second. Distortion.: ' // trim(sys_sdL(dsecDist,8)))
+    end if
+    call output_line('Element............: ' // trim(selement))
+    call output_line('Cubature rule......: ' // trim(scubature))
     select case(isolver)
     case(0)
-      call output_line('Solver.........: UMFPACK4')
+      call output_line('Solver.............: UMFPACK4')
     case(1)
-      call output_line('Solver.........: CG-SSOR')
-      call output_line('Relaxation.....: ' // trim(sys_sdL(drelax,8)))
+      call output_line('Solver.............: CG-SSOR')
+      call output_line('Relaxation.........: ' // trim(sys_sdL(drelax,8)))
     case(2)
-      call output_line('Solver.........: BiCGStab-ILU(0)')
+      call output_line('Solver.............: BiCGStab-ILU(0)')
     case default
       call output_line('Invalid ISOLVER parameter', &
-        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_2')
       call sys_halt()
     end select
-    call output_line('Output Level...: ' // trim(sys_siL(ioutput,4)))
-    call output_line('Maximum Iter...: ' // trim(sys_siL(nmaxiter,12)))
-    call output_line('Absolute EPS...: ' // trim(sys_sdEP(depsAbs,20,12)))
-    call output_line('Relative EPS...: ' // trim(sys_sdEP(depsRel,20,12)))
+    call output_line('Output Level.......: ' // trim(sys_siL(ioutput,4)))
+    call output_line('Maximum Iter.......: ' // trim(sys_siL(nmaxiter,12)))
+    call output_line('Absolute EPS.......: ' // trim(sys_sdEP(depsAbs,20,12)))
+    call output_line('Relative EPS.......: ' // trim(sys_sdEP(depsRel,20,12)))
     call output_lbrk()
     
     ! Loop over all levels
@@ -178,30 +217,77 @@ contains
       ! Now read in the basic triangulation.
       select case(cshape)
       case(BGEOM_SHAPE_HEXA)
-        call tria_readTriFile3D (rtriangulation, './pre/CUBE.tri')
-      case(BGEOM_SHAPE_PRISM)
-        call tria_readTriFile3D (rtriangulation, './pre/PRISM.tri')
+        call tria_readTriFile3D (rtria, './pre/CUBE.tri')
       end select
-       
-      ! Refine it.
-      call tria_quickRefine2LevelOrdering (ilvl-1,rtriangulation)
+      
+      if(idistLevel .le. 0) then
+        idistLvl = max(1,ilvl-idistLevel)
+      else
+        idistLvl = idistLevel
+      end if
+      
+      if((idistLvl .le. ilvl) .and. (idistType .ne. 0)) then
+      
+        ! Refine up to distortion level
+        call tria_quickRefine2LevelOrdering (idistLvl-1, rtria)
+        
+        ! Distort the mesh
+        select case(idistType)
+        case (1)
+          ! coordinate-based distortion
+          call disto3d_distortCubeCoords(rtria, ddist)
+        
+        case (2)
+          ! index-based distortion
+          call meshmod_disturbMesh (rtria, ddist)
+        
+        case (3)
+          ! XY-plane-wise index-based distortion
+          call disto3d_distortCubePlaneXY(rtria, ddist, dsecDist)
+        
+        case (4)
+          ! XZ-plane-wise index-based distortion
+          call disto3d_distortCubePlaneXZ(rtria, ddist, dsecDist)
+        
+        case (5)
+          ! YZ-plane-wise index-based distortion
+          call disto3d_distortCubePlaneYZ(rtria, ddist, dsecDist)
+        
+        end select
+        
+        ! Refine up to current level
+        if(idistLvl .lt. ilvl) then
+          call tria_quickRefine2LevelOrdering (ilvl-idistLvl, rtria)
+        end if
+      
+      else
+      
+        ! Refine up to current level
+        call tria_quickRefine2LevelOrdering (ilvl-1, rtria)
+        
+      end if
       
       ! And create information about adjacencies and everything one needs from
       ! a triangulation.
-      call tria_initStandardMeshFromRaw (rtriangulation)
-
-      ! Optionally distort the mesh
-      if(ddist .ne. 0.0_DP) &
-        call meshmod_disturbMesh (rtriangulation, ddist)
+      call tria_initStandardMeshFromRaw (rtria)
+      
+      ! Calculate domain volume
+      call disto3d_calcDomainVolume(rtria, Dvol(ilvl))
+      
+      ! Calculate normal deviations
+      call disto3d_calcFaceNormalDeviation(rtria, Ddev(1,ilvl), Ddev(2,ilvl))
+      
+      ! Calculate non-linear devations
+      call disto3d_calcFaceNLDeviation(rtria, Ddev(3,ilvl), Ddev(4,ilvl))
       
       ! Set up discretisation
-      call spdiscr_initBlockDiscr (rdiscretisation,1,rtriangulation)
-      call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-          celement, ccubature, rtriangulation)
+      call spdiscr_initBlockDiscr (rdiscr,1,rtria)
+      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1), &
+          celement, ccubature, rtria)
                    
       ! Create matrix structure
-      call lsysbl_createMatBlockByDiscr(rdiscretisation, rmatrix)
-      call bilf_createMatrixStructure(rdiscretisation%RspatialDiscr(1),&
+      call lsysbl_createMatBlockByDiscr(rdiscr, rmatrix)
+      call bilf_createMatrixStructure(rdiscr%RspatialDiscr(1),&
                                LSYSSC_MATRIX9,rmatrix%RmatrixBlock(1,1))
 
       ! Create vectors
@@ -211,11 +297,11 @@ contains
       
       ! Set up discrete BCs
       call bcasm_initDiscreteBC(rdiscreteBC)
-      call mshreg_createFromNodalProp(rmeshRegion, rtriangulation, &
+      call mshreg_createFromNodalProp(rmeshRegion, rtria, &
                                       MSHREG_IDX_ALL)
       
       ! Describe Dirichlet BCs on that mesh region
-      call bcasm_newDirichletBConMR(rdiscretisation, 1, rdiscreteBC, &
+      call bcasm_newDirichletBConMR(rdiscr, 1, rdiscreteBC, &
                                     rmeshRegion,getBoundaryValues3D)
       call mshreg_done(rmeshRegion)
 
@@ -227,14 +313,14 @@ contains
       ! Store statistics
       Istat(1,ilvl) = rmatrix%NEQ
       Istat(2,ilvl) = rmatrix%rmatrixBlock(1,1)%NA
-      Istat(3,ilvl) = rtriangulation%NVT
-      Istat(4,ilvl) = rtriangulation%NMT
-      Istat(5,ilvl) = rtriangulation%NAT
-      Istat(6,ilvl) = rtriangulation%NEL
+      Istat(3,ilvl) = rtria%NVT
+      Istat(4,ilvl) = rtria%NMT
+      Istat(5,ilvl) = rtria%NAT
+      Istat(6,ilvl) = rtria%NEL
 
       ! Assemble system
       select case(itest)
-      case(301)
+      case(311)
         ! Assemble Mass matrix
         call stdop_assembleSimpleMatrix(rmatrix%RmatrixBlock(1,1), &
                                         DER_FUNC3D, DER_FUNC3D)
@@ -242,17 +328,17 @@ contains
         ! Assemble RHS vector
         rlinform%itermCount = 1
         rlinform%Idescriptors(1) = DER_FUNC3D
-        call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
+        call linf_buildVectorScalar (rdiscr%RspatialDiscr(1),&
               rlinform,.true.,rvecRhs%RvectorBlock(1),coeff_RHS3D_Mass)
       
-      case(302)
+      case(312)
         ! Assemble Laplace matrix
         call stdop_assembleLaplaceMatrix(rmatrix%RmatrixBlock(1,1))
         
         ! Assemble RHS vector
         rlinform%itermCount = 1
         rlinform%Idescriptors(1) = DER_FUNC3D
-        call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
+        call linf_buildVectorScalar (rdiscr%RspatialDiscr(1),&
            rlinform,.true.,rvecRhs%RvectorBlock(1),coeff_RHS3D_Laplace)
         
         ! Implement BCs
@@ -269,7 +355,7 @@ contains
         call linsol_initUMFPACK4(p_rsolver)
       
       case (1)
-        ! CG-SSOR[1.2] solver
+        ! CG-SSOR solver
         nullify(p_rprecond)
         call linsol_initSSOR(p_rprecond,drelax)
         call linsol_initCG(p_rsolver, p_rprecond)
@@ -317,8 +403,8 @@ contains
       call lsysbl_releaseVector (rvecRhs)
       call lsysbl_releaseMatrix (rmatrix)
       call bcasm_releaseDiscreteBC (rdiscreteBC)
-      call spdiscr_releaseBlockDiscr(rdiscretisation)
-      call tria_done (rtriangulation)
+      call spdiscr_releaseBlockDiscr(rdiscr)
+      call tria_done (rtria)
     
     end do ! ilvl
     
@@ -334,6 +420,33 @@ contains
           trim(sys_si(Istat(4,ilvl),12)) // &
           trim(sys_si(Istat(5,ilvl),12)) // &
           trim(sys_si(Istat(6,ilvl),12)))
+    end do ! ilvl
+    
+    ! Print out the volume of the domain on each level
+    call output_separator(OU_SEP_MINUS)
+    call output_line('Level     Domain Volume')
+    do ilvl = NLMIN, NLMAX
+      call output_line(trim(sys_si(ilvl,5)) // '   ' // &
+          trim(sys_sdEP(Dvol(ilvl),20,12)))
+    end do ! ilvl
+
+    ! Print out the normal deviations on each level
+    call output_separator(OU_SEP_MINUS)
+    !                           -                       -
+    call output_line('Level     Max Normal Deviation    Mean Normal Deviation')
+    do ilvl = NLMIN, NLMAX
+      call output_line(trim(sys_si(ilvl,5)) // '   ' // &
+          trim(sys_sdEP(Ddev(1,ilvl),20,12)) // '    ' // &
+          trim(sys_sdEP(Ddev(2,ilvl),20,12)))
+    end do ! ilvl
+
+    ! Print out the non-linear deviations on each level
+    call output_separator(OU_SEP_MINUS)
+    call output_line('Level     Max Non-Lin Deviation   Mean Non-Lin Deviation')
+    do ilvl = NLMIN, NLMAX
+      call output_line(trim(sys_si(ilvl,5)) // '   ' // &
+          trim(sys_sdEP(Ddev(3,ilvl),20,12)) // '    ' // &
+          trim(sys_sdEP(Ddev(4,ilvl),20,12)))
     end do ! ilvl
 
     ! Print out the L2- and H1-errors on each level
@@ -369,6 +482,8 @@ contains
     ! Deallocate arrays
     deallocate(Istat)
     deallocate(Derror)
+    deallocate(Ddev)
+    deallocate(Dvol)
     
   end subroutine
 

@@ -3,11 +3,11 @@
 SLOGFILE = ./log/output.txt
 
 # Name of the configuration section that is to be loaded
-SCONFIGSECTION = EXAMPLE
+SCONFIGSECTION = EXAMPLE_N0X
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# Example Section
-[EXAMPLE]
+# Example Section for simple debuggers #1
+[EXAMPLE_N0X]
 
 # Test that is to be loaded (non-optional)
 # 101 -> 1D Element-Debugger: L2-projection, SINUS solution
@@ -30,6 +30,67 @@ SCUBATURE = G3_2D
 
 # Mesh distortion parameter (default: 0.0)
 DMESHDISTORT = 0.0
+
+# Solver that is to be used (default: 0)
+# 0 -> UMFPACK4 solver
+# 1 -> CG-SSOR solver
+# 2 -> BiCGStab-ILU(0) solver
+ISOLVER = 0
+
+# Relaxation parameter for CG-SSOR (default: 1.2)
+DRELAX = 1.2
+
+# Output Level of solver (default: 0)
+IOUTPUT = 0
+
+# Maximum number of iterations for iterative solvers (default: 1000)
+NMAXITER = 1000
+
+# Relative tolerance for iterative solvers (default: 1e-8)
+DEPSREL = 1E-8
+
+# Absolute tolerance for iterative solvers (default: 1e-11)
+DEPSABS = 1e-11
+
+
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Example Section for extended 3D debugger #2
+[EXAMPLE_31X]
+
+# Test that is to be loaded (non-optional)
+# 311 -> 3D Element-Debugger: L2-projection, SINUS solution
+# 312 -> 3D Element-Debugger: Poisson, SINUS solution
+ITEST = 312
+
+# Minimum and maximum levels (non-optional)
+NLMIN = 2
+NLMAX = 7
+
+# Element identifier (non-optional)
+SELEMENT = EL_Q1_3D
+
+# Cubature rule identifier (non-optional)
+SCUBATURE = G3_3D
+
+# Mesh distortion type (default: 2)
+# 0 -> no distortion
+# 1 -> coordinate-based distortion
+# 2 -> index-based distortion, as in 'N0X' debuggers
+# 3 -> XY-plane-wise index-based distortion
+# 4 -> XZ-plane-wise index-based distortion
+# 5 -> YZ-plane-wise index-based distortion
+IDISTTYPE = 2
+
+# Level on which the mesh is to be distorted (default: 0)
+# <= 0 -> distort mesh on level max(1, ILEVEL - |IDISTLEVEL|)
+# >= 1 -> distort mesh on level IDISTLEVEL
+IDISTLEVEL = 0
+
+# Mesh distortion parameter (default: 0.1)
+DMESHDISTORT = 0.1
+
+# Secondary mesh distortion parameter, used by plane-wise distortion (default: 0.0)
+DSECDISTORT = 0.0
 
 # Solver that is to be used (default: 0)
 # 0 -> UMFPACK4 solver
