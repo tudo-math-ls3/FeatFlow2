@@ -1892,16 +1892,16 @@ contains
 
   subroutine codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
                                  rsolution, rsolutionInitial, rrhs, rres,&
-                                 ite, rcollection)
+                                 ite, rcollection, rb)
 
 !<description>
     ! This subroutine computes the nonlinear residual vector
     ! 
-    !   $$ r^{(m)} = b^n - [M-\theta\Delta t K^{(m)}]u^{(m)} $$
+    !   $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]u^{(m)} $$
     !
     !  and the constant right-hand side (only in the zeroth iteration)
     !
-    !  $$ b^n = [M+(1-\theta)\Delta t K^n]u^n $$
+    !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + \Delta t b$$
 !</description>
 
 !<input>
@@ -1916,6 +1916,9 @@ contains
 
     ! number of nonlinear iteration
     integer, intent(IN) :: ite
+
+    ! OPTIONAL: load vector specified by the application
+    type(t_vectorBlock), intent(IN), optional :: rb
 !</input>
 
 !<inputoutput>
@@ -1926,9 +1929,14 @@ contains
     type(t_solver), intent(INOUT) :: rsolver
 
     ! right-hand side vector
+    !   ite=0: the right-hand side vector is calculated
+    !   ite>0: the right-hand side vector remains unchanged
     type(t_vectorBlock), intent(INOUT) :: rrhs
 
     ! residual vector
+    !   ite=0: the initial residual vector is calculated
+    !   ite>0: the residual vector is initialized by the right-hand
+    !          sude vector and updated by the implicit contribution
     type(t_vectorBlock), intent(INOUT) :: rres
 
     ! collection
@@ -1952,20 +1960,13 @@ contains
     lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
     consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
 
-    ! Are we in the zeroth iteration?
+    ! Are we in the zero-th iteration?
     if (ite .eq. 0) then
 
       !-------------------------------------------------------------------------
-      ! In the first nonlinear iteration update we compute
-      !
-      ! - the residual $ res = dt*L(u^n)*u^n+f(u^n,u^n) $ and
-      !
-      ! - the right hand side $ rhs = [M+(1-theta)*dt*L^n]*u^n $
-      !
+      ! In the zero-th nonlinear iteration we calculate the initial
+      ! residual vector and the constant right-hand side vector
       !-------------------------------------------------------------------------
-      
-      ! Copy the constant right-hand side to the residual vector
-      call lsysbl_copyVector(rrhs, rres)
 
       imasstype = collct_getvalue_int(rcollection, 'imasstype')
       
@@ -1979,27 +1980,27 @@ contains
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsolution%rvectorBlock(1),&
                                  rres%RvectorBlock(1),&
-                                 rtimestep%dStep, 1.0_DP)
+                                 rtimestep%dStep, 0.0_DP)
 
-        ! Compute the constant right-hand side, whereby the force vector
-        ! is already given in the right-hand side vector
+        ! Compute the constant right-hand side
         !
         !   $ rhs = M_L*u^n+(1-theta)*res^{(0)} $
 
         if (rtimestep%theta .lt. 1.0_DP) then
-          call lsyssc_vectorLinearComb(rres%RvectorBlock(1), rrhs%RvectorBlock(1),&
-                                       1.0_DP-rtimestep%theta, 0.0_DP)
+          call lsysbl_copyVector(rres, rrhs)
+
           call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                    rsolution%RvectorBlock(1),&
-                                   rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP)
+                                   rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP-rtimestep%theta)
         else
           call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                    rsolution%RvectorBlock(1),&
                                    rrhs%RvectorBlock(1),&
-                                   1.0_DP, 1.0_DP)
+                                   1.0_DP, 0.0_DP)
         end if
 
       case (MASS_CONSISTENT)
+
         ! Compute the initial low-order residual
         !
         !   $  res^{(0)} = dt*L(u^n)*u^n $
@@ -2007,27 +2008,27 @@ contains
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsolution%rvectorBlock(1),&
                                  rres%RvectorBlock(1),&
-                                 rtimestep%dStep, 1.0_DP)
+                                 rtimestep%dStep, 0.0_DP)
         
-        ! Compute the constant right-hand side, whereby the force vector
-        ! is already given in the right-hand side vector
+        ! Compute the constant right-hand side
         !
-        !   $ rhs = M_C*u^n+(1-theta)*res $
+        !   $ rhs = M_C*u^n+(1-theta)*res^{(0)} $
 
         if (rtimestep%theta .lt. 1.0_DP) then
-          call lsyssc_vectorLinearComb(rres%RvectorBlock(1), rrhs%RvectorBlock(1),&
-                                       1.0_DP-rtimestep%theta, 0.0_DP)
+          call lsysbl_copyVector(rres, rrhs)
+
           call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
                                    rsolution%RvectorBlock(1),&
-                                   rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP)
+                                   rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP-rtimestep%theta)
         else
           call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
                                    rsolution%RvectorBlock(1),&
                                    rrhs%RvectorBlock(1),&
-                                   1.0_DP, 1.0_DP)
+                                   1.0_DP, 0.0_DP)
         end if
 
       case DEFAULT
+
         ! Compute the initial low-order residual
         !
         !   $  res^{(0)} = L(u^n)*u^n $
@@ -2035,7 +2036,7 @@ contains
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsolution%rvectorBlock(1),&
                                  rres%RvectorBlock(1),&
-                                 1.0_DP, 1.0_DP)
+                                 1.0_DP, 0.0_DP)        
       end select
      
 
@@ -2101,7 +2102,7 @@ contains
 
       !-------------------------------------------------------------------------
       ! In all subsequent nonlinear iterations only the residual vector is
-      ! updated, using the right-hand side vector from the first iteration
+      ! updated, using the right-hand side vector from the zero-th iteration
       !-------------------------------------------------------------------------
 
       imasstype = collct_getvalue_int(rcollection, 'imasstype')
@@ -2114,10 +2115,12 @@ contains
         !   $ res^{(m)} = rhs - [M_L - dt*theta*L(u^{(m)})]*u^{(m)} $
 
         call lsysbl_copyVector(rrhs, rres)
+
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsolution%rvectorBlock(1),&
                                  rres%RvectorBlock(1),&
                                  rtimestep%theta*rtimestep%dStep, 1.0_DP)
+
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                  rsolution%RvectorBlock(1),&
                                  rres%RvectorBlock(1),&
@@ -2129,10 +2132,12 @@ contains
         !   $ res^{(m)} = rhs - [M_C - dt*theta*L(u^{(m)})]*u^{(m)} $
 
         call lsysbl_copyVector(rrhs, rres)
+
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
                                  rsolution%rvectorBlock(1),&
                                  rres%RvectorBlock(1),&
                                  rtimestep%theta*rtimestep%dStep, 1.0_DP)
+
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
                                  rsolution%RvectorBlock(1),&
                                  rres%RvectorBlock(1),&
@@ -2207,6 +2212,9 @@ contains
       end if   ! diffusionAFC > 0
 
     end if   ! ite = 0
+
+    ! Apply the given load vector to the residual
+    if (present(rb)) call lsysbl_vectorLinearComb(rb, rres, 1.0_DP, 1.0_DP)
 
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(rtimer)
