@@ -105,7 +105,7 @@ contains
   
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkin1d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxGalerkin1d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard Galerkin 
@@ -132,11 +132,6 @@ contains
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! inviscid fluxes
@@ -277,7 +272,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTVD1d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxTVD1d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes 
@@ -297,11 +292,6 @@ contains
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! inviscid fluxes
@@ -369,7 +359,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxScalarDiss1d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxScalarDiss1d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -393,11 +383,6 @@ contains
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! inviscid fluxes
@@ -507,7 +492,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTensorDiss1d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji, istatus)
+  subroutine euler_calcFluxTensorDiss1d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -530,11 +515,6 @@ contains
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! inviscid fluxes
@@ -740,7 +720,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcRawFluxFCT1d(U_i, U_j, C_ij, C_ji, dscale, F_ij, istatus)
+  subroutine euler_calcRawFluxFCT1d(U_i, U_j, C_ij, C_ji, dscale, F_ij)
 
 !<description>
     ! This subroutine computes the raw antidiffusive flux
@@ -757,11 +737,6 @@ contains
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! inviscid fluxes
@@ -836,7 +811,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixGalerkinDiag1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices in 1D
@@ -849,11 +824,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -893,7 +863,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixGalerkin1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the local Roe matrices in 1D
@@ -906,11 +876,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -971,7 +936,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixScalarDissDiag1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -985,11 +950,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -1038,7 +998,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixScalarDiss1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the local Roe matrices
@@ -1052,11 +1012,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -1118,7 +1073,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixTensorDissDiag1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -1132,11 +1087,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -1279,7 +1229,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij, istatus)
+  subroutine euler_calcMatrixTensorDiss1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -1293,11 +1243,6 @@ contains
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! local Roe matrices
@@ -1443,7 +1388,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcCharacteristics1d(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij, istatus)
+  subroutine euler_calcCharacteristics1d(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
 
 !<description>
     ! This subroutine computes the characteristic variables in 1D
@@ -1456,11 +1401,6 @@ contains
     ! weighting vector
     real(DP), dimension(:), intent(IN) :: Dweight
 !</input>
-
-!<inputoutput>
-    ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
-!</inputoutput>
 
 !<output>
     ! vector of characteristic variables
@@ -1633,8 +1573,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcBoundaryvalues1d(DbdrNormal, DpointNormal,&
-                                      DbdrValue, ibdrCondType, Du, Du0, istatus)
+  subroutine euler_calcBoundaryvalues1d(DbdrNormal, DpointNormal, DbdrValue,&
+                                        ibdrCondType, Du, Du0, istatus)
 
 !<description>
     ! This subroutine computes the boundary values for a given node in 1D
