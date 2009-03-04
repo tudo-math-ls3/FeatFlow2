@@ -710,6 +710,8 @@ contains
     CALL storage_free(rgriddefInfo%h_DblendPar)
   END IF
   
+  call tria_done (rgriddefInfo%p_rhLevels(rgriddefInfo%NLMAX)%rtriangulation)
+  
   ! release copied memory on the NLMAX level
   
   ! deallocate the levels structure
