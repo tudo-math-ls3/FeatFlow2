@@ -82,6 +82,12 @@ contains
   integer(I32), dimension(2) :: Celements
 
   dof_igetNDofGlob = 0
+  
+  if (rdiscretisation%bprecompiledDofMapping) then
+    ! The value is already available.
+    dof_igetNDofGlob = rdiscretisation%ndof
+    return 
+  end if
 
   select case(rdiscretisation%ndimension)
   case (NDIM1D)
@@ -452,11 +458,33 @@ contains
 
     ! local variables
     integer, dimension(:,:), pointer :: p_2darray,p_2darray2,p_2darray3
+    integer, dimension(:), pointer :: p_IelementDofs,p_IelementDofIdx
     integer, dimension(:), pointer :: p_IelementCounter
     type(t_triangulation), pointer :: p_rtriangulation     
     integer(I32) :: celement
     integer(I32), dimension(2) :: Celements
+    integer :: i,iel,isize,ipos,ielnr
 
+    if (rdiscretisation%bprecompiledDofMapping) then
+      ! Just copy the global DOF's from the array with the
+      ! DOF's of the element. All elements have the same number of DOF's.
+      call storage_getbase_int (rdiscretisation%h_IelementDofs,p_IelementDofs)
+      call storage_getbase_int (rdiscretisation%h_IelementDofIdx,p_IelementDofIdx)
+      
+      do iel = 1,size(IelIdx)
+        ielnr = IelIdx(iel)
+        isize = p_IelementDofIdx(ielnr+1) - p_IelementDofIdx(ielnr)
+        ipos = p_IelementDofIdx(ielnr)
+        do i=1,isize
+          IdofGlob(i,iel) = p_IelementDofs(ipos+i-1)
+        end do
+      end do
+      
+      ! That's it.
+      return
+    end if
+
+    ! No, we have to compute...
     p_rtriangulation => rdiscretisation%p_rtriangulation
     
     select case(rdiscretisation%ndimension)
@@ -2037,6 +2065,137 @@ contains
         call output_line ('Solution component:           '//trim(sys_siL(i,10)))
         call dof_infoDiscr(rblockDiscr%RspatialDiscr(i))
       end do
+    end if
+
+  end subroutine
+
+    ! ***************************************************************************
+!<subroutine>
+
+  elemental integer function dof_igetNDofLocMax(rdiscretisation)
+  
+!<description>
+  ! Calculates the maximum number of local DOF's in this discretisation.
+!</description>
+
+!<input>
+  ! The discretisation structure where information should be printed.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,imax
+    
+    imax = 0
+    
+    ! Loop through the element distributions and calculate the maximum
+    do i=1,rdiscretisation%inumFESpaces
+      imax = max(imax,elem_igetNDofLoc(rdiscretisation%RelementDistr(i)%celement))
+    end do
+    
+    dof_igetNDofLocMax = imax
+    
+  end function
+
+! ***************************************************************************
+!<subroutine>
+
+  subroutine dof_precomputemapping(rdiscretisation)
+  
+!<description>
+  ! Precomputes the DOF-mapping. Simple discretisations may work with
+  ! a direct mapping. More complex discretisations (hanging nodes e.g.) must
+  ! precompute the DOF-mapping to determine how to map local DOF's to
+  ! global DOF's.
+!</description>
+
+!<inputoutput>
+  ! The discretisation structure where to precompute the DOF-mapping.
+  type(t_spatialDiscretisation), intent(inout) :: rdiscretisation
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ndoflocal,i,j,ieldistr,ipos
+    integer, dimension(:,:), allocatable :: IelementDofs
+    integer, dimension(:), pointer :: p_IelementDofs,p_IelementDofIdx,p_IelementList
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! Release old arrays if necessary.
+    call spdiscr_releaseDofMapping(rdiscretisation)
+    
+    ! Is that a simple Dof-mapping that can directly be precomputed?
+    rdiscretisation%ndof = dof_igetNDofGlob(rdiscretisation)
+    if (rdiscretisation%ndof .ne. 0) then
+      
+      ! Allocate lists for precomputing the DOF's.
+      p_rtriangulation => rdiscretisation%p_rtriangulation
+      
+      ! Allocate a temp array accepting the local DOF's.
+      !
+      ! At first allocate an index array; this has to be build in advance.
+      call storage_new1D ('dof_precomputemapping', 'h_IelementDofIdx', &
+          p_rtriangulation%NEL+1, ST_INT, rdiscretisation%h_IelementDofIdx,   &
+          ST_NEWBLOCK_ZERO)
+      call storage_getbase_int(rdiscretisation%h_IelementDofIdx,p_IelementDofIdx)
+      
+      ! Build that array by looping through the element distributions and
+      ! counting the number of local DOF's.
+      do ieldistr = 1,rdiscretisation%inumFESpaces 
+        call storage_getbase_int(rdiscretisation%RelementDistr(ieldistr)%h_IelementList,&
+            p_IelementList)
+        ndoflocal = elem_igetNDofLoc(rdiscretisation%RelementDistr(ieldistr)%celement)
+        do i = 1,rdiscretisation%RelementDistr(ieldistr)%NEL
+          p_IelementDofIdx(1+p_IelementList(i)) = ndoflocal
+        end do
+      end do
+      
+      ! Sum the values up to get the actial index array.
+      p_IelementDofIdx(1) = 1
+      do i = 2,p_rtriangulation%NEL+1
+        p_IelementDofIdx(i) = p_IelementDofIdx(i) + p_IelementDofIdx(i-1)
+      end do
+      
+      ! Now get the actual DOF's.
+      call storage_new1D ('dof_precomputemapping', 'h_IelementDofs', &
+          p_IelementDofIdx(p_rtriangulation%NEL+1)-1, ST_INT, rdiscretisation%h_IelementDofs,&
+          ST_NEWBLOCK_ZERO)
+      call storage_getbase_int(rdiscretisation%h_IelementDofs,p_IelementDofs)
+      
+      do ieldistr = 1,rdiscretisation%inumFESpaces 
+
+        call storage_getbase_int(rdiscretisation%RelementDistr(ieldistr)%h_IelementList,&
+            p_IelementList)
+        ndoflocal = elem_igetNDofLoc(rdiscretisation%RelementDistr(ieldistr)%celement)
+        
+        ! Allocate temp memory for the DOF's. Write them to this array at first
+        ! and copy them later to the actual array.
+        allocate(IelementDofs(ndoflocal,rdiscretisation%RelementDistr(ieldistr)%NEL))
+        
+        call dof_locGlobMapping_mult(rdiscretisation, p_IelementList, IelementDofs)
+        
+        do i = 1,rdiscretisation%RelementDistr(ieldistr)%NEL
+          ipos = p_IelementDofIdx(p_IelementList(i))
+          do j=1,ndoflocal
+            p_IelementDofs(ipos+j-1) = IelementDofs(j,i)
+          end do
+        end do
+
+        ! Release temp memory, that's it.
+        deallocate (IelementDofs)
+      
+      end do
+      
+      ! Remember that the DOF-mapping is precomputed now.
+      rdiscretisation%bprecompiledDofMapping = .true.
+      
+    else
+      call output_line ('Discretisation does not support precomputed DOF''s!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'dof_precomputemapping')  
+      call sys_halt()
     end if
 
   end subroutine

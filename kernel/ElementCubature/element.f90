@@ -755,7 +755,7 @@ contains
 
 !<function>  
 
-  elemental integer(I32) function elem_igetNDofLoc(celement)
+  elemental integer function elem_igetNDofLoc(celement)
 
 !<description>
   ! This function returns for a given element type the number of local

@@ -243,6 +243,24 @@ module spatialdiscretisation
     ! that is used in the discretisation.
     type(t_elementDistribution), dimension(:), pointer :: RelementDistr => null()
     
+    ! Specifies whether the DOF-mapping is precomputed.
+    logical                          :: bprecompiledDofMapping = .false.
+    
+    ! Number of DOF's total. Only available if bprecompiledDofMapping=true.
+    integer                          :: ndof = 0
+    
+    ! Specifies for every element a list of DOF's how to map a local DOF
+    ! to a global DOF. p_IelementDofIdx is a list with starting indices
+    ! for every element in this list.
+    ! Only available if bprecompiledDofMapping=true.
+    integer :: h_IelementDofs = ST_NOHANDLE
+    
+    ! List of starting indices. p_IelementDofIdx(iel) apecifies the index
+    ! in p_IelementDofs where the global DOF's of element iel start.
+    ! DIMENSION(nelements+1).
+    ! Only available if bprecompiledDofMapping=true.
+    integer :: h_IelementDofIdx = ST_NOHANDLE
+    
   end type
   
 !</typeblock>
@@ -1554,6 +1572,9 @@ contains
     ! No FE-spaces in here anymore...
     deallocate(rspatialDiscr%RelementDistr)
     rspatialDiscr%inumFESpaces = 0
+    
+    ! Release the DOF-Mapping if necessary
+    call spdiscr_releaseDofMapping(rspatialDiscr)
   
     ! Structure not initialised anymore
     rspatialDiscr%ndimension = 0
@@ -1809,4 +1830,30 @@ contains
      call output_line ('h_IelementList:  '//trim(sys_siL(relementDistr%h_IelementList,15)))
 
    end subroutine spdisc_infoElementDistr
+
+  ! ***************************************************************************
+!<subroutine>
+
+  subroutine spdiscr_releaseDofMapping(rdiscretisation)
+  
+!<description>
+  ! Releases precomputed DOF-mapping arrays.
+!</description>
+
+!<input>    
+  ! The discretisation structure that specifies the (scalar) discretisation.
+  type(t_spatialDiscretisation), intent(inout) :: rdiscretisation
+!</input>
+
+!</subroutine>
+
+    ! Release old arrays of necessary.
+    if (rdiscretisation%bprecompiledDofMapping) then
+      rdiscretisation%bprecompiledDofMapping = .false.
+      call storage_free (rdiscretisation%h_IelementDofs)
+      call storage_free (rdiscretisation%h_IelementDofIdx)
+    end if
+
+  end subroutine
+
 end module
