@@ -30,6 +30,9 @@
 !# 6.) dof_infoDiscrBlock
 !#     -> Prints out information about a block discretisation to the terminal
 !#
+!# 7.) dof_precomputemapping
+!#     -> Precompute the DOF-mapping into a discretisation structure
+!#
 !# </purpose>
 !##############################################################################
 
@@ -2068,36 +2071,6 @@ contains
     end if
 
   end subroutine
-
-    ! ***************************************************************************
-!<subroutine>
-
-  elemental integer function dof_igetNDofLocMax(rdiscretisation)
-  
-!<description>
-  ! Calculates the maximum number of local DOF's in this discretisation.
-!</description>
-
-!<input>
-  ! The discretisation structure where information should be printed.
-  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-!</input>
-
-!</subroutine>
-
-    ! local variables
-    integer :: i,imax
-    
-    imax = 0
-    
-    ! Loop through the element distributions and calculate the maximum
-    do i=1,rdiscretisation%inumFESpaces
-      imax = max(imax,elem_igetNDofLoc(rdiscretisation%RelementDistr(i)%celement))
-    end do
-    
-    dof_igetNDofLocMax = imax
-    
-  end function
 
 ! ***************************************************************************
 !<subroutine>
