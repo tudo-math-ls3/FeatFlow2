@@ -146,6 +146,8 @@ module euler_basic
   real(DP), parameter, public :: G10 = 2.0/(GAMMA+1.0)
   real(DP), parameter, public :: G11 = 2.0*GAMMA/(GAMMA-1.0)
   real(DP), parameter, public :: G12 = (GAMMA-1.0)/(GAMMA+1.0)
+  real(DP), parameter, public :: G13 = 3.0-GAMMA
+  real(DP), parameter, public :: G14 = (GAMMA-3.0)/2.0
 
 !</constantblock>
 
