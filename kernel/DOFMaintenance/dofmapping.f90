@@ -30,7 +30,7 @@
 !# 6.) dof_infoDiscrBlock
 !#     -> Prints out information about a block discretisation to the terminal
 !#
-!# 7.) dof_precomputemapping
+!# 7.) dof_precomputeDofMapping
 !#     -> Precompute the DOF-mapping into a discretisation structure
 !#
 !# </purpose>
@@ -2075,7 +2075,7 @@ contains
 ! ***************************************************************************
 !<subroutine>
 
-  subroutine dof_precomputemapping(rdiscretisation)
+  subroutine dof_precomputeDofMapping(rdiscretisation)
   
 !<description>
   ! Precomputes the DOF-mapping. Simple discretisations may work with
