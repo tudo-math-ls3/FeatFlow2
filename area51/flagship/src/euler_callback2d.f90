@@ -394,12 +394,17 @@ contains
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 2D using scalar dissipation.
     !
-    ! This is actually the skew-symmetic part of the standard
-    ! Galerkin discretization plus some artificial viscosities
-    ! proportional to the spectral radius of the Roe matrix:
-    !      $F_{ij}=(A_{ij)+S_{ij}-d_{ij}I)(U_i-U_j)$
+    ! This is actually the standard Galerkin discretization
+    ! plus some artificial viscosities
+    !      $F_{ij}=(A_{ij)+S_{ij}-D_{ij})(U_i-U_j)$
     ! and
-    !      $F_{ji}=(A_{ij}-S_{ij}+d_{ij}I)(U_i-U_j)$
+    !      $F_{ji}=(A_{ij}-S_{ij}+D_{ij})(U_i-U_j)$
+    !
+    ! The alternative version computes the Galerkin flues
+    ! directly in terms of fluxes and adds artificial viscosities
+    !       $F_{ij}=c_{ij}\cdot(F_i-F_j)-D_{ij}(U_i-U_j)$
+    ! and
+    !       $F_{ji}=c_{ji}\cdot(F_j-F_i)+D_{ij}(U_i-U_j)$
 !</description>
 
 !<input>
@@ -430,6 +435,49 @@ contains
     real(DP), dimension(NDIM2D) :: a,s
     real(DP) :: aux,aux1,aux2,u2,v2,uv,hi,hj,d_ij,cs_ij,H_ij,q_ij,u_ij,v_ij
 
+#ifdef EVALFLUXES
+    ! additional local variables for evaluating the Galerkin fluxes directly
+    real(DP), dimension(NVAR2D) :: F1_i, F2_i, F1_j,F2_j
+    real(DP) :: p_i,p_j
+#endif
+
+#ifdef EVALFLUXES
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes directly
+    !---------------------------------------------------------------------------
+
+    ! Compute nodal pressure values
+    p_i = G1*(U_i(4)-0.5_DP*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/U_i(1))
+    p_j = G1*(U_j(4)-0.5_DP*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/U_j(1))
+
+    ! Compute fluxes for nodes i
+    F1_i(1) = U_i(2)
+    F1_i(2) = U_i(2)*U_i(2)/U_i(1) + p_i
+    F1_i(3) = U_i(3)*U_i(2)/U_i(1)
+    F1_i(4) = (U_i(4)+p_i)*U_i(2)/U_i(1)
+
+    F2_i(1) = U_i(3)
+    F2_i(2) = U_i(2)*U_i(3)/U_i(1)
+    F2_i(3) = U_i(3)*U_i(3)/U_i(1) + p_i
+    F2_i(4) = (U_i(4)+p_i)*U_i(3)/U_i(1)
+
+    ! Compute fluxes for nodes j
+    F1_j(1) = U_j(2)
+    F1_j(2) = U_j(2)*U_j(2)/U_j(1) + p_j
+    F1_j(3) = U_j(3)*U_j(2)/U_j(1)
+    F1_j(4) = (U_j(4)+p_j)*U_j(2)/U_j(1)
+
+    F2_j(1) = U_j(3)
+    F2_j(2) = U_j(2)*U_j(3)/U_j(1)
+    F2_j(3) = U_j(3)*U_j(3)/U_j(1) + p_j
+    F2_j(4) = (U_j(4)+p_j)*U_j(3)/U_j(1)
+
+    ! Assembly fluxes
+    F_ij = dscale * (C_ij(1)*(F1_i-F1_j) + C_ij(2)*(F2_i-F2_j))
+    F_ji = dscale * (C_ji(1)*(F1_j-F1_i) + C_ji(2)*(F2_j-F2_i))
+
+#endif
+
     ! Compute solution difference
     Diff = U_i-U_j
 
@@ -453,6 +501,11 @@ contains
     uv    = u_ij*v_ij
     q_ij  = 0.5_DP*(u2+v2)
     cs_ij = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
+
+#ifndef EVALFLUXES
+    !---------------------------------------------------------------------------
+    ! Evaluate the matrices and multiply them with the solution difference
+    !---------------------------------------------------------------------------
 
     ! Compute Roe matrix for the skew-symmetric part
     Roe(1,1) =   0.0_DP
@@ -478,13 +531,26 @@ contains
     ! Compute Roe*(u_i-u_j) for skew-symmetric/interior part
     call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
                     NVAR2D, Diff, 1, 0.0_DP, F_ij, 1)
+#endif
 
     ! Scalar dissipation
     d_ij = dscale*(abs(aux1) + cs_ij*sqrt(a(1)*a(1)+a(2)*a(2)))
 
-    ! Assemble fluxes from symmetric part and artificial viscosity
+#ifdef EVALFLUXES
+    ! Add the artificial diffusion to the fluxes
+    F_ji = F_ji+d_ij*Diff
+    F_ij = F_ij-d_ij*Diff
+#else
+    ! Build flux F_ji and add the artificial diffusion
     F_ji = F_ij+d_ij*Diff
     F_ij = F_ij-d_ij*Diff
+#endif
+
+#ifndef EVALFLUXES
+    !---------------------------------------------------------------------------
+    ! Evaluate the matrices for the boundary part
+    ! and multiply them with the solution difference
+    !---------------------------------------------------------------------------
 
     ! Check if boundary integral vanishes
     if (abs(s(1))+abs(s(2)) .ne. 0.0_DP) then
@@ -514,11 +580,13 @@ contains
       call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
                       NVAR2D, Diff, 1, 0.0_DP, Daux, 1)
 
-      ! Assemble fluxes from symmetric part
+      ! Add the boundary contribution to the fluxes
       F_ij = F_ij+Daux
       F_ji = F_ji-Daux
 
     end if
+
+#endif
 
   end subroutine euler_calcFluxScalarDiss2d
 
@@ -532,13 +600,13 @@ contains
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 2D using tensorial dissipation.
     !
-    ! This is actually the skew-symmetic part of the standard
-    ! Galerkin discretization plus some artificial viscosities
+    ! This is actually the standard Galerkin discretization
+    ! plus some artificial viscosities
     !      $F_{ij}=(A_{ij)+S_{ij}-D_{ij})(U_i-U_j)$
     ! and
     !      $F_{ji}=(A_{ij}-S_{ij}+D_{ij})(U_i-U_j)$
     !
-    ! The alternative version computes the Galerkin part
+    ! The alternative version computes the Galerkin flues
     ! directly in terms of fluxes and adds artificial viscosities
     !       $F_{ij}=c_{ij}\cdot(F_i-F_j)-D_{ij}(U_i-U_j)$
     ! and
@@ -642,7 +710,8 @@ contains
 
 #ifndef EVALFLUXES
     !---------------------------------------------------------------------------
-    ! Evaluate the matrices and multiply them with the solution difference
+    ! Evaluate the matrices for the internal part
+    ! and multiply them with the solution difference
     !---------------------------------------------------------------------------
 
     ! Compute Roe matrix for the skew-symmetric part
@@ -669,7 +738,6 @@ contains
     ! Compute Roe*(u_i-u_j) for skew-symmetric/interior part
     call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
                     NVAR2D, Diff, 1, 0.0_DP, F_ij, 1)
-
 #endif
     
     ! Characteristic velocity
@@ -769,26 +837,30 @@ contains
       call DGEMV('n', NVAR2D, NVAR2D, dscale, D_ij,&
                       NVAR2D, Diff, 1, 0.0_DP, Daux, 1)
 
-      ! Assemble fluxes
 #ifdef EVALFLUXES
-
+      ! Add the artificial diffusion to the fluxes
       F_ji = F_ji+Daux
       F_ij = F_ij-Daux
-
 #else
-
+      ! Build flux F_ji and add the artificial diffusion
       F_ji = F_ij+Daux
       F_ij = F_ij-Daux
-
 #endif
 
     else
 
-      ! Set flux and neglect diffusive contribution
+#ifndef EVALFLUXES
+      ! Build flux F_ji and neglect diffusive contribution
       F_ji = F_ij
+#endif
 
     end if
     
+#ifndef EVALFLUXES
+    !---------------------------------------------------------------------------
+    ! Evaluate the matrices for the boundary part
+    ! and multiply them with the solution difference
+    !---------------------------------------------------------------------------
 
     ! Check if boundary integral vanishes
     if (abs(s(1))+abs(s(2)) .gt. SYS_EPSREAL) then
@@ -818,11 +890,13 @@ contains
       call DGEMV('n', NVAR2D, NVAR2D, dscale, Roe,&
                       NVAR2D, diff, 1, 0.0_DP, Daux, 1)
 
-      ! Assemble fluxes
+      ! Add the boundary contribution to the fluxes
       F_ij = F_ij+Daux
       F_ji = F_ji-Daux
       
     end if
+
+#endif
 
   end subroutine euler_calcFluxTensorDiss2d
 
