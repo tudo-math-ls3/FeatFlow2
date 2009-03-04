@@ -989,7 +989,7 @@ contains
                                         h_Dcontrib,&
                                         bstartNew, blevelHasChanged, bterminate, &
                                         bdegenerated, imgLevelCalc, iiteradapt, ibcIdx,& 
-                                        def_monitorfct,rdiscretisation)                        
+                                        def_monitorfct)
   !<description>
     ! This subroutine is the main routine for the grid deformation process, as all 
     ! necessary steps are included here. For performing grid deformation, it is sufficient
@@ -1014,8 +1014,6 @@ contains
 
     logical, intent(IN) :: bterminate
     
-    type(t_blockDiscretisation), intent(INout) :: rdiscretisation
-
     ! number of adaptive iteration
     integer, intent(in) :: iiterAdapt
 
@@ -1106,7 +1104,7 @@ contains
     ! perform one deformation step: This routine appplies deformation to the
     CALL  griddef_performOneDefStep(rgriddefInfo, rgriddefWork,&
                                        p_DblendPar(idef), NLMAX, NLMAX,&
-                                       def_monitorfct,rdiscretisation)
+                                       def_monitorfct)
                                        
                                            
 !
@@ -1222,7 +1220,7 @@ contains
 !<subroutine>
   SUBROUTINE griddef_performOneDefStep(rgriddefInfo, rgriddefWork,&
                                        dblendpar, ilevelODE, ilevel,&
-                                       def_monitorfct,rdiscretisation)
+                                       def_monitorfct)
   !<description>
     ! This subroutine performs one deformation step of the enhanced deformation method.
   !</description>
@@ -1242,8 +1240,6 @@ contains
     ! absolute level on which the deformation PDE is solved
     integer(I32), intent(in) :: ilevel
     
-    type(t_blockDiscretisation), intent(inout) :: rdiscretisation
-
     ! blending parameter for monitorfunction sf + (1-s)g
     real(DP), intent(inout) :: dblendpar
   !</input>
@@ -1265,7 +1261,7 @@ contains
     
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
-    type(t_blockDiscretisation) :: rdiscretisation1,rDubDiscretisation   
+    type(t_blockDiscretisation) :: rdiscretisation,rDubDiscretisation   
          
     
     ! A solver node that accepts parameters for the linear solver    
@@ -1284,29 +1280,40 @@ contains
     ! Error indicator during initialisation of the solver
     integer :: ierror,NLMAX    
     
+    NLMAX=rgriddefInfo%NLMAX
+    
     ! initialise Dresults
     Dresults  => NULL()
 
     ! no blending
     bBlending = .TRUE.
     
-    NLMAX=rgriddefInfo%NLMAX
-    
+!    call spdiscr_initBlockDiscr (rdiscretisation,1,&
+!         rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation, rgriddefInfo%p_rboundary)
+
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
-    call spdiscr_initBlockDiscr (rdiscretisation1,1,&
-         rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation, rgriddefInfo%p_rboundary)
+    call spdiscr_initBlockDiscr (rdiscretisation,1,&
+         rgriddefInfo%p_rtriangulation, rgriddefInfo%p_rboundary)
+
+
     
+!    call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+!                                   EL_E011,CUB_G2X2,&
+!                                   rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation,&
+!                                   rgriddefInfo%p_rboundary)
+    
+
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
-    call spdiscr_initDiscr_simple (rdiscretisation1%RspatialDiscr(1), &
+    call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                    EL_E011,CUB_G2X2,&
-                                   rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation,&
+                                   rgriddefInfo%p_rtriangulation,&
                                    rgriddefInfo%p_rboundary)
-    
+
 
     ! compute the area distribution
     call griddef_getArea(rgriddefInfo, rgriddefWork,rdiscretisation)
@@ -1383,9 +1390,10 @@ contains
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,rgriddefWork%rSolBlock,&
                                  rgriddefWork%rrhsBlock,rgriddefWork%rtempBlock)    
-    
+
     call spdiscr_initBlockDiscr (rDubDiscretisation,2,&
-                                 rgriddefInfo%p_rtriangulation)
+                                 rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation)
+
     call spdiscr_deriveSimpleDiscrSc (&
                  rdiscretisation%RspatialDiscr(1), &
                  EL_Q1, CUB_G2X2, rDubDiscretisation%RspatialDiscr(1))
@@ -1418,8 +1426,8 @@ contains
     
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
-!    call spdiscr_releaseBlockDiscr(rdiscretisation)
-!    call spdiscr_releaseBlockDiscr(rDubDiscretisation)
+    call spdiscr_releaseBlockDiscr(rdiscretisation)
+    call spdiscr_releaseBlockDiscr(rDubDiscretisation)
     
   
   end subroutine ! end griddef_performOneDefStep
