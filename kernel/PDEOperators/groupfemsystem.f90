@@ -3349,7 +3349,6 @@ contains
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
       real(DP), dimension(NVAR) :: F_ij,F_ji
       integer :: ij,ji,i,j
-
    
       ! Loop over all rows
       do i = 1, NEQ
@@ -3365,7 +3364,6 @@ contains
 
           ! Compute coefficients
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute the fluxes
@@ -3400,7 +3398,6 @@ contains
       real(DP), dimension(NVAR) :: F_ij,F_ji
       integer :: ij,ji,i,j
    
-
       ! Loop over all rows
       do i = 1, NEQ
         
