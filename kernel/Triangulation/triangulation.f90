@@ -2620,8 +2620,9 @@ contains
       if (checkGen(iflag, TR_GEN_IVERTICESATEDGE))&
           call tria_genVerticesAtEdge2D (rtriangulation)
 
-      if (checkGen(iflag, TR_GEN_INODALPROPERTY))&
-          call tria_genEdgeNodalProperty2D (rtriangulation)
+      if (checkGen(iflag, TR_GEN_INODALPROPERTY))then
+            call tria_genEdgeNodalProperty2D (rtriangulation)
+      end if
 
       if (checkGen(iflag, TR_GEN_DELEMENTAREA))&
           call tria_genElementVolume2D (rtriangulation)
@@ -12134,7 +12135,7 @@ p_InodalPropertyDest = -4711
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer :: ive
     integer :: iel
-    integer :: isize
+    integer :: isize,nnodes
     integer :: ivt1,ivt2,NVT
 
     ! Is everything here we need?
@@ -12156,16 +12157,35 @@ p_InodalPropertyDest = -4711
       call sys_halt()
     end if
     
-    ! Do we have (enough) memory for that array?
+      
+      ! Calculate the number of nodes in the mesh.
+      ! This is: #vertices 
+      !         +#edges (as every edge generates a new vertex)
+      !         +#quads (as every quad generates a midpoint)
+      nnodes = rtriangulation%NVT + rtriangulation%NMT + &
+          rtriangulation%InelOfType(TRIA_NVEQUAD2D)
+          
+    ! Reallocate the memory if necessary.
+    ! Copy the old content as we mustn't destroy the old nodal 
+    ! property tags of the vertices.
+    ! New elements are filled with zero = specify inner vertices.
     call storage_getsize (rtriangulation%h_InodalProperty, isize)
-    if (isize .lt. rtriangulation%NVT+rtriangulation%NMT) then
-      ! If the size is wrong, reallocate memory.
-      ! Copy the old content as we mustn't destroy the old nodal property
-      ! tags of the vertices.
+    if (isize .lt. nnodes) then
       call storage_realloc ('tria_genEdgeNodalProperty2D', &
-          rtriangulation%NVT+rtriangulation%NMT, &
-          rtriangulation%h_InodalProperty, &
+          nnodes, rtriangulation%h_InodalProperty, &
           ST_NEWBLOCK_NOINIT, .true.)
+      
+      if (rtriangulation%InelOfType(TRIA_NVEQUAD2D) .ne. 0) then
+        ! Fill the last InelOfType(TRIA_NVEQUAD2D) entries of
+        ! the array by 0. These elements will generate the
+        ! nodal property for the element midpoints.
+        ! Edge midpoints are recomputed anyway, so we don't
+        ! have to initialise that part of the array!
+        call storage_getbase_int (&
+            rtriangulation%h_InodalProperty,p_InodalProperty)
+        call lalg_clearVectorInt (&
+            p_InodalProperty(nnodes-rtriangulation%InelOfType(TRIA_NVEQUAD2D)+1:))
+      end if
     end if
     
     ! Get the arrays.
