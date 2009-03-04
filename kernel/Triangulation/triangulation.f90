@@ -8400,8 +8400,10 @@ p_InodalPropertyDest = -4711
     
     ! Hexahedron
     integer, dimension(TRIA_NNEHEXA3D), parameter :: Ihev = (/1,2,3,4,1,2,3,4,5,6,7,8/)
-    integer, dimension(TRIA_NAEHEXA3D), parameter :: Ihfv = (/1,1,2,3,4,5/)
-    integer, dimension(TRIA_NAEHEXA3D), parameter :: Ihfn = (/2,5,6,7,8,8/)
+    !integer, dimension(TRIA_NAEHEXA3D), parameter :: Ihfv = (/1,1,2,3,4,5/)
+    !integer, dimension(TRIA_NAEHEXA3D), parameter :: Ihfn = (/2,5,6,7,8,8/)
+    integer, dimension(TRIA_NAEHEXA3D), parameter :: Ihfv = (/1,1,7,7,1,7/)
+    integer, dimension(TRIA_NAEHEXA3D), parameter :: Ihfn = (/2,5,3,8,4,6/)
     integer, dimension(TRIA_NAEHEXA3D), parameter :: Ihav = (/4,4,4,4,4,4/)
     
 
