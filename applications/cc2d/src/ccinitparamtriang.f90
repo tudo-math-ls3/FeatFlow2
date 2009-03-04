@@ -35,7 +35,7 @@ module ccinitparamtriang
   use nonlinearsolver
   use paramlist
   use statistics
-  
+  use griddeform
   use collection
   use convection
     
@@ -72,6 +72,9 @@ contains
     character(LEN=SYS_STRLEN) :: sString
     character(LEN=SYS_STRLEN) :: sPRMFile, sTRIFile
     type(t_timer) :: rtimer
+
+    integer(i32), dimension(:), pointer :: p_InodalProperty
+    integer(i32), dimension(:), pointer :: p_InodalProperty1
 
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
@@ -114,7 +117,7 @@ contains
     ! a triangulation. Afterwards, we have the coarse mesh.
     call tria_initStandardMeshFromRaw (&
         rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%rboundary)
-    
+
     ! Now, refine to level up to nlmax.
     do i=rproblem%NLMIN+1,rproblem%NLMAX
       call tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
@@ -122,6 +125,11 @@ contains
       call tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
           rproblem%rboundary)
     end do
+    
+    call storage_getbase_int (rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation%h_InodalProperty,&
+    p_InodalProperty)
+    
+    call cc_deform(rproblem)    
     
     ! Compress the level hierarchy.
     ! Share the vertex coordinates of all levels, so the coarse grid coordinates
@@ -141,6 +149,152 @@ contains
 
   end subroutine
 
+! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine cc_deform(rproblem)
+  
+!<description>
+  ! 
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(INOUT) :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+  ! Definitions of variables.
+  !
+  ! We need a couple of variables for this problem. Let's see...
+  !
+  ! An object for saving the domain:
+  type(t_boundary) :: rboundary
+  
+  type(t_griddefWork) :: rgriddefWork
+  
+  ! An object for saving the triangulation on the domain
+  type(t_triangulation) :: rtriangulation
+
+  ! An object specifying the discretisation.
+  ! This contains also information about trial/test functions,...
+  type(t_blockDiscretisation) :: rdiscretisation
+  
+  ! In this vector we will save the area of the deformed grid
+  type(t_vectorScalar) :: rvectorAreaQ0 
+
+  ! NLMAX receives the level where we want to solve.
+  integer :: NLMAX,NLMIN
+  
+  ! dummy
+  integer :: idummy,iloop    
+  
+  ! Output block for UCD output to GMV file
+  type(t_ucdExport) :: rexport
+  
+  ! grid deform structure
+  type(t_griddefInfo) :: rgriddefInfo
+
+  ! Ok, let's start. 
+  !
+
+  ! griddeformation setup
+  call griddef_deformationInit(rgriddefInfo,rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation,&
+                               rproblem%NLMIN,&
+                               rproblem%NLMAX,rproblem%rboundary,1)                 
+  
+  do iloop=rproblem%NLMIN,rproblem%NLMAX
+    call griddef_buildHGrid(rgriddefInfo,rproblem%RlevelInfo(iloop)%rtriangulation,iloop)
+  end do
+  
+  
+  ! Deform
+  call griddef_performDeformation(rgriddefInfo, rgriddefWork,idummy,&
+                                  .TRUE., .FALSE., .FALSE., &
+                                  .FALSE., NLMAX, 0, 0,&
+                                  tridef2d_monitorfct)
+  ! Release Deformation structures
+  call griddef_DeformationDone(rgriddefInfo,rgriddefWork)
+    
+  end subroutine
+
+!******************************************************************************
+  
+  !<subroutine>  
+    subroutine tridef2d_monitorfct(DvertexCoords,Dentries)
+  
+  
+    !<description>
+      ! In this function we build the nodewise area distribution out 
+      ! of an elementwise distribution
+    !</description>
+
+    !<inputoutput>
+     real(DP), dimension(:,:) :: DvertexCoords
+     real(DP), dimension(:) :: Dentries
+    !</inputoutput>
+
+    !</subroutine>
+    ! local variables
+     real(dp),dimension(:,:),allocatable :: Dpoints
+     integer(PREC_VERTEXIDX) :: ive,i1,ipoints
+     integer :: iMethod
+     real(DP) :: Dist,t,dt,dmin
+     iMethod = 1
+      
+     ipoints = ubound(Dentries,1) 
+      
+      
+     select case(iMethod)
+       case(0)
+         ! loop over all vertices and compute the monitor function
+        do ive=1, ipoints
+          Dentries(ive) = 0.5_dp + DvertexCoords(1,ive)
+         end do
+       case(1)
+         ! loop over all vertices and compute the monitor function
+         do ive=1,ipoints
+           Dist = sqrt((0.5_dp - DvertexCoords(1,ive))**2 + (0.5_dp - DvertexCoords(2,ive))**2)
+           ! Good now define the monitor function
+           Dist = abs(Dist - 0.2_dp)/0.2_dp
+           Dist=max(dist,0.1_dp)
+           Dist=min(1.0_dp,dist)
+           Dentries(ive)=Dist
+         end do
+       case(2)
+        do ive=1,ipoints
+          Dentries(ive) = 1.0_dp
+        end do
+       case(3)
+       
+        allocate(Dpoints(2,10000))
+        dt = 6.28_dp/real(10000)
+        t  = 0.0_dp
+        do i1=1,10000
+         Dpoints(1,i1) = 0.5_dp + 0.1_dp * cos(t)
+         Dpoints(2,i1) = 0.5_dp + 0.2_dp * sin(t)
+         t = t + dt
+        end do
+       
+        do ive=1,ipoints
+          
+          dmin = 10000.0_dp
+            
+          do i1=1,10000
+            Dist = sqrt((Dpoints(1,i1)-DvertexCoords(1,ive))**2 + (Dpoints(2,i1)-DvertexCoords(2,ive))**2)
+            dmin =min(Dist,dmin)
+          end do
+          
+          Dentries(ive) = dmin
+          
+        end do
+       case default
+     end select
+      
+  end subroutine
+  
   ! ***************************************************************************
 
 !<subroutine>
