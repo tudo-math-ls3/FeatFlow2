@@ -861,34 +861,32 @@ contains
 !</output>
 !</subroutine>
 
-!!$    ! local variable
-!!$    real(DP), dimension(NDIM1D) :: a,s
-!!$    real(DP) :: aux,aux1,aux2,u_ij,v_ij
-!!$
-!!$    ! Compute Roe mean values
-!!$    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
-!!$    v_ij = ( aux*U_i(3)/U_i(1)+U_j(3)/U_j(1) )/(aux+1._DP)
-!!$    
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij)
-!!$    s = 0.5_DP*(C_ij+C_ji)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1 = u_ij*a(1) + v_ij*a(2)
-!!$    aux2 = u_ij*s(1) + v_ij*s(2)
-!!$
-!!$    ! Compute diagonal Roe matrix for skew-symmetric part
-!!$    A_ij(1) = 0._DP
-!!$    A_ij(2) = aux1-G6*u_ij*a(1)
-!!$    A_ij(3) = aux1-G6*v_ij*a(2)
-!!$    A_ij(4) = GAMMA*aux1
-!!$
-!!$    ! Compute diagonal Roe matrix for symmetric part
-!!$    S_ij(1) = 0._DP
-!!$    S_ij(2) = aux2-G6*u_ij*s(1)
-!!$    S_ij(3) = aux2-G6*v_ij*s(2)
-!!$    S_ij(4) = GAMMA*aux2
+    ! local variable
+    real(DP), dimension(NDIM1D) :: a,s
+    real(DP) :: aux,aux1,aux2,u_ij
+
+    ! Compute Roe mean values
+    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
+    
+    ! Compute coefficients
+    a = 0.5_DP*(C_ji-C_ij)
+    s = 0.5_DP*(C_ij+C_ji)
+
+    ! Compute auxiliary variables
+    aux1 = u_ij*a(1)
+    aux2 = u_ij*s(1)
+
+    ! Compute diagonal Roe matrix for skew-symmetric part
+    A_ij(1) = 0.0_DP
+    A_ij(2) = G13*aux1
+    A_ij(3) = GAMMA*aux1
+
+    ! Compute diagonal Roe matrix for symmetric part
+    S_ij(1) = 0.0_DP
+    S_ij(2) = G12*aux2
+    S_ij(3) = GAMMA*aux2
+
   end subroutine euler_calcMatrixGalerkinDiag1d
 
   !*****************************************************************************
@@ -920,73 +918,53 @@ contains
 !</output>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP), dimension(NDIM1D) :: a,s
-!!$    real(DP) :: aux,aux1,aux2,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$    
-!!$    ! Compute Roe mean values
-!!$    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
-!!$    v_ij = ( aux*U_i(3)/U_i(1)+U_j(3)/U_j(1) )/(aux+1._DP)
-!!$    hi   =   GAMMA*U_i(4)/U_i(1)-&
-!!$             G2*( U_i(2)*U_i(2)+U_i(3)*U_i(3) )/(U_i(1)*U_i(1))
-!!$    hj   =   GAMMA*U_j(4)/U_j(1)-&
-!!$             G2*( U_j(2)*U_j(2)+U_j(3)*U_j(3) )/(U_j(1)*U_j(1))
-!!$    H_ij = ( aux*hi+hj )/(aux+1._DP)
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij)
-!!$    s = 0.5_DP*(C_ij+C_ji)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1 = u_ij*a(1) + v_ij*a(2)
-!!$    aux2 = u_ij*s(1) + v_ij*s(2)
-!!$    u2   = u_ij*u_ij
-!!$    v2   = v_ij*v_ij
-!!$    uv   = u_ij*v_ij
-!!$    q_ij = 0.5_DP*(u2+v2)
-!!$    
-!!$    ! Compute Roe matrix for skew-symmetric part
-!!$    A_ij( 1) =   0._DP
-!!$    A_ij( 2) =   (G1*q_ij-u2)*a(1)   - uv*a(2)
-!!$    A_ij( 3) = - uv*a(1)             + (G1*q_ij-v2)*a(2)
-!!$    A_ij( 4) =   (G1*q_ij-H_ij)*aux1
-!!$    
-!!$    A_ij( 5) =   a(1)
-!!$    A_ij( 6) =   aux1-G6*u_ij*a(1)
-!!$    A_ij( 7) =   v_ij*a(1)           - G1*u_ij*a(2)
-!!$    A_ij( 8) =   (H_ij-G1*u2)*a(1)   - G1*uv*a(2)
-!!$    
-!!$    A_ij( 9) =                         a(2)
-!!$    A_ij(10) = - G1*v_ij*a(1)        + u_ij*a(2)
-!!$    A_ij(11) =                         aux1-G6*v_ij*a(2)
-!!$    A_ij(12) = - G1*uv*a(1)          + (H_ij-G1*v2)*a(2)
-!!$
-!!$    A_ij(13) =   0._DP
-!!$    A_ij(14) =   G1*a(1)
-!!$    A_ij(15) =                         G1*a(2)
-!!$    A_ij(16) =   GAMMA*aux1
-!!$
-!!$    ! Compute Roe matrix for symmetric part
-!!$    S_ij( 1) =   0._DP
-!!$    S_ij( 2) =   (G1*q_ij-u2)*s(1)   - uv*s(2)
-!!$    S_ij( 3) = - uv*s(1)             + (G1*q_ij-v2)*s(2)
-!!$    S_ij( 4) =   (G1*q_ij-H_ij)*aux2
-!!$    
-!!$    S_ij( 5) =   s(1)
-!!$    S_ij( 6) =   aux2-G6*u_ij*s(1)
-!!$    S_ij( 7) =   v_ij*s(1)           - G1*u_ij*s(2)
-!!$    S_ij( 8) =   (H_ij-G1*u2)*s(1)   - G1*uv*s(2)
-!!$    
-!!$    S_ij( 9) =                         s(2)
-!!$    S_ij(10) = - G1*v_ij*s(1)        + u_ij*s(2)
-!!$    S_ij(11) =                         aux2-G6*v_ij*s(2)
-!!$    S_ij(12) = - G1*uv*s(1)          + (H_ij-G1*v2)*s(2)
-!!$
-!!$    S_ij(13) =   0._DP
-!!$    S_ij(14) =   G1*s(1)
-!!$    S_ij(15) =                         G1*s(2)
-!!$    S_ij(16) =   GAMMA*aux2
+    ! local variables
+    real(DP), dimension(NDIM1D) :: a,s
+    real(DP) :: aux,aux1,aux2,u2,hi,hj,H_ij,u_ij
+    
+    ! Compute Roe mean values
+    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
+    hi   =   GAMMA*U_i(4)/U_i(1)-G2*( U_i(2)*U_i(2) )/(U_i(1)*U_i(1))
+    hj   =   GAMMA*U_j(3)/U_j(1)-G2*( U_j(2)*U_j(2) )/(U_j(1)*U_j(1))
+    H_ij = ( aux*hi+hj )/(aux+1._DP)
+
+    ! Compute coefficients
+    a = 0.5_DP*(C_ji-C_ij)
+    s = 0.5_DP*(C_ij+C_ji)
+
+    ! Compute auxiliary variables
+    aux1 = u_ij*a(1)
+    aux2 = u_ij*s(1)
+    u2   = u_ij*u_ij
+    
+    ! Compute Roe matrix for skew-symmetric part
+    A_ij(1) = 0.0_DP
+    A_ij(2) = G14*u2*a(1)
+    A_ij(3) = (G2*u2 - H_ij)*aux1
+    
+    A_ij(4) = a(1)
+    A_ij(5) = G13*aux1
+    A_ij(6) = (H_ij-G1*u2)*a(1)
+    
+    A_ij(7) = 0.0_DP
+    A_ij(8) = G1*a(1)
+    A_ij(9) = GAMMA*aux1
+
+
+    ! Compute Roe matrix for symmetric part
+    S_ij(1) = 0.0_DP
+    S_ij(2) = G14*u2*s(1)
+    S_ij(3) = (G2*u2 - H_ij)*aux2
+    
+    S_ij(4) = s(1)
+    S_ij(5) = G13*aux2
+    S_ij(6) = (H_ij-G1*u2)*s(1)
+    
+    S_ij(7) = 0.0_DP
+    S_ij(8) = G1*s(1)
+    S_ij(9) = GAMMA*aux2
+
   end subroutine euler_calcMatrixGalerkin1d
 
   !*****************************************************************************
@@ -1019,41 +997,41 @@ contains
 !</output>
 !</subroutine>
 
-!!$    ! local variable
-!!$    real(DP), dimension(NDIM1D) :: a
-!!$    real(DP) :: aux,aux1,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$    real(DP) :: cnrm,cs_ij,vel
-!!$
-!!$    ! Compute Roe mean values
-!!$    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
-!!$    v_ij = ( aux*U_i(3)/U_i(1)+U_j(3)/U_j(1) )/(aux+1._DP)
-!!$    hi   =   GAMMA*U_i(4)/U_i(1)-&
-!!$             G2*( U_i(2)*U_i(2)+U_i(3)*U_i(3) )/(U_i(1)*U_i(1))
-!!$    hj   =   GAMMA*U_j(4)/U_j(1)-&
-!!$             G2*( U_j(2)*U_j(2)+U_j(3)*U_j(3) )/(U_j(1)*U_j(1))
-!!$    H_ij = ( aux*hi+hj )/(aux+1._DP)
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1  = u_ij*a(1) + v_ij*a(2)
-!!$    q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-!!$
-!!$    ! Compute diagonal Roe matrix for skew-symmetric part
-!!$    A_ij(1) = 0._DP
-!!$    A_ij(2) = aux1-G6*u_ij*a(1)
-!!$    A_ij(3) = aux1-G6*v_ij*a(2)
-!!$    A_ij(4) = GAMMA*aux1
-!!$
-!!$    ! Compute auxiliary variables
-!!$    cs_ij = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
-!!$    cnrm  = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$    vel   = a(1)*u_ij+a(2)*v_ij
-!!$
-!!$    ! Compute scalar viscosities
-!!$    S_ij(1:4) = -abs(vel)-cnrm*cs_ij
+    ! local variable
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: aux,aux1,hi,hj,H_ij,q_ij,u_ij,cs_ij
+
+    ! Compute coefficients
+    a = 0.5_DP*(C_ji-C_ij)
+
+    if (a(1) .eq. 0.0_DP) then
+      A_ij = 0.0_DP
+      S_ij = 0.0_DP
+      return
+    end if
+
+    ! Compute Roe mean values
+    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
+    hi   =   GAMMA*U_i(3)/U_i(1)-G2*(U_i(2)*U_i(2))/(U_i(1)*U_i(1))
+    hj   =   GAMMA*U_j(3)/U_j(1)-G2*(U_j(2)*U_j(2))/(U_j(1)*U_j(1))
+    H_ij = ( aux*hi+hj )/(aux+1.0_DP)
+       
+    ! Compute auxiliary variables
+    aux1 = u_ij*a(1)
+    q_ij = 0.5_DP*(u_ij*u_ij)
+
+    ! Compute diagonal Roe matrix for skew-symmetric part
+    A_ij(1) = 0.0_DP
+    A_ij(2) = G13*aux1
+    A_ij(3) = GAMMA*aux1
+
+    ! Compute the speed of sound
+    cs_ij = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
+
+    ! Compute scalar viscosities
+    S_ij = -abs(aux1)-abs(a(1)*cs_ij)
+
   end subroutine euler_calcMatrixScalarDissDiag1d
 
 !*****************************************************************************
@@ -1086,63 +1064,54 @@ contains
 !</output>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP), dimension(NDIM1D) :: a
-!!$    real(DP) :: aux,aux1,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$    real(DP) :: cnrm,cs_ij,vel
-!!$    
-!!$    ! Compute Roe mean values
-!!$    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
-!!$    v_ij = ( aux*U_i(3)/U_i(1)+U_j(3)/U_j(1) )/(aux+1._DP)
-!!$    hi   =   GAMMA*U_i(4)/U_i(1)-&
-!!$             G2*( U_i(2)*U_i(2)+U_i(3)*U_i(3) )/(U_i(1)*U_i(1))
-!!$    hj   =   GAMMA*U_j(4)/U_j(1)-&
-!!$             G2*( U_j(2)*U_j(2)+U_j(3)*U_j(3) )/(U_j(1)*U_j(1))
-!!$    H_ij = ( aux*hi+hj )/(aux+1._DP)
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1 = u_ij*a(1) + v_ij*a(2)
-!!$    u2   = u_ij*u_ij
-!!$    v2   = v_ij*v_ij
-!!$    uv   = u_ij*v_ij
-!!$    q_ij = 0.5_DP*(u2+v2)
-!!$    
-!!$    ! Compute Roe matrix for skew-symmetric part
-!!$    A_ij( 1) =   0._DP
-!!$    A_ij( 2) =   (G1*q_ij-u2)*a(1)   - uv*a(2)
-!!$    A_ij( 3) = - uv*a(1)             + (G1*q_ij-v2)*a(2)
-!!$    A_ij( 4) =   (G1*q_ij-H_ij)*aux1
-!!$    
-!!$    A_ij( 5) =   a(1)
-!!$    A_ij( 6) =   aux1-G6*u_ij*a(1)
-!!$    A_ij( 7) =   v_ij*a(1)           - G1*u_ij*a(2)
-!!$    A_ij( 8) =   (H_ij-G1*u2)*a(1)   - G1*uv*a(2)
-!!$    
-!!$    A_ij( 9) =                         a(2)
-!!$    A_ij(10) = - G1*v_ij*a(1)        + u_ij*a(2)
-!!$    A_ij(11) =                         aux1-G6*v_ij*a(2)
-!!$    A_ij(12) = - G1*uv*a(1)          + (H_ij-G1*v2)*a(2)
-!!$
-!!$    A_ij(13) =   0._DP
-!!$    A_ij(14) =   G1*a(1)
-!!$    A_ij(15) =                         G1*a(2)
-!!$    A_ij(16) =   GAMMA*aux1
-!!$
-!!$    ! Compute auxiliary variables
-!!$    cs_ij = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
-!!$    cnrm  = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$    vel   = a(1)*u_ij+a(2)*v_ij
-!!$
-!!$    ! Compute scalar viscosities
-!!$    S_ij     = 0._DP
-!!$    S_ij( 1) = -abs(vel)-cnrm*cs_ij
-!!$    S_ij( 6) = -abs(vel)-cnrm*cs_ij
-!!$    S_ij(11) = -abs(vel)-cnrm*cs_ij
-!!$    S_ij(16) = -abs(vel)-cnrm*cs_ij
+    ! local variables
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: aux,aux1,u2,hi,hj,H_ij,q_ij,u_ij,cs_ij
+
+    ! Compute coefficients
+    a = 0.5_DP*(C_ji-C_ij)
+
+    if (a(1) .eq. 0.0_DP) then
+      A_ij = 0.0_DP
+      S_ij = 0.0_DP
+      return
+    end if
+
+    ! Compute Roe mean values
+    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
+    hi   =   GAMMA*U_i(4)/U_i(1)-G2*( U_i(2)*U_i(2) )/(U_i(1)*U_i(1))
+    hj   =   GAMMA*U_j(3)/U_j(1)-G2*( U_j(2)*U_j(2) )/(U_j(1)*U_j(1))
+    H_ij = ( aux*hi+hj )/(aux+1._DP)
+
+    ! Compute auxiliary variables
+    aux1 = u_ij*a(1)
+    q_ij = 0.5_DP*(u_ij*u_ij)
+    u2   = u_ij*u_ij
+    
+    ! Compute Roe matrix for skew-symmetric part
+    A_ij(1) = 0.0_DP
+    A_ij(2) = G14*u2*a(1)
+    A_ij(3) = (G2*u2 - H_ij)*aux1
+    
+    A_ij(4) = a(1)
+    A_ij(5) = G13*aux1
+    A_ij(6) = (H_ij-G1*u2)*a(1)
+    
+    A_ij(7) = 0.0_DP
+    A_ij(8) = G1*a(1)
+    A_ij(9) = GAMMA*aux1
+
+    ! Compute the speed of sound
+    cs_ij = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
+    aux   = -abs(aux1)-abs(a(1)*cs_ij)
+    
+    ! Compute scalar viscosities
+    S_ij    = 0.0_DP
+    S_ij(1) = aux
+    S_ij(4) = aux
+    S_ij(7) = aux
+
   end subroutine euler_calcMatrixScalarDiss1d
 
   !*****************************************************************************
