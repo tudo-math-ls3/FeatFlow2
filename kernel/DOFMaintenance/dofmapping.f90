@@ -2110,7 +2110,7 @@ contains
       ! Allocate a temp array accepting the local DOF's.
       !
       ! At first allocate an index array; this has to be build in advance.
-      call storage_new1D ('dof_precomputemapping', 'h_IelementDofIdx', &
+      call storage_new1D ('dof_precomputeDofMapping', 'h_IelementDofIdx', &
           p_rtriangulation%NEL+1, ST_INT, rdiscretisation%h_IelementDofIdx,   &
           ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rdiscretisation%h_IelementDofIdx,p_IelementDofIdx)
@@ -2133,7 +2133,7 @@ contains
       end do
       
       ! Now get the actual DOF's.
-      call storage_new1D ('dof_precomputemapping', 'h_IelementDofs', &
+      call storage_new1D ('dof_precomputeDofMapping', 'h_IelementDofs', &
           p_IelementDofIdx(p_rtriangulation%NEL+1)-1, ST_INT, rdiscretisation%h_IelementDofs,&
           ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rdiscretisation%h_IelementDofs,p_IelementDofs)
