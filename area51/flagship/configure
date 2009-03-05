@@ -7,7 +7,5 @@ build="`date +%Y%m%d`"
 	--appname=flagship \
 	--programfile=src/flagship.f90 \
 	--srclist_app="`ls src/*.f90 src/kernel/*.f90`" \
-	--apponlyflags=-DVERSION=\\\"${date}\\\",-DBUILD=\\\"${build}\\\",-DEVALFLUXES \
+	--apponlyflags=-DVERSION=\\\"${date}\\\",-DBUILD=\\\"${build}\\\",-DRUSANOV_FLUX\
 	$@
-
-
