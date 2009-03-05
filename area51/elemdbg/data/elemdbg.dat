@@ -14,6 +14,7 @@ SCONFIGSECTION = EXAMPLE_N0X
 # 102 -> 1D Element-Debugger: Poisson, SINUS solution
 # 201 -> 2D Element-Debugger: L2-projection, SINUS solution
 # 202 -> 2D Element-Debugger: Poisson, SINUS solution
+# 203 -> 2D Element-Debugger: Convection-Diffusion, SINUS solution
 # 301 -> 3D Element-Debugger: L2-projection, SINUS solution
 # 302 -> 3D Element-Debugger: Poisson, SINUS solution
 ITEST = 202
@@ -26,7 +27,7 @@ NLMAX = 7
 SELEMENT = EL_Q1_2D
 
 # Cubature rule identifier (non-optional)
-SCUBATURE = G3_2D
+SCUBATURE = G4_2D
 
 # Mesh distortion parameter (default: 0.0)
 DMESHDISTORT = 0.0
@@ -52,6 +53,25 @@ DEPSREL = 1E-8
 # Absolute tolerance for iterative solvers (default: 1e-11)
 DEPSABS = 1e-11
 
+# Viscosity coefficient in front of the Laplace in the convection-diffusion problem
+DNU = 1E-5
+
+# Convection vector for convection problems
+DBETA1 = 2
+DBETA2 = 3
+
+# Stabilisation in the convection-diffusion problem
+# =0: no
+# =1: SD(upsam)
+# =2: EOJ(upsam)
+ISTABIL = 0
+
+# Stabilisation parameter
+DUPSAM = 1.0
+
+# Write the mesh of every level.
+# =0: No. =1: GMV, =2: VTK
+IWRITEMESH = 1
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # Example Section for extended 3D debugger #2

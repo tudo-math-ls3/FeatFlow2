@@ -53,7 +53,7 @@ program elemdbg
     ! 1D Element-Debugger #1
     call elemdbg1d_1(rparam,sConfigSection,itest)
 
-  case(201,202)
+  case(201,202,203)
     ! 2D Element-Debugger #1
     call elemdbg2d_1(rparam,sConfigSection,itest)
 

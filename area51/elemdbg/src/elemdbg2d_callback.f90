@@ -110,6 +110,96 @@ contains
 
 !<subroutine>
 
+  subroutine coeff_RHS2D_ConvecDiff (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in test space,nelements)
+    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    real(DP) :: beta1,beta2,dnu
+
+    ! RHS for stiffness matrix
+    !    u(x,y) = SIN(PI * x) * SIN(PI * y)
+    ! Gives for the operator -Laplace(u)+Beta*grad(u):
+    ! => f(x,y) = 2*sin(Pi*x)*Pi^2*sin(Pi*y)+beta1*cos(Pi*x)*Pi*sin(Pi*y)+beta2*sin(Pi*x)*cos(Pi*y)*Pi
+    dnu = rform%Dcoefficients(1)
+    beta1 = rform%Dcoefficients(2)
+    beta2 = rform%Dcoefficients(3)
+    
+    Dcoefficients (1,:,:) = &
+        2.0_DP*dnu*sin(SYS_PI*Dpoints(1,:,:))*SYS_PI**2*sin(SYS_PI*Dpoints(2,:,:)) &
+        + beta1*cos(SYS_PI*Dpoints(1,:,:))*SYS_PI*sin(SYS_PI*Dpoints(2,:,:)) &
+        + beta2*sin(SYS_PI*Dpoints(1,:,:))*cos(SYS_PI*Dpoints(2,:,:))*SYS_PI
+
+  end subroutine
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine coeff_RHS2D_Mass (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
