@@ -640,12 +640,12 @@ contains
         call lsysbl_resizeVectorBlock(p_raux, rsolution, .false.)
       end if
       
-      ! Apply the constant right-hand side
-      if (present(rb)) then
-        call lsysbl_copyVector(rb, p_rrhs)
-      else
-        call lsysbl_clearVector(p_rrhs)
-      end if
+!!$      ! Apply the constant right-hand side
+!!$      if (present(rb)) then
+!!$        call lsysbl_copyVector(rb, p_rrhs)
+!!$      else
+!!$        call lsysbl_clearVector(p_rrhs)
+!!$      end if
 
       ! Compute the preconditioner and the initial residual
       ioperationSpec = NLSOL_OPSPEC_CALCPRECOND +&
