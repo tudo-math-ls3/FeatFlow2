@@ -305,15 +305,15 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                      rsolution, euler_calcMatrixGalerkinDiag1d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixGalerkinDiag1d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                      rsolution, euler_calcMatrixGalerkinDiag2d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixGalerkinDiag2d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                                      rsolution, euler_calcMatrixGalerkinDiag3d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixGalerkinDiag3d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -329,15 +329,15 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                      rsolution, euler_calcMatrixScalarDissDiag1d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixScalarDissDiag1d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                      rsolution, euler_calcMatrixScalarDissDiag2d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixScalarDissDiag2d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                                      rsolution, euler_calcMatrixScalarDissDiag3d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixScalarDissDiag3d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -353,15 +353,15 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                      rsolution, euler_calcMatrixTensorDissDiag1d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixTensorDissDiag1d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                      rsolution, euler_calcMatrixTensorDissDiag2d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixTensorDissDiag2d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                                      rsolution, euler_calcMatrixTensorDissDiag3d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixTensorDissDiag3d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -392,15 +392,15 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                      rsolution, euler_calcMatrixGalerkin1d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixGalerkin1d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                      rsolution, euler_calcMatrixGalerkin2d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixGalerkin2d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                                      rsolution, euler_calcMatrixGalerkin3d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixGalerkin3d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -416,15 +416,15 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                      rsolution, euler_calcMatrixScalarDiss1d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixScalarDiss1d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                      rsolution, euler_calcMatrixScalarDiss2d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixScalarDiss2d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                                      rsolution, euler_calcMatrixScalarDiss3d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixScalarDiss3d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -440,15 +440,15 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                      rsolution, euler_calcMatrixTensorDiss1d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixTensorDiss1d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                      rsolution, euler_calcMatrixTensorDiss2d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixTensorDiss2d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                                      rsolution, euler_calcMatrixTensorDiss3d, -1.0_DP, .true.,&
+                                      rsolution, euler_calcMatrixTensorDiss3d, 1.0_DP, .true.,&
                                       rproblemLevel%RmatrixBlock(systemMatrix))
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
