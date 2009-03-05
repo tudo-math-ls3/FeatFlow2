@@ -83,7 +83,7 @@ program flagship
     call output_lbrk()
     call output_line('  PARAMETERFILE missing!!!')
     call output_lbrk()
-    stop
+    call sys_halt()
   end if
   
   ! Initialize parameter list from file
