@@ -1110,8 +1110,10 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
-          K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
+          K(ii) = K(ii)-k_ij
+          K(ij) = K(ij)+k_ij
+          K(ji) = K(ji)+k_ji
+          K(jj) = K(jj)-k_ji
         end do
       end do
     end subroutine doGalerkinZRSMat7_1D
@@ -1167,7 +1169,8 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+          K(ij) = K(ij)+k_ij
+          K(ji) = K(ji)+k_ji
         end do
       end do
     end subroutine doGalerkinMat7_1D
@@ -1216,8 +1219,10 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
-          K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
+          K(ii) = K(ii)-k_ij
+          K(ij) = K(ij)+k_ij
+          K(ji) = K(ji)+k_ji
+          K(jj) = K(jj)-k_ji
         end do
       end do
     end subroutine doGalerkinZRSMat7_2D
@@ -1274,7 +1279,8 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+          K(ij) = K(ij)+k_ij
+          K(ji) = K(ji)+k_ji
         end do
       end do
     end subroutine doGalerkinMat7_2D
@@ -1322,8 +1328,10 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
-          K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
+          K(ii) = K(ii)-k_ij
+          K(ij) = K(ij)+k_ij 
+          K(ji) = K(ji)+k_ji
+          K(jj) = K(jj)-k_ji
         end do
       end do
     end subroutine doGalerkinZRSMat7_3D
@@ -1381,7 +1389,8 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+          K(ij) = K(ij)+k_ij
+          K(ji) = K(ji)+k_ji
         end do
       end do
     end subroutine doGalerkinMat7_3D
@@ -1429,8 +1438,10 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
-          K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
+          K(ii) = K(ii)-k_ij
+          K(ij) = K(ij)+k_ij 
+          K(ji) = K(ji)+k_ji
+          K(jj) = K(jj)-k_ji
         end do
       end do
     end subroutine doGalerkinZRSMat9_1D
@@ -1486,7 +1497,8 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+          K(ij) = K(ij)+k_ij
+          K(ji) = K(ji)+k_ji
         end do
       end do
     end subroutine doGalerkinMat9_1D
@@ -1535,8 +1547,10 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
-          K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
+          K(ii) = K(ii)-k_ij
+          K(ij) = K(ij)+k_ij 
+          K(ji) = K(ji)+k_ji
+          K(jj) = K(jj)-k_ji
         end do
       end do
     end subroutine doGalerkinZRSMat9_2D
@@ -1593,7 +1607,8 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+          K(ij) = K(ij)+k_ij
+          K(ji) = K(ji)+k_ji
         end do
       end do
     end subroutine doGalerkinMat9_2D
@@ -1643,8 +1658,10 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ii) = K(ii)-k_ij
-          K(ji) = K(ji)+k_ji; K(jj) = K(jj)-k_ji
+          K(ii) = K(ii)-k_ij
+          K(ij) = K(ij)+k_ij 
+          K(ji) = K(ji)+k_ji
+          K(jj) = K(jj)-k_ji
         end do
       end do
     end subroutine doGalerkinZRSMat9_3D
@@ -1702,7 +1719,8 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij; K(ji) = K(ji)+k_ji
+          K(ij) = K(ij)+k_ij
+          K(ji) = K(ji)+k_ji
         end do
       end do
     end subroutine doGalerkinMat9_3D
@@ -1757,8 +1775,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
         end do
       end do
     end subroutine doUpwindZRSMat7_1D
@@ -1821,8 +1841,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
         end do
       end do
     end subroutine doUpwindMat7_1D
@@ -1878,8 +1900,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
         end do
       end do
     end subroutine doUpwindZRSMat7_2D
@@ -1943,8 +1967,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
         end do
       end do
     end subroutine doUpwindMat7_2D
@@ -2001,8 +2027,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
         end do
       end do
     end subroutine doUpwindZRSMat7_3D
@@ -2067,8 +2095,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
         end do
       end do
     end subroutine doUpwindMat7_3D
@@ -2123,8 +2153,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
         end do
       end do
     end subroutine doUpwindZRSMat9_1D
@@ -2187,8 +2219,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
         end do
       end do
     end subroutine doUpwindMat9_1D
@@ -2244,8 +2278,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
         end do
       end do
     end subroutine doUpwindZRSMat9_2D
@@ -2309,8 +2345,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
         end do
       end do
     end subroutine doUpwindMat9_2D
@@ -2367,8 +2405,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
         end do
       end do
     end subroutine doUpwindZRSMat9_3D
@@ -2433,8 +2473,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
         end do
       end do
     end subroutine doUpwindMat9_3D
@@ -2501,8 +2543,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -2588,8 +2632,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -2667,8 +2713,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -2755,8 +2803,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -2835,8 +2885,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -2924,8 +2976,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3002,8 +3056,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3089,8 +3145,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3168,8 +3226,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3256,8 +3316,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3336,8 +3398,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3425,8 +3489,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3503,8 +3569,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3595,8 +3663,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3679,8 +3749,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3772,8 +3844,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3857,8 +3931,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3951,8 +4027,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -4034,8 +4112,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -4126,8 +4206,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -4210,8 +4292,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -4303,8 +4387,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -4388,8 +4474,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-k_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-k_ji
+          L(ii) = L(ii)-k_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-k_ji
           
           ! Increase edge counter
           iedge = iedge+1
@@ -4482,8 +4570,10 @@ contains
           k_ji = k_ji+d_ij
           
           ! Assemble the global operator
-          L(ij) = L(ij)+k_ij; L(ii) = L(ii)-d_ij
-          L(ji) = L(ji)+k_ji; L(jj) = L(jj)-d_ij
+          L(ii) = L(ii)-d_ij
+          L(ij) = L(ij)+k_ij 
+          L(ji) = L(ji)+k_ji
+          L(jj) = L(jj)-d_ij
           
           ! Increase edge counter
           iedge = iedge+1
