@@ -73,6 +73,10 @@
 !#        which encodes what information an element needs if one wants
 !#        to evaluate it in a point.
 !#
+!# 12.) elem_igetID
+!#      -> Convert a string with an element identifier to the corresponding
+!#         element id.
+!#
 !#  FAQ - Some explainations
 !# --------------------------
 !# 1.) What is an element and what are Degrees Of Freedoms (DOF's)?
