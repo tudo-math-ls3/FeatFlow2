@@ -823,8 +823,6 @@ contains
 
     end if
 
-stop
-
   end subroutine euler_calcMatrixScalarDiss2d
 
   !*****************************************************************************
