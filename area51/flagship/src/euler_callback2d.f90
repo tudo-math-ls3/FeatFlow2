@@ -1189,156 +1189,112 @@ stop
 !</subroutine>
 
     ! local variables
-    real(DP) :: u_ij,v_ij,H_ij,q_ij,c_ij,aux,hi,hj,cPow2,uPow2,vPow2,c1,c2,cnrm,vel
-    real(DP), dimension(NVAR2D) :: diff
+    real(DP), dimension(NVAR2D) :: Diff
+    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs_ij,aux,aux1,aux2,hi,hj,cPow2,uPow2,vPow2,c1,c2,cnorm    
+    
+    ! Compute norm of weighting coefficient
+    cnorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
+    
+    ! Check if weighting coefficient is zero
+    if (cnorm .gt. SYS_EPSREAL) then
 
-    ! Roe mean values
-    aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-    u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1.0_DP)
-    v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1.0_DP)
+      ! Compute normalized weighting coefficient
+      c1  = Dweight(1)/cnorm
+      c2  = Dweight(2)/cnorm
 
-    hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-    hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-    H_ij = (aux*hi+hj)/(aux+1.0_DP)
+      ! Compute Roe mean values
+      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+      u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1.0_DP)
+      v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1.0_DP)
+      hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
+      hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+      
+      ! Compute auxiliary variables
+      uPow2 = u_ij*u_ij
+      vPow2 = v_ij*v_ij
+      q_ij  = 0.5_DP*(uPow2+vPow2)
+      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cs_ij = sqrt(cPow2)  
+      aux   = c1*u_ij+c2*v_ij
 
-    ! auxiliary variables
-    uPow2 = u_ij*u_ij
-    vPow2 = v_ij*v_ij
-    q_ij  = 0.5_DP*(uPow2+vPow2)
+      ! Compute diagonal matrix of eigenvalues (if present)
+      if (present(Lbd_ij)) then
+        Lbd_ij(1) = aux-cs_ij
+        Lbd_ij(2) = aux
+        Lbd_ij(3) = aux+cs_ij
+        Lbd_ij(4) = aux
+      end if
 
-    ! speed of sound
-    cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-    c_ij  = sqrt(cPow2)
+      ! Compute matrix of right eigenvectors
+      if (present(R_ij)) then
+        ! Matrix of right eigenvectors
+        R_ij( 1) =  1.0_DP
+        R_ij( 2) =  u_ij-cs_ij*c1
+        R_ij( 3) =  v_ij-cs_ij*c2
+        R_ij( 4) =  H_ij-cs_ij*aux
 
-    ! characteristic velocity
-    cnrm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
-    if (cnrm .eq. 0.0_DP) then
+        R_ij( 5) =  1.0_DP
+        R_ij( 6) =  u_ij
+        R_ij( 7) =  v_ij
+        R_ij( 8) =  q_ij
+
+        R_ij( 9) =  1.0_DP
+        R_ij(10) =  u_ij+cs_ij*c1
+        R_ij(11) =  v_ij+cs_ij*c2
+        R_ij(12) =  H_ij+cs_ij*aux
+        R_ij(13) =  0.0_DP
+
+        R_ij(14) =  c2
+        R_ij(15) = -c1
+        R_ij(16) =  u_ij*c2-v_ij*c1
+      end if
+
+      ! Compute matrix of left eigenvectors
+      if (present(L_ij)) then
+        L_ij( 1) =  0.5_DP*(G1*q_ij+cs_ij*aux)/cPow2
+        L_ij( 2) = (cPow2-G1*q_ij)/cPow2
+        L_ij( 3) =  0.5_DP*(G1*q_ij-cs_ij*aux)/cPow2
+        L_ij( 4) =  v_ij*c1-u_ij*c2
+
+        L_ij( 5) =  0.5_DP*(-G1*u_ij-cs_ij*c1)/cPow2
+        L_ij( 6) =  G1*u_ij/cPow2
+        L_ij( 7) =  0.5_DP*(-G1*u_ij+cs_ij*c1)/cPow2
+        L_ij( 8) =  c2
+
+        L_ij( 9) =  0.5_DP*(-G1*v_ij-cs_ij*c2)/cPow2
+        L_ij(10) =  G1*v_ij/cPow2
+        L_ij(11) =  0.5_DP*(-G1*v_ij+cs_ij*c2)/cPow2
+        L_ij(12) = -c1
+
+        L_ij(13) =  G2/cPow2
+        L_ij(14) = -G1/cPow2
+        L_ij(15) =  G2/cPow2
+        L_ij(16) =  0.0_DP
+      end if
+
+      ! Compute solution difference U_i-U_j
+      Diff = U_j-U_i
+
+      ! Compute auxiliary quantities for characteristic variables
+      aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
+      aux2 = 0.5_DP*(aux*Diff(1)-c1*Diff(2)-c2*Diff(3))/cs_ij
+      
+      ! Compute characteristic variables
+      W_ij(1) = cnorm * (aux1 + aux2)
+      W_ij(2) = cnorm * ((1.0_DP-G1*q_ij/cPow2)*Diff(1)+G1*(u_ij*Diff(2)+v_ij*Diff(3)-Diff(4))/cPow2)
+      W_ij(3) = cnorm * (aux1 - aux2)
+      W_ij(4) = cnorm * ((c1*v_ij-c2*u_ij)*Diff(1)+c2*Diff(2)-c1*Diff(3))
+      
+    else   ! |dweight| = 0
+      
+      W_ij = 0.0_DP
       if (present(Lbd_ij)) Lbd_ij = 0.0_DP
       if (present(R_ij))   R_ij   = 0.0_DP
       if (present(L_ij))   L_ij   = 0.0_DP
-      W_ij = 0.0_DP
-      return
+      
     end if
-    c1  = Dweight(1)/cnrm
-    c2  = Dweight(2)/cnrm
-    vel = c1*u_ij+c2*v_ij
-
-    ! Compute solution difference
-    diff = U_j-U_i
-
-    ! Compute diagonal matrix of eigenvalues
-    if (present(Lbd_ij)) then
-      Lbd_ij(1) = vel-c_ij
-      Lbd_ij(2) = vel
-      Lbd_ij(3) = vel+c_ij
-      Lbd_ij(4) = vel
-    end if
-
-    ! Compute matrix of right eigenvectors
-    if (present(R_ij)) then
-      ! Matrix of right eigenvectors
-      R_ij( 1) =  1.0_DP
-      R_ij( 2) =  u_ij-c_ij*c1
-      R_ij( 3) =  v_ij-c_ij*c2
-      R_ij( 4) =  H_ij-c_ij*vel
-      R_ij( 5) =  1.0_DP
-      R_ij( 6) =  u_ij
-      R_ij( 7) =  v_ij
-      R_ij( 8) =  q_ij
-      R_ij( 9) =  1.0_DP
-      R_ij(10) =  u_ij+c_ij*c1
-      R_ij(11) =  v_ij+c_ij*c2
-      R_ij(12) =  H_ij+c_ij*vel
-      R_ij(13) =  0.0_DP
-      R_ij(14) =  c2
-      R_ij(15) = -c1
-      R_ij(16) =  u_ij*c2-v_ij*c1
-    end if
-
-    ! Compute matrix of left eigenvectors
-    if (present(L_ij)) then
-      if (abs(c1) > abs(c2)) then
-        ! Matrix of left eigenvectors if C1 is largest coefficient
-        L_ij( 1) =  0.5_DP*(G1*q_ij+c_ij*vel)/cPow2
-        L_ij( 2) = (cPow2-G1*q_ij)/cPow2
-        L_ij( 3) =  0.5_DP*(G1*q_ij-c_ij*vel)/cPow2
-        L_ij( 4) = (v_ij-vel*c2)/c1
-        L_ij( 5) =  0.5_DP*(-G1*u_ij-c_ij*c1)/cPow2
-        L_ij( 6) =  G1*u_ij/cPow2
-        L_ij( 7) =  0.5_DP*(-G1*u_ij+c_ij*c1)/cPow2
-        L_ij( 8) =  c2
-        L_ij( 9) =  0.5_DP*(-G1*v_ij-c_ij*c2)/cPow2
-        L_ij(10) =  G1*v_ij/cPow2
-        L_ij(11) =  0.5_DP*(-G1*v_ij+c_ij*c2)/cPow2
-        L_ij(12) = (c2*c2-1)/c1
-        L_ij(13) =  G2/cPow2
-        L_ij(14) = -G1/cPow2
-        L_ij(15) =  G2/cPow2
-        L_ij(16) =  0.0_DP
-      else
-        ! Matrix of left eigenvectors if C2 is largest coefficient
-        L_ij( 1) =  0.5_DP*(G1*q_ij+c_ij*vel)/cPow2
-        L_ij( 2) = (cPow2-G1*q_ij)/cPow2
-        L_ij( 3) =  0.5_DP*(G1*q_ij-c_ij*vel)/cPow2
-        L_ij( 4) = (vel*c1-u_ij)/c2
-        L_ij( 5) =  0.5_DP*(-G1*u_ij-c_ij*c1)/cPow2
-        L_ij( 6) =  G1*u_ij/cPow2
-        L_ij( 7) =  0.5_DP*(-G1*u_ij+c_ij*c1)/cPow2
-        L_ij( 8) = (1-c1*c1)/c2
-        L_ij( 9) =  0.5_DP*(-G1*v_ij-c_ij*c2)/cPow2
-        L_ij(10) =  G1*v_ij/cPow2
-        L_ij(11) =  0.5_DP*(-G1*v_ij+c_ij*c2)/cPow2
-        L_ij(12) = -c1
-        L_ij(13) =  G2/cPow2
-        L_ij(14) = -G1/cPow2
-        L_ij(15) =  G2/cPow2
-        L_ij(16) =  0.0_DP
-      end if
-
-      ! Compute W_ij = L_ij*(U_j-U_i)
-      call DGEMV('n', NVAR2D, NVAR2D, 1.0_DP, L_ij,&
-                      NVAR2D, Diff, 1, 0.0_DP, W_ij, 1)
-
-    else
-
-      ! Compute W_ij = L_ij*(U_j-U_i) directly
-      if (abs(c1) > abs(c2)) then
-        ! C1 is largest coefficient
-        W_ij(1) = 0.5_DP*(G1*q_ij+c_ij*vel)/cPow2*Diff(1) +&
-                  0.5_DP*(-G1*u_ij-c_ij*c1)/cPow2*Diff(2)  +&
-                  0.5_DP*(-G1*v_ij-c_ij*c2)/cPow2*Diff(3)  +&
-                  G2/cPow2*Diff(4)
-        W_ij(2) = (cPow2-G1*q_ij)/cPow2*Diff(1) +&
-                  G1*u_ij/cPow2*Diff(2)      +&
-                  G1*v_ij/cPow2*Diff(3)      -&
-                  G1/cPow2*Diff(4)
-        W_ij(3) = 0.5_DP*(G1*q_ij-c_ij*vel)/cPow2*Diff(1) +&
-                  0.5_DP*(-G1*u_ij+c_ij*c1)/cPow2*Diff(2)  +&
-                  0.5_DP*(-G1*v_ij+c_ij*c2)/cPow2*Diff(3)  +&
-                  G2/cPow2*Diff(4)
-        W_ij(4) = (v_ij-vel*c2)/c1*Diff(1) +&
-                  c2*Diff(2)               +&
-                  (c2*c2-1)/c1*Diff(3)
-      else
-        ! C2 is largest coefficient
-        W_ij(1) = 0.5_DP*(G1*q_ij+c_ij*vel)/cPow2*Diff(1)+&
-                  0.5_DP*(-G1*u_ij-c_ij*c1)/cPow2*Diff(2)+&
-                  0.5_DP*(-G1*v_ij-c_ij*c2)/cPow2*Diff(3)+&
-                  G2/cPow2*Diff(4)
-        W_ij(2) = (cPow2-G1*q_ij)/cPow2*Diff(1)+&
-                  G1*u_ij/cPow2*Diff(2)+&
-                  G1*v_ij/cPow2*Diff(3)-&
-                  G1/cPow2*Diff(4)
-        W_ij(3) = 0.5_DP*(G1*q_ij-c_ij*vel)/cPow2*Diff(1)+&
-                  0.5_DP*(-G1*u_ij+c_ij*c1)/cPow2*Diff(2)+&
-                  0.5_DP*(-G1*v_ij+c_ij*c2)/cPow2*Diff(3)+&
-                  G2/cPow2*Diff(4)
-        W_ij(4) = (vel*c1-u_ij)/c2*Diff(1)+&
-                  (1-c1*c1)/c2*Diff(2)-&
-                  c1*Diff(3)
-      end if
-    end if
-
+    
   end subroutine euler_calcCharacteristics2d
 
   !*****************************************************************************
