@@ -547,6 +547,9 @@ contains
 
         call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D, 'energy', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D, 'effective_energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
         
         call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D, 'pressure', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
@@ -566,6 +569,9 @@ contains
         call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D, 'energy', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
         
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D, 'effective_energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
+
         call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D, 'pressure', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
 
@@ -584,6 +590,9 @@ contains
         call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D, 'energy', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
         
+        call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D, 'effective_energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
+
         call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D, 'pressure', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
 
@@ -605,6 +614,9 @@ contains
 
         call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D, 'energy', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
+
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D, 'effective_energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
         
         call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D, 'pressure', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
@@ -624,6 +636,9 @@ contains
         call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D, 'energy', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
         
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D, 'effective_energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
+
         call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D, 'pressure', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
 
@@ -641,7 +656,10 @@ contains
 
         call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'energy', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'energy', UCD_VAR_STANDARD, p_Ddata1)
-        
+
+        call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'effective_energy', p_Dsolution, p_Ddata1)
+        call ucd_addVariableVertexBased (rexport, 'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
+
         call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'pressure', p_Dsolution, p_Ddata1)
         call ucd_addVariableVertexBased (rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata1)
 
@@ -666,6 +684,179 @@ contains
     call ucd_release(rexport)
 
   end subroutine mhd_outputSolution
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mhd_estimateRecoveryError(rparlist, ssectionName, rproblemLevel, rsolution, rerror)
+
+!<description>
+    ! Uses the level-set function for error estimation
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
+
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: rsolution
+
+    ! problem level structure
+    type(t_problemLevel), intent(IN) :: rproblemLevel
+!</input>
+
+!<output>
+    ! element-wise error distribution
+    type(t_vectorScalar), intent(OUT) :: rerror
+!</output>
+!</subroutine>
+
+    ! section names
+    character(LEN=SYS_STRLEN) :: sindatfileName
+    character(LEN=SYS_STRLEN) :: serrorestimatorName
+    character(LEN=SYS_STRLEN) :: sexactsolutionName
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata, p_Derror
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement
+    logical, dimension(:), pointer :: p_BisactiveElement
+    real(DP) :: dprotectLayerTolerance, ddistance
+    integer :: iel, ivt, ive
+    integer :: iprotectLayer, nprotectLayers
+    integer :: h_BisactiveElement
+    
+
+
+    call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
+    call lsyssc_getbase_double(rerror, p_Derror)
+    call lsysbl_getbase_double(rsolution, p_Ddata)
+            
+    call storage_getbase_int2d(rproblemLevel%rtriangulation%h_IverticesAtElement,&
+                               p_IverticesAtElement)
+
+    ielloop: do iel = 1, rproblemLevel%rtriangulation%NEL
+      
+      do ive = 1, tria_getNVE(p_IverticesAtElement, iel)
+
+        ivt = p_IverticesAtElement(ive, iel)
+        
+        if (p_Ddata(ivt) .ge. 0.0_DP) then
+          p_Derror(iel) = 1.0_DP
+          cycle ielloop
+        else
+          p_Derror(iel) = 0.0_DP
+        end if       
+
+      end do
+      
+    end do ielloop
+
+
+    !---------------------------------------------------------------------------
+    ! Calculate protection layers
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
+    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'nprotectLayers', nprotectLayers, 0)
+    call parlst_getvalue_double(rparlist, trim(serrorestimatorName),&
+                                'dprotectLayerTolerance', dprotectLayerTolerance, 0.0_DP)
+
+    if (nprotectLayers > 0) then
+
+      ! Create auxiliary memory
+      h_BisactiveElement = ST_NOHANDLE
+      call storage_new('codire_estimateRecoveryError',' BisactiveElement',&
+                       rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
+                       h_BisactiveElement, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
+      
+      ! Set pointers
+      call storage_getbase_int2D(&
+          rproblemLevel%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+      call storage_getbase_int2D(&
+          rproblemLevel%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+      call lsyssc_getbase_double(rerror, p_Ddata)
+
+      ! Compute protection layers
+      do iprotectLayer = 1, nprotectLayers
+        
+        ! Reset activation flag
+        p_BisActiveElement = .false.
+        
+        ! Compute a single-width protection layer
+        call doProtectionLayerUniform(p_IverticesAtElement, p_IneighboursAtElement,&
+                                      rproblemLevel%rtriangulation%NEL,&
+                                      dprotectLayerTolerance, p_Ddata, p_BisActiveElement)
+      end do
+
+      ! Release memory
+      call storage_free(h_BisactiveElement)
+
+    end if
+
+  contains
+    
+    ! Here, the real working routines follow.
+    
+    !**************************************************************
+    ! Compute one uniformly distributed protection layer
+
+    subroutine doProtectionLayerUniform(IverticesAtElement, IneighboursAtElement, NEL,&
+                                        dthreshold, Ddata, BisactiveElement)
+
+      integer, dimension(:,:), intent(IN) :: IverticesAtElement
+      integer, dimension(:,:), intent(IN) :: IneighboursAtElement     
+      real(DP), intent(IN) :: dthreshold
+      integer, intent(IN) :: NEL
+      
+      real(DP), dimension(:), intent(INOUT) :: Ddata
+      logical, dimension(:), intent(INOUT) :: BisactiveElement
+      
+      
+      ! local variables
+      integer :: iel,jel,ive
+
+      ! Loop over all elements in triangulation
+      do iel = 1, NEL
+        
+        ! Do nothing if element belongs to active layer
+        if (BisactiveElement(iel)) cycle
+
+        ! Do nothing if element indicator does not exceed threshold
+        if (Ddata(iel) .le. dthreshold) cycle
+
+        ! Loop over neighbouring elements
+        do ive = 1, tria_getNVE(IverticesAtElement, iel)
+          
+          ! Get number of neighbouring element
+          jel = IneighboursAtElement(ive, iel)
+
+          ! Do nothing at the boundary
+          if (jel .eq. 0) cycle
+
+          ! Check if element belongs to active layer
+          if (BisactiveElement(jel)) then
+            ! If yes, then just update the element indicator
+            Ddata(jel) = max(Ddata(jel), Ddata(iel))
+          else
+            ! Otherwise, we have to check if the neighbouring element
+            ! exceeds the prescribed threshold level. If this is the case
+            ! it will be processed later or has already been processed
+            if (Ddata(jel) .lt. dthreshold) then
+              Ddata(jel) = max(Ddata(jel), Ddata(iel))
+              BisactiveElement(jel) = .true.
+            end if
+          end if
+        end do
+      end do
+    end subroutine doProtectionLayerUniform
+   
+  end subroutine mhd_estimateRecoveryError
 
   !*****************************************************************************
 
@@ -844,15 +1035,18 @@ contains
     character(LEN=SYS_STRLEN) :: soutputName
 
     ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, isystemFormat
     integer :: discretisationEuler, discretisationTransport
     integer :: isize, ipreadapt, npreadapt, nerrorvariable
     integer, external :: signal_SIGINT
     
-type(t_ucdExport) :: rexport
-real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
-    
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    real(DP) :: ddistance
+    integer :: ive, iel, ivt
+
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
 
@@ -993,30 +1187,25 @@ real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
             
-            ! Compute the error estimator using recovery techniques
-            call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-                                              rsolutionTransport, rtimestepEuler%dinitialTime,&
-                                              relementError1, derror)
+            call mhd_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+                                           rsolutionTransport, relementError1)
 
-            ! Compute the error estimator using recovery techniques
-            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
-                                             relementError2, derror)
-
-            call lsyssc_getbase_double(relementError1, p_Ddata1)
-            call lsyssc_getbase_double(relementError2, p_Ddata2)
-            
-            p_Ddata1 = max(p_Ddata1, p_Ddata2)
-
-!!$            call ucd_startGMV(rexport, UCD_FLAG_STANDARD,&
-!!$                              p_rproblemLevel%rtriangulation,&
-!!$                              'out/error.gmv')
+!!$            ! Compute the error estimator using recovery techniques
+!!$            call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+!!$                                              rsolutionTransport, rtimestepEuler%dinitialTime,&
+!!$                                              relementError1, derror)
 !!$
-!!$            call lsyssc_getbase_double(relementError, p_Ddata)
-!!$            call ucd_addVariableElementBased (rexport, 'e', UCD_VAR_STANDARD, p_Ddata)
-!!$            call ucd_write  (rexport)
-!!$            call ucd_release(rexport)
-!!$            pause
+!!$            ! Compute the error estimator using recovery techniques
+!!$            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+!!$                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
+!!$                                             relementError2, derror)
+!!$
+!!$            call lsyssc_getbase_double(relementError1, p_Ddata1)
+!!$            call lsyssc_getbase_double(relementError2, p_Ddata2)
+!!$            
+!!$            p_Ddata1 = max(p_Ddata1, p_Ddata2)
+
+
 
             ! Perform h-adaptation and update the triangulation structure
             call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
@@ -1151,29 +1340,34 @@ real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
       ! Start time measurement for solution procedure
       call stat_startTimer(rappDescrTransport%rtimerSolution, STAT_TIMERSHORT)
       
-      ! Set velocity field for scalar model problem
-      call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)      
+!!$      ! Set velocity field for scalar model problem
+!!$      call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)      
+!!$
+!!$      ! What time-stepping scheme should be used?
+!!$      select case(rtimestepTransport%ctimestepType)
+!!$        
+!!$      case (TSTEP_RK_SCHEME)
+!!$        
+!!$        ! Adopt explicit Runge-Kutta scheme
+!!$        call tstep_performRKStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
+!!$                                 rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+!!$        
+!!$      case (TSTEP_THETA_SCHEME)
+!!$        
+!!$        ! Adopt two-level theta-scheme
+!!$        call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
+!!$                                    rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+!!$          
+!!$      case DEFAULT
+!!$        call output_line('Unsupported time-stepping algorithm!',&
+!!$                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
+!!$        call sys_halt()
+!!$      end select
 
-      ! What time-stepping scheme should be used?
-      select case(rtimestepTransport%ctimestepType)
-        
-      case (TSTEP_RK_SCHEME)
-        
-        ! Adopt explicit Runge-Kutta scheme
-        call tstep_performRKStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
-                                 rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
-        
-      case (TSTEP_THETA_SCHEME)
-        
-        ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
-                                    rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
-          
-      case DEFAULT
-        call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
-        call sys_halt()
-      end select
+      rtimestepTransport%dTime = rtimestepEuler%dTime
+
+      call codire_initSolution(rparlist, ssectionnameTransport, p_rproblemLevel,&
+                               rtimestepTransport%dTime, rsolutionTransport)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescrTransport%rtimerSolution)
@@ -1220,33 +1414,51 @@ real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
         ! Perform recovery-based error estimation
         !-----------------------------------------------------------------------
         
-        ! Start time measurement for error estimation
-        call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
-        
-        ! Compute the error estimator using recovery techniques
-        call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-                                          rsolutionTransport, rtimestepTransport%dTime,&
-                                          relementError1, derror)
-        
-        ! Stop time measurement for error estimation
-        call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
+!!$        ! Start time measurement for error estimation
+!!$        call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
+!!$        
+!!$        ! Compute the error estimator using recovery techniques
+!!$        call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+!!$                                          rsolutionTransport, rtimestepTransport%dTime,&
+!!$                                          relementError1, derror)
+!!$        
+!!$        ! Stop time measurement for error estimation
+!!$        call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
+!!$
+!!$
+!!$        ! Start time measurement for error estimation
+!!$        call stat_startTimer(rappDescrEuler%rtimerErrorEstimation, STAT_TIMERSHORT)
+!!$        
+!!$        ! Compute the error estimator using recovery techniques
+!!$        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+!!$                                         rsolutionEuler, rtimestepEuler%dTime,&
+!!$                                         relementError2, derror)
+!!$        
+!!$        ! Stop time measurement for error estimation
+!!$        call stat_stopTimer(rappDescrEuler%rtimerErrorEstimation)
+!!$
+!!$        call lsyssc_getbase_double(relementError1, p_Ddata1)
+!!$        call lsyssc_getbase_double(relementError2, p_Ddata2)
+!!$        
+!!$        p_Ddata1 = max(p_Ddata1, p_Ddata2)
 
-
-        ! Start time measurement for error estimation
-        call stat_startTimer(rappDescrEuler%rtimerErrorEstimation, STAT_TIMERSHORT)
-        
-        ! Compute the error estimator using recovery techniques
-        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-                                         rsolutionEuler, rtimestepEuler%dTime,&
-                                         relementError2, derror)
-        
-        ! Stop time measurement for error estimation
-        call stat_stopTimer(rappDescrEuler%rtimerErrorEstimation)
-
+        call lsyssc_createVector(relementError1, p_rproblemLevel%rtriangulation%NEL, .false.)
         call lsyssc_getbase_double(relementError1, p_Ddata1)
-        call lsyssc_getbase_double(relementError2, p_Ddata2)
+        call lsysbl_getbase_double(rsolutionTransport, p_Ddata2)
         
-        p_Ddata1 = max(p_Ddata1, p_Ddata2)
+        call storage_getbase_int2d(p_rproblemLevel%rtriangulation%h_IverticesAtElement,&
+                                   p_IverticesAtElement)
+        
+        ielloop1: do iel = 1, p_rproblemLevel%rtriangulation%NEL
+          do ive = 1, 3
+            if (p_Ddata2(p_IverticesAtElement(ive, iel)) .ge. 0.0_DP) then
+              p_Ddata1(iel) = 1.0_DP
+              cycle ielloop1
+            else
+              p_Ddata1(iel) = 0.0_DP
+            end if
+          end do
+        end do ielloop1
 
         !-------------------------------------------------------------------------
         ! Perform h-adaptation
