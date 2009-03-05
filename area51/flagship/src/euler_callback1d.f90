@@ -811,7 +811,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
+  subroutine euler_calcMatrixGalerkinDiag1d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices in 1D
@@ -823,6 +823,9 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
 !</input>
 
 !<output>
@@ -863,7 +866,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
+  subroutine euler_calcMatrixGalerkin1d(U_i, U_j, C_ij, C_ji, dscale,A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the local Roe matrices in 1D
@@ -875,6 +878,9 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
 !</input>
 
 !<output>
@@ -936,7 +942,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
+  subroutine euler_calcMatrixScalarDissDiag1d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -949,6 +955,9 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
 !</input>
 
 !<output>
@@ -998,7 +1007,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
+  subroutine euler_calcMatrixScalarDiss1d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the local Roe matrices
@@ -1011,6 +1020,9 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
 !</input>
 
 !<output>
@@ -1073,7 +1085,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
+  subroutine euler_calcMatrixTensorDissDiag1d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -1086,6 +1098,9 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
 !</input>
 
 !<output>
@@ -1229,7 +1244,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss1d(U_i, U_j, C_ij, C_ji, A_ij, S_ij)
+  subroutine euler_calcMatrixTensorDiss1d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the local Roe matrices 
@@ -1242,6 +1257,9 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
 !</input>
 
 !<output>
