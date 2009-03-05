@@ -50,7 +50,7 @@ imassantidiffusiontype = 0
 # 0 = no dissipation
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
-idissipationtype = 2
+idissipationtype = 1
 
 # type of system coupling
 # 0 = segregated approach
@@ -142,7 +142,7 @@ errorestimator = ErrorEstimator
 # 12 = linearized FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 20
 
 
 ################################################################################
