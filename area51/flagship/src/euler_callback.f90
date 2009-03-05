@@ -30,6 +30,9 @@
 !# 7.) euler_setBoundary
 !#     -> Imposes boundary conditions for nonlinear solver
 !#
+!# 8.) euler_calcLinearizedFCT
+!#     -> Calculates the linearized FCT correction
+!#
 !# </purpose>
 !##############################################################################
 
@@ -64,6 +67,7 @@ module euler_callback
   public :: euler_calcResidual
   public :: euler_calcRHS
   public :: euler_setBoundary
+  public :: euler_calcLinearizedFCT
 
 contains
 
@@ -1408,5 +1412,331 @@ contains
     end select
     
   end subroutine euler_setBoundary
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcLinearizedFCT(rbdrCond, rproblemLevel, rtimestep, rsolution, rcollection)
+
+!<description>
+    ! This subroutine calculates the linearized FCT correction
+!</description>
+
+!<input>
+    ! boundary condition structure
+    type(t_boundaryCondition), intent(IN) :: rbdrCond
+
+    ! problem level structure
+    type(t_problemLevel), intent(IN) :: rproblemLevel
+
+    ! time-stepping algorithm
+    type(t_timestep), intent(IN) :: rtimestep
+!</input>
+
+!<inputoutput>
+    ! solution vector
+    type(t_vectorBlock), intent(INOUT) :: rsolution
+
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    real(DP), dimension(NDIM2D) :: XDir2D = (/ 1.0_DP, 0.0_DP /)
+    real(DP), dimension(NDIM2D) :: YDir2D = (/ 0.0_DP, 1.0_DP /)
+    
+
+    ! local variables
+    type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_vectorScalar) :: rflux0X, rflux0Y, rfluxX, rfluxY
+    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_u, p_flux0X, p_flux0Y, p_fluxX, p_fluxY
+    integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
+    integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix, coeffMatrix_CX, coeffMatrix_CY, nedge
+
+    templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
+    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentMassMatrix')
+    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedMassMatrix')
+    coeffMatrix_CX       = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
+    coeffMatrix_CY       = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
+    
+    p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
+
+    ! Set pointers
+    call lsyssc_getbase_Kld(p_rmatrix, p_Kld)
+    call lsyssc_getbase_Kcol(p_rmatrix, p_Kcol)
+    call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
+    
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CX), p_Cx)
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CY), p_Cy)
+
+    call lsysbl_getbase_double(rsolution, p_u)
+
+    ! Create diagonal separator
+    h_Ksep = ST_NOHANDLE
+    call storage_copy(p_rmatrix%h_Kld, h_Ksep)
+    call storage_getbase_int(h_Ksep, p_Ksep, p_rmatrix%NEQ+1)
+
+    ! Compute number of edges
+    nedge = int(0.5*(p_rmatrix%NA-p_rmatrix%NEQ))
+
+    call lsyssc_createVector(rflux0X, nedge, NVAR2D, .true., ST_DOUBLE)
+    call lsyssc_createVector(rflux0Y, nedge, NVAR2D, .true., ST_DOUBLE)
+    call lsyssc_createVector(rfluxX, nedge, NVAR2D, .true., ST_DOUBLE)
+    call lsyssc_createVector(rfluxY, nedge, NVAR2D, .true., ST_DOUBLE)
+
+    ! Create flux vectors
+    call lsyssc_getbase_double(rflux0X, p_flux0X)
+    call lsyssc_getbase_double(rflux0Y, p_flux0Y)
+    call lsyssc_getbase_double(rfluxX, p_fluxX)
+    call lsyssc_getbase_double(rfluxY, p_fluxY)
+
+    ! Build the flux vectors
+    call buildFluxVectors2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+                            NVAR2D, nedge, p_u, rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy,&
+                            p_flux0X, p_flux0Y, p_fluxX, p_fluxY)
+
+    call limitSolutionVector(Xdir2D, p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+                             NVAR2D, nedge, p_ML, p_u, p_flux0X, p_fluxX)
+
+    
+    ! Set boundary conditions explicitly
+    call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
+                                   rsolution, rtimestep%dTime,&
+                                   rproblemLevel%p_rproblem%rboundary,&
+                                   euler_calcBoundaryvalues2d)
+
+    call limitSolutionVector(YDir2D, p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+                             NVAR2D, nedge, p_ML, p_u, p_flux0X, p_fluxX)
+
+    ! Set boundary conditions explicitly
+    call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
+                                   rsolution, rtimestep%dTime,&
+                                   rproblemLevel%p_rproblem%rboundary,&
+                                   euler_calcBoundaryvalues2d)
+
+    ! Release flux vectors
+    call storage_free(h_Ksep)
+    call lsyssc_releaseVector(rflux0X)
+    call lsyssc_releaseVector(rfluxX)
+    call lsyssc_releaseVector(rflux0Y)
+    call lsyssc_releaseVector(rfluxY)
+
+  contains
+
+    subroutine buildFluxVectors2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u, dscale,&
+                                  MC, ML, Cx, Cy, flux0X, flux0Y, fluxX, fluxY)
+      
+      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
+      real(DP), dimension(:), intent(IN) :: Cx,Cy,MC,ML
+      real(DP), intent(IN) :: dscale
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NVAR,NEDGE
+      
+      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux0X,flux0Y,fluxX,fluxY
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
+      integer :: ij,ji,i,j, iedge
+
+      real(DP), dimension(:,:), allocatable :: rX,rY
+      real(DP), dimension(NDIM2D) :: a_ij, s_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij
+      real(DP), dimension(NVAR) :: Lbd_ij, W_ij, Daux, Daux1, Daux2, Wp_ij, Wm_ij
+
+      allocate(rX(nvar,neq), rY(nvar,neq)); rX=0; rY=0
+
+      ! Reset Ksep
+      Ksep = Kld; iedge = 0
+      
+      do i = 1, NEQ
+        
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+
+          ! Compute skew-symmetric and symmetric coefficient
+          a_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji));   a_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
+          s_ij(1) = 0.5_DP*(Cx(ij)+Cx(ji));   s_ij(2) = 0.5_DP*(Cy(ij)+Cy(ji))
+
+          
+          ! Calculate characteristic variables for x-direction
+          call euler_calcCharacteristics2d(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
+          Daux = a_ij(1)*Lbd_ij; Wm_ij = min(0.0_DP, Daux)*W_ij; Wp_ij = max(0.0_DP, Daux)*W_ij
+
+          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, Wm_ij, 1, 0.0_DP, Daux1, 1)
+          rX(:,i) = rX(:,i) - 2*dscale*Daux1
+          
+          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, Wp_ij, 1, 0.0_DP, Daux1, 1)
+          rX(:,j) = rX(:,j) - 2*dscale*Daux1
+
+          Daux1 = max(0.0_DP, min(abs(Daux)+s_ij(1)*Lbd_ij,2*abs(Daux)))*W_ij
+          call DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, Daux1, 1, 0.0_DP, Daux2, 1)
+          fluxX(:,iedge) = -Daux2
+
+          
+          ! Calculate characteristic variables for y-direction
+          call euler_calcCharacteristics2d(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
+          Daux = a_ij(2)*Lbd_ij; Wm_ij = min(0.0_DP, Daux)*W_ij; Wp_ij = max(0.0_DP, Daux)*W_ij
+
+          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, Wm_ij, 1, 0.0_DP, Daux, 1)
+          rY(:,i) = rY(:,i) - 2*dscale*Daux
+          
+          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, Wp_ij, 1, 0.0_DP, Daux, 1)
+          rY(:,j) = rY(:,j) - 2*dscale*Daux
+
+          Daux1 = max(0.0_DP, min(abs(Daux)+s_ij(2)*Lbd_ij,2*abs(Daux)))*W_ij
+          call DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, Daux1, 1, 0.0_DP, Daux2, 1)
+          fluxY(:,iedge) = -Daux2
+
+        end do
+      end do
+
+      do i = 1, NEQ
+        rX(:,i) = rX(:,i)/ML(i)
+        rY(:,i) = rY(:,i)/ML(i)
+      end do
+
+      flux0X = fluxX
+      flux0Y = fluxY
+
+      ! Reset Ksep
+      Ksep = Kld;  iedge = 0
+      
+      ! Add contribution of consistent mass matrix
+      do i = 1, NEQ
+        
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+
+          fluxX(:,iedge) = MC(ij)*(rX(:,i)-rX(:,j))+fluxX(:,iedge)
+          fluxY(:,iedge) = MC(ij)*(rY(:,i)-rY(:,j))+fluxY(:,iedge)
+          
+        end do
+      end do
+
+      deallocate(rX, rY)
+
+    end subroutine buildFluxVectors2D
+
+
+    subroutine limitSolutionVector(Dweight, Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, ML, u, flux0, flux)
+
+      include 'intf_gfsyscallback.inc'
+
+      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux0,flux
+      real(DP), dimension(:), intent(IN) :: Dweight, ML
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NVAR,NEDGE
+      
+      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: u
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
+      real(DP), dimension(:,:), allocatable :: pp,pm,qp,qm,rp,rm,r
+      real(DP), dimension(NVAR*NVAR) :: R_ij, L_ij
+      real(DP), dimension(NVAR) :: Lbd_ij, W_ij, Daux, F_ij, F0_ij
+      integer :: ij,ji,i,j,iedge,ivar
+
+      allocate(pp(nvar,neq), pm(nvar,neq), qp(nvar,neq), qm(nvar,neq), rp(nvar,neq), rm(nvar,neq), r(nvar, neq))
+      
+      pp=0; pm=0; qp=0; qm=0; rp=1; rm=1; r=0
+      
+      ! Reset Ksep
+      Ksep = Kld; iedge = 0
+      
+      ! Add contribution of consistent mass matrix
+      do i = 1, NEQ
+        
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+
+          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+
+          call DGEMV('n', NVAR, NVAR, 1.0_DP, L_ij, NVAR, flux(:,iedge), 1, 0.0_DP, F_ij, 1)
+          call DGEMV('n', NVAR, NVAR, 1.0_DP, L_ij, NVAR, flux0(:,iedge), 1, 0.0_DP, F0_ij, 1)
+
+          F_ij = minmod(F_ij, F0_ij);   flux(:,iedge) = F_ij
+
+          ! Sums of raw antidiffusive fluxes
+          pp(:,i) = pp(:,i) + max(0.0_DP,  F_ij)
+          pp(:,j) = pp(:,j) + max(0.0_DP, -F_ij)
+          pm(:,i) = pm(:,i) + min(0.0_DP,  F_ij)
+          pm(:,j) = pm(:,j) + min(0.0_DP, -F_ij)
+
+          ! Sums of admissible edge contributions
+          qp(:,i) = max(qp(:,i),  F0_ij)
+          qp(:,j) = max(qp(:,j), -F0_ij)
+          qm(:,i) = min(qm(:,i),  F0_ij)
+          qm(:,j) = min(qm(:,j), -F0_ij)
+
+        end do
+      end do
+
+
+      ! Compute nodal correction factors
+      do i = 1, NEQ
+        do ivar = 1, nvar
+          if (pp(ivar,i) >  SYS_EPSREAL) rp(ivar,i) = min(1.0_DP, ML(i)*qp(ivar,i)/pp(ivar,i))
+          if (pm(ivar,i) < -SYS_EPSREAL) rm(ivar,i) = min(1.0_DP, ML(i)*qm(ivar,i)/pm(ivar,i))
+        end do
+      end do
+
+
+      ! Reset Ksep
+      Ksep = Kld; iedge = 0
+
+      ! Add contribution of consistent mass matrix
+      do i = 1, NEQ
+        
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+
+          F_ij = flux(:,iedge)
+
+          where (F_ij > 0)
+            F_ij = min(rp(:,i), rm(:,j))*F_ij
+          elsewhere
+            F_ij = min(rm(:,i), rp(:,j))*F_ij
+          end where
+
+          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, W_ij, Lbd_ij, R_ij)
+
+          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, F_ij, 1, 0.0_DP, Daux, 1)
+
+          r(:,i) = r(:,i) + Daux
+          r(:,j) = r(:,j) - Daux
+
+        end do
+      end do
+
+      do i = 1, NEQ
+        u(:,i) = u(:,i) + r(:,i)/ML(i)
+      end do
+
+      deallocate(pp,pm,qp,qm,rp,rm,r)
+      
+    end subroutine limitSolutionVector
+
+
+    pure function minmod(a,b)
+      real(DP), dimension(:), intent(IN) :: a,b
+      real(DP), dimension(size(a)) :: minmod
+
+      where (a > 0 .and. b > 0)
+        minmod = min(a,b)
+      elsewhere (a < 0 .and. b < 0)
+        minmod = max(a,b)
+      elsewhere
+        minmod = 0
+      end where
+    end function minmod
+
+  end subroutine euler_calcLinearizedFCT
 
 end module euler_callback
