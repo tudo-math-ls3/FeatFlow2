@@ -50,7 +50,7 @@ imassantidiffusiontype = 0
 # 0 = no dissipation
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -94,7 +94,7 @@ trifile = grids/2d/rect_01x0.2_quads.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = -1
+celement = 11
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -107,7 +107,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 1
+isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -142,7 +142,7 @@ errorestimator = ErrorEstimator
 # 12 = linearized FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 1
 
 
 ################################################################################
@@ -157,7 +157,7 @@ istabilisation = 20
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.0
 
 # file for UCD output of solution
 ucdsolution = out/shocktube
@@ -177,7 +177,7 @@ ucderror = out/shocktube_error
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -202,7 +202,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.001
+dfinalTime = 0.231
 
 # initial time step size
 dinitialStep = 0.001
@@ -374,7 +374,7 @@ depsStag = 0.0
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 4
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -635,7 +635,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 3
+npreadapt = 0
 
 # number of adaptation steps
 nadapt = 0
@@ -644,7 +644,7 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.001
+dstepadapt = 0.0
 
 # maximum number of refinement levels
 nsubdividemax = 3
