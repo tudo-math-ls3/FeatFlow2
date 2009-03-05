@@ -207,7 +207,7 @@ contains
       real(DP), dimension(nvar,neq), intent(INOUT) :: DdataResidual
       
       ! local variables
-      real(DP) :: dradius, daux, dscale, v1, v2, x1, x2
+      real(DP) :: dradius, daux, dscale, x1, x2
       integer :: ieq
       
       
@@ -218,6 +218,8 @@ contains
       ! Loop over all nodal values
       do ieq = 1, neq
         
+        if (DdataTransport(ieq) .lt. 0.0_DP) cycle
+
         ! Get coodrinates
         x1 = DvertexCoords(1, ieq)
         x2 = DvertexCoords(2, ieq)
@@ -245,16 +247,21 @@ contains
         end if
         
         ! Compute auxiliary quantity
-        daux = dscale * DdataMassMatrix(ieq) * DdataTransport(ieq) / max(dradius, 1.0e-4_DP)
+        daux = dscale * DdataMassMatrix(ieq) / max(dradius, 1.0e-4_DP)
+!!$            max(DdataTransport(ieq), 0.0_DP) / max(dradius, 1.0e-4_DP)
         
-        ! Compute velocities
-        v1 = DdataEuler(2, ieq)/DdataEuler(1, ieq)
-        v2 = DdataEuler(3, ieq)/DdataEuler(1, ieq)
-        
-        ! Impose source values into global vector
-        DdataResidual(2, ieq) = DdataResidual(2, ieq) + daux * x1
-        DdataResidual(3, ieq) = DdataResidual(3, ieq) + daux * x2
-        DdataResidual(4, ieq) = DdataResidual(4, ieq) + max(daux * (x1*v1 + x2*v2), 0.0_DP)
+        ! Impose source values into the x-momentum equation
+        DdataResidual(2, ieq) = DdataResidual(2, ieq) +&
+                                daux * x1 * max(DdataEuler(1, ieq), 0.0_DP)
+
+        ! Impose source values into the y-momentum equation
+        DdataResidual(3, ieq) = DdataResidual(3, ieq) +&
+                                daux * x2 * max(DdataEuler(1, ieq), 0.0_DP)
+
+        ! Impose source values into the energy equation
+        DdataResidual(4, ieq) = DdataResidual(4, ieq) +&
+                                max(daux * (x1 * DdataEuler(2, ieq)  +&
+                                            x2 * DdataEuler(3, ieq) ), 0.0_DP)
       end do
       
     end subroutine calcSourceTermInterleaveFormat
@@ -275,7 +282,7 @@ contains
       real(DP), dimension(neq,nvar), intent(INOUT) :: DdataResidual
       
       ! local variables
-      real(DP) :: dradius, daux, dscale, v1, v2, x1, x2
+      real(DP) :: dradius, daux, dscale, x1, x2
       integer :: ieq
       
       
@@ -286,6 +293,8 @@ contains
       ! Loop over all nodal values
       do ieq = 1, neq
         
+        if (DdataTransport(ieq) .lt. 0.0_DP) cycle
+
         ! Get coodrinates
         x1 = DvertexCoords(1, ieq)
         x2 = DvertexCoords(2, ieq)
@@ -313,16 +322,21 @@ contains
         end if
         
         ! Compute auxiliary quantity
-        daux = dscale * DdataMassMatrix(ieq) * DdataTransport(ieq) / max(dradius, 1.0e-4_DP)
+        daux = dscale * DdataMassMatrix(ieq) / max(dradius, 1.0e-4_DP)
+!!$            max(DdataTransport(ieq), 0.0_DP) / max(dradius, 1.0e-4_DP)
         
-        ! Compute velocities
-        v1 = DdataEuler(ieq, 2)/DdataEuler(ieq, 1)
-        v2 = DdataEuler(ieq, 3)/DdataEuler(ieq, 1)
-        
-        ! Impose source values into global vector
-        DdataResidual(ieq, 2) = DdataResidual(ieq, 2) + daux * x1
-        DdataResidual(ieq, 3) = DdataResidual(ieq, 3) + daux * x2
-        DdataResidual(ieq, 4) = DdataResidual(ieq, 4) + max(daux * (x1*v1 + x2*v2), 0.0_DP)
+        ! Impose source values into the x-momentum equation
+        DdataResidual(ieq, 2) = DdataResidual(ieq, 2) +&
+                                daux * x1 * max(DdataEuler(ieq, 1), 0.0_DP)
+
+        ! Impose source values into the y-momentum equation
+        DdataResidual(ieq, 3) = DdataResidual(ieq, 3) +&
+                                daux * x2 * max(DdataEuler(ieq, 1), 0.0_DP)
+
+        ! Impose source values into the energy equation
+        DdataResidual(ieq, 4) = DdataResidual(ieq, 4) +&
+                                max(daux * (x1 * DdataEuler(ieq, 2)  +&
+                                            x2 * DdataEuler(ieq, 3) ), 0.0_DP)
       end do
       
     end subroutine calcSourceTermBlockFormat
@@ -440,7 +454,7 @@ contains
       ! storen in the third quick access string.
 
       ! Retrieve solution vectors from colletion and set pointer
-       rsolutionEuler     => collct_getvalue_vec(rcollection,&
+      rsolutionEuler     => collct_getvalue_vec(rcollection,&
                                            trim(rcollection%SquickAccess(2)))
       rsolutionTransport => collct_getvalue_vec(rcollection,&
                                            trim(rcollection%SquickAccess(3)))
