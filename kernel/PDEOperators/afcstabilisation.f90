@@ -955,7 +955,7 @@ contains
 !</result>
 !</function>
 
-    if (p > SYS_EPSREAL) then
+    if (p > 1e-12_DP) then
       r = q/p
     else
       r = default
@@ -991,8 +991,8 @@ contains
 !</result>
 !</function>
     
-    if (p > SYS_EPSREAL) then
-      r = min(q/p, dbound)
+    if (p*dbound > q + 1e-12_DP) then
+      r = q/p
     else
       r = default
     end if
