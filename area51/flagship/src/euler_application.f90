@@ -302,9 +302,11 @@ contains
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
     
     ! Release time-stepping
+    call tstep_infoTimestep(rtimestep, .false.)
     call tstep_releaseTimestep(rtimestep)
     
     ! Release solver
+    call solver_infoSolver(rsolver, .false.)
     call solver_releaseSolver(rsolver)
     
     ! Release problem structure
