@@ -118,7 +118,7 @@
 
 !<subroutine>
 
-  subroutine fcb_calcMatrix(U_i, U_j, C_ij, C_ji, K_ij, K_ji)
+  subroutine fcb_calcMatrix(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
 
     use fsystem
 
@@ -133,6 +133,7 @@
 !<input>
   real(DP), dimension(:), intent(IN)  :: U_i,U_j
   real(DP), dimension(:), intent(IN)  :: C_ij,C_ji
+  real(DP), intent(IN)                :: dscale
 !</input>
 
 !<outptu>
