@@ -22,7 +22,7 @@
 !# and Turek in a series of publications. As a starting point for systems of
 !# conservation laws, the reader is referred to the book chapter
 !#
-!#     D. Kuzmin and M. Moeller, "Algebraic flux correction II. Compsressible Euler
+!#     D. Kuzmin and M. Moeller, "Algebraic flux correction II. Compressible Euler
 !#     Equations", In: D. Kuzmin et al. (eds), Flux-Corrected Transport: Principles, 
 !#     Algorithms, and Applications, Springer, 2005, 207-250.
 !#
@@ -861,7 +861,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
 
       
@@ -887,17 +887,14 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
 
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
-          
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + A_ij(ivar) + S_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) - A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - A_ij(ivar) + S_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
           end do
         end do
       end do
@@ -922,7 +919,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
 
       
@@ -949,17 +946,14 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
           
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
-
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + A_ij(ivar) + S_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) - A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - A_ij(ivar) + S_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
           end do
         end do
       end do
@@ -984,7 +978,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
       
 
@@ -1012,17 +1006,14 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
           
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
-
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + A_ij(ivar) + S_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) - A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - A_ij(ivar) + S_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
           end do
         end do
       end do
@@ -1047,7 +1038,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
 
       
@@ -1073,17 +1064,14 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + A_ij(ivar) + S_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) - A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - A_ij(ivar) + S_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
           end do
         end do
       end do
@@ -1108,7 +1096,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
 
 
@@ -1135,17 +1123,14 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
 
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
-          
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + A_ij(ivar) + S_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) - A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - A_ij(ivar) + S_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
           end do
         end do
       end do
@@ -1170,7 +1155,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
 
 
@@ -1198,17 +1183,14 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + A_ij(ivar) + S_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) - A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + A_ij(ivar) - S_ij(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - A_ij(ivar) + S_ij(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
           end do
         end do
       end do
@@ -1233,7 +1215,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
 
@@ -1260,19 +1242,16 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
-          
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
           
           ! Assemble the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + A_ij(idx) + S_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) - A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - A_ij(idx) + S_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
             end do
           end do
         end do
@@ -1298,7 +1277,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
       
@@ -1326,19 +1305,16 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + A_ij(idx) + S_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) - A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - A_ij(idx) + S_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
             end do
           end do
         end do
@@ -1364,7 +1340,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
       
@@ -1393,19 +1369,16 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
           
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
-
           ! Assemble the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + A_ij(idx) + S_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) - A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - A_ij(idx) + S_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
             end do
           end do
         end do
@@ -1431,7 +1404,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
 
@@ -1458,19 +1431,16 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + A_ij(idx) + S_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) - A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - A_ij(idx) + S_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
             end do
           end do
         end do
@@ -1496,7 +1466,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
       
@@ -1524,19 +1494,16 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
           
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
-
           ! Assemble the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + A_ij(idx) + S_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) - A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - A_ij(idx) + S_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
             end do
           end do
         end do
@@ -1562,7 +1529,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
 
@@ -1591,19 +1558,16 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, A_ij, S_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
 
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
-          
           ! Assemble the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + A_ij(idx) + S_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) - A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + A_ij(idx) - S_ij(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - A_ij(idx) + S_ij(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
             end do
           end do
         end do
@@ -1851,7 +1815,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
       
@@ -1874,16 +1838,13 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
           
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
-
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat7Diag_1D
@@ -1907,7 +1868,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -1931,16 +1892,13 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat7Diag_2D
@@ -1964,7 +1922,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -1989,16 +1947,13 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
           
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
-
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat7Diag_3D
@@ -2022,7 +1977,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
       
@@ -2045,16 +2000,13 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat9Diag_1D
@@ -2078,7 +2030,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2102,16 +2054,13 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
 
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
-          
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat9Diag_2D
@@ -2135,7 +2084,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2160,16 +2109,13 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat9Diag_3D
@@ -2193,7 +2139,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
       
@@ -2216,16 +2162,13 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat7_1D
@@ -2249,7 +2192,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2273,16 +2216,13 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat7_2D
@@ -2306,7 +2246,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2331,16 +2271,13 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat7_3D
@@ -2364,7 +2301,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2387,16 +2324,13 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat9_1D
@@ -2420,7 +2354,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2444,16 +2378,13 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat9_2D
@@ -2477,7 +2408,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,S_ij
+      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2502,16 +2433,13 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, A_ij, S_ij)
-
-          ! Scale matrix blocks
-          A_ij = dscale*A_ij; S_ij = dscale*S_ij
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
 
           ! Assemble the global operator
-          K(:,ii) = K(:,ii) + A_ij + S_ij
-          K(:,ij) = K(:,ij) - A_ij - S_ij
-          K(:,ji) = K(:,ji) + A_ij - S_ij
-          K(:,jj) = K(:,jj) - A_ij + S_ij
+          K(:,ii) = K(:,ii) - K_ij
+          K(:,ij) = K(:,ij) + K_ij
+          K(:,ji) = K(:,ji) + K_ji
+          K(:,jj) = K(:,jj) - K_ji
         end do
       end do
     end subroutine doOperatorMat9_3D
@@ -3631,7 +3559,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
 
@@ -3775,7 +3703,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
 
@@ -4011,7 +3939,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
 
@@ -4338,7 +4266,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
       
@@ -4482,7 +4410,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
 
@@ -4717,7 +4645,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
       
@@ -5218,7 +5146,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
       
@@ -5356,7 +5284,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
       
@@ -5583,7 +5511,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
       
@@ -5898,7 +5826,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
       
@@ -6036,7 +5964,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
 
@@ -6263,7 +6191,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: A_ij,R_ij,L_ij
+      real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
       real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
       integer :: ij,ji,i,j,iloc,jloc,ivar
       
