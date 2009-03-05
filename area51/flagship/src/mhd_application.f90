@@ -1322,6 +1322,10 @@ contains
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
                                     rsolutionEuler, mhd_nlsolverCallback, rcollectionEuler)
+
+        ! Perform characteristic FCT postprocessing
+        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
+                                     rsolutionEuler, rcollectionEuler)
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
