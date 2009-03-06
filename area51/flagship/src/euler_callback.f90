@@ -1450,7 +1450,8 @@ contains
     ! local variables
     type(t_matrixScalar), pointer :: p_rmatrix
     type(t_vectorScalar) :: rflux0X, rflux0Y, rfluxX, rfluxY
-    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_u, p_flux0X, p_flux0Y, p_fluxX, p_fluxY
+    type(t_vectorBlock) :: ruX, ruY
+    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_u, p_flux0X, p_flux0Y, p_fluxX, p_fluxY, p_uX, p_uY
     integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
     integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix, coeffMatrix_CX, coeffMatrix_CY, nedge
 
@@ -1487,6 +1488,11 @@ contains
     call lsyssc_createVector(rfluxX, nedge, NVAR2D, .true., ST_DOUBLE)
     call lsyssc_createVector(rfluxY, nedge, NVAR2D, .true., ST_DOUBLE)
 
+    call lsysbl_createVectorBlock(rsolution, ruX)
+    call lsysbl_createVectorBlock(rsolution, ruY)
+    call lsysbl_getbase_double(ruX, p_uX)
+    call lsysbl_getbase_double(ruY, p_uY)
+    
     ! Create flux vectors
     call lsyssc_getbase_double(rflux0X, p_flux0X)
     call lsyssc_getbase_double(rflux0Y, p_flux0Y)
@@ -1498,18 +1504,24 @@ contains
                             NVAR2D, nedge, p_u, rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy,&
                             p_flux0X, p_flux0Y, p_fluxX, p_fluxY)
 
+    p_fluxX = p_fluxX + p_fluxY
+    p_flux0X = p_flux0X + p_flux0Y
+    
     call limitSolutionVector(Xdir2D, p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
                              NVAR2D, nedge, p_ML, p_u, p_flux0X, p_fluxX)
-
     
-    ! Set boundary conditions explicitly
-    call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
-                                   rsolution, rtimestep%dTime,&
-                                   rproblemLevel%p_rproblem%rboundary,&
-                                   euler_calcBoundaryvalues2d)
+   
 
-    call limitSolutionVector(YDir2D, p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                             NVAR2D, nedge, p_ML, p_u, p_flux0X, p_fluxX)
+!!$    ! Set boundary conditions explicitly
+!!$    call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
+!!$                                   rsolution, rtimestep%dTime,&
+!!$                                   rproblemLevel%p_rproblem%rboundary,&
+!!$                                   euler_calcBoundaryvalues2d)
+
+!!$    call limitSolutionVector(YDir2D, p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+!!$                             NVAR2D, nedge, p_ML, p_u, p_flux0Y, p_fluxY, p_uY)
+
+!!!$    p_u = p_u + p_uX! + p_uY
 
     ! Set boundary conditions explicitly
     call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
@@ -1523,6 +1535,8 @@ contains
     call lsyssc_releaseVector(rfluxX)
     call lsyssc_releaseVector(rflux0Y)
     call lsyssc_releaseVector(rfluxY)
+    call lsysbl_releaseVector(ruX)
+    call lsysbl_releaseVector(ruY)
 
   contains
 
@@ -1546,7 +1560,7 @@ contains
       real(DP), dimension(NVAR*NVAR) :: R_ij
       real(DP), dimension(NVAR) :: Lbd_ij, W_ij, Daux, Daux1, Daux2, Wp_ij, Wm_ij
 
-      allocate(rX(nvar,neq), rY(nvar,neq)); rX=0; rY=0
+!!$      allocate(rX(nvar,neq), rY(nvar,neq)); rX=0; rY=0
 
       ! Reset Ksep
       Ksep = Kld; iedge = 0
@@ -1566,66 +1580,65 @@ contains
           call euler_calcCharacteristics2d(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
           Daux = a_ij(1)*Lbd_ij; Wm_ij = min(0.0_DP, Daux)*W_ij; Wp_ij = max(0.0_DP, Daux)*W_ij
 
-          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, Wm_ij, 1, 0.0_DP, Daux1, 1)
-          rX(:,i) = rX(:,i) - 2*dscale*Daux1
-          
-          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, Wp_ij, 1, 0.0_DP, Daux1, 1)
-          rX(:,j) = rX(:,j) - 2*dscale*Daux1
+!!$          call DGEMV('n', NVAR, NVAR, 2.0_DP*dscale, R_ij, NVAR, Wm_ij, 1, 0.0_DP, Daux1, 1)
+!!$          rX(:,i) = rX(:,i) - Daux1
+!!$          
+!!$          call DGEMV('n', NVAR, NVAR, 2.0_DP*dscale, R_ij, NVAR, Wp_ij, 1, 0.0_DP, Daux1, 1)
+!!$          rX(:,j) = rX(:,j) - Daux1
 
-          Daux1 = max(0.0_DP, min(abs(Daux)+s_ij(1)*Lbd_ij,2*abs(Daux)))*W_ij
+          Daux1 = max(0.0_DP, min(abs(Daux)+s_ij(1)*Lbd_ij, 2.0_DP*abs(Daux)))*W_ij
           call DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, Daux1, 1, 0.0_DP, Daux2, 1)
-          fluxX(:,iedge) = -Daux2
-
-          
+          fluxX(:,iedge) = - Daux2
+                    
           ! Calculate characteristic variables for y-direction
           call euler_calcCharacteristics2d(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
           Daux = a_ij(2)*Lbd_ij; Wm_ij = min(0.0_DP, Daux)*W_ij; Wp_ij = max(0.0_DP, Daux)*W_ij
 
-          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, Wm_ij, 1, 0.0_DP, Daux, 1)
-          rY(:,i) = rY(:,i) - 2*dscale*Daux
-          
-          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, Wp_ij, 1, 0.0_DP, Daux, 1)
-          rY(:,j) = rY(:,j) - 2*dscale*Daux
+!!$          call DGEMV('n', NVAR, NVAR, 2.0_DP*dscale, R_ij, NVAR, Wm_ij, 1, 0.0_DP, Daux1, 1)
+!!$          rY(:,i) = rY(:,i) - Daux1
+!!$          
+!!$          call DGEMV('n', NVAR, NVAR, 2.0_DP*dscale, R_ij, NVAR, Wp_ij, 1, 0.0_DP, Daux1, 1)
+!!$          rY(:,j) = rY(:,j) - Daux1
 
-          Daux1 = max(0.0_DP, min(abs(Daux)+s_ij(2)*Lbd_ij,2*abs(Daux)))*W_ij
+          Daux1 = max(0.0_DP, min(abs(Daux)+s_ij(2)*Lbd_ij, 2.0_DP*abs(Daux)))*W_ij
           call DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, Daux1, 1, 0.0_DP, Daux2, 1)
-          fluxY(:,iedge) = -Daux2
+          fluxY(:,iedge) = - Daux2
 
         end do
       end do
 
-      do i = 1, NEQ
-        rX(:,i) = rX(:,i)/ML(i)
-        rY(:,i) = rY(:,i)/ML(i)
-      end do
+!!$      do i = 1, NEQ
+!!$        rX(:,i) = rX(:,i)/ML(i)
+!!$        rY(:,i) = rY(:,i)/ML(i)
+!!$      end do
 
       flux0X = fluxX
       flux0Y = fluxY
 
-      ! Reset Ksep
-      Ksep = Kld;  iedge = 0
-      
-      ! Add contribution of consistent mass matrix
-      do i = 1, NEQ
-        
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+!!$      ! Reset Ksep
+!!$      Ksep = Kld;  iedge = 0
+!!$      
+!!$      ! Add contribution of consistent mass matrix
+!!$      do i = 1, NEQ
+!!$        
+!!$        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+!!$          
+!!$          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+!!$
+!!$          fluxX(:,iedge) = MC(ij)*(rX(:,i)-rX(:,j))+fluxX(:,iedge)
+!!$          fluxY(:,iedge) = MC(ij)*(rY(:,i)-rY(:,j))+fluxY(:,iedge)
+!!$          
+!!$        end do
+!!$      end do
 
-          fluxX(:,iedge) = MC(ij)*(rX(:,i)-rX(:,j))+fluxX(:,iedge)
-          fluxY(:,iedge) = MC(ij)*(rY(:,i)-rY(:,j))+fluxY(:,iedge)
-          
-        end do
-      end do
-
-      deallocate(rX, rY)
+!!$      deallocate(rX, rY)
 
     end subroutine buildFluxVectors2D
 
 
     subroutine limitSolutionVector(Dweight, Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, ML, u, flux0, flux)
 
-      include 'intf_gfsyscallback.inc'
+      include '../../../kernel/PDEOperators/intf_gfsyscallback.inc'
 
       real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux0,flux
       real(DP), dimension(:), intent(IN) :: Dweight, ML
@@ -1655,12 +1668,14 @@ contains
           
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
 
-          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+!!$          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+!!$
+!!$          call DGEMV('n', NVAR, NVAR, 1.0_DP, L_ij, NVAR, flux(:,iedge), 1, 0.0_DP, F_ij, 1)
+!!$          call DGEMV('n', NVAR, NVAR, 1.0_DP, L_ij, NVAR, flux0(:,iedge), 1, 0.0_DP, F0_ij, 1)
+!!$
+!!$          F_ij = minmod(F_ij, F0_ij);   flux(:,iedge) = F_ij
 
-          call DGEMV('n', NVAR, NVAR, 1.0_DP, L_ij, NVAR, flux(:,iedge), 1, 0.0_DP, F_ij, 1)
-          call DGEMV('n', NVAR, NVAR, 1.0_DP, L_ij, NVAR, flux0(:,iedge), 1, 0.0_DP, F0_ij, 1)
-
-          F_ij = minmod(F_ij, F0_ij);   flux(:,iedge) = F_ij
+          F_ij = flux(:,iedge); W_ij = u(:,j)-u(:,i)
 
           ! Sums of raw antidiffusive fluxes
           pp(:,i) = pp(:,i) + max(0.0_DP,  F_ij)
@@ -1669,14 +1684,13 @@ contains
           pm(:,j) = pm(:,j) + min(0.0_DP, -F_ij)
 
           ! Sums of admissible edge contributions
-          qp(:,i) = max(qp(:,i),  F0_ij)
-          qp(:,j) = max(qp(:,j), -F0_ij)
-          qm(:,i) = min(qm(:,i),  F0_ij)
-          qm(:,j) = min(qm(:,j), -F0_ij)
+          qp(:,i) = max(qp(:,i),  W_ij)
+          qp(:,j) = max(qp(:,j), -W_ij)
+          qm(:,i) = min(qm(:,i),  W_ij)
+          qm(:,j) = min(qm(:,j), -W_ij)
 
         end do
       end do
-
 
       ! Compute nodal correction factors
       do i = 1, NEQ
@@ -1699,24 +1713,32 @@ contains
 
           F_ij = flux(:,iedge)
 
-          where (F_ij > 0)
-            F_ij = min(rp(:,i), rm(:,j))*F_ij
-          elsewhere
-            F_ij = min(rm(:,i), rp(:,j))*F_ij
-          end where
+          if (F_ij(1) > 0) then
+            F_ij = min(rp(1,i), rm(1,j))*F_ij
+          else
+            F_ij = min(rm(1,i), rp(1,j))*F_ij
+          end if
 
-          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, W_ij, Lbd_ij, R_ij)
+!!$          where (F_ij > 0)
+!!$            F_ij = min(rp(:,i), rm(:,j))*F_ij
+!!$          elsewhere
+!!$            F_ij = min(rm(:,i), rp(:,j))*F_ij
+!!$          end where
 
-          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, F_ij, 1, 0.0_DP, Daux, 1)
+!!$          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, W_ij, Lbd_ij, R_ij)
+!!$
+!!$          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, F_ij, 1, 0.0_DP, Daux, 1)
+
+          Daux = F_ij
 
           r(:,i) = r(:,i) + Daux
           r(:,j) = r(:,j) - Daux
 
         end do
       end do
-
+      
       do i = 1, NEQ
-        u(:,i) = u(:,i) + r(:,i)/ML(i)
+        u(:,i) = r(:,i)/ML(i)
       end do
 
       deallocate(pp,pm,qp,qm,rp,rm,r)
