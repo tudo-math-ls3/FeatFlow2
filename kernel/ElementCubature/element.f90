@@ -781,7 +781,7 @@ contains
 
     select case (elem_getPrimaryElement(celement))
     
-    ! -= 1D element types =-
+    ! -= 1D Line Elements =-
     case (EL_P0_1D)
       ! local DOFs for 1D P0
       elem_igetNDofLoc = 1
@@ -797,9 +797,10 @@ contains
     case (EL_PN_1D)
       ! local DOFs for 1D Pn
       elem_igetNDofLoc = 1 + iand(ishft(celement,-16),255_I32)
-    ! -= 2D element types =-
-    case (EL_P0, EL_Q0)
-      ! local DOFs for Q0
+    
+    ! -= 2D Triangle Elements =-
+    case (EL_P0)
+      ! local DOFs for P0
       elem_igetNDofLoc = 1
     case (EL_P1)
       ! local DOFs for P1
@@ -813,6 +814,11 @@ contains
     case (EL_P1T)
       ! local DOFs for Ex20
       elem_igetNDofLoc = 3
+    
+    ! -= 2D Quadrilateral Elements =-
+    case (EL_Q0)
+      ! local DOFs for Q0
+      elem_igetNDofLoc = 1
     case (EL_Q1)
       ! local DOFs for Q1
       elem_igetNDofLoc = 4
@@ -826,27 +832,30 @@ contains
       ! local DOFs for QP1
       elem_igetNDofLoc = 3
     case (EL_Q1T)
-      ! local DOFs for Ex30
+      ! local DOFs for Ex30, Ex31
       elem_igetNDofLoc = 4
     case (EL_Q1TB)
       ! local DOFs for EB30
       elem_igetNDofLoc = 5
     case (EL_Q2T)
       ! local DOFs for Ex50 
-      ! 9 DOF's per element. 
       elem_igetNDofLoc = 9
     case (EL_Q2TB)
-      ! local DOFs for EB30 
-      ! 10 DOF's per element. 
+      ! local DOFs for EB50 
       elem_igetNDofLoc = 10
     
-    ! -= 3D element types =-
-    case (EL_P0_3D, EL_Q0_3D,EL_Y0_3D,EL_R0_3D)
+    ! -= 3D Tetrahedron Elements =-
+    case (EL_P0_3D)
       ! local DOFs for 3D P0, Q0, Y0, R0
       elem_igetNDofLoc = 1
     case (EL_P1_3D)
       ! local DOFs for 3D P1
       elem_igetNDofLoc = 4
+    
+    ! -= 3D Hexahedron Elements =-
+    case (EL_Q0_3D)
+      ! local DOFs for 3D Q0
+      elem_igetNDofLoc = 1
     case (EL_Q1_3D)
       ! local DOFs for 3D Q1
       elem_igetNDofLoc = 8
@@ -856,18 +865,28 @@ contains
     case (EL_QP1_3d)
       ! local DOFs for 3D QP1
       elem_igetNDofLoc = 4
-    case (EL_Y1_3D)
-      ! local DOFs for 3D Y1
-      elem_igetNDofLoc = 5
-    case (EL_R1_3D)
-      ! local DOFs for 3D R1
-      elem_igetNDofLoc = 6
     case (EL_Q1T_3D)
       ! local DOFs for 3D Ex30
       elem_igetNDofLoc = 6
     case (EL_Q2T_3D)
       ! local DOFs for 3D Ex50
       elem_igetNDofLoc = 19
+
+    ! -= 3D Pyramid Elements =-
+    case (EL_Y0_3D)
+      ! local DOFs for 3D Y0
+      elem_igetNDofLoc = 1
+    case (EL_Y1_3D)
+      ! local DOFs for 3D Y1
+      elem_igetNDofLoc = 5
+    
+    ! -= 3D Prism Elements =-
+    case (EL_R0_3D)
+      ! local DOFs for 3D R0
+      elem_igetNDofLoc = 1
+    case (EL_R1_3D)
+      ! local DOFs for 3D R1
+      elem_igetNDofLoc = 6
       
     case default
       elem_igetNDofLoc = 0
@@ -920,7 +939,7 @@ contains
 
     select case (elem_getPrimaryElement(celement))
     
-    ! -= 1D element types =-
+    ! -= 1D Line Elements =-
     case (EL_P0_1D)
       ! local DOFs for P0
       ndofAtElement  = 1
@@ -938,8 +957,9 @@ contains
       ! local DOFs for Pn
       ndofAtVertices = 2
       ndofAtElement = iand(ishft(celement,-16),255_I32)-1
-    ! -= 2D element types =-
-    case (EL_P0, EL_Q0)
+    
+    ! -= 2D Triangle Elements =-
+    case (EL_P0)
       ! local DOFs for Q0
       ndofAtElement  = 1
     case (EL_P1)
@@ -954,8 +974,13 @@ contains
       ndofAtVertices = 3
       ndofAtEdges    = 6
     case (EL_P1T)
-      ! local DOFs for Ex20
+      ! local DOFs for P1~
       ndofAtEdges    = 3
+    
+    ! -= 2D Quadrilateral Elements =-
+    case (EL_Q0)
+      ! local DOFs for Q0
+      ndofAtElement  = 1
     case (EL_Q1)
       ! local DOFs for Q1
       ndofAtVertices = 4
@@ -988,13 +1013,18 @@ contains
       ndofAtEdges    = 8
       ndofAtElement  = 2
       
-    ! -= 3D element types =-
-    case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
+    ! -= 3D Tetrahedron Elements =-
+    case (EL_P0_3D)
       ! local DOFs for P0,Q0,Y0,R0
       ndofAtElement  = 1
     case (EL_P1_3D)
       ! local DOFs for P1
       ndofAtVertices = 4
+    
+    ! -= 3D Hexahedron Elements =-
+    case (EL_Q0_3D)
+      ! local DOFs for Q0
+      ndofAtElement  = 1
     case (EL_Q1_3D)
       ! local DOFs for Q1
       ndofAtVertices = 8
@@ -1007,12 +1037,6 @@ contains
     case (EL_QP1_3D)
       ! local DOFs for QP1
       ndofAtElement  = 4
-    case (EL_Y1_3D)
-      ! local DOFs for Y1
-      ndofAtVertices = 5
-    case (EL_R1_3D)
-      ! local DOFs for R1
-      ndofAtVertices = 6
     case (EL_Q1T_3D)
       ! local DOFs for Ex30
       ndofAtFaces = 6
@@ -1020,6 +1044,22 @@ contains
       ! local DOFs for Ex50
       ndofAtFaces = 18
       ndofAtElement = 1
+      
+    ! -= 3D Pyramid Elements =-
+    case (EL_Y0_3D)
+      ! local DOFs for Y0
+      ndofAtElement  = 1
+    case (EL_Y1_3D)
+      ! local DOFs for Y1
+      ndofAtVertices = 5
+
+    ! -= 3D Pyramid Elements =-
+    case (EL_R0_3D)
+      ! local DOFs for R0
+      ndofAtElement  = 1
+    case (EL_R1_3D)
+      ! local DOFs for R1
+      ndofAtVertices = 6
     end select
 
   end subroutine
@@ -1117,8 +1157,8 @@ contains
     case (EL_R0_3D, EL_R1_3D)
       ! These work on the reference prism
       elem_igetCoordSystem = TRAFO_CS_REF3DPRISM
-    case (EL_Q1T_3D+EL_NONPARAMETRIC)
-      ! EM30; these work in real coordinates
+    case (EL_Q1T_3D+EL_NONPARAMETRIC,EL_Q2T_3D+EL_NONPARAMETRIC)
+      ! EM30, EM50; these work in real coordinates
       elem_igetCoordSystem = TRAFO_CS_REAL3DHEXA
       
     case default
