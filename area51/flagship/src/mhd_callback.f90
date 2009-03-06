@@ -207,8 +207,23 @@ contains
       real(DP), dimension(nvar,neq), intent(INOUT) :: DdataResidual
       
       ! local variables
-      real(DP) :: dradius, daux, dscale, x1, x2
+      real(DP) :: drad, dang, daux, dscale, x1, x2
       integer :: ieq
+
+      real(DP) :: m1,m2,m3
+
+      real(DP), dimension(:,:), allocatable, save :: DsourceTerm
+
+      if (.not. allocated(DsourceTerm)) then
+        allocate(DsourceTerm(nvar,neq))
+      end if
+
+      if (istep .ne. 0) then
+        DdataResidual = DdataResidual + DsourceTerm
+        return
+      end if
+
+      m1=0; m2=0; m3=0
       
       
       ! Compute the scaling parameter
@@ -218,51 +233,71 @@ contains
       ! Loop over all nodal values
       do ieq = 1, neq
         
-        if (DdataTransport(ieq) .lt. 0.0_DP) cycle
+!!$        if (DdataTransport(ieq) .lt. 0.0_DP) cycle
 
         ! Get coodrinates
         x1 = DvertexCoords(1, ieq)
         x2 = DvertexCoords(2, ieq)
           
-        ! Compute distance from origin
-        dradius = sqrt(x1*x1 + x2*x2)
+        ! Compute polar coordinates
+        drad = sqrt(x1*x1 + x2*x2)
+        dang = atan2(x2, x1)
         
-        ! Compute unit vector emanating from the origin
-        if (x1> 0.0_DP) then
-          daux = atan(x2/x1)
-          x1   = cos(daux)
-          x2   = sin(daux)
-        elseif (x1 < 0.0_DP) then
-          daux = atan(x2/x1)
-          x1   = -cos(daux)
-          x2   = -sin(daux)
-        else
-          if (x2 > 0.0) then
-            x1 = 0.0_DP
-            x2 = 1.0_DP
-          else
-            x1 =  0.0_DP
-            x2 = -1.0_DP
-          end if
-        end if
+        ! Compute unit vector into origin
+        x1 = cos(dang)
+        x2 = sin(dang)
+
+!!$        if (x1> 0.0_DP) then
+!!$          daux = atan(x2/x1)
+!!$          x1   = cos(daux)
+!!$          x2   = sin(daux)
+!!$        elseif (x1 < 0.0_DP) then
+!!$          daux = atan(x2/x1)
+!!$          x1   = -cos(daux)
+!!$          x2   = -sin(daux)
+!!$        else
+!!$          if (x2 > 0.0) then
+!!$            x1 = 0.0_DP
+!!$            x2 = 1.0_DP
+!!$          else
+!!$            x1 =  0.0_DP
+!!$            x2 = -1.0_DP
+!!$          end if
+!!$        end if
         
         ! Compute auxiliary quantity
-        daux = dscale * DdataMassMatrix(ieq) / max(dradius, 1.0e-4_DP)
-!!$            max(DdataTransport(ieq), 0.0_DP) / max(dradius, 1.0e-4_DP)
+!!$        daux = dscale * DdataMassMatrix(ieq) / max(drad, 1.0e-4_DP)    
+        daux = dscale * DdataMassMatrix(ieq) * max(DdataTransport(ieq), 0.0_DP) / max(drad, 1.0e-4_DP)
         
-        ! Impose source values into the x-momentum equation
-        DdataResidual(2, ieq) = DdataResidual(2, ieq) +&
-                                daux * x1 * max(DdataEuler(1, ieq), 0.0_DP)
 
-        ! Impose source values into the y-momentum equation
-        DdataResidual(3, ieq) = DdataResidual(3, ieq) +&
-                                daux * x2 * max(DdataEuler(1, ieq), 0.0_DP)
+        DsourceTerm(1, ieq) = 0.0_DP
+        DsourceTerm(2, ieq) = daux * x1
+        DsourceTerm(3, ieq) = daux * x2
+        DsourceTerm(4, ieq) = daux * (x1 * DdataEuler(2, ieq) + x2 * DdataEuler(3, ieq) )/DdataEuler(1, ieq)
 
-        ! Impose source values into the energy equation
-        DdataResidual(4, ieq) = DdataResidual(4, ieq) +&
-                                max(daux * (x1 * DdataEuler(2, ieq)  +&
-                                            x2 * DdataEuler(3, ieq) ), 0.0_DP)
+        m1 = max(m1, abs(daux*x1))
+        m2 = max(m2, abs(daux*x2))
+        m3 = max(m3, abs(daux * (x1 * DdataEuler(2, ieq) + x2 * DdataEuler(3, ieq) )/DdataEuler(1, ieq)))
+
+!!$        ! Impose source values into the x-momentum equation
+!!$        DdataResidual(2, ieq) = DdataResidual(2, ieq) +&
+!!$                                daux * x1 !* max(DdataEuler(1, ieq), 0.0_DP)
+!!$
+!!$        ! Impose source values into the y-momentum equation
+!!$        DdataResidual(3, ieq) = DdataResidual(3, ieq) +&
+!!$                                daux * x2 !* max(DdataEuler(1, ieq), 0.0_DP)
+!!$
+!!$        ! Impose source values into the energy equation
+!!$        DdataResidual(4, ieq) = DdataResidual(4, ieq) +&
+!!$                                max(daux * (x1 * DdataEulerOld(2, ieq)/DdataEulerOld(1, ieq)  +&
+!!$                                            x2 * DdataEulerOld(3, ieq)/DdataEulerOld(1, ieq) ), 0.0_DP)
+!!$        
+!!$        maximum = max(maximum, daux * (x1 * DdataEulerOld(2, ieq)/DdataEulerOld(1, ieq)  +&
+!!$                                            x2 * DdataEulerOld(3, ieq)/DdataEulerOld(1, ieq) ))
+        
       end do
+
+      print *, m1,m2,m3
       
     end subroutine calcSourceTermInterleaveFormat
 
@@ -282,10 +317,11 @@ contains
       real(DP), dimension(neq,nvar), intent(INOUT) :: DdataResidual
       
       ! local variables
-      real(DP) :: dradius, daux, dscale, x1, x2
+      real(DP) :: drad, daux, dscale, x1, x2
       integer :: ieq
       
-      
+      stop !! does not work
+
       ! Compute the scaling parameter
       dscale = -dstep * 12.0 * (1.0-dtime**4) * dtime**2
 !!$      dscale = -dstep * 12.0 * dtime*dtime
@@ -293,14 +329,14 @@ contains
       ! Loop over all nodal values
       do ieq = 1, neq
         
-        if (DdataTransport(ieq) .lt. 0.0_DP) cycle
+!!$        if (DdataTransport(ieq) .lt. 0.0_DP) cycle
 
         ! Get coodrinates
         x1 = DvertexCoords(1, ieq)
         x2 = DvertexCoords(2, ieq)
           
         ! Compute distance from origin
-        dradius = sqrt(x1*x1 + x2*x2)
+        drad = sqrt(x1*x1 + x2*x2)
         
         ! Compute unit vector emanating from the origin
         if (x1> 0.0_DP) then
@@ -322,8 +358,8 @@ contains
         end if
         
         ! Compute auxiliary quantity
-        daux = dscale * DdataMassMatrix(ieq) / max(dradius, 1.0e-4_DP)
-!!$            max(DdataTransport(ieq), 0.0_DP) / max(dradius, 1.0e-4_DP)
+!!$        daux = dscale * DdataMassMatrix(ieq) / max(drad, 1.0e-4_DP)
+        daux = dscale * DdataMassMatrix(ieq) * max(DdataTransport(ieq), 0.0_DP) / max(drad, 1.0e-4_DP)
         
         ! Impose source values into the x-momentum equation
         DdataResidual(ieq, 2) = DdataResidual(ieq, 2) +&
