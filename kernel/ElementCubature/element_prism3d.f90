@@ -423,15 +423,15 @@ contains
     Dhelp(1,2) =-(1.0_DP-dz)
     Dhelp(2,2) = 0.0_DP
     Dhelp(3,2) = (1.0_DP-dz)
-    Dhelp(1,2) =-(1.0_DP+dz)
-    Dhelp(2,2) = 0.0_DP
-    Dhelp(3,2) = (1.0_DP+dz)
+    Dhelp(4,2) =-(1.0_DP+dz)
+    Dhelp(5,2) = 0.0_DP
+    Dhelp(6,2) = (1.0_DP+dz)
     Dhelp(1,3) =-(1.0_DP-dx-dy)
     Dhelp(2,3) =-dx
     Dhelp(3,3) =-dy
-    Dhelp(1,3) = (1.0_DP-dx-dy)
-    Dhelp(2,3) = dx
-    Dhelp(3,3) = dy
+    Dhelp(4,3) = (1.0_DP-dx-dy)
+    Dhelp(5,3) = dx
+    Dhelp(6,3) = dy
       
     ! x-derivatives on current element
 !    if (Bder(DER_DERIV3D_X)) then
@@ -821,15 +821,15 @@ contains
         Dhelp(1,2) =-(1.0_DP-Dpoints(3,i,j))
         Dhelp(2,2) = 0.0_DP
         Dhelp(3,2) = (1.0_DP-Dpoints(3,i,j))
-        Dhelp(1,2) =-(1.0_DP+Dpoints(3,i,j))
-        Dhelp(2,2) = 0.0_DP
-        Dhelp(3,2) = (1.0_DP+Dpoints(3,i,j))
+        Dhelp(4,2) =-(1.0_DP+Dpoints(3,i,j))
+        Dhelp(5,2) = 0.0_DP
+        Dhelp(6,2) = (1.0_DP+Dpoints(3,i,j))
         Dhelp(1,3) =-(1.0_DP-Dpoints(1,i,j)-Dpoints(2,i,j))
         Dhelp(2,3) =-Dpoints(1,i,j)
         Dhelp(3,3) =-Dpoints(2,i,j)
-        Dhelp(1,3) =+(1.0_DP-Dpoints(1,i,j)-Dpoints(2,i,j))
-        Dhelp(2,3) =+Dpoints(1,i,j)
-        Dhelp(3,3) =+Dpoints(2,i,j)
+        Dhelp(4,3) =+(1.0_DP-Dpoints(1,i,j)-Dpoints(2,i,j))
+        Dhelp(5,3) =+Dpoints(1,i,j)
+        Dhelp(6,3) =+Dpoints(2,i,j)
 
         dxj = 0.25_DP / Ddetj(i,j)
         
