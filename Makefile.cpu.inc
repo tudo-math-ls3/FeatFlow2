@@ -162,13 +162,13 @@ LDFLAGS       =
 INC           =
 
 # List of files only needed for a specific build ID
-# (store them in $(SRCDIR_ARCH), do not include path information here)
-SRCEXTRA      = kernel/Postprocessing/gmvwritef.c \
-		kernel/System/signal_ccode.c \
-		libraries/minisplib/src/ilus.f \
-		libraries/minisplib/src/lusl.f \
-		libraries/minisplib/src/numfac.f \
-		libraries/minisplib/src/symbfac.f
+# (please include path information, at best using Makefile variables)
+SRCEXTRA      = $(FEASTBASEDIR)/kernel/Postprocessing/gmvwritef.c \
+		$(FEASTBASEDIR)/kernel/System/signal_ccode.c \
+		$(FEASTBASEDIR)/libraries/minisplib/src/ilus.f \
+		$(FEASTBASEDIR)/libraries/minisplib/src/lusl.f \
+		$(FEASTBASEDIR)/libraries/minisplib/src/numfac.f \
+		$(FEASTBASEDIR)/libraries/minisplib/src/symbfac.f
 
 # List of all libraries available (queried for purge* targets)
 ALLLIB        = amd blas lapack umfpack

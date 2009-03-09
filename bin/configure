@@ -113,6 +113,8 @@ my $progname = &basename($0);
 # version with relative paths
 # is not available in FEAT2 as there is no general rule to set up the directory
 # structure of any application such that this script can be found via ../../bin.
+# (It would be different, though, if one could be sure that any FEAT2 application 
+# resides in a directory exactly two hierarchy levels beneath the FEAT2 root directory.)
 
 # version with absolute paths
 my $FEASTBASEDIR = &abs_path(&dirname($0) . "/..");
@@ -475,10 +477,10 @@ if ($#{$entry} >= 0 &&
     print MAKEFILE_HDL
 	"#!/usr/bin/env make\n" .
 	"\n" .
+	"default:\n" .
 	"clean-app:\n" .
 	"clean-libs:\n" .
 	"clean:\n" .
-	"default:\n" .
 	"id:\n" .
 	"idonly:\n" .
 	"libs:\n" .
@@ -987,13 +989,25 @@ sub create_feastAppMakefile {
 			   "\$(OBJDIR)") . "\n\n";
     }
 
-    # Dependency of program file
+    # Dependencies of program file
     $entry = ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'});
 	$path{$entry} = $entry;
         $objectfiles_and_dependencies .=
 	    &make_dep_list(\%dependencyLists, $path{$entry},
 			   $entry, 1, "o", "o",
 			   "\$(OBJDIR)") . "\n\n";
+
+    # Dependencies of Fortran 90 files listed in Makefile variable $(SRCEXTRA) 
+    # can not be determined unfortunately at configure time. Because they may
+    # be defined using Makefile variables (e.g. $(FEASTBASEDIR)/kernel/arch/amub.f90)
+    # which cannnot easily be expanded by configure.
+    $objectfiles_and_dependencies .=
+	"# Dependencies of Fortran 90 files listed in Makefile variable \$(SRCEXTRA)\n" .
+	"# can not be determined unfortunately at configure time and incorporated into\n" .
+	"# this Makefile. Because the path to these files or the files themselves may\n" .
+	"# be defined using Makefile variables (e.g. $(FEASTBASEDIR)/kernel/arch/amub.f90)\n" .
+	"# whose value cannnot easily be expanded by configure.\n\n";
+
     print "done\n";
 
     # The instructions above ensure that for all FEAST source files
@@ -1383,7 +1397,7 @@ sub create_feastAppMakefile {
 	# write out general coproc-specific variable additions
         print MAKEFILE_HDL
             "# Coprocessor-specific special options\n" .
-	    "SRCEXTRA     := \$(SRCEXTRA) coproc.c coproc_solver.c\n" .
+	    "SRCEXTRA     := \$(SRCEXTRA) \$(SRCDIR_ARCH)/coproc.c \$(SRCDIR_ARCH)/coproc_solver.c\n" .
 	    "BUILDLIB     := \$(BUILDLIB) coproc\n" .
 	    "LIBS         := -lcoproc \$(LIBS)\n" .
 	    "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
@@ -1887,28 +1901,36 @@ sub create_feastAppMakefile {
 
     # Generic rule for *.f files out of SRCEXTRA
 	"# Generic rule for *.f files out of SRCEXTRA\n" .
-	"\$(patsubst %.f, \$(OBJDIR)/%.o, \$(filter %.f, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA:%=\$(FEASTBASEDIR)/%)\n" .
-	"\t\$(F77) \$(APPONLYFLAGS) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA)) -o \$\@\n\n" .
+	"\$(patsubst %.f, \$(OBJDIR)/%.o, \$(filter %.f, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA)\n" .
+	"\t\$(F77) \$(APPONLYFLAGS) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA)) -o \$\@\n\n" .
 
     # Generic rule for *.f90 files out of SRCEXTRA
 	"# Generic rule for *.f90 files out of SRCEXTRA\n" .
-	"# (Remember that those files are supposed to provide no Fortran module\n" .
+	"# Note 1:\n" .
+	"# Remember that those files are supposed to provide no Fortran module\n" .
 	"#  - otherwise they would be on the normal kernel file list - and as\n" .
 	"#  such do not try to move a .mod file upon compilation as a workaround\n" .
 	"#  for compilers that do not create .mod files in the object directory,\n" .
-	"#  in the working directory.)\n" .
-	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA:%=\$(FEASTBASEDIR)/%)\n" .
-	"\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA)) -o \$\@\n\n" .
+	"# in the working directory.\n" .
+	"# Note 2:\n" .
+	"# Fortran 90 source files listed in in SRCEXTRA may try to 'use' Fortran 90\n" .
+	"# modules from the kernel. Add the complete list of object files generated\n" . 
+	"# from the kernel's Fortran 90 sources to the dependency list of the\n" .
+	"# SRCEXTRA's Fortran 90 source files to prevent them from being compiled\n" .
+	"# prematurely, e.g. in a highly parallel make run (make -j N, with N>32 or\n" .
+	"# N missing).\n" .
+	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA) \$(OBJF90)\n" .
+	"\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA)) -o \$\@\n\n" .
 
     # Generic rule for *.c files out of SRCEXTRA
 	"# Generic rule for *.c files out of SRCEXTRA\n" .
-	"\$(patsubst %.c, \$(OBJDIR)/%.o, \$(filter %.c, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA:%=\$(FEASTBASEDIR)/%)\n" .
-	"\t\$(CC) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).c, \$(SRCEXTRA)) -o \$\@\n\n" .
+	"\$(patsubst %.c, \$(OBJDIR)/%.o, \$(filter %.c, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA)\n" .
+	"\t\$(CC) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).c, \$(SRCEXTRA)) -o \$\@\n\n" .
 
     # Generic rule for *.cc files out of SRCEXTRA
 	"# Generic rule for *.cc files out of SRCEXTRA\n" .
-	"\$(patsubst %.cc, \$(OBJDIR)/%.o, \$(filter %.cc, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA:%=\$(FEASTBASEDIR)/%)\n" .
-	"\t\$(CXX) \$(APPONLYFLAGS) \$(CFLAGSCXX) \$(MPIINC) \$(INC) -c \$(FEASTBASEDIR)/\$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA)) -o \$\@\n\n" .
+	"\$(patsubst %.cc, \$(OBJDIR)/%.o, \$(filter %.cc, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA)\n" .
+	"\t\$(CXX) \$(APPONLYFLAGS) \$(CFLAGSCXX) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA)) -o \$\@\n\n" .
 
     # All files listed in $(SRCEXTRA) should be compiled, but depending on
     # its extension with a separate rule. Fortran, Fortran90, C and C++
@@ -2916,14 +2938,14 @@ sub create_feastAppMakefile {
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
         "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
-        "\t    \$(MAKEFILE_CPU_INC) | sort;\n\n" .
+        "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
 
 
     # create tag file for emacs users
 	"# create tag file for emacs users\n" .
 	".PHONY: tags\n" .
-        "tags: \$(SRCF77) \$(SRCF90) \$(SRCEXTRA:%=\$(FEASTBASEDIR)/%)\n" .
+        "tags: \$(SRCF77) \$(SRCF90) \$(SRCEXTRA)\n" .
 	"\trm -f TAGS\n" .
 	"\tetags \$(filter %.c %.f %.f90,\$^)\n\n" .
 
