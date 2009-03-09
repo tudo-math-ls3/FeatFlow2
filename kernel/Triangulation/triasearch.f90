@@ -375,6 +375,7 @@ contains
     
     ! If the point is in element iel, we are immediately done.
     
+    
     do ive = 1,nnve
       if (IverticesAtElement(ive,iel) .eq. 0) exit ! Triangle in a quad mesh
       DcornerCoords(1,ive) = DvertexCoords(1,IverticesAtElement(ive,iel))
@@ -386,11 +387,13 @@ contains
       call gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
     end if
     
+    bcheck=.TRUE.
+    
     if (bcheck) then
       if (present(iresult)) iresult = 1
       if (present(ilastElement)) ilastElement = iel
       if (present(ilastEdge)) ilastEdge = 0
-      return
+      !return
     end if
     
     ! We restrict our raytracing search to imaxIter neighbour cells;
@@ -423,7 +426,7 @@ contains
           
           call gaux_isIntersection_line2D (dx1,dy1,dx2,dy2,dxmid,dymid,&
               Dpoint(1),Dpoint(2),bcheck)
-          
+          bcheck=.true.
           if (bcheck) then
           
             ! Go on searching in the neighbour element
