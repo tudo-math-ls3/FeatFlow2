@@ -1220,7 +1220,7 @@ contains
  
 
 !<subroutine>
-  SUBROUTINE griddef_performOneDefStep(rgriddefInfo, rgriddefWork,&
+  subroutine griddef_performOneDefStep(rgriddefInfo, rgriddefWork,&
                                        dblendpar, ilevelODE, ilevel,&
                                        def_monitorfct)
   !<description>
@@ -1394,7 +1394,7 @@ contains
                                  rgriddefWork%rrhsBlock,rgriddefWork%rtempBlock)    
 
     call spdiscr_initBlockDiscr (rDubDiscretisation,2,&
-                                 rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation)
+                                 rgriddefInfo%p_rtriangulation)
 
     call spdiscr_deriveSimpleDiscrSc (&
                  rdiscretisation%RspatialDiscr(1), &
@@ -1437,7 +1437,7 @@ contains
   ! *************************************************************************** 
 
 !<subroutine>  
-  SUBROUTINE griddef_getArea(rgriddefInfo, rgriddefWork,rdiscretisation)
+  subroutine griddef_getArea(rgriddefInfo, rgriddefWork,rdiscretisation)
   
   !<description>
     ! In this function we build the nodewise area distribution out 
@@ -1446,108 +1446,108 @@ contains
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+    type(t_griddefInfo), intent(INOUT) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    TYPE(t_griddefWork), INTENT(INOUT) :: rgriddefWork
+    type(t_griddefWork), intent(INOUT) :: rgriddefWork
     
-    TYPE(t_blockDiscretisation), INTENT(INOUT) :: rdiscretisation    
+    type(t_blockDiscretisation), intent(INOUT) :: rdiscretisation    
     
   !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_DareaLevel
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    REAL(DP), DIMENSION(:), POINTER :: p_Darea
-    REAL(DP), DIMENSION(:), POINTER :: p_DareaProj    
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE2D) :: Dpoints
-    INTEGER :: ive
-    TYPE(t_vectorScalar) :: rvectorAreaQ0 
-    TYPE(t_vectorBlock) :: rvectorAreaBlockQ0
-    TYPE(t_blockDiscretisation) :: rprjDiscretisation
+    integer(PREC_VERTEXIDX), dimension(:,:), pointer :: p_IverticesAtElement
+    integer(PREC_VERTEXIDX), dimension(:), pointer :: p_DareaLevel
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_Darea
+    real(DP), dimension(:), pointer :: p_DareaProj    
+    integer(PREC_ELEMENTIDX) :: iel
+    real(DP), dimension(NDIM2D,TRIA_MAXNVE2D) :: Dpoints
+    integer :: ive
+    type(t_vectorScalar) :: rvectorAreaQ0 
+    type(t_vectorBlock) :: rvectorAreaBlockQ0
+    type(t_blockDiscretisation) :: rprjDiscretisation
     
     ! Is everything here we need?
-    IF (rgriddefInfo%p_rtriangulation%h_DvertexCoords .EQ. ST_NOHANDLE) THEN
-      CALL output_line ('h_DvertexCoords not available!', &
+    if (rgriddefInfo%p_rtriangulation%h_DvertexCoords .EQ. ST_NOHANDLE) then
+      call output_line ('h_DvertexCoords not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
 
-    IF (rgriddefInfo%p_rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
-      CALL output_line ('IverticesAtElement  not available!', &
+    if (rgriddefInfo%p_rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) then
+      call output_line ('IverticesAtElement  not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! Do we have (enough) memory for that array?
-    IF (rgriddefInfo%p_rtriangulation%h_DelementVolume .EQ. ST_NOHANDLE) THEN
-      CALL storage_new ('tria_genElementVolume2D', 'DAREA', &
-          INT(rgriddefInfo%p_rtriangulation%NEL+1,I32), ST_DOUBLE, &
+    if (rgriddefInfo%p_rtriangulation%h_DelementVolume .EQ. ST_NOHANDLE) then
+      call storage_new ('tria_genElementVolume2D', 'DAREA', &
+          int(rgriddefInfo%p_rtriangulation%NEL+1,I32), ST_DOUBLE, &
           rgriddefInfo%p_rtriangulation%h_DelementVolume, ST_NEWBLOCK_NOINIT)
-    END IF
+    end if
     
     
     ! Get the arrays
-    CALL storage_getbase_double2D (rgriddefInfo%p_rtriangulation%h_DvertexCoords,&
+    call storage_getbase_double2D (rgriddefInfo%p_rtriangulation%h_DvertexCoords,&
         p_DvertexCoords)
-    CALL storage_getbase_int2D (rgriddefInfo%p_rtriangulation%h_IverticesAtElement,&
+    call storage_getbase_int2D (rgriddefInfo%p_rtriangulation%h_IverticesAtElement,&
         p_IverticesAtElement)
     
     ! Set up an empty block vector    
-    CALL lsysbl_createVecBlockByDiscr(rdiscretisation,rgriddefWork%rvectorAreaBlockQ1,.TRUE.)        
+    call lsysbl_createVecBlockByDiscr(rdiscretisation,rgriddefWork%rvectorAreaBlockQ1,.TRUE.)        
         
     ! Create a discretisation structure for Q0, based on our
     ! previous discretisation structure:
-    CALL spdiscr_duplicateBlockDiscr(rdiscretisation,rprjDiscretisation)
-    CALL spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_duplicateBlockDiscr(rdiscretisation,rprjDiscretisation)
+    call spdiscr_deriveSimpleDiscrSc (&
                  rdiscretisation%RspatialDiscr(1), &
                  EL_Q0, CUB_G2X2, rprjDiscretisation%RspatialDiscr(1))
                  
     ! Initialise a Q0 vector from the newly created discretisation         
-    CALL lsyssc_createVecByDiscr(rprjDiscretisation%RspatialDiscr(1), &
+    call lsyssc_createVecByDiscr(rprjDiscretisation%RspatialDiscr(1), &
     rvectorAreaQ0,.true.)
     
     ! get the pointer to the entries of this vector
-    CALL lsyssc_getbase_double(rvectorAreaQ0,p_Darea)    
+    call lsyssc_getbase_double(rvectorAreaQ0,p_Darea)    
     
     ! Loop over all elements calculate the area 
     ! and save it in our vector
-    DO iel=1,rgriddefInfo%p_rtriangulation%NEL
+    do iel=1,rgriddefInfo%p_rtriangulation%NEL
       
-      IF (p_IverticesAtElement(4,iel) .EQ. 0) THEN
+      if (p_IverticesAtElement(4,iel) .EQ. 0) then
         ! triangular element
-        DO ive=1,TRIA_NVETRI2D
+        do ive=1,TRIA_NVETRI2D
           Dpoints(1,ive) = p_DvertexCoords(1,p_IverticesAtElement(ive,iel))
           Dpoints(2,ive) = p_DvertexCoords(2,p_IverticesAtElement(ive,iel))
-        END DO
+        end do
         p_Darea(iel) = gaux_getArea_tria2D(Dpoints)
-      ELSE
+      else
         ! quad element
-        DO ive=1,TRIA_NVEQUAD2D
+        do ive=1,TRIA_NVEQUAD2D
           Dpoints(1,ive) = p_DvertexCoords(1,p_IverticesAtElement(ive,iel))
           Dpoints(2,ive) = p_DvertexCoords(2,p_IverticesAtElement(ive,iel))
-        END DO
+        end do
         p_Darea(iel) = gaux_getArea_quad2D(Dpoints)
-      END IF
+      end if
 
-    END DO ! end iel
+    end do ! end iel
     ! now transform the q0 vector into a q1 vector
     ! Setup a new solution vector based on this discretisation,
     ! allocate memory.
-    CALL lsysbl_createVecFromScalar(rvectorAreaQ0,rvectorAreaBlockQ0,rprjDiscretisation)
+    call lsysbl_createVecFromScalar(rvectorAreaQ0,rvectorAreaBlockQ0,rprjDiscretisation)
  
     ! Take the original solution vector and convert it according to the
     ! new discretisation:
-    CALL spdp_projectSolution(rvectorAreaBlockQ0,rgriddefWork%rvectorAreaBlockQ1)
+    call spdp_projectSolution(rvectorAreaBlockQ0,rgriddefWork%rvectorAreaBlockQ1)
     
     call lsysbl_releaseVector(rvectorAreaBlockQ0)
     call lsyssc_releaseVector(rvectorAreaQ0)
   
-  END SUBROUTINE
+  end subroutine
 
   ! *************************************************************************** 
   
@@ -1594,34 +1594,34 @@ contains
   p_rvectorMonFuncQ1 => rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1)
   
   ! get the data
-  CALL storage_getbase_double(p_rvectorMonFuncQ1%h_ddata,p_Dentries)
+  call storage_getbase_double(p_rvectorMonFuncQ1%h_ddata,p_Dentries)
   
-  SELECT CASE(iMethod)
-    CASE(0)
+  select case(imethod)
+    case(0)
       ! loop over all vertices and compute the monitor function
-      DO ive=1,rgriddefInfo%p_rtriangulation%NVT
+      do ive=1,rgriddefInfo%p_rtriangulation%NVT
         p_Dentries(ive) = 0.5_dp + p_DvertexCoords(1,ive)
         !p_Dentries(ive) = 1.0_dp
-      END DO
-    CASE(1)
+      end do
+    case(1)
       ! loop over all vertices and compute the monitor function
-      DO ive=1,rgriddefInfo%p_rtriangulation%NVT
-        Dist = SQRT((0.5_dp - p_DvertexCoords(1,ive))**2 + (0.5_dp - p_DvertexCoords(2,ive))**2)
+      do ive=1,rgriddefInfo%p_rtriangulation%NVT
+        Dist = sqrt((0.5_dp - p_DvertexCoords(1,ive))**2 + (0.5_dp - p_DvertexCoords(2,ive))**2)
         ! Good now define the monitor function
-        Dist = ABS(Dist - 0.2_dp)/0.2_dp
+        Dist = abs(Dist - 0.2_dp)/0.2_dp
         Dist=max(dist,0.1_dp)
         Dist=min(1.0_dp,dist)
         p_Dentries(ive)=Dist
-      END DO
-    CASE DEFAULT
-  END SELECT
+      end do
+    case default
+  end select
   
-  END SUBROUTINE ! end griddef_buildMonFuncTest
+  end subroutine ! end griddef_buildMonFuncTest
   
   ! *************************************************************************** 
   
 !<subroutine>     
-  SUBROUTINE griddef_normaliseFctsNum(rgriddefInfo, rgriddefWork,dScale1,dScale2)
+  subroutine griddef_normaliseFctsNum(rgriddefInfo, rgriddefWork,dScale1,dScale2)
   !<description>
     ! We normalize the functions f and g so that
     ! dScale1 * int_omega f = dScale2 * int_omega g = |omega|
@@ -1630,30 +1630,30 @@ contains
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+    type(t_griddefInfo), intent(INOUT) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    TYPE(t_griddefWork), INTENT(INOUT) :: rgriddefWork
+    type(t_griddefWork), intent(INOUT) :: rgriddefWork
     
   !</inputoutput>
   
   !<output>
-  REAL(DP),INTENT(inout) :: dScale1    
-  REAL(DP),INTENT(inout) :: dScale2      
+  real(dp),intent(inout) :: dScale1    
+  real(dp),intent(inout) :: dScale2      
   !</output>  
 
 !</subroutine>
 
   ! local variables
   ! a shorthand to the functions
-  TYPE(t_vectorScalar) , POINTER :: p_Df1
-  TYPE(t_vectorScalar) , POINTER :: p_Df2
-  REAL(DP), DIMENSION(:), POINTER :: p_Data1
-  REAL(DP), DIMENSION(:), POINTER :: p_Data2  
+  type(t_vectorScalar) , pointer :: p_Df1
+  TYPE(t_vectorScalar) , pointer :: p_Df2
+  real(DP), dimension(:), pointer :: p_Data1
+  real(DP), dimension(:), pointer :: p_Data2  
   ! These will be the values of the integral  
-  REAL(DP) :: dIntF1, dIntF2,Domega
+  real(DP) :: dIntF1, dIntF2,Domega
   ! Element area 
-  REAL(DP), DIMENSION(:), POINTER :: p_DelementVolume
+  real(DP), dimension(:), pointer :: p_DelementVolume
       
   ! initialise integral value with zero
   dIntF1 = 0.0_dp
@@ -1663,15 +1663,15 @@ contains
   ! we do not want to write this name 
   p_Df2 => rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1)  
   
-  CALL storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DelementVolume, &
+  call storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DelementVolume, &
                               p_DelementVolume)
   
   ! Integrate
-  CALL pperr_scalar (p_Df1,PPERR_L1ERROR,dIntF1)
-  CALL pperr_scalar (p_Df2,PPERR_L1ERROR,dIntF2)
+  call pperr_scalar (p_Df1,PPERR_L1ERROR,dIntF1)
+  call pperr_scalar (p_Df2,PPERR_L1ERROR,dIntF2)
   
   ! compute the area for each element and add up
-  CALL tria_genElementVolume2D(rgriddefInfo%p_rtriangulation)
+  call tria_genElementVolume2D(rgriddefInfo%p_rtriangulation)
   
   ! The omega value is the total area of the domain
   Domega = p_DelementVolume(rgriddefInfo%p_rtriangulation%NEL+1)
@@ -1681,19 +1681,19 @@ contains
   dScale2 = Domega/dIntF2
   
   ! get the function data
-  CALL lsyssc_getbase_double(p_Df1,p_Data1)
-  CALL lsyssc_getbase_double(p_Df2,p_Data2)
+  call lsyssc_getbase_double(p_Df1,p_Data1)
+  call lsyssc_getbase_double(p_Df2,p_Data2)
   
   ! scale the functions
   p_Data1(:) =  p_Data1(:) *  dScale1    
   p_Data2(:) =  p_Data2(:) *  dScale2      
                                      
-  END SUBROUTINE  ! end griddef_normaliseFctsNum
+  end subroutine  ! end griddef_normaliseFctsNum
   
   ! ***************************************************************************   
   
 !<subroutine>     
-  SUBROUTINE griddef_blendmonitor(rgriddefInfo, rgriddefWork,dBlendPar)
+  subroutine griddef_blendmonitor(rgriddefInfo, rgriddefWork,dBlendPar)
   
   !<description>
     ! This subroutine performs the blending between the monitor function and the area
@@ -1707,22 +1707,22 @@ contains
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    TYPE(t_griddefInfo),INTENT(INOUT) :: rgriddefInfo
+    type(t_griddefInfo),intent(INOUT) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    TYPE(t_griddefWork),INTENT(INOUT) :: rgriddefWork
+    type(t_griddefWork),intent(INOUT) :: rgriddefWork
     
   !</inputoutput>
-    REAL(DP),intent(inout)  :: dBlendPar
+    real(DP),intent(inout)  :: dBlendPar
 !</subroutine>
 
     ! local variables
     ! a shorthand to the functions
     integer(i32) :: i
-    TYPE(t_vectorScalar) , POINTER :: p_Df1
-    TYPE(t_vectorScalar) , POINTER :: p_Df2
-    REAL(DP), DIMENSION(:), POINTER :: p_Data1
-    REAL(DP), DIMENSION(:), POINTER :: p_Data2  
+    type(t_vectorScalar) , pointer :: p_Df1
+    type(t_vectorScalar) , pointer :: p_Df2
+    real(DP), dimension(:), pointer :: p_Data1
+    real(DP), dimension(:), pointer :: p_Data2  
    ! blending parameter
         
     ! we do not want to write this name 
@@ -1749,12 +1749,12 @@ contains
       p_Data2(i) = dblendPar * p_Data2(i) + (1.0_dp - dblendPar) * p_Data1(i)
     end do
     
-  END SUBROUTINE  ! end griddef_blendmonitor
+  end subroutine  ! end griddef_blendmonitor
 
   ! *************************************************************************** 
 
 !<subroutine>   
-  SUBROUTINE griddef_normaliseFctsInv(rgriddefInfo, rgriddefWork,rdiscretisation)
+  subroutine griddef_normaliseFctsInv(rgriddefInfo, rgriddefWork,rdiscretisation)
   !<description>
     ! 
     ! 
@@ -1762,12 +1762,12 @@ contains
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    TYPE(t_griddefInfo),INTENT(INOUT) :: rgriddefInfo
+    type(t_griddefInfo),intent(INOUT) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    TYPE(t_griddefWork),INTENT(INOUT) :: rgriddefWork
+    type(t_griddefWork),intent(INOUT) :: rgriddefWork
     
-    TYPE(t_blockDiscretisation),INTENT(INOUT) :: rdiscretisation    
+    type(t_blockDiscretisation),intent(INOUT) :: rdiscretisation    
     
   !</inputoutput>
 
@@ -1775,14 +1775,14 @@ contains
 
   ! local variables
   ! a shorthand to the functions
-  TYPE(t_vectorScalar) , POINTER :: p_Df1
-  TYPE(t_vectorScalar) , POINTER :: p_Df2
-  REAL(DP), DIMENSION(:), POINTER :: p_Data1
-  REAL(DP), DIMENSION(:), POINTER :: p_Data2  
+  type(t_vectorScalar) , pointer :: p_Df1
+  type(t_vectorScalar) , pointer :: p_Df2
+  real(dp), dimension(:), pointer :: p_Data1
+  real(dp), dimension(:), pointer :: p_Data2  
   ! These will be the values of the integral  
-  REAL(DP) :: dIntF1, dIntF2,Domega,dScale1,dScale2
+  real(dp) :: dIntF1, dIntF2,Domega,dScale1,dScale2
   ! Element area 
-  REAL(DP), DIMENSION(:), POINTER :: p_DelementVolume
+  real(dp), dimension(:), pointer :: p_DelementVolume
       
   ! initialise integral value with zero
   dIntF1 = 0.0_dp
@@ -1793,18 +1793,18 @@ contains
   p_Df2 => rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1)  
   
   ! get the function data
-  CALL lsyssc_getbase_double(p_Df1,p_Data1)
-  CALL lsyssc_getbase_double(p_Df2,p_Data2)
+  call lsyssc_getbase_double(p_Df1,p_Data1)
+  call lsyssc_getbase_double(p_Df2,p_Data2)
   
   ! get the element area pointer
-  CALL storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DelementVolume, &
+  call storage_getbase_double(rgriddefInfo%p_rtriangulation%h_DelementVolume, &
                               p_DelementVolume)
   
   ! Integrate the functions f and g
-  CALL griddef_normaliseFctsInvAux(rgriddefWork,rdiscretisation,dIntF1,dIntF2,Domega)
+  call griddef_normaliseFctsInvAux(rgriddefWork,rdiscretisation,dIntF1,dIntF2,Domega)
   
   ! compute the area for each element and add up
-  CALL tria_genElementVolume2D(rgriddefInfo%p_rtriangulation)
+  call tria_genElementVolume2D(rgriddefInfo%p_rtriangulation)
   
   ! compute the scaling factor
   dScale1 = dintF1/domega 
@@ -1814,12 +1814,12 @@ contains
   p_Data1(:) =  p_Data1(:) *  dScale1    
   p_Data2(:) =  p_Data2(:) *  dScale2         
   
-  END SUBROUTINE ! end griddef_normaliseFctsInv
+  end subroutine ! end griddef_normaliseFctsInv
   
   !****************************************************************************
 
 !<subroutine>    
-  SUBROUTINE griddef_normaliseFctsInvAux(rgriddefWork,rdiscretisation,&
+  subroutine griddef_normaliseFctsInvAux(rgriddefWork,rdiscretisation,&
                                          dValue1,dValue2,dOm)
 
 !<description>
@@ -1831,94 +1831,94 @@ contains
 
 !<inputoutput>
   ! structure containing all vector handles for the deformation algorithm
-  TYPE(t_griddefWork), INTENT(INOUT)  :: rgriddefWork
+  type(t_griddefWork), intent(INOUT)  :: rgriddefWork
 
-  TYPE(t_blockDiscretisation), INTENT(INOUT)  :: rdiscretisation 
+  type(t_blockDiscretisation), intent(INOUT)  :: rdiscretisation 
 !</inputoutput>
 
 !</subroutine>
 
 !<output>
   ! Array receiving the calculated error.
-  REAL(DP) :: dValue1,dValue2,dOm
+  real(dp) :: dValue1,dValue2,dOm
 !</output>
 
 !</subroutine>
 
   ! Pointer to the vector entries
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataMon,p_DdataArea
+  real(dp), dimension(:), pointer :: p_DdataMon,p_DdataArea
 
   ! Allocateable arrays for the values of the basis functions - 
   ! for test space.
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTest,DbasFunc
+  real(dp), dimension(:,:,:,:), allocatable, target :: DbasTest,DbasFunc
   
   ! Number of local degees of freedom for test functions
-  INTEGER :: indofTest,indofFunc
+  integer :: indofTest,indofFunc
   
-  TYPE(t_vectorScalar), POINTER :: rvectorArea,rvectorMon
+  type(t_vectorScalar), pointer :: rvectorArea,rvectorMon
   
   ! The FE solution vector. Represents a scalar FE function.
-  TYPE(t_vectorScalar), POINTER :: rvectorScalar
+  type(t_vectorScalar), pointer :: rvectorScalar
 
 
-  INTEGER :: i,k,icurrentElementDistr, ICUBP, NVE
-  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE
-  REAL(DP) :: OM
+  integer :: i,k,icurrentElementDistr, ICUBP, NVE
+  integer(i32) :: IEL, IELmax, IELset, IDOFE
+  real(dp) :: OM
   
   ! Array to tell the element which derivatives to calculate
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+  logical, dimension(el_maxnder) :: Bder
   
   ! Cubature point coordinates on the reference element
-  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+  real(dp), dimension(cub_maxcubp, ndim3d) :: Dxi
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
-  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+  real(dp), dimension(cub_maxcubp) :: Domega
   
   ! number of cubature points on the reference element
-  INTEGER :: ncubp
+  integer :: ncubp
   
   ! The triangulation structure - to shorten some things...
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
+  type(t_triangulation), pointer :: p_rtriangulation
   
   ! A pointer to an element-number list
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+  integer(i32), dimension(:), pointer :: p_IelementList
   
   ! An array receiving the coordinates of cubature points on
   ! the reference element for all elements in a set.
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: p_DcubPtsRef
+  real(dp), dimension(:,:), allocatable :: p_DcubPtsRef
 
   ! Arrays for saving Jacobian determinants and matrices
-  REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+  real(dp), dimension(:,:), pointer :: p_Ddetj
   
   ! Current element distribution
-  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
+  type(t_elementDistribution), pointer :: p_relementDistribution
   
   ! Number of elements in the current element distribution
-  INTEGER(PREC_ELEMENTIDX) :: NEL
+  integer(prec_elementidx) :: NEL
 
   ! Pointer to the values of the function that are computed by the callback routine.
-  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
+  real(dp), dimension(:,:,:), allocatable :: Dcoefficients
   
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
-  INTEGER :: nelementsPerBlock
+  integer :: nelementsPerBlock
   
   ! A t_domainIntSubset structure that is used for storing information
   ! and passing it to callback routines.
-  TYPE(t_evalElementSet) :: rintSubset
+  type(t_evalElementSet) :: rintSubset
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest,IdofFunc
+  integer(prec_dofidx), dimension(:,:), allocatable, target :: IdofsTest,IdofFunc
 
   ! Type of transformation from the reference to the real element 
-  INTEGER :: ctrafoType
+  integer :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
-  INTEGER(I32) :: cevaluationTag
+  integer(i32) :: cevaluationTag
   
-  REAL(DP) :: daux1,daux2
+  real(dp) :: daux1,daux2
 
     ! Which derivatives of basis functions are needed?
     ! Check the descriptors of the bilinear form and set BDER
@@ -1929,8 +1929,8 @@ contains
     rvectorMon  => rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1)
     rvectorScalar => rgriddefWork%rvectorAreaBlockQ1%RvectorBlock(1)      
 
-    CALL lsyssc_getbase_double (rvectorMon,p_DdataMon)
-    CALL lsyssc_getbase_double (rvectorArea,p_DdataArea)
+    call lsyssc_getbase_double (rvectorMon,p_DdataMon)
+    call lsyssc_getbase_double (rvectorArea,p_DdataArea)
   !-------------------------------------------------------------  
 
 
@@ -1953,13 +1953,13 @@ contains
     ! Now loop over the different element distributions (=combinations
     ! of trial and test functions) in the discretisation.
 
-    DO icurrentElementDistr = 1,rdiscretisation%RspatialDiscr(1)%inumFESpaces
+    do icurrentElementDistr = 1,rdiscretisation%RspatialDiscr(1)%inumFESpaces
     
       ! Activate the current element distribution
       p_relementDistribution => rdiscretisation%RspatialDiscr(1)%RelementDistr(icurrentElementDistr)
     
       ! Cancel if this element distribution is empty.
-      IF (p_relementDistribution%NEL .EQ. 0) CYCLE
+      if (p_relementDistribution%NEL .EQ. 0) cycle
 
       ! Get the number of local DOF's for trial functions
       indofTest = elem_igetNDofLoc(p_relementDistribution%celement)
@@ -1969,31 +1969,31 @@ contains
       
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
-      CALL cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
+      call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
       ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
       ! Allocate some memory to hold the cubature points on the reference element
-      ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
 
       ! Reformat the cubature points; they are in the wrong shape!
-      DO i=1,ncubp
-        DO k=1,UBOUND(p_DcubPtsRef,1)
+      do i=1,ncubp
+        do k=1,UBOUND(p_DcubPtsRef,1)
           p_DcubPtsRef(k,i) = Dxi(i,k)
-        END DO
-      END DO
+        end do
+      end do
       
       ! Allocate arrays for the values of the test functions.
-      ALLOCATE(DbasTest(indofTest,elem_getMaxDerivative(p_relementDistribution%celement),&
+      allocate(DbasTest(indofTest,elem_getMaxDerivative(p_relementDistribution%celement),&
                ncubp,nelementsPerBlock))
       
       ! Allocate memory for the DOF's of all the elements.
-      ALLOCATE(IdofsTest(indofTest,nelementsPerBlock))
+      allocate(IdofsTest(indofTest,nelementsPerBlock))
 
       ! Initialisation of the element set.
-      CALL elprep_init(rintSubset)
+      call elprep_init(rintSubset)
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -2006,14 +2006,14 @@ contains
 
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that combination of trial functions
-      CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
+      call storage_getbase_int (p_relementDistribution%h_IelementList, &
                                 p_IelementList)
                      
       ! Get the number of elements there.
       NEL = p_relementDistribution%NEL
     
       ! Loop over the elements - blockwise.
-      DO IELset = 1, NEL, PPERR_NELEMSIM
+      do IELset = 1, NEL, PPERR_NELEMSIM
       
         ! We always handle LINF_NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
@@ -2026,13 +2026,13 @@ contains
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our LINF_NELEMSIM elements simultaneously.
-        CALL dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1),&
+        call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1),&
                                      p_IelementList(IELset:IELmax),IdofsTest)
                                      
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
         ! on the cells.
-        CALL elprep_prepareSetForEvaluation (rintSubset,&
+        call elprep_prepareSetForEvaluation (rintSubset,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
             
@@ -2043,13 +2043,13 @@ contains
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
 
         ! Calculate the values of the basis functions.
-        CALL elem_generic_sim2 (p_relementDistribution%celement, &
+        call elem_generic_sim2 (p_relementDistribution%celement, &
             rintSubset, Bder, DbasTest)
         
-        DO IEL=1,IELmax-IELset+1
+        do IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
-          DO icubp = 1, ncubp
+          do icubp = 1, ncubp
           
             ! calculate the current weighting factor in the cubature formula
             ! in that cubature point.
@@ -2059,31 +2059,31 @@ contains
             daux1 = 0.0_DP
             daux2 = 0.0_DP
             
-            DO IDOFE = 1,indofTest
+            do IDOFE = 1,indofTest
               daux1 = daux1 + p_DdataArea(IdofsTest(IDOFE,IEL))* &
               DbasTest(IDOFE,DER_FUNC,ICUBP,IEL)
               daux2 = daux2 + p_DdataMon(IdofsTest(IDOFE,IEL))* &
               DbasTest(IDOFE,DER_FUNC,ICUBP,IEL)
               dOm = dOm + OM * DbasTest(IDOFE,DER_FUNC,ICUBP,IEL)           
-            END DO
+            end do
             
             dValue1 = dValue1 + OM/daux1
             dValue2 = dValue2 + OM/daux2
 
-          END DO ! ICUBP 
+          end do ! ICUBP 
 
-        END DO ! IEL
+        end do ! IEL
     
-      END DO ! IELset
+      end do ! IELset
       
       ! Release memory
-      CALL elprep_releaseElementSet(rintSubset)
+      call elprep_releaseElementSet(rintSubset)
 
-      DEALLOCATE(p_DcubPtsRef)
+      deallocate(p_DcubPtsRef)
 
-    END DO ! icurrentElementDistr
+    end do ! icurrentElementDistr
 
-  END SUBROUTINE ! griddef_normaliseFctsInvAux
+  end subroutine ! griddef_normaliseFctsInvAux
   
   !****************************************************************************
 
@@ -2633,15 +2633,15 @@ contains
 !      i = i +1
 !    enddo
     ! write back coordinates
-    do i=1,rgriddefInfo%p_rtriangulation%NVT
-      p_DvertexCoordsReal(1,i) = p_DvertexCoords(1,i)
-      p_DvertexCoordsReal(2,i) = p_DvertexCoords(2,i)
-    end do
-
-    ! write back coordinates
-    do i=1,rgriddefInfo%p_rtriangulation%NVBD
-      p_DvertexParametersReal(i) = p_DvertexParameters(i)
-    end do
+!    do i=1,rgriddefInfo%p_rtriangulation%NVT
+!      p_DvertexCoordsReal(1,i) = p_DvertexCoords(1,i)
+!      p_DvertexCoordsReal(2,i) = p_DvertexCoords(2,i)
+!    end do
+!
+!    ! write back coordinates
+!    do i=1,rgriddefInfo%p_rtriangulation%NVBD
+!      p_DvertexParametersReal(i) = p_DvertexParameters(i)
+!    end do
 
   
   end subroutine ! end griddef_moveMesh
@@ -2675,10 +2675,10 @@ contains
   logical :: bsearchFailed
 
   ! coordinates of evaluation point
-  real(dp) :: dx, dy
+  real(dp) :: dx, dy, dx_old, dy_old
 
   ! time and step size for ODE solving
-  real(dp) :: dtime, dstepSize,deps
+  real(dp) :: dtime, dstepSize,deps,dist
 
   ! level diference between PDE and PDE level
   integer(i32):: ilevDiff
@@ -2723,6 +2723,13 @@ contains
   ilevDiff = rgriddefInfo%imindefLevel
 
   do ive=1, rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%NVT
+  
+      dx_old = p_DvertexCoords(1,ive)
+      dy_old = p_DvertexCoords(2,ive)
+      
+      dx = p_DvertexCoords(1,ive)
+      dy = p_DvertexCoords(2,ive)
+      
 
     if(p_InodalProperty(ive) .ne. 0)then
     
@@ -2735,10 +2742,13 @@ contains
 
       ! initialise flag for failed search
       bsearchFailed = .FALSE.
-
       ! initial coordinates of the vertex
       dx = p_DvertexCoords(1,ive)
       dy = p_DvertexCoords(2,ive)
+      
+      dx_old = p_DvertexCoords(1,ive)
+      dy_old = p_DvertexCoords(2,ive)
+      
       
       ! here we store the coordinates
       Dpoint(1) = dx
@@ -2761,14 +2771,14 @@ contains
       ! compute step size for next time step
       dstepSize = 0.05_dp
 
-      ! so this means in DresultArray(1) there is the
+      ! so this means in Dvalues(1) there is the
       ! x coordinate of the recovered gradient
-      ! so this means in DresultArray(2) there is the
+      ! so this means in Dvalues(2) there is the
       ! y coordinate of the recovered gradient        
-      !((1.0_DP - dtime)*DresultArr(4) + &
-      !dtime*(DresultArr(3)))
-      ! In Dresult(4) we find the g function(area distribution)
-      ! In Dresult(3) the f function (monitor)
+      !((1.0_DP - dtime)*Dvalues(4) + &
+      !dtime*(Dvalues(3)))
+      ! In Dvalues(4) we find the g function(area distribution)
+      ! In Dvalues(3) the f function (monitor)
       ! perform the actual Euler step
       dx = dx + dstepSize* Dvalues(1)/((1.0_DP - dtime)*Dvalues(4) + &
            dtime*(Dvalues(3)))
@@ -2819,7 +2829,7 @@ contains
         ! time interval exhausted, calculation finished and exit
         if (dtime .ge. 1.0_DP - deps) then
               p_DvertexCoords(1,ive) = dx
-              p_DvertexCoords(2,ive) = dy     
+              p_DvertexCoords(2,ive) = dy
             exit calculationloopEE_inner
 !          END IF ! nodelProperty .ne. 0
         end if ! (dtime .ge. 1.0_DP - deps)
@@ -2830,7 +2840,7 @@ contains
         p_DvertexCoords(1,ive) = dx
         p_DvertexCoords(2,ive) = dy     
       endif ! dtime
-  end if ! nodal_property .ne. 0    
+  end if ! nodal_property .ne. 0
   end do ! ive
   
   end subroutine ! end griddef_performEE
@@ -3453,7 +3463,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   ! evaluate the functions on the element
   
 
-  CALL griddef_evalPhi_Known(DER_FUNC, Dvalues, &
+  call griddef_evalPhi_Known(DER_FUNC, Dvalues, &
        rgriddefWork%rvecGradBlock%RvectorBlock(1), &
        rgriddefWork%rvecGradBlock%RvectorBlock(2), &
        rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1), &
@@ -3479,10 +3489,10 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   dtime = dtime + dstepSize
 
   ! While we are still in the [0,1] interval(with a small tolerance)
-  IF (dtime .le. 1.0_DP - deps) THEN
+  if (dtime .le. 1.0_DP - deps) then
 
      ! for the other time steps, we have really to search
-    calculationloopEE_bdy : DO
+    calculationloopEE_bdy : do
     
     dalpha_old = dalpha
     
@@ -3545,7 +3555,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     end do ! end do
 
     ! time interval exhausted, calculation finished and exit
-    IF (bsearchFailed) THEN
+    if (bsearchFailed) then
     
       call boundary_getCoords(rgriddefInfo%p_rboundary, p_InodalProperty(ive),&
                               dalpha_old, dx, dy)        
@@ -3553,8 +3563,8 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
       ! write
       p_DvertexCoords(1,ive) = dx
       p_DvertexCoords(2,ive) = dy     
-      EXIT calculationloopEE_bdy
-    END IF ! (dtime .ge. 1.0_DP - deps)
+      exit calculationloopEE_bdy
+    end if ! (dtime .ge. 1.0_DP - deps)
 
     ! evaluate phi now in element iinelement    
 
@@ -3569,7 +3579,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
    
     ! search in which element the point is
     ! iel ivbd param value  
-    CALL griddef_evalphi_ray_bound(DER_FUNC, Dvalues, &
+    call griddef_evalphi_ray_bound(DER_FUNC, Dvalues, &
        rgriddefWork%rvecGradBlock%RvectorBlock(1), &
        rgriddefWork%rvecGradBlock%RvectorBlock(2), &
        rgriddefWork%rvectorMonFuncQ1%RvectorBlock(1), &
@@ -3589,14 +3599,14 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     ivbd = 0
     
     ! if the point is outside the domain, stop moving it
-    IF ((dalpha .lt. rregion(iregions)%dminParam) .or. & 
-        (dalpha .gt. rregion(iregions)%dmaxParam)) THEN
+    if ((dalpha .lt. rregion(iregions)%dminParam) .or. & 
+        (dalpha .gt. rregion(iregions)%dmaxParam)) then
         call boundary_getCoords(rgriddefInfo%p_rboundary, p_InodalProperty(ive),&
                                 dalpha_old, dx, dy)        
         p_DvertexCoords(1,ive) = dx
         p_DvertexCoords(2,ive) = dy     
-      EXIT calculationloopEE_bdy
-    ENDIF
+      exit calculationloopEE_bdy
+    endif
     
     ! time interval exhausted, calculation finished and exit
     IF (dtime .ge. 1.0_DP - deps) THEN
@@ -3607,24 +3617,24 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
       ! get the x,y coordinates from the parameter values
       p_DvertexCoords(1,ive) = dx
       p_DvertexCoords(2,ive) = dy     
-      EXIT calculationloopEE_bdy
-    END IF ! (dtime .ge. 1.0_DP - deps)
+      exit calculationloopEE_bdy
+    end if ! (dtime .ge. 1.0_DP - deps)
     
-    ENDDO calculationloopEE_bdy
+    enddo calculationloopEE_bdy
   ! in case time interval exhausted in the first time step  
-  ELSE
+  else
     ! write the coordinates
     ! get the x,y coordinates from the parameter values
     p_DvertexCoords(1,ive) = dx
     p_DvertexCoords(2,ive) = dy     
-  ENDIF ! dtime
+  endif ! dtime
 
-  END SUBROUTINE
+  end subroutine
  
  !****************************************************************************  
 
 !<subroutine>  
-  SUBROUTINE griddef_evalPhi_Known(iderType, Dvalues, rvecGradX, &
+  subroutine griddef_evalPhi_Known(iderType, Dvalues, rvecGradX, &
              rvecGradY,rvecMon,rvecArea,Dpoint, &
              Ielements, IelementsHint, cnonmeshPoints)
 !<description>
@@ -3636,79 +3646,79 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
 
 !<input>
   ! type of function value to evaluate. One of the DER_xxxx constants
-  INTEGER, INTENT(IN)           :: iderType
+  integer, intent(in)           :: idertype
   
   ! the scalar solution vector that is to be evaluated.
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecMon
+  type(t_vectorScalar), intent(IN)              :: rvecMon
   
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecGradX
+  type(t_vectorScalar), intent(IN)              :: rvecGradX
   
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecGradY  
+  type(t_vectorScalar), intent(IN)              :: rvecGradY  
   
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecArea    
+  type(t_vectorScalar), intent(IN)              :: rvecArea    
   
   ! a list of points where to evaluate
   ! dimension(1..ndim,1..npoints)
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  real(dp), dimension(:), intent(in) :: Dpoint
   
   ! optional: a list of elements containing the points Dpoints.
   ! if this is not specified the elment numbers containing the points 
   ! are determined automatically
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN), OPTIONAL :: Ielements
+  integer(prec_elementidx), intent(in), optional :: Ielements
 
   ! OPTIONAL: A list of elements that are near the points in Dpoints.
   ! This gives only a hint where to start searching for the actual elements
   ! containing the points. This is ignored if Ielements is specified!
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN), OPTIONAL :: IelementsHint
+  integer(prec_elementidx), intent(in), optional :: IelementsHint
   
   ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens
   ! if a point is located outside of the domain. May happen e.g. in
   ! nonconvex domains. FEVL_NONMESHPTS_NONE is the default 
   ! parameter if cnonmeshPoints is not specified. 
-  INTEGER, INTENT(IN), OPTIONAL :: cnonmeshPoints  
+  integer, intent(in), optional :: cnonmeshPoints  
   
 !</input>
 
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dvalues
+  real(dp), dimension(:), intent(out) :: Dvalues
   
 
   
 !</output>      
 
   ! local variables
-  INTEGER :: cnonmesh
-  INTEGER :: ieltype,indof,nve,ibas
-  INTEGER(PREC_ELEMENTIDX) :: iel
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+  integer :: cnonmesh
+  integer :: ieltype,indof,nve,ibas
+  integer :: iel
+  integer, dimension(:), pointer :: p_IelementDistr
+  logical, dimension(el_maxnder) :: Bder
   
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataMon
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataArea
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataGradX
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataGradY
+  real(dp), dimension(:), pointer :: p_ddatamon
+  real(dp), dimension(:), pointer :: p_ddataarea
+  real(dp), dimension(:), pointer :: p_ddatagradx
+  real(dp), dimension(:), pointer :: p_ddatagrady
   
   ! Transformation
-  INTEGER(I32) :: ctrafoType
-  REAL(DP), DIMENSION(TRAFO_MAXDIMREFCOORD) :: DparPoint 
+  integer :: ctrafotype
+  real(dp), dimension(trafo_maxdimrefcoord) :: dparpoint 
   
   ! Values of basis functions and DOF's
-  REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER) :: Dbas
-  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS) :: Idofs
+  real(DP), dimension(el_maxnbas,el_maxnder) :: Dbas
+  integer, dimension(el_maxnbas) :: Idofs
   
   ! List of element distributions in the discretisation structure
-  TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
+  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
   ! Evaluation structure and tag
-  TYPE(t_evalElement) :: revalElement
-  INTEGER(I32) :: cevaluationTag  
+  type(t_evalElement) :: revalElement
+  integer(I32) :: cevaluationTag  
   
   p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
   
   ! for uniform discretisations, we get the element type in advance...
-  IF(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+  if(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNIFORM) then
   
     ! Element type
     ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
@@ -3750,19 +3760,19 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   Bder(iderType) = .TRUE.
   
   cnonmesh = FEVL_NONMESHPTS_NONE
-  IF (PRESENT(cnonmeshPoints)) cnonmesh = cnonmeshPoints
+  if (PRESENT(cnonmeshPoints)) cnonmesh = cnonmeshPoints
   
   ! We loop over all points
   iel = 1
   
   ! Get the element number that contains the point
-  IF(PRESENT(Ielements))THEN
+  if(PRESENT(Ielements))then
     ! we have it...
     iel = Ielements
-  END IF
+  end if
   
   ! get the type of the element iel
-  IF(ASSOCIATED(p_IelementDistr))then
+  if(associated(p_ielementdistr))then
     ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
     
     ! Get the number of local DOF's for trial and test functions
@@ -3776,28 +3786,28 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     
     ! get the element evaluation tag; necessary for the preparation of the element
     cevaluationTag = elem_getEvaluationTag(ieltype)
-  END IF
+  end if
   
   ! Calculate the global DOF's on that element into IdofsTest.
-  CALL dof_locGlobMapping(rvecMon%p_rspatialDiscr, iel, Idofs)
+  call dof_locGlobMapping(rvecMon%p_rspatialDiscr, iel, Idofs)
   
   ! Get the element shape information
-  CALL elprep_prepareForEvaluation(revalElement, EL_EVLTAG_COORDS, &
+  call elprep_prepareForEvaluation(revalElement, EL_EVLTAG_COORDS, &
        rvecMon%p_rspatialDiscr%p_rtriangulation, iel, ctrafoType)
        
   ! calculate the transformation of the point to the reference element
-  CALL trafo_calcRefCoords(ctrafoType, revalElement%Dcoords, &
+  call trafo_calcRefCoords(ctrafoType, revalElement%Dcoords, &
        Dpoint(:), DparPoint)
        
   ! Now calculate everything else what is necessary for the element
-  CALL elprep_prepareForEvaluation (revalElement, &
+  call elprep_prepareForEvaluation (revalElement, &
       IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
       rvecMon%p_rspatialDiscr%p_rtriangulation, iel, &
       ctrafoType, DparPoint, Dpoint(:))    
   
   ! Call the element to calculate the values of the basis functions
   ! in the point
-  CALL elem_generic2(ieltype, revalElement, Bder, Dbas)
+  call elem_generic2(ieltype, revalElement, Bder, Dbas)
   
   ! Combine the basis functions to get the function value
   Dvalues(:) = 0.0_DP
@@ -3807,22 +3817,22 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   ! basis functions and summing up.
   !          
   ! Calculate the value in the point
-  DO ibas = 1, indof
+  do ibas = 1, indof
     Dvalues(1) = Dvalues(1) + p_DdataGradX(Idofs(ibas)) * Dbas(ibas,iderType)
     Dvalues(2) = Dvalues(2) + p_DdataGradY(Idofs(ibas)) * Dbas(ibas,iderType)
     Dvalues(3) = Dvalues(3) + p_DdataMon(Idofs(ibas)) * Dbas(ibas,iderType)
     Dvalues(4) = Dvalues(4) + p_DdataArea(Idofs(ibas)) * Dbas(ibas,iderType)
-  END DO
+  end do
   
   Dvalues(3) = 1.0_DP/Dvalues(3)
   Dvalues(4) = 1.0_DP/Dvalues(4)
   
-  END SUBROUTINE ! end griddef_evalPhi_Known
+  end subroutine ! end griddef_evalPhi_Known
   
   !**************************************************************************** 
   
 !<subroutine>  
-  SUBROUTINE griddef_evalphi_ray(iderType, Dvalues, rvecGradX, &
+  subroutine griddef_evalphi_ray(iderType, Dvalues, rvecGradX, &
              rvecGradY,rvecMon,rvecArea,Dpoint,bsearchFailed, &
              IelementsHint, cnonmeshPoints)
 !<description>
@@ -3834,77 +3844,77 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
 
 !<input>
   ! type of function value to evaluate. One of the DER_xxxx constants
-  INTEGER, INTENT(IN)           :: iderType
+  integer, intent(in)           :: iderType
   
   ! the scalar solution vector that is to be evaluated.
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecMon
+  type(t_vectorScalar), intent(IN)              :: rvecMon
   
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecGradX
+  type(t_vectorScalar), intent(IN)              :: rvecGradX
   
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecGradY  
+  type(t_vectorScalar), intent(IN)              :: rvecGradY  
   
-  TYPE(t_vectorScalar), INTENT(IN)              :: rvecArea    
+  type(t_vectorScalar), intent(IN)              :: rvecArea    
   
   ! a list of points where to evaluate
   ! dimension(1..ndim,1..npoints)
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  real(dp), dimension(:), intent(in) :: Dpoint
   
   ! OPTIONAL: A list of elements that are near the points in Dpoints.
   ! This gives only a hint where to start searching for the actual elements
   ! containing the points. This is ignored if Ielements is specified!
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN), OPTIONAL :: IelementsHint
+  integer(prec_elementidx), intent(in), optional :: IelementsHint
   
   ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens
   ! if a point is located outside of the domain. May happen e.g. in
   ! nonconvex domains. FEVL_NONMESHPTS_NONE is the default 
   ! parameter if cnonmeshPoints is not specified. 
-  INTEGER, INTENT(IN), OPTIONAL :: cnonmeshPoints  
+  integer, intent(in), optional :: cnonmeshPoints  
   
 !</input>
 
 
 !<inputoutput>
-  LOGICAL, INTENT(inout) :: bsearchFailed
+  logical, intent(inout) :: bsearchFailed
 !</inputoutput>
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dvalues
+  real(dp), dimension(:), intent(out) :: Dvalues
 !</output>      
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: cnonmesh
-  INTEGER :: ieltype,indof,nve,ibas
-  INTEGER(PREC_ELEMENTIDX) :: iel
-  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
-  LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
+  integer :: cnonmesh
+  integer :: ieltype,indof,nve,ibas
+  integer(prec_elementidx) :: iel
+  integer(i32), dimension(:), pointer :: p_IelementDistr
+  logical, dimension(el_maxnder) :: Bder
   
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataMon
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataArea
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataGradX
-  REAL(DP), DIMENSION(:), POINTER :: p_DdataGradY
+  real(dp), dimension(:), pointer :: p_DdataMon
+  real(dp), dimension(:), pointer :: p_DdataArea
+  real(dp), dimension(:), pointer :: p_DdataGradX
+  real(dp), dimension(:), pointer :: p_DdataGradY
   
   ! Transformation
-  INTEGER(I32) :: ctrafoType
-  REAL(DP), DIMENSION(TRAFO_MAXDIMREFCOORD) :: DparPoint 
+  integer(i32) :: ctrafotype,iresult,ilastElement,ilastEdge
+  real(dp), dimension(trafo_maxdimrefcoord) :: DparPoint 
   
   ! Values of basis functions and DOF's
-  REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER) :: Dbas
-  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS) :: Idofs
+  real(dp), dimension(el_maxnbas,el_maxnder) :: Dbas
+  integer(prec_dofidx), dimension(el_maxnbas) :: Idofs
   
   ! List of element distributions in the discretisation structure
-  TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
+  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
   ! Evaluation structure and tag
-  TYPE(t_evalElement) :: revalElement
-  INTEGER(I32) :: cevaluationTag  
+  type(t_evalElement) :: revalElement
+  integer(I32) :: cevaluationTag  
   
   p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
   
   ! for uniform discretisations, we get the element type in advance...
-  IF(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+  if(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNIFORM) then
   
     ! Element type
     ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
@@ -3921,54 +3931,55 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     ! Get the element evaluation tag; neccessary for preparation
     cevaluationTag = elem_getEvaluationTag(ieltype)
     
-    NULLIFY(p_IelementDistr)
-  ELSE
-     CALL storage_getbase_int (&
+    nullify(p_IelementDistr)
+  else
+     call storage_getbase_int (&
           rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)    
-  END IF
+  end if
   
   ! get the data vector
-  SELECT CASE (rvecMon%cdataType)
-  CASE (ST_DOUBLE) 
-    CALL lsyssc_getbase_double(rvecMon,p_DdataMon)
-    CALL lsyssc_getbase_double(rvecArea,p_DdataArea)
-    CALL lsyssc_getbase_double(rvecGradX,p_DdataGradX)
-    CALL lsyssc_getbase_double(rvecGradY,p_DdataGradY)    
-  CASE (ST_SINGLE)
-  CASE DEFAULT
-    CALL output_line ('Unsupported vector precision!',&
+  select case (rvecMon%cdataType)
+  case (ST_DOUBLE) 
+    call lsyssc_getbase_double(rvecMon,p_DdataMon)
+    call lsyssc_getbase_double(rvecArea,p_DdataArea)
+    call lsyssc_getbase_double(rvecGradX,p_DdataGradX)
+    call lsyssc_getbase_double(rvecGradY,p_DdataGradY)    
+  case (ST_SINGLE)
+  case default
+    call output_line ('Unsupported vector precision!',&
         OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
-    CALL sys_halt()
-  END SELECT  
+    call sys_halt()
+  end select  
 
   ! What to evaluate
   Bder = .FALSE.
   Bder(iderType) = .TRUE.
   
   cnonmesh = FEVL_NONMESHPTS_NONE
-  IF (PRESENT(cnonmeshPoints)) cnonmesh = cnonmeshPoints
+  if (PRESENT(cnonmeshPoints)) cnonmesh = cnonmeshPoints
   
   ! We loop over all points
   iel = 0
   
   ! Use raytracing search to find the element
   ! containing the point.
-  CALL tsrch_getElem_raytrace2D (&
-    Dpoint(:),rvecMon%p_rspatialDiscr%p_rtriangulation,iel)
+  call tsrch_getElem_raytrace2D (&
+    Dpoint(:),rvecMon%p_rspatialDiscr%p_rtriangulation,iel,&
+    iresult,ilastElement,ilastEdge,100)
     
   ! Ok, not found... Brute force search
-  IF (iel .EQ. 0) THEN
-    CALL tsrch_getElem_BruteForce (Dpoint(:), &
+  if((iel .eq. 0) .or. (iel .eq. -1))then
+    call tsrch_getElem_BruteForce (Dpoint(:), &
       rvecMon%p_rspatialDiscr%p_rtriangulation,iel)
-  END IF
+  end if
   
-  IF (iel .EQ. 0) THEN
+  if((iel .eq. 0) .or. (iel .eq. -1))then
     bsearchFailed = .true.
-    RETURN
-  END IF  
+    return
+  end if  
   
   ! get the type of the element iel
-  IF(ASSOCIATED(p_IelementDistr))then
+  if(ASSOCIATED(p_IelementDistr))then
     ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
     
     ! Get the number of local DOF's for trial and test functions
@@ -3982,28 +3993,28 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     
     ! get the element evaluation tag; necessary for the preparation of the element
     cevaluationTag = elem_getEvaluationTag(ieltype)
-  END IF
+  end if
   
   ! Calculate the global DOF's on that element into IdofsTest.
-  CALL dof_locGlobMapping(rvecMon%p_rspatialDiscr, iel, Idofs)
+  call dof_locGlobMapping(rvecMon%p_rspatialDiscr, iel, Idofs)
   
   ! Get the element shape information
-  CALL elprep_prepareForEvaluation(revalElement, EL_EVLTAG_COORDS, &
+  call elprep_prepareForEvaluation(revalElement, EL_EVLTAG_COORDS, &
        rvecMon%p_rspatialDiscr%p_rtriangulation, iel, ctrafoType)
        
   ! calculate the transformation of the point to the reference element
-  CALL trafo_calcRefCoords(ctrafoType, revalElement%Dcoords, &
+  call trafo_calcRefCoords(ctrafoType, revalElement%Dcoords, &
        Dpoint(:), DparPoint)
        
   ! Now calculate everything else what is necessary for the element
-  CALL elprep_prepareForEvaluation (revalElement, &
+  call elprep_prepareForEvaluation (revalElement, &
       IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
       rvecMon%p_rspatialDiscr%p_rtriangulation, iel, &
       ctrafoType, DparPoint, Dpoint(:))    
   
   ! Call the element to calculate the values of the basis functions
   ! in the point
-  CALL elem_generic2(ieltype, revalElement, Bder, Dbas)
+  call elem_generic2(ieltype, revalElement, Bder, Dbas)
   
   ! Combine the basis functions to get the function value
   Dvalues(:) = 0.0_DP
@@ -4013,18 +4024,18 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   ! basis functions and summing up.
   !          
   ! Calculate the value in the point
-  DO ibas = 1, indof
+  do ibas = 1, indof
     Dvalues(1) = Dvalues(1) + p_DdataGradX(Idofs(ibas)) * Dbas(ibas,iderType)
     Dvalues(2) = Dvalues(2) + p_DdataGradY(Idofs(ibas)) * Dbas(ibas,iderType)
     Dvalues(3) = Dvalues(3) + p_DdataMon(Idofs(ibas)) * Dbas(ibas,iderType)
     Dvalues(4) = Dvalues(4) + p_DdataArea(Idofs(ibas)) * Dbas(ibas,iderType)
-  END DO
+  end do
   
   Dvalues(3) = 1.0_DP/Dvalues(3)
   Dvalues(4) = 1.0_DP/Dvalues(4)  
   
   
-  END SUBROUTINE ! end griddef_evalphi_ray
+  end subroutine ! end griddef_evalphi_ray
 
 ! ***************************************************************************   
  
