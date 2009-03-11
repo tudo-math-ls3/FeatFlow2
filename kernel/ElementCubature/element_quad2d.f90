@@ -7132,9 +7132,9 @@ contains
   real(DP) :: ddets
 
   ! other local variables
-  integer :: i,j,iel,ipt
+  integer :: i,iel,ipt
   real(DP), dimension(NBAS,NBAS) :: Da, Dc
-  real(DP) :: dx,dy,dt,derx,dery
+  real(DP) :: dx,dy,derx,dery
   
     ! Loop over all elements
     do iel = 1, reval%nelements
@@ -7168,20 +7168,20 @@ contains
       Da = 0.0_DP
 
       ! Loop over all vertices of the quad
-      do j = 1, 4
+      do i = 1, 4
       
         ! Apply inverse affine trafo on corner vertice coordinates to get
         ! (x,y) in the element's local coordinate system.
-        dx = ds(1,1)*(Dvert(1,j)-dr(1)) + ds(1,2)*(Dvert(2,j)-dr(2))
-        dy = ds(2,1)*(Dvert(1,j)-dr(1)) + ds(2,2)*(Dvert(2,j)-dr(2))
+        dx = ds(1,1)*(Dvert(1,i)-dr(1)) + ds(1,2)*(Dvert(2,i)-dr(2))
+        dy = ds(2,1)*(Dvert(1,i)-dr(1)) + ds(2,2)*(Dvert(2,i)-dr(2))
         
         ! Evaluate monomials in current vertice
-        Da(1,j) = Da(1,j) + dt
-        Da(2,j) = Da(2,j) + dx*dt
-        Da(3,j) = Da(3,j) + dy*dt
-        Da(4,j) = Da(4,j) + dx*dy*dt
+        Da(1,i) = 1.0_DP
+        Da(2,i) = dx
+        Da(3,i) = dy
+        Da(4,i) = dx*dy
       
-      end do ! j
+      end do ! i
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 4: Invert coefficient matrix
