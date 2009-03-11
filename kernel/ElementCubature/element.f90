@@ -489,6 +489,10 @@ module element
 !</constantblock>
 
 !<constantblock description="Special 2D element variants.">
+
+  ! ID of bilinear conforming quadrilateral FE, Q1, non-parametric
+  integer(I32), parameter, public :: EL_EM11    = EL_Q1 + EL_NONPARAMETRIC
+  integer(I32), parameter, public :: EL_EM11_2D = EL_EM11
   
   ! ID of rotated linear nonconforming triangular FE, P1~, edge-midpoint based
   integer(I32), parameter, public :: EL_E020    = EL_P1T
@@ -674,6 +678,8 @@ contains
       elem_igetID = EL_Q0_2D
     case("EL_Q1","EL_Q1_2D","EL_E011","EL_E011_2D")
       elem_igetID = EL_Q1_2D
+    case("EL_EM11","EL_EM11_2D")
+      elem_igetID = EL_EM11_2D
     case("EL_Q2","EL_Q2_2D")
       elem_igetID = EL_Q2_2D
     case("EL_Q2H_2D")
@@ -1139,8 +1145,10 @@ contains
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
       ! These work on the reference quadrilateral
       elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
-    case (EL_Q1T+EL_NONPARAMETRIC,EL_Q2T+EL_NONPARAMETRIC)
-      ! EM30, EM31, EM50; these work in real coordinates
+    case (EL_Q1 +EL_NONPARAMETRIC, &
+          EL_Q1T+EL_NONPARAMETRIC, &
+          EL_Q2T+EL_NONPARAMETRIC)
+      ! EM11, EM30, EM31, EM50; these work in real coordinates
       elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
     
     ! 3D Element types
@@ -1157,7 +1165,8 @@ contains
     case (EL_R0_3D, EL_R1_3D)
       ! These work on the reference prism
       elem_igetCoordSystem = TRAFO_CS_REF3DPRISM
-    case (EL_Q1T_3D+EL_NONPARAMETRIC,EL_Q2T_3D+EL_NONPARAMETRIC)
+    case (EL_Q1T_3D+EL_NONPARAMETRIC,&
+          EL_Q2T_3D+EL_NONPARAMETRIC)
       ! EM30, EM50; these work in real coordinates
       elem_igetCoordSystem = TRAFO_CS_REAL3DHEXA
       
@@ -1692,6 +1701,8 @@ contains
         call elem_Q0 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q1)
         call elem_Q1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EM11_2D)
+        bwrapSim2 = .true.
       case (EL_Q2)
         call elem_Q2 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q2H_2D)
@@ -2435,6 +2446,9 @@ contains
       
       ! New implementation
       !call elem_eval_Q1_2D(celement, revalElementSet, Bder, Dbas)
+    
+    case (EL_EM11_2D)
+      call elem_eval_EM11_2D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_Q2)
       call elem_Q2_sim (celement, revalElementSet%p_Dcoords, &
