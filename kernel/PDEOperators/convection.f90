@@ -80,6 +80,9 @@ module convection
   ! Unified edge jump stabilisation
   integer, parameter :: CONV_JUMP_UNIFIEDEDGE = 1
   
+  ! Reactive jump stabilisation
+  integer, parameter :: CONV_JUMP_REACTIVE    = 2
+  
 !</constantblock>
 
 !</constants>
@@ -205,6 +208,8 @@ module convection
     ! Type of Jump stabilisation.
     ! One of the CONV_JUMP_xxxx-constants. Standard is unified edge
     ! stabilisation.
+    ! CONV_JUMP_UNIFIEDEDGE: $ \sum_E \gamma h_E^2 \int_E [grad u] [grad v] ds $
+    ! CONV_JUMP_REACTIVE:    $ \sum_E gamma nu 1/|E| \int_E [u] [v] ds $
     integer               :: cjump = CONV_JUMP_UNIFIEDEDGE
   
     ! 1st Relaxation parameter for the Jump stabilisation.
@@ -9833,6 +9838,26 @@ contains
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
           rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%dtheta,&
+          rconfig%ccubType,rconfig%dnu,rdiscretisation)
+      end if
+
+    else if (rconfig%cjump .eq. CONV_JUMP_REACTIVE) then
+      if (present(rdefect)) then
+      
+        ! Modify the defect?
+        if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
+          call jstab_matvecReacJumpStabilBlk2d ( &
+              rconfig%dgamma,rconfig%ccubType,rconfig%dnu,&
+              rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP,&
+              rdiscretisation)
+        end if
+
+      end if
+      
+      ! Modify the matrix?
+      if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
+        call jstab_calcReacJumpStabilisation (&
+          rmatrix,rconfig%dgamma,rconfig%dtheta,&
           rconfig%ccubType,rconfig%dnu,rdiscretisation)
       end if
 
