@@ -376,6 +376,14 @@ endif
 
 ############################ Itanium 2 Dual Core #############################
 
+ifeq ($(call match,$(ID),ia64-itanium2x2-cygwin_nt.*-g95-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+#CFLAGSF77:=$(CFLAGSF77) -fno-underscoring
+#CFLAGSF90:=$(CFLAGSF90) -fno-underscoring
+endif
+
 ifeq ($(call match,$(ID),ia64-itanium2x2-linux-g95-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
 include $(TEMPLATESDIR)/ia64-generic.mk
@@ -440,6 +448,20 @@ endif
 
 
 ################################# Athlon 64 ##################################
+
+ifeq ($(call match,$(ID),pc-athlon64-cygwin_nt.*-g95-.*),yes)
+# invokes the G95 Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
+CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
+CFLAGSC       := -march=athlon64 $(CFLAGSC)
+CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
+LDFLAGS       := -march=athlon64 $(LDFLAGS)
+endif
+endif
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-g95-.*),yes)
 # invokes the G95 Fortran 77/90 compiler, local umfpack, local metis
@@ -538,6 +560,22 @@ endif
 
 ################################# Turion X2 ##################################
 
+ifeq ($(call match,$(ID),pc-turionx2-cygwin_nt.*-g95-*),yes)
+# invokes the G95 Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+include $(TEMPLATESDIR)/openmpi-generic.mk
+include $(TEMPLATESDIR)/gotoblas-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
+CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
+CFLAGSC       := -march=athlon64 $(CFLAGSC)
+CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
+LDFLAGS       := -march=athlon64 $(LDFLAGS)
+endif
+endif
+
 ifeq ($(call match,$(ID),pc-turionx2-linux-g95-goto-ompi),yes)
 # invokes the G95 Fortran 77/90 compiler, local umfpack, local metis
 include $(TEMPLATESDIR)/pc-generic.mk
@@ -557,6 +595,19 @@ endif
 
 
 ################################# Athlon XP ##################################
+
+ifeq ($(call match,$(ID),pc-athlonxp-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+# -mmx -m3dnow -mfpmath=sse -msse are automatically set by -march=athlon-xp
+CFLAGSF77LIBS := -march=athlon-xp $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon-xp $(CFLAGSF77)
+CFLAGSF90     := -march=athlon-xp $(CFLAGSF90)
+CFLAGSC       := -march=athlon-xp $(CFLAGSC)
+endif
+endif
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
@@ -645,6 +696,21 @@ endif
 
 
 ################################# CoreDuo 32bit ################################
+
+ifeq ($(call match,$(ID),pc-coreduo-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77LIBS)
+CFLAGSF77     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77)
+CFLAGSF90     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF90)
+CFLAGSC       := -msse3 -pipe -fomit-frame-pointer $(CFLAGSC)
+CFLAGSCXX     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSCXX)
+LDFLAGS       := $(LDFLAGS)
+endif
+endif
+
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-g95-.*),yes)
 # invokes the GNU Fortran 77/90 compiler, local umfpack, local metis
@@ -799,6 +865,29 @@ endif
 
 ################################# CoreSolo 32 bit ###############################
 
+ifeq ($(call match,$(ID),pc-coresolo-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+# According to http://archives.gentoo.org/gentoo-amd64/msg_14402.xml
+# H.J. Lu from Intel, very prominent on gcc 4.x bugzilla, advices
+# different settings:
+# * GCC 4.1:
+#   - use -march=prescott for Intel Core Solo/Duo
+#   - use -march=nocona (and an amd64 profile) for Core 2 Solo/Duo
+# * GCC 4.2:
+#   - use -march=prescott -mtune=generic for Intel Core Solo/Duo
+#   - use -march=nocona -mtune=generic for Intel Core 2 Solo/Duo
+CFLAGSF77LIBS := -march=pentium-m -mtune=prescott -msse $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=pentium-m -mtune=prescott -msse $(CFLAGSF77)
+CFLAGSF90     := -march=pentium-m -mtune=prescott -msse $(CFLAGSF90)
+CFLAGSC       := -march=pentium-m -mtune=prescott -msse $(CFLAGSC)
+CFLAGSCXX     := -march=pentium-m -mtune=prescott -msse $(CFLAGSCXX)
+endif
+endif
+
+
 ifeq ($(call match,$(ID),pc-coresolo-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
 include $(TEMPLATESDIR)/pc-generic.mk
@@ -863,6 +952,20 @@ endif
 
 
 ############################### Opteron 32bit ################################
+
+ifeq ($(call match,$(ID),pc-opteron-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=opteron $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=opteron $(CFLAGSF77)
+CFLAGSF90     := -march=opteron $(CFLAGSF90)
+CFLAGSC       := -march=opteron $(CFLAGSC)
+CFLAGSCXX     := -march=opteron $(CFLAGSCXX)
+endif
+endif
+
 
 ifeq ($(call match,$(ID),pc-opteron-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
@@ -1005,6 +1108,26 @@ endif
 endif
 
 
+ifeq ($(call match,$(ID),pc64-opteronx2-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
+CFLAGSF77     := $(CFLAGSF77) -m64
+CFLAGSF90     := $(CFLAGSF90) -m64
+CFLAGSC       := $(CFLAGSC) -m64
+LDFLAGS       := $(LDFLAGS) -m64
+ifeq ($(call optimise), YES)
+# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
+CFLAGSF77LIBS := $(CFLAGSF77LIBS) -march=opteron
+CFLAGSF77     := $(CFLAGSF77) -march=opteron
+CFLAGSF90     := $(CFLAGSF90) -march=opteron
+CFLAGSC       := $(CFLAGSC) -march=opteron
+endif
+endif
+
+
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
 # invokes the GNU g95 compiler, local umfpack, local metis
@@ -1092,6 +1215,26 @@ endif
 
 
 ############################### Opteron 64bit ################################
+
+ifeq ($(call match,$(ID),pc64-opteron-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
+CFLAGSF77     := $(CFLAGSF77) -m64
+CFLAGSF90     := $(CFLAGSF90) -m64
+CFLAGSC       := $(CFLAGSC) -m64
+LDFLAGS       := $(LDFLAGS) -m64
+ifeq ($(call optimise), YES)
+# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
+CFLAGSF77LIBS := $(CFLAGSF77LIBS) -march=opteron
+CFLAGSF77     := $(CFLAGSF77) -march=opteron
+CFLAGSF90     := $(CFLAGSF90) -march=opteron
+CFLAGSC       := $(CFLAGSC) -march=opteron
+endif
+endif
+
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
@@ -1286,6 +1429,25 @@ endif
 
 ###################### Opteron 64bit running 32bit app #######################
 
+ifeq ($(call match,$(ID),pc64-opteron_ia32-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+CFLAGSF77LIBS := -m32 $(CFLAGSF77LIBS)
+CFLAGSF77     := -m32 $(CFLAGSF77)
+CFLAGSF90     := -m32 $(CFLAGSF90)
+CFLAGSC       := -m32 $(CFLAGSC)
+LDFLAGS       := -m32 $(LDFLAGS)
+ifeq ($(call optimise), YES)
+# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
+CFLAGSF77LIBS := -march=opteron -mfpmath=sse -msse2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=opteron -mfpmath=sse -msse2 $(CFLAGSF77)
+CFLAGSF90     := -march=opteron -mfpmath=sse -msse2 $(CFLAGSF90)
+CFLAGSC       := -march=opteron -mfpmath=sse -msse2 $(CFLAGSC)
+endif
+endif
+
+
 ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
 include $(TEMPLATESDIR)/pc-generic.mk
@@ -1329,6 +1491,20 @@ CFLAGSF77LIBS := -march=pentium3 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium3 $(CFLAGSF77)
 CFLAGSF90     := -march=pentium3 $(CFLAGSF90)
 CFLAGSC       := -march=pentium3 $(CFLAGSC)
+endif
+endif
+
+
+ifeq ($(call match,$(ID),pc-pentium3-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=pentium3 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=pentium3 $(CFLAGSF77)
+CFLAGSF90     := -march=pentium3 $(CFLAGSF90)
+CFLAGSC       := -march=pentium3 $(CFLAGSC)
+LDFLAGS       := -march=pentium3 $(LDFLAGS)
 endif
 endif
 
@@ -1422,6 +1598,20 @@ endif
 
 
 ################################# Pentium 4 ##################################
+
+ifeq ($(call match,$(ID),pc-pentium4-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=pentium4 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=pentium4 $(CFLAGSF77)
+CFLAGSF90     := -march=pentium4 $(CFLAGSF90)
+CFLAGSC       := -march=pentium4 $(CFLAGSC)
+LDFLAGS       := -march=pentium4 $(LDFLAGS)
+endif
+endif
+
 
 ifeq ($(call match,$(ID),pc-pentium4-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis
@@ -1518,6 +1708,20 @@ endif
 
 
 ############################## Pentium 4 Mobile ##############################
+
+ifeq ($(call match,$(ID),pc-pentium4m-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=pentium4m $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=pentium4m $(CFLAGSF77)
+CFLAGSF90     := -march=pentium4m $(CFLAGSF90)
+CFLAGSC       := -march=pentium4m $(CFLAGSC)
+LDFLAGS       := -march=pentium4m $(LDFLAGS)
+endif
+endif
+
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack, local metis

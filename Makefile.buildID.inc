@@ -51,6 +51,10 @@ match=$(shell echo $(1) | sed -e 's/$(2)/yes/')
 # implementation to come up with default build IDs for every platform. 
 # List is to be extended for every new host FEAT is ported to.
 
+ifeq ($(call match,$(ID),pc-.*-cygwin_nt.*),yes)
+ID:=$(strip $(ID))-g95-blas
+endif
+
 ifeq ($(strip $(ID)), alpha-ev6-osf1)
 ID:=$(strip $(ID))-cf90-dxml
 endif
