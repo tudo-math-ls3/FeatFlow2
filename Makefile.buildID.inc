@@ -179,7 +179,7 @@ ifeq ($(strip $(ID)), ia64-itanium2-linux64-intel-mkl)
 ID:=$(strip $(ID))-mpi
 endif
 
-ifeq ($(call match,$(ID),.*-.*-.*-.*-.*),yes)
+ifeq ($(call match,$(ID),[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*),yes)
 ID:=$(ID)-ompi
 endif
 endif
@@ -195,7 +195,7 @@ endif
 # case we have to cut the last two identifiers (specifying blas library implementation and
 # MPI environment). So, use current ID setting and cutting it will in any case give us 
 # what we need.
-LIBID:=$(shell echo "$(ID)" | LC_ALL=C perl -pe 's/^(\w+-\w+-\w+-\w+-\w+)(-\w+|)$$/$$1/;')
+LIBID:=$(shell echo "$(ID)" | LC_ALL=C perl -pe 's/^([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)(-[^-]+|)$$/$$1/;')
 
 
 # hack to have this target in all Makefiles, the dot is to not
