@@ -467,8 +467,8 @@ if (! defined($cachedtests{'build-id'})) {
 my $entry = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
 # no support for *-*-*-psc-*, *-*-*-sunstudio-*, sx*-none-superux-f90-*
 if ($#{$entry} >= 0 &&
-    ($buildID_lib =~ m/^\w+-\w+-\w+-(psc|sunstudio)-\w+$/ ||
-     $buildID_lib =~ m/^sx\w+-none-superux-f90-\w+$/)) {
+    ($buildID_lib =~ m/^[^-]+-[^-]+-[^-]+-(psc|sunstudio)-[^-]+$/ ||
+     $buildID_lib =~ m/^sx[^-]+-none-superux-f90-[^-]+$/)) {
     # Create an empty Makefile to prevent breaking compilation of
     # complete benchmark just because configuring one application
     # failed.
@@ -2922,7 +2922,8 @@ sub create_feastAppMakefile {
         "# It would be a lot nicer if we could distribute the following perl\n" .
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
-        "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
+# orig  "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
+	"\t\@perl -ne '(my \$\$id_1st3tokens = \"\$(ID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(ID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
 
@@ -3210,7 +3211,7 @@ sub get_buildID {
 # Function: Determine build ID for libraries (do not check yet whether it's valid)
 sub get_buildID_lib {
     my $string = $buildID;
-    $string =~ s/^(\w+-\w+-\w+-\w+-\w+)(-\w+|)$/$1/;
+    $string =~ s/^([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)(-[^-]+|)$/$1/;
     return $string;
 }
 
@@ -3448,20 +3449,34 @@ sub list_ids {
     # Get valid IDs from MAKEFILE_INC
     &get_validIDs();
 
-    my $id = $buildID;
-    $id =~ s/^(\w+-\w+-\w+).*$/$1/;
+    my $id_1st3tokens = $buildID;
+    $id_1st3tokens =~ s/^([^-]+-[^-]+-[^-]+).*$/$1/;
 
     print "\n$progname v" . &get_version() . ":\n" .
-          "Valid build IDs (for $id hosts) match\n" .
+          "Valid build IDs (for $id_1st3tokens hosts) match\n" .
           "against the following regular expressions:\n";
-    foreach my $entry (sort @valid_id) {
-        if ($entry =~ m/^$id/) {
-            if ($entry eq $buildID) {
-                print "* $entry (default)\n";
+    foreach my $complete_matching_rule (sort @valid_id) {
+	# $entry is a matching rule for a build ID. Even in the first three tokens
+	# of $entry wildcards may have been used. In order to have an arbitrarily
+	# given or set build ID with prefix "pc-coreduo-cygwin_nt5.1" result in
+	# the following matches
+	#     pc-coreduo-cygwin_nt.*-.*-blas.*
+	#     pc-coreduo-cygwin_nt.*-g95-.* 
+	# (note the "nt5.1" in the prefix and the "nt.*" in the matches which is
+	#  exactly the opposite of what we would like to have)
+	# extract the first three tokens of $entry and try to match the first tokens
+	# of the current build ID against them. In case of matches, print the complete
+	# matching rule, i.e. the complete $entry.
+	my $match_1st3tokens = $complete_matching_rule;
+	$match_1st3tokens =~ s/([^-]+-[^-]+-[^-]+)(-.*)$/$1/;
+	
+	if ($id_1st3tokens =~ m/$match_1st3tokens/) {
+            if ($complete_matching_rule eq $buildID) {
+                print "* $complete_matching_rule (default)\n";
             } else {
-                print "* $entry\n";
+                print "* $complete_matching_rule\n";
             }
-        }
+	}
     }
     if (-1 == $#valid_id) {
 	print "     (none)\n\n" .
