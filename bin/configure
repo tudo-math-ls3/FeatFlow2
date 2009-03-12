@@ -114,11 +114,12 @@ my $progname = &basename($0);
 # is not available in FEAT2 as there is no general rule to set up the directory
 # structure of any application such that this script can be found via ../../bin.
 # (It would be different, though, if one could be sure that any FEAT2 application 
-# resides in a directory exactly two hierarchy levels beneath the FEAT2 root directory.)
+#  resides in a directory exactly two hierarchy levels beneath the FEAT2 root 
+#  directory. Then we could simply set)
+#my $FEASTBASEDIR = "../..";
 
 # version with absolute paths
 my $FEASTBASEDIR = &abs_path(&dirname($0) . "/..");
-
 
 # another version with absolute paths
 # (when changing to absolute paths again, be aware that copying of
