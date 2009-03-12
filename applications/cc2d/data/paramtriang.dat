@@ -8,7 +8,7 @@
 [PARAMTRIANG]
 
 # Filename of the parametrisation of the domain
-sParametrisation = './pre/QUAD.prm'
+sParametrisation = './pre/bench1.prm'
 
 # Filename of the coarse grid mesh
-sMesh = './pre/QUAD.tri'
+sMesh = './pre/bench1.tri'
