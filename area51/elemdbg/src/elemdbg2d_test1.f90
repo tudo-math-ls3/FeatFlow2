@@ -408,7 +408,7 @@ contains
       ! Probably write the mesh to disc
       if (iwritemesh .eq. 1) then
         call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                          'gmv/solution'//TRIM(sys_siL(ilvl,5))//'.gmv')
+                          'ucd/solution'//TRIM(sys_siL(ilvl,5))//'.gmv')
 
         ! Project the solution to the vertices
         allocate (p_Ddata(rtriangulation%NVT))
@@ -420,7 +420,7 @@ contains
         deallocate(p_Ddata)
       else if (iwritemesh .eq. 2) then
         call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                          'gmv/solution'//TRIM(sys_siL(ilvl,5))//'.vtk')
+                          'ucd/solution'//TRIM(sys_siL(ilvl,5))//'.vtk')
 
         ! Project the solution to the vertices
         allocate (p_Ddata(rtriangulation%NVT))
