@@ -116,10 +116,10 @@ my $progname = &basename($0);
 # (It would be different, though, if one could be sure that any FEAT2 application 
 #  resides in a directory exactly two hierarchy levels beneath the FEAT2 root 
 #  directory. Then we could simply set)
-#my $FEASTBASEDIR = "../..";
+my $FEASTBASEDIR = "../..";
 
 # version with absolute paths
-my $FEASTBASEDIR = &abs_path(&dirname($0) . "/..");
+#my $FEASTBASEDIR = &abs_path(&dirname($0) . "/..");
 
 # another version with absolute paths
 # (when changing to absolute paths again, be aware that copying of
@@ -139,7 +139,11 @@ my $SRCDIR_KERNEL         = "kernel";
 my $SRCDIR_ARCH           = "kernel/arch-specific";
 my $SRCDIR_APP            = ".";
 
-# suffix for directories to store FEAST and third-party libraries
+
+# Where to look by default for application-specific source files
+use constant SRCDIR_APP    => "src";
+
+# subdirectories to store FEAST and third-party libraries
 #
 # (Third party libraries are independent of FEAST sources and, as such, can
 # be shared among all FEAST applications.)
@@ -311,11 +315,11 @@ my %defaults = (
     OBJDIR              => "",
     OBJDIR_LIB          => "",
     OPT                 => "YES",
-    PROGRAMFILE         => $FEASTBASEDIR . "/" . $SRCDIR_KERNEL . "/masterslave.f90",
+    PROGRAMFILE         => "DETERMINED_ON_DEMAND_IF_UNSET",
     RANLIB              => "",
     RELINK_ALWAYS       => "YES",
     SRCEXTRA            => "",
-    SRCLIST_APP         => [ "slavemod.f90", "userdef.f90" ],
+    SRCLIST_APP         => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
 );
 
 
@@ -391,7 +395,7 @@ GetOptions (
             "objdir-lib-prefix=s"           => \$cl{'objdirlibprefix'},
             "opt:s"                         => \$cl{'OPT'},
             "parallel"                      => sub { $cl{'MODE'} = "parallel" },
-            "programfile=s"                 => \$cl{'programfile'},
+            "programfile=s"                 => \$cl{'PROGRAMFILE'},
             "ranlib=s"                      => \$cl{'RANLIB'},
             "relink-always!"                => \$cl{'RELINK_ALWAYS'},
             "serial"                        => sub { $cl{'MODE'} = "serial" },
@@ -450,7 +454,7 @@ $buildID_lib = &get_buildID_lib();
 # script)
 if (! defined($cachedtests{'build-id'})) {
     if (! &id_is_valid($buildID)) {
-        die "\n" . $progname.": ERROR: ".
+        die "\n$progname: ERROR:\n".
             "The build ID is not valid.\n" .
             "There is no such case handled in " .
             &concat_filename($FEASTBASEDIR, $MAKEFILE_CPU_INC) . ".\n" .
@@ -474,7 +478,9 @@ if ($#{$entry} >= 0 &&
     # complete benchmark just because configuring one application
     # failed.
     print "creating $MAKEFILE (with empty targets).\n";
-    open(MAKEFILE_HDL, ">" , $MAKEFILE) or die "$progname: ERROR: Cannot open file <$MAKEFILE> for writing: $!\n";
+    open(MAKEFILE_HDL, ">" , $MAKEFILE) or 
+	die "\n$progname: ERROR:\n" .
+	    "Cannot open file <$MAKEFILE> for writing: $!\n";
     print MAKEFILE_HDL
 	"#!/usr/bin/env make\n" .
 	"\n" .
@@ -491,7 +497,7 @@ if ($#{$entry} >= 0 &&
     # set error code on exit. The value is queried in fbenchmark2/bin/runregressiontest
     # (certain cases are known to fail and should not trigger an e-mail notification)
     $! = 15;
-    die "\n" . $progname.": ERROR: ".
+    die "\n$progname: ERROR:\n".
 	"Coprocessor support is not available in combination with\n" .
 	"Pathscale, Sun Studio nor NEC compiler suites. Simply because the respective\n" .
 	"Fortran compilers create symbol names that can not be cross-language\n" .
@@ -501,7 +507,9 @@ if ($#{$entry} >= 0 &&
 # Backup old Makefile if existent and has not zero size
 if ( -e $MAKEFILE && -s $MAKEFILE ) {
     print "renaming existing $MAKEFILE to $MAKEFILE" . ".bak\n";
-    rename($MAKEFILE, $MAKEFILE . ".bak") or die "Failed to rename $MAKEFILE to $MAKEFILE" . ".bak.\n";
+    rename($MAKEFILE, $MAKEFILE . ".bak") or 
+	die "\n$progname: ERROR:\n" .
+	    "Failed to rename $MAKEFILE to $MAKEFILE" . ".bak.\n";
 }
 
 # Now, create either the FEAST regression directory meta Makefile
@@ -511,7 +519,7 @@ if ($cl{'regressionbenchmark'}) {
     # Loop over all subdirectories matching src_* and
     # configure the FEAST benchmark applications
     opendir(DIRECTORY, ".") ||
-        die "\n" . $progname.": ERROR: " .
+        die "\n$progname: ERROR:\n" .
             "Can't open directory . for reading. This is supposed never to happen!\n";
     my @srcdirs = grep /^src_/, readdir DIRECTORY;
     my $cwd = &cwd();
@@ -660,7 +668,7 @@ sub check_for_gnumake {
             print "yes\n";
         } else {
             print "no\n";
-            die $progname.": ERROR:\n".
+            die "\n$progname: ERROR:\n".
                 "Sorry, GNU Make >= 3.80 is required to create and, later on, use the Makefile.\n" .
                 "<$make>, however, is not GNU Make.\n" .
                 "Please use '--make=PROG' to specify a valid instance of GNU make or set the\n" .
@@ -684,7 +692,7 @@ sub check_for_gnumake {
             print "$makeversion, yes\n";
         } else {
             print "$makeversion, no\n";
-            die $progname.": ERROR:\n".
+            die "\n$progname: ERROR:\n".
                 "Sorry, GNU Make >= 3.80 is required to create and, later on, use the Makefile.\n" .
                 "<$make>, however, is $makeversion.\n" .
                 "Please use '--make=PROG' to specify a valid instance of GNU make or set the\n" .
@@ -708,7 +716,9 @@ sub check_make_sets_make_variable {
 
     } else {
         my $tmpfile = POSIX::tmpnam();
-        open(TMPFILE, ">", $tmpfile) or die $progname.":\nCannot open file <$tmpfile> for writing: $!\n";
+        open(TMPFILE, ">", $tmpfile) or 
+            die "\n$progname: ERROR:\n".
+	        "Cannot open file <$tmpfile> for writing: $!\n";
         print TMPFILE "all:\n\t\@echo 'maketemp=\"\${MAKE}\"'";
         close(TMPFILE);
         my $currentString = `$make -f $tmpfile | grep maketemp=`;
@@ -740,7 +750,7 @@ sub check_options {
 
     # First detect if any unknown option has been given
     if ($unknownoption) {
-       die $progname.": ERROR:".
+	die "\n$progname: ERROR:\n".
            INITIAL_MESSAGE .
            "Unknown option(s) found: " . join(' ', @ARGV) . "\n" .
            (" " x (length($progname)+2)) . "Check options specified on command line or in your local\n" .
@@ -752,7 +762,7 @@ sub check_options {
     # command line options. (Only strings that do not start with '--'
     # are detected here.)
     if ($#ARGV > -1) {
-        die $progname.": ERROR:".
+	die "\n$progname: ERROR:\n".
            INITIAL_MESSAGE .
             "Unknown option(s) found: " . join(' ', @ARGV) . "\n" .
             "Check options specified on command line or in your local configure script.\n" .
@@ -779,14 +789,14 @@ sub check_options {
 
     # Do not allow whitespace-only values for OBJDIR_PREFIX and OBJDIR_LIB_PREFIX
     if (defined($cl{'objdirprefix'}) && $cl{'objdirprefix'} =~ m/^\s*$/) {
-        die $progname.": ERROR:".
-           INITIAL_MESSAGE .
+	die "\n$progname: ERROR:\n".
+	    INITIAL_MESSAGE .
             "Argument to --objdir-prefix must not contain whitespace characters only.\n" .
             "Try `$progname --help' for more information.\n";
     }
     if (defined($cl{'objdirlibprefix'}) && $cl{'objdirlibprefix'} =~ m/^\s*$/) {
-        die $progname.": ERROR:".
-           INITIAL_MESSAGE .
+	die "\n$progname: ERROR:\n".
+	    INITIAL_MESSAGE .
             "Argument to --objdir-lib-prefix must not contain whitespace characters only.\n" .
             "Try `$progname --help' for more information.\n";
     }
@@ -909,7 +919,7 @@ sub check_options {
 		    # reconstruct name of command line option from variable name
 		    $cloption = lc("--" . $entry);
 		    $cloption =~ s/_/-/g;
-		    die $progname.": ERROR:".
+		    die "\n$progname: ERROR:\n".
 			INITIAL_MESSAGE .
 			"Unknown keyword for option $cloption: <$cl{$entry}>\n" .
 			"Valid keywords are <" . join("> and <", @{ $validkeywords{$entry} }) . ">.\n" .
@@ -929,7 +939,7 @@ sub check_options {
 			# reconstruct name of command line option from variable name
 			$cloption = lc("--" . $entry);
 			$cloption =~ s/_/-/g;
-			die $progname.": ERROR:".
+			die "\n$progname: ERROR:\n".
 			    INITIAL_MESSAGE .
 			    "Unknown keyword for option $cloption: <$key>\n" .
 			    "Valid keywords are <" . join("> and <", @{ $validkeywords{$entry} }) . ">.\n" .
@@ -955,6 +965,7 @@ sub create_feastAppMakefile {
     # all files for which make_dep_list / get_dependency has been called.
     my %dependencyLists = ();
 
+    &get_programsourcefile();
     print "creating dependency lists... ";
 
     # A hash that maps module file names to file system object (including path information)
@@ -991,7 +1002,8 @@ sub create_feastAppMakefile {
     }
 
     # Dependencies of program file
-    $entry = ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'});
+#    $entry = ((defined($cl{'PROGRAMFILE'})) ? $cl{'PROGRAMFILE'} : $defaults{'PROGRAMFILE'});
+    $entry = &get_programsourcefile();
 	$path{$entry} = $entry;
         $objectfiles_and_dependencies .=
 	    &make_dep_list(\%dependencyLists, $path{$entry},
@@ -1028,7 +1040,8 @@ sub create_feastAppMakefile {
     # files again, the cached results of previous get_dependency() calls
     # are used. It makes a small difference (12-15% faster).
     my @modulesToParse;
-    push @modulesToParse, ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'});
+#    push @modulesToParse, ((defined($cl{'PROGRAMFILE'})) ? $cl{'PROGRAMFILE'} : $defaults{'PROGRAMFILE'});
+    push @modulesToParse, &get_programsourcefile();
     my %modulesParsed;
     my $i = -1;
     while ($i < $#modulesToParse) {
@@ -1062,7 +1075,9 @@ sub create_feastAppMakefile {
     # Start to create the Makefile
     #
     print "creating $MAKEFILE.\n";
-    open(MAKEFILE_HDL, ">" , $MAKEFILE) or die "$progname: ERROR: Cannot open file <$MAKEFILE> for writing: $!\n";
+    open(MAKEFILE_HDL, ">" , $MAKEFILE) or 
+	die "\n$progname: ERROR:\n".
+	    "Cannot open file <$MAKEFILE> for writing: $!\n";
 
     # Create head section: include global Makefile settings,
     # specifying the application name, sbblas version
@@ -1235,14 +1250,15 @@ sub create_feastAppMakefile {
     # deleted.
     my %srclist = ();
     map { $srclist{$_} = "" } @{$srclist_app};
-    delete $srclist{((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'})};
+#    delete $srclist{((defined($cl{'PROGRAMFILE'})) ? $cl{'PROGRAMFILE'} : $defaults{'PROGRAMFILE'})};
+    delete $srclist{&get_programsourcefile()};
 
     print MAKEFILE_HDL
 	&format_list("SRCLIST_APP    = ", 8, 70, join(' ', sort keys %srclist), "\\\n", "\\") . "\n";
     undef %srclist;
 
     print MAKEFILE_HDL
-        &format_list("PROGRAM_FILE   = ", 8, 70, ((defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'}), "\\\n", "\\") . "\n\n";
+        &format_list("PROGRAM_FILE   = ", 8, 70, &get_programsourcefile(), "\\\n", "\\") . "\n\n";
 
     # The idea is to have only paths relative to FEASTBASEDIR.
     # Substitute absolute path information in @headerfiles accordingly.
@@ -1909,9 +1925,9 @@ sub create_feastAppMakefile {
 	"# Generic rule for *.f90 files out of SRCEXTRA\n" .
 	"# Note 1:\n" .
 	"# Remember that those files are supposed to provide no Fortran module\n" .
-	"#  - otherwise they would be on the normal kernel file list - and as\n" .
-	"#  such do not try to move a .mod file upon compilation as a workaround\n" .
-	"#  for compilers that do not create .mod files in the object directory,\n" .
+	"# - otherwise they would be on the normal kernel file list - and as\n" .
+	"# such do not try to move a .mod file upon compilation as a workaround\n" .
+	"# for compilers that do not create .mod files in the object directory,\n" .
 	"# in the working directory.\n" .
 	"# Note 2:\n" .
 	"# Fortran 90 source files listed in in SRCEXTRA may try to 'use' Fortran 90\n" .
@@ -1920,7 +1936,7 @@ sub create_feastAppMakefile {
 	"# SRCEXTRA's Fortran 90 source files to prevent them from being compiled\n" .
 	"# prematurely, e.g. in a highly parallel make run (make -j N, with N>32 or\n" .
 	"# N missing).\n" .
-	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA) \$(OBJF90)\n" .
+	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA) \$(SRCLIST_KERNEL:%.f90=\$(OBJDIR)/%.o)\n" .
 	"\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA)) -o \$\@\n\n" .
 
     # Generic rule for *.c files out of SRCEXTRA
@@ -3042,7 +3058,8 @@ sub create_feastAppMakefile {
 sub create_feastBenchmarkMakefile {
     close(MAKEFILE_HDL);
 
-    die "Currently unsupported.\n";
+    die "\n$progname: ERROR:\n".
+        "Creation of regression benchmark Makefile is currently unsupported.\n";
 }
 
 
@@ -3228,7 +3245,9 @@ sub get_dependency {
     my $aux;
 
 #    open (INFILE, "<:utf8", $file) or die "$progname: Cannot open file <$file> for reading: $!\n";
-    open (INFILE, "<", $file) or die "$progname: ERROR: Cannot open file <$file> for reading: $!\n";
+    open (INFILE, "<", $file) or 
+	die "\n$progname: ERROR:\n".
+	    "Cannot open file <$file> for reading: $!\n";
 
     # Loop through file line by line
     LINE: while (defined($line = <INFILE>)) {
@@ -3304,12 +3323,80 @@ sub get_filename {
 
 
 
+# Function: Finds file containing the Fortran 90 PROGRAM keyword among source files.
+sub get_programsourcefile {
+    if (defined($cl{'PROGRAMFILE'})) {
+	return $cl{'PROGRAMFILE'};
+    } else {
+	# If no program source file is given on the command line, try to dynamically
+	# determine it: Parse all application-specific source files.
+	if ($defaults{'PROGRAMFILE'} ne "DETERMINED_ON_DEMAND_IF_UNSET") {
+	    # Either the default value is set to some proper value
+	    # (in particular not equal to DETERMINED_ON_DEMAND_IF_UNSET !) and we can
+	    # just return that or we did already run this function earlier and determined
+	    # the program source file in which case we can simply return the previous result.
+	    return $defaults{'PROGRAMFILE'};
+	} else {
+	    print "WARNING: program source file not given on command line.\n" .
+		  "         Trying to compensate, check result in configuration summary below.\n";
+	    print "determining presumed (!) program source file... ";
+	    my $line = "";
+	    my @programfiles = ();
+	    # Get rid of setting "DETERMINED_ON_DEMAND_IF_UNSET"
+	    undef $defaults{'PROGRAMFILE'};
+	    foreach my $file ( &get_sourcefilelist() ) {
+		open (INFILE, "<", $file) or 
+		    die "\n$progname: ERROR:\n".
+		        "Cannot open file <$file> for reading: $!\n";
+
+		# Loop through file line by line
+	        LINE: while (defined($line = <INFILE>)) {
+		  # Remove comments
+		  $line =~ s/\!.*$//;
+		  $line =~ s/^[Cc].*$//;
+		
+		  # Parse for "program foobar" statements
+		  # and add the module to the list
+		  if ($line =~ m/^\s*program\s+\w+/i) {
+		      push @programfiles, $file;
+		  }
+		}
+		close (INFILE);
+	       
+		# Ensure there is only *one* program source file
+		if ($#programfiles > 0) {
+		    die "\n\n$progname: ERROR:\n".
+			"You did not specify the program source file with the\n" .
+			"--programfile command line option. Additionally, while trying\n" .
+			"to dynamically determine the program source file from the list\n" .
+			"of application-specific source files, multiple files matched:\n" .
+			&format_list("  ", 2, 75,
+				     "<" . join("> <", @programfiles), "", "") . ">\n" .
+			"There can be only one source file with the PROGRAM keyword!\n" .
+			"I refuse to create <" . $MAKEFILE . ">.\n\n" .
+			"Please specify the appropriate one explicitly with the\n" .
+			"--programfile command line option.\n";
+		} else {
+		    $defaults{'PROGRAMFILE'} = $programfiles[0];
+		}
+	    }
+	    print "done\n";
+	    return $defaults{'PROGRAMFILE'};
+	}
+    }
+    # Return an empty string, just to meet the interface. Code should never come here, though.
+    return "";
+}
+
+
+
 # Function: Returns source file list
 sub get_sourcefilelist {
     # $cl{'SRCLIST_APP'} has been passed as an array to GetOptions()
     # and as such is always defined. But is does not necessarily have
-    # entries. So, don't test with perl function defined(). Test whether
-    # one or more entries. (Perl count from zero, like C does.)
+    # entries. So, don't test with perl function defined() whether it is
+    # set. Instead test whether it contains one or more entries. 
+    # (Remember that Perl starts counting from zero, like C does.)
     if ($#{ $cl{'SRCLIST_APP'} } >= 0) {
         # Remove duplicate entries from application source file list
         my @tmplist = ();
@@ -3328,8 +3415,55 @@ sub get_sourcefilelist {
         }
 	return @tmplist;
     } else {
-	return @{ $defaults{'SRCLIST_APP'} };
+	# If no app source list given on the command line, try to dynamically
+	# determine a list: Use all source files in a generic src subdirectory 
+	# for a FEAT2 application.
+	if (${ $defaults{'SRCLIST_APP'} }[0] ne "DETERMINED_ON_DEMAND_IF_UNSET") {
+	    # Either the default value is set to some proper value
+	    # (in particular not equal to DETERMINED_ON_DEMAND_IF_UNSET !) and we can
+	    # just return that or we did already run this function earlier and determined
+	    # the list in which case we can simply return the previous result.
+	    return @{ $defaults{'SRCLIST_APP'} };
+	} else {
+	    print "WARNING: application-specific source files not given on command line.\n" .
+		  "         Trying to compensate, check result in configuration summary below.\n";
+	    print "creating a list of presumed (!) application source files... ";
+	    if (opendir SRCDIR, SRCDIR_APP) {
+		my $files = 0;
+		# Get rid of setting "DETERMINED_ON_DEMAND_IF_UNSET"
+		undef $defaults{'SRCLIST_APP'};
+		map { $files++; push @{ $defaults{'SRCLIST_APP'} }, SRCDIR_APP . "/$_" }
+			sort grep { /.+\.f90$/ && ! /^\./ } readdir SRCDIR;
+		closedir SRCDIR;
+		# SRCLIST_APP still empty?
+		if ($files == 0) {
+		    die "\n\n$progname: ERROR:\n".
+			"You did not specify a list of application-specific source file\n" .
+			"with the --srclist-app command line option. Additionally, the\n" .
+			"subdirectory <" . SRCDIR_APP . ">, searched by default for " .
+			"application-specific\n" .
+			"source files in such a case, does not contain any *.f90 file.\n" .
+			"I refuse to create <" . $MAKEFILE . ">.\n\n" . 
+			"Please specify the list of application-specific source files with\n" .
+			"the --srclist-app command line option.\n";
+		}
+		print "done\n";
+		return @{ $defaults{'SRCLIST_APP'} };
+	    } else {
+		die "\n\n$progname: ERROR:\n".
+		    "You did not specify a list of application-specific source files\n" .
+		    "with the --srclist-app command line option. Additionally, the\n" .
+		    "subdirectory <" . SRCDIR_APP . ">, searched by default for " .
+		    "application-specific\n" .
+		    "source files in such a case, does not exist.\n" .
+		    "I refuse to create <" . $MAKEFILE . ">.\n\n" .
+		    "Please specify the list of application-specific source files with\n" .
+		    "the --srclist-app command line option.\n";
+	    }
+	}
     }
+    # Return an empty array, just to meet the interface. Code should never come here, though.
+    return @{[]};
 }
 
 
@@ -3339,7 +3473,7 @@ sub get_validIDs {
     my $filename = &concat_filename($FEASTBASEDIR, $MAKEFILE_CPU_INC);
 
     open(FILE, "<" , $filename) or
-        die $progname.": ERROR:".
+	die "\n$progname: ERROR:\n".
             INITIAL_MESSAGE .
             "Cannot open file <$filename> for reading: $!\n\n" .
             "Make sure the path to Makefile.inc is set correctly in\n" .
@@ -3561,14 +3695,22 @@ sub make_dep_list {
         }
         # Include file
         elsif ($aux =~ m/^include:(.+)$/) {
-            $depstring .= "$objectdir/" . &basename($1) . " ";
+	    my $match = $1;
+            $depstring .= "$objectdir/" . &basename($match) . " ";
 
             # Add included file (adding relevant path info) to global list
             # of included files (in order to have them evaluated by cpp
-            # on make invocation and then stored into object directory)
-            $aux = &abs_path(&concat_filename(&dirname($fileToParse), $1));
-            # Cut off leading './', if any
-#            $aux =~ s/^\.\///;
+            # on make invocation and then stored into object directory).
+	    # The approach differs depending on whether we have absolute
+	    # or relative base paths.
+	    # Absolute path case?
+	    if ($FEASTBASEDIR =~ m/^\//) {
+		$aux = &abs_path(&concat_filename(&dirname($fileToParse), $match));
+	    } else {
+		$aux = &concat_filename(&dirname($fileToParse), $match);
+                # Cut off leading './', if any
+		$aux =~ s/^\.\///;
+	    }
 
             # Add to the list if not already on the list or in 'forbidden' lists
             unless ((join(' ', @headerfiles) =~ m/\Q$aux\E/) or
@@ -3599,7 +3741,7 @@ sub print_statistics_about_feastAppMakefile {
     print "  Application name             : " .
 	( (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'} ) . "\n";
     print "  Application program file     : <" .
-	( (defined($cl{'programfile'})) ? $cl{'programfile'} : $defaults{'PROGRAMFILE'} ) . ">\n";
+	&get_programsourcefile() . ">\n";
 
     print &format_list("  Application's source files   :", 33, 75,
 		       "<" . join("> <", @{$srclist_app}), "", "") . ">\n";
