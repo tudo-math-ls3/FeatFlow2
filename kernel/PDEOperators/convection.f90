@@ -9867,6 +9867,177 @@ contains
     end if
 
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine conv_JumpStabilisation3d ( &
+      rconfig, cdef, rmatrix, rsolution, rdefect, rdiscretisation)
+
+!<description>
+  ! Edge oriented stabilisation technique. Wrapper routine.
+  ! 3D-version (X-, Y- and Z-velocity).
+  !
+  ! rvecPrimary, rvecSecondary are two velocity field vectors for the X-
+  ! and Y-veclocity; IvelocityComp defines which components of these
+  ! vectors contains the X- and which contains the Y-velocity.
+  ! The final velocity vector field is then computed as a weighted average
+  ! of these two:
+  !
+  !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
+  !
+  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! the grad-term.
+  !
+  ! The switch cdef decides on whether the routine sets up the nonlinear
+  ! defect, the nonlinear matrix or both.
+  !
+  ! The configuration how the routine should react is to be configured
+  ! in the configuration block rconfig.
+!</description>
+
+!<input>
+  ! Configuration block for the streamline diffusion scheme
+  type(t_jumpStabilisation), intent(IN) :: rconfig
   
+  ! Computation/defect correction method. One of the CONV_MODxxxx constants:
+  ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
+  !                 nonlinear part is added to the matrix.
+  ! CONV_MODDEFECT: Set up the nonlinear defect. rdefect and rsolution must be 
+  !                 present.
+  ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
+  !                 rmatrix, rdefect and rsolution must all be present.
+  integer, intent(IN) :: cdef
+
+  ! OPTIONAL: Solution vector u_2.
+  ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
+  type(t_vectorBlock), intent(IN), target, optional :: rsolution
+  
+  ! OPTIONAL: Alternative discretisation structure to use for setting up
+  ! the jump stabilisaton. This allows to use a different FE pair for
+  ! setting up the stabilisation than the matrix itself.
+  type(t_spatialDiscretisation), intent(in), optional :: rdiscretisation
+!</input>
+
+!<inputoutput>
+  ! System matrix.
+  ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
+  ! =CONV_MODBOTH, otherwise only the structure is used.
+  ! The nonlinear operator is added to the matrix.
+  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  
+  ! optional: Defect vector.
+  ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
+  ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
+  ! The nonlinear part is subtracted from this vector: 
+  ! $r = r - \theta * u_1*grad(u_2)$
+  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
+!</inputoutput>
+
+!</subroutine>
+
+    ! At first check the input parameters that everything is present what
+    ! we need:
+    if ((cdef .eq. CONV_MODDEFECT) .or. (cdef .eq. CONV_MODBOTH)) then
+!      if ((.not. present(rsolution)) .or. (.not. present(rdefect))) then
+!        call output_line ('Solution/defect vector not present', &
+!            OU_CLASS_ERROR,OU_MODE_STD,'conv_JumpStabilisation3d')
+!        call sys_halt()
+!      end if
+      call output_line ('Defect modification currently not supported', &
+          OU_CLASS_ERROR,OU_MODE_STD,'conv_JumpStabilisation3d')
+    end if
+    
+    ! At the moment, we only support a rather limited set of configurations:
+    ! Matrix and vectors must all be double precision, matrix must be format 
+    ! 7 or 9, discretisation must be Q1~, constant viscosity.
+    if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
+      call output_line ('Unsupported matrix format', &
+          OU_CLASS_ERROR,OU_MODE_STD,'conv_JumpStabilisation3d')
+      call sys_halt()
+    end if
+
+    if (rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) then
+      call output_line ('Unsupported discretisation', &
+          OU_CLASS_ERROR,OU_MODE_STD,'conv_JumpStabilisation3d')
+      call sys_halt()
+    end if
+
+    !if ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
+    !    (rvecSecondary%cdataType .NE. ST_DOUBLE)) then
+    !  PRINT *,'EOS: Unsupported vector data type in velocity.'
+    !  call sys_halt()
+    !end if
+    ! 
+    !if (PRESENT(rdefect)) then
+    !  if ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
+    !      (rdefect%cdataType .NE. ST_DOUBLE)) then
+    !    PRINT *,'EOS: Unsupported vector data type in solution/defect'
+    !    call sys_halt()
+    !  end if
+    !end if
+    
+    if (.not. rconfig%bconstViscosity) then
+      call output_line ('Only constant viscosity supported at the moment', &
+          OU_CLASS_ERROR,OU_MODE_STD,'conv_JumpStabilisation3d')
+      call sys_halt()
+    end if
+    
+    if (rconfig%dnu .eq. SYS_INFINITY) then
+      call output_line ('Viscosity parameter nu not initialised', &
+          OU_CLASS_ERROR,OU_MODE_STD,'conv_JumpStabilisation3d')
+      call sys_halt()
+    end if
+    
+    if (rconfig%cjump .eq. CONV_JUMP_UNIFIEDEDGE) then
+!      if (present(rdefect)) then
+!      
+!        ! Modify the defect?
+!        if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
+!          call jstab_matvecUEOJumpStabilBlk3d ( &
+!              rconfig%dgamma,rconfig%dgammastar,rconfig%ccubType,rconfig%dnu,&
+!              rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP,&
+!              rdiscretisation)
+!        end if
+!
+!      end if
+      
+      ! Modify the matrix?
+      if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
+        call jstab_calcUEOJumpStabilisation (&
+          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%dtheta,&
+          rconfig%ccubType,rconfig%dnu,rdiscretisation)
+      end if
+
+!    else if (rconfig%cjump .eq. CONV_JUMP_REACTIVE) then
+!      if (present(rdefect)) then
+!      
+!        ! Modify the defect?
+!        if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
+!          call jstab_matvecReacJumpStabilBlk3d ( &
+!              rconfig%dgamma,rconfig%ccubType,rconfig%dnu,&
+!              rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP,&
+!              rdiscretisation)
+!        end if
+!
+!      end if
+!      
+!      ! Modify the matrix?
+!      if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
+!        call jstab_calcReacJumpStabilisation (&
+!          rmatrix,rconfig%dgamma,rconfig%dtheta,&
+!          rconfig%ccubType,rconfig%dnu,rdiscretisation)
+!      end if
+
+    else
+      call output_line ('Unknown jump stabilisation', &
+          OU_CLASS_ERROR,OU_MODE_STD,'conv_JumpStabilisation3d')
+      call sys_halt()
+    end if
+
+  end subroutine
+    
 end module
  
