@@ -82,11 +82,14 @@ module euler_basic
 
 !<constantblock description="Global type of dissipation">
 
-  ! Employ scalar dissipation (default)
+  ! Scalar dissipation
   integer, parameter, public :: DISSIPATION_SCALAR = 1
 
-  ! Employ tensorial dissipation
+  ! Tensorial dissipation
   integer, parameter, public :: DISSIPATION_TENSOR = 2
+
+  ! Rusanov flux
+  integer, parameter, public :: DISSIPATION_RUSANOV = 3
 
 !</constantblock>
 
