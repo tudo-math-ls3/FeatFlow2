@@ -703,7 +703,7 @@ contains
       call storage_getbase_double(p_rdirichlet%h_DdirichletValues, p_DdirichletValues)
       
       ! Set the value of the dirichlet condition
-      p_DdirichletValues(1) = dleft
+      p_DdirichletValues(1) = dright
       
       ! Get the index of the boundary vertice
       ibndVert = p_IvertAtBnd(p_IbndCpIdx(idx))
