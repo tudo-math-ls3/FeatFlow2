@@ -52,9 +52,9 @@ imassantidiffusiontype = 0
 
 # type of dissipation
 # 0 = no dissipation
-# 1 = scalar dissipation
-# 2 = tensorial dissipation
-# 3 = Rusanov type
+# 1 = scalar dissipation (-1 = dimensional splitting)
+# 2 = tensorial dissipation (-2 = dimensional splitting)
+# 3 = Rusanov type (-3 = dimensional splitting)
 idissipationtype = 1
 
 # type of system coupling
