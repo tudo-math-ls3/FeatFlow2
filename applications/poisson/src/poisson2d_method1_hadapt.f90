@@ -378,7 +378,7 @@ contains
       ! Perform a posteriori error estimation
       call lsyssc_createVector(rindicator,rtriangulation%NEL,.true.)
       call gethadaptMonitorFunction_2D(rtriangulation,rvectorBlock%RvectorBlock(1),&
-          -1,3,rindicator)
+          EL_UNDEFINED,3,rindicator)
       
       ! Output error
       call lsyssc_getbase_double(rindicator,p_Ddata)
