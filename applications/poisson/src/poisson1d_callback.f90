@@ -25,19 +25,13 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 3.) getBoundaryValues_1D
-!#     -> Returns analytic values on the (Dirichlet) boundary of the
-!#        problem to solve.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_bcassembly.inc'
-!#
-!# 4.) getBoundaryValuesMR_1D
+!# 3.) getBoundaryValuesMR_1D
 !#     -> Returns discrete values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_discretebc.inc'
 !#
-!# 5.) getReferenceFunction_1D
+!# 4.) getReferenceFunction_1D
 !#
 !#     -> Returns the values of the analytic function and its derivatives,
 !#        corresponding to coeff_RHS_1D for the 1D poisson-problem.
@@ -319,104 +313,6 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
-
-  subroutine getBoundaryValues_1D (Icomponents,rdiscretisation,rbcRegion,ielement, &
-                                   cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
-  
-  use collection
-  use spatialdiscretisation
-  use discretebc
-  
-!<description>
-  ! This subroutine is called during the discretisation of boundary
-  ! conditions. It calculates a special quantity on the boundary, which is
-  ! then used by the discretisation routines to generate a discrete
-  ! 'snapshot' of the (actually analytic) boundary conditions.
-!</description>
-  
-!<input>
-  ! Component specifier.
-  ! For Dirichlet boundary: 
-  !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
-  !   2=2nd solution component, e.g. Y-velocity,...)
-  integer, dimension(:), intent(IN)                           :: Icomponents
-
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-  
-  ! Boundary condition region that is currently being processed.
-  ! (This e.g. defines the type of boundary conditions that are
-  !  currently being calculated, as well as information about the current
-  !  boundary segment 'where we are at the moment'.)
-  type(t_bcRegion), intent(IN)                                :: rbcRegion
-  
-  
-  ! The element number on the boundary which is currently being processed
-  integer, intent(IN)                                         :: ielement
-  
-  ! The type of information, the routine should calculate. One of the
-  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
-  ! to return one or multiple information value in the result array.
-  integer, intent(IN)                                         :: cinfoNeeded
-  
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
-  !   iwhere = number of the edge where the value integral mean value
-  !            should be computed
-  integer, intent(IN)                                          :: iwhere
-
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
-  !   dwhere = 0 (not used)
-  real(DP), intent(IN)                                        :: dwhere
-    
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional                 :: rcollection
-
-!</input>
-
-!<output>
-  ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
-  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-  real(DP), dimension(:), intent(OUT)                         :: Dvalues
-!</output>
-  
-!</subroutine>
-
-
-    ! To get the X/Y-coordinates of the boundary point, use:
-    !
-    ! REAL(DP) :: dx,dy
-    !
-    ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
-    !     rbcRegion%rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
-
-    ! Return zero Dirichlet boundary values for all situations.
-    Dvalues(1) = 0.0_DP
-  
-  end subroutine
-
-  ! ***************************************************************************
-
   !<subroutine>
 
   subroutine getBoundaryValuesMR_1D (Icomponents,rdiscretisation,rmeshRegion,&
@@ -499,6 +395,12 @@ contains
 
     ! Return zero Dirichlet boundary values for all situations.
     Dvalues(1) = 0.0_DP
+    
+    ! On the left side of the domain (x=0), we may specify a different BC
+    ! as follows:
+    if (Dcoords(1) .eq. 0.0_DP) then
+      Dvalues(1) = 1.0_DP
+    end if
 
   end subroutine
 

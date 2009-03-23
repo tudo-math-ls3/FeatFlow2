@@ -221,7 +221,7 @@ contains
     ! ends. One possibility is to use the bcasm_initDirichletBC_1D routine.
     ! The following call would prescribe 0 on both interval ends:
     !
-    ! CALL bcasm_initDirichletBC_1D(rdiscretisation, rdiscreteBC, 0.0_DP, 0.0_DP)
+    ! CALL bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 0.0_DP, 0.0_DP)
     !
     ! The second possibility is using mesh regions:
     !
