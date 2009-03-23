@@ -130,7 +130,7 @@ contains
     integer :: NLMAX
     
     ! The element type we want to use
-    integer :: ielemType
+    integer(I32) :: celement
     
     ! Error indicator during initialisation of the solver
     integer :: ierror
@@ -155,7 +155,7 @@ contains
     allocate(Rlevels(NLMIN:NLMAX))
 
     ! Set the element type. 
-    ielemType = EL_Q1_3D
+    celement = EL_Q1_3D
 
     ! At first, read in the basic triangulation.
     ! As we cannot refine a 3D grid yet, read in a cube grid.
@@ -195,7 +195,7 @@ contains
     do i = NLMIN, NLMAX
       call spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-          ielemType,CUB_G3_3D,Rlevels(i)%rtriangulation)
+          celement,CUB_G3_3D,Rlevels(i)%rtriangulation)
     end do
                  
     do i = NLMIN, NLMAX
@@ -414,7 +414,7 @@ contains
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
     ! If the element type is Q1, we can print the solution
-    if (ielemType .eq. EL_Q1_3D) then
+    if (celement .eq. EL_Q1_3D) then
 
       ! Start UCD export to GMV file:
       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,Rlevels(NLMAX)%rtriangulation,&
