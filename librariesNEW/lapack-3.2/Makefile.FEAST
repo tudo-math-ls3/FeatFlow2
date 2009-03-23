@@ -44,7 +44,8 @@ ifneq ($(GOTOBLAS_PATCH_FOR_LAPACK), REQUIRED)
 # Do compile the following LAPACK source files except when using
 # a recent GotoBLAS version as the symbols are already contained therein.
 SRCLIST+=SRC/xerbla.f SRC/dgesv.f SRC/dgetf2.f SRC/dgetrf.f SRC/dgetrs.f SRC/dlaswp.f \
-	 INSTALL/lsame.f 
+	 SRC/dgesv.f SRC/sgesv.f SRC/sgetrf.f SRC/sgetrs.f SRC/sgetf2.f SRC/slaswp.f \
+	 INSTALL/slamch.f INSTALL/lsame.f 
 endif
 
 OBJ = $(patsubst %.f, $(OBJDIR)/%.o, $(notdir $(SRCLIST)))
