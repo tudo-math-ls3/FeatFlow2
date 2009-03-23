@@ -54,6 +54,7 @@ imassantidiffusiontype = 0
 # 0 = no dissipation
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
+# 3 = Rusanov type
 idissipationtype = 1
 
 # type of system coupling
