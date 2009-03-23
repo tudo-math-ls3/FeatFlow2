@@ -64,8 +64,9 @@ isystemcoupling = 0
 
 # type of preconditioner
 # 0 = Galerkin scheme
-# 1 = Low-order scheme with scalar dissipation
-# 2 = Low-order scheme with tensorial dissipation
+# 1 = low-order scheme with scalar dissipation
+# 2 = low-order scheme with tensorial dissipation
+# 3 = low-order schemes of Rusanov type
 isystemPrecond = 2
 
 # type of initial solution profile
