@@ -1036,22 +1036,22 @@ contains
 
       
       ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
-      D_ij(1) = -anorm*( R_ij(1,1)*L_ij(1,1)+&
-                         R_ij(1,2)*L_ij(2,1)+&
-                         R_ij(1,3)*L_ij(3,1)+&
-                         R_ij(1,4)*L_ij(4,1)  )
-      D_ij(2) = -anorm*( R_ij(2,1)*L_ij(1,2)+&
-                         R_ij(2,2)*L_ij(2,2)+&
-                         R_ij(2,3)*L_ij(3,2)+&
-                         R_ij(2,4)*L_ij(4,2)  )
-      D_ij(3) = -anorm*( R_ij(3,1)*L_ij(1,3)+&
-                         R_ij(3,2)*L_ij(2,3)+&
-                         R_ij(3,3)*L_ij(3,3)+&
-                         R_ij(3,4)*L_ij(4,3)  )
-      D_ij(4) = -anorm*( R_ij(4,1)*L_ij(1,4)+&
-                         R_ij(4,2)*L_ij(2,4)+&
-                         R_ij(4,3)*L_ij(3,4)+&
-                         R_ij(4,4)*L_ij(4,4)  )
+      D_ij(1) = anorm*( R_ij(1,1)*L_ij(1,1)+&
+                        R_ij(1,2)*L_ij(2,1)+&
+                        R_ij(1,3)*L_ij(3,1)+&
+                        R_ij(1,4)*L_ij(4,1)  )
+      D_ij(2) = anorm*( R_ij(2,1)*L_ij(1,2)+&
+                        R_ij(2,2)*L_ij(2,2)+&
+                        R_ij(2,3)*L_ij(3,2)+&
+                        R_ij(2,4)*L_ij(4,2)  )
+      D_ij(3) = anorm*( R_ij(3,1)*L_ij(1,3)+&
+                        R_ij(3,2)*L_ij(2,3)+&
+                        R_ij(3,3)*L_ij(3,3)+&
+                        R_ij(3,4)*L_ij(4,3)  )
+      D_ij(4) = anorm*( R_ij(4,1)*L_ij(1,4)+&
+                        R_ij(4,2)*L_ij(2,4)+&
+                        R_ij(4,3)*L_ij(3,4)+&
+                        R_ij(4,4)*L_ij(4,4)  )
 
       ! Apply tensorial dissipation
       K_ij = K_ij - D_ij
@@ -1219,7 +1219,7 @@ contains
       L_ij(4,4) =  0.0_DP
       
       ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
-      call DGEMM('n', 'n', NVAR2D, NVAR2D, NVAR2D, -anorm,&
+      call DGEMM('n', 'n', NVAR2D, NVAR2D, NVAR2D, anorm,&
                  R_ij, NVAR2D, L_ij, NVAR2D, 0.0_DP, D_ij, NVAR2D)
 
       ! Apply tensorial dissipation
