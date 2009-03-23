@@ -1276,17 +1276,29 @@ sub create_feastAppMakefile {
 
     # The idea is to have only paths relative to FEASTBASEDIR.
     # Substitute absolute path information in @headerfiles accordingly.
-    @tmparray = ();
+    my %tmparray = ();
     foreach $entry (@headerfiles) {
 	my $file_PathUsingBasedir = $entry;
 	$file_PathUsingBasedir =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
-	push @tmparray, $file_PathUsingBasedir;
+	# Remove relative paths. This approach is feasible as we can assume
+	# that not many Feat2 users will do weird stuff with symbolic links
+	# in their checkout. If they do, strange things may happen during 'make',
+	# but then that's the users fault. If we would not remove the relative
+	# path information here, 'make' would regularly complain about duplicate
+	# definitions for e.g.
+        # $(FEASTBASEDIR)/kernel/Projection/intf_coefficientVectorSc.inc
+        # $(FEASTBASEDIR)/kernel/Projection/intf_refFunctionSc.inc
+	# as they are referenced both without path and with path in Feat2 sources:
+        # $(FEASTBASEDIR)/kernel/Projection/../DOFMaintenance/intf_coefficientVectorSc.inc
+        # $(FEASTBASEDIR)/kernel/Projection/../Postprocessing/intf_refFunctionSc.inc
+	$file_PathUsingBasedir =~ s|/[^/]+/\.\./|/|;
+	$tmparray{$file_PathUsingBasedir} = 1;
     }
     print MAKEFILE_HDL
         "# Files included in source files that need to be evaluated by cpp\n" .
         &format_list("INCLUDED_FILES_TO_EVALUATE_WITH_CPP = ", 8, 70,
-		     join(' ', sort @tmparray), "\\\n", "\\") . "\n\n";
-    undef @tmparray;
+		     join(' ', sort keys %tmparray), "\\\n", "\\") . "\n\n";
+    undef %tmparray;
 
     # Create section where the source directories and files are put together
     # and the object files resulting from them.
@@ -2214,6 +2226,7 @@ sub create_feastAppMakefile {
 
     # umfpack library
         "# Create umfpack library\n" .
+	".PHONY: \$(OBJDIR_LIB)/libumfpack.a\n" .
         "\$(OBJDIR_LIB)/libumfpack.a:\n" .
         "\t\@echo \"# Building umfpack library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
@@ -2229,6 +2242,7 @@ sub create_feastAppMakefile {
 
     # AMD library
         "# Create AMD library\n" .
+	".PHONY: \$(OBJDIR_LIB)/libamd.a\n" .
         "\$(OBJDIR_LIB)/libamd.a:\n" .
         "\t\@echo \"# Building amd library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
@@ -2244,6 +2258,7 @@ sub create_feastAppMakefile {
 
     # blas library
         "# Create blas library\n" .
+	".PHONY: \$(OBJDIR_LIB)/libblas.a\n" .
         "\$(OBJDIR_LIB)/libblas.a:\n" .
         "\t\@echo \"# Building blas library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
@@ -2259,6 +2274,7 @@ sub create_feastAppMakefile {
 
     # lapack library
         "# Create lapack library\n" .
+	".PHONY: \$(OBJDIR_LIB)/liblapack.a\n" .
         "ifeq (\$(GOTOBLAS_PATCH_FOR_LAPACK),)\n" .
         "\$(OBJDIR_LIB)/liblapack.a: GOTOBLAS_PATCH_FOR_LAPACK = NOT_REQUIRED\n" .
         "endif\n" .
