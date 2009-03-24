@@ -999,15 +999,18 @@ contains
       do idof = 1, ndofs
 
         ! Now let's see whether the current DOF (of the second element)
-        ! is already in the patch.
-        do idofp = 1, ndofsPatch
+        ! is already in the patch. Please note that it is sufficient to check
+        ! only the first ndofs entries in IdofsPatch, as all entries beyond
+        ! ndofs belong to the second element that we're currently processing.
+        do idofp = 1, ndofs
           if(IdofsPatch(idofp) .eq. Idofs(idof,2)) exit
         end do
         
         ! Update the DOF-map for the patch in the case the the current DOF was
         ! not already in the list.
-        if(idofp .gt. ndofsPatch) then
-          ndofsPatch = idofp
+        if(idofp .gt. ndofs) then
+          ndofsPatch = ndofsPatch + 1
+          idofp = ndofsPatch
           IdofsPatch(idofp) = Idofs(idof,2)
         end if
         
