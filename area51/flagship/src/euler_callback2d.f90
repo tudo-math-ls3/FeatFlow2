@@ -10,64 +10,86 @@
 !# The following callback functions are available:
 !#
 !# 1.) euler_calcFluxGalerkin2d
-!#     -> compute inviscid fluxes for standard Galerkin scheme
+!#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#
-!# 2.) euler_calcFluxTVD2d
-!#     -> compute inviscid fluxes for TVD scheme
+!# 2.) euler_calcFluxGalerkinNoBdr2d
+!#     -> Computes inviscid fluxes for standard Galerkin scheme
+!#        without assembling the symmetric boundary contribution
 !#
 !# 3.) euler_calcFluxScalarDiss2d
-!#     -> compute inviscid fluxes for low-order discretization
+!#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting scalar artificial viscosities
 !#
-!# 4.) euler_calcFluxTensorDiss2d
-!#     -> compute inviscid fluxes for low-order discretization
+!# 4.) euler_calcFluxDSplitScalarDiss2d
+!#     -> Computes inviscid fluxes for low-order discretization
+!#        adopting scalar artificial viscosities based on
+!#        dimensional splitting approach
+!#
+!# 5.) euler_calcFluxTensorDiss2d
+!#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting tensorial artificial viscosities
 !#
-!# 5.) euler_calcFluxRusanov2d
-!#     -> compute inviscid fluxes for low-order discretization
+!# 6.) euler_calcFluxDSplitTensorDiss2d
+!#     -> Computes inviscid fluxes for low-order discretization
+!#        adopting tensorial artificial viscosities based on
+!#        dimensional splitting approach
+!#
+!# 7.) euler_calcFluxRusanov2d
+!#     -> Computes inviscid fluxes for low-order discretization
+!#        adopting the Rusanov artificial diffusion based on
+!#        dimensional splitting approach
+!#
+!# 8.) euler_calcFluxDSplitRusanov2d
+!#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting the Rusanov artificial diffusion
 !#
-!# 6.) euler_calcMatrixGalerkinDiag2d
-!#     -> compute local matrices for standard Galerkin scheme
+!# 9.) euler_calcMatrixDiagonalDiag2d
+!#     -> Computes local matrix for diagonal entry
 !#
-!# 7.) euler_calcMatrixGalerkin2d
-!#     -> compute local matrices for standard Galerkin scheme
+!# 10.) euler_calcMatrixDiagonal2d
+!#      -> Computes local matrix for diagonal entry
 !#
-!# 8.) euler_calcMatrixScalarDissDiag2d
-!#     -> compute local matrices for low-order discretization
-!#        adopting scalar artificial viscosities
+!# 11.) euler_calcMatrixGalerkinDiag2d
+!#      -> Computes local matrices for standard Galerkin scheme
 !#
-!# 9.) euler_calcMatrixScalarDiss2d
-!#     -> compute local matrices for low-order discretization
-!#        adopting scalar artificial viscosities
+!# 12.) euler_calcMatrixGalerkin2d
+!#      -> Computes local matrices for standard Galerkin scheme
 !#
-!# 10.) euler_calcMatrixTensorDissDiag2d
-!#      -> compute local matrices for low-order discretization
+!# 13.) euler_calcMatrixScalarDissDiag2d
+!#      -> Computes local matrices for low-order discretization
+!#         adopting scalar artificial viscosities
+!#
+!# 14.) euler_calcMatrixScalarDiss2d
+!#      -> Computes local matrices for low-order discretization
+!#         adopting scalar artificial viscosities
+!#
+!# 15.) euler_calcMatrixTensorDissDiag2d
+!#      -> Computes local matrices for low-order discretization
 !#         adopting tensorial artificial viscosities
 !#
-!# 11.) euler_calcMatrixTensorDiss2d
-!#      -> compute local matrices for low-order discretization
+!# 16.) euler_calcMatrixTensorDiss2d
+!#      -> Computes local matrices for low-order discretization
 !#         adopting tensorial artificial viscosities
 !#
-!# 12.) euler_calcMatrixRusanovDiag2d
-!#      -> compute local matrices for low-order discretization
+!# 17.) euler_calcMatrixRusanovDiag2d
+!#      -> Computes local matrices for low-order discretization
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 13.) euler_calcMatrixRusanov2d
-!#      -> compute local matrices for low-order discretization
+!# 18.) euler_calcMatrixRusanov2d
+!#      -> Computes local matrices for low-order discretization
 !#         adopting the Rusanov flux artificial viscosities
 !#
-!# 14.) euler_calcCharacteristics2d
-!#      -> compute characteristic variables in 2D
+!# 19.) euler_calcCharacteristics2d
+!#      -> Computes characteristic variables in 2D
 !#
-!# 15.) euler_calcBoundaryvalues2d
-!#      -> compute the boundary values for a given node
+!# 20.) euler_calcBoundaryvalues2d
+!#      -> Computes the boundary values for a given node
 !#
-!# 16.) euler_hadaptCallbackScalar2d
+!# 21.) euler_hadaptCallbackScalar2d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 2D, whereby the vector is stored in interleave format
 !#
-!# 17.) euler_hadaptCallbackBlock2d
+!# 22.) euler_hadaptCallbackBlock2d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 2D, whereby the vector is stored in block format
 !#
@@ -96,10 +118,15 @@ module euler_callback2d
 
   private
   public :: euler_calcFluxGalerkin2d
-  public :: euler_calcFluxTVD2d
+  public :: euler_calcFluxGalerkinNoBdr2d
   public :: euler_calcFluxScalarDiss2d
+  public :: euler_calcFluxDSplitScalarDiss2d
   public :: euler_calcFluxTensorDiss2d
+  public :: euler_calcFluxDSplitTensorDiss2d
   public :: euler_calcFluxRusanov2d
+  public :: euler_calcFluxDSplitRusanov2d
+  public :: euler_calcMatrixDiagonalDiag2d
+  public :: euler_calcMatrixDiagonal2d
   public :: euler_calcMatrixGalerkinDiag2d
   public :: euler_calcMatrixGalerkin2d
   public :: euler_calcMatrixScalarDissDiag2d
@@ -123,7 +150,7 @@ contains
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
-    ! Galerkin discretization in 2D without resorting to matrix-vector.
+    ! Galerkin discretization in 2D.
 !</description>
 
 !<input>
@@ -211,12 +238,14 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTVD2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxGalerkinNoBdr2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
     ! discretization in 2D. The symmetric boundary contributions
     ! are neglected and incorporated in the antidiffusive flux.
+    ! Hence, this is simply the standard Galerkin flux for the
+    ! skew-symmetric internal contributions.
 !</description>
 
 !<input>
@@ -273,7 +302,7 @@ contains
     F_ij = a(1)*dF1_ij + a(2)*dF2_ij
     F_ji = F_ij
 
-  end subroutine euler_calcFluxTVD2d
+  end subroutine euler_calcFluxGalerkinNoBdr2d
 
   !*****************************************************************************
 
@@ -361,7 +390,7 @@ contains
     aux2 = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
 
     ! Scalar dissipation
-    d_ij = dscale * (abs(aux1) + aux2*aux)
+    d_ij = dscale * (abs(aux1) + aux*aux2)
 
     ! Multiply the solution difference by the artificial diffusion factor
     Diff = d_ij*(U_j-U_i)
@@ -371,6 +400,103 @@ contains
     F_ji = F_ji-Diff
 
   end subroutine euler_calcFluxScalarDiss2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcFluxDSplitScalarDiss2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 2D using scalar dissipation,
+    ! whereby dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(IN) :: U_i,U_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling coefficient
+    real(DP), intent(IN) :: dscale
+!</input>
+
+!<output>
+    ! inviscid fluxes
+    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+    real(DP), dimension(NVAR2D) :: Diff
+    real(DP), dimension(NDIM2D) :: a
+    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes
+    ! For a detailed description of algorithm and the definition of auxiliary
+    ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
+    !---------------------------------------------------------------------------
+    
+    ! Compute auxiliary values
+    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
+    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
+    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
+    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    
+    ! Compute fluxes for x-direction
+    dF1_ij(1) = U_i(2)                             - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
+    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+
+    ! Compute fluxes for y-direction
+    dF2_ij(1) = U_i(3)                             - U_j(3)
+    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
+
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the scalar dissipation 
+    !---------------------------------------------------------------------------
+
+    ! Compute skew-symmetric coefficient
+    a = 0.5_DP*(C_ij-C_ji)
+
+    ! Compute Roe mean values
+    aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+    u_ij = (aux*aux3+aux7)/(aux+1.0_DP)
+    v_ij = (aux*aux4+aux8)/(aux+1.0_DP)
+    q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
+    hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
+    hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
+    H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+    ! Compute auxiliary variable
+    aux  = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
+
+    ! Scalar dissipation for x- and y-direction
+    d_ij = dscale * ( abs(a(1)*u_ij) + abs(a(1))*aux +&
+                      abs(a(2)*v_ij) + abs(a(2))*aux )
+
+    ! Multiply the solution difference by the artificial diffusion factor
+    Diff = d_ij*(U_j-U_i)
+
+    ! Add the artificial diffusion to the fluxes
+    F_ij = F_ij+Diff
+    F_ji = F_ji-Diff
+
+  end subroutine euler_calcFluxDSplitScalarDiss2d
 
   !*****************************************************************************
 
@@ -502,6 +628,170 @@ contains
 
 !<subroutine>
 
+  subroutine euler_calcFluxDSplitTensorDiss2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 2D using tensorial dissipation,
+    ! whereby dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(IN) :: U_i,U_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling coefficient
+    real(DP), intent(IN) :: dscale
+!</input>
+
+!<output>
+    ! inviscid fluxes
+    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVAR2D) :: dF1_ij,dF2_ij,Diff
+    real(DP), dimension(NDIM2D) :: a
+    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    real(DP) :: aux,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
+    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,cs_ij
+
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes
+    ! For a detailed description of algorithm and the definition of auxiliary
+    ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
+    !---------------------------------------------------------------------------
+    
+    ! Compute auxiliary values
+    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
+    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
+    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
+    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    
+    ! Compute fluxes for x-direction
+    dF1_ij(1) = U_i(2)                             - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
+    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+
+    ! Compute fluxes for y-direction
+    dF2_ij(1) = U_i(3)                             - U_j(3)
+    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
+
+
+    
+    !---------------------------------------------------------------------------
+    ! Evaluate the tensorial dissipation 
+    !---------------------------------------------------------------------------
+    
+    ! Compute the skew-symmetric coefficient
+    a = 0.5_DP*(C_ij-C_ji); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
+
+    if (anorm .gt. SYS_EPSREAL) then
+
+      ! Compute the absolute value
+      a = abs(a)
+      
+      ! Compute Roe mean values
+      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+      u_ij = (aux*aux3+aux7)/(aux+1.0_DP)
+      v_ij = (aux*aux4+aux8)/(aux+1.0_DP)
+      hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
+      hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+      
+      ! Compute auxiliary variables
+      uPow2 = u_ij*u_ij
+      vPow2 = v_ij*v_ij
+      q_ij  = 0.5_DP*(uPow2+vPow2)
+      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cs_ij = sqrt(cPow2)
+
+      !-------------------------------------------------------------------------
+      ! Dimensional splitting: x-direction
+      !-------------------------------------------------------------------------
+      
+      ! Compute eigenvalues
+      l1 = abs(u_ij-cs_ij)
+      l2 = abs(u_ij)
+      l3 = abs(u_ij+cs_ij)
+      l4 = abs(u_ij)
+
+      ! Compute solution difference U_i-U_j
+      Diff = U_j-U_i
+      
+      ! Compute auxiliary quantities for characteristic variables
+      aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
+      aux2 = 0.5_DP*(u_ij*Diff(1)-Diff(2))/cs_ij
+
+      ! Compute characteristic variables multiplied by the corresponding eigenvalue
+      w1 = l1 * (aux1 + aux2)
+      w2 = l2 * ((1.0_DP-G1*q_ij/cPow2)*Diff(1)+G1*(u_ij*Diff(2)+v_ij*Diff(3)-Diff(4))/cPow2)
+      w3 = l3 * (aux1 - aux2)
+      w4 = l4 * (v_ij*Diff(1)-Diff(3))
+
+      ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+      Diff(1) = dscale * a(1) * ( w1 + w2 + w3 )
+      Diff(2) = dscale * a(1) * ( (u_ij-cs_ij)*w1 + u_ij*w2 + (u_ij+cs_ij)*w3 )
+      Diff(3) = dscale * a(1) * ( v_ij*w1 + v_ij*w2 + v_ij*w3 - w4 )
+      Diff(4) = dscale * a(1) * ( (H_ij-cs_ij*u_ij)*w1  + q_ij*w2 + (H_ij+cs_ij*u_ij)*w3  -v_ij*w4 )
+      
+      ! Add the artificial diffusion to the fluxes
+      F_ij = F_ij+Diff
+      F_ji = F_ji-Diff
+      
+
+      !-------------------------------------------------------------------------
+      ! Dimensional splitting: y-direction
+      !-------------------------------------------------------------------------
+      ! Compute eigenvalues
+      l1 = abs(v_ij-cs_ij)
+      l2 = abs(v_ij)
+      l3 = abs(v_ij+cs_ij)
+      l4 = abs(v_ij)
+
+      ! Compute solution difference U_i-U_j
+      Diff = U_j-U_i
+      
+      ! Compute auxiliary quantities for characteristic variables
+      aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
+      aux2 = 0.5_DP*(v_ij*Diff(1)-Diff(3))/cs_ij
+
+      ! Compute characteristic variables multiplied by the corresponding eigenvalue
+      w1 = l1 * (aux1 + aux2)
+      w2 = l2 * ((1.0_DP-G1*q_ij/cPow2)*Diff(1)+G1*(u_ij*Diff(2)+v_ij*Diff(3)-Diff(4))/cPow2)
+      w3 = l3 * (aux1 - aux2)
+      w4 = l4 * (-u_ij*Diff(1)+Diff(2))
+
+      ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+      Diff(1) = dscale * a(2) * ( w1 + w2 + w3 )
+      Diff(2) = dscale * a(2) * ( u_ij*w1 + u_ij*w2 + u_ij*w3 + w4 )
+      Diff(3) = dscale * a(2) * ( (v_ij-cs_ij)*w1 + v_ij*w2 + (v_ij+cs_ij)*w3 )
+      Diff(4) = dscale * a(2) * ( (H_ij-cs_ij*v_ij)*w1  + q_ij*w2 + (H_ij+cs_ij*v_ij)*w3  + u_ij*w4 )
+      
+      ! Add the artificial diffusion to the fluxes
+      F_ij = F_ij+Diff
+      F_ji = F_ji-Diff
+
+    end if
+
+  end subroutine euler_calcFluxDSplitTensorDiss2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine euler_calcFluxRusanov2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
@@ -596,7 +886,203 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
+  subroutine euler_calcFluxDSplitRusanov2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 2D using the Rusanov dissipation,
+    ! whereby dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(IN) :: U_i,U_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling coefficient
+    real(DP), intent(IN) :: dscale
+!</input>
+
+!<output>
+    ! inviscid fluxes
+    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+    real(DP), dimension(NVAR2D) :: Diff
+    real(DP), dimension(NDIM2D) :: a
+    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes
+    ! For a detailed description of algorithm and the definition of auxiliary
+    ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
+    !---------------------------------------------------------------------------
+    
+    ! Compute auxiliary values
+    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
+    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
+    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
+    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    
+    ! Compute fluxes for x-direction
+    dF1_ij(1) = U_i(2)                             - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
+    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+
+    ! Compute fluxes for y-direction
+    dF2_ij(1) = U_i(3)                             - U_j(3)
+    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
+    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
+
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the scalar dissipation 
+    !---------------------------------------------------------------------------
+
+    ! Compute skew-symmetric coefficient
+    a = 0.5_DP*(C_ij-C_ji)
+
+    ! Compute enthalpy
+    hi = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
+    hj = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
+
+    ! Compute auxiliary variables
+    aux5 = sqrt(max(-G1*(0.5_DP*(aux3*aux3+aux4*aux4)-hi), SYS_EPSREAL))
+    aux6 = sqrt(max(-G1*(0.5_DP*(aux7*aux7+aux8*aux8)-hj), SYS_EPSREAL))
+    
+    ! Scalar dissipation for the Rusanov flux
+    d_ij = dscale * ( abs(a(1)) * max( abs(aux3) + aux5, abs(aux7) + aux6) +&
+                      abs(a(2)) * max( abs(aux4) + aux5, abs(aux8) + aux6) )
+
+    ! Multiply the solution difference by the artificial diffusion factor
+    Diff = d_ij*(U_j-U_i)
+
+    ! Add the artificial diffusion to the fluxes
+    F_ij = F_ij+Diff
+    F_ji = F_ji-Diff
+
+  end subroutine euler_calcFluxDSplitRusanov2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcMatrixDiagonalDiag2d(U_i, C_ii, dscale, K_ii)
+
+!<description>
+    ! This subroutine computes the diagonal of the Galerkin matrices
+    ! for the diagonal block of the global operator in 2D
+!</description>
+
+!<input>
+    ! local solution at node I
+    real(DP), dimension(:), intent(IN) :: U_i
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ii
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
+!</input>
+
+!<output>
+    ! local Jacobian matrix
+    real(DP), dimension(:), intent(OUT) :: K_ii
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP) :: ui,vi
+
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1)
+
+    ! Compute Galerkin coefficient K_ii
+    K_ii(1) = 0.0_DP
+    K_ii(2) = dscale*(G13*ui*C_ii(1)+vi*C_ii(2))
+    K_ii(3) = dscale*(ui*C_ii(1)+G13*vi*C_ii(2))
+    K_ii(4) = dscale*(GAMMA*(ui*C_ii(1)+vi*C_ii(2)))
+
+  end subroutine euler_calcMatrixDiagonalDiag2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcMatrixDiagonal2d(U_i, C_ii, dscale, K_ii)
+
+!<description>
+    ! This subroutine computes the Galerkin matrices for the diagonal
+    ! block of the global operator in 2D
+!</description>
+
+!<input>
+    ! local solution at node I
+    real(DP), dimension(:), intent(IN) :: U_i
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ii
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
+!</input>
+
+!<output>
+    ! local Jacobian matrix
+    real(DP), dimension(:), intent(OUT) :: K_ii
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP) :: Ei,ui,vi,qi,uvi,uPow2i,vPow2i,aux
+
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
+    
+    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   uPow2i = vi*vi
+    
+    aux = ui*C_ii(1)+vi*C_ii(2)
+    
+    ! Compute Galerkin coefficient K_ij
+    K_ii( 1) = 0.0_DP
+    K_ii( 2) = dscale*((G2*qi-uPow2i)*C_ii(1)-uvi*C_ii(2))
+    K_ii( 3) = dscale*((G2*qi-vPow2i)*C_ii(2)-uvi*C_ii(1))
+    K_ii( 4) = dscale*(G1*qi-GAMMA*Ei)*aux
+
+    K_ii( 5) = dscale*C_ii(1)
+    K_ii( 6) = dscale*(G13*ui*C_ii(1)+vi*C_ii(2))
+    K_ii( 7) = dscale*(vi*C_ii(1)-G1*ui*C_ii(2))
+    K_ii( 8) = dscale*((GAMMA*Ei-G2*qi)*C_ii(1)-G1*ui*aux)
+
+    K_ii( 9) = dscale*C_ii(2)
+    K_ii(10) = dscale*(ui*C_ii(2)-G1*vi*C_ii(1))
+    K_ii(11) = dscale*(ui*C_ii(1)+G13*vi*C_ii(2))
+    K_ii(12) = dscale*((GAMMA*Ei-G2*qi)*C_ii(2)-G1*vi*aux)
+
+    K_ii(13) = 0.0_DP
+    K_ii(14) = dscale*G1*C_ii(1)
+    K_ii(15) = dscale*G1*C_ii(2)
+    K_ii(16) = dscale*(GAMMA*(ui*C_ii(1)+vi*C_ii(2)))
+
+  end subroutine euler_calcMatrixDiagonal2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcMatrixGalerkinDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 2D
@@ -615,7 +1101,7 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij, K_ji
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
@@ -638,13 +1124,16 @@ contains
     K_ji(3) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
     K_ji(4) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
+    ! Nullify dissipation tensor
+    D_ij = 0.0_DP
+
   end subroutine euler_calcMatrixGalerkinDiag2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
+  subroutine euler_calcMatrixGalerkin2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 2D
@@ -663,7 +1152,7 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
@@ -722,13 +1211,16 @@ contains
     K_ji(15) = dscale*G1*C_ji(2)
     K_ji(16) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
+    ! Nullify dissipation tensor
+    D_ij = 0.0_DP
+
   end subroutine euler_calcMatrixGalerkin2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
+  subroutine euler_calcMatrixScalarDissDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -748,13 +1240,13 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,aux1,hi,hj,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij,d_ij
+    real(DP) :: anorm,aux,aux1,hi,hj,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij
 
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1)
@@ -787,11 +1279,15 @@ contains
       q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
          
       ! Compute scalar dissipation
-      d_ij = dscale*(abs(a(1)*u_ij+a(2)*v_ij) + anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
+      D_ij = dscale*(abs(a(1)*u_ij+a(2)*v_ij) + anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
       
-      ! Apply scalar dissipation
-      K_ij = K_ij - d_ij
-      K_ji = K_ji - d_ij
+!!$      ! Apply scalar dissipation
+!!$      K_ij = K_ij - d_ij
+!!$      K_ji = K_ji - d_ij
+
+    else
+
+      D_ij = 0.0_DP
 
     end if
 
@@ -801,7 +1297,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
+  subroutine euler_calcMatrixScalarDiss2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -821,13 +1317,13 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij, K_ji
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij,d_ij
+    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij
     real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
 
     ! Compute auxiliary variables
@@ -897,18 +1393,28 @@ contains
       q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
          
       ! Compute scalar dissipation
-      d_ij = dscale*(abs(a(1)*u_ij+a(2)*v_ij) + anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
+      aux = dscale*(abs(a(1)*u_ij+a(2)*v_ij) + anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
       
-      ! Apply scalar dissipation
-      K_ij( 1) = K_ij( 1) - d_ij
-      K_ij( 6) = K_ij( 6) - d_ij
-      K_ij(11) = K_ij(11) - d_ij
-      K_ij(16) = K_ij(16) - d_ij
+      D_ij     = 0.0_DP
+      D_ij( 1) = aux
+      D_ij( 6) = aux
+      D_ij(11) = aux
+      D_ij(16) = aux
 
-      K_ji( 1) = K_ji( 1) - d_ij
-      K_ji( 6) = K_ji( 6) - d_ij
-      K_ji(11) = K_ji(11) - d_ij
-      K_ji(16) = K_ji(16) - d_ij
+!!$      ! Apply scalar dissipation
+!!$      K_ij( 1) = K_ij( 1) - d_ij
+!!$      K_ij( 6) = K_ij( 6) - d_ij
+!!$      K_ij(11) = K_ij(11) - d_ij
+!!$      K_ij(16) = K_ij(16) - d_ij
+!!$
+!!$      K_ji( 1) = K_ji( 1) - d_ij
+!!$      K_ji( 6) = K_ji( 6) - d_ij
+!!$      K_ji(11) = K_ji(11) - d_ij
+!!$      K_ji(16) = K_ji(16) - d_ij
+
+    else
+
+      D_ij = 0.0_DP
 
     end if
 
@@ -918,10 +1424,10 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
+  subroutine euler_calcMatrixTensorDissDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
-    ! This subroutine computes the diagonal of the local Roe matrices 
+    ! This subroutine computes the Galerkin matrices
     ! and applies tensorial artificial viscosities in 2D
 !</description>
 
@@ -938,13 +1444,12 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij, K_ji
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP), dimension(NVAR2D,NVAR2D) :: R_ij,L_ij
-    real(DP), dimension(NVAR2D) :: D_ij
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: aux,hi,hj,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij
     real(DP) :: l1,l2,l3,l4,anorm,c1,c2,cs_ij,cPow2,vel
@@ -1036,6 +1541,7 @@ contains
 
       
       ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
+      D_ij    = 0.0_DP
       D_ij(1) = anorm*( R_ij(1,1)*L_ij(1,1)+&
                         R_ij(1,2)*L_ij(2,1)+&
                         R_ij(1,3)*L_ij(3,1)+&
@@ -1053,10 +1559,14 @@ contains
                         R_ij(4,3)*L_ij(3,4)+&
                         R_ij(4,4)*L_ij(4,4)  )
 
-      ! Apply tensorial dissipation
-      K_ij = K_ij - D_ij
-      K_ji = K_ji - D_ij
+!!$      ! Apply tensorial dissipation
+!!$      K_ij = K_ij - D_ij
+!!$      K_ji = K_ji - D_ij
 
+    else
+
+      D_ij = 0.0_DP
+      
     end if
 
   end subroutine euler_calcMatrixTensorDissDiag2d
@@ -1065,10 +1575,10 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
+  subroutine euler_calcMatrixTensorDiss2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
-    ! This subroutine computes the diagonal of the local Roe matrices 
+    ! This subroutine computes the Galerkin matrices
     ! and applies tensorial artificial viscosities in 2D
 !</description>
 
@@ -1085,14 +1595,14 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP), dimension(NVAR2D,NVAR2D) :: R_ij,L_ij
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij,d_ij,vel,c1,c2,cPow2,cs_ij,l1,l2,l3,l4
+    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij,vel,c1,c2,cPow2,cs_ij,l1,l2,l3,l4
     real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
 
     ! Compute auxiliary variables
@@ -1222,9 +1732,13 @@ contains
       call DGEMM('n', 'n', NVAR2D, NVAR2D, NVAR2D, anorm,&
                  R_ij, NVAR2D, L_ij, NVAR2D, 0.0_DP, D_ij, NVAR2D)
 
-      ! Apply tensorial dissipation
-      K_ij = K_ij - D_ij
-      K_ji = K_ji - D_ij
+!!$      ! Apply tensorial dissipation
+!!$      K_ij = K_ij - D_ij
+!!$      K_ji = K_ji - D_ij
+
+    else
+
+      D_ij = 0.0_DP
       
     end if
 
@@ -1234,7 +1748,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanovDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
+  subroutine euler_calcMatrixRusanovDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1254,13 +1768,13 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux1,aux2,hi,hj,ui,uj,vi,vj,d_ij
+    real(DP) :: anorm,aux1,aux2,hi,hj,ui,uj,vi,vj
 
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1)
@@ -1292,11 +1806,15 @@ contains
       aux2 = abs(a(1)*uj+a(2)*vj) + anorm*sqrt(max(-G1*(uj*uj+vj*vj-hj), SYS_EPSREAL))
 
       ! Compute scalar dissipation
-      d_ij = dscale*max(aux1,aux2)
+      D_ij = dscale*max(aux1,aux2)
       
-      ! Apply scalar dissipation
-      K_ij = K_ij - d_ij
-      K_ji = K_ji - d_ij
+!!$      ! Apply scalar dissipation
+!!$      K_ij = K_ij - d_ij
+!!$      K_ji = K_ji - d_ij
+
+    else
+
+      D_ij = 0.0_DP
 
     end if
 
@@ -1306,7 +1824,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanov2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
+  subroutine euler_calcMatrixRusanov2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1326,14 +1844,13 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij, K_ji
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,hi,hj,d_ij
-    real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
+    real(DP) :: anorm,aux,hi,hj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
 
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
@@ -1397,18 +1914,28 @@ contains
       aux2 = abs(a(1)*uj+a(2)*vj) + anorm*sqrt(max(-G1*(qj-hj), SYS_EPSREAL))
       
       ! Compute scalar dissipation
-      d_ij = dscale*max(aux1, aux2)
-      
-      ! Apply scalar dissipation
-      K_ij( 1) = K_ij( 1) - d_ij
-      K_ij( 6) = K_ij( 6) - d_ij
-      K_ij(11) = K_ij(11) - d_ij
-      K_ij(16) = K_ij(16) - d_ij
+      aux = dscale*max(aux1, aux2)
 
-      K_ji( 1) = K_ji( 1) - d_ij
-      K_ji( 6) = K_ji( 6) - d_ij
-      K_ji(11) = K_ji(11) - d_ij
-      K_ji(16) = K_ji(16) - d_ij
+      D_ij     = 0.0_DP
+      D_ij( 1) = aux
+      D_ij( 6) = aux
+      D_ij(11) = aux
+      D_ij(16) = aux
+      
+!!$      ! Apply scalar dissipation
+!!$      K_ij( 1) = K_ij( 1) - d_ij
+!!$      K_ij( 6) = K_ij( 6) - d_ij
+!!$      K_ij(11) = K_ij(11) - d_ij
+!!$      K_ij(16) = K_ij(16) - d_ij
+!!$
+!!$      K_ji( 1) = K_ji( 1) - d_ij
+!!$      K_ji( 6) = K_ji( 6) - d_ij
+!!$      K_ji(11) = K_ji(11) - d_ij
+!!$      K_ji(16) = K_ji(16) - d_ij
+
+    else
+
+      D_ij = 0.0_DP
 
     end if
 
