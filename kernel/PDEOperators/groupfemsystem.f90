@@ -626,21 +626,12 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildDivOperatorBlock(RcoeffMatrices, ru, fcb_calcMatrix,&
+  subroutine gfsys_buildDivOperatorBlock(RcoeffMatrices, ru,&
+                                         fcb_calcMatrixDiagonal, fcb_calcMatrix,&
                                          dscale, bclear, rdivMatrix)
 
 !<description>
-    ! This subroutine assembles the discrete transport operator $K$ so that
-    !
-    !   $$ (Ku)_i = -\sum_{j\ne i}\bf c}_{ij}\cdot({\bf F}_j-{\bf F}_i) $$
-    !
-    ! whereby the flux difference can be represented as
-    !
-    !   $$ {\bf F}_j-{\bf F}_i=\hat{\bf A}_{ij}(u_j-u_i) $$
-    !
-    ! and the matrix $\hat{\bf A}$ corresponds to the Jacobian tensor
-    ! evaluated for some special set of averaged flow variables.
-    !
+    ! This subroutine assembles the discrete divergence operator.
     ! Note that this routine is designed for block matrices/vectors. 
     ! If there is only one block, then the corresponding scalar routine 
     ! is called. Otherwise, the global operator is treated as block matrix.
@@ -686,7 +677,8 @@ contains
     if ((ru%nblocks .eq. 1) .and.&
         (rdivMatrix%nblocksPerCol .eq. 1) .and. &
         (rdivMatrix%nblocksPerRow .eq. 1)) then
-      call gfsys_buildDivOperatorScalar(RcoeffMatrices, ru%RvectorBlock(1), fcb_calcMatrix,&
+      call gfsys_buildDivOperatorScalar(RcoeffMatrices, ru%RvectorBlock(1),&
+                                        fcb_calcMatrixDiagonal, fcb_calcMatrix,&
                                         dscale, bclear, rdivMatrix%RmatrixBlock(1,1))
       return       
     end if
@@ -757,7 +749,7 @@ contains
                                  ru%nblocks, p_Cx, p_Cy, p_Cz, p_u, dscale, rarray)
         end select
         
-      else   ! bisFullMatrix
+      else   ! bisFullMatrix == no
 
         select case(ndim)
         case (NDIM1D)
@@ -810,7 +802,7 @@ contains
                                  p_Cx, p_Cy, p_Cz, p_u, dscale, rarray)
         end select
         
-      else   ! bisFullMatrix
+      else   ! bisFullMatrix == no
 
         select case(ndim)
         case (NDIM1D)
@@ -861,7 +853,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
 
       
@@ -870,6 +862,20 @@ contains
         
         ! Get position of diagonal entry
         ii = Kld(i)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ii)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + K_ij(ivar)
+        end do
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -883,18 +889,18 @@ contains
           ! Compute coefficients
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          ! Get solution values at node
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)              + D_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)              + D_ij(ivar)
           end do
         end do
       end do
@@ -919,7 +925,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
 
       
@@ -929,6 +935,20 @@ contains
         ! Get position of diagonal entry
         ii = Kld(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + K_ij(ivar)
+        end do
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -942,18 +962,18 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          ! Get solution values at node
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
           
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)              + D_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)              + D_ij(ivar)
           end do
         end do
       end do
@@ -978,7 +998,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
       
 
@@ -988,6 +1008,20 @@ contains
         ! Get position of diagonal entry
         ii = Kld(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + K_ij(ivar)
+        end do
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1002,18 +1036,18 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          ! Get solution values at node
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
           
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)              + D_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)              + D_ij(ivar)
           end do
         end do
       end do
@@ -1038,7 +1072,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
 
       
@@ -1048,6 +1082,20 @@ contains
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + K_ij(ivar)
+        end do
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1061,17 +1109,17 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)              + D_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)              + D_ij(ivar)
           end do
         end do
       end do
@@ -1096,7 +1144,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
 
 
@@ -1106,6 +1154,20 @@ contains
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + K_ij(ivar)
+        end do
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1119,18 +1181,18 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          ! Get solution values at node
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)              + D_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)              + D_ij(ivar)
           end do
         end do
       end do
@@ -1155,7 +1217,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji,u_i,u_j
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar
 
 
@@ -1164,7 +1226,21 @@ contains
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
-        
+
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) + K_ij(ivar)
+        end do
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1179,18 +1255,18 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          ! Get solution values at node
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii) - K_ij(ivar)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar)
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj) - K_ji(ivar)
+            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)              + D_ij(ivar)
+            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij) + K_ij(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji) + K_ji(ivar) - D_ij(ivar)
+            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)              + D_ij(ivar)
           end do
         end do
       end do
@@ -1215,7 +1291,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
 
@@ -1225,6 +1301,23 @@ contains
         
         ! Get position of diagonal entry
         ii = Kld(i)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ii)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          do jvar = 1, NVAR
+            idx = NVAR*(ivar-1)+jvar
+            K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + K_ij(idx)
+          end do
+        end do
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1238,20 +1331,20 @@ contains
           ! Compute coefficients
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          ! Get solution values at node
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
           
-          ! Assemble the global operator
+          ! Apply matrices to the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)             + D_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)             + D_ij(idx)
             end do
           end do
         end do
@@ -1277,7 +1370,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
       
@@ -1287,6 +1380,23 @@ contains
         
         ! Get position of diagonal entry
         ii = Kld(i)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ij)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          do jvar = 1, NVAR
+            idx = NVAR*(ivar-1)+jvar
+            K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + K_ij(idx)
+          end do
+        end do
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1301,20 +1411,20 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          ! Get solution values at node
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
+          ! Apply matrices to the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)             + D_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)             + D_ij(idx)
             end do
           end do
         end do
@@ -1340,7 +1450,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
       
@@ -1351,6 +1461,23 @@ contains
         ! Get position of diagonal entry
         ii = Kld(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          do jvar = 1, NVAR
+            idx = NVAR*(ivar-1)+jvar
+            K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + K_ij(idx)
+          end do
+        end do
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1365,20 +1492,20 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          ! Get solution values at node
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
           
-          ! Assemble the global operator
+          ! Apply matrices to the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)             + D_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)             + D_ij(idx)
             end do
           end do
         end do
@@ -1404,7 +1531,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
 
@@ -1414,6 +1541,23 @@ contains
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
+
+        ! Compute coefficients
+        C_ij(1) = Cx(ii)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          do jvar = 1, NVAR
+            idx = NVAR*(ivar-1)+jvar
+            K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + K_ij(idx)
+          end do
+        end do
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1427,20 +1571,20 @@ contains
           ! Compute coefficients
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          ! Get solution values at node
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
+          ! Apply matrices to the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)             + D_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)             + D_ij(idx)
             end do
           end do
         end do
@@ -1466,7 +1610,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
       
@@ -1477,6 +1621,23 @@ contains
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ij)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          do jvar = 1, NVAR
+            idx = NVAR*(ivar-1)+jvar
+            K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + K_ij(idx)
+          end do
+        end do
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1490,20 +1651,20 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
-          ! Get solution values at nodes
-          u_i = u(i,:); u_j = u(j,:)
+          ! Get solution values at node
+          u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
           
-          ! Assemble the global operator
+          ! Apply matrices to the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)             + D_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)             + D_ij(idx)
             end do
           end do
         end do
@@ -1529,7 +1690,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       real(DP), dimension(NVAR) :: u_i,u_j
       integer :: ii,ij,ji,jj,i,j,ivar,jvar,idx
 
@@ -1540,6 +1701,23 @@ contains
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+
+        ! Get solution values at node
+        u_i = u(i,:)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        do ivar = 1, NVAR
+          do jvar = 1, NVAR
+            idx = NVAR*(ivar-1)+jvar
+            K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) + K_ij(idx)
+          end do
+        end do
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1558,16 +1736,16 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
+          ! Apply matrices to the global operator
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               idx = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii) - K_ij(idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx)
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj) - K_ji(idx)
+              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)             + D_ij(idx)
+              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij) + K_ij(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji) + K_ji(idx) - D_ij(idx)
+              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)             + D_ij(idx)
             end do
           end do
         end do
@@ -1579,23 +1757,14 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildDivOperatorScalar(RcoeffMatrices, ru, fcb_calcMatrix,&
+  subroutine gfsys_buildDivOperatorScalar(RcoeffMatrices, ru,&
+                                          fcb_calcMatrixDiagonal, fcb_calcMatrix,&
                                           dscale, bclear, rdivMatrix)
 
 !<description>
-    ! This subroutine assembles the discrete transport operator $K$ so that
-    !
-    !   $$ (Ku)_i=-\sum_{j\ne i}\bf c}_{ij}\cdot({\bf F}_j-{\bf F}_i) $$
-    !
-    ! whereby the flux difference can be represented as
-    !
-    !   $$ {\bf F}_j-{\bf F}_i=\hat{\bf A}_{ij}(u_j-u_i) $$
-    !
-    ! and the matrix $\hat{\bf A}$ corresponds to the Jacobian tensor
-    ! evaluated for some special set of averaged variables.
-    !
-    ! Note that this routine requires the scalar matrices/vectors are
-    ! stored in the interleave format.
+    ! This subroutine assembles the discrete divergence operator.
+    ! Note that this routine requires the scalar matrices/vectors
+    ! are stored in the interleave format.
 !</description>
 
 !<input>
@@ -1815,7 +1984,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
       
@@ -1825,6 +1994,15 @@ contains
         ! Get position of diagonal entry
         ii = Kld(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1838,13 +2016,13 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
           
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat7Diag_1D
@@ -1868,7 +2046,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -1878,6 +2056,15 @@ contains
         ! Get position of diagonal entry
         ii = Kld(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1892,13 +2079,13 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat7Diag_2D
@@ -1922,7 +2109,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -1932,6 +2119,15 @@ contains
         ! Get position of diagonal entry
         ii = Kld(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -1947,13 +2143,13 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
           
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat7Diag_3D
@@ -1977,7 +2173,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
       
@@ -1987,6 +2183,15 @@ contains
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -2000,13 +2205,13 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat9Diag_1D
@@ -2030,7 +2235,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2040,6 +2245,15 @@ contains
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -2054,13 +2268,13 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat9Diag_2D
@@ -2084,7 +2298,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2093,6 +2307,15 @@ contains
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
+
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2109,13 +2332,13 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat9Diag_3D
@@ -2139,7 +2362,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
       
@@ -2148,6 +2371,15 @@ contains
         
         ! Get position of diagonal entry
         ii = Kld(i)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2162,13 +2394,13 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat7_1D
@@ -2192,7 +2424,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2201,6 +2433,15 @@ contains
         
         ! Get position of diagonal entry
         ii = Kld(i)
+
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2216,13 +2457,13 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat7_2D
@@ -2246,7 +2487,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2256,6 +2497,15 @@ contains
         ! Get position of diagonal entry
         ii = Kld(i)
         
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -2271,13 +2521,13 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat7_3D
@@ -2301,7 +2551,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2310,6 +2560,15 @@ contains
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
+
+        ! Compute coefficients
+        C_ij(1) = Cx(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2324,13 +2583,13 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat9_1D
@@ -2354,7 +2613,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2363,7 +2622,16 @@ contains
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
-        
+
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -2378,13 +2646,13 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat9_2D
@@ -2408,7 +2676,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR*NVAR) :: K_ij,K_ji
+      real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -2417,6 +2685,15 @@ contains
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
+
+        ! Compute coefficients
+        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+
+        ! Compute matrix
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+
+        ! Apply matrix to the diagonal entry of the global operator
+        K(:,ii) = K(:,ii) + K_ij
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2433,13 +2710,13 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-          ! Assemble the global operator
-          K(:,ii) = K(:,ii) - K_ij
-          K(:,ij) = K(:,ij) + K_ij
-          K(:,ji) = K(:,ji) + K_ji
-          K(:,jj) = K(:,jj) - K_ji
+          ! Apply matrices to the global operator
+          K(:,ii) = K(:,ii)        + D_ij
+          K(:,ij) = K(:,ij) + K_ij - D_ij
+          K(:,ji) = K(:,ji) + K_ji - D_ij
+          K(:,jj) = K(:,jj)        + D_ij
         end do
       end do
     end subroutine doOperatorMat9_3D
