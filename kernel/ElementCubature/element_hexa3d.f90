@@ -4608,7 +4608,7 @@ contains
   integer, parameter :: NBAS = 6
   
   ! Parameter: Number of cubature points for 1D edge integration
-  integer, parameter :: NCUB1D = 3
+  integer, parameter :: NCUB1D = 2
   
   ! Parameter: Number of cubature points for 2D quad integration
   integer, parameter :: NCUB2D = NCUB1D**2
@@ -4645,15 +4645,13 @@ contains
     ! Step 0: Set up 1D and 2D cubature rules
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    ! Set up a 3-point Gauss rule for 1D
+    ! Set up a 2-point Gauss rule for 1D
     ! Remark: Although we don't actually need the 1D formula for integration,
     ! it is used a few lines below to set up the 2D formula...
-    DcubPts1D(1) = -sqrt(3.0_DP / 5.0_DP)
-    DcubPts1D(2) = 0.0_DP
-    DcubPts1D(3) = sqrt(3.0_DP / 5.0_DP)
-    DcubOmega1D(1) = 5.0_DP / 9.0_DP
-    DcubOmega1D(2) = 8.0_DP / 9.0_DP
-    DcubOmega1D(3) = 5.0_DP / 9.0_DP
+    DcubPts1D(1) = -sqrt(1.0_DP / 3.0_DP)
+    DcubPts1D(2) =  sqrt(1.0_DP / 3.0_DP)
+    DcubOmega1D(1) = 1.0_DP
+    DcubOmega1D(2) = 1.0_DP
 
 !    ! !!! DEBUG: 5-point Gauss rule !!!
 !    dt = 2.0_DP*sqrt(10.0_DP / 7.0_DP)
@@ -4669,7 +4667,7 @@ contains
 !    DcubOmega1D(4) = (322.0_DP + dt) / 900.0_DP
 !    DcubOmega1D(5) = (322.0_DP - dt) / 900.0_DP
 
-    ! Set up a 3x3-point Gauss rule for 2D
+    ! Set up a 2x2-point Gauss rule for 2D
     l = 1
     do i = 1, NCUB1D
       do j = 1, NCUB1D
@@ -4684,7 +4682,7 @@ contains
     do iel = 1, reval%nelements
     
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-      ! Step 1: Calculate vertice and face midpoint coordinates
+      ! Step 1: Fetch vertice coordinates
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
       ! Fetch the eight corner vertices for that element
@@ -4700,6 +4698,15 @@ contains
       Dat(:,1) = 0.25_DP * (Dvert(:,2)+Dvert(:,3)+Dvert(:,7)+Dvert(:,6))-Dr(:)
       Dat(:,2) = 0.25_DP * (Dvert(:,3)+Dvert(:,4)+Dvert(:,8)+Dvert(:,7))-Dr(:)
       Dat(:,3) = 0.25_DP * (Dvert(:,5)+Dvert(:,6)+Dvert(:,7)+Dvert(:,8))-Dr(:)
+      
+!      ! !!! DEBUG: normalise local coordinate system !!!
+!      dx1 = 1.0_DP / sqrt(Dat(1,1)**2 + Dat(2,1)**2 + Dat(3,1)**2)
+!      dy1 = 1.0_DP / sqrt(Dat(1,2)**2 + Dat(2,2)**2 + Dat(3,2)**2)
+!      dz1 = 1.0_DP / sqrt(Dat(1,3)**2 + Dat(2,3)**2 + Dat(3,3)**2)
+!      Dat(:,1) = dx1 * Dat(:,1)
+!      Dat(:,2) = dy1 * Dat(:,2)
+!      Dat(:,3) = dz1 * Dat(:,3)
+!      ! !!! DEBUG !!!
       
       ! And invert it
       call mprim_invert3x3MatrixDirectDble(Dat,Ds)
@@ -4744,7 +4751,7 @@ contains
       end do ! j
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-      ! Step 4: Calculate face areas and hexahedron volume
+      ! Step 4: Calculate face areas
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Calculate the inverse of the face areas - we will need them for
       ! scaling later...
@@ -4823,7 +4830,7 @@ contains
             Dbas(i,DER_FUNC3D,ipt,iel) = Dc(i,1) &
               + dx*(Dc(i,2) + dx*Dc(i,5)) &
               + dy*(Dc(i,3) + dy*(Dc(i,6) - Dc(i,5))) &
-              + dz*(Dc(i,4) + dz*Dc(i,6))
+              + dz*(Dc(i,4) - dz*Dc(i,6))
 
           end do ! i
       
@@ -4855,7 +4862,7 @@ contains
             ! Calculate 'reference' derivatives
             derx = Dc(i,2) + 2.0_DP*dx*Dc(i,5)
             dery = Dc(i,3) + 2.0_DP*dy*(Dc(i,6) - Dc(i,5))
-            derz = Dc(i,4) + 2.0_DP*dz*Dc(i,6)
+            derz = Dc(i,4) - 2.0_DP*dz*Dc(i,6)
 
             ! Calculate 'real' derivatives
             Dbas(i,DER_DERIV3D_X,ipt,iel) = &
