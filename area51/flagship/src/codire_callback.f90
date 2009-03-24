@@ -575,7 +575,7 @@ contains
 
     ! local variables
     type(t_timer), pointer :: rtimer
-    logical :: bStabilize,bbuildAFC, bisDivergenceFree
+    logical :: bStabilize, bbuildAFC
     integer :: systemMatrix, transportMatrix
     integer :: lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
@@ -686,9 +686,6 @@ contains
     ivelocitytype = collct_getvalue_int(rcollection, 'ivelocitytype')
     convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
 
-    ! Check if velocity is assumed to be discretely divergence free
-    bisDivergenceFree = (ivelocitytype .gt. 0)
-    
     if (convectionAFC > 0) then
 
       ! Check if stabilization should be applied
@@ -728,21 +725,21 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, codire_calcPrimalConvConst1d, bisDivergenceFree,&
+                rsolution, codire_calcPrimalConvConst1d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC))
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, codire_calcPrimalConvConst2d, bisDivergenceFree,&
+                rsolution, codire_calcPrimalConvConst2d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC))
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, codire_calcPrimalConvConst3d, bisDivergenceFree,&
+                rsolution, codire_calcPrimalConvConst3d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC))
           end select
@@ -753,19 +750,19 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, codire_calcPrimalConvConst1d, bisDivergenceFree,&
+                rsolution, codire_calcPrimalConvConst1d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, codire_calcPrimalConvConst2d, bisDivergenceFree,&
+                rsolution, codire_calcPrimalConvConst2d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, codire_calcPrimalConvConst3d, bisDivergenceFree,&
+                rsolution, codire_calcPrimalConvConst3d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
           end select
           
@@ -785,7 +782,7 @@ contains
           
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBurgersSpT2d, bisDivergenceFree,&
+              rsolution, codire_calcConvectionBurgersSpT2d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC))
 
@@ -793,7 +790,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBurgersSpT2d, bisDivergenceFree,&
+              rsolution, codire_calcConvectionBurgersSpT2d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
 
         end if
@@ -810,7 +807,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBuckLevSpT2d, bisDivergenceFree,&
+              rsolution, codire_calcConvectionBuckLevSpT2d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC))
 
@@ -819,7 +816,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBurgersSpT2d, bisDivergenceFree,&
+              rsolution, codire_calcConvectionBurgersSpT2d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
 
         end if
@@ -836,7 +833,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, codire_calcConvectionBurgers1d, bisDivergenceFree,&
+              rsolution, codire_calcConvectionBurgers1d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC))
 
@@ -844,7 +841,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, codire_calcConvectionBurgers1d, bisDivergenceFree,&
+              rsolution, codire_calcConvectionBurgers1d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
 
         end if
@@ -861,7 +858,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBurgers2d, bisDivergenceFree,&
+              rsolution, codire_calcConvectionBurgers2d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC))
 
@@ -869,7 +866,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBurgers2d, bisDivergenceFree,&
+              rsolution, codire_calcConvectionBurgers2d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
 
         end if
@@ -886,7 +883,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, codire_calcConvectionBuckLev1d, bisDivergenceFree,&
+              rsolution, codire_calcConvectionBuckLev1d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC))
 
@@ -894,7 +891,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, codire_calcConvectionBuckLev1d, bisDivergenceFree,&
+              rsolution, codire_calcConvectionBuckLev1d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
 
         end if
@@ -930,21 +927,21 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, codire_calcDualConvConst1d, bisDivergenceFree,&
+                rsolution, codire_calcDualConvConst1d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC))
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, codire_calcDualConvConst2d, bisDivergenceFree,&
+                rsolution, codire_calcDualConvConst2d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC))
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, codire_calcDualConvConst3d, bisDivergenceFree,&
+                rsolution, codire_calcDualConvConst3d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC))
           end select
@@ -955,19 +952,19 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, codire_calcDualConvConst1d, bisDivergenceFree,&
+                rsolution, codire_calcDualConvConst1d,&
                 bstabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, codire_calcDualConvConst2d, bisDivergenceFree,&
+                rsolution, codire_calcDualConvConst2d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, codire_calcDualConvConst3d, bisDivergenceFree,&
+                rsolution, codire_calcDualConvConst3d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix))
           end select
 
