@@ -16,11 +16,11 @@
 !#     -> Performs a matrix vector multiplication with the jump stabilisation
 !#        matrix for a 2d block vector.
 !# 
-!# 1.) jstab_calcReacJumpStabil
+!# 3.) jstab_calcReacJumpStabil
 !#     -> Modifies a scalar matrix to add the reactive
 !#        jump stabilisation term.
 !#
-!# 2.) jstab_matvecReacJumpStabilBlk2d
+!# 4.) jstab_matvecReacJumpStabilBlk2d
 !#     -> Performs a matrix vector multiplication with the reactive jump
 !#        stabilisation matrix for a 2d block vector.
 !# 
@@ -29,8 +29,11 @@
 !# 1.) jstab_ueoJumpStabil2d_m_unidble
 !#     -> The actual matrix computation routine for 2D domains.
 !#
-!# 1.) jstab_reacJumpStabil2d_m_unidbl
+!# 2.) jstab_reacJumpStabil2d_m_unidbl
 !#     -> The actual matrix computation routine for 2D domains.
+!#
+!# 3.) jstab_ueoJumpStabil3d_m_unidble
+!#     -> The actual matrix computation routine for 3D domains.
 !#
 !# </purpose>
 !##############################################################################
@@ -1111,6 +1114,8 @@ contains
       
     end do ! iat
     
+    ! Release the element set
+    call elprep_releaseElementSet(reval)
     
     ! Deallocate everything we've allocated
     deallocate(Dmatrix)
@@ -1145,7 +1150,7 @@ contains
     ! The coordinates of the face's corner vertices.
     real(DP), dimension(3,4), intent(IN) :: Dvtx
     
-    ! The points for which the 'jacobian determinants' are to be calculates,
+    ! The points for which the 'jacobian determinants' are to be calculated,
     ! given in 2D reference quadrilateral coordinates.
     real(DP), dimension(:,:), intent(IN) :: Dpts
   !</input>
