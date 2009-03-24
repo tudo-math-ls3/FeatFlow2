@@ -456,7 +456,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvOperatorBlock(RcoeffMatrices, ru, fcb_calcConvection,&
-                                         bZeroRowsum, bStabilise, bclear, rconvMatrix, rafcstab)
+                                         bStabilise, bclear, rconvMatrix, rafcstab)
     
 !<description>
     ! This subroutine assembles the discrete transport operator which results
@@ -478,12 +478,6 @@ contains
     ! problems which require the evaluation of the velocity
     type(t_vectorBlock), intent(IN) :: ru
     
-    ! Switch for row-sum property
-    ! TRUE  : assume zero row-sum, that is, the diegonal coefficient
-    !         is computed as the sum of negative off-diagonal coefficients
-    ! FALSE : compute the diagonal coefficient by standard finite elements
-    logical, intent(IN) :: bZeroRowsum
-
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
@@ -517,7 +511,7 @@ contains
     else
       
       call gfsc_buildConvOperatorScalar(RcoeffMatrices, ru%RvectorBlock(1),&
-                                        fcb_calcConvection, bZeroRowsum, bStabilise,&
+                                        fcb_calcConvection, bStabilise,&
                                         bclear, rconvMatrix, rafcstab)
 
     end if
@@ -529,7 +523,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvOperatorScalar(RcoeffMatrices, ru, fcb_calcConvection,&
-                                          bZeroRowsum, bStabilise, bclear, rconvMatrix, rafcstab)
+                                          bStabilise, bclear, rconvMatrix, rafcstab)
 
 !<description>
     ! This subroutine assembles the discrete transport operator which results
@@ -572,12 +566,6 @@ contains
     ! problems which require the evaluation of the velocity
     type(t_vectorScalar), intent(IN) :: ru
 
-    ! Switch for row-sum property
-    ! TRUE  : assume zero row-sum, that is, the diegonal coefficient
-    !         is computed as the sum of negative off-diagonal coefficients
-    ! FALSE : compute the diagonal coefficient by standard finite elements
-    logical, intent(IN) :: bZeroRowsum
-
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
@@ -605,8 +593,8 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Cx, p_Cy, p_Cz, p_ConvOp, p_u
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal,p_IsuperdiagonalEdgesIdx
-    integer :: h_Ksep,ndim
+    integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Ksep, p_Kdiagonal, p_IsuperdiagonalEdgesIdx
+    integer :: h_Ksep, ndim
     
     
     ! Clear matrix?
@@ -674,99 +662,51 @@ contains
           
           ! Adopt orientation convention IJ, such that L_ij < L_ji
           ! and generate edge structure for the flux limiter
+                      
+          select case(ndim)
+          case (NDIM1D)
+            call doUpwindMat7_ordAFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                        p_Cx, p_u, p_ConvOp,&
+                                        p_IsuperdiagonalEdgesIdx,&
+                                        p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          case (NDIM2D)
+            call doUpwindMat7_ordAFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                        p_Cx, p_Cy, p_u, p_ConvOp,&
+                                        p_IsuperdiagonalEdgesIdx,&
+                                        p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          case (NDIM3D)
+            call doUpwindMat7_ordAFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                        p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                        p_IsuperdiagonalEdgesIdx,&
+                                        p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          end select
           
-          if (bZeroRowsum) then
-            
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindZRSMat7_ordAFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                             p_Cx, p_u, p_ConvOp,&
-                                             p_IsuperdiagonalEdgesIdx,&
-                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindZRSMat7_ordAFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                             p_Cx, p_Cy, p_u, p_ConvOp,&
-                                             p_IsuperdiagonalEdgesIdx,&
-                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindZRSMat7_ordAFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                             p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                             p_IsuperdiagonalEdgesIdx,&
-                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          else   ! bZeroRowsum
-            
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat7_ordAFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                          p_Cx, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindMat7_ordAFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                          p_Cx, p_Cy, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindMat7_ordAFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                          p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          end if   ! bZeroRowsum
-
           ! Set state of stabilisation
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION)
 
-        else   ! bhasOrientation
+        else   ! bhasOrientation == no
 
           ! Adopt no orientation convention and generate edge structure
-
-          if (bZeroRowsum) then
-            
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindZRSMat7_AFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                          p_Cx, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindZRSMat7_AFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                          p_Cx, p_Cy, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindZRSMat7_AFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                          p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          else   ! bZeroRowsum
-
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat7_AFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                       p_Cx, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindMat7_AFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                       p_Cx, p_Cy, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindMat7_AFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                       p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          end if   ! bZeroRowsum
+          
+          select case(ndim)
+          case (NDIM1D)
+            call doUpwindMat7_AFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                     p_Cx, p_u, p_ConvOp,&
+                                     p_IsuperdiagonalEdgesIdx,&
+                                     p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          case (NDIM2D)
+            call doUpwindMat7_AFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                     p_Cx, p_Cy, p_u, p_ConvOp,&
+                                     p_IsuperdiagonalEdgesIdx,&
+                                     p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          case (NDIM3D)
+            call doUpwindMat7_AFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                     p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                     p_IsuperdiagonalEdgesIdx,&
+                                     p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          end select
           
           ! Set state of stabilisation
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
@@ -774,74 +714,38 @@ contains
 
         end if   ! bhasOrientation
         
-      elseif (bStabilise) then   ! present(rafcstab)
+      elseif (bStabilise) then   ! present(rafcstab) == no
         
         ! Perform discrete upwinding but do not generate the edge data structure
 
-        if (bZeroRowsum) then
-          
-          select case(ndim)
-          case (NDIM1D)
-            call doUpwindZRSMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                    p_Cx, p_u, p_ConvOp)
-          case (NDIM2D)
-            call doUpwindZRSMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                    p_Cx, p_Cy, p_u, p_ConvOp)
-          case (NDIM3D)
-            call doUpwindZRSMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                    p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
-          end select
-          
-        else   ! bZeroRowsum
+        select case(ndim)
+        case (NDIM1D)
+          call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                               p_Cx, p_u, p_ConvOp)
+        case (NDIM2D)
+          call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                               p_Cx, p_Cy, p_u, p_ConvOp)
+        case (NDIM3D)
+          call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                               p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+        end select
 
-          select case(ndim)
-          case (NDIM1D)
-            call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                 p_Cx, p_u, p_ConvOp)
-          case (NDIM2D)
-            call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                 p_Cx, p_Cy, p_u, p_ConvOp)
-          case (NDIM3D)
-            call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                 p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
-          end select
-
-        end if   !bZeroRowsum
-
-      else   ! present(rafcstab) and bStabilise
+      else   ! present(rafcstab) == no and bStabilise == no
         
         ! Apply standard Galerkin discretisation
-
-        if (bZeroRowsum) then
-          
-          select case(ndim)
-          case (NDIM1D)
-            call doGalerkinZRSMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                      p_Cx, p_u, p_ConvOp)
-          case (NDIM2D)
-            call doGalerkinZRSMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                      p_Cx, p_Cy, p_u, p_ConvOp)
-          case (NDIM3D)
-            call doGalerkinZRSMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                      p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
-          end select
-
-        else   ! bZeroRowsum
-
-          select case(ndim)
-          case (NDIM1D)
-            call doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                   p_Cx, p_u, p_ConvOp)
-          case (NDIM2D)
-            call doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                   p_Cx, p_Cy, p_u, p_ConvOp)
-          case (NDIM3D)
-            call doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                   p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
-          end select
-
-        end if   ! bZeroRowsum
-
+        
+        select case(ndim)
+        case (NDIM1D)
+          call doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                 p_Cx, p_u, p_ConvOp)
+        case (NDIM2D)
+          call doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                 p_Cx, p_Cy, p_u, p_ConvOp)
+        case (NDIM3D)
+          call doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                 p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+        end select
+        
       end if   ! present(rafcstab)
 
 
@@ -884,98 +788,50 @@ contains
 
           ! Adopt orientation convention IJ, such that L_ij < L_ji 
           ! and generate edge structure for the flux limiter
-          if (bZeroRowsum) then
-            
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindZRSMat9_ordAFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                             rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
-                                             p_IsuperdiagonalEdgesIdx,&
-                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindZRSMat9_ordAFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                             rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
-                                             p_IsuperdiagonalEdgesIdx,&
-                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindZRSMat9_ordAFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                             rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                             p_IsuperdiagonalEdgesIdx,&
-                                             p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-            
-          else   ! bZeroRowsum
-
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat9_ordAFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                          rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindMat9_ordAFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindMat9_ordAFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          end if   ! bZeroRowsum
+          select case(ndim)
+          case (NDIM1D)
+            call doUpwindMat9_ordAFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                        rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
+                                        p_IsuperdiagonalEdgesIdx,&
+                                        p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          case (NDIM2D)
+            call doUpwindMat9_ordAFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                        rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
+                                        p_IsuperdiagonalEdgesIdx,&
+                                        p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          case (NDIM3D)
+            call doUpwindMat9_ordAFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                        rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                        p_IsuperdiagonalEdgesIdx,&
+                                        p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          end select
           
           ! Set state of stabilisation
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION)
 
-        else   ! bhasOrientation
+        else   ! bhasOrientation == no
 
           ! Adopt no orientation convention and generate edge structure
           
-          if (bZeroRowsum) then
-            
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindZRSMat9_AFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                          rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindZRSMat9_AFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindZRSMat9_AFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                          p_IsuperdiagonalEdgesIdx,&
-                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          else   ! bZeroRowsum
-
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat9_AFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                       rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindMat9_AFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                       rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindMat9_AFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                       rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          end if   ! bZeroRowsum
+          select case(ndim)
+          case (NDIM1D)
+            call doUpwindMat9_AFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                     rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
+                                     p_IsuperdiagonalEdgesIdx,&
+                                     p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          case (NDIM2D)
+            call doUpwindMat9_AFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                     rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
+                                     p_IsuperdiagonalEdgesIdx,&
+                                     p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          case (NDIM3D)
+            call doUpwindMat9_AFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                     rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                     p_IsuperdiagonalEdgesIdx,&
+                                     p_IverticesAtEdge, p_DcoefficientsAtEdge)
+          end select
           
           ! Set state of stabilisation
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
@@ -983,73 +839,37 @@ contains
 
         end if   ! bhasOrientation
           
-      elseif (bStabilise) then   ! present(rafcstab)
+      elseif (bStabilise) then   ! present(rafcstab) == no
         
         ! Perform discrete upwinding but do not generate the edge data structure
         
-        if (bZeroRowsum) then
-          
-          select case(ndim)
-          case (NDIM1D)
-            call doUpwindZRSMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                    rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
-          case (NDIM2D)
-            call doUpwindZRSMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                    rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
-          case (NDIM3D)
-            call doUpwindZRSMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                    rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
-          end select
-          
-        else   ! bZeroRowsum
-          
-          select case(ndim)
-          case (NDIM1D)
-            call doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                 rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
-          case (NDIM2D)
-            call doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                 rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
-          case (NDIM3D)
-            call doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                 rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
-          end select
-          
-        end if   ! bZeroRowsum
-        
-      else   ! present(rafcstab) and bStabilise
+        select case(ndim)
+        case (NDIM1D)
+          call doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                               rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
+        case (NDIM2D)
+          call doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                               rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
+        case (NDIM3D)
+          call doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                               rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+        end select
+                  
+      else   ! present(rafcstab) == no and bStabilise == no
         
         ! Apply standard Galerkin discretisation
         
-        if (bZeroRowsum) then
-          
-          select case(ndim)
-          case (NDIM1D)
-            call doGalerkinZRSMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                      rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
-          case (NDIM2D)
-            call doGalerkinZRSMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                      rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
-          case (NDIM3D)
-            call doGalerkinZRSMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                      rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
-          end select
-          
-        else   ! bZeroRowsum
-          
-          select case(ndim)
-          case (NDIM1D)
-            call doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                   rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
-          case (NDIM2D)
-            call doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                   rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
-          case (NDIM3D)
-            call doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                   rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
-          end select
-          
-        end if   ! bZeroRowsum
+        select case(ndim)
+        case (NDIM1D)
+          call doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                 rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
+        case (NDIM2D)
+          call doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                 rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
+        case (NDIM3D)
+          call doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                 rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+        end select
         
       end if   ! present(rafcstab)
       
@@ -1067,58 +887,7 @@ contains
   contains
 
     ! Here, the working routine follow
-    
-    !**************************************************************
-    ! Assemble high-order Galerkin operator K in 1D
-    ! and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-    
-    subroutine doGalerkinZRSMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
-
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-
-            
-      ! Loop over all rows
-      do i = 1, NEQ
         
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Assemble the global operator
-          K(ii) = K(ii)-k_ij
-          K(ij) = K(ij)+k_ij
-          K(ji) = K(ji)+k_ji
-          K(jj) = K(jj)-k_ji
-        end do
-      end do
-    end subroutine doGalerkinZRSMat7_1D
-
-    
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D.
     ! All matrices are stored in matrix format 7
@@ -1151,7 +920,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        K(ii) = K(ii)+k_ii
+        K(ii) = K(ii) + k_ii
 
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1169,65 +938,13 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij
-          K(ji) = K(ji)+k_ji
+          K(ij) = K(ij) + k_ij
+          K(ji) = K(ji) + k_ji
         end do
       end do
     end subroutine doGalerkinMat7_1D
 
     
-    !**************************************************************
-    ! Assemble high-order Galerkin operator K in 2D
-    ! and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-    
-    subroutine doGalerkinZRSMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-      
-            
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Assemble the global operator
-          K(ii) = K(ii)-k_ij
-          K(ij) = K(ij)+k_ij
-          K(ji) = K(ji)+k_ji
-          K(jj) = K(jj)-k_ji
-        end do
-      end do
-    end subroutine doGalerkinZRSMat7_2D
-
-
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D.
     ! All matrices are stored in matrix format 7
@@ -1260,7 +977,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        K(ii) = K(ii)+k_ii
+        K(ii) = K(ii) + k_ii
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1279,64 +996,13 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij
-          K(ji) = K(ji)+k_ji
+          K(ij) = K(ij) + k_ij
+          K(ji) = K(ji) + k_ji
         end do
       end do
     end subroutine doGalerkinMat7_2D
 
-
-    !**************************************************************
-    ! Assemble high-order Galerkin operator K in 3D
-    ! and assume zero row-sums
-    ! All matrices are stored in matrix format 7
     
-    subroutine doGalerkinZRSMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
-      
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-            
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Assemble the global operator
-          K(ii) = K(ii)-k_ij
-          K(ij) = K(ij)+k_ij 
-          K(ji) = K(ji)+k_ji
-          K(jj) = K(jj)-k_ji
-        end do
-      end do
-    end subroutine doGalerkinZRSMat7_3D
-
-
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D.
     ! All matrices are stored in matrix format 7
@@ -1369,7 +1035,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        K(ii) = K(ii)+k_ii
+        K(ii) = K(ii) + k_ii
 
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1389,64 +1055,13 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij
-          K(ji) = K(ji)+k_ji
+          K(ij) = K(ij) + k_ij
+          K(ji) = K(ji) + k_ji
         end do
       end do
     end subroutine doGalerkinMat7_3D
 
-
-    !**************************************************************
-    ! Assemble high-order Galerkin operator K in 1D
-    ! and assume zero row-sums
-    ! All matrices are stored in matrix format 9
     
-    subroutine doGalerkinZRSMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
-
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-      
-            
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Assemble the global operator
-          K(ii) = K(ii)-k_ij
-          K(ij) = K(ij)+k_ij 
-          K(ji) = K(ji)+k_ji
-          K(jj) = K(jj)-k_ji
-        end do
-      end do
-    end subroutine doGalerkinZRSMat9_1D
-
-
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D.
     ! All matrices are stored in matrix format 9
@@ -1479,7 +1094,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        K(ii) = K(ii)+k_ii
+        K(ii) = K(ii) + k_ii
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1497,65 +1112,13 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij
-          K(ji) = K(ji)+k_ji
+          K(ij) = K(ij) + k_ij
+          K(ji) = K(ji) + k_ji
         end do
       end do
     end subroutine doGalerkinMat9_1D
 
-
-    !**************************************************************
-    ! Assemble high-order Galerkin operator K in 2D
-    ! and assume zero row-sums
-    ! All matrices are stored in matrix format 9
     
-    subroutine doGalerkinZRSMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-      
-      
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Assemble the global operator
-          K(ii) = K(ii)-k_ij
-          K(ij) = K(ij)+k_ij 
-          K(ji) = K(ji)+k_ji
-          K(jj) = K(jj)-k_ji
-        end do
-      end do
-    end subroutine doGalerkinZRSMat9_2D
-
-
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D.
     ! All matrices are stored in matrix format 9
@@ -1588,7 +1151,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        K(ii) = K(ii)+k_ii
+        K(ii) = K(ii) + k_ii
 
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1607,66 +1170,13 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij
-          K(ji) = K(ji)+k_ji
+          K(ij) = K(ij) + k_ij
+          K(ji) = K(ji) + k_ji
         end do
       end do
     end subroutine doGalerkinMat9_2D
 
-
-    !**************************************************************
-    ! Assemble high-order Galerkin operator K in 3D
-    ! and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
     
-    subroutine doGalerkinZRSMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-      
-            
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Assemble the global operator
-          K(ii) = K(ii)-k_ij
-          K(ij) = K(ij)+k_ij 
-          K(ji) = K(ji)+k_ji
-          K(jj) = K(jj)-k_ji
-        end do
-      end do
-    end subroutine doGalerkinZRSMat9_3D
-
-
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D.
     ! All matrices are stored in matrix format 9
@@ -1699,7 +1209,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        K(ii) = K(ii)+k_ii
+        K(ii) = K(ii) + k_ii
 
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1719,71 +1229,13 @@ contains
           call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Assemble the global operator
-          K(ij) = K(ij)+k_ij
-          K(ji) = K(ji)+k_ji
+          K(ij) = K(ij) + k_ij
+          K(ji) = K(ji) + k_ji
         end do
       end do
     end subroutine doGalerkinMat9_3D
 
-
-    !**************************************************************
-    ! Assemble low-order operator L in 1D
-    ! and assume zero row-sum.
-    ! All matrices are stored in matrix format 7
     
-    subroutine doUpwindZRSMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
-
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-      
-      
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-        end do
-      end do
-    end subroutine doUpwindZRSMat7_1D
-
-
     !**************************************************************
     ! Assemble low-order operator L in 1D.
     ! All matrices are stored in matrix format 7
@@ -1816,7 +1268,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1837,78 +1289,19 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
         end do
       end do
     end subroutine doUpwindMat7_1D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L in 2D
-    ! and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
     
-    subroutine doUpwindZRSMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-      
-            
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-        end do
-      end do
-    end subroutine doUpwindZRSMat7_2D
-
-
+    
     !**************************************************************
     ! Assemble low-order operator L in 2D.
     ! All matrices are stored in matrix format 7
@@ -1941,7 +1334,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
 
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1963,79 +1356,19 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
         end do
       end do
     end subroutine doUpwindMat7_2D
 
-
-    !**************************************************************
-    ! Assemble low-order operator L in 3D
-    ! and assume zero row-sum.
-    ! All matrices are stored in matrix format 7
     
-    subroutine doUpwindZRSMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-
-            
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-        end do
-      end do
-    end subroutine doUpwindZRSMat7_3D
-
-
     !**************************************************************
     ! Assemble low-order operator L in 3D.
     ! All matrices are stored in matrix format 7
@@ -2068,7 +1401,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2091,77 +1424,19 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
         end do
       end do
     end subroutine doUpwindMat7_3D
 
     
-    !**************************************************************
-    ! Assemble low-order operator L in 1D
-    ! and assume zero row-sum.
-    ! All matrices are stored in matrix format 9
-    
-    subroutine doUpwindZRSMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
-
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-      
-            
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-        end do
-      end do
-    end subroutine doUpwindZRSMat9_1D
-
-
     !**************************************************************
     ! Assemble low-order operator L in 1D.
     ! All matrices are stored in matrix format 9
@@ -2194,7 +1469,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2215,78 +1490,19 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
         end do
       end do
     end subroutine doUpwindMat9_1D
 
-
-    !**************************************************************
-    ! Assemble low-order operator L in 2D
-    ! and assume zero row-sum.
-    ! All matrices are stored in matrix format 9
     
-    subroutine doUpwindZRSMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-      
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-        end do
-      end do
-    end subroutine doUpwindZRSMat9_2D
-
-
     !**************************************************************
     ! Assemble low-order operator L in 2D.
     ! All matrices are stored in matrix format 9
@@ -2319,7 +1535,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2341,79 +1557,19 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
         end do
       end do
     end subroutine doUpwindMat9_2D
 
-
-    !**************************************************************
-    ! Assemble low-order operator L in 3D
-    ! and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
     
-    subroutine doUpwindZRSMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-      
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,i,j
-      
-      
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-        end do
-      end do
-    end subroutine doUpwindZRSMat9_3D
-
-
     !**************************************************************
     ! Assemble low-order operator L in 3D.
     ! All matrices are stored in matrix format 9
@@ -2446,7 +1602,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2469,99 +1625,19 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
         end do
       end do
     end subroutine doUpwindMat9_3D
 
-
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data w/o edge
-    ! orientation in 1D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doUpwindZRSMat7_AFC_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L, &
-                                      IsuperdiagonalEdgesIdx,&
-                                      IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-      
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC w/o edge orientation
-          IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)          
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat7_AFC_1D
-
-
+    
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 1D.
@@ -2604,7 +1680,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -2628,14 +1704,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -2649,87 +1725,6 @@ contains
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
     end subroutine doUpwindMat7_AFC_1D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data w/o edge
-    ! orientation in 2D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doUpwindZRSMat7_AFC_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
-                                      IsuperdiagonalEdgesIdx,&
-                                      IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC w/o edge orientation
-          IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)          
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat7_AFC_2D
 
 
     !**************************************************************
@@ -2774,7 +1769,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -2799,14 +1794,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -2822,88 +1817,6 @@ contains
     end subroutine doUpwindMat7_AFC_2D
 
     
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data w/o edge
-    ! orientation in 3D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doUpwindZRSMat7_AFC_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
-                                      IsuperdiagonalEdgesIdx,&
-                                      IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC w/o edge orientation
-          IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)          
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat7_AFC_3D
-
-
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 3D.
@@ -2946,7 +1859,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -2972,14 +1885,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -2995,86 +1908,6 @@ contains
     end subroutine doUpwindMat7_AFC_3D
 
     
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data w/o edge
-    ! orientation in 1D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doUpwindZRSMat9_AFC_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-                                      Cx, u, L, IsuperdiagonalEdgesIdx,&
-                                      IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC w/o edge orientation
-          IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)          
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat9_AFC_1D
-
-
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 1D.
@@ -3117,7 +1950,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -3141,14 +1974,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3163,88 +1996,7 @@ contains
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
     end subroutine doUpwindMat9_AFC_1D
 
-
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data w/o edge
-    ! orientation in 2D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doUpwindZRSMat9_AFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
-                                      IsuperdiagonalEdgesIdx,&
-                                      IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC w/o edge orientation
-          IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)          
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat9_AFC_2D
-
-
+    
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 2D.
@@ -3270,7 +2022,7 @@ contains
       real(DP) :: d_ij,k_ii,k_ij,k_ji
       integer :: ii,ij,ji,jj,iedge,i,j
       
-      
+
       ! Initialize edge counter
       iedge = 0
 
@@ -3287,8 +2039,8 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
-        
+        L(ii) = L(ii) + k_ii
+                
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
         
@@ -3312,14 +2064,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3333,88 +2085,6 @@ contains
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
     end subroutine doUpwindMat9_AFC_2D
-
-
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data w/o edge 
-    ! orientation in 3D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doUpwindZRSMat9_AFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
-                                      IsuperdiagonalEdgesIdx,&
-                                      IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC w/o edge orientation
-          IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)          
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat9_AFC_3D
 
     
     !**************************************************************
@@ -3459,7 +2129,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -3485,14 +2155,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3507,92 +2177,7 @@ contains
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
     end subroutine doUpwindMat9_AFC_3D
 
-
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data with edge
-    ! orientation in 1D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doUpwindZRSMat7_ordAFC_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,&
-                                         IsuperdiagonalEdgesIdx,&
-                                         IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC with edge orientation
-          if (k_ij < k_ji) then
-            IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-            DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-          else
-            IverticesAtEdge(:,iedge)     =(/j, i, ji, ij/)
-            DcoefficientsAtEdge(:,iedge) =(/d_ij, k_ji, k_ij/)
-          end if
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat7_ordAFC_1D
-
-
+    
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 1D.
@@ -3635,7 +2220,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -3659,14 +2244,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3685,92 +2270,6 @@ contains
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
     end subroutine doUpwindMat7_ordAFC_1D
-    
-    
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data with edge
-    ! orientation in 2D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doUpwindZRSMat7_ordAFC_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
-                                         IsuperdiagonalEdgesIdx,&
-                                         IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC with edge orientation
-          if (k_ij < k_ji) then
-            IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-            DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-          else
-            IverticesAtEdge(:,iedge)     =(/j, i, ji, ij/)
-            DcoefficientsAtEdge(:,iedge) =(/d_ij, k_ji, k_ij/)
-          end if
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat7_ordAFC_2D
 
 
     !**************************************************************
@@ -3815,7 +2314,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -3840,14 +2339,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -3868,93 +2367,6 @@ contains
     end subroutine doUpwindMat7_ordAFC_2D
     
     
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data with edge
-    ! orientation in 3D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doUpwindZRSMat7_ordAFC_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
-                                         IsuperdiagonalEdgesIdx,&
-                                         IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kld(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC with edge orientation
-          if (k_ij < k_ji) then
-            IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-            DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-          else
-            IverticesAtEdge(:,iedge)     =(/j, i, ji, ij/)
-            DcoefficientsAtEdge(:,iedge) =(/d_ij, k_ji, k_ij/)
-          end if
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat7_ordAFC_3D
-
-
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 3D.
@@ -3997,7 +2409,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -4023,14 +2435,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -4051,91 +2463,6 @@ contains
     end subroutine doUpwindMat7_ordAFC_3D
     
     
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data with edge
-    ! orientation in 1D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doUpwindZRSMat9_ordAFC_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L, &
-                                         IsuperdiagonalEdgesIdx,&
-                                         IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC with edge orientation
-          if (k_ij < k_ji) then
-            IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-            DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-          else
-            IverticesAtEdge(:,iedge)     = (/j, i, ji, ij/)
-            DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ji, k_ij/)
-          end if
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat9_ordAFC_1D
-
-
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 1D.
@@ -4178,7 +2505,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -4202,14 +2529,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -4229,93 +2556,7 @@ contains
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
     end subroutine doUpwindMat9_ordAFC_1D
 
-
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data with edge
-    ! orientation in 2D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doUpwindZRSMat9_ordAFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
-                                         IsuperdiagonalEdgesIdx,&
-                                         IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC with edge orientation
-          if (k_ij < k_ji) then
-            IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-            DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-          else
-            IverticesAtEdge(:,iedge)     = (/j, i, ji, ij/)
-            DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ji, k_ij/)
-          end if
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat9_ordAFC_2D
-
-
+    
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 2D.
@@ -4358,7 +2599,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
 
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -4383,14 +2624,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -4410,93 +2651,6 @@ contains
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
     end subroutine doUpwindMat9_ordAFC_2D
 
-    
-    !**************************************************************
-    ! Assemble low-order operator L and AFC data with edge
-    ! orientation in 3D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doUpwindZRSMat9_ordAFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
-                                         IsuperdiagonalEdgesIdx,&
-                                         IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
-
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
-
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
-      
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Initialize edge counter
-      iedge = 0
-
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Set initial edge number for row I
-        IsuperdiagonalEdgesIdx(i) = iedge+1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
-
-          ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
-          ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
-          
-          ! Assemble the global operator
-          L(ii) = L(ii)-k_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-k_ji
-          
-          ! Increase edge counter
-          iedge = iedge+1
-          
-          ! AFC with edge orientation
-          if (k_ij < k_ji) then
-            IverticesAtEdge(:,iedge)     = (/i, j, ij, ji/)
-            DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-          else
-            IverticesAtEdge(:,iedge)     = (/j, i, ji, ij/)
-            DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ji, k_ij/)
-          end if
-        end do
-      end do
-      
-      ! Set index for last entry
-      IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindZRSMat9_ordAFC_3D
-    
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
@@ -4540,7 +2694,7 @@ contains
         call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
         
         ! Update the diagonal coefficient
-        L(ii) = L(ii)+k_ii
+        L(ii) = L(ii) + k_ii
         
         ! Set initial edge number for row I
         IsuperdiagonalEdgesIdx(i) = iedge+1
@@ -4566,14 +2720,14 @@ contains
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
           
           ! Apply artificial diffusion
-          k_ij = k_ij+d_ij
-          k_ji = k_ji+d_ij
+          k_ij = k_ij + d_ij
+          k_ji = k_ji + d_ij
           
           ! Assemble the global operator
-          L(ii) = L(ii)-d_ij
-          L(ij) = L(ij)+k_ij 
-          L(ji) = L(ji)+k_ji
-          L(jj) = L(jj)-d_ij
+          L(ii) = L(ii) - d_ij
+          L(ij) = L(ij) + k_ij 
+          L(ji) = L(ji) + k_ji
+          L(jj) = L(jj) - d_ij
           
           ! Increase edge counter
           iedge = iedge+1
@@ -4600,7 +2754,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildDiffusionOperator(rcoeffMatrix, bStabilise, bclear,&
-                                          rdiffMatrix, rafcstab)
+                                         rdiffMatrix, rafcstab)
 
 !<description>
     ! This subroutine assembles the diffusive part of the discrete
