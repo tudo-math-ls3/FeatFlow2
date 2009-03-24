@@ -10,64 +10,85 @@
 !# The following callback functions are available:
 !#
 !# 1.) euler_calcFluxGalerkin3d
-!#     -> compute inviscid fluxes for standard Galerkin scheme
+!#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#
-!# 2.) euler_calcFluxTVD3d
-!#     -> compute inviscid fluxes for TVD scheme
+!# 2.) euler_calcFluxGalerkinNoBdr3d
+!#     -> Computes inviscid fluxes for standard Galerkin scheme
+!#        without assembling the symmetric boundary contribution
 !#
 !# 3.) euler_calcFluxScalarDiss3d
-!#     -> compute inviscid fluxes for low-order discretization
+!#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting scalar artificial viscosities
 !#
-!# 4.) euler_calcFluxTensorDiss3d
-!#     -> compute inviscid fluxes for low-order discretization
+!# 4.) euler_calcFluxDSplitScalarDiss3d
+!#     -> Computes inviscid fluxes for low-order discretization
+!#        adopting scalar artificial viscosities based on
+!#        dimensional splitting approach
+!#
+!# 5.) euler_calcFluxTensorDiss3d
+!#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting tensorial artificial viscosities
 !#
-!# 5.) euler_calcFluxRusanov3d
-!#     -> compute inviscid fluxes for low-order discretization
+!# 6.) euler_calcFluxDSplitTensorDiss3d
+!#     -> Computes inviscid fluxes for low-order discretization
+!#        adopting tensorial artificial viscosities based on
+!#        dimensional splitting approach
+!#
+!# 7.) euler_calcFluxRusanov3d
+!#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting the Rusanov artificial diffusion
 !#
-!# 6.) euler_calcMatrixGalerkinDiag3d
-!#     -> compute local matrices for standard Galerkin scheme
+!# 8.) euler_calcFluxDSplitRusanov3d
+!#     -> Computes inviscid fluxes for low-order discretization
+!#        adopting the Rusanov artificial diffusion
 !#
-!# 7.) euler_calcMatrixGalerkin3d
-!#     -> compute local matrices for standard Galerkin scheme
+!# 9.) euler_calcMatrixDiagonalDiag3d
+!#     -> Computes local matrix for diagonal entry
 !#
-!# 8.) euler_calcMatrixScalarDissDiag3d
-!#     -> compute local matrices for low-order discretization
-!#        adopting scalar artificial viscosities
+!# 10.) euler_calcMatrixDiagonal3d
+!#      -> Computes local matrix for diagonal entry
 !#
-!# 9.) euler_calcMatrixScalarDiss3d
-!#     -> compute local matrices for low-order discretization
-!#        adopting scalar artificial viscosities
+!# 11.) euler_calcMatrixGalerkinDiag3d
+!#      -> Computes local matrices for standard Galerkin scheme
 !#
-!# 10.) euler_calcMatrixTensorDissDiag3d
-!#      -> compute local matrices for low-order discretization
+!# 12.) euler_calcMatrixGalerkin3d
+!#      -> Computes local matrices for standard Galerkin scheme
+!#
+!# 13.) euler_calcMatrixScalarDissDiag3d
+!#      -> Computes local matrices for low-order discretization
+!#         adopting scalar artificial viscosities
+!#
+!# 14.) euler_calcMatrixScalarDiss3d
+!#      -> Computes local matrices for low-order discretization
+!#         adopting scalar artificial viscosities
+!#
+!# 15.) euler_calcMatrixTensorDissDiag3d
+!#      -> Computes local matrices for low-order discretization
 !#         adopting tensorial artificial viscosities
 !#
-!# 11.) euler_calcMatrixTensorDiss3d
-!#      -> compute local matrices for low-order discretization
+!# 16.) euler_calcMatrixTensorDiss3d
+!#      -> Computes local matrices for low-order discretization
 !#         adopting tensorial artificial viscosities
 !#
-!# 12.) euler_calcMatrixRusanovDiag3d
-!#      -> compute local matrices for low-order discretization
+!# 17.) euler_calcMatrixRusanovDiag3d
+!#      -> Computes local matrices for low-order discretization
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 13.) euler_calcMatrixRusanov3d
-!#      -> compute local matrices for low-order discretization
+!# 18.) euler_calcMatrixRusanov3d
+!#      -> Computes local matrices for low-order discretization
 !#         adopting the Rusanov flux artificial viscosities
 !#
-!# 14.) euler_calcCharacteristics3d
-!#      -> compute characteristic variables in 3D
+!# 19.) euler_calcCharacteristics3d
+!#      -> Computes characteristic variables in 3D
 !#
-!# 15.) euler_calcBoundaryvalues3d
-!#      -> compute the boundary values for a given node
+!# 20.) euler_calcBoundaryvalues3d
+!#      -> Computes the boundary values for a given node
 !#
-!# 16.) euler_hadaptCallbackScalar3d
+!# 21.) euler_hadaptCallbackScalar3d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 3D, whereby the vector is stored in interleave format
 !#
-!# 17.) euler_hadaptCallbackBlock3d
+!# 22.) euler_hadaptCallbackBlock3d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 3D, whereby the vector is stored in block format
 !#
@@ -96,10 +117,15 @@ module euler_callback3d
 
   private
   public :: euler_calcFluxGalerkin3d
-  public :: euler_calcFluxTVD3d
+  public :: euler_calcFluxGalerkinNoBdr3d
   public :: euler_calcFluxScalarDiss3d
+  public :: euler_calcFluxDSplitScalarDiss3d
   public :: euler_calcFluxTensorDiss3d
+  public :: euler_calcFluxDSplitTensorDiss3d
   public :: euler_calcFluxRusanov3d
+  public :: euler_calcFluxDSplitRusanov3d
+  public :: euler_calcMatrixDiagonalDiag3d
+  public :: euler_calcMatrixDiagonal3d
   public :: euler_calcMatrixGalerkinDiag3d
   public :: euler_calcMatrixGalerkin3d
   public :: euler_calcMatrixScalarDissDiag3d
@@ -123,17 +149,7 @@ contains
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard Galerkin 
-    ! discretization in 3D. Two different versions are implemented:
-    !
-    ! 1.) The Galerkin flux is computed as follows:
-    !          $F_{ij}=c_{ij}\cdot(F_i-F_j)$ 
-    !     and
-    !          $F_{ji}=c_{ji}\cdot(F_j-F_i)$
-    !
-    ! 2.) The Galerkin flux is computed as follows:
-    !          $F_{ij}=(A_{ij}+S_{ij})(U_i-U_j)$
-    !     and
-    !          $F_{ji}=(A_{ij}-S_{ij})(U_i-U_j)$
+    ! discretization in 3D.
 !</description>
 
 !<input>
@@ -153,147 +169,20 @@ contains
 !</output>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP), dimension(NVAR3D) :: F1_i, F2_i, F1_j,F2_j
-!!$    real(DP) :: p_i,p_j
-!!$
-!!$    ! Compute nodal pressure values
-!!$    p_i = G1*(U_i(4)-0.5_DP*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/U_i(1))
-!!$    p_j = G1*(U_j(4)-0.5_DP*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/U_j(1))
-!!$
-!!$    ! Compute fluxes for nodes i
-!!$    F1_i(1) = U_i(2)
-!!$    F1_i(2) = U_i(2)*U_i(2)/U_i(1) + p_i
-!!$    F1_i(3) = U_i(3)*U_i(2)/U_i(1)
-!!$    F1_i(4) = (U_i(4)+p_i)*U_i(2)/U_i(1)
-!!$
-!!$    F2_i(1) = U_i(3)
-!!$    F2_i(2) = U_i(2)*U_i(3)/U_i(1)
-!!$    F2_i(3) = U_i(3)*U_i(3)/U_i(1) + p_i
-!!$    F2_i(4) = (U_i(4)+p_i)*U_i(3)/U_i(1)
-!!$
-!!$    ! Compute fluxes for nodes j
-!!$    F1_j(1) = U_j(2)
-!!$    F1_j(2) = U_j(2)*U_j(2)/U_j(1) + p_j
-!!$    F1_j(3) = U_j(3)*U_j(2)/U_j(1)
-!!$    F1_j(4) = (U_j(4)+p_j)*U_j(2)/U_j(1)
-!!$
-!!$    F2_j(1) = U_j(3)
-!!$    F2_j(2) = U_j(2)*U_j(3)/U_j(1)
-!!$    F2_j(3) = U_j(3)*U_j(3)/U_j(1) + p_j
-!!$    F2_j(4) = (U_j(4)+p_j)*U_j(3)/U_j(1)
-!!$
-!!$    ! Assembly fluxes
-!!$    F_ij = dscale * (C_ij(1)*(F1_i-F1_j) + C_ij(2)*(F2_i-F2_j))
-!!$    F_ji = dscale * (C_ji(1)*(F1_j-F1_i) + C_ji(2)*(F2_j-F2_i))
-    
-!!$    ! local variables
-!!$    REAL(DP), DIMENSION(NVAR3D,NVAR3D) :: Roe
-!!$    REAL(DP), DIMENSION(NVAR3D) :: Diff,Daux
-!!$    REAL(DP), DIMENSION(NDIM3D) :: a,s
-!!$    REAL(DP) :: aux,aux1,aux2,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$
-!!$    ! Compute solution difference
-!!$    Diff = U_i-U_j
-!!$
-!!$    ! Compute Roe mean values
-!!$    aux  = SQRT(MAX(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1._DP)
-!!$    v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1._DP)
-!!$
-!!$    hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-!!$    hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-!!$    H_ij = (aux*hi+hj)/(aux+1._DP)
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ij-C_ji)
-!!$    s = 0.5_DP*(C_ij+C_ji)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1 = u_ij*a(1) + v_ij*a(2)
-!!$    aux2 = u_ij*s(1) + v_ij*s(2)
-!!$    u2   = u_ij*u_ij
-!!$    v2   = v_ij*v_ij
-!!$    uv   = u_ij*v_ij
-!!$    q_ij = 0.5_DP*(u2+v2)
-!!$
-!!$    ! Compute Roe matrix for the skew-symmetric/interior part
-!!$    Roe(1,1) =   0._DP
-!!$    Roe(2,1) =   (G1*q_ij-u2)*a(1)   - uv*a(2)
-!!$    Roe(3,1) = - uv*a(1)             + (G1*q_ij-v2)*a(2)
-!!$    Roe(4,1) =   (G1*q_ij-H_ij)*aux1
-!!$    
-!!$    Roe(1,2) =   a(1)
-!!$    Roe(2,2) =   aux1-G6*u_ij*a(1)
-!!$    Roe(3,2) =   v_ij*a(1)           - G1*u_ij*a(2)
-!!$    Roe(4,2) =   (H_ij-G1*u2)*a(1)   - G1*uv*a(2)
-!!$    
-!!$    Roe(1,3) =                         a(2)
-!!$    Roe(2,3) = - G1*v_ij*a(1)        + u_ij*a(2)
-!!$    Roe(3,3) =                         aux1-G6*v_ij*a(2)
-!!$    Roe(4,3) = - G1*uv*a(1)          + (H_ij-G1*v2)*a(2)
-!!$
-!!$    Roe(1,4) =   0._DP
-!!$    Roe(2,4) =   G1*a(1)
-!!$    Roe(3,4) =                         G1*a(2)
-!!$    Roe(4,4) =   GAMMA*aux1
-!!$
-!!$    ! Compute Roe*(u_i-u_j) for skew-symmetric/interior part
-!!$    CALL DGEMV('n', NVAR3D, NVAR3D, dscale, Roe,&
-!!$                    NVAR3D, Diff, 1, 0._DP, F_ij, 1)
-!!$
-!!$    ! Check if boundary integral vanishes
-!!$    IF (ABS(s(1))+ABS(s(2)) .NE. 0._DP) THEN
-!!$
-!!$      ! Compute Roe matrix for the symmetric/boundary part
-!!$      Roe(1,1) =   0._DP
-!!$      Roe(2,1) =   (G1*q_ij-u2)*s(1)   - uv*s(2)
-!!$      Roe(3,1) = - uv*s(1)             + (G1*q_ij-v2)*s(2)
-!!$      Roe(4,1) =   (G1*q_ij-H_ij)*aux2
-!!$      
-!!$      Roe(1,2) =   s(1)
-!!$      Roe(2,2) =   aux2-G6*u_ij*s(1)
-!!$      Roe(3,2) =   v_ij*s(1)           - G1*u_ij*s(2)
-!!$      Roe(4,2) =   (H_ij-G1*u2)*s(1)   - G1*uv*s(2)
-!!$      
-!!$      Roe(1,3) =                         s(2)
-!!$      Roe(2,3) = - G1*v_ij*s(1)        + u_ij*s(2)
-!!$      Roe(3,3) =                         aux2-G6*v_ij*s(2)
-!!$      Roe(4,3) = - G1*uv*s(1)          + (H_ij-G1*v2)*s(2)
-!!$      
-!!$      Roe(1,4) =   0._DP
-!!$      Roe(2,4) =   G1*s(1)
-!!$      Roe(3,4) =                         G1*s(2)
-!!$      Roe(4,4) =   GAMMA*aux2
-!!$      
-!!$      ! Compute Roe*(u_i-u_j) for symmetric/boundary part
-!!$      CALL DGEMV('n', NVAR3D, NVAR3D, dscale, Roe,&
-!!$                      NVAR3D, Diff, 1, 0._DP, Daux, 1)
-!!$
-!!$      ! Assemble fluxes from skew-symmetric and symmetric parts
-!!$      F_ji = F_ij-Daux
-!!$      F_ij = F_ij+Daux
-!!$
-!!$    ELSE
-!!$      
-!!$      ! Assemble fluxes only skew-symmetric part
-!!$      F_ji = F_ij
-!!$
-!!$    END IF
   end subroutine euler_calcFluxGalerkin3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcFluxTVD3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxGalerkinNoBdr3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
-    ! This subroutine computes the inviscid fluxes 
-    ! for the TVD discretization in 3D.
-    !
-    ! This is actually the skew-symmetic part of the standard
-    ! Galerkin discretization $F_{ij}=A_{ij}(U_j-U_i)=F_{ji}$.
+    ! This subroutine computes the inviscid fluxes for the TVD
+    ! discretization in 3D. The symmetric boundary contributions
+    ! are neglected and incorporated in the antidiffusive flux.
+    ! Hence, this is simply the standard Galerkin flux for the
+    ! skew-symmetric internal contributions.
 !</description>
 
 !<input>
@@ -313,62 +202,7 @@ contains
 !</output>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP), dimension(NVAR3D,NVAR3D) :: Roe
-!!$    real(DP), dimension(NVAR3D) :: Diff
-!!$    real(DP), dimension(NDIM3D) :: a
-!!$    real(DP) :: aux,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$
-!!$    ! Compute solution difference
-!!$    Diff = U_i-U_j
-!!$
-!!$    ! Compute Roe mean values
-!!$    aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1._DP)
-!!$    v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1._DP)
-!!$
-!!$    hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-!!$    hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-!!$    H_ij = (aux*hi+hj)/(aux+1._DP)
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ij-C_ji)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux  = u_ij*a(1) + v_ij*a(2)
-!!$    u2   = u_ij*u_ij
-!!$    v2   = v_ij*v_ij
-!!$    uv   = u_ij*v_ij
-!!$    q_ij = 0.5_DP*(u2+v2)
-!!$
-!!$    ! Compute Roe matrix
-!!$    Roe(1,1) =   0._DP
-!!$    Roe(2,1) =   (G1*q_ij-u2)*a(1)  - uv*a(2)
-!!$    Roe(3,1) = - uv*a(1)            + (G1*q_ij-v2)*a(2)
-!!$    Roe(4,1) =   (G1*q_ij-H_ij)*aux
-!!$    
-!!$    Roe(1,2) =   a(1)
-!!$    Roe(2,2) =   aux-G6*u_ij*a(1)
-!!$    Roe(3,2) =   v_ij*a(1)          - G1*u_ij*a(2)
-!!$    Roe(4,2) =   (H_ij-G1*u2)*a(1)  - G1*uv*a(2)
-!!$    
-!!$    Roe(1,3) =                        a(2)
-!!$    Roe(2,3) = - G1*v_ij*a(1)       + u_ij*a(2)
-!!$    Roe(3,3) =                        aux-G6*v_ij*a(2)
-!!$    Roe(4,3) = - G1*uv*a(1)         + (H_ij-G1*v2)*a(2)
-!!$
-!!$    Roe(1,4) =   0._DP
-!!$    Roe(2,4) =   G1*a(1)
-!!$    Roe(3,4) =                        G1*a(2)
-!!$    Roe(4,4) =   GAMMA*aux
-!!$
-!!$    ! Compute Roe*(u_j-u_i) for skew-symmetric part
-!!$    call DGEMV('n', NVAR3D, NVAR3D, dscale, Roe,&
-!!$                    NVAR3D, Diff, 1, 0._DP, F_ij, 1)
-!!$
-!!$    ! Assemble fluxes
-!!$    F_ji = F_ij
-  end subroutine euler_calcFluxTVD3d
+  end subroutine euler_calcFluxGalerkinNoBdr3d
 
   !*****************************************************************************
 
@@ -379,13 +213,6 @@ contains
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 3D using scalar dissipation.
-    !
-    ! This is actually the skew-symmetic part of the standard
-    ! Galerkin discretization plus some artificial viscosities
-    ! proportional to the spectral radius of the Roe matrix:
-    !      $F_{ij}=(A_{ij)+S_{ij}-d_{ij}I)(U_i-U_j)$
-    ! and
-    !      $F_{ji}=(A_{ij}-S_{ij}+d_{ij}I)(U_i-U_j)$
 !</description>
 
 !<input>
@@ -405,103 +232,38 @@ contains
 !</output>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP), dimension(NVAR3D,NVAR3D) :: Roe
-!!$    real(DP), dimension(NVAR3D) :: Diff,Daux
-!!$    real(DP), dimension(NDIM3D) :: a,s
-!!$    real(DP) :: aux,aux1,aux2,u2,v2,uv,hi,hj,d_ij,cs_ij,H_ij,q_ij,u_ij,v_ij
-!!$
-!!$    ! Compute solution difference
-!!$    Diff = U_i-U_j
-!!$
-!!$    ! Compute Roe mean values
-!!$    aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1._DP)
-!!$    v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1._DP)
-!!$
-!!$    hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-!!$    hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-!!$    H_ij = (aux*hi+hj)/(aux+1._DP)
-!!$
-!!$    ! Compute coefficient
-!!$    a = 0.5_DP*(C_ij-C_ji)
-!!$    s = 0.5_DP*(C_ij+C_ji)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1  = u_ij*a(1) + v_ij*a(2)
-!!$    aux2  = u_ij*s(1) + v_ij*s(2)
-!!$    u2    = u_ij*u_ij
-!!$    v2    = v_ij*v_ij
-!!$    uv    = u_ij*v_ij
-!!$    q_ij  = 0.5_DP*(u2+v2)
-!!$    cs_ij = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
-!!$
-!!$    ! Compute Roe matrix for the skew-symmetric part
-!!$    Roe(1,1) =   0._DP
-!!$    Roe(2,1) =   (G1*q_ij-u2)*a(1)  - uv*a(2)
-!!$    Roe(3,1) = - uv*a(1)            + (G1*q_ij-v2)*a(2)
-!!$    Roe(4,1) =   (G1*q_ij-H_ij)*aux1
-!!$    
-!!$    Roe(1,2) =   a(1)
-!!$    Roe(2,2) =   aux1-G6*u_ij*a(1)
-!!$    Roe(3,2) =   v_ij*a(1)          - G1*u_ij*a(2)
-!!$    Roe(4,2) =   (H_ij-G1*u2)*a(1)  - G1*uv*a(2)
-!!$    
-!!$    Roe(1,3) =                        a(2)
-!!$    Roe(2,3) = - G1*v_ij*a(1)       + u_ij*a(2)
-!!$    Roe(3,3) =                        aux1-G6*v_ij*a(2)
-!!$    Roe(4,3) = - G1*uv*a(1)         + (H_ij-G1*v2)*a(2)
-!!$
-!!$    Roe(1,4) =   0._DP
-!!$    Roe(2,4) =   G1*a(1)
-!!$    Roe(3,4) =                        G1*a(2)
-!!$    Roe(4,4) =   GAMMA*aux1
-!!$
-!!$    ! Compute Roe*(u_i-u_j) for skew-symmetric/interior part
-!!$    call DGEMV('n', NVAR3D, NVAR3D, dscale, Roe,&
-!!$                    NVAR3D, Diff, 1, 0._DP, F_ij, 1)
-!!$
-!!$    ! Scalar dissipation
-!!$    d_ij = dscale*(abs(aux1) + cs_ij*sqrt(a(1)*a(1)+a(2)*a(2)))
-!!$
-!!$    ! Assemble fluxes from symmetric part and artificial viscosity
-!!$    F_ji = F_ij+d_ij*Diff
-!!$    F_ij = F_ij-d_ij*Diff
-!!$
-!!$    ! Check if boundary integral vanishes
-!!$    if (abs(s(1))+abs(s(2)) .ne. 0._DP) then
-!!$
-!!$      ! Compute Roe matrix for the symmetric part (if required)
-!!$      Roe(1,1) =   0._DP
-!!$      Roe(2,1) =   (G1*q_ij-u2)*s(1)   - uv*s(2)
-!!$      Roe(3,1) = - uv*s(1)             + (G1*q_ij-v2)*s(2)
-!!$      Roe(4,1) =   (G1*q_ij-H_ij)*aux2
-!!$      
-!!$      Roe(1,2) =   s(1)
-!!$      Roe(2,2) =   aux2-G6*u_ij*s(1)
-!!$      Roe(3,2) =   v_ij*s(1)           - G1*u_ij*s(2)
-!!$      Roe(4,2) =   (H_ij-G1*u2)*s(1)   - G1*uv*s(2)
-!!$      
-!!$      Roe(1,3) =                         s(2)
-!!$      Roe(2,3) = - G1*v_ij*s(1)        + u_ij*s(2)
-!!$      Roe(3,3) =                         aux2-G6*v_ij*s(2)
-!!$      Roe(4,3) = - G1*uv*s(1)          + (H_ij-G1*v2)*s(2)
-!!$      
-!!$      Roe(1,4) =   0._DP
-!!$      Roe(2,4) =   G1*s(1)
-!!$      Roe(3,4) =                         G1*s(2)
-!!$      Roe(4,4) =   GAMMA*aux2
-!!$      
-!!$      ! Compute Roe*(u_i-u_j) for symmetric/boundary part
-!!$      call DGEMV('n', NVAR3D, NVAR3D, dscale, Roe,&
-!!$                      NVAR3D, Diff, 1, 0._DP, Daux, 1)
-!!$
-!!$      ! Assemble fluxes from symmetric part
-!!$      F_ij = F_ij+Daux
-!!$      F_ji = F_ji-Daux
-!!$
-!!$    end if
   end subroutine euler_calcFluxScalarDiss3d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcFluxDSplitScalarDiss3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 3D using scalar dissipation,
+    ! whereby dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(IN) :: U_i,U_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling coefficient
+    real(DP), intent(IN) :: dscale
+!</input>
+
+!<output>
+    ! inviscid fluxes
+    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+!</output>
+!</subroutine>
+
+  end subroutine euler_calcFluxDSplitScalarDiss3d
 
   !*****************************************************************************
 
@@ -512,12 +274,6 @@ contains
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 3D using tensorial dissipation.
-    !
-    ! This is actually the skew-symmetic part of the standard
-    ! Galerkin discretization plus some artificial viscosities
-    !      $F_{ij}=(A_{ij)+S_{ij}-D_{ij})(U_i-U_j)$
-    ! and
-    !      $F_{ji}=(A_{ij}-S_{ij}+D_{ij})(U_i-U_j)$
 !</description>
 
 !<input>
@@ -537,199 +293,38 @@ contains
 !</output>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP), dimension(NVAR3D,NVAR3D) :: Roe,L_ij,R_ij,D_ij
-!!$    real(DP), dimension(NVAR3D) :: Diff,Daux
-!!$    real(DP), dimension(NDIM3D) :: a,s
-!!$    real(DP) :: aux,aux1,aux2,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$    real(DP) :: l1,l2,l3,l4,vel,cnrm,cx,cy,c2,cs_ij
-!!$
-!!$    ! Compute solution difference
-!!$    Diff = U_i-U_j
-!!$
-!!$    ! Compute Roe mean values
-!!$    aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1._DP)
-!!$    v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1._DP)
-!!$    hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-!!$    hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-!!$    H_ij = (aux*hi+hj)/(aux+1._DP)
-!!$
-!!$    ! Compute coefficient
-!!$    a = 0.5_DP*(C_ij-C_ji)
-!!$    s = 0.5_DP*(C_ij+C_ji)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1  = u_ij*a(1) + v_ij*a(2)
-!!$    aux2  = u_ij*s(1) + v_ij*s(2)
-!!$    u2    = u_ij*u_ij
-!!$    v2    = v_ij*v_ij
-!!$    uv    = u_ij*v_ij
-!!$    q_ij  = 0.5_DP*(u2+v2)
-!!$
-!!$    ! Compute Roe matrix for the skew-symmetric part
-!!$    Roe(1,1) =   0._DP
-!!$    Roe(2,1) =   (G1*q_ij-u2)*a(1)  - uv*a(2)
-!!$    Roe(3,1) = - uv*a(1)            + (G1*q_ij-v2)*a(2)
-!!$    Roe(4,1) =   (G1*q_ij-H_ij)*aux1
-!!$    
-!!$    Roe(1,2) =   a(1)
-!!$    Roe(2,2) =   aux1-G6*u_ij*a(1)
-!!$    Roe(3,2) =   v_ij*a(1)          - G1*u_ij*a(2)
-!!$    Roe(4,2) =   (H_ij-G1*u2)*a(1)  - G1*uv*a(2)
-!!$    
-!!$    Roe(1,3) =                        a(2)
-!!$    Roe(2,3) = - G1*v_ij*a(1)       + u_ij*a(2)
-!!$    Roe(3,3) =                        aux1-G6*v_ij*a(2)
-!!$    Roe(4,3) = - G1*uv*a(1)         + (H_ij-G1*v2)*a(2)
-!!$
-!!$    Roe(1,4) =   0._DP
-!!$    Roe(2,4) =   G1*a(1)
-!!$    Roe(3,4) =                        G1*a(2)
-!!$    Roe(4,4) =   GAMMA*aux1
-!!$
-!!$    ! Compute Roe*(u_i-u_j) for skew-symmetric/interior part
-!!$    call DGEMV('n', NVAR3D, NVAR3D, dscale, Roe,&
-!!$                    NVAR3D, diff, 1, 0._DP, F_ij, 1)
-!!$    
-!!$    ! Characteristic velocity
-!!$    cnrm = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$    if (cnrm .ne. 0._DP) then
-!!$      
-!!$      ! Compute auxiliary variables
-!!$      cx  = a(1)/cnrm
-!!$      cy  = a(2)/cnrm
-!!$      vel = cx*u_ij+cy*v_ij
-!!$      
-!!$      ! Compute speed of sound
-!!$      c2    = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-!!$      cs_ij = sqrt(c2)
-!!$      
-!!$      ! Diagonal matrix of eigenvalues
-!!$      l1 = abs(vel-cs_ij)
-!!$      l2 = abs(vel)
-!!$      l3 = abs(vel+cs_ij)
-!!$      l4 = abs(vel)
-!!$      
-!!$      ! Matrix of right eigenvectors multiplied by the diagonal
-!!$      ! matrix of real eigenvalues from the left |Lbd_{ij}|*R_{ij}
-!!$      R_ij(1,1) =  l1
-!!$      R_ij(2,1) =  l1*(u_ij-cs_ij*cx)
-!!$      R_ij(3,1) =  l1*(v_ij-cs_ij*cy)
-!!$      R_ij(4,1) =  l1*(H_ij-cs_ij*vel)
-!!$      
-!!$      R_ij(1,2) =  l2
-!!$      R_ij(2,2) =  l2*u_ij
-!!$      R_ij(3,2) =  l2*v_ij
-!!$      R_ij(4,2) =  l2*q_ij
-!!$      
-!!$      R_ij(1,3) =  l3
-!!$      R_ij(2,3) =  l3*(u_ij+cs_ij*cx)
-!!$      R_ij(3,3) =  l3*(v_ij+cs_ij*cy)
-!!$      R_ij(4,3) =  l3*(H_ij+cs_ij*vel)
-!!$      
-!!$      R_ij(1,4) =  0._DP
-!!$      R_ij(2,4) =  l4*cy
-!!$      R_ij(3,4) = -l4*cx
-!!$      R_ij(4,4) =  l4*(u_ij*cy-v_ij*cx)
-!!$      
-!!$      if (abs(cx) > abs(cy)) then
-!!$        ! Matrix of left eigenvectors if C(x) is largest coefficient
-!!$        L_ij(1,1) = 0.5_DP*(G1*q_ij+cs_ij*vel)/c2
-!!$        L_ij(2,1) = (c2-G1*q_ij)/c2
-!!$        L_ij(3,1) = 0.5_DP*(G1*q_ij-cs_ij*vel)/c2
-!!$        L_ij(4,1) = (v_ij-vel*cy)/cx
-!!$        
-!!$        L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs_ij*cx)/c2
-!!$        L_ij(2,2) = G1*u_ij/c2
-!!$        L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs_ij*cx)/c2
-!!$        L_ij(4,2) = cy
-!!$        
-!!$        L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs_ij*cy)/c2
-!!$        L_ij(2,3) = G1*v_ij/c2
-!!$        L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs_ij*cy)/c2
-!!$        L_ij(4,3) = (cy*cy-1)/cx
-!!$        
-!!$        L_ij(1,4) =  G2/c2
-!!$        L_ij(2,4) = -G1/c2
-!!$        L_ij(3,4) =  G2/c2
-!!$        L_ij(4,4) =  0.0_DP
-!!$      else
-!!$        ! Matrix of left eigenvectors if C(Y) is largest coefficient
-!!$        L_ij(1,1) = 0.5_DP*(G1*q_ij+cs_ij*vel)/c2
-!!$        L_ij(2,1) = (c2-G1*q_ij)/c2
-!!$        L_ij(3,1) = 0.5_DP*(G1*q_ij-cs_ij*vel)/c2
-!!$        L_ij(4,1) = (vel*cx-u_ij)/cy
-!!$        
-!!$        L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs_ij*cx)/c2
-!!$        L_ij(2,2) = G1*u_ij/c2
-!!$        L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs_ij*cx)/c2
-!!$        L_ij(4,2) = (1-cx*cx)/cy
-!!$        
-!!$        L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs_ij*cy)/c2
-!!$        L_ij(2,3) = G1*v_ij/c2
-!!$        L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs_ij*cy)/c2
-!!$        L_ij(4,3) = -cx
-!!$        
-!!$        L_ij(1,4) =  G2/c2
-!!$        L_ij(2,4) = -G1/c2
-!!$        L_ij(3,4) =  G2/c2
-!!$        L_ij(4,4) =  0.0_DP
-!!$      end if
-!!$      
-!!$      ! Compute D_ij = R_ij*|Lbd_ij|*L_ij
-!!$      call DGEMM('n', 'n', NVAR3D, NVAR3D, NVAR3D, cnrm,&
-!!$                     R_ij, NVAR3D, L_ij, NVAR3D, 0._DP, D_ij, NVAR3D)
-!!$      
-!!$      ! Compute D_ij*(u_i-u_j)
-!!$      call DGEMV('n', NVAR3D, NVAR3D, dscale, D_ij,&
-!!$                      NVAR3D, diff, 1, 0._DP, Daux, 1)
-!!$
-!!$      ! Assemble fluxes
-!!$      F_ji = F_ij+Daux
-!!$      F_ij = F_ij-Daux
-!!$
-!!$    else
-!!$
-!!$      ! Set flux and neglect diffusive contribution
-!!$      F_ji = F_ij
-!!$
-!!$    end if
-!!$    
-!!$    ! Check if boundary integral vanishes
-!!$    if (abs(s(1))+abs(s(2)) .ne. 0._DP) then
-!!$
-!!$      ! Compute Roe matrix for the symmetric part (if required)
-!!$      Roe(1,1) =   0._DP
-!!$      Roe(2,1) =   (G1*q_ij-u2)*s(1)   - uv*s(2)
-!!$      Roe(3,1) = - uv*s(1)             + (G1*q_ij-v2)*s(2)
-!!$      Roe(4,1) =   (G1*q_ij-H_ij)*aux2
-!!$      
-!!$      Roe(1,2) =   s(1)
-!!$      Roe(2,2) =   aux2-G6*u_ij*s(1)
-!!$      Roe(3,2) =   v_ij*s(1)           - G1*u_ij*s(2)
-!!$      Roe(4,2) =   (H_ij-G1*u2)*s(1)   - G1*uv*s(2)
-!!$      
-!!$      Roe(1,3) =                         s(2)
-!!$      Roe(2,3) = - G1*v_ij*s(1)        + u_ij*s(2)
-!!$      Roe(3,3) =                         aux2-G6*v_ij*s(2)
-!!$      Roe(4,3) = - G1*uv*s(1)          + (H_ij-G1*v2)*s(2)
-!!$      
-!!$      Roe(1,4) =   0._DP
-!!$      Roe(2,4) =   G1*s(1)
-!!$      Roe(3,4) =                         G1*s(2)
-!!$      Roe(4,4) =   GAMMA*aux2
-!!$      
-!!$      ! Compute Roe*(u_i-u_j) for symmetric/boundary part
-!!$      call DGEMV('n', NVAR3D, NVAR3D, dscale, Roe,&
-!!$                      NVAR3D, diff, 1, 0._DP, Daux, 1)
-!!$
-!!$      ! Assemble fluxes
-!!$      F_ij = F_ij+Daux
-!!$      F_ji = F_ji-Daux
-!!$      
-!!$    end if
   end subroutine euler_calcFluxTensorDiss3d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcFluxDSplitTensorDiss3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 3D using tensorial dissipation,
+    ! whereby dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(IN) :: U_i,U_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling coefficient
+    real(DP), intent(IN) :: dscale
+!</input>
+
+!<output>
+    ! inviscid fluxes
+    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+!</output>
+!</subroutine>
+
+  end subroutine euler_calcFluxDSplitTensorDiss3d
 
   !*****************************************************************************
 
@@ -759,80 +354,107 @@ contains
 !</output>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
-!!$    real(DP), dimension(NVAR2D) :: Diff
-!!$    real(DP), dimension(NDIM2D) :: a
-!!$    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-!!$    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Evaluate the Galerkin fluxes
-!!$    ! For a detailed description of algorithm and the definition of auxiliary
-!!$    ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
-!!$    !---------------------------------------------------------------------------
-!!$    
-!!$    ! Compute auxiliary values
-!!$    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
-!!$    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
-!!$    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
-!!$    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
-!!$    
-!!$    ! Compute fluxes for x-direction
-!!$    dF1_ij(1) = U_i(2)                             - U_j(2)
-!!$    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
-!!$    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
-!!$    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
-!!$
-!!$    ! Compute fluxes for y-direction
-!!$    dF2_ij(1) = U_i(3)                             - U_j(3)
-!!$    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-!!$    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
-!!$    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
-!!$
-!!$    ! Assembly fluxes
-!!$    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
-!!$    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
-!!$
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Evaluate the scalar dissipation 
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    ! Compute skew-symmetric coefficient
-!!$    a = 0.5_DP*(C_ij-C_ji)
-!!$
-!!$    ! Compute enthalpy
-!!$    hi = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-!!$    hj = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux  = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$    aux1 = aux3*a(1) + aux4*a(2)
-!!$    aux2 = aux7*a(1) + aux8*a(2)
-!!$    aux5 = sqrt(max(-G1*(0.5_DP*(aux3*aux3+aux4*aux4)-hi), SYS_EPSREAL))
-!!$    aux6 = sqrt(max(-G1*(0.5_DP*(aux7*aux7+aux8*aux8)-hj), SYS_EPSREAL))
-!!$    
-!!$    ! Scalar dissipation for the Rusanov flux
-!!$    d_ij = dscale*max( abs(aux1) + aux5*aux, abs(aux2) + aux6*aux)
-!!$
-!!$    ! Multiply the solution difference by the artificial diffusion factor
-!!$    Diff = d_ij*(U_j-U_i)
-!!$
-!!$    ! Add the artificial diffusion to the fluxes
-!!$    F_ij = F_ij+Diff
-!!$    F_ji = F_ji-Diff
-
   end subroutine euler_calcFluxRusanov3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag3d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
+  subroutine euler_calcFluxDSplitRusanov3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
 
 !<description>
-    ! This subroutine computes the diagonal of the local Roe matrices in 3D
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 3D using the Rusanov dissipation,
+    ! whereby dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(IN) :: U_i,U_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling coefficient
+    real(DP), intent(IN) :: dscale
+!</input>
+
+!<output>
+    ! inviscid fluxes
+    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+!</output>
+!</subroutine>
+
+  end subroutine euler_calcFluxDSplitRusanov3d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcMatrixDiagonalDiag3d(U_i, C_ii, dscale, K_ii)
+
+!<description>
+    ! This subroutine computes the diagonal of the Galerkin matrices
+    ! for the diagonal block of the global operator in 3D
+!</description>
+
+!<input>
+    ! local solution at node I
+    real(DP), dimension(:), intent(IN) :: U_i
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ii
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
+!</input>
+
+!<output>
+    ! local Jacobian matrix
+    real(DP), dimension(:), intent(OUT) :: K_ii
+!</output>
+!</subroutine>
+
+  end subroutine euler_calcMatrixDiagonalDiag3d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcMatrixDiagonal3d(U_i, C_ii, dscale, K_ii)
+
+!<description>
+    ! This subroutine computes the Galerkin matrices for the diagonal
+    ! block of the global operator in 3D
+!</description>
+
+!<input>
+    ! local solution at node I
+    real(DP), dimension(:), intent(IN) :: U_i
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ii
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
+!</input>
+
+!<output>
+    ! local Jacobian matrix
+    real(DP), dimension(:), intent(OUT) :: K_ii
+!</output>
+!</subroutine>
+
+  end subroutine euler_calcMatrixDiagonal3d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcMatrixGalerkinDiag3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+
+!<description>
+    ! This subroutine computes the diagonal of the Galerkin matrices in 3D
 !</description>
 
 !<input>
@@ -848,48 +470,20 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: A_ij,S_ij
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
-!!$    ! local variable
-!!$    real(DP), dimension(NDIM3D) :: a,s
-!!$    real(DP) :: aux,aux1,aux2,u_ij,v_ij
-!!$
-!!$    ! Compute Roe mean values
-!!$    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
-!!$    v_ij = ( aux*U_i(3)/U_i(1)+U_j(3)/U_j(1) )/(aux+1._DP)
-!!$    
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij)
-!!$    s = 0.5_DP*(C_ij+C_ji)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1 = u_ij*a(1) + v_ij*a(2)
-!!$    aux2 = u_ij*s(1) + v_ij*s(2)
-!!$
-!!$    ! Compute diagonal Roe matrix for skew-symmetric part
-!!$    A_ij(1) = 0._DP
-!!$    A_ij(2) = aux1-G6*u_ij*a(1)
-!!$    A_ij(3) = aux1-G6*v_ij*a(2)
-!!$    A_ij(4) = GAMMA*aux1
-!!$
-!!$    ! Compute diagonal Roe matrix for symmetric part
-!!$    S_ij(1) = 0._DP
-!!$    S_ij(2) = aux2-G6*u_ij*s(1)
-!!$    S_ij(3) = aux2-G6*v_ij*s(2)
-!!$    S_ij(4) = GAMMA*aux2
   end subroutine euler_calcMatrixGalerkinDiag3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin3d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
+  subroutine euler_calcMatrixGalerkin3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
-    ! This subroutine computes the local Roe matrices in 3D
+     ! This subroutine computes the Galerkin matrices in 3D
 !</description>
 
 !<input>
@@ -905,87 +499,20 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: A_ij,S_ij
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP), dimension(NDIM3D) :: a,s
-!!$    real(DP) :: aux,aux1,aux2,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$    
-!!$    ! Compute Roe mean values
-!!$    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
-!!$    v_ij = ( aux*U_i(3)/U_i(1)+U_j(3)/U_j(1) )/(aux+1._DP)
-!!$    hi   =   GAMMA*U_i(4)/U_i(1)-&
-!!$             G2*( U_i(2)*U_i(2)+U_i(3)*U_i(3) )/(U_i(1)*U_i(1))
-!!$    hj   =   GAMMA*U_j(4)/U_j(1)-&
-!!$             G2*( U_j(2)*U_j(2)+U_j(3)*U_j(3) )/(U_j(1)*U_j(1))
-!!$    H_ij = ( aux*hi+hj )/(aux+1._DP)
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij)
-!!$    s = 0.5_DP*(C_ij+C_ji)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1 = u_ij*a(1) + v_ij*a(2)
-!!$    aux2 = u_ij*s(1) + v_ij*s(2)
-!!$    u2   = u_ij*u_ij
-!!$    v2   = v_ij*v_ij
-!!$    uv   = u_ij*v_ij
-!!$    q_ij = 0.5_DP*(u2+v2)
-!!$    
-!!$    ! Compute Roe matrix for skew-symmetric part
-!!$    A_ij( 1) =   0._DP
-!!$    A_ij( 2) =   (G1*q_ij-u2)*a(1)   - uv*a(2)
-!!$    A_ij( 3) = - uv*a(1)             + (G1*q_ij-v2)*a(2)
-!!$    A_ij( 4) =   (G1*q_ij-H_ij)*aux1
-!!$    
-!!$    A_ij( 5) =   a(1)
-!!$    A_ij( 6) =   aux1-G6*u_ij*a(1)
-!!$    A_ij( 7) =   v_ij*a(1)           - G1*u_ij*a(2)
-!!$    A_ij( 8) =   (H_ij-G1*u2)*a(1)   - G1*uv*a(2)
-!!$    
-!!$    A_ij( 9) =                         a(2)
-!!$    A_ij(10) = - G1*v_ij*a(1)        + u_ij*a(2)
-!!$    A_ij(11) =                         aux1-G6*v_ij*a(2)
-!!$    A_ij(12) = - G1*uv*a(1)          + (H_ij-G1*v2)*a(2)
-!!$
-!!$    A_ij(13) =   0._DP
-!!$    A_ij(14) =   G1*a(1)
-!!$    A_ij(15) =                         G1*a(2)
-!!$    A_ij(16) =   GAMMA*aux1
-!!$
-!!$    ! Compute Roe matrix for symmetric part
-!!$    S_ij( 1) =   0._DP
-!!$    S_ij( 2) =   (G1*q_ij-u2)*s(1)   - uv*s(2)
-!!$    S_ij( 3) = - uv*s(1)             + (G1*q_ij-v2)*s(2)
-!!$    S_ij( 4) =   (G1*q_ij-H_ij)*aux2
-!!$    
-!!$    S_ij( 5) =   s(1)
-!!$    S_ij( 6) =   aux2-G6*u_ij*s(1)
-!!$    S_ij( 7) =   v_ij*s(1)           - G1*u_ij*s(2)
-!!$    S_ij( 8) =   (H_ij-G1*u2)*s(1)   - G1*uv*s(2)
-!!$    
-!!$    S_ij( 9) =                         s(2)
-!!$    S_ij(10) = - G1*v_ij*s(1)        + u_ij*s(2)
-!!$    S_ij(11) =                         aux2-G6*v_ij*s(2)
-!!$    S_ij(12) = - G1*uv*s(1)          + (H_ij-G1*v2)*s(2)
-!!$
-!!$    S_ij(13) =   0._DP
-!!$    S_ij(14) =   G1*s(1)
-!!$    S_ij(15) =                         G1*s(2)
-!!$    S_ij(16) =   GAMMA*aux2
   end subroutine euler_calcMatrixGalerkin3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag3d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
+  subroutine euler_calcMatrixScalarDissDiag3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
-    ! This subroutine computes the diagonal of the local Roe matrices 
+    ! This subroutine computes the diagonal of the Galerkin matrices
     ! and applies scalar artificial viscosities in 3D
 !</description>
 
@@ -1002,55 +529,20 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: A_ij,S_ij
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
-!!$    ! local variable
-!!$    real(DP), dimension(NDIM3D) :: a
-!!$    real(DP) :: aux,aux1,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$    real(DP) :: cnrm,cs_ij,vel
-!!$
-!!$    ! Compute Roe mean values
-!!$    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
-!!$    v_ij = ( aux*U_i(3)/U_i(1)+U_j(3)/U_j(1) )/(aux+1._DP)
-!!$    hi   =   GAMMA*U_i(4)/U_i(1)-&
-!!$             G2*( U_i(2)*U_i(2)+U_i(3)*U_i(3) )/(U_i(1)*U_i(1))
-!!$    hj   =   GAMMA*U_j(4)/U_j(1)-&
-!!$             G2*( U_j(2)*U_j(2)+U_j(3)*U_j(3) )/(U_j(1)*U_j(1))
-!!$    H_ij = ( aux*hi+hj )/(aux+1._DP)
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1  = u_ij*a(1) + v_ij*a(2)
-!!$    q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-!!$
-!!$    ! Compute diagonal Roe matrix for skew-symmetric part
-!!$    A_ij(1) = 0._DP
-!!$    A_ij(2) = aux1-G6*u_ij*a(1)
-!!$    A_ij(3) = aux1-G6*v_ij*a(2)
-!!$    A_ij(4) = GAMMA*aux1
-!!$
-!!$    ! Compute auxiliary variables
-!!$    cs_ij = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
-!!$    cnrm  = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$    vel   = a(1)*u_ij+a(2)*v_ij
-!!$
-!!$    ! Compute scalar viscosities
-!!$    S_ij(1:4) = -abs(vel)-cnrm*cs_ij
   end subroutine euler_calcMatrixScalarDissDiag3d
 
 !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss3d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
+  subroutine euler_calcMatrixScalarDiss3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
-    ! This subroutine computes the local Roe matrices
+    ! This subroutine computes the Galerkin matrices
     ! and applies scalar artificial viscosities in 3D
 !</description>
 
@@ -1067,77 +559,20 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: A_ij,S_ij
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP), dimension(NDIM3D) :: a
-!!$    real(DP) :: aux,aux1,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$    real(DP) :: cnrm,cs_ij,vel
-!!$    
-!!$    ! Compute Roe mean values
-!!$    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
-!!$    v_ij = ( aux*U_i(3)/U_i(1)+U_j(3)/U_j(1) )/(aux+1._DP)
-!!$    hi   =   GAMMA*U_i(4)/U_i(1)-&
-!!$             G2*( U_i(2)*U_i(2)+U_i(3)*U_i(3) )/(U_i(1)*U_i(1))
-!!$    hj   =   GAMMA*U_j(4)/U_j(1)-&
-!!$             G2*( U_j(2)*U_j(2)+U_j(3)*U_j(3) )/(U_j(1)*U_j(1))
-!!$    H_ij = ( aux*hi+hj )/(aux+1._DP)
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1 = u_ij*a(1) + v_ij*a(2)
-!!$    u2   = u_ij*u_ij
-!!$    v2   = v_ij*v_ij
-!!$    uv   = u_ij*v_ij
-!!$    q_ij = 0.5_DP*(u2+v2)
-!!$    
-!!$    ! Compute Roe matrix for skew-symmetric part
-!!$    A_ij( 1) =   0._DP
-!!$    A_ij( 2) =   (G1*q_ij-u2)*a(1)   - uv*a(2)
-!!$    A_ij( 3) = - uv*a(1)             + (G1*q_ij-v2)*a(2)
-!!$    A_ij( 4) =   (G1*q_ij-H_ij)*aux1
-!!$    
-!!$    A_ij( 5) =   a(1)
-!!$    A_ij( 6) =   aux1-G6*u_ij*a(1)
-!!$    A_ij( 7) =   v_ij*a(1)           - G1*u_ij*a(2)
-!!$    A_ij( 8) =   (H_ij-G1*u2)*a(1)   - G1*uv*a(2)
-!!$    
-!!$    A_ij( 9) =                         a(2)
-!!$    A_ij(10) = - G1*v_ij*a(1)        + u_ij*a(2)
-!!$    A_ij(11) =                         aux1-G6*v_ij*a(2)
-!!$    A_ij(12) = - G1*uv*a(1)          + (H_ij-G1*v2)*a(2)
-!!$
-!!$    A_ij(13) =   0._DP
-!!$    A_ij(14) =   G1*a(1)
-!!$    A_ij(15) =                         G1*a(2)
-!!$    A_ij(16) =   GAMMA*aux1
-!!$
-!!$    ! Compute auxiliary variables
-!!$    cs_ij = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
-!!$    cnrm  = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$    vel   = a(1)*u_ij+a(2)*v_ij
-!!$
-!!$    ! Compute scalar viscosities
-!!$    S_ij     = 0._DP
-!!$    S_ij( 1) = -abs(vel)-cnrm*cs_ij
-!!$    S_ij( 6) = -abs(vel)-cnrm*cs_ij
-!!$    S_ij(11) = -abs(vel)-cnrm*cs_ij
-!!$    S_ij(16) = -abs(vel)-cnrm*cs_ij
   end subroutine euler_calcMatrixScalarDiss3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag3d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
+  subroutine euler_calcMatrixTensorDissDiag3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
-!<description>
-    ! This subroutine computes the diagonal of the local Roe matrices 
+    !<description>
+    ! This subroutine computes the Galerkin matrices
     ! and applies tensorial artificial viscosities in 3D
 !</description>
 
@@ -1154,149 +589,20 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: A_ij,S_ij
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
-!!$    ! local variable
-!!$    real(DP), dimension(NVAR3D,NVAR3D) :: R_ij,L_ij
-!!$    real(DP), dimension(NDIM3D) :: a
-!!$    real(DP) :: aux,aux1,u2,v2,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$    real(DP) :: l1,l2,l3,l4,cnrm,cx,cy,cs_ij,c2,vel
-!!$
-!!$    ! Compute Roe mean values
-!!$    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
-!!$    v_ij = ( aux*U_i(3)/U_i(1)+U_j(3)/U_j(1) )/(aux+1._DP)
-!!$    hi   =   GAMMA*U_i(4)/U_i(1)-&
-!!$             G2*( U_i(2)*U_i(2)+U_i(3)*U_i(3) )/(U_i(1)*U_i(1))
-!!$    hj   =   GAMMA*U_j(4)/U_j(1)-&
-!!$             G2*( U_j(2)*U_j(2)+U_j(3)*U_j(3) )/(U_j(1)*U_j(1))
-!!$    H_ij = ( aux*hi+hj )/(aux+1._DP)
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1  = u_ij*a(1) + v_ij*a(2)
-!!$    u2    = u_ij*u_ij
-!!$    v2    = v_ij*v_ij
-!!$    q_ij  = 0.5_DP*(u2+v2)
-!!$    
-!!$    ! Compute diagonal Roe matrix for skew-symmetric part
-!!$    A_ij(1) = 0._DP
-!!$    A_ij(2) = aux1-G6*u_ij*a(1)
-!!$    A_ij(3) = aux1-G6*v_ij*a(2)
-!!$    A_ij(4) = GAMMA*aux1
-!!$
-!!$    ! Compute auxiliary variables
-!!$    cnrm = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$    if (cnrm .eq. 0._DP) return
-!!$    cx    = a(1)/cnrm
-!!$    cy    = a(2)/cnrm
-!!$    vel   = cx*u_ij+cy*v_ij
-!!$    c2    = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-!!$    cs_ij = sqrt(c2)
-!!$
-!!$    ! Diagonal matrix of eigenvalues
-!!$    l1 = abs(vel-cs_ij)
-!!$    l2 = abs(vel)
-!!$    l3 = abs(vel+cs_ij)
-!!$    l4 = abs(vel)
-!!$    
-!!$    ! Matrix of right eigenvectors
-!!$    R_ij(1,1) =  l1
-!!$    R_ij(2,1) =  l1*(u_ij-cs_ij*cx)
-!!$    R_ij(3,1) =  l1*(v_ij-cs_ij*cy)
-!!$    R_ij(4,1) =  l1*(H_ij-cs_ij*vel)
-!!$
-!!$    R_ij(1,2) =  l2
-!!$    R_ij(2,2) =  l2*u_ij
-!!$    R_ij(3,2) =  l2*v_ij
-!!$    R_ij(4,2) =  l2*q_ij
-!!$
-!!$    R_ij(1,3) =  l3
-!!$    R_ij(2,3) =  l3*(u_ij+cs_ij*cx)
-!!$    R_ij(3,3) =  l3*(v_ij+cs_ij*cy)
-!!$    R_ij(4,3) =  l3*(H_ij+cs_ij*vel)
-!!$
-!!$    R_ij(1,4) =  0.0_DP
-!!$    R_ij(2,4) =  l4*cy
-!!$    R_ij(3,4) = -l4*cx
-!!$    R_ij(4,4) =  l4*(u_ij*cy-v_ij*cx)
-!!$
-!!$    if (abs(cx) > abs(cy)) then
-!!$      ! Matrix of left eigenvectors if C(x) is largest coefficient
-!!$      L_ij(1,1) = 0.5_DP*(G1*q_ij+cs_ij*vel)/c2
-!!$      L_ij(2,1) = (c2-G1*q_ij)/c2
-!!$      L_ij(3,1) = 0.5_DP*(G1*q_ij-cs_ij*vel)/c2
-!!$      L_ij(4,1) = (v_ij-vel*cy)/cx
-!!$
-!!$      L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs_ij*cx)/c2
-!!$      L_ij(2,2) = G1*u_ij/c2
-!!$      L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs_ij*cx)/c2
-!!$      L_ij(4,2) = cy
-!!$
-!!$      L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs_ij*cy)/c2
-!!$      L_ij(2,3) = G1*v_ij/c2
-!!$      L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs_ij*cy)/c2
-!!$      L_ij(4,3) = (cy*cy-1)/cx
-!!$
-!!$      L_ij(1,4) =  G2/c2
-!!$      L_ij(2,4) = -G1/c2
-!!$      L_ij(3,4) =  G2/c2
-!!$      L_ij(4,4) =  0.0_DP
-!!$    else
-!!$      ! Matrix of left eigenvectors if C(Y) is largest coefficient
-!!$      L_ij(1,1) = 0.5_DP*(G1*q_ij+cs_ij*vel)/c2
-!!$      L_ij(2,1) = (c2-G1*q_ij)/c2
-!!$      L_ij(3,1) = 0.5_DP*(G1*q_ij-cs_ij*vel)/c2
-!!$      L_ij(4,1) = (vel*cx-u_ij)/cy
-!!$
-!!$      L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs_ij*cx)/c2
-!!$      L_ij(2,2) = G1*u_ij/c2
-!!$      L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs_ij*cx)/c2
-!!$      L_ij(4,2) = (1-cx*cx)/cy
-!!$      
-!!$      L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs_ij*cy)/c2
-!!$      L_ij(2,3) = G1*v_ij/c2
-!!$      L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs_ij*cy)/c2
-!!$      L_ij(4,3) = -cx
-!!$      
-!!$      L_ij(1,4) =  G2/c2
-!!$      L_ij(2,4) = -G1/c2
-!!$      L_ij(3,4) =  G2/c2
-!!$      L_ij(4,4) =  0.0_DP
-!!$    end if
-!!$
-!!$    ! Compute D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
-!!$    S_ij    = 0.0_DP
-!!$    S_ij(1) = -cnrm*( R_ij(1,1)*L_ij(1,1)+&
-!!$                      R_ij(1,2)*L_ij(2,1)+&
-!!$                      R_ij(1,3)*L_ij(3,1)+&
-!!$                      R_ij(1,4)*L_ij(4,1)  )
-!!$    S_ij(2) = -cnrm*( R_ij(2,1)*L_ij(1,2)+&
-!!$                      R_ij(2,2)*L_ij(2,2)+&
-!!$                      R_ij(2,3)*L_ij(3,2)+&
-!!$                      R_ij(2,4)*L_ij(4,2)  )
-!!$    S_ij(3) = -cnrm*( R_ij(3,1)*L_ij(1,3)+&
-!!$                      R_ij(3,2)*L_ij(2,3)+&
-!!$                      R_ij(3,3)*L_ij(3,3)+&
-!!$                      R_ij(3,4)*L_ij(4,3)  )
-!!$    S_ij(4) = -cnrm*( R_ij(4,1)*L_ij(1,4)+&
-!!$                      R_ij(4,2)*L_ij(2,4)+&
-!!$                      R_ij(4,3)*L_ij(3,4)+&
-!!$                      R_ij(4,4)*L_ij(4,4)  )
   end subroutine euler_calcMatrixTensorDissDiag3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss3d(U_i, U_j, C_ij, C_ji, dscale, A_ij, S_ij)
+  subroutine euler_calcMatrixTensorDiss3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
-    ! This subroutine computes the diagonal of the local Roe matrices 
+    ! This subroutine computes the Galerkin matrices
     ! and applies tensorial artificial viscosities in 3D
 !</description>
 
@@ -1313,149 +619,17 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: A_ij,S_ij
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
-!!$    ! local variable
-!!$    real(DP), dimension(NVAR3D,NVAR3D) :: R_ij,L_ij
-!!$    real(DP), dimension(NDIM3D) :: a
-!!$    real(DP) :: aux,aux1,u2,v2,uv,hi,hj,H_ij,q_ij,u_ij,v_ij
-!!$    real(DP) :: l1,l2,l3,l4,cnrm,cx,cy,c2,cs_ij,vel
-!!$
-!!$    ! Compute Roe mean values
-!!$    aux  =   sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = ( aux*U_i(2)/U_i(1)+U_j(2)/U_j(1) )/(aux+1._DP)
-!!$    v_ij = ( aux*U_i(3)/U_i(1)+U_j(3)/U_j(1) )/(aux+1._DP)
-!!$    hi   =   GAMMA*U_i(4)/U_i(1)-&
-!!$             G2*( U_i(2)*U_i(2)+U_i(3)*U_i(3) )/(U_i(1)*U_i(1))
-!!$    hj   =   GAMMA*U_j(4)/U_j(1)-&
-!!$             G2*( U_j(2)*U_j(2)+U_j(3)*U_j(3) )/(U_j(1)*U_j(1))
-!!$    H_ij = ( aux*hi+hj )/(aux+1._DP)
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij)
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1  = u_ij*a(1) + v_ij*a(2)
-!!$    u2    = u_ij*u_ij
-!!$    v2    = v_ij*v_ij
-!!$    uv    = u_ij*v_ij
-!!$    q_ij  = 0.5_DP*(u2+v2)
-!!$    
-!!$    ! Compute Roe matrix for skew-symmetric part
-!!$    A_ij( 1) =   0._DP
-!!$    A_ij( 2) =   (G1*q_ij-u2)*a(1)   - uv*a(2)
-!!$    A_ij( 3) = - uv*a(1)             + (G1*q_ij-v2)*a(2)
-!!$    A_ij( 4) =   (G1*q_ij-H_ij)*aux1
-!!$    
-!!$    A_ij( 5) =   a(1)
-!!$    A_ij( 6) =   aux1-G6*u_ij*a(1)
-!!$    A_ij( 7) =   v_ij*a(1)           - G1*u_ij*a(2)
-!!$    A_ij( 8) =   (H_ij-G1*u2)*a(1)   - G1*uv*a(2)
-!!$    
-!!$    A_ij( 9) =                         a(2)
-!!$    A_ij(10) = - G1*v_ij*a(1)        + u_ij*a(2)
-!!$    A_ij(11) =                         aux1-G6*v_ij*a(2)
-!!$    A_ij(12) = - G1*uv*a(1)          + (H_ij-G1*v2)*a(2)
-!!$
-!!$    A_ij(13) =   0._DP
-!!$    A_ij(14) =   G1*a(1)
-!!$    A_ij(15) =                         G1*a(2)
-!!$    A_ij(16) =   GAMMA*aux1
-!!$
-!!$    ! Characteristic velocity
-!!$    cnrm = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$    if (cnrm .eq. 0._DP) return
-!!$    cx    = a(1)/cnrm
-!!$    cy    = a(2)/cnrm
-!!$    vel   = cx*u_ij+cy*v_ij
-!!$
-!!$    ! Compute speed of sound
-!!$    c2    = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-!!$    cs_ij = sqrt(c2)
-!!$
-!!$    ! Diagonal matrix of eigenvalues
-!!$    l1 = abs(vel-cs_ij)
-!!$    l2 = abs(vel)
-!!$    l3 = abs(vel+cs_ij)
-!!$    l4 = abs(vel)
-!!$    
-!!$    ! Matrix of right eigenvectors
-!!$    R_ij(1,1) =  l1
-!!$    R_ij(2,1) =  l1*(u_ij-cs_ij*cx)
-!!$    R_ij(3,1) =  l1*(v_ij-cs_ij*cy)
-!!$    R_ij(4,1) =  l1*(H_ij-cs_ij*vel)
-!!$
-!!$    R_ij(1,2) =  l2
-!!$    R_ij(2,2) =  l2*u_ij
-!!$    R_ij(3,2) =  l2*v_ij
-!!$    R_ij(4,2) =  l2*q_ij
-!!$
-!!$    R_ij(1,3) =  l3
-!!$    R_ij(2,3) =  l3*(u_ij+cs_ij*cx)
-!!$    R_ij(3,3) =  l3*(v_ij+cs_ij*cy)
-!!$    R_ij(4,3) =  l3*(H_ij+cs_ij*vel)
-!!$
-!!$    R_ij(1,4) =  0.0_DP
-!!$    R_ij(2,4) =  l4*cy
-!!$    R_ij(3,4) = -l4*cx
-!!$    R_ij(4,4) =  l4*(u_ij*cy-v_ij*cx)
-!!$
-!!$    if (abs(cx) > abs(cy)) then
-!!$      ! Matrix of left eigenvectors if C(x) is largest coefficient
-!!$      L_ij(1,1) = 0.5_DP*(G1*q_ij+cs_ij*vel)/c2
-!!$      L_ij(2,1) = (c2-G1*q_ij)/c2
-!!$      L_ij(3,1) = 0.5_DP*(G1*q_ij-cs_ij*vel)/c2
-!!$      L_ij(4,1) = (v_ij-vel*cy)/cx
-!!$
-!!$      L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs_ij*cx)/c2
-!!$      L_ij(2,2) = G1*u_ij/c2
-!!$      L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs_ij*cx)/c2
-!!$      L_ij(4,2) = cy
-!!$
-!!$      L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs_ij*cy)/c2
-!!$      L_ij(2,3) = G1*v_ij/c2
-!!$      L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs_ij*cy)/c2
-!!$      L_ij(4,3) = (cy*cy-1)/cx
-!!$
-!!$      L_ij(1,4) =  G2/c2
-!!$      L_ij(2,4) = -G1/c2
-!!$      L_ij(3,4) =  G2/c2
-!!$      L_ij(4,4) =  0.0_DP
-!!$    else
-!!$      ! Matrix of left eigenvectors if C(Y) is largest coefficient
-!!$      L_ij(1,1) = 0.5_DP*(G1*q_ij+cs_ij*vel)/c2
-!!$      L_ij(2,1) = (c2-G1*q_ij)/c2
-!!$      L_ij(3,1) = 0.5_DP*(G1*q_ij-cs_ij*vel)/c2
-!!$      L_ij(4,1) = (vel*cx-u_ij)/cy
-!!$
-!!$      L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs_ij*cx)/c2
-!!$      L_ij(2,2) = G1*u_ij/c2
-!!$      L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs_ij*cx)/c2
-!!$      L_ij(4,2) = (1-cx*cx)/cy
-!!$      
-!!$      L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs_ij*cy)/c2
-!!$      L_ij(2,3) = G1*v_ij/c2
-!!$      L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs_ij*cy)/c2
-!!$      L_ij(4,3) = -cx
-!!$      
-!!$      L_ij(1,4) =  G2/c2
-!!$      L_ij(2,4) = -G1/c2
-!!$      L_ij(3,4) =  G2/c2
-!!$      L_ij(4,4) =  0.0_DP
-!!$    end if
-!!$
-!!$    ! Compute D_ij = R_ij*|Lbd_ij|*L_ij
-!!$    call DGEMM('n', 'n', NVAR3D, NVAR3D, NVAR3D, -cnrm,&
-!!$               R_ij, NVAR3D, L_ij, NVAR3D, 0._DP, S_ij, NVAR3D)
   end subroutine euler_calcMatrixTensorDiss3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanovDiag3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
+  subroutine euler_calcMatrixRusanovDiag3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1475,51 +649,9 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
-
-!!$    ! local variable
-!!$    real(DP), dimension(NDIM2D) :: a
-!!$    real(DP) :: anorm,aux1,aux2,hi,hj,ui,uj,vi,vj,d_ij
-!!$
-!!$    ! Compute auxiliary variables
-!!$    ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1)
-!!$    uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1)
-!!$
-!!$    ! Compute Galerkin coefficient K_ij
-!!$    K_ij(1) = 0.0_DP
-!!$    K_ij(2) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-!!$    K_ij(3) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-!!$    K_ij(4) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
-!!$
-!!$    ! Compute Galerkin coefficient K_ji
-!!$    K_ji(1) = 0.0_DP
-!!$    K_ji(2) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-!!$    K_ji(3) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-!!$    K_ji(4) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
-!!$
-!!$    ! Compute skew-symmetric coefficient and its norm
-!!$    a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$
-!!$    if (anorm .gt. SYS_EPSREAL) then
-!!$      
-!!$      ! Compute enthalpy
-!!$      hi   = GAMMA*U_i(4)/U_i(1)-G2*(ui*ui+vi*vi)
-!!$      hj   = GAMMA*U_j(4)/U_j(1)-G2*(uj*uj+vj*vj)
-!!$      
-!!$      ! Compute auxiliary values
-!!$      aux1 = abs(a(1)*ui+a(2)*vi) + anorm*sqrt(max(-G1*(ui*ui+vi*vi-hi), SYS_EPSREAL))
-!!$      aux2 = abs(a(1)*uj+a(2)*vj) + anorm*sqrt(max(-G1*(uj*uj+vj*vj-hj), SYS_EPSREAL))
-!!$
-!!$      ! Compute scalar dissipation
-!!$      d_ij = dscale*max(aux1,aux2)
-!!$      
-!!$      ! Apply scalar dissipation
-!!$      K_ij = K_ij - d_ij
-!!$      K_ji = K_ji - d_ij
-!!$
-!!$    end if
 
   end subroutine euler_calcMatrixRusanovDiag3d
 
@@ -1527,7 +659,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanov3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji)
+  subroutine euler_calcMatrixRusanov3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1547,91 +679,9 @@ contains
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij, K_ji
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
-
-!!$    ! local variable
-!!$    real(DP), dimension(NDIM2D) :: a
-!!$    real(DP) :: anorm,aux,hi,hj,d_ij
-!!$    real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-!!$
-!!$    ! Compute auxiliary variables
-!!$    ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
-!!$    uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
-!!$
-!!$    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   uPow2i = vi*vi
-!!$    uvj = uj*vj;   qj = uj*uj+vj*vj;   uPow2j = uj*uj;   vPow2j = vj*vj
-!!$
-!!$    aux1 = uj*C_ij(1)+vj*C_ij(2)
-!!$    aux2 = ui*C_ji(1)+vi*C_ji(2)
-!!$    
-!!$    ! Compute Galerkin coefficient K_ij
-!!$    K_ij( 1) = 0.0_DP
-!!$    K_ij( 2) = dscale*((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
-!!$    K_ij( 3) = dscale*((G2*qj-vPow2j)*C_ij(2)-uvj*C_ij(1))
-!!$    K_ij( 4) = dscale*(G1*qj-GAMMA*Ej)*aux1
-!!$
-!!$    K_ij( 5) = dscale*C_ij(1)
-!!$    K_ij( 6) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-!!$    K_ij( 7) = dscale*(vj*C_ij(1)-G1*uj*C_ij(2))
-!!$    K_ij( 8) = dscale*((GAMMA*Ej-G2*qj)*C_ij(1)-G1*uj*aux1)
-!!$
-!!$    K_ij( 9) = dscale*C_ij(2)
-!!$    K_ij(10) = dscale*(uj*C_ij(2)-G1*vj*C_ij(1))
-!!$    K_ij(11) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-!!$    K_ij(12) = dscale*((GAMMA*Ej-G2*qj)*C_ij(2)-G1*vj*aux1)
-!!$
-!!$    K_ij(13) = 0.0_DP
-!!$    K_ij(14) = dscale*G1*C_ij(1)
-!!$    K_ij(15) = dscale*G1*C_ij(2)
-!!$    K_ij(16) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
-!!$
-!!$    ! Compute Galerkin coefficient K_ji
-!!$    K_ji( 1) = 0.0_DP
-!!$    K_ji( 2) = dscale*((G1*qi-uPow2i)*C_ji(1)-uvi*C_ji(2))
-!!$    K_ji( 3) = dscale*((G1*qi-vPow2i)*C_ji(2)-uvi*C_ji(1))
-!!$    K_ji( 4) = dscale*(G1*qi-GAMMA*Ei)*aux2
-!!$
-!!$    K_ji( 5) = dscale*C_ji(1)
-!!$    K_ji( 6) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-!!$    K_ji( 7) = dscale*(vi*C_ji(1)-G1*ui*C_ji(2))
-!!$    K_ji( 8) = dscale*((GAMMA*Ei-G2*qi)*C_ji(1)-G1*ui*aux2)
-!!$
-!!$    K_ji( 9) = dscale*C_ji(2)
-!!$    K_ji(10) = dscale*(ui*C_ji(2)-G1*vi*C_ji(1))
-!!$    K_ji(11) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-!!$    K_ji(12) = dscale*((GAMMA*Ei-G2*qi)*C_ji(2)-G1*vi*aux2)
-!!$
-!!$    K_ji(13) = 0.0_DP
-!!$    K_ji(14) = dscale*G1*C_ji(1)
-!!$    K_ji(15) = dscale*G1*C_ji(2)
-!!$    K_ji(16) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
-!!$
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$
-!!$    if (anorm .gt. SYS_EPSREAL) then
-!!$      
-!!$      ! Compute auxiliary values
-!!$      aux1 = abs(a(1)*ui+a(2)*vi) + anorm*sqrt(max(-G1*(qi-hi), SYS_EPSREAL))
-!!$      aux2 = abs(a(1)*uj+a(2)*vj) + anorm*sqrt(max(-G1*(qj-hj), SYS_EPSREAL))
-!!$      
-!!$      ! Compute scalar dissipation
-!!$      d_ij = dscale*max(aux1, aux2)
-!!$      
-!!$      ! Apply scalar dissipation
-!!$      K_ij( 1) = K_ij( 1) - d_ij
-!!$      K_ij( 6) = K_ij( 6) - d_ij
-!!$      K_ij(11) = K_ij(11) - d_ij
-!!$      K_ij(16) = K_ij(16) - d_ij
-!!$
-!!$      K_ji( 1) = K_ji( 1) - d_ij
-!!$      K_ji( 6) = K_ji( 6) - d_ij
-!!$      K_ji(11) = K_ji(11) - d_ij
-!!$      K_ji(16) = K_ji(16) - d_ij
-!!$
-!!$    end if
 
   end subroutine euler_calcMatrixRusanov3d
 
@@ -1668,156 +718,6 @@ contains
 !</output>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP) :: u_ij,v_ij,H_ij,q_ij,c_ij,aux,hi,hj,c2,u2,v2,cx,cy,cnrm,vel
-!!$    real(DP), dimension(NVAR3D) :: diff
-!!$
-!!$    ! Roe mean values
-!!$    aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-!!$    u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1._DP)
-!!$    v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1._DP)
-!!$
-!!$    hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-!!$    hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-!!$    H_ij = (aux*hi+hj)/(aux+1._DP)
-!!$
-!!$    ! auxiliary variables
-!!$    u2   = u_ij*u_ij
-!!$    v2   = v_ij*v_ij
-!!$    q_ij = 0.5_DP*(u2+v2)
-!!$
-!!$    ! speed of sound
-!!$    c2   = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-!!$    c_ij = sqrt(c2)
-!!$
-!!$    ! characteristic velocity
-!!$    cnrm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
-!!$    if (cnrm .eq. 0._DP) then
-!!$      if (present(Lbd_ij)) Lbd_ij = 0._DP
-!!$      if (present(R_ij))   R_ij   = 0._DP
-!!$      if (present(L_ij))   L_ij   = 0._DP
-!!$      W_ij = 0._DP
-!!$      return
-!!$    end if
-!!$    cx  = Dweight(1)/cnrm
-!!$    cy  = Dweight(2)/cnrm
-!!$    vel = cx*u_ij+cy*v_ij
-!!$
-!!$    ! Compute solution difference
-!!$    diff = U_j-U_i
-!!$
-!!$    ! Compute diagonal matrix of eigenvalues
-!!$    if (present(Lbd_ij)) then
-!!$      Lbd_ij(1) = vel-c_ij
-!!$      Lbd_ij(2) = vel
-!!$      Lbd_ij(3) = vel+c_ij
-!!$      Lbd_ij(4) = vel
-!!$    end if
-!!$
-!!$    ! Compute matrix of right eigenvectors
-!!$    if (present(R_ij)) then
-!!$      ! Matrix of right eigenvectors
-!!$      R_ij( 1) =  1._DP
-!!$      R_ij( 2) =  u_ij-c_ij*cx
-!!$      R_ij( 3) =  v_ij-c_ij*cy
-!!$      R_ij( 4) =  H_ij-c_ij*vel
-!!$      R_ij( 5) =  1._DP
-!!$      R_ij( 6) =  u_ij
-!!$      R_ij( 7) =  v_ij
-!!$      R_ij( 8) =  q_ij
-!!$      R_ij( 9) =  1._DP
-!!$      R_ij(10) =  u_ij+c_ij*cx
-!!$      R_ij(11) =  v_ij+c_ij*cy
-!!$      R_ij(12) =  H_ij+c_ij*vel
-!!$      R_ij(13) =  0.0_DP
-!!$      R_ij(14) =  cy
-!!$      R_ij(15) = -cx
-!!$      R_ij(16) =  u_ij*cy-v_ij*cx
-!!$    end if
-!!$
-!!$    ! Compute matrix of left eigenvectors
-!!$    if (present(L_ij)) then
-!!$      if (abs(cx) > abs(cy)) then
-!!$        ! Matrix of left eigenvectors if CX is largest coefficient
-!!$        L_ij( 1) =  0.5_DP*(G1*q_ij+c_ij*vel)/c2
-!!$        L_ij( 2) = (c2-G1*q_ij)/c2
-!!$        L_ij( 3) =  0.5_DP*(G1*q_ij-c_ij*vel)/c2
-!!$        L_ij( 4) = (v_ij-vel*cy)/cx
-!!$        L_ij( 5) =  0.5_DP*(-G1*u_ij-c_ij*cx)/c2
-!!$        L_ij( 6) =  G1*u_ij/c2
-!!$        L_ij( 7) =  0.5_DP*(-G1*u_ij+c_ij*cx)/c2
-!!$        L_ij( 8) =  cy
-!!$        L_ij( 9) =  0.5_DP*(-G1*v_ij-c_ij*cy)/c2
-!!$        L_ij(10) =  G1*v_ij/c2
-!!$        L_ij(11) =  0.5_DP*(-G1*v_ij+c_ij*cy)/c2
-!!$        L_ij(12) = (cy*cy-1)/cx
-!!$        L_ij(13) =  G2/c2
-!!$        L_ij(14) = -G1/c2
-!!$        L_ij(15) =  G2/c2
-!!$        L_ij(16) =  0.0_DP
-!!$      else
-!!$        ! Matrix of left eigenvectors if CY is largest coefficient
-!!$        L_ij( 1) =  0.5_DP*(G1*q_ij+c_ij*vel)/c2
-!!$        L_ij( 2) = (c2-G1*q_ij)/c2
-!!$        L_ij( 3) =  0.5_DP*(G1*q_ij-c_ij*vel)/c2
-!!$        L_ij( 4) = (vel*cx-u_ij)/cy
-!!$        L_ij( 5) =  0.5_DP*(-G1*u_ij-c_ij*cx)/c2
-!!$        L_ij( 6) =  G1*u_ij/c2
-!!$        L_ij( 7) =  0.5_DP*(-G1*u_ij+c_ij*cx)/c2
-!!$        L_ij( 8) = (1-cx*cx)/cy
-!!$        L_ij( 9) =  0.5_DP*(-G1*v_ij-c_ij*cy)/c2
-!!$        L_ij(10) =  G1*v_ij/c2
-!!$        L_ij(11) =  0.5_DP*(-G1*v_ij+c_ij*cy)/c2
-!!$        L_ij(12) = -cx
-!!$        L_ij(13) =  G2/c2
-!!$        L_ij(14) = -G1/c2
-!!$        L_ij(15) =  G2/c2
-!!$        L_ij(16) =  0.0_DP
-!!$      end if
-!!$
-!!$      ! Compute W_ij = L_ij*(U_j-U_i)
-!!$      call DGEMV('n', NVAR3D, NVAR3D, 1._DP, L_ij,&
-!!$                      NVAR3D, Diff, 1, 0._DP, W_ij, 1)
-!!$
-!!$    else
-!!$
-!!$      ! Compute W_ij = L_ij*(U_j-U_i) directly
-!!$      if (abs(cx) > abs(cy)) then
-!!$        ! CX is largest coefficient
-!!$        W_ij(1) = 0.5_DP*(G1*q_ij+c_ij*vel)/c2*Diff(1) +&
-!!$                  0.5_DP*(-G1*u_ij-c_ij*cx)/c2*Diff(2)  +&
-!!$                  0.5_DP*(-G1*v_ij-c_ij*cy)/c2*Diff(3)  +&
-!!$                  G2/c2*Diff(4)
-!!$        W_ij(2) = (c2-G1*q_ij)/c2*Diff(1) +&
-!!$                  G1*u_ij/c2*Diff(2)      +&
-!!$                  G1*v_ij/c2*Diff(3)      -&
-!!$                  G1/c2*Diff(4)
-!!$        W_ij(3) = 0.5_DP*(G1*q_ij-c_ij*vel)/c2*Diff(1) +&
-!!$                  0.5_DP*(-G1*u_ij+c_ij*cx)/c2*Diff(2)  +&
-!!$                  0.5_DP*(-G1*v_ij+c_ij*cy)/c2*Diff(3)  +&
-!!$                  G2/c2*Diff(4)
-!!$        W_ij(4) = (v_ij-vel*cy)/cx*Diff(1) +&
-!!$                  cy*Diff(2)               +&
-!!$                  (cy*cy-1)/cx*Diff(3)
-!!$      else
-!!$        ! CY is largest coefficient
-!!$        W_ij(1) = 0.5_DP*(G1*q_ij+c_ij*vel)/c2*Diff(1)+&
-!!$                  0.5_DP*(-G1*u_ij-c_ij*cx)/c2*Diff(2)+&
-!!$                  0.5_DP*(-G1*v_ij-c_ij*cy)/c2*Diff(3)+&
-!!$                  G2/c2*Diff(4)
-!!$        W_ij(2) = (c2-G1*q_ij)/c2*Diff(1)+&
-!!$                  G1*u_ij/c2*Diff(2)+&
-!!$                  G1*v_ij/c2*Diff(3)-&
-!!$                  G1/c2*Diff(4)
-!!$        W_ij(3) = 0.5_DP*(G1*q_ij-c_ij*vel)/c2*Diff(1)+&
-!!$                  0.5_DP*(-G1*u_ij+c_ij*cx)/c2*Diff(2)+&
-!!$                  0.5_DP*(-G1*v_ij+c_ij*cy)/c2*Diff(3)+&
-!!$                  G2/c2*Diff(4)
-!!$        W_ij(4) = (vel*cx-u_ij)/cy*Diff(1)+&
-!!$                  (1-cx*cx)/cy*Diff(2)-&
-!!$                  cx*Diff(3)
-!!$      end if
-!!$    end if
   end subroutine euler_calcCharacteristics3d
 
   !*****************************************************************************
@@ -1857,459 +757,6 @@ contains
 !</inputoutput>
 !</subroutine>
 
-!!$    ! local variables
-!!$    real(DP) :: rho,v1,v2,p,E,c,v1_0,v2_0       ! primitive variables
-!!$    real(DP) :: v1_b,v2_b,vn_b,vn,vt,pstar      ! velocities and boundary values
-!!$    real(DP) :: ps,Ts,p0,Ms,mr                  ! thermodynamic quantities
-!!$    real(DP), dimension(NVAR3D) :: W,Wu,Winf    ! Riemann invariants, eigenvalues, etc.
-!!$    real(DP) :: cup,f,fd,ge,qrt                 ! auxiliary variables ...
-!!$    real(DP) :: pold,ppv,prat,ptl,ptr,vdiff,vm  ! ... for the Riemann solver
-!!$    real(DP) :: auxA,auxB,aux,dnx2,dny2,dnxy
-!!$    integer:: ite
-!!$
-!!$    ! What type of boundary condition is given?
-!!$    select case(ibdrCondType)
-!!$    case(BDR_EULERWALL,&
-!!$         BDR_RLXEULERWALL)
-!!$      !-------------------------------------------------------------------------
-!!$
-!!$      ! The wall boundary conditions follows algorithm II from the paper
-!!$      !
-!!$      !    "High-order accurate implementation of solid wall
-!!$      !     boundary conditions in curved geometries"
-!!$      !     L. Krivodonova and M. Berger, J. Comput. Physics 211, (2006) 492-512
-!!$      !
-!!$      ! From the computed primitive values U=[rho, v1, v2, p] the boundary
-!!$      ! values are determined as follows:
-!!$      !
-!!$      !     $$\rho_b = \rho$
-!!$      !     $$v1_b   = v_1*(n_y^2-n_x^2)-2*n_x*n_y*v_2$$
-!!$      !     $$v2_b   = v_2*(n_x^2-n_y^2)-2*n_x*n_y*v_1$$
-!!$      !     $$p_b    = p$
-!!$      !
-!!$      ! where $n=[n_x,n_y]$ denotes the physical normal vector which is given 
-!!$      ! analytically, i.e. it is more accurate than the finite element normal.
-!!$      ! The Riemann problem Riem(U, U_b, N) in the direction of the numerical
-!!$      ! normal vector $N=[N_x,N_y]$ is solved exactly. Due to the identical
-!!$      ! pressure and density in the two states, the exact solution consists if 
-!!$      ! either two shocks or two rarefaction waves.
-!!$      !
-!!$      ! Note that the relaxed wall boundary conditions is intended to prevent
-!!$      ! impulsive start, that is, the fluid is allowed to seep through the wall
-!!$      ! at startup and the normal velocity is gradually driven to zero as the
-!!$      ! flow evolves. This technique is presented and analyzed by Lyra:
-!!$      !
-!!$      !    "Unstructured Grid Adaptive Algorithms for 
-!!$      !     Fluid Dynamics and Heat Conduction"
-!!$      !     P.R.M. Lyra, PhD thesis, University of Wales, Swansea, 1994.
-!!$      !
-!!$      ! In the framework of algorithm II by Krivodonova and Berger the boundary
-!!$      ! values are determined as follows:
-!!$      !
-!!$      ! rho_b = rho
-!!$      ! v1_b  = v_1*(ny^2-nx^2)-2*nx*ny*v_2+2*c*(v_1^n*n_x^2+v_2^n*n_x*n_y)
-!!$      ! v2_b  = v_2*(nx^2-ny^2)-2*nx*ny*v_1+2*c*(v_2^n*n_y^2+v_1^n*n_x*n_y)
-!!$      ! p_b   = p
-!!$
-!!$      ! Compute primitive variables
-!!$      rho = Du(1)
-!!$      v1  = Du(2)/rho
-!!$      v2  = Du(3)/rho
-!!$      E   = Du(4)/rho
-!!$      p   = thdyn_pressure(GAMMA, E, rho, v1, v2)
-!!$      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
-!!$
-!!$      ! Precompute auxiliary data
-!!$      dnxy = DbdrNormal(1)*DbdrNormal(2)
-!!$      dnx2 = DbdrNormal(1)*DbdrNormal(1)
-!!$      dny2 = DbdrNormal(2)*DbdrNormal(2)
-!!$      
-!!$      if (ibdrCondType .eq. BDR_EULERWALL) then
-!!$        ! Compute reflected velocities at the boundary
-!!$        v1_b = (dny2-dnx2)*v1 - 2.0_DP*dnxy*v2
-!!$        v2_b = (dnx2-dny2)*v2 - 2.0_DP*dnxy*v1
-!!$      else
-!!$        ! Compute initial velocity from previous time step
-!!$        v1_0 = Du0(2)/Du0(1)
-!!$        v2_0 = Du0(3)/Du0(1)
-!!$
-!!$        ! Compute semi-reflected velocities at the boundary
-!!$        v1_b = (dny2-dnx2)*v1-2._DP*dnxy*v2 + 2*DbdrValue(1)*(v1_0*dnx2+v2_0*dnxy)
-!!$        v2_b = (dnx2-dny2)*v2-2._DP*dnxy*v1 + 2*DbdrValue(1)*(v2_0*dny2+v1_0*dnxy)
-!!$      end if
-!!$
-!!$      ! Compute normal elocities at the boundary and the ghost state
-!!$      ! w.r.t. the numerical/approximate  outward unit normal vector
-!!$      vn   = DpointNormal(1)*v1   + DpointNormal(2)*v2
-!!$      vn_b = DpointNormal(1)*v1_b + DpointNormal(2)*v2_b
-!!$
-!!$      ! Compute the tangential velocity depending on the sign of N*v
-!!$      if (vn .gt. 0.0_DP) then
-!!$        vt = DpointNormal(2)*v1   - DpointNormal(1)*v2    
-!!$      else
-!!$        vt = DpointNormal(2)*v1_b - DpointNormal(1)*v2_b
-!!$      end if
-!!$      
-!!$      
-!!$      !-------------------------------------------------------------------------
-!!$      ! Calculate the pressure in the star region
-!!$      !
-!!$      ! Note that the pressure equation can only be solved if the pressure
-!!$      ! positivity condition is satisfied, that is
-!!$      !
-!!$      !     $$\frac{2}{\gamma-1}(c+c_b)>v_b-v$$
-!!$      !
-!!$      ! Otherwise, the Riemann problem gives rise to vacuum so that the 
-!!$      ! "star region" does no longer exist and the standard procedure fails.
-!!$      !
-!!$      ! Here and below, the left state corresponds to the interior value
-!!$      ! and the right state corresponds to the ghost values since the unit
-!!$      ! normal vector is directed outward to the boundary.
-!!$      !-------------------------------------------------------------------------
-!!$
-!!$      ! Check the pressure positivity condition
-!!$      if (2.0_DP*G9*c .le. vn_b-vn) then
-!!$        if (present(istatus)) then
-!!$          istatus = -ibdrCondType
-!!$          return
-!!$        else
-!!$          call output_line('Riemann solver failed due to vacuum',&
-!!$                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues3d')
-!!$          call sys_halt()
-!!$        end if
-!!$      end if
-!!$      
-!!$      ! Provide a guess value for pressure in the "star region"
-!!$      ! by using the PVRS Riemann solver as suggested by Toro
-!!$
-!!$      cup  = rho*c
-!!$      ppv  = p+0.5_DP*(vn-vn_b)*cup
-!!$      ppv  = max(0.0_DP, ppv)
-!!$
-!!$      if (ppv .eq. p) then
-!!$
-!!$        ! Select guessed pressure from PVRS Riemann solver
-!!$        pstar = ppv
-!!$      else
-!!$        if (ppv .lt. p) then
-!!$
-!!$          ! Guess pressure from the Two-Rarefaction Riemann solver
-!!$          vm    = 0.5_DP*(vn+vn_b)
-!!$          ptl   = 1._DP + G2*(vn-vm)/c
-!!$          ptr   = 1._DP + G2*(vm-vn_b)/c
-!!$          pstar = 0.5_DP*(p*ptl + p*ptr)**G11
-!!$        else
-!!$
-!!$          ! Guess pressure from the Two-Shock Riemann solver 
-!!$          ! with PVRS as estimated pressure value
-!!$          ge    = sqrt((G10/rho)/(G12*p+ppv))
-!!$          pstar = p - 0.5_DP*(vn_b-vn)/ge
-!!$        end if
-!!$      end if
-!!$
-!!$      ! Initialize solution difference and pressure
-!!$      vdiff = (vn_b-vn)/2.0_DP
-!!$      pold  = pstar
-!!$
-!!$      newton: do ite = 1, 100
-!!$        
-!!$        ! Compute pressure function f(pold) and its derivative f1(pold)
-!!$        if (pold .le. p) then
-!!$
-!!$          ! Rarefaction wave
-!!$          prat = pold/p
-!!$          
-!!$          f  = G9*c*(prat**G7 - 1.0_DP)
-!!$          fd = (1.0_DP/(rho*c))*prat**(-G8)
-!!$        else
-!!$
-!!$          ! Shock wave
-!!$          auxA = G10/rho
-!!$          auxB = G12*p
-!!$          qrt  = sqrt(auxA/(auxB + pold))
-!!$
-!!$          f  = (pold-p)*qrt
-!!$          fd = (1.0_DP - 0.5_DP*(pold - p)/(auxB + pold))*qrt
-!!$        end if
-!!$
-!!$        pstar = pold - (f+vdiff)/fd
-!!$        if (pstar .lt. 0.0_DP) then
-!!$          pold = 1.0E-6
-!!$          cycle newton
-!!$        end if
-!!$
-!!$        aux = 2.0_DP*abs((pstar-pold)/(pstar+pold))
-!!$        if (aux .le. 1.0E-6)  exit newton
-!!$        
-!!$        pold = pstar
-!!$
-!!$      end do newton
-!!$
-!!$      ! Check if Newton's method converged
-!!$      if (ite .ge. 100) then
-!!$        if (present(istatus)) then
-!!$          istatus = -ibdrCondType
-!!$          return
-!!$        else
-!!$          call output_line('Riemann solver failed due to divergence in&
-!!$                           & Newton-Raphson iteration',&
-!!$                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues3d')
-!!$          call sys_halt()
-!!$        end if
-!!$      end if
-!!$      
-!!$      !-------------------------------------------------------------------------
-!!$      ! Calculate the velocity in the star region
-!!$      !-------------------------------------------------------------------------
-!!$
-!!$      ! Note that the contribution fR-fL vanishes due to constant states
-!!$      vn = 0.5_DP*(vn+vn_b)   
-!!$      
-!!$
-!!$      !-------------------------------------------------------------------------
-!!$      ! Calculate the density in the star region
-!!$      !-------------------------------------------------------------------------
-!!$
-!!$      if (pstar .le. p) then
-!!$
-!!$        ! Rarefaction wave
-!!$        rho = rho*(pstar/p)**G4
-!!$      else
-!!$
-!!$        ! Shock wave
-!!$        rho = rho*(pstar/p+G12)/(G12*(pstar/p)+1._DP)
-!!$      end if
-!!$      
-!!$      ! Update the solution vector
-!!$      Du(1) = rho
-!!$      Du(2) = rho*( DpointNormal(2)*vt+DpointNormal(1)*vn)
-!!$      Du(3) = rho*(-DpointNormal(1)*vt+DpointNormal(2)*vn)
-!!$      Du(4) = pstar/G1+0.5_DP*rho*(vn*vn+vt*vt)
-!!$
-!!$
-!!$    case(BDR_VISCOUSWALL)
-!!$      !-------------------------------------------------------------------------
-!!$      
-!!$      ! Compute primitive variables
-!!$      rho = Du(1)
-!!$      v1  = Du(2)/rho
-!!$      v2  = Du(3)/rho
-!!$      E   = Du(4)/rho
-!!$      p   = thdyn_pressure(GAMMA, E, rho, v1, v2)
-!!$
-!!$      ! Update the solution vector and let vn:=0 and vt:=0
-!!$      Du(2) = 0._DP
-!!$      Du(3) = 0._DP
-!!$      Du(4) = p/G1
-!!$
-!!$
-!!$    case(BDR_SUPERINLET)
-!!$      !-------------------------------------------------------------------------
-!!$
-!!$      ! The free stream primitive variables are Deval=[rho,v1,v2,p]
-!!$      rho = DbdrValue(1)
-!!$      p   = DbdrValue(4); 
-!!$      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
-!!$      vn  = DbdrNormal(1)*DbdrValue(2)+DbdrNormal(2)*DbdrValue(3)
-!!$      vt  = DbdrNormal(2)*DbdrValue(2)-DbdrNormal(1)*DbdrValue(3)
-!!$      
-!!$      ! Compute Riemann invariants based on the free stream values
-!!$      W(1) = vn-2*c/G1
-!!$      W(2) = vn+2*c/G1
-!!$      W(3) = p/(rho**GAMMA)
-!!$      W(4) = vt
-!!$
-!!$      ! Transform back into conservative variables
-!!$      vn   = 0.5_DP*(W(1)+W(2))
-!!$      c    = 0.25_DP*G1*(W(2)-W(1))
-!!$      rho  = (c*c/GAMMA/W(3))**G3
-!!$      p    = rho*c*c/GAMMA
-!!$      vt   = W(4)
-!!$
-!!$      ! Update the solution vector
-!!$      Du(1) = rho
-!!$      Du(2) = rho*( DbdrNormal(2)*vt+DbdrNormal(1)*vn)
-!!$      Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
-!!$      Du(4) = p/G1+0.5_DP*rho*(vn*vn+vt*vt)
-!!$
-!!$
-!!$    case(BDR_FARFIELD)
-!!$      !-------------------------------------------------------------------------
-!!$
-!!$      ! The free stream primitive variables are Deval=[rho,v1,v2,p]
-!!$      rho = DbdrValue(1)
-!!$      p   = DbdrValue(4); 
-!!$      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
-!!$      vn  = DbdrNormal(1)*DbdrValue(2)+DbdrNormal(2)*DbdrValue(3)
-!!$      vt  = DbdrNormal(2)*DbdrValue(2)-DbdrNormal(1)*DbdrValue(3)
-!!$      
-!!$      ! Compute Riemann invariants based on the free stream values
-!!$      Winf(1) = vn-2._DP*c/G1
-!!$      Winf(2) = vn+2._DP*c/G1
-!!$      Winf(3) = p/(rho**GAMMA)
-!!$      Winf(4) = vt
-!!$
-!!$      ! Compute primitive variables
-!!$      rho = Du(1)
-!!$      v1  = Du(2)/rho
-!!$      v2  = Du(3)/rho
-!!$      E   = Du(4)/rho
-!!$      p   = thdyn_pressure(GAMMA, E, rho, v1, v2)
-!!$      
-!!$      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
-!!$      vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
-!!$      vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
-!!$      
-!!$      ! Compute Riemann invariants based on the solution values
-!!$      Wu(1) = vn-2._DP*c/G1
-!!$      Wu(2) = vn+2._DP*c/G1
-!!$      Wu(3) = p/(rho**GAMMA)
-!!$      Wu(4) = vt
-!!$
-!!$      ! Adopt free stream/computed values depending on the sign of the eigenvalue
-!!$      W(1) = merge(Winf(1), Wu(1), vn <  c)
-!!$      W(2) = merge(Winf(2), Wu(2), vn < -c)
-!!$      W(3) = merge(Winf(3), Wu(3), vn <  SYS_EPSREAL)
-!!$      W(4) = merge(Winf(4), Wu(4), vn <  SYS_EPSREAL)
-!!$
-!!$      ! Transform back into conservative variables
-!!$      vn   = 0.5_DP*(W(1)+W(2))
-!!$      c    = 0.25_DP*G1*(W(2)-W(1))
-!!$      rho  = (c*c/GAMMA/W(3))**G3
-!!$      p    = rho*c*c/GAMMA
-!!$      vt   = W(4)
-!!$
-!!$      ! Update the solution vector
-!!$      Du(1) = rho
-!!$      Du(2) = rho*( DbdrNormal(2)*vt+DbdrNormal(1)*vn)
-!!$      Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
-!!$      Du(4) = p/G1+0.5_DP*rho*(vn*vn+vt*vt)
-!!$
-!!$
-!!$    case(BDR_SUBINLET)
-!!$      !-------------------------------------------------------------------------
-!!$      print *, "Subsonic inlet boundary conditions not tested!"
-!!$      stop
-!!$
-!!$      ! The specified total pressure and total temperature are Deval=[ps,Ts]
-!!$      ps = DbdrValue(1)
-!!$      Ts = DbdrValue(2)
-!!$      
-!!$      ! Compute primitive variables
-!!$      rho = Du(1)
-!!$      v1  = Du(2)/rho
-!!$      v2  = Du(3)/rho
-!!$      E   = Du(4)/rho
-!!$      p   = thdyn_pressure(GAMMA, E, rho, v1, v2)
-!!$      
-!!$      vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
-!!$      vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
-!!$      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
-!!$
-!!$      ! Compute Riemann invariants based on the solution values and prescribe
-!!$      ! total pressure and total Temperature
-!!$      rho = ps/RGAS/Ts ! ideal gas law
-!!$      
-!!$      W(2) = 2*c/G1-vn
-!!$      W(1) = 4/G1*sqrt(max(GAMMA*ps/rho*(p/ps)**G4, SYS_EPSREAL))-W(2)
-!!$
-!!$
-!!$    case(BDR_SUBOUTLET)
-!!$      !-------------------------------------------------------------------------
-!!$      
-!!$      ! The specified exit static/pressure is Deval=[ps]
-!!$      ps = DbdrValue(1)
-!!$
-!!$      ! Compute primitive variables
-!!$      rho = Du(1)
-!!$      v1  = Du(2)/rho
-!!$      v2  = Du(3)/rho
-!!$      E   = Du(4)/rho
-!!$      p   = thdyn_pressure(GAMMA, E, rho, v1, v2)
-!!$
-!!$      vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
-!!$      vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
-!!$      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
-!!$      
-!!$      ! Compute Riemann invariants based on the solution values and prescribed exit pressure
-!!$      W(2) = 2*c/G1-vn
-!!$      W(3) = p/(rho**GAMMA)
-!!$      W(4) = vt
-!!$      W(1) = 4/G1*sqrt(max(GAMMA*ps/rho*(p/ps)**G4, SYS_EPSREAL))-W(2)
-!!$
-!!$      ! Transform back into conservative variables
-!!$      vn  = 0.5_DP*(W(1)-W(2))
-!!$      c   = 0.25_DP*G1*(W(1)+W(2))
-!!$      rho = (c*c/GAMMA/W(3))**G3
-!!$      p   = rho*c*c/GAMMA
-!!$      vt  = W(4)
-!!$
-!!$      ! Update the solution vector
-!!$      Du(1) = rho
-!!$      Du(2) = rho*( DbdrNormal(2)*vt+DbdrNormal(1)*vn)
-!!$      Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
-!!$      Du(4) = p/G1+0.5_DP*rho*(vn*vn+vt*vt)
-!!$
-!!$
-!!$    case(BDR_MASSINLET)
-!!$      !-------------------------------------------------------------------------
-!!$      print *, "Mass inlet boundary conditions not tested!"
-!!$      stop
-!!$
-!!$      ! The specified mass flow is Devel=[mr]
-!!$      mr = DbdrValue(1)
-!!$
-!!$      ! Then the normal velocity is
-!!$      vn = mr/Du(1)
-!!$
-!!$
-!!$    case(BDR_MACHOUTLET)
-!!$      !-------------------------------------------------------------------------
-!!$      print *, "Mass outlet boundary conditions not tested!"
-!!$      stop
-!!$      
-!!$      ! The specified total pressure and desired Mach number are Deval=[p0,Ms]
-!!$      p0 = DbdrValue(1)
-!!$      Ms = DbdrValue(2)
-!!$
-!!$      ! Then the static pressure is
-!!$      ps = p0*(1+0.5*G1*Ms*Ms)**(-G5)
-!!$
-!!$      ! Compute primitive variables
-!!$      rho = Du(1)
-!!$      v1  = Du(2)/rho
-!!$      v2  = Du(3)/rho
-!!$      E   = Du(4)/rho
-!!$      p   = thdyn_pressure(GAMMA, E, rho, v1, v2)
-!!$
-!!$      vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
-!!$      vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
-!!$      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
-!!$      
-!!$      ! Compute Riemann invariants based on the solution values and prescribed exit pressure
-!!$      W(2) = 2*c/G1-vn
-!!$      W(3) = p/(rho**GAMMA)
-!!$      W(4) = vt
-!!$      W(1) = 4/G1*sqrt(max(GAMMA*ps/rho*(p/ps)**G4, SYS_EPSREAL))-W(2)
-!!$
-!!$      ! Transform back into conservative variables
-!!$      vn  = 0.5_DP*(W(1)-W(2))
-!!$      c   = 0.25_DP*G1*(W(1)+W(2))
-!!$      rho = (c*c/GAMMA/W(3))**G3
-!!$      p   = rho*c*c/GAMMA
-!!$      vt  = W(4)
-!!$      
-!!$      Du(1) = rho
-!!$      Du(2) = rho*( DbdrNormal(2)*vt+DbdrNormal(1)*vn)
-!!$      Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
-!!$      Du(4) = p/G1+0.5_DP*rho*(vn*vn+vt*vt)
-!!$
-!!$
-!!$    case DEFAULT
-!!$      call output_line('Unsupported type of boundary condition!',&
-!!$                       OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues3d')
-!!$      call sys_halt()
-!!$    end select
   end subroutine euler_calcBoundaryvalues3d
 
   !*****************************************************************************
