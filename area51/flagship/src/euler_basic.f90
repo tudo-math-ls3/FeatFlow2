@@ -91,6 +91,15 @@ module euler_basic
   ! Rusanov flux
   integer, parameter, public :: DISSIPATION_RUSANOV = 3
 
+  ! Scalar dissipation adopting dimensional splitting
+  integer, parameter, public :: DISSIPATION_SCALAR_DSPLIT = -DISSIPATION_SCALAR
+
+  ! Tensorial dissipation adopting dimensional splitting
+  integer, parameter, public :: DISSIPATION_TENSOR_DSPLIT = -DISSIPATION_TENSOR
+
+  ! Rusanov flux adopting dimensional splitting
+  integer, parameter, public :: DISSIPATION_RUSANOV_DSPLIT = -DISSIPATION_RUSANOV
+
 !</constantblock>
 
 
