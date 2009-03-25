@@ -126,7 +126,7 @@ contains
     
     rgeometryObject%ndimension = NDIM2D
     
-    CALL geom_init_circle(rgeometryObject,0.05_dp,(/0.2_dp,0.2_dp/))
+    CALL geom_init_circle(rgeometryObject,0.05_dp,(/0.2_dp,0.1_dp/))
     
 !  subroutine geom_init_circle_direct(rgeomObject, dradius, Dorigin, &
 !                                     drotation, dscalingFactor, binverted)
@@ -144,7 +144,7 @@ contains
     ! initial x-position
     p_rproblem%rcollection%Dquickaccess(7)=0.2_dp
     ! initial y-position
-    p_rproblem%rcollection%Dquickaccess(8)=0.2_dp
+    p_rproblem%rcollection%Dquickaccess(8)=0.1_dp
     
     ! Initialise the parameter list object. This creates an empty parameter list.
     call parlst_init (p_rproblem%rparamList)
