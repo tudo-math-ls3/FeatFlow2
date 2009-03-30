@@ -2213,13 +2213,13 @@ contains
         ! Adopt explicit Runge-Kutta scheme
         call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
                                  rsolution, euler_nlsolverCallback, rcollection)
-        
+
       case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
                                     rsolution, euler_nlsolverCallback, rcollection)
-        
+       
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'euler_solveTransient')
