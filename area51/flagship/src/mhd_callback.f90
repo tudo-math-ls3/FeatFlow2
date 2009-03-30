@@ -15,6 +15,9 @@
 !# 2.) mhd_calcVelocityField
 !#     -> Calculates the velocity field for the scalar transport model
 !#
+!# 3.) mhd_calcSourceTerm
+!#     -> Calculates the source term
+!#
 !# 3.) mhd_hadaptCallbackScalar2d
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in interleave format
@@ -49,6 +52,7 @@ module mhd_callback
   private
   public :: mhd_nlsolverCallback
   public :: mhd_calcVelocityField
+  public :: mhd_calcSourceTerm
   public :: mhd_hadaptCallbackScalar2d
   public :: mhd_hadaptCallbackBlock2d
 
@@ -114,8 +118,10 @@ contains
     real(DP), dimension(:), pointer :: p_DdataTransport
     real(DP), dimension(:), pointer :: p_DdataEuler
     real(DP), dimension(:), pointer :: p_DdataResidual
+    real(DP), dimension(:), pointer :: p_DdataRHS
     real(DP), dimension(:), pointer :: p_DdataMassMatrix
-    integer :: neq, nvar, lumpedMassMatrix, isystemFormat
+    integer, dimension(:), pointer :: p_Kld, p_Kcol
+    integer :: neq, nvar, lumpedMassMatrix, consistentMassMatrix, isystemFormat
 
       
     ! Do we have to calculate the preconditioner?
@@ -135,44 +141,75 @@ contains
                               rsolution, rsolutionInitial,&
                               rrhs, rres, istep, rcollection)
       
-      ! Get solution from scalar transport model
-      p_rsolutionTransport => rcollection%p_rvectorQuickAccess1
-      
-      ! Set pointer to global solution vectors
+      ! Set pointers
       call lsysbl_getbase_double(rsolution, p_DdataEuler)
       call lsysbl_getbase_double(rres, p_DdataResidual)
-      call lsysbl_getbase_double(p_rsolutionTransport, p_DdataTransport)
       
-      ! Get lumped mass matrix
-      lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
-      call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      ! Get consistent mass matrix
+      consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+      call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix),&
                                  p_DdataMassMatrix)
-      
-      ! Set pointer to the vertex coordinates
-      call storage_getbase_double2D(&
-          rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-      
+      call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(consistentMassMatrix), p_Kld)
+      call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(consistentMassMatrix), p_Kcol)
+
       ! Set dimensions
-      neq  = p_rsolutionTransport%NEQ
       nvar = euler_getNVAR(rproblemLevel)
-      
-      isystemFormat = collct_getvalue_int(rcollection, 'isystemformat')
-      select case(isystemFormat)
-      case (SYSTEM_INTERLEAVEFORMAT)
-        call calcSourceTermInterleaveFormat(rtimestep%dTime, rtimestep%dStep,&
-                                            neq, nvar, p_DvertexCoords,&
-                                            p_DdataMassMatrix, p_DdataTransport,&
-                                            p_DdataEuler, p_DdataResidual)
-      case (SYSTEM_BLOCKFORMAT)
-        call calcSourceTermBlockFormat(rtimestep%dTime, rtimestep%dStep,&
-                                       neq, nvar, p_DvertexCoords,&
-                                       p_DdataMassMatrix, p_DdataTransport,&
-                                       p_DdataEuler, p_DdataResidual)
-      case DEFAULT
-        call output_line('Invalid system format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_nlsolverCallback')
-        call sys_halt()
-      end select
+      neq  = rsolution%NEQ/nvar
+
+      ! Add some background dissipation
+      call calcMassDiffusion(rtimestep%dStep, neq, nvar, p_Kld, p_Kcol, &
+                             p_DdataMassMatrix, p_DdataEuler, p_DdataResidual)
+
+
+!!$      ! In the zeroth iteration the explicit source term is applied to
+!!$      ! right-hand side vector and the residual vector
+!!$      if (istep .eq. 0) then
+!!$
+!!$        ! Get solution from scalar transport model
+!!$        p_rsolutionTransport => rcollection%p_rvectorQuickAccess1
+!!$        
+!!$        ! Set pointer to global solution vectors
+!!$        call lsysbl_getbase_double(rsolution, p_DdataEuler)
+!!$        call lsysbl_getbase_double(rres, p_DdataResidual)
+!!$        call lsysbl_getbase_double(rrhs, p_DdataRHS)
+!!$        call lsysbl_getbase_double(p_rsolutionTransport, p_DdataTransport)
+!!$        
+!!$        ! Get lumped mass matrix
+!!$        lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+!!$        call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+!!$                                   p_DdataMassMatrix)
+!!$      
+!!$        ! Set pointer to the vertex coordinates
+!!$        call storage_getbase_double2D(&
+!!$            rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+!!$        
+!!$        ! Set dimensions
+!!$        neq  = p_rsolutionTransport%NEQ
+!!$        nvar = euler_getNVAR(rproblemLevel)
+!!$        
+!!$        isystemFormat = collct_getvalue_int(rcollection, 'isystemformat')
+!!$        select case(isystemFormat)
+!!$        case (SYSTEM_INTERLEAVEFORMAT)
+!!$          
+!!$          ! Apply source term to residual vector
+!!$          call calcSourceTermInterleaveFormat(rtimestep%dTime, rtimestep%dStep,&
+!!$                                              neq, nvar, p_DvertexCoords,&
+!!$                                              p_DdataMassMatrix, p_DdataTransport,&
+!!$                                              p_DdataEuler, p_DdataResidual)
+!!$
+!!$          ! Apply source term to right-hand side vector
+!!$          call calcSourceTermInterleaveFormat(rtimestep%dTime, rtimestep%dStep,&
+!!$                                              neq, nvar, p_DvertexCoords,&
+!!$                                              p_DdataMassMatrix, p_DdataTransport,&
+!!$                                              p_DdataEuler, p_DdataRHS)
+!!$               
+!!$        case DEFAULT
+!!$          call output_line('Invalid system format!',&
+!!$              OU_CLASS_ERROR,OU_MODE_STD,'mhd_nlsolverCallback')
+!!$          call sys_halt()
+!!$        end select
+!!$      end if
+
     end if
 
     
@@ -195,7 +232,7 @@ contains
     
     subroutine calcSourceTermInterleaveFormat(dtime, dstep, neq, nvar, DvertexCoords,&
                                               DdataMassMatrix, DdataTransport,&
-                                              DdataEuler, DdataResidual)
+                                              DdataEuler, DdataVector)
 
       real(DP), dimension(nvar,neq), intent(IN) :: DdataEuler
       real(DP), dimension(:,:), intent(IN) :: DvertexCoords
@@ -204,28 +241,12 @@ contains
       real(DP), intent(IN) :: dtime, dstep
       integer, intent(IN) :: neq, nvar
       
-      real(DP), dimension(nvar,neq), intent(INOUT) :: DdataResidual
+      real(DP), dimension(nvar,neq), intent(INOUT) :: DdataVector
       
       ! local variables
       real(DP) :: drad, dang, daux, dscale, x1, x2
       integer :: ieq
 
-      real(DP) :: m1,m2,m3
-
-      real(DP), dimension(:,:), allocatable, save :: DsourceTerm
-
-      if (.not. allocated(DsourceTerm)) then
-        allocate(DsourceTerm(nvar,neq))
-      end if
-
-      if (istep .ne. 0) then
-        DdataResidual = DdataResidual + DsourceTerm
-        return
-      end if
-
-      m1=0; m2=0; m3=0
-      
-      
       ! Compute the scaling parameter
       dscale = -dstep * 12.0 * (1.0-dtime**4) * dtime**2
 !!$      dscale = -dstep * 12.0 * dtime*dtime
@@ -233,8 +254,6 @@ contains
       ! Loop over all nodal values
       do ieq = 1, neq
         
-!!$        if (DdataTransport(ieq) .lt. 0.0_DP) cycle
-
         ! Get coodrinates
         x1 = DvertexCoords(1, ieq)
         x2 = DvertexCoords(2, ieq)
@@ -247,135 +266,48 @@ contains
         x1 = cos(dang)
         x2 = sin(dang)
 
-!!$        if (x1> 0.0_DP) then
-!!$          daux = atan(x2/x1)
-!!$          x1   = cos(daux)
-!!$          x2   = sin(daux)
-!!$        elseif (x1 < 0.0_DP) then
-!!$          daux = atan(x2/x1)
-!!$          x1   = -cos(daux)
-!!$          x2   = -sin(daux)
-!!$        else
-!!$          if (x2 > 0.0) then
-!!$            x1 = 0.0_DP
-!!$            x2 = 1.0_DP
-!!$          else
-!!$            x1 =  0.0_DP
-!!$            x2 = -1.0_DP
-!!$          end if
-!!$        end if
-        
         ! Compute auxiliary quantity
-!!$        daux = dscale * DdataMassMatrix(ieq) / max(drad, 1.0e-4_DP)    
         daux = dscale * DdataMassMatrix(ieq) * max(DdataTransport(ieq), 0.0_DP) / max(drad, 1.0e-4_DP)
         
+        ! Impose source values into the momentum equations
+        DdataVector(2, ieq) = DdataVector(2, ieq) + daux * x1
+        DdataVector(3, ieq) = DdataVector(3, ieq) + daux * x2
 
-        DsourceTerm(1, ieq) = 0.0_DP
-        DsourceTerm(2, ieq) = daux * x1
-        DsourceTerm(3, ieq) = daux * x2
-        DsourceTerm(4, ieq) = daux * (x1 * DdataEuler(2, ieq) + x2 * DdataEuler(3, ieq) )/DdataEuler(1, ieq)
-
-        m1 = max(m1, abs(daux*x1))
-        m2 = max(m2, abs(daux*x2))
-        m3 = max(m3, abs(daux * (x1 * DdataEuler(2, ieq) + x2 * DdataEuler(3, ieq) )/DdataEuler(1, ieq)))
-
-!!$        ! Impose source values into the x-momentum equation
-!!$        DdataResidual(2, ieq) = DdataResidual(2, ieq) +&
-!!$                                daux * x1 !* max(DdataEuler(1, ieq), 0.0_DP)
-!!$
-!!$        ! Impose source values into the y-momentum equation
-!!$        DdataResidual(3, ieq) = DdataResidual(3, ieq) +&
-!!$                                daux * x2 !* max(DdataEuler(1, ieq), 0.0_DP)
-!!$
-!!$        ! Impose source values into the energy equation
-!!$        DdataResidual(4, ieq) = DdataResidual(4, ieq) +&
-!!$                                max(daux * (x1 * DdataEulerOld(2, ieq)/DdataEulerOld(1, ieq)  +&
-!!$                                            x2 * DdataEulerOld(3, ieq)/DdataEulerOld(1, ieq) ), 0.0_DP)
-!!$        
-!!$        maximum = max(maximum, daux * (x1 * DdataEulerOld(2, ieq)/DdataEulerOld(1, ieq)  +&
-!!$                                            x2 * DdataEulerOld(3, ieq)/DdataEulerOld(1, ieq) ))
-        
+        ! Impose source values into the energy equation
+        DdataVector(4, ieq) = DdataVector(4, ieq) + max(daux * &
+                                ( x1 * DdataEuler(2, ieq)/DdataEuler(1, ieq) +&
+                                  x2 * DdataEuler(3, ieq)/DdataEuler(1, ieq) ), 0.0_DP )
       end do
-
-      print *, m1,m2,m3
       
     end subroutine calcSourceTermInterleaveFormat
 
     !**************************************************************
-    
-    subroutine calcSourceTermBlockFormat(dtime, dstep, neq, nvar, DvertexCoords,&
-                                         DdataMassMatrix, DdataTransport,&
-                                         DdataEuler, DdataResidual)
+
+    subroutine calcMassDiffusion(dstep, neq, nvar, Kld, Kcol, MC,&
+                                 DdataEuler, DdataResidual)
       
-      real(DP), dimension(neq,nvar), intent(IN) :: DdataEuler
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
-      real(DP), dimension(:), intent(IN) :: DdataMassMatrix
-      real(DP), dimension(:), intent(IN) :: DdataTransport
-      real(DP), intent(IN) :: dtime, dstep
-      integer, intent(IN) :: neq, nvar
-      
-      real(DP), dimension(neq,nvar), intent(INOUT) :: DdataResidual
-      
+      real(DP), dimension(nvar,neq), intent(IN) :: DdataEuler
+      real(DP), dimension(:), intent(IN) :: MC
+      real(DP), intent(IN) :: dstep
+      integer, dimension(:), intent(IN) :: Kld, Kcol
+      integer, intent(IN) :: neq,nvar
+
+      real(DP), dimension(nvar,neq), intent(INOUT) :: DdataResidual
+
       ! local variables
-      real(DP) :: drad, daux, dscale, x1, x2
-      integer :: ieq
-      
-      stop !! does not work
+      integer :: i,j,ij
 
-      ! Compute the scaling parameter
-      dscale = -dstep * 12.0 * (1.0-dtime**4) * dtime**2
-!!$      dscale = -dstep * 12.0 * dtime*dtime
-      
-      ! Loop over all nodal values
-      do ieq = 1, neq
-        
-!!$        if (DdataTransport(ieq) .lt. 0.0_DP) cycle
+      do i = 1, neq
 
-        ! Get coodrinates
-        x1 = DvertexCoords(1, ieq)
-        x2 = DvertexCoords(2, ieq)
-          
-        ! Compute distance from origin
-        drad = sqrt(x1*x1 + x2*x2)
-        
-        ! Compute unit vector emanating from the origin
-        if (x1> 0.0_DP) then
-          daux = atan(x2/x1)
-          x1   = cos(daux)
-          x2   = sin(daux)
-        elseif (x1 < 0.0_DP) then
-          daux = atan(x2/x1)
-          x1   = -cos(daux)
-          x2   = -sin(daux)
-        else
-          if (x2 > 0.0) then
-            x1 = 0.0_DP
-            x2 = 1.0_DP
-          else
-            x1 =  0.0_DP
-            x2 = -1.0_DP
-          end if
-        end if
-        
-        ! Compute auxiliary quantity
-!!$        daux = dscale * DdataMassMatrix(ieq) / max(drad, 1.0e-4_DP)
-        daux = dscale * DdataMassMatrix(ieq) * max(DdataTransport(ieq), 0.0_DP) / max(drad, 1.0e-4_DP)
-        
-        ! Impose source values into the x-momentum equation
-        DdataResidual(ieq, 2) = DdataResidual(ieq, 2) +&
-                                daux * x1 * max(DdataEuler(ieq, 1), 0.0_DP)
+        do ij = Kld(i), Kld(i+1)-1
 
-        ! Impose source values into the y-momentum equation
-        DdataResidual(ieq, 3) = DdataResidual(ieq, 3) +&
-                                daux * x2 * max(DdataEuler(ieq, 1), 0.0_DP)
+          j = Kcol(ij); if (i.eq.j) cycle
 
-        ! Impose source values into the energy equation
-        DdataResidual(ieq, 4) = DdataResidual(ieq, 4) +&
-                                max(daux * (x1 * DdataEuler(ieq, 2)  +&
-                                            x2 * DdataEuler(ieq, 3) ), 0.0_DP)
+          DdataResidual(:,i) = DdataResidual(:,i) + 0.1 * MC(ij) * (DdataEuler(:,j)-DdataEuler(:,i))
+        end do
       end do
-      
-    end subroutine calcSourceTermBlockFormat
+
+    end subroutine calcMassDiffusion
     
   end subroutine mhd_nlsolverCallback
   
@@ -443,6 +375,228 @@ contains
                                      PROBLEV_MSPEC_UPDATE)
 
   end subroutine mhd_calcVelocityField
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mhd_calcSourceTerm(rproblemLevel, rtimestep, rsolutionTransport,&
+                                rsolutionEuler, rcollection)
+
+!<input>
+    ! solution vector for Transport model
+    type(t_vectorBlock), intent(IN) :: rsolutionTransport
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    
+    ! time-stepping structure
+    type(t_timestep), intent(INOUT) :: rtimestep
+        
+    ! solution vector for Euler model
+    type(t_vectorBlock), intent(INOUT) :: rsolutionEuler
+    
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+
+    ! local variable
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataEuler, p_MC, p_ML
+    integer, dimension(:), pointer :: p_Kld, p_Kcol
+    integer :: neq, nvar, isystemFormat, consistentMassMatrix, lumpedMassMatrix
+    
+    ! Get lumped and consistent mass matrix
+    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
+
+    call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(consistentMassMatrix), p_Kld)
+    call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(consistentMassMatrix), p_Kcol)
+    
+    ! Set pointer to global solution vectors
+    call lsysbl_getbase_double(rsolutionEuler, p_DdataEuler)
+    call lsysbl_getbase_double(rsolutionTransport, p_DdataTransport)
+    
+    ! Set pointer to the vertex coordinates
+    call storage_getbase_double2D(&
+        rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+    
+    ! Set dimensions
+    neq  = rsolutionTransport%NEQ
+    nvar = euler_getNVAR(rproblemLevel)
+    
+    isystemFormat = collct_getvalue_int(rcollection, 'isystemformat')
+    select case(isystemFormat)
+    case (SYSTEM_INTERLEAVEFORMAT)
+      call calcSourceTermInterleaveFormat(rtimestep%dTime, rtimestep%dStep, neq, nvar,&
+                                          p_DvertexCoords, p_Kld, p_Kcol, p_MC, p_ML,&
+                                          p_DdataTransport, p_DdataEuler)
+      
+    case DEFAULT
+      call output_line('Invalid system format!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcSourceTerm')
+      call sys_halt()
+    end select
+    
+  contains
+    
+    ! Here, the real working routines follow
+    
+    !**************************************************************
+    
+    subroutine calcSourceTermInterleaveFormat(dtime, dstep, neq, nvar, DvertexCoords,&
+                                              Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
+
+      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:), intent(IN) :: MC,ML,DdataTransport
+      real(DP), intent(IN) :: dtime, dstep
+      integer, dimension(:), intent(IN) :: Kld, Kcol
+      integer, intent(IN) :: neq, nvar
+      
+      real(DP), dimension(nvar,neq), intent(INOUT) :: DdataEuler
+      
+      ! local variables
+      real(DP), dimension(:,:), allocatable :: DsourceTerm
+      real(DP) :: drad, dang, daux1, daux2, dscale, x1, x2, p, rq
+      integer :: i,j,ij
+
+
+      ! Compute the scaling parameter
+      dscale = -dstep * 12.0 * (1.0-dtime**4) * dtime**2
+!!$      dscale = -dstep * 12.0 * dtime*dtime
+      
+      
+!!$      ! >>> lumped version
+!!$
+!!$      ! Loop over all rows
+!!$      do i = 1, neq
+!!$        
+!!$        ! Get coodrinates at node i
+!!$        x1 = DvertexCoords(1, i)
+!!$        x2 = DvertexCoords(2, i)
+!!$          
+!!$        ! Compute polar coordinates
+!!$        drad = sqrt(x1*x1 + x2*x2)
+!!$        dang = atan2(x2, x1)
+!!$        
+!!$        ! Compute unit vector into origin
+!!$        x1 = cos(dang)
+!!$        x2 = sin(dang)
+!!$        
+!!$        ! Compute source term 
+!!$        daux1 = dscale * max(DdataTransport(i), 0.0_DP) / max(drad, 1.0e-4_DP)
+!!$        
+!!$        ! Compute source term for energy equation
+!!$        daux2 = daux1 * ( x1 * DdataEuler(2, i)/DdataEuler(1, i) +&
+!!$                          x2 * DdataEuler(3, i)/DdataEuler(1, i) )
+!!$
+!!$        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
+!!$                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)
+!!$          
+!!$        ! Compute pressure value
+!!$        p = DdataEuler(4, i) - rq
+!!$
+!!$        ! Impose source term values
+!!$        DdataEuler(2, i) = DdataEuler(2, i) + daux1 * x1
+!!$        DdataEuler(3, i) = DdataEuler(3, i) + daux1 * x2
+!!$
+!!$        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
+!!$                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)        
+!!$        
+!!$        DdataEuler(4, i) = p + rq
+!!$!!!DdataEuler(4, i) = DdataEuler(4, i) + daux2
+!!$      end do
+!!$
+!!$      ! lumped version <<<
+
+      
+      ! >>> consistent version
+
+      allocate(DsourceTerm(2,neq)); DsourceTerm = 0.0_DP
+
+      ! Loop over all rows
+      do i = 1, neq
+
+        ! Loop over all columns
+        do ij = Kld(i), Kld(i+1)-1
+
+          ! Get columns number
+          j = Kcol(ij)
+        
+          ! Get coodrinates at node j
+          x1 = DvertexCoords(1, j)
+          x2 = DvertexCoords(2, j)
+          
+          ! Compute polar coordinates
+          drad = sqrt(x1*x1 + x2*x2)
+          dang = atan2(x2, x1)
+          
+          ! Compute unit vector into origin
+          x1 = cos(dang)
+          x2 = sin(dang)
+          
+          ! Compute source term 
+          daux1 = dscale * MC(ij) * max(DdataTransport(j), 0.0_DP) / max(drad, 1.0e-4_DP)
+
+          ! Compute source term for energy equation (no scaling by density required)
+          daux2 = daux1 * ( x1 * DdataEuler(2, j) + x2 * DdataEuler(3, j) ) / DdataEuler(1, j)
+          
+!!$          ! Compute source term for energy equation
+!!$          daux2 = daux1 * ( x1 * DdataEuler(2, j)/DdataEuler(1, j) +&
+!!$                            x2 * DdataEuler(3, j)/DdataEuler(1, j) )
+          
+          ! Impose source values
+          DsourceTerm(1, i) = DsourceTerm(1, i) + daux1 * x1
+          DsourceTerm(2, i) = DsourceTerm(2, i) + daux1 * x2
+!!$          DsourceTerm(3, i) = DsourceTerm(3, i) + daux2
+
+!!$        ! Compute source term for energy equation
+!!$        daux2 = daux1 * ( x1 * DdataEuler(2, i)/DdataEuler(1, i) +&
+!!$                          x2 * DdataEuler(3, i)/DdataEuler(1, i) )
+!!#
+!!$        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
+!!$                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)
+!!$
+!!$        ! Impose source value into the energy equation
+!!$        DdataEuler(4, i) = max(p, 1e-7) + rq
+
+        end do
+      end do
+
+      do i = 1, neq
+
+        ! Compute from momentum value without source term
+        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
+                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)
+        p = DdataEuler(4, i) - rq
+
+        ! Update momentum equations
+        DdataEuler(2, i) = DdataEuler(2, i) + DsourceTerm(1, i)/ML(i)
+        DdataEuler(3, i) = DdataEuler(3, i) + DsourceTerm(2, i)/ML(i)
+
+        ! Compute from momentum value with source term
+        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
+                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)
+
+        ! Update energy equation
+        DdataEuler(4, i) = p + rq
+!!$
+!!$        DdataEuler(4, i) = DdataEuler(4, i) + DsourceTerm(3, i)/ML(i)
+      end do
+      
+      deallocate(DsourceTerm)
+
+      ! consistent version <<<
+
+    end subroutine calcSourceTermInterleaveFormat
+
+  end subroutine mhd_calcSourceTerm
 
   !*****************************************************************************
 
