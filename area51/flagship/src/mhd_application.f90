@@ -1042,10 +1042,6 @@ contains
     integer :: isize, ipreadapt, npreadapt, nerrorvariable
     integer, external :: signal_SIGINT
     
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    real(DP) :: ddistance
-    integer :: ive, iel, ivt
 
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
@@ -1187,18 +1183,18 @@ contains
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
             
-            call mhd_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-                                           rsolutionTransport, relementError1)
+!!$            call mhd_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+!!$                                           rsolutionTransport, relementError1)
 
 !!$            ! Compute the error estimator using recovery techniques
 !!$            call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
 !!$                                              rsolutionTransport, rtimestepEuler%dinitialTime,&
 !!$                                              relementError1, derror)
 !!$
-!!$            ! Compute the error estimator using recovery techniques
-!!$            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-!!$                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
-!!$                                             relementError2, derror)
+            ! Compute the error estimator using recovery techniques
+            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                             relementError1, derror)
 !!$
 !!$            call lsyssc_getbase_double(relementError1, p_Ddata1)
 !!$            call lsyssc_getbase_double(relementError2, p_Ddata2)
@@ -1213,7 +1209,7 @@ contains
             
             ! Release element-wise error distribution
             call lsyssc_releaseVector(relementError1)
-            call lsyssc_releaseVector(relementError2)
+!!$            call lsyssc_releaseVector(relementError2)
 
             ! Generate standard mesh from raw mesh
             call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
@@ -1299,13 +1295,13 @@ contains
                                   rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
 
       !-------------------------------------------------------------------------
-      ! Compute Euler model for full time step
+      ! Compute Euler model for full time step: U^n -> U^{n+1}
       !-------------------------------------------------------------------------
 
       ! Start time measurement for solution procedure
       call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
 
-      ! Attach solution from scalar model to collection
+      ! Attach solution u^n from scalar model to collection
       rcollectionEuler%p_rvectorQuickAccess1 => rsolutionTransport
 
       ! What time-stepping scheme should be used?
@@ -1315,17 +1311,17 @@ contains
         
         ! Adopt explicit Runge-Kutta scheme
         call tstep_performRKStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
-                                 rsolutionEuler, mhd_nlsolverCallback, rcollectionEuler)
+                                 rsolutionEuler, euler_nlsolverCallback, rcollectionEuler) !! mhd_xxx
         
       case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
-                                    rsolutionEuler, mhd_nlsolverCallback, rcollectionEuler)
+                                    rsolutionEuler, euler_nlsolverCallback, rcollectionEuler) !! mhd_xxx
 
         ! Perform characteristic FCT postprocessing
-        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
-                                     rsolutionEuler, rcollectionEuler)
+!        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
+!                                     rsolutionEuler, rcollectionEuler)
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -1338,13 +1334,13 @@ contains
 
       
       !-------------------------------------------------------------------------
-      ! Compute scalar transport model for full time step
+      ! Compute scalar transport model for full time step: u^n -> u^{n+1}
       !-------------------------------------------------------------------------
       
       ! Start time measurement for solution procedure
       call stat_startTimer(rappDescrTransport%rtimerSolution, STAT_TIMERSHORT)
-      
-      ! Set velocity field for scalar model problem
+
+      ! Set velocity field v^{n+1} for scalar model problem
       call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)      
 
       ! What time-stepping scheme should be used?
@@ -1361,21 +1357,47 @@ contains
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
                                     rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+
+        ! Perform characteristic FCT postprocessing
+!        call codire_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
+!                                      rsolutionTransport, rcollectionTransport)
           
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
         call sys_halt()
       end select
-
-!!$      rtimestepTransport%dTime = rtimestepEuler%dTime
-!!$
-!!$      call codire_initSolution(rparlist, ssectionnameTransport, p_rproblemLevel,&
-!!$                               rtimestepTransport%dTime, rsolutionTransport)
-
+      
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescrTransport%rtimerSolution)
 
+
+      ! Synchronized time step size
+      
+      rtimestepEuler%dTime     = rtimestepEuler%dTime-rtimestepEuler%dStep
+      rtimestepTransport%dTime = rtimestepTransport%dTime-rtimestepTransport%dStep
+      
+      rtimestepTransport%dStep  = rtimestepEuler%dStep
+      rtimestepTransport%dStep1 = rtimestepEuler%dStep1
+
+      rtimestepEuler%dTime     = rtimestepEuler%dTime+rtimestepEuler%dStep
+      rtimestepTransport%dTime = rtimestepTransport%dTime+rtimestepTransport%dStep
+
+      !-------------------------------------------------------------------------
+      ! Compute source term for full time step
+      !
+      ! U^{n+1} - \tilde U^{n+1} = dt * (S^{n+1} - S^n)
+      !-------------------------------------------------------------------------
+
+      ! Start time measurement for solution procedure
+      call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
+
+      call mhd_calcSourceTerm(p_rproblemLevel, rtimestepTransport, &
+                              rsolutionTransport, rsolutionEuler, rcollectionEuler)
+
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(rappDescrEuler%rtimerSolution)
+      
 
       ! Reached final time, then exit the infinite time loop?
       if ((rtimestepEuler%dTime     .ge. rtimestepEuler%dfinalTime) .or.&
@@ -1421,10 +1443,10 @@ contains
         ! Start time measurement for error estimation
         call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
         
-        ! Compute the error estimator using recovery techniques
-        call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-                                          rsolutionTransport, rtimestepTransport%dTime,&
-                                          relementError1, derror)
+!!$        ! Compute the error estimator using recovery techniques
+!!$        call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+!!$                                          rsolutionTransport, rtimestepTransport%dTime,&
+!!$                                          relementError1, derror)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
@@ -1436,33 +1458,15 @@ contains
         ! Compute the error estimator using recovery techniques
         call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
                                          rsolutionEuler, rtimestepEuler%dTime,&
-                                         relementError2, derror)
+                                         relementError1, derror)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rappDescrEuler%rtimerErrorEstimation)
 
-        call lsyssc_getbase_double(relementError1, p_Ddata1)
-        call lsyssc_getbase_double(relementError2, p_Ddata2)
-        
-        p_Ddata1 = max(p_Ddata1, p_Ddata2)
-
-!!$        call lsyssc_createVector(relementError1, p_rproblemLevel%rtriangulation%NEL, .false.)
 !!$        call lsyssc_getbase_double(relementError1, p_Ddata1)
-!!$        call lsysbl_getbase_double(rsolutionTransport, p_Ddata2)
+!!$        call lsyssc_getbase_double(relementError2, p_Ddata2)
 !!$        
-!!$        call storage_getbase_int2d(p_rproblemLevel%rtriangulation%h_IverticesAtElement,&
-!!$                                   p_IverticesAtElement)
-!!$        
-!!$        ielloop1: do iel = 1, p_rproblemLevel%rtriangulation%NEL
-!!$          do ive = 1, 3
-!!$            if (p_Ddata2(p_IverticesAtElement(ive, iel)) .ge. 0.0_DP) then
-!!$              p_Ddata1(iel) = 1.0_DP
-!!$              cycle ielloop1
-!!$            else
-!!$              p_Ddata1(iel) = 0.0_DP
-!!$            end if
-!!$          end do
-!!$        end do ielloop1
+!!$        p_Ddata1 = max(p_Ddata1, p_Ddata2)
 
         !-------------------------------------------------------------------------
         ! Perform h-adaptation
@@ -1543,7 +1547,6 @@ contains
       end if
 
     end do timeloop
-
 
     ! Release adaptation structure
     if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
