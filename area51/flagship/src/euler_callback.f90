@@ -1710,11 +1710,12 @@ contains
 
     ! local variables
     type(t_matrixScalar), pointer :: p_rmatrix
-    type(t_vectorScalar) :: rflux0X, rflux0Y, rfluxX, rfluxY
-    type(t_vectorBlock) :: ruX, ruY
-    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_u, p_flux0X, p_flux0Y, p_fluxX, p_fluxY, p_uX, p_uY
+    type(t_vectorScalar) :: rflux0, rflux, ralpha
+    type(t_vectorBlock) :: rdata
+    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_u, p_flux0, p_flux, p_data, p_alpha
     integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
-    integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix, coeffMatrix_CX, coeffMatrix_CY, nedge
+    integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix
+    integer :: coeffMatrix_CX, coeffMatrix_CY, nedge
 
     templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
     consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentMassMatrix')
@@ -1734,8 +1735,6 @@ contains
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CX), p_Cx)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CY), p_Cy)
 
-    call lsysbl_getbase_double(rsolution, p_u)
-
     ! Create diagonal separator
     h_Ksep = ST_NOHANDLE
     call storage_copy(p_rmatrix%h_Kld, h_Ksep)
@@ -1744,45 +1743,70 @@ contains
     ! Compute number of edges
     nedge = int(0.5*(p_rmatrix%NA-p_rmatrix%NEQ))
 
-    call lsyssc_createVector(rflux0X, nedge, NVAR2D, .true., ST_DOUBLE)
-    call lsyssc_createVector(rflux0Y, nedge, NVAR2D, .true., ST_DOUBLE)
-    call lsyssc_createVector(rfluxX, nedge, NVAR2D, .true., ST_DOUBLE)
-    call lsyssc_createVector(rfluxY, nedge, NVAR2D, .true., ST_DOUBLE)
-
-    call lsysbl_createVectorBlock(rsolution, ruX)
-    call lsysbl_createVectorBlock(rsolution, ruY)
-    call lsysbl_getbase_double(ruX, p_uX)
-    call lsysbl_getbase_double(ruY, p_uY)
+    ! Create auxiliary vectors
+    call lsyssc_createVector(rflux0, nedge, NVAR2D, .true., ST_DOUBLE)
+    call lsyssc_createVector(rflux,  nedge, NVAR2D, .true., ST_DOUBLE)
+    call lsyssc_createVector(ralpha, nedge, .false., ST_DOUBLE)
+    call lsysbl_createVectorBlock(rsolution, rdata, .false.)
     
-    ! Create flux vectors
-    call lsyssc_getbase_double(rflux0X, p_flux0X)
-    call lsyssc_getbase_double(rflux0Y, p_flux0Y)
-    call lsyssc_getbase_double(rfluxX, p_fluxX)
-    call lsyssc_getbase_double(rfluxY, p_fluxY)
+    ! Set pointers
+    call lsysbl_getbase_double(rsolution, p_u)
+    call lsysbl_getbase_double(rdata, p_data)
+    call lsyssc_getbase_double(rflux, p_flux)
+    call lsyssc_getbase_double(rflux0, p_flux0)
+    call lsyssc_getbase_double(ralpha, p_alpha)
 
-    ! Build the flux vectors
-    call buildFluxVectors2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                            NVAR2D, nedge, p_u, rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy,&
-                            p_flux0X, p_flux0Y, p_fluxX, p_fluxY)
-
-    p_fluxX = p_fluxX + p_fluxY
-    p_flux0X = p_flux0X + p_flux0Y
+    p_alpha = 1.0_DP
     
-    call limitSolutionVector(Xdir2D, p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                             NVAR2D, nedge, p_ML, p_u, p_flux0X, p_fluxX)
+
+!!$    ! Build the fluxes for x-direction
+!!$    call buildFluxChar2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+!!$                         NVAR2D, nedge, p_u, rtimestep%dStep,&
+!!$                         p_MC, p_ML, p_Cx, p_Cy, p_data, p_flux, p_flux0)
+!!$
+!!$    ! Build the fluxes for x-direction
+!!$    call buildFluxChar(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+!!$                       NVAR2D, nedge, p_u, XDir2D, rtimestep%dStep,&
+!!$                       p_MC, p_ML, p_Cx, p_data, p_flux, p_flux0)
+!!$
+!!$    ! Build the fluxes for y-direction
+!!$    call buildFluxChar(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+!!$                       NVAR2D, nedge, p_u, YDir2D, rtimestep%dStep,&
+!!$                       p_MC, p_ML, p_Cy, p_data, p_flux, p_flux0)
+!!$    
+!!$    ! Combine transient and stationary contributions
+!!$    p_flux = p_flux + p_flux0
+!!$
+!!$    ! Build the correction for x-direction
+!!$    call buildCorrectionChar(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+!!$                             NVAR2D, nedge, p_u, XDir2D, p_ML, p_flux, p_flux0)
+!!$
+!!$    ! Build the correction for y-direction
+!!$    call buildCorrectionChar(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+!!$                             NVAR2D, nedge, p_u, YDir2D, p_ML, p_flux, p_flux0)
+!!$
+!!$    ! Apply correction to low-order solution
+!!$    call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+!!$                         NVAR2D, nedge, p_ML, p_flux, p_data, p_u)
     
-   
+    ! Build the flux
+    call buildFluxCons2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+                         NVAR2D, nedge, p_u, rtimestep%dStep,&
+                         p_MC, p_ML, p_Cx, p_Cy, p_data, p_flux, p_flux0)
 
-!!$    ! Set boundary conditions explicitly
-!!$    call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
-!!$                                   rsolution, rtimestep%dTime,&
-!!$                                   rproblemLevel%p_rproblem%rboundary,&
-!!$                                   euler_calcBoundaryvalues2d)
+    ! Build the correction
+    call buildCorrectionCons2(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+                              NVAR2D, nedge, p_ML, p_flux, p_flux0, 1, p_alpha, p_u)
+!!$    call buildCorrectionCons2(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+!!$                              NVAR2D, nedge, p_ML, p_flux, p_flux0, 2, p_alpha, p_u)
+!!$    call buildCorrectionCons2(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+!!$                              NVAR2D, nedge, p_ML, p_flux, p_flux0, 3, p_alpha, p_u)
+    call buildCorrectionCons2(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+                              NVAR2D, nedge, p_ML, p_flux, p_flux0, 4, p_alpha, p_u)
 
-!!$    call limitSolutionVector(YDir2D, p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-!!$                             NVAR2D, nedge, p_ML, p_u, p_flux0Y, p_fluxY, p_uY)
-
-!!!$    p_u = p_u + p_uX! + p_uY
+    ! Apply correction to low-order solution
+    call applyCorrection2(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+                          NVAR2D, nedge, p_ML, p_flux, p_alpha, p_data, p_u)
 
     ! Set boundary conditions explicitly
     call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
@@ -1792,232 +1816,785 @@ contains
 
     ! Release flux vectors
     call storage_free(h_Ksep)
-    call lsyssc_releaseVector(rflux0X)
-    call lsyssc_releaseVector(rfluxX)
-    call lsyssc_releaseVector(rflux0Y)
-    call lsyssc_releaseVector(rfluxY)
-    call lsysbl_releaseVector(ruX)
-    call lsysbl_releaseVector(ruY)
+    call lsyssc_releaseVector(rflux0)
+    call lsyssc_releaseVector(rflux)
+    call lsyssc_releaseVector(ralpha)
+    call lsysbl_releaseVector(rdata)
 
   contains
 
-    subroutine buildFluxVectors2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u, dscale,&
-                                  MC, ML, Cx, Cy, flux0X, flux0Y, fluxX, fluxY)
+    subroutine buildFluxChar(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u,&
+                             Dweight, dscale, MC, ML, C, troc, flux, flux0)
       
       real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,MC,ML
+      real(DP), dimension(:), intent(IN) :: Dweight,MC,ML,C
       real(DP), intent(IN) :: dscale
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
       integer, intent(IN) :: NEQ,NVAR,NEDGE
       
-      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux0X,flux0Y,fluxX,fluxY
       integer, dimension(:), intent(INOUT) :: Ksep
-
+      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux,flux0
+      
+      real(DP), dimension(NVAR,NEQ), intent(OUT) :: troc
+      
       ! local variables
-      integer :: ij,ji,i,j, iedge
-
-      real(DP), dimension(:,:), allocatable :: rX,rY
-      real(DP), dimension(NDIM2D) :: a_ij, s_ij
       real(DP), dimension(NVAR*NVAR) :: R_ij
       real(DP), dimension(NVAR) :: Lbd_ij, W_ij, Daux, Daux1, Daux2, Wp_ij, Wm_ij
+      real(DP) :: a_ij, s_ij
+      integer :: ij, ji, i, j, iedge
 
-!!$      allocate(rX(nvar,neq), rY(nvar,neq)); rX=0; rY=0
-
-      ! Reset Ksep
-      Ksep = Kld; iedge = 0
+      ! Initialize time rate of change
+      call lalg_clearVector(troc)
       
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
       do i = 1, NEQ
         
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
         do ij = Kdiagonal(i)+1, Kld(i+1)-1
 
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1; iedge = iedge+1
 
           ! Compute skew-symmetric and symmetric coefficient
-          a_ij(1) = 0.5_DP*(Cx(ij)-Cx(ji));   a_ij(2) = 0.5_DP*(Cy(ij)-Cy(ji))
-          s_ij(1) = 0.5_DP*(Cx(ij)+Cx(ji));   s_ij(2) = 0.5_DP*(Cy(ij)+Cy(ji))
-
+          a_ij = 0.5_DP*(C(ij)-C(ji));   s_ij = 0.5_DP*(C(ij)+C(ji))
           
-          ! Calculate characteristic variables for x-direction
-          call euler_calcCharacteristics2d(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
-          Daux = a_ij(1)*Lbd_ij; Wm_ij = min(0.0_DP, Daux)*W_ij; Wp_ij = max(0.0_DP, Daux)*W_ij
+          ! Calculate characteristic variables
+          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, W_ij=W_ij, Lbd_ij=Lbd_ij, R_ij=R_ij)
 
-!!$          call DGEMV('n', NVAR, NVAR, 2.0_DP*dscale, R_ij, NVAR, Wm_ij, 1, 0.0_DP, Daux1, 1)
-!!$          rX(:,i) = rX(:,i) - Daux1
-!!$          
-!!$          call DGEMV('n', NVAR, NVAR, 2.0_DP*dscale, R_ij, NVAR, Wp_ij, 1, 0.0_DP, Daux1, 1)
-!!$          rX(:,j) = rX(:,j) - Daux1
+          ! Seperate positive and negative eigenvalues and 
+          ! multiply them by the characteristic variables
+          Daux = a_ij*Lbd_ij;   Wm_ij = min(0.0_DP, Daux)*W_ij;   Wp_ij = max(0.0_DP, Daux)*W_ij
 
-          Daux1 = max(0.0_DP, min(abs(Daux)+s_ij(1)*Lbd_ij, 2.0_DP*abs(Daux)))*W_ij
+          ! Transform back into conservative variables
+          call DGEMV('n', NVAR, NVAR, 2.0_DP*dscale, R_ij, NVAR, Wm_ij, 1, 0.0_DP, Daux1, 1)
+          call DGEMV('n', NVAR, NVAR, 2.0_DP*dscale, R_ij, NVAR, Wp_ij, 1, 0.0_DP, Daux2, 1)
+
+          ! Update the time rate of change vector
+          troc(:,i) = troc(:,i) - Daux1          
+          troc(:,j) = troc(:,j) - Daux2
+
+          ! Compute the raw antidiffusive flux
+          Daux1 = max(0.0_DP, min(abs(Daux)+s_ij*Lbd_ij, 2.0_DP*abs(Daux)))*W_ij
+
+          ! Transform back into conservative variables
           call DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, Daux1, 1, 0.0_DP, Daux2, 1)
-          fluxX(:,iedge) = - Daux2
-                    
-          ! Calculate characteristic variables for y-direction
-          call euler_calcCharacteristics2d(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
-          Daux = a_ij(2)*Lbd_ij; Wm_ij = min(0.0_DP, Daux)*W_ij; Wp_ij = max(0.0_DP, Daux)*W_ij
 
-!!$          call DGEMV('n', NVAR, NVAR, 2.0_DP*dscale, R_ij, NVAR, Wm_ij, 1, 0.0_DP, Daux1, 1)
-!!$          rY(:,i) = rY(:,i) - Daux1
-!!$          
-!!$          call DGEMV('n', NVAR, NVAR, 2.0_DP*dscale, R_ij, NVAR, Wp_ij, 1, 0.0_DP, Daux1, 1)
-!!$          rY(:,j) = rY(:,j) - Daux1
+          ! Store the raw antidiffusive flux
+          flux0(:,iedge) = flux0(:,iedge)-Daux2
+          
+        end do
+      end do
+      
 
-          Daux1 = max(0.0_DP, min(abs(Daux)+s_ij(2)*Lbd_ij, 2.0_DP*abs(Daux)))*W_ij
-          call DGEMV('n', NVAR, NVAR, dscale, R_ij, NVAR, Daux1, 1, 0.0_DP, Daux2, 1)
-          fluxY(:,iedge) = - Daux2
+      ! Scale the time rate of change by the lumped mass matrix
+      do i = 1, NEQ
+        troc(:,i) = troc(:,i)/ML(i)
+      end do
 
+
+      ! Loop over all rows (backward)
+      do i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        do ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+          
+          ! Apply mass antidiffusion
+          flux(:,iedge) = flux(:,iedge) + MC(ij)*(troc(:,i)-troc(:,j))
+          
+          ! Update edge counter
+          iedge = iedge-1
+          
         end do
       end do
 
-!!$      do i = 1, NEQ
-!!$        rX(:,i) = rX(:,i)/ML(i)
-!!$        rY(:,i) = rY(:,i)/ML(i)
-!!$      end do
+    end subroutine buildFluxChar
 
-      flux0X = fluxX
-      flux0Y = fluxY
+    !***************************************************************************
+    
+    subroutine buildCorrectionChar(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u,&
+                                   Dweight, ML, flux, flux0)
 
-!!$      ! Reset Ksep
-!!$      Ksep = Kld;  iedge = 0
-!!$      
-!!$      ! Add contribution of consistent mass matrix
-!!$      do i = 1, NEQ
-!!$        
-!!$        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-!!$          
-!!$          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
-!!$
-!!$          fluxX(:,iedge) = MC(ij)*(rX(:,i)-rX(:,j))+fluxX(:,iedge)
-!!$          fluxY(:,iedge) = MC(ij)*(rY(:,i)-rY(:,j))+fluxY(:,iedge)
-!!$          
-!!$        end do
-!!$      end do
-
-!!$      deallocate(rX, rY)
-
-    end subroutine buildFluxVectors2D
-
-
-    subroutine limitSolutionVector(Dweight, Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, ML, u, flux0, flux)
-
-      include '../../../kernel/PDEOperators/intf_gfsyscallback.inc'
-
-      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux0,flux
+      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
+      real(DP), dimension(NVAR,NEDGE), intent(IN) :: flux0
       real(DP), dimension(:), intent(IN) :: Dweight, ML
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
       integer, intent(IN) :: NEQ,NVAR,NEDGE
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: u
+      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux
       integer, dimension(:), intent(INOUT) :: Ksep
-
+      
       ! local variables
-      real(DP), dimension(:,:), allocatable :: pp,pm,qp,qm,rp,rm,r
+      real(DP), dimension(:,:), allocatable :: pp,pm,qp,qm,rp,rm
       real(DP), dimension(NVAR*NVAR) :: R_ij, L_ij
-      real(DP), dimension(NVAR) :: Lbd_ij, W_ij, Daux, F_ij, F0_ij
+      real(DP), dimension(NVAR) :: W_ij, Daux, F_ij, F0_ij
       integer :: ij,ji,i,j,iedge,ivar
 
-      allocate(pp(nvar,neq), pm(nvar,neq), qp(nvar,neq), qm(nvar,neq), rp(nvar,neq), rm(nvar,neq), r(nvar, neq))
+      allocate(pp(nvar,neq), pm(nvar,neq), qp(nvar,neq), qm(nvar,neq))
+      allocate(rp(nvar,neq), rm(nvar,neq))
       
-      pp=0; pm=0; qp=0; qm=0; rp=1; rm=1; r=0
+      pp=0.0_DP; pm=0.0_DP
+      qp=0.0_DP; qm=0.0_DP
+      rp=1.0_DP; rm=1.0_DP
       
-      ! Reset Ksep
-      Ksep = Kld; iedge = 0
+      ! Initialize edge counter
+      iedge = 0
       
-      ! Add contribution of consistent mass matrix
+      ! Loop over all rows
       do i = 1, NEQ
         
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
         do ij = Kdiagonal(i)+1, Kld(i+1)-1
           
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
-
-!!$          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, W_ij, Lbd_ij, R_ij, L_ij)
-!!$
-!!$          call DGEMV('n', NVAR, NVAR, 1.0_DP, L_ij, NVAR, flux(:,iedge), 1, 0.0_DP, F_ij, 1)
-!!$          call DGEMV('n', NVAR, NVAR, 1.0_DP, L_ij, NVAR, flux0(:,iedge), 1, 0.0_DP, F0_ij, 1)
-!!$
-!!$          F_ij = minmod(F_ij, F0_ij);   flux(:,iedge) = F_ij
-
-          F_ij = flux(:,iedge); W_ij = u(:,j)-u(:,i)
-
+          
+          ! Calculate characteristic variables
+          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, W_ij=W_ij, L_ij=L_ij)
+          
+          ! Transform raw fluxes into characteristic variables
+          call DGEMV('n', NVAR, NVAR, 1.0_DP, L_ij, NVAR, flux(:,iedge), 1, 0.0_DP, F_ij, 1)
+          call DGEMV('n', NVAR, NVAR, 1.0_DP, L_ij, NVAR, flux0(:,iedge), 1, 0.0_DP, F0_ij, 1)
+          
+          ! Apply minmod limiter and store characteristic flux
+          F_ij = minmod(F_ij, F0_ij);   flux(:,iedge) = F_ij
+          
           ! Sums of raw antidiffusive fluxes
           pp(:,i) = pp(:,i) + max(0.0_DP,  F_ij)
           pp(:,j) = pp(:,j) + max(0.0_DP, -F_ij)
           pm(:,i) = pm(:,i) + min(0.0_DP,  F_ij)
           pm(:,j) = pm(:,j) + min(0.0_DP, -F_ij)
-
+          
           ! Sums of admissible edge contributions
           qp(:,i) = max(qp(:,i),  W_ij)
           qp(:,j) = max(qp(:,j), -W_ij)
           qm(:,i) = min(qm(:,i),  W_ij)
           qm(:,j) = min(qm(:,j), -W_ij)
-
+          
         end do
       end do
-
+      
       ! Compute nodal correction factors
       do i = 1, NEQ
-        do ivar = 1, nvar
+        do ivar = 1, NVAR
           if (pp(ivar,i) >  SYS_EPSREAL) rp(ivar,i) = min(1.0_DP, ML(i)*qp(ivar,i)/pp(ivar,i))
           if (pm(ivar,i) < -SYS_EPSREAL) rm(ivar,i) = min(1.0_DP, ML(i)*qm(ivar,i)/pm(ivar,i))
         end do
       end do
 
 
-      ! Reset Ksep
-      Ksep = Kld; iedge = 0
+      ! Loop over all rows (backward)
+      do i = NEQ, 1, -1
+        
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        do ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
 
-      ! Add contribution of consistent mass matrix
+          ! Limit characteristic fluxes
+          F_ij = flux(:,iedge)
+          where (F_ij > 0.0_DP)
+            F_ij = min(rp(:,i), rm(:,j))*F_ij
+          elsewhere
+            F_ij = min(rm(:,i), rp(:,j))*F_ij
+          end where
+
+          ! Calculate characteristic variables
+          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, R_ij=R_ij)
+
+          ! Transform back into conservative variables
+          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, F_ij, 1, 0.0_DP, Daux, 1)
+
+          ! Store limited antidiffusive flux
+          flux(:,iedge) = Daux
+
+          ! Update edge counter
+          iedge = iedge-1
+          
+        end do
+      end do
+
+      deallocate(pp,pm,qp,qm,rp,rm)
+      
+    end subroutine buildCorrectionChar
+
+    !***************************************************************************
+
+    subroutine buildFluxChar2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u,&
+                               dscale, MC, ML, Cx, Cy, troc, flux, flux0)
+
+      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
+      real(DP), dimension(:), intent(IN) :: MC,ML,Cx, Cy
+      real(DP), intent(IN) :: dscale
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NVAR,NEDGE
+      
+      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux0,flux
+
+      real(DP), dimension(NVAR,NEQ), intent(OUT) :: troc     
+
+      ! local variables
+      real(DP), dimension(NVAR) :: K_ij,K_ji,D_ij,Diff,F_ij,F_ji
+      real(DP), dimension(NDIM2D) :: C_ij,C_ji
+      integer :: ij,ji,i,j,iedge
+
+      ! Initialize time rate of change
+      call lalg_clearVector(troc)
+      
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
       do i = 1, NEQ
         
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+          
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          
+          ! Calculate low-order flux
+          call euler_calcFluxRusanov2d(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          
+          ! Update the time rate of change vector
+          troc(:,i) = troc(:,i) + F_ij
+          troc(:,j) = troc(:,j) + F_ji
+
+          ! Calculate diffusion coefficient
+          call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+
+          ! Compute the raw antidiffusive flux
+          flux0(:,iedge) = D_ij*(u(:,i)-u(:,j)) ! + (1e-2) * MC(ij) * Diff
+          
+        end do
+      end do
+
+
+      ! Scale the time rate of change by the lumped mass matrix
+      do i = 1, NEQ
+        troc(:,i) = troc(:,i)/ML(i)
+      end do
+
+
+      ! Loop over all rows (backward)
+      do i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        do ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+          
+          ! Apply mass antidiffusion
+          flux(:,iedge) = flux0(:,iedge) + MC(ij)*(troc(:,i)-troc(:,j))
+          
+          ! Update edge counter
+          iedge = iedge-1
+          
+        end do
+      end do
+
+      flux = flux0
+
+    end subroutine buildFluxChar2d
+
+    !***************************************************************************
+
+    subroutine buildFluxCons2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u,&
+                               dscale, MC, ML, Cx, Cy, troc, flux, flux0)
+
+      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
+      real(DP), dimension(:), intent(IN) :: MC,ML,Cx, Cy
+      real(DP), intent(IN) :: dscale
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NVAR,NEDGE
+      
+      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux0,flux
+
+      real(DP), dimension(NVAR,NEQ), intent(OUT) :: troc     
+
+      real(DP), parameter :: c_d = 1.0
+
+      ! local variables
+      real(DP), dimension(NVAR) :: K_ij,K_ji,D_ij,Diff,F_ij,F_ji
+      real(DP), dimension(NDIM2D) :: C_ij,C_ji
+      integer :: ij,ji,i,j,iedge
+
+      ! Initialize time rate of change
+      call lalg_clearVector(troc)
+      
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+          
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+          
+          ! Calculate low-order flux
+          call euler_calcFluxRusanov2d(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          
+          ! Update the time rate of change vector
+          troc(:,i) = troc(:,i) + F_ij
+          troc(:,j) = troc(:,j) + F_ji
+
+          ! Calculate diffusion coefficient
+          call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          
+          ! Compute solution difference
+          Diff = u(:,i)-u(:,j)         
+
+          ! Compute the raw antidiffusive flux
+          flux0(:,iedge) = D_ij*Diff
+          
+        end do
+      end do
+
+
+      ! Scale the time rate of change by the lumped mass matrix
+      do i = 1, NEQ
+        troc(:,i) = troc(:,i)/ML(i)
+      end do
+
+
+      ! Loop over all rows (backward)
+      do i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        do ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+          
+          ! Apply mass antidiffusion
+          flux(:,iedge) = flux0(:,iedge) + MC(ij)*(troc(:,i)-troc(:,j))
+          
+          ! Update edge counter
+          iedge = iedge-1
+          
+        end do
+      end do
+
+      flux = flux0
+
+    end subroutine buildFluxCons2d
+    
+    !***************************************************************************
+    
+    subroutine buildCorrectionCons(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE,&
+                                   ML, flux, flux0, data, u)
+
+      
+      real(DP), dimension(NVAR,NEDGE), intent(IN) :: flux0
+      real(DP), dimension(:), intent(IN) :: ML
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NVAR,NEDGE
+      
+      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: data,u
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NVAR) :: G_ij
+      real(DP) :: dprelimit,f_ij,f0_ij,diff
+      integer :: ij,ji,i,j,iedge,ivar
+
+      allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
+      
+      pp=0.0_DP; pm=0.0_DP
+      qp=0.0_DP; qm=0.0_DP
+      rp=1.0_DP; rm=1.0_DP
+
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
         do ij = Kdiagonal(i)+1, Kld(i+1)-1
           
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
 
-          F_ij = flux(:,iedge)
-
-          if (F_ij(1) > 0) then
-            F_ij = min(rp(1,i), rm(1,j))*F_ij
+          ! Apply minmod prelimiter
+          dprelimit = minmod(flux(1,iedge), flux0(1,iedge))
+          if (dprelimit > 0.0_DP) then
+            flux(:,iedge) = dprelimit*flux(:,iedge)/flux(1,iedge)
           else
-            F_ij = min(rm(1,i), rp(1,j))*F_ij
+            flux(:,iedge) = 0.0_DP
           end if
+          
+          ! Get antidiffusive flux for density variable
+          f_ij = flux(1,iedge)
 
-!!$          where (F_ij > 0)
-!!$            F_ij = min(rp(:,i), rm(:,j))*F_ij
-!!$          elsewhere
-!!$            F_ij = min(rm(:,i), rp(:,j))*F_ij
-!!$          end where
+          ! Sums of raw antidiffusive fluxes
+          pp(i) = pp(i) + max(0.0_DP,  f_ij)
+          pp(j) = pp(j) + max(0.0_DP, -f_ij)
+          pm(i) = pm(i) + min(0.0_DP,  f_ij)
+          pm(j) = pm(j) + min(0.0_DP, -f_ij)
 
-!!$          call euler_calcCharacteristics2d(u(:,i), u(:,j), Dweight, W_ij, Lbd_ij, R_ij)
-!!$
-!!$          call DGEMV('n', NVAR, NVAR, 1.0_DP, R_ij, NVAR, F_ij, 1, 0.0_DP, Daux, 1)
+          ! Compute solution difference
+          diff = u(1,j)-u(1,i)
 
-          Daux = F_ij
-
-          r(:,i) = r(:,i) + Daux
-          r(:,j) = r(:,j) - Daux
+          ! Sums of admissible edge contributions
+          qp(i) = max(qp(i),  diff)
+          qp(j) = max(qp(j), -diff)
+          qm(i) = min(qm(i),  diff)
+          qm(j) = min(qm(j), -diff)
 
         end do
       end do
-      
+
+
+      ! Compute nodal correction factors
       do i = 1, NEQ
-        u(:,i) = r(:,i)/ML(i)
+        if (pp(i) >  SYS_EPSREAL) rp(i) = min(1.0_DP, ML(i)*qp(i)/pp(i))
+        if (pm(i) < -SYS_EPSREAL) rm(i) = min(1.0_DP, ML(i)*qm(i)/pm(i))
       end do
 
-      deallocate(pp,pm,qp,qm,rp,rm,r)
+
+      ! Initialize correction
+      call lalg_clearVector(data)
+
+      ! Loop over all rows (backward)
+      do i = NEQ, 1, -1
+        
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        do ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+
+          ! Limit conservative fluxes
+          f_ij = flux(1,iedge)
+          if (f_ij > 0.0_DP) then
+            G_ij = min(rp(i), rm(j))*flux(:,iedge)
+          else
+            G_ij = min(rm(i), rp(j))*flux(:,iedge)
+          end if
+          
+          ! Apply correction
+          data(:,i) = data(:,i) + G_ij
+          data(:,j) = data(:,j) - G_ij
+
+          ! Update edge counter
+          iedge = iedge-1
+          
+        end do
+      end do
+
+
+      do i = 1, NEQ
+        u(:,i) = u(:,i) + data(:,i)/ML(i)
+      end do
+
+    end subroutine buildCorrectionCons
+
+    !***************************************************************************
+
+    subroutine  buildCorrectionCons2(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE,&
+                                     ML, flux, flux0, ivar, alpha, u)
+
+      real(DP), dimension(NVAR,NEDGE), intent(IN) :: flux0
+      real(DP), dimension(:), intent(IN) :: ML
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NVAR,NEDGE,ivar
       
-    end subroutine limitSolutionVector
+      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: u
+      real(DP), dimension(:), intent(INOUT) :: alpha
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NVAR) :: Cons
+      real(DP) :: f_ij,f0_ij,diff,aux,u_ij,v_ij,p
+      integer :: ij,ji,i,j,iedge
 
+      allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
+      
+      pp=0.0_DP; pm=0.0_DP
+      qp=0.0_DP; qm=0.0_DP
+      rp=0.0_DP; rm=0.0_DP
 
-    pure function minmod(a,b)
-      real(DP), dimension(:), intent(IN) :: a,b
-      real(DP), dimension(size(a)) :: minmod
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        
+        ! Sanity check if pressure is non-negative
+        p = (GAMMA-1) * (u(4,i) - 0.5 * (u(2,i)*u(2,i)+u(3,i)*u(3,i)) / u(1,i))
+        if (p .le. 0.0) then
+          print *, "!!! Low-order pressure is negative !!!"
+          print *, p
+          stop
+        end if
 
-      where (a > 0 .and. b > 0)
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+          
+          if (ivar .eq. 4) then
+
+!!$            u_ij = (u(2,i)+u(2,j))/(u(1,i)+u(1,j))
+!!$            v_ij = (u(3,i)+u(3,j))/(u(1,i)+u(1,j))
+
+            u_ij = 0.5_DP * (u(2,i)/u(1,i)+u(2,j)/u(1,j))
+            v_ij = 0.5_DP * (u(3,i)/u(1,i)+u(3,j)/u(1,j))
+
+            f_ij = (GAMMA-1) * (flux(4, iedge) + &
+                                0.5*(u_ij*u_ij + v_ij*v_ij)*flux(1, iedge) -&
+                                u_ij*flux(2, iedge) - v_ij*flux(3, iedge))
+
+            Cons = u(:,j) - u(:,i)
+
+            diff = (GAMMA-1) * (Cons(4) + &
+                                0.5*(u_ij*u_ij + v_ij*v_ij)*Cons(1) -&
+                                u_ij*Cons(2) - v_ij*Cons(3))
+
+          else
+            
+            f_ij = flux(ivar,iedge)
+            diff = u(ivar,j)-u(ivar,i)
+            
+          end if
+
+          if (f_ij * diff > 0) then
+            alpha(iedge) = 0.0_DP; f_ij = 0.0_DP
+          end if
+
+          ! Sums of raw antidiffusive fluxes
+          pp(i) = pp(i) + max(0.0_DP,  f_ij)
+          pp(j) = pp(j) + max(0.0_DP, -f_ij)
+          pm(i) = pm(i) + min(0.0_DP,  f_ij)
+          pm(j) = pm(j) + min(0.0_DP, -f_ij)
+
+          ! Sums of admissible edge contributions
+          qp(i) = max(qp(i),  diff)
+          qp(j) = max(qp(j), -diff)
+          qm(i) = min(qm(i),  diff)
+          qm(j) = min(qm(j), -diff)
+
+        end do
+      end do
+
+      ! Compute nodal correction factors
+      do i = 1, NEQ
+        if (pp(i) >  SYS_EPSREAL) rp(i) = min(1.0_DP, ML(i)*qp(i)/pp(i))
+        if (pm(i) < -SYS_EPSREAL) rm(i) = min(1.0_DP, ML(i)*qm(i)/pm(i))
+      end do
+      
+      ! Loop over all rows (backward)
+      do i = NEQ, 1, -1
+        
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        do ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+
+          if (ivar .eq. 4) then
+
+!!$            u_ij = (u(2,i)+u(2,j))/(u(1,i)+u(1,j))
+!!$            v_ij = (u(3,i)+u(3,j))/(u(1,i)+u(1,j))
+
+            u_ij = 0.5_DP * (u(2,i)/u(1,i)+u(2,j)/u(1,j))
+            v_ij = 0.5_DP * (u(3,i)/u(1,i)+u(3,j)/u(1,j))
+
+            f_ij = (GAMMA-1) * (flux(4, iedge) + &
+                                0.5*(u_ij*u_ij + v_ij*v_ij)*flux(1, iedge) -&
+                                u_ij*flux(2, iedge) - v_ij*flux(3, iedge))
+            
+          else
+            
+            f_ij = flux(ivar,iedge)
+            
+          end if
+
+          ! Limit conservative fluxes
+          if (f_ij > SYS_EPSREAL) then
+            alpha(iedge) = min(alpha(iedge),rp(i), rm(j))
+          elseif (f_ij < -SYS_EPSREAL) then
+            alpha(iedge) = min(alpha(iedge),rm(i), rp(j))
+          end if
+          
+          ! Update edge counter
+          iedge = iedge-1
+          
+        end do
+      end do
+
+    end subroutine buildCorrectionCons2
+
+    !***************************************************************************
+
+    subroutine applyCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, ML, flux, data, u)
+
+      
+      real(DP), dimension(NVAR,NEDGE), intent(IN) :: flux
+      real(DP), dimension(:), intent(IN) :: ML
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NVAR,NEDGE
+      
+      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: u,data
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      real(DP) :: p
+      integer :: ij,ji,i,j,iedge
+
+      ! Initialize correction
+      call lalg_clearVector(data)
+
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+
+          ! Apply correction
+          data(:,i) = data(:,i) + flux(:,iedge)
+          data(:,j) = data(:,j) - flux(:,iedge)
+        end do
+      end do
+
+      do i = 1, NEQ
+        u(:,i) = u(:,i) + data(:,i)/ML(i)
+
+        ! Sanity check if pressure is non-negative
+        p = (GAMMA-1) * (u(4,i) - 0.5 * (u(2,i)*u(2,i)+u(3,i)*u(3,i)) / u(1,i))
+        if (p < 0.0) then
+          print *, "!!! Corrected pressure is negative !!!"
+          print *, p
+          stop
+        end if
+      end do
+      
+    end subroutine applyCorrection
+
+    !***************************************************************************
+
+    subroutine applyCorrection2(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, ML, flux, alpha, data, u)
+
+      
+      real(DP), dimension(NVAR,NEDGE), intent(IN) :: flux
+      real(DP), dimension(:), intent(IN) :: ML,alpha
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NVAR,NEDGE
+      
+      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: u,data
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      integer :: ij,ji,i,j,iedge
+
+      ! Initialize correction
+      call lalg_clearVector(data)
+
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+
+          ! Apply correction
+          data(:,i) = data(:,i) + alpha(iedge)*flux(:,iedge)
+          data(:,j) = data(:,j) - alpha(iedge)*flux(:,iedge)
+        end do
+      end do
+
+      do i = 1, NEQ
+        u(:,i) = u(:,i) + data(:,i)/ML(i)
+      end do
+      
+    end subroutine applyCorrection2
+
+    !***************************************************************************
+
+    pure elemental function minmod(a,b)
+      real(DP), intent(IN) :: a,b
+      real(DP) :: minmod
+
+      if (a > 0 .and. b > 0) then
         minmod = min(a,b)
-      elsewhere (a < 0 .and. b < 0)
+      elseif (a < 0 .and. b < 0) then
         minmod = max(a,b)
-      elsewhere
+      else
         minmod = 0
-      end where
+      end if
     end function minmod
 
   end subroutine euler_calcLinearizedFCT
