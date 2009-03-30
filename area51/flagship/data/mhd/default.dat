@@ -87,3 +87,16 @@ CoeffMatrix_CZ = 11
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
 CoeffMatrix_S = 0
+
+################################################################################
+[Timestepping]
+################################################################################
+
+# proportional exponent for PID controller
+dproportionalexponent = 0.075
+
+# integrap exponent for PID controller
+dintegralexponent = 0.175
+
+# derivative exponent for PID controller
+dderivativeexponent = 0.01
