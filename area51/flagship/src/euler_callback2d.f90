@@ -819,9 +819,11 @@ contains
     ! local variables
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP), dimension(NDIM2D) :: a
     real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
     real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
+
+
+    real(DP) :: ui,vi,uj,vj,ci,cj,Ei,Ej
 
     !---------------------------------------------------------------------------
     ! Evaluate the Galerkin fluxes
@@ -855,26 +857,34 @@ contains
     !---------------------------------------------------------------------------
     ! Evaluate the scalar dissipation 
     !---------------------------------------------------------------------------
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
 
-    ! Compute skew-symmetric coefficient
-    a = 0.5_DP*(C_ij-C_ji)
+    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
 
-    ! Compute enthalpy
-    hi = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-    hj = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
+    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
-    ! Compute auxiliary variables
-    aux  = sqrt(a(1)*a(1)+a(2)*a(2))
-    aux1 = aux3*a(1) + aux4*a(2)
-    aux2 = aux7*a(1) + aux8*a(2)
-    aux5 = sqrt(max(-G1*(0.5_DP*(aux3*aux3+aux4*aux4)-hi), SYS_EPSREAL))
-    aux6 = sqrt(max(-G1*(0.5_DP*(aux7*aux7+aux8*aux8)-hj), SYS_EPSREAL))
-    
-    ! Scalar dissipation for the Rusanov flux
-    d_ij = dscale*max( abs(aux1) + aux5*aux, abs(aux2) + aux6*aux)
+    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
+                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
+
+!!$    ! Compute enthalpy
+!!$    hi = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
+!!$    hj = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
+!!$
+!!$    ! Compute auxiliary variables
+!!$    aux1 = aux3*a(1) + aux4*a(2)
+!!$    aux2 = aux7*a(1) + aux8*a(2)
+!!$    aux5 = sqrt(max(-G1*(0.5_DP*(aux3*aux3+aux4*aux4)-hi), SYS_EPSREAL))
+!!$    aux6 = sqrt(max(-G1*(0.5_DP*(aux7*aux7+aux8*aux8)-hj), SYS_EPSREAL))
+
+
+!!$    ! Scalar dissipation for the Rusanov flux
+!!$    d_ij = dscale*max( abs(aux1) + aux5*aux, abs(aux2) + aux6*aux)
 
     ! Multiply the solution difference by the artificial diffusion factor
-    Diff = d_ij*(U_j-U_i)
+    Diff = dscale*d_ij*(U_j-U_i)
 
     ! Add the artificial diffusion to the fluxes
     F_ij = F_ij+Diff
@@ -1281,10 +1291,6 @@ contains
       ! Compute scalar dissipation
       D_ij = dscale*(abs(a(1)*u_ij+a(2)*v_ij) + anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
       
-!!$      ! Apply scalar dissipation
-!!$      K_ij = K_ij - d_ij
-!!$      K_ji = K_ji - d_ij
-
     else
 
       D_ij = 0.0_DP
@@ -1400,17 +1406,6 @@ contains
       D_ij( 6) = aux
       D_ij(11) = aux
       D_ij(16) = aux
-
-!!$      ! Apply scalar dissipation
-!!$      K_ij( 1) = K_ij( 1) - d_ij
-!!$      K_ij( 6) = K_ij( 6) - d_ij
-!!$      K_ij(11) = K_ij(11) - d_ij
-!!$      K_ij(16) = K_ij(16) - d_ij
-!!$
-!!$      K_ji( 1) = K_ji( 1) - d_ij
-!!$      K_ji( 6) = K_ji( 6) - d_ij
-!!$      K_ji(11) = K_ji(11) - d_ij
-!!$      K_ji(16) = K_ji(16) - d_ij
 
     else
 
@@ -1558,10 +1553,6 @@ contains
                         R_ij(4,2)*L_ij(2,4)+&
                         R_ij(4,3)*L_ij(3,4)+&
                         R_ij(4,4)*L_ij(4,4)  )
-
-!!$      ! Apply tensorial dissipation
-!!$      K_ij = K_ij - D_ij
-!!$      K_ji = K_ji - D_ij
 
     else
 
@@ -1732,10 +1723,6 @@ contains
       call DGEMM('n', 'n', NVAR2D, NVAR2D, NVAR2D, anorm,&
                  R_ij, NVAR2D, L_ij, NVAR2D, 0.0_DP, D_ij, NVAR2D)
 
-!!$      ! Apply tensorial dissipation
-!!$      K_ij = K_ij - D_ij
-!!$      K_ji = K_ji - D_ij
-
     else
 
       D_ij = 0.0_DP
@@ -1776,6 +1763,8 @@ contains
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: anorm,aux1,aux2,hi,hj,ui,uj,vi,vj
 
+    real(DP) :: ci,cj,Ei,Ej,aux
+
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1)
@@ -1792,31 +1781,41 @@ contains
     K_ji(3) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
     K_ji(4) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
-    ! Compute skew-symmetric coefficient and its norm
-    a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
+!!$    ! Compute skew-symmetric coefficient and its norm
+!!$    a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
+!!$
+!!$    if (anorm .gt. SYS_EPSREAL) then
+!!$      
+!!$      ! Compute enthalpy
+!!$      hi   = GAMMA*U_i(4)/U_i(1)-G2*(ui*ui+vi*vi)
+!!$      hj   = GAMMA*U_j(4)/U_j(1)-G2*(uj*uj+vj*vj)
+!!$      
+!!$      ! Compute auxiliary values
+!!$      aux1 = abs(a(1)*ui+a(2)*vi) + anorm*sqrt(max(-G1*(ui*ui+vi*vi-hi), SYS_EPSREAL))
+!!$      aux2 = abs(a(1)*uj+a(2)*vj) + anorm*sqrt(max(-G1*(uj*uj+vj*vj-hj), SYS_EPSREAL))
+!!$
+!!$      ! Compute scalar dissipation
+!!$      D_ij = dscale*max(aux1,aux2)
+!!$      
+!!$    else
+!!$
+!!$      D_ij = 0.0_DP
+!!$
+!!$    end if
 
-    if (anorm .gt. SYS_EPSREAL) then
-      
-      ! Compute enthalpy
-      hi   = GAMMA*U_i(4)/U_i(1)-G2*(ui*ui+vi*vi)
-      hj   = GAMMA*U_j(4)/U_j(1)-G2*(uj*uj+vj*vj)
-      
-      ! Compute auxiliary values
-      aux1 = abs(a(1)*ui+a(2)*vi) + anorm*sqrt(max(-G1*(ui*ui+vi*vi-hi), SYS_EPSREAL))
-      aux2 = abs(a(1)*uj+a(2)*vj) + anorm*sqrt(max(-G1*(uj*uj+vj*vj-hj), SYS_EPSREAL))
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
 
-      ! Compute scalar dissipation
-      D_ij = dscale*max(aux1,aux2)
-      
-!!$      ! Apply scalar dissipation
-!!$      K_ij = K_ij - d_ij
-!!$      K_ji = K_ji - d_ij
+    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
 
-    else
+    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
-      D_ij = 0.0_DP
+    aux = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
+               abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
 
-    end if
+    D_ij = aux*dscale
 
   end subroutine euler_calcMatrixRusanovDiag2d
 
@@ -1851,6 +1850,10 @@ contains
     ! local variable
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: anorm,aux,hi,hj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
+
+
+    real(DP) :: ci,cj
+
 
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
@@ -1904,41 +1907,50 @@ contains
     K_ji(15) = dscale*G1*C_ji(2)
     K_ji(16) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
-    ! Compute coefficients
-    a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
-
-    if (anorm .gt. SYS_EPSREAL) then
-      
-      ! Compute auxiliary values
-      aux1 = abs(a(1)*ui+a(2)*vi) + anorm*sqrt(max(-G1*(qi-hi), SYS_EPSREAL))
-      aux2 = abs(a(1)*uj+a(2)*vj) + anorm*sqrt(max(-G1*(qj-hj), SYS_EPSREAL))
-      
-      ! Compute scalar dissipation
-      aux = dscale*max(aux1, aux2)
-
-      D_ij     = 0.0_DP
-      D_ij( 1) = aux
-      D_ij( 6) = aux
-      D_ij(11) = aux
-      D_ij(16) = aux
-      
-!!$      ! Apply scalar dissipation
-!!$      K_ij( 1) = K_ij( 1) - d_ij
-!!$      K_ij( 6) = K_ij( 6) - d_ij
-!!$      K_ij(11) = K_ij(11) - d_ij
-!!$      K_ij(16) = K_ij(16) - d_ij
+!!$    ! Compute coefficients
+!!$    a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 !!$
-!!$      K_ji( 1) = K_ji( 1) - d_ij
-!!$      K_ji( 6) = K_ji( 6) - d_ij
-!!$      K_ji(11) = K_ji(11) - d_ij
-!!$      K_ji(16) = K_ji(16) - d_ij
+!!$    if (anorm .gt. SYS_EPSREAL) then
+!!$      
+!!$      ! Compute auxiliary values
+!!$      aux1 = abs(a(1)*ui+a(2)*vi) + anorm*sqrt(max(-G1*(qi-hi), SYS_EPSREAL))
+!!$      aux2 = abs(a(1)*uj+a(2)*vj) + anorm*sqrt(max(-G1*(qj-hj), SYS_EPSREAL))
+!!$      
+!!$      ! Compute scalar dissipation
+!!$      aux = dscale*max(aux1, aux2)
+!!$
+!!$      D_ij     = 0.0_DP
+!!$      D_ij( 1) = aux
+!!$      D_ij( 6) = aux
+!!$      D_ij(11) = aux
+!!$      D_ij(16) = aux
+!!$      
+!!$    else
+!!$
+!!$      D_ij = 0.0_DP
+!!$
+!!$    end if
 
-    else
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
 
-      D_ij = 0.0_DP
+    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
 
-    end if
+    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
+    aux = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
+               abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
+
+    aux = aux*dscale
+
+    D_ij = 0.0_DP
+    D_ij( 1) = aux
+    D_ij( 6) = aux
+    D_ij(11) = aux
+    D_ij(16) = aux
+    
   end subroutine euler_calcMatrixRusanov2d
 
   !*****************************************************************************
@@ -1961,7 +1973,7 @@ contains
 
 !<output>
     ! vector of characteristic variables
-    real(DP), dimension(:), intent(OUT) :: W_ij
+    real(DP), dimension(:), intent(OUT), optional :: W_ij
 
     ! OPTIONAL: diagonal matrix of eigenvalues
     real(DP), dimension(:), intent(OUT), optional :: Lbd_ij
@@ -1976,17 +1988,17 @@ contains
 
     ! local variables
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs_ij,aux,aux1,aux2,hi,hj,cPow2,uPow2,vPow2,c1,c2,cnorm    
+    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs_ij,aux,aux1,aux2,hi,hj,cPow2,uPow2,vPow2,a1,a2,anorm    
     
     ! Compute norm of weighting coefficient
-    cnorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
+    anorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
     
     ! Check if weighting coefficient is zero
-    if (cnorm .gt. SYS_EPSREAL) then
+    if (anorm .gt. SYS_EPSREAL) then
 
       ! Compute normalized weighting coefficient
-      c1  = Dweight(1)/cnorm
-      c2  = Dweight(2)/cnorm
+      a1  = Dweight(1)/anorm
+      a2  = Dweight(2)/anorm
 
       ! Compute Roe mean values
       aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
@@ -2002,7 +2014,7 @@ contains
       q_ij  = 0.5_DP*(uPow2+vPow2)
       cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
       cs_ij = sqrt(cPow2)  
-      aux   = c1*u_ij+c2*v_ij
+      aux   = a1*u_ij+a2*v_ij
 
       ! Compute diagonal matrix of eigenvalues (if present)
       if (present(Lbd_ij)) then
@@ -2014,10 +2026,9 @@ contains
 
       ! Compute matrix of right eigenvectors
       if (present(R_ij)) then
-        ! Matrix of right eigenvectors
         R_ij( 1) =  1.0_DP
-        R_ij( 2) =  u_ij-cs_ij*c1
-        R_ij( 3) =  v_ij-cs_ij*c2
+        R_ij( 2) =  u_ij-cs_ij*a1
+        R_ij( 3) =  v_ij-cs_ij*a2
         R_ij( 4) =  H_ij-cs_ij*aux
 
         R_ij( 5) =  1.0_DP
@@ -2026,14 +2037,14 @@ contains
         R_ij( 8) =  q_ij
 
         R_ij( 9) =  1.0_DP
-        R_ij(10) =  u_ij+cs_ij*c1
-        R_ij(11) =  v_ij+cs_ij*c2
+        R_ij(10) =  u_ij+cs_ij*a1
+        R_ij(11) =  v_ij+cs_ij*a2
         R_ij(12) =  H_ij+cs_ij*aux
         R_ij(13) =  0.0_DP
 
-        R_ij(14) =  c2
-        R_ij(15) = -c1
-        R_ij(16) =  u_ij*c2-v_ij*c1
+        R_ij(14) =  a2
+        R_ij(15) = -a1
+        R_ij(16) =  u_ij*a2-v_ij*a1
       end if
 
       ! Compute matrix of left eigenvectors
@@ -2041,17 +2052,17 @@ contains
         L_ij( 1) =  0.5_DP*(G1*q_ij+cs_ij*aux)/cPow2
         L_ij( 2) = (cPow2-G1*q_ij)/cPow2
         L_ij( 3) =  0.5_DP*(G1*q_ij-cs_ij*aux)/cPow2
-        L_ij( 4) =  v_ij*c1-u_ij*c2
+        L_ij( 4) =  v_ij*a1-u_ij*a2
 
-        L_ij( 5) =  0.5_DP*(-G1*u_ij-cs_ij*c1)/cPow2
+        L_ij( 5) =  0.5_DP*(-G1*u_ij-cs_ij*a1)/cPow2
         L_ij( 6) =  G1*u_ij/cPow2
-        L_ij( 7) =  0.5_DP*(-G1*u_ij+cs_ij*c1)/cPow2
-        L_ij( 8) =  c2
+        L_ij( 7) =  0.5_DP*(-G1*u_ij+cs_ij*a1)/cPow2
+        L_ij( 8) =  a2
 
-        L_ij( 9) =  0.5_DP*(-G1*v_ij-cs_ij*c2)/cPow2
+        L_ij( 9) =  0.5_DP*(-G1*v_ij-cs_ij*a2)/cPow2
         L_ij(10) =  G1*v_ij/cPow2
-        L_ij(11) =  0.5_DP*(-G1*v_ij+cs_ij*c2)/cPow2
-        L_ij(12) = -c1
+        L_ij(11) =  0.5_DP*(-G1*v_ij+cs_ij*a2)/cPow2
+        L_ij(12) = -a1
 
         L_ij(13) =  G2/cPow2
         L_ij(14) = -G1/cPow2
@@ -2059,25 +2070,28 @@ contains
         L_ij(16) =  0.0_DP
       end if
 
-      ! Compute solution difference U_i-U_j
-      Diff = U_j-U_i
-
-      ! Compute auxiliary quantities for characteristic variables
-      aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
-      aux2 = 0.5_DP*(aux*Diff(1)-c1*Diff(2)-c2*Diff(3))/cs_ij
-      
-      ! Compute characteristic variables
-      W_ij(1) = cnorm * (aux1 + aux2)
-      W_ij(2) = cnorm * ((1.0_DP-G1*q_ij/cPow2)*Diff(1)+G1*(u_ij*Diff(2)+v_ij*Diff(3)-Diff(4))/cPow2)
-      W_ij(3) = cnorm * (aux1 - aux2)
-      W_ij(4) = cnorm * ((c1*v_ij-c2*u_ij)*Diff(1)+c2*Diff(2)-c1*Diff(3))
+      ! Compute characteristic solution difference
+      if (present(W_ij)) then
+        ! Compute solution difference U_i-U_j
+        Diff = U_j-U_i
+        
+        ! Compute auxiliary quantities for characteristic variables
+        aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
+        aux2 = 0.5_DP*(aux*Diff(1)-a1*Diff(2)-a2*Diff(3))/cs_ij
+        
+        ! Compute characteristic variables
+        W_ij(1) = anorm * (aux1 + aux2)
+        W_ij(2) = anorm * ((1.0_DP-G1*q_ij/cPow2)*Diff(1)+G1*(u_ij*Diff(2)+v_ij*Diff(3)-Diff(4))/cPow2)
+        W_ij(3) = anorm * (aux1 - aux2)
+        W_ij(4) = anorm * ((a1*v_ij-a2*u_ij)*Diff(1)+a2*Diff(2)-a1*Diff(3))
+      end if
       
     else   ! |dweight| = 0
       
-      W_ij = 0.0_DP
       if (present(Lbd_ij)) Lbd_ij = 0.0_DP
       if (present(R_ij))   R_ij   = 0.0_DP
       if (present(L_ij))   L_ij   = 0.0_DP
+      if (present(W_ij))   W_ij   = 0.0_DP
       
     end if
     
