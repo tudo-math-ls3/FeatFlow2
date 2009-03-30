@@ -35,11 +35,11 @@ algorithm = transient_primal
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = bin/test.prm
+prmfile = bin/coarse.prm
 #grids/2d/z-pinch_tria.prm
 
 # file which contains the triangulation
-trifile = bin/test.tri
+trifile = bin/coarse.tri
 #grids/2d/z-pinch_tria.tri
 
 # convert mesh to triangular mesh?
@@ -83,7 +83,7 @@ imassantidiffusiontype = 0
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 3
 
 # type of system coupling
 # 0 = segregated approach
@@ -95,7 +95,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 1
+isystemPrecond = 3
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -203,7 +203,7 @@ imassantidiffusiontype = 0
 # 3 = Burgers equation in space-time (x,t)
 # 4 = Buckley Leverett in space-time (x,t)
 # 6 = Burgers' equation in 2D
-ivelocitytype = -2
+ivelocitytype = 2
 
 # section name of velocity field
 svelocityname = 
@@ -322,7 +322,7 @@ errorestimator = ErrorEstimator
 # 12 = linearized FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 10
+istabilisation = 1
 
 
 ################################################################################
@@ -340,7 +340,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/z-pinch1
+ucdsolution = out/dummy_fct
 
 # file for UCD output of error
 ucderror = out/z-pinch_error
@@ -382,37 +382,40 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.18
+dfinalTime =  0.9
 
 # initial time step size
-dinitialStep = 1e-4
+dinitialStep = 1e-8
 
 # lower bound for the admissible time step
-dminStep = 1e-4
+dminStep = 1e-8
 
 # upper bound for the admissible time step
-dmaxStep = 1e-4
+dmaxStep = 1e-3
 
 # adaptive time stepping algorithm
-iadaptTimestep = 0
+iadaptTimestep = 1
 
 # initial time for adaptive time stepping
 dadaptTime = 0.0
 
 # minimum factor by which time step may change
-ddecreaseFactor = 1.0
+ddecreaseFactor = 0.5
 
 # maximum factor by which time step may change
-dincreaseFactor = 1.0
+dincreaseFactor = 1.5
 
 # reduction factor by which time step is reduced if simulation fails
-dstepReductionFactor = 1.0
+dstepReductionFactor = 0.8
 
 # target tolerace for relative changes
-depsRel = 0.0
+depsRel = 1e-4
 
 # absolute tolerance for relative changes
 depsAbs = 0.0
+
+# maximum tolerance for relative changes
+dmaxRel = 1e-2
 
 # tolerance for steady state convergence
 depsSteady = 0.0
@@ -524,10 +527,10 @@ ioutputlevel = 3
 iresNorm = 0
 
 # minimum number of nonlinear steps
-nminIterations = 1
+nminIterations = 3
 
 # maximum number of nonlinear steps
-nmaxIterations = 100
+nmaxIterations = 25 #100
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -569,10 +572,10 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-10
+depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 0.0
+depsRel = 1e-6
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -603,10 +606,10 @@ ioutputlevel = 3
 iresNorm = 0
 
 # minimum number of nonlinear steps
-nminIterations = 1
+nminIterations = 1 #1
 
 # maximum number of nonlinear steps
-nmaxIterations = 100
+nmaxIterations = 10 #100
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -648,7 +651,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-12
+depsAbs = 1e-10
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -703,10 +706,10 @@ nkrylov = 25
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-16
+depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-3
+depsRel = 0.0
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -751,20 +754,20 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.00
+dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 0
+nsubdividemax = 2
 
 # adaptation strategy
 # 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.9
+drefinementTolerance = 0.3
 
 # coarsening tolerance
-dcoarseningTolerance = 0.5
+dcoarseningTolerance = 0.1
 
 
 ################################################################################
@@ -796,7 +799,7 @@ dabsfilter = 0.001
 nprotectLayers = 3
 
 # tolerance for protection layers
-dprotectLayerTolerance = 0.9
+dprotectLayerTolerance = 0.3
 
 # type of error variables
 #   density
