@@ -42,7 +42,7 @@
 !</input>
 
 !<output>
-  real(DP), dimension(:), intent(OUT)           :: W_ij
+  real(DP), dimension(:), intent(OUT), optional :: W_ij
   real(DP), dimension(:), intent(OUT), optional :: Lbd_ij
   real(DP), dimension(:), intent(OUT), optional :: R_ij
   real(DP), dimension(:), intent(OUT), optional :: L_ij
