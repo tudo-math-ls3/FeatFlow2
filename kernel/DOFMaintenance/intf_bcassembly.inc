@@ -104,10 +104,10 @@
   
       ! To get the X/Y-coordinates of the boundary point, use:
       !
-      ! REAL(DP) :: dx,dy
+      ! real(DP) :: dx,dy
       !
-      ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
-      !     rbcRegion%rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
+      ! call boundary_getCoords(rdiscretisation%p_rboundary, &
+      !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
     end subroutine
     
