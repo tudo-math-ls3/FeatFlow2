@@ -596,7 +596,7 @@ contains
 
 !<output>
     ! vector of characteristic variables
-    real(DP), dimension(:), intent(OUT) :: W_ij
+    real(DP), dimension(:), intent(OUT), optional :: W_ij
 
     ! OPTIONAL: diagonal matrix of eigenvalues
     real(DP), dimension(:), intent(OUT), optional :: Lbd_ij
