@@ -53,6 +53,9 @@
 !# 14.) codire_hadaptCallback3d
 !#      -> Performs application specific tasks in the adaptation algorithm in 3D
 !#
+!# 15.) codire_calcLinearizedFCT
+!#      -> Calculates the linearized FCT correction
+!#
 !#
 !# The following auxiliary routines are available:
 !#
@@ -131,6 +134,7 @@ module codire_callback
   public :: codire_hadaptCallback1d
   public :: codire_hadaptCallback2d
   public :: codire_hadaptCallback3d
+  public :: codire_calcLinearizedFCT
 
 !<globals>
 
@@ -2763,6 +2767,333 @@ contains
     end select
     
   end subroutine codire_hadaptCallback3d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine codire_calcLinearizedFCT(rbdrCond, rproblemLevel, rtimestep, rsolution, rcollection)
+
+!<description>
+    ! This subroutine calculates the linearized FCT correction
+!</description>
+
+!<input>
+    ! boundary condition structure
+    type(t_boundaryCondition), intent(IN) :: rbdrCond
+
+    ! problem level structure
+    type(t_problemLevel), intent(IN) :: rproblemLevel
+
+    ! time-stepping algorithm
+    type(t_timestep), intent(IN) :: rtimestep
+!</input>
+
+!<inputoutput>
+    ! solution vector
+    type(t_vectorBlock), intent(INOUT) :: rsolution
+
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_vectorScalar) :: rflux0, rflux
+    type(t_vectorBlock) :: rdata
+    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_u, p_flux0, p_flux, p_data
+    integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
+    integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix
+    integer :: coeffMatrix_CX, coeffMatrix_CY, nedge
+
+    templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
+    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentMassMatrix')
+    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedMassMatrix')
+    coeffMatrix_CX       = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
+    coeffMatrix_CY       = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
+    
+    p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
+
+    ! Set pointers
+    call lsyssc_getbase_Kld(p_rmatrix, p_Kld)
+    call lsyssc_getbase_Kcol(p_rmatrix, p_Kcol)
+    call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
+    
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CX), p_Cx)
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CY), p_Cy)
+
+    ! Create diagonal separator
+    h_Ksep = ST_NOHANDLE
+    call storage_copy(p_rmatrix%h_Kld, h_Ksep)
+    call storage_getbase_int(h_Ksep, p_Ksep, p_rmatrix%NEQ+1)
+
+    ! Compute number of edges
+    nedge = int(0.5*(p_rmatrix%NA-p_rmatrix%NEQ))
+
+    ! Create auxiliary vectors
+    call lsyssc_createVector(rflux0, nedge, .true., ST_DOUBLE)
+    call lsyssc_createVector(rflux,  nedge, .true., ST_DOUBLE)
+    call lsysbl_createVectorBlock(rsolution, rdata, .false.)
+    
+    ! Set pointers
+    call lsysbl_getbase_double(rsolution, p_u)
+    call lsysbl_getbase_double(rdata, p_data)
+    call lsyssc_getbase_double(rflux, p_flux)
+    call lsyssc_getbase_double(rflux0, p_flux0)
+
+    ! Build the flux
+    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ, nedge, p_u, &
+                     rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy, p_data, p_flux, p_flux0)
+
+    ! Build the correction
+    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+                             nedge, p_ML, p_flux, p_flux0, p_data, p_u)
+    
+    ! Set boundary conditions explicitly
+    call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
+                                   rsolution, rtimestep%dTime,&
+                                   rproblemLevel%p_rproblem%rboundary)
+
+    ! Release flux vectors
+    call storage_free(h_Ksep)
+    call lsyssc_releaseVector(rflux0)
+    call lsyssc_releaseVector(rflux)
+    call lsysbl_releaseVector(rdata)
+
+  contains
+
+    !***************************************************************************
+
+    subroutine buildFlux2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE, u,&
+                           dscale, MC, ML, Cx, Cy, troc, flux0, flux)
+
+      real(DP), dimension(:), intent(IN) :: MC,ML,Cx,Cy,u
+      real(DP), intent(IN) :: dscale
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE
+      
+      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(INOUT) :: flux0,flux
+      
+      real(DP), dimension(:), intent(OUT) :: troc     
+
+      ! local variables
+      real(DP), dimension(NDIM2D) :: C_ii,C_ij, C_ji
+      real(DP) :: k_ii,k_ij,k_ji,d_ij,aux,f_ij,f_ji
+      integer :: ii,ij,ji,i,j,iedge
+
+      ! Initialize time rate of change
+      call lalg_clearVector(troc)
+
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        
+        ! Get position of diagonal entry
+        ii = Kdiagonal(i)
+
+        ! Compute coefficient
+        C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
+
+        ! Compute convection coefficients
+        call codire_calcPrimalConvConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+
+        ! Update the time rate of change vector
+        troc(i) = troc(i) + dscale*k_ii*u(i)
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+          
+          ! Compute coefficients
+          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+          ! Compute convection coefficients
+          call codire_calcPrimalConvConst2d(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          
+          ! Artificial diffusion coefficient
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+
+          ! Compute auxiliary value
+          aux = d_ij*(u(j)-u(i))
+          
+          ! Update the time rate of change vector
+          troc(i) = troc(i) + dscale * (k_ij*u(j) + aux)
+          troc(j) = troc(j) + dscale * (k_ji*u(i) - aux)
+
+          ! Compute raw antidiffusive flux
+          flux0(iedge) = -aux
+
+        end do
+      end do
+
+
+      ! Scale the time rate of change by the lumped mass matrix
+      do i = 1, NEQ
+        troc(i) = troc(i)/ML(i)
+      end do
+
+
+      ! Loop over all rows (backward)
+      do i = NEQ, 1, -1
+
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        do ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+          
+          ! Apply mass antidiffusion
+          flux(iedge) = flux0(iedge) + MC(ij)*(troc(i)-troc(j))
+          
+          ! Update edge counter
+          iedge = iedge-1
+          
+        end do
+      end do
+
+      flux = flux0
+
+    end subroutine buildFlux2d
+
+    !***************************************************************************
+    
+    subroutine buildCorrectionCons(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE,&
+                                   ML, flux, flux0, data, u)
+
+      
+      real(DP), dimension(:), intent(IN) :: ML,flux0
+      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
+      integer, intent(IN) :: NEQ,NEDGE
+      
+      real(DP), dimension(:), intent(INOUT) :: data,u,flux
+      integer, dimension(:), intent(INOUT) :: Ksep
+      
+      ! local variables
+      real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
+      real(DP) :: f_ij,diff
+      integer :: ij,ji,i,j,iedge,ivar
+
+      allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
+      
+      pp=0.0_DP; pm=0.0_DP
+      qp=0.0_DP; qm=0.0_DP
+      rp=0.0_DP; rm=0.0_DP
+      
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+
+          ! Apply minmod prelimiter
+          f_ij = flux(iedge)
+          diff = u(j)-u(i)
+
+          if (f_ij * diff > 0) then
+            f_ij = 0.0_DP;  flux(iedge) = f_ij
+          end if
+
+          ! Sums of raw antidiffusive fluxes
+          pp(i) = pp(i) + max(0.0_DP,  f_ij)
+          pp(j) = pp(j) + max(0.0_DP, -f_ij)
+          pm(i) = pm(i) + min(0.0_DP,  f_ij)
+          pm(j) = pm(j) + min(0.0_DP, -f_ij)
+
+          ! Sums of admissible edge contributions
+          qp(i) = max(qp(i),  diff)
+          qp(j) = max(qp(j), -diff)
+          qm(i) = min(qm(i),  diff)
+          qm(j) = min(qm(j), -diff)
+
+        end do
+      end do
+
+
+      ! Compute nodal correction factors
+      do i = 1, NEQ
+        if (pp(i) >  SYS_EPSREAL) rp(i) = min(1.0_DP, ML(i)*qp(i)/pp(i))
+        if (pm(i) < -SYS_EPSREAL) rm(i) = min(1.0_DP, ML(i)*qm(i)/pm(i))
+      end do
+
+
+      ! Initialize correction
+      call lalg_clearVector(data)
+
+      ! Loop over all rows (backward)
+      do i = NEQ, 1, -1
+        
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        do ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+
+          ! Limit conservative fluxes
+          f_ij = flux(iedge)
+          if (f_ij > 0.0_DP) then
+            f_ij = min(rp(i), rm(j))*f_ij
+          else
+            f_ij = min(rm(i), rp(j))*f_ij
+          end if
+          
+          ! Apply correction
+          data(i) = data(i) + f_ij
+          data(j) = data(j) - f_ij
+
+          ! Update edge counter
+          iedge = iedge-1
+          
+        end do
+      end do
+
+
+      do i = 1, NEQ
+        u(i) = u(i) + data(i)/ML(i)
+      end do
+
+    end subroutine buildCorrectionCons
+
+    !***************************************************************************
+
+    pure elemental function minmod(a,b)
+      real(DP), intent(IN) :: a,b
+      real(DP) :: minmod
+
+      if (a > 0 .and. b > 0) then
+        minmod = min(a,b)
+      elseif (a < 0 .and. b < 0) then
+        minmod = max(a,b)
+      else
+        minmod = 0
+      end if
+    end function minmod
+    
+  end subroutine codire_calcLinearizedFCT
 
   !*****************************************************************************
   
