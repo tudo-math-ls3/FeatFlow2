@@ -22,7 +22,9 @@ program gridgen_otype
   ! Definition of output filename
   character(len=80) :: cfilename = "grid"
 
-  
+  ! Definition of output format
+  character(LEN=*), parameter :: cFormat = '(F32.15)'
+ 
   ! local variables
   character(len=80) :: cbuffer
   character(len=32) :: cbuffer1,cbuffer2,cbuffer3,cbuffer4
@@ -59,13 +61,17 @@ program gridgen_otype
     end select
   end do
 
-  print *, "Generating annular grid"
-  print *,"------------------------"
-  print *, "inner radius: ", dinnerRadius
-  print *, "outer radius: ", douterRadius
-  print *, "number of layers in radial direction: ", nlayers
-  print *, "number of segments in angular direction: ", nsegments
-  print *, "name of output file: ", trim(adjustl(cfilename))
+  write(*,'(A)') 'Generating annular grid'
+  write(*,'(A)') '-----------------------'
+  write(cbuffer, *) dinnerRadius
+  write(*,'(A,T45,A)') 'inner radius:',trim(adjustl(cbuffer))
+  write(cbuffer, *) douterRadius
+  write(*,'(A,T45,A)') 'outer radius:',trim(adjustl(cbuffer))
+  write(cbuffer, *) nlayers
+  write(*,'(A,T45,A)') 'number of layers in radial direction:',trim(adjustl(cbuffer))
+  write(cbuffer, *) nsegments
+  write(*,'(A,T45,A)') 'number of segments in angular direction:',trim(adjustl(cbuffer))
+  write(*,'(A,T45,A)') 'name of output file: ',trim(adjustl(cfilename))
   
   !-----------------------------------------------------------------------------
   ! Generate PRM-file
@@ -82,11 +88,12 @@ program gridgen_otype
   write(100,'(A)') 'ITYP NSPLINE NPAR'
   write(100,'(A)') '2 1 3 '
   write(100,'(A)') 'PARAMETERS'
-  write(100,'(A)') '0.00000 0.00000'
-  write(cbuffer1, '(F20.12)') douterRadius
-  write(100,'(A)') trim(adjustl(cbuffer1))//' 0.0E0'
-  write(cbuffer1, '(F20.12)') 2.0_DP*pi
-  write(100,'(A)') '0.0 '//trim(adjustl(cbuffer1))
+  write(cbuffer1, cFormat) 0.0
+  write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer1))
+  write(cbuffer2, cFormat) douterRadius
+  write(100,'(A)') trim(adjustl(cbuffer2))//' '//trim(adjustl(cbuffer1))
+  write(cbuffer2, cFormat) 2.0_DP*pi
+  write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
   
   close(100)
   
@@ -110,28 +117,30 @@ program gridgen_otype
   !-----------------------------------------------------------------------------
 
   ! Write vertex at origin
-  write(100,'(A)') '0.000000000000 0.000000000000'
+  write(cbuffer1, cFormat) 0.0
+  write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer1))
 
   ! Write interior vertices
   do i = 1, nsegments
     do j = 1, nlayers-1
 
       ! Compute radius
-      r = dinnerRadius + (j-1)*(douterRadius-dinnerRadius)/(nlayers-1)
+      r = dinnerRadius + j*(douterRadius-dinnerRadius)/nlayers
       
       ! Compute angle
-      phi = (i-1)*2.0_DP*pi/nsegments
+      phi = 2*(i-1)*pi/nsegments
 
-      write(cbuffer1, '(F20.12)') r * cos(phi)
-      write(cbuffer2, '(F20.12)') r * sin(phi)
+      write(cbuffer1, cFormat) r * cos(phi)
+      write(cbuffer2, cFormat) r * sin(phi)
 
       write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
     end do
 
     ! Write parameter for boundary vertex
     r = real(i-1,DP)/real(nsegments,DP)
-    write(cbuffer1, '(F20.12)') r
-    write(100,'(A)') trim(adjustl(cbuffer1))//' 0.0'
+    write(cbuffer1, cFormat) r
+    write(cbuffer2, cFormat) 0.0
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
   end do
 
   !-----------------------------------------------------------------------------
