@@ -35,6 +35,9 @@
 !# 3.) jstab_ueoJumpStabil3d_m_unidble
 !#     -> The actual matrix computation routine for 3D domains.
 !#
+!# 4.) jstab_ueoJumpStabil1d_m_unidble
+!#     -> The actual matrix computation routine for 1D domains.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -116,6 +119,11 @@ contains
     
     ! Check which element we have here...
     select case(elem_igetShape(rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement))
+    case (BGEOM_SHAPE_LINE)
+      ! 1D line element
+      call jstab_ueoJumpStabil1d_m_unidble (&
+          rmatrix,dgamma,dgammastar,dtheta,dnu,rdiscretisation)
+
     case (BGEOM_SHAPE_QUAD)
       ! 2D quadrilateral element
       call jstab_ueoJumpStabil2d_m_unidble (&
@@ -905,7 +913,7 @@ contains
     cevalTag = elem_getEvaluationTag(celement)
     
     ! Do not calculate reference coordiantes - we'll do this manually.
-    cevalTag = ior(cevalTag, not(EL_EVLTAG_REFPOINTS))
+    cevalTag = iand(cevalTag, not(EL_EVLTAG_REFPOINTS))
 
     ! Set up the Bder array - we'll need the first derivatives
     Bder = .false.
@@ -1298,6 +1306,325 @@ contains
     end subroutine jstab3d_aux_mapQuadToHexa
   
   end subroutine jstab_ueoJumpStabil3d_m_unidble
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine jstab_ueoJumpStabil1d_m_unidble ( &
+      rmatrixScalar,dgamma,dgammastar,dtheta,dnu,rdiscretisation)
+      
+!<description>
+  ! Unified edge oriented jump stabilisation, 1D version for uniform
+  ! hexahedron elements.
+  !
+  ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
+  !            \int_E [grad u] [grad v] ds$$
+  !
+  ! Uniform discretisation, double precision structure-7 and 9 matrix.
+  !
+  ! For a rerefence about the stabilisation, see
+  ! [Ouazzi, A.; Finite Element Simulation of Nonlinear Fluids, Application
+  ! to Granular Material and Powder; Shaker Verlag, ISBN 3-8322-5201-0, p. 55ff]
+  !
+  ! WARNING: For edge oriented stabilisation, the underlying matrix rmatrix
+  !   must have an extended stencil! The matrix structure must be set up with
+  !   the BILF_MATC_EDGEBASED switch!!!
+!</description>
+  
+!<input>
+  ! Stabilisation parameter. Standard=0.01
+  real(DP), intent(IN) :: dgamma
+  
+  ! 2nd stabilisation parametr. Standard=dgamma=0.01
+  real(DP), intent(IN) :: dgammastar
+  
+  ! Multiplication factor for the stabilisation matrix when adding
+  ! it to the global matrix. Standard value = 1.0.
+  real(DP), intent(IN) :: dtheta
+  
+  ! Viscosity parameter for the matrix if viscosity is constant.
+  real(DP), intent(IN) :: dnu
+
+  ! OPTIONAL: Alternative discretisation structure to use for setting up
+  ! the jump stabilisaton. This allows to use a different FE pair for
+  ! setting up the stabilisation than the matrix itself.
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+!</input>
+  
+!<inputoutput>
+  ! The system matrix to be modified. Must be format 7 or 9.
+  type(t_matrixScalar), intent(INOUT), target :: rmatrixScalar
+!</inputoutput>
+
+!</subroutine>
+
+  ! The triangulation structure - to shorten some things...
+  type(t_triangulation), pointer :: p_rtria
+  
+  ! Current element distribution
+  type(t_elementDistribution), pointer :: p_relemDist
+  
+  ! Underlying discretisation structure
+  type(t_spatialDiscretisation), pointer :: p_rdiscr
+  
+  ! Some triangulation arrays we need frequently
+  integer, dimension(:), pointer :: p_IelemAtVert, p_IelemAtVertIdx
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  
+  ! Pointer to KLD, KCOL, DA
+  integer, dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
+  real(DP), dimension(:), pointer :: p_Da
+  
+  ! Number of DOFs - per element and per patch
+  integer :: ndofs, ndofsPatch, idof,idofp,idof1,idof2
+  
+  ! Variables for the cubature formula
+  real(DP), dimension(1,1,2) :: DcubPts1D
+  
+  ! Variables for the DOF-mapping
+  integer, dimension(:,:), allocatable :: Idofs
+
+  ! An element evaluation structure
+  type(t_evalElementSet) :: reval
+  
+  ! Derivative specifiers
+  logical, dimension(EL_MAXNDER) :: Bder
+  
+  ! Arrays for the evaluation of the elements
+  real(DP), dimension(:,:,:,:), allocatable :: Dbas
+  
+  ! An array for the evaluation of the Jump
+  real(DP), dimension(:), allocatable :: Djump
+  
+  ! An array for the local DOFs of the patch
+  integer, dimension(:), allocatable :: IdofsPatch
+  
+  ! The local matrix
+  real(DP), dimension(:,:), allocatable :: Dmatrix
+
+  ! some other local variables
+  integer(I32) :: celement, cevalTag, ctrafo
+  integer :: i, j, iel1, iel2, ivt, ivt1, ivt2, idx, irow
+  integer, dimension(2) :: Iel
+  real(DP) :: dh, dcoeff
+
+
+    ! Get a pointer to the triangulation and discretisation.
+    p_rtria => rmatrixScalar%p_rspatialDiscrTest%p_rtriangulation
+    p_rdiscr => rmatrixScalar%p_rspatialDiscrTest
+    
+    ! If a discretisation structure is present, take that one.
+    if (present(rdiscretisation)) &
+      p_rdiscr => rdiscretisation
+
+    ! Get the arrays from the triangulation
+    call storage_getbase_int2d (p_rtria%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int (p_rtria%h_IelementsAtVertex, p_IelemAtVert)
+    call storage_getbase_int (p_rtria%h_IelementsAtVertexIdx, p_IelemAtVertIdx)
+    call storage_getbase_double2d(p_rtria%h_DvertexCoords, p_DvertexCoords)
+    
+    ! Get KLD, KCol and Da
+    call lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
+    call lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
+    call lsyssc_getbase_double (rmatrixScalar,p_Da)
+    
+    ! Activate the one and only element distribution
+    p_relemDist => p_rdiscr%RelementDistr(1)
+
+    ! Get the number of DOFs
+    celement = p_relemDist%celement
+    ndofs = elem_igetNDofLoc(celement)
+      
+    ! Get the trafo type
+    ctrafo = elem_igetTrafoType(celement)
+    
+    ! Get the evaluation tag of the element
+    cevalTag = elem_getEvaluationTag(celement)
+    
+    ! Do not calculate reference coordiantes - we'll do this manually.
+    cevalTag = iand(cevalTag, not(EL_EVLTAG_REFPOINTS))
+
+    ! Set up the Bder array - we'll need the first derivatives
+    Bder = .false.
+    Bder(DER_DERIV1D_X) = .true.
+    
+    ! Allocate an array for the DOF-mapping
+    allocate(Idofs(ndofs,2))
+    
+    ! Allocate an array for the element evaluation
+    allocate(Dbas(ndofs,elem_getMaxDerivative(celement),2,2))
+    
+    ! Allocate an array for the DOFs on the patch
+    allocate(IdofsPatch(2*ndofs))
+    
+    ! Allocate an array for the jumps
+    allocate(Djump(2*ndofs))
+    
+    ! Allocate the local matrix
+    allocate(Dmatrix(2*ndofs,2*ndofs))
+    
+    ! Okay, loop over all vertices of the mesh
+    do ivt = 1, p_rtria%NVT
+    
+      ! Get the indices of the elements adjacent to the current vertice
+      idx = p_IelemAtVertIdx(ivt)
+      if(p_IelemAtVertIdx(ivt+1) - idx .le. 1) cycle
+      iel1 = p_IelemAtVert(idx)
+      iel2 = p_IelemAtVert(idx+1)
+      
+      ! Copy (iel1,iel2) into an array
+      Iel(:) = (/ iel1, iel2 /)
+      
+      ! Find out which of the element's local faces corresponds
+      ! to the global face we're currently processing.
+      do ivt1 = 1, 2
+        if(p_IverticesAtElement(ivt1, iel1) .eq. ivt) exit
+      end do
+      do ivt2 = 1, 2
+        if(p_IverticesAtElement(ivt2, iel2) .eq. ivt) exit
+      end do
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! STEP 1: Evaluate elements
+      ! Evaluate the element on both cells and perform the DOF-mapping.
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Set up the 'cubature points'
+      DcubPts1D(1,1,1) = -1.0_DP + real(2*(ivt1-1),DP)
+      DcubPts1D(1,1,2) = -1.0_DP + real(2*(ivt2-1),DP)
+
+      ! Prepare the element evaluation structure
+      call elprep_prepareSetForEvaluation (reval, cevalTag, p_rtria, Iel, &
+                                           ctrafo, DpointsRef=DcubPts1D)
+      
+      ! Evaluate the element
+      call elem_generic_sim2(celement, reval, Bder, Dbas)
+
+      ! Perform the DOF-mapping for both elements
+      call dof_locGlobMapping_mult(p_rdiscr, Iel, Idofs)
+    
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! STEP 2: Calculate Jumps
+      ! In this step, we'll calculate the gradient jumps and, at the same
+      ! time, we will calculate the DOFs of the current element patch.
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Reset Djump
+      Djump = 0.0_DP
+      
+      ! First, copy the evaluation of the first element's gradients to the
+      ! Djump array. At the same time, copy the DOF indices of the first
+      ! element into IdofsPatch
+      do idof = 1, ndofs
+        Djump(idof) = Dbas(idof,DER_DERIV1D_X,1,1)
+        IdofsPatch(idof) = Idofs(idof,1)
+      end do ! idof
+      
+      ! Currently, we have ndofs DOFs in our patch - these are the DOFs of
+      ! the first element in the patch.
+      ndofsPatch = ndofs
+      
+      ! Now comes the interesting part: Calculate the jumps.
+      ! So loop over all local DOFs on the second element
+      do idof = 1, ndofs
+
+        ! Now let's see whether the current DOF (of the second element)
+        ! is already in the patch. Please note that it is sufficient to check
+        ! only the first ndofs entries in IdofsPatch, as all entries beyond
+        ! ndofs belong to the second element that we're currently processing.
+        do idofp = 1, ndofs
+          if(IdofsPatch(idofp) .eq. Idofs(idof,2)) exit
+        end do
+        
+        ! Update the DOF-map for the patch in the case the the current DOF was
+        ! not already in the list.
+        if(idofp .gt. ndofs) then
+          ndofsPatch = ndofsPatch + 1
+          idofp = ndofsPatch
+          IdofsPatch(idofp) = Idofs(idof,2)
+        end if
+        
+        ! Calculate the jump of the gradient in all points
+        Djump(idofp) = Djump(idofp) - Dbas(idof,DER_DERIV1D_X,1,2)
+
+      end do ! idof
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! STEP 3: Prepare for 'integration'
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Calculate local h
+      dh = 0.5_DP * abs(p_IverticesAtElement(3-ivt1,iel1) &
+                       -p_IverticesAtElement(3-ivt2,iel2))
+      
+      ! Calculate the coefficient for the integral
+      dcoeff = & !max(dgammastar * dnu * dh, &
+                dgamma * dh**2
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! STEP 4: Calculate local matrix
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Reset the local matrix for this patch
+      Dmatrix = 0.0_DP
+      
+      ! Okay, let's loop over all DOFs in the current patch, once for the
+      ! test and once for the trial space.
+      do idof1 = 1, ndofsPatch
+        do idof2 = 1, ndofsPatch
+          
+          ! Store the entry in the local matrix, weighted by dcoeff
+          Dmatrix(idof1,idof2) = dcoeff*Djump(idof1)*Djump(idof2)
+
+        end do ! idof2
+      end do ! idof1
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! STEP 5: Update global matrix
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Loop over all DOFs in test space
+      do idof1 = 1, ndofsPatch
+      
+        ! Get the index of the row
+        irow = IdofsPatch(idof1)
+        
+        ! Loop over all DOFs in trial space
+        do idof2 = 1, ndofsPatch
+          
+          ! Try to find the entry in the global matrix
+          do idx = p_Kld(irow), p_Kld(irow+1)-1
+            if(p_Kcol(idx) .eq. IdofsPatch(idof2)) then
+              p_Da(idx) = p_Da(idx) + dtheta*Dmatrix(idof1,idof2)
+              exit
+            end if 
+          end do ! idx
+          
+        end do ! idof2
+      
+      end do ! idof1 
+      
+      ! Proceed with the next face
+      
+    end do ! iat
+    
+    ! Release the element set
+    call elprep_releaseElementSet(reval)
+    
+    ! Deallocate everything we've allocated
+    deallocate(Dmatrix)
+    deallocate(Djump)
+    deallocate(IdofsPatch)
+    deallocate(Dbas)
+    deallocate(Idofs)
+    
+    ! That's it
+  
+  end subroutine jstab_ueoJumpStabil1d_m_unidble
   
 ! ***************************************************************************
 
