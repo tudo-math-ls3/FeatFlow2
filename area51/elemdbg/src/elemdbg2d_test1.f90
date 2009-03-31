@@ -29,8 +29,10 @@ module elemdbg2d_test1
   use ucd
   use spdiscprojection
   use convection
+  use collection
     
   use elemdbg2d_callback
+  use disto2d_aux
   
   implicit none
 
@@ -64,19 +66,20 @@ contains
   integer :: NLMIN,NLMAX,ierror,ilvl
   real(DP), dimension(:,:), allocatable, target :: Derror
   integer, dimension(:,:), allocatable :: Istat
-  integer :: isolver, ioutput, nmaxiter,ccubature
+  integer :: isolver, ioutput, nmaxiter,ccubature,idistType,idistLevel,idistLvl
   integer(I32) :: celement, cshape
-  real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2
+  real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2, ddist2
   character(LEN=64) :: selement,scubature
   type(t_bilinearForm) :: rform
   integer :: iwritemesh
   type(t_ucdexport) :: rexport
   real(DP), dimension(:), pointer :: p_Ddata
-  real(DP) :: dnu,dbeta1,dbeta2,dupsam
-  integer :: istabil
+  real(DP) :: dnu,dbeta1,dbeta2,dupsam,dgamma
+  integer :: istabil, isolution
   type(t_convStreamlineDiffusion) :: rconfigSD
   type(t_jumpStabilisation) :: rconfigEOJ
-    
+  type(t_collection) :: rcollect
+
     ! Fetch minimum and maximum levels
     call parlst_getvalue_int(rparam, sConfigSection, 'NLMIN', NLMIN, -1)
     call parlst_getvalue_int(rparam, sConfigSection, 'NLMAX', NLMAX, -1)
@@ -87,12 +90,22 @@ contains
       call sys_halt()
     end if
 
-    ! Fetch mesh distortion parameter
-    call parlst_getvalue_double(rparam, sConfigSection, 'DMESHDISTORT', ddist, 0.0_DP)
+    ! Fetch mesh distortion type
+    call parlst_getvalue_int(rparam, sConfigSection, 'IDISTTYPE', idistType, 0)
+
+    ! Fetch mesh distortion level
+    call parlst_getvalue_int(rparam, sConfigSection, 'IDISTLEVEL', idistLevel, 0)
+
+    ! Fetch mesh distortion parameters
+    call parlst_getvalue_double(rparam, sConfigSection, 'DMESHDISTORT', ddist, 0.1_DP)
+    call parlst_getvalue_double(rparam, sConfigSection, 'DMESHDISTORT2', ddist2, 0.0_DP)
     
     ! Fetch element and cubature rule
     call parlst_getvalue_string(rparam, sConfigSection, 'SELEMENT', selement, '')
     call parlst_getvalue_string(rparam, sConfigSection, 'SCUBATURE', scubature, '')
+    
+    ! Fetch desired solution
+    call parlst_getvalue_int(rparam, sConfigSection, 'ISOLUTION', isolution, 0)
     
     ! Fetch solver type
     call parlst_getvalue_int(rparam, sConfigSection, 'ISOLVER', isolver, 0)
@@ -107,14 +120,15 @@ contains
     call parlst_getvalue_double(rparam, sConfigSection, 'DEPSABS', depsAbs, 1E-11_DP)
     call parlst_getvalue_double(rparam, sConfigSection, 'DEPSREL', depsRel, 1E-8_DP)
 
-    ! Problem parameters
+    ! Fetch problem parameters
     call parlst_getvalue_double(rparam, sConfigSection, 'DNU', dnu, 1.0_DP)
     call parlst_getvalue_double(rparam, sConfigSection, 'DBETA1', dbeta1, 0.0_DP)
     call parlst_getvalue_double(rparam, sConfigSection, 'DBETA2', dbeta2, 0.0_DP)
     
-    ! Get stabilisation parameter
+    ! Fetch stabilisation parameters
     call parlst_getvalue_int(rparam, sConfigSection, 'ISTABIL', istabil, 0)
-    call parlst_getvalue_double(rparam, sConfigSection, 'DUPSAM', dupsam, 0.0_DP)
+    call parlst_getvalue_double(rparam, sConfigSection, 'DUPSAM', dupsam, 1.0_DP)
+    call parlst_getvalue_double(rparam, sConfigSection, 'DGAMMA', dgamma, 0.01_DP)
     
     ! Fetch relaxation parameter for CG-SSOR
     call parlst_getvalue_double(rparam, sConfigSection, 'DRELAX', drelax, 1.2_DP)
@@ -150,8 +164,37 @@ contains
       call output_line('System.........: Poisson')
     case(203)
       call output_line('System.........: Convection-Diffusion')
+      call output_line('DNU............: ' // trim(sys_sdEP(dnu,20,12)))
+      call output_line('DBETA1.........: ' // trim(sys_sdEP(dbeta1,20,12)))
+      call output_line('DBETA2.........: ' // trim(sys_sdEP(dbeta2,20,12)))
+      select case(istabil)
+      case(0)
+        call output_line('Stabilisation..: none')
+      case(1)
+        call output_line('Stabilisation..: Streamline-Diffusion')
+        call output_line('DUPSAM.........: ' // trim(sys_sdEP(dupsam,20,12)))
+      case(2)
+        call output_line('Stabilisation..: Jump-Stabilisation')
+        call output_line('DGAMMA.........: ' // trim(sys_sdEP(dgamma,20,12)))
+      case default
+        call output_line('Invalid ISTABIL parameter', &
+          OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
+        call sys_halt()
+      end select
     case default
       call output_line('Invalid ITEST parameter', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
+      call sys_halt()
+    end select
+    select case(isolution)
+    case(0)
+      call output_line('Solution.......: u(x,y) = sin(pi*x) * sin(pi*y)')
+    case(1)
+      call output_line('Solution.......: u(x,y) = x')
+    case(2)
+      call output_line('Solution.......: u(x,y) = y')
+    case default
+      call output_line('Invalid ISOLUTION parameter', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
       call sys_halt()
     end select
@@ -167,7 +210,27 @@ contains
     end select
     call output_line('NLMIN..........: ' // trim(sys_siL(NLMIN,4)))
     call output_line('NLMAX..........: ' // trim(sys_siL(NLMAX,4)))
-    call output_line('Mesh-Distortion: ' // trim(sys_sdL(ddist,8)))
+    select case(idistType)
+    case(0)
+      ! no distortion => nothing else to print
+    case(1)
+      call output_line('Distortion Type....: index-based')
+    case(2)
+      call output_line('Distortion Type....: X-line-wise index-based')
+    case(3)
+      call output_line('Distortion Type....: Y-line-wise index-based')
+    case default
+      call output_line('Invalid IDISTTYPE parameter', &
+        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
+      call sys_halt()
+    end select
+    if(idistType .ne. 0) then
+      call output_line('Distortion Level...: ' // trim(sys_siL(idistLevel,4)))
+      call output_line('Mesh Distortion....: ' // trim(sys_sdL(ddist,8)))
+    end if
+    if((idistType .ge. 2) .and. (idistType .le. 3)) then
+      call output_line('Mesh Distortion 2..: ' // trim(sys_sdL(ddist2,8)))
+    end if
     call output_line('Element........: ' // trim(selement))
     call output_line('Cubature rule..: ' // trim(scubature))
     select case(isolver)
@@ -189,6 +252,14 @@ contains
     call output_line('Relative EPS...: ' // trim(sys_sdEP(depsRel,20,12)))
     call output_lbrk()
     
+    ! Copy important parameters into quick-access arrays of the collection,
+    ! these ones are needed by the callback functions.
+    rcollect%IquickAccess(1) = itest
+    rcollect%IquickAccess(2) = isolution
+    rcollect%DquickAccess(1) = dnu
+    rcollect%DquickAccess(2) = dbeta1
+    rcollect%DquickAccess(3) = dbeta2
+
     ! Read in parametrisation
     select case(cshape)
     case(BGEOM_SHAPE_TRIA)
@@ -210,17 +281,49 @@ contains
         call tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
       end select
        
-      ! Refine it.
-      call tria_quickRefine2LevelOrdering (ilvl-1,rtriangulation,rboundary)
+      if(idistLevel .le. 0) then
+        idistLvl = max(1,ilvl-idistLevel)
+      else
+        idistLvl = idistLevel
+      end if
+       
+      if((idistLvl .le. ilvl) .and. (idistType .ne. 0)) then
+      
+        ! Refine up to distortion level
+        call tria_quickRefine2LevelOrdering (idistLvl-1, rtriangulation,rboundary)
+        
+        ! Distort the mesh
+        select case(idistType)
+        case (1)
+          ! index-based distortion
+          call meshmod_disturbMesh (rtriangulation, ddist)
+        
+        case (2)
+          ! X-line-wise index-based distortion
+          call disto2d_distortQuadLineX(rtriangulation, ddist, ddist2)
+        
+        case (3)
+          ! Y-line-wise index-based distortion
+          call disto2d_distortQuadLineY(rtriangulation, ddist, ddist2)
+        
+        end select
+        
+        ! Refine up to current level
+        if(idistLvl .lt. ilvl) then
+          call tria_quickRefine2LevelOrdering (ilvl-idistLvl, rtriangulation,rboundary)
+        end if
+      
+      else
+      
+        ! Refine up to current level
+        call tria_quickRefine2LevelOrdering (ilvl-1, rtriangulation,rboundary)
+        
+      end if
       
       ! And create information about adjacencies and everything one needs from
       ! a triangulation.
       call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 
-      ! Optionally distort the mesh
-      if(ddist .ne. 0.0_DP) &
-        call meshmod_disturbMesh (rtriangulation, ddist)
-      
       ! Set up discretisation
       call spdiscr_initBlockDiscr (rdiscretisation,1,rtriangulation, rboundary)
       call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
@@ -247,16 +350,16 @@ contains
       call bcasm_initDiscreteBC(rdiscreteBC)
       call boundary_createRegion(rboundary,1,1,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-           rboundaryRegion,rdiscreteBC,getBoundaryValues2D)
+           rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-           rboundaryRegion,rdiscreteBC,getBoundaryValues2D)
+           rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
       call boundary_createRegion(rboundary,1,3,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-           rboundaryRegion,rdiscreteBC,getBoundaryValues2D)
+           rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
       call boundary_createRegion(rboundary,1,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-           rboundaryRegion,rdiscreteBC,getBoundaryValues2D)
+           rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
                                
       ! Assign BCs
       rmatrix%p_rdiscreteBC => rdiscreteBC
@@ -277,26 +380,9 @@ contains
         call stdop_assembleSimpleMatrix(rmatrix%RmatrixBlock(1,1), &
                                         DER_FUNC2D, DER_FUNC2D)
       
-        ! Assemble RHS vector
-        rlinform%itermCount = 1
-        rlinform%Idescriptors(1) = DER_FUNC2D
-        call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-              rlinform,.true.,rvecRhs%RvectorBlock(1),coeff_RHS2D_Mass)
-      
       case(202)
         ! Assemble Laplace matrix
         call stdop_assembleLaplaceMatrix(rmatrix%RmatrixBlock(1,1))
-        
-        ! Assemble RHS vector
-        rlinform%itermCount = 1
-        rlinform%Idescriptors(1) = DER_FUNC2D
-        call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-           rlinform,.true.,rvecRhs%RvectorBlock(1),coeff_RHS2D_Laplace)
-        
-        ! Implement BCs
-        call vecfil_discreteBCrhs (rvecRhs)
-        call vecfil_discreteBCsol (rvecsol)
-        call matfil_discreteBC (rmatrix)
 
       case(203)
         ! Assemble Laplace matrix
@@ -333,31 +419,28 @@ contains
           call bilf_buildMatrixScalar (rform,.false.,rmatrix%RmatrixBlock(1,1))
           
           ! Assemble the jump stabilisation
-          rconfigEOJ%dgamma = dupsam
-          rconfigEOJ%dgammastar = dupsam
+          rconfigEOJ%dgamma = dgamma
+          rconfigEOJ%dgammastar = dgamma
           rconfigEOJ%dnu = dnu
           call conv_JumpStabilisation2d (rconfigEOJ, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1))
           
         end select
-        
-        ! Assemble RHS vector
-        ! Set the DCoefficients-entries to the direction of the convection.
-        ! This is an abuse of the parameters, but we don't care here...
-        rlinform%itermCount = 1
-        rlinform%Idescriptors(1) = DER_FUNC2D
-        rlinform%Dcoefficients(1) = dnu
-        rlinform%Dcoefficients(2) = dbeta1
-        rlinform%Dcoefficients(3) = dbeta2
-        call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-          rlinform,.true.,rvecRhs%RvectorBlock(1),coeff_RHS2D_ConvecDiff)
-        
+      
+      end select
+      
+      ! Assemble RHS vector
+      rlinform%itermCount = 1
+      rlinform%Idescriptors(1) = DER_FUNC2D
+      call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
+            rlinform,.true.,rvecRhs%RvectorBlock(1),coeff_RHS2D,rcollect)
+
+      ! In any case except for L2-projection, filter the system
+      if(itest .ne. 201) then
         ! Implement BCs
         call vecfil_discreteBCrhs (rvecRhs)
         call vecfil_discreteBCsol (rvecsol)
         call matfil_discreteBC (rmatrix)
-      
-      end select
-      
+      end if
       
       ! Set up the solver
       select case(isolver)
@@ -398,7 +481,7 @@ contains
       rerror%p_RvecCoeff => rvecSol%RvectorBlock(1:1)
       rerror%p_DerrorL2 => Derror(1:1,ilvl)
       rerror%p_DerrorH1 => Derror(2:2,ilvl)
-      call pperr_scalarVec(rerror, getReferenceFunction2D)
+      call pperr_scalarVec(rerror, getReferenceFunction2D, rcollect)
       
       ! Print the errors
       call output_line('Errors (L2/H1): ' // &
@@ -408,7 +491,7 @@ contains
       ! Probably write the mesh to disc
       if (iwritemesh .eq. 1) then
         call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                          'ucd/solution'//TRIM(sys_siL(ilvl,5))//'.gmv')
+                          'ucd/sol2d_'//TRIM(sys_siL(ilvl,5))//'.gmv')
 
         ! Project the solution to the vertices
         allocate (p_Ddata(rtriangulation%NVT))
@@ -420,7 +503,7 @@ contains
         deallocate(p_Ddata)
       else if (iwritemesh .eq. 2) then
         call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                          'ucd/solution'//TRIM(sys_siL(ilvl,5))//'.vtk')
+                          'ucd/sol2d_'//TRIM(sys_siL(ilvl,5))//'.vtk')
 
         ! Project the solution to the vertices
         allocate (p_Ddata(rtriangulation%NVT))

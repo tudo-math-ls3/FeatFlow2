@@ -15,6 +15,7 @@ INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
 SRC =   elemdbg1d_callback.f90 elemdbg1d_test1.f90 \
         elemdbg2d_callback.f90 elemdbg2d_test1.f90 \
         elemdbg3d_callback.f90 elemdbg3d_test1.f90 \
+        disto2d_aux.f90 disto3d_aux.f90 \
         elemdbg.f90
 
 # include the standart kernel sources

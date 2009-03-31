@@ -13,7 +13,7 @@ program elemdbg
   use elemdbg1d_test1
   use elemdbg2d_test1
   use elemdbg3d_test1
-  use elemdbg3d_test2
+  !use elemdbg3d_test2
   use paramlist
   
   implicit none
@@ -57,13 +57,13 @@ program elemdbg
     ! 2D Element-Debugger #1
     call elemdbg2d_1(rparam,sConfigSection,itest)
 
-  case(301,302)
+  case(301,302,303)
     ! 3D Element-Debugger #1
     call elemdbg3d_1(rparam,sConfigSection,itest)
 
-  case(311,312)
+  !case(311,312)
     ! 3D Element-Debugger #2
-    call elemdbg3d_2(rparam,sConfigSection,itest)
+    !call elemdbg3d_2(rparam,sConfigSection,itest)
   
   case default
     ! Error
