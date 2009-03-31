@@ -512,7 +512,7 @@ contains
 
     
     ! Initialize the function parser for the velocity field if required
-    if (rappDescriptor%ivelocitytype .ne. VELOCITY_ZERO) then
+    if (abs(rappDescriptor%ivelocitytype) .ne. VELOCITY_ZERO) then
       
       call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname', svelocityName, '')
       if (trim(svelocityName) .ne. '') then
@@ -576,7 +576,7 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    if (rappDescriptor%ivelocitytype .ne. VELOCITY_ZERO) then
+    if (abs(rappDescriptor%ivelocitytype) .ne. VELOCITY_ZERO) then
       call fparser_release(rappDescriptor%rfparserVelocityField)
     end if
 
