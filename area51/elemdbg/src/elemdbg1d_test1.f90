@@ -159,7 +159,11 @@ contains
     case(103)
       call output_line('System.........: Convection-Diffusion')
       call output_line('DNU............: ' // trim(sys_sdEP(dnu,20,12)))
-      call output_line('DBETA1.........: ' // trim(sys_sdEP(dbeta1,20,12)))
+      if(isolution .eq. 2) then
+        call output_line('DBETA1.........: ' // trim(sys_sdEP(1.0_DP,20,12)))
+      else
+        call output_line('DBETA1.........: ' // trim(sys_sdEP(dbeta1,20,12)))
+      end if
       select case(istabil)
       case(0)
         call output_line('Stabilisation..: none')
@@ -184,6 +188,18 @@ contains
       call output_line('Solution.......: u(x) = sin(pi*x)')
     case(1)
       call output_line('Solution.......: u(x) = x')
+    case(2)
+      ! Check if the solution is available
+      if(itest .eq. 103) then
+        ! solution is valid
+        call output_line('Solution.......: u(x) = (exp(1/nu) -' // &
+                         ' exp(x/nu)) / (exp(1/nu) + 1)')
+        dbeta1 = 1.0_DP
+      else
+        call output_line('ISOLUTION = 2 is only valid for ITEST = 103', &
+          OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg1d_1')
+        call sys_halt()
+      end if
     case default
       call output_line('Invalid ISOLUTION parameter', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg1d_1')
@@ -307,6 +323,9 @@ contains
       case(1)
         ! u(x) = x => 0/1 Dirichlet BCs
         call bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 0.0_DP, 1.0_DP)
+      case(2)
+        ! u(x) = (exp(nu)-exp(x*nu)) / (exp(nu)-1) => 1/0 Dirichlet BCs
+        call bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 1.0_DP, 0.0_DP)
       end select
 
       ! Assign BCs

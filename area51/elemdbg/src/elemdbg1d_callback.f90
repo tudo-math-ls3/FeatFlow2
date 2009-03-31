@@ -105,11 +105,9 @@ contains
     dnu = rcollection%DquickAccess(1)
     dbeta1 = rcollection%DquickAccess(2)
 
-    Dcoefficients(1,:,:) = SYS_PI**2 * sin(SYS_PI*Dpoints(1,:,:))
-
     ! Okay, what type of system do we have here?
     select case(itest)
-    case(301)
+    case(101)
       ! L2-projection
       select case(isolution)
       case(0)
@@ -118,7 +116,7 @@ contains
         Dcoefficients(1,:,:) = Dpoints(1,:,:)
       end select
                    
-    case(302)
+    case(102)
       ! Poisson-System
       select case(isolution)
       case(0)
@@ -127,7 +125,7 @@ contains
         Dcoefficients(1,:,:) = 0.0_DP
       end select
     
-    case(303)
+    case(103)
       ! Convection-Diffusion-System
       select case(isolution)
       case(0)
@@ -135,6 +133,8 @@ contains
                              + dbeta1 * SYS_PI * cos(SYS_PI*Dpoints(1,:,:))
       case(1)
         Dcoefficients(1,:,:) = dbeta1
+      case(2)
+        Dcoefficients(1,:,:) = 0.0_DP
       end select
           
     end select
@@ -213,6 +213,8 @@ contains
 !</output>
   
 !</subroutine>
+
+  real(DP) :: deps, deps2
   
     Dvalues = 0.0_DP
 
@@ -231,6 +233,17 @@ contains
         Dvalues(:,:) = Dpoints(1,:,:)
       case (DER_DERIV1D_X)
         Dvalues(:,:) = 1.0_DP
+      end select
+    
+    case(2)
+      ! Get 1/nu and exp(1/nu)
+      deps = 1.0_DP / rcollection%DquickAccess(1)
+      deps2 = exp(deps)
+      select case (cderivative)
+      case (DER_FUNC1D)
+        Dvalues(:,:) = (deps2 - exp(deps*Dpoints(1,:,:))) / (deps2 - 1.0_DP)
+      case (DER_DERIV1D_X)
+        Dvalues(:,:) = -deps*exp(deps*Dpoints(1,:,:)) / (deps2 - 1.0_DP)
       end select
 
     end select

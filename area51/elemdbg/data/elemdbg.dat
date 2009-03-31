@@ -38,6 +38,9 @@ SCUBATURE = G3_2D
 # 1D:
 #   0 -> u(x) = sin(pi*x)
 #   1 -> u(x) = x
+#   2 -> u(x) = (exp(1/nu) - exp(x/nu)) / (exp(1/nu) - 1)
+#        This solution is only valid for ITEST = 103.
+#        In this case DBETA1 is always set to 1.
 # 2D:
 #   0 -> u(x,y) = sin(pi*x) * sin(pi*y)
 #   1 -> u(x,y) = x
