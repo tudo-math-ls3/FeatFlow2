@@ -613,8 +613,6 @@ contains
     ! Check if conservative of non-conservative convection operator is required
     bconservative = .true.
     if (present(bisConservative)) bconservative = bisConservative
-
-!!!    bconservative = .false. !!!!! THIS IS A TEMPORAL HACK
         
     ! Clear matrix?
     if (bclear) call lsyssc_clearMatrix(rconvMatrix)
@@ -684,21 +682,21 @@ contains
 
           if (bconservative) then
 
-            ! Conservative treatment of convection operator
+            ! Conservative formulation of convection operator
 
             select case(ndim)
             case (NDIM1D)
-              call doUpwindMat7_ordAFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+              call doUpwindOAFCMat7Cons1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
                                           p_Cx, p_u, p_ConvOp,&
                                           p_IsuperdiagonalEdgesIdx,&
                                           p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM2D)
-              call doUpwindMat7_ordAFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+              call doUpwindOAFCMat7Cons2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
                                           p_Cx, p_Cy, p_u, p_ConvOp,&
                                           p_IsuperdiagonalEdgesIdx,&
                                           p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM3D)
-              call doUpwindMat7_ordAFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+              call doUpwindOAFCMat7Cons3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
                                           p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
                                           p_IsuperdiagonalEdgesIdx,&
                                           p_IverticesAtEdge, p_DcoefficientsAtEdge)
@@ -706,24 +704,24 @@ contains
 
           else
 
-            ! Non-conservative treatment of convection operator
+            ! Non-conservative formulation of convection operator
 
             select case(ndim)
             case (NDIM1D)
-              call doUpwindMat7_ordAFC_nc1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                            p_Cx, p_u, p_ConvOp,&
-                                            p_IsuperdiagonalEdgesIdx,&
-                                            p_IverticesAtEdge, p_DcoefficientsAtEdge)
+              call doUpwindOAFCMat7Nonc1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                          p_Cx, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM2D)
-              call doUpwindMat7_ordAFC_nc2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                            p_Cx, p_Cy, p_u, p_ConvOp,&
-                                            p_IsuperdiagonalEdgesIdx,&
-                                            p_IverticesAtEdge, p_DcoefficientsAtEdge)
+              call doUpwindOAFCMat7Nonc2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                          p_Cx, p_Cy, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM3D)
-              call doUpwindMat7_ordAFC_nc3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                            p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                            p_IsuperdiagonalEdgesIdx,&
-                                            p_IverticesAtEdge, p_DcoefficientsAtEdge)
+              call doUpwindOAFCMat7Nonc3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                          p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             end select
 
           end if
@@ -739,43 +737,43 @@ contains
           
           if (bconservative) then
 
-            ! Conservative treatment of convection operator
+            ! Conservative formulation of convection operator
             
             select case(ndim)
             case (NDIM1D)
-              call doUpwindMat7_AFC_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                       p_Cx, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindMat7_AFC_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                       p_Cx, p_Cy, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindMat7_AFC_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                       p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          else
-
-            ! Non-conservative treatment of convection operator
-
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat7_AFC_nc1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+              call doUpwindAFCMat7Cons1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
                                          p_Cx, p_u, p_ConvOp,&
                                          p_IsuperdiagonalEdgesIdx,&
                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM2D)
-              call doUpwindMat7_AFC_nc2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+              call doUpwindAFCMat7Cons2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
                                          p_Cx, p_Cy, p_u, p_ConvOp,&
                                          p_IsuperdiagonalEdgesIdx,&
                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM3D)
-              call doUpwindMat7_AFC_nc3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+              call doUpwindAFCMat7Cons3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                         p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                         p_IsuperdiagonalEdgesIdx,&
+                                         p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            end select
+
+          else
+
+            ! Non-conservative formulation of convection operator
+
+            select case(ndim)
+            case (NDIM1D)
+              call doUpwindAFCMat7Nonc1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                         p_Cx, p_u, p_ConvOp,&
+                                         p_IsuperdiagonalEdgesIdx,&
+                                         p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM2D)
+              call doUpwindAFCMat7Nonc2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                         p_Cx, p_Cy, p_u, p_ConvOp,&
+                                         p_IsuperdiagonalEdgesIdx,&
+                                         p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM3D)
+              call doUpwindAFCMat7Nonc3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
                                          p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
                                          p_IsuperdiagonalEdgesIdx,&
                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
@@ -795,34 +793,34 @@ contains
 
         if (bconservative) then
 
-          ! Conservative treatment of convection operator
+          ! Conservative formulation of convection operator
 
           select case(ndim)
           case (NDIM1D)
-            call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                 p_Cx, p_u, p_ConvOp)
+            call doUpwindMat7Cons1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                    p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                 p_Cx, p_Cy, p_u, p_ConvOp)
+            call doUpwindMat7Cons2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                    p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                 p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+            call doUpwindMat7Cons3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                    p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
         else
 
-          ! Non-conservative treatment of convection operator
+          ! Non-conservative formulation of convection operator
           
           select case(ndim)
           case (NDIM1D)
-            call doUpwindMat7_nc1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                   p_Cx, p_u, p_ConvOp)
+            call doUpwindMat7Nonc1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                    p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doUpwindMat7_nc2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                   p_Cx, p_Cy, p_u, p_ConvOp)
+            call doUpwindMat7Nonc2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                    p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doUpwindMat7_nc3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                   p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+            call doUpwindMat7Nonc3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                    p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
         end if
@@ -833,34 +831,34 @@ contains
         
         if (bconservative) then
 
-          ! Conservative treatment of convection operator
+          ! Conservative formulation of convection operator
 
           select case(ndim)
           case (NDIM1D)
-            call doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                   p_Cx, p_u, p_ConvOp)
+            call doGalerkinMat7Cons1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                      p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                   p_Cx, p_Cy, p_u, p_ConvOp)
+            call doGalerkinMat7Cons2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                      p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                   p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+            call doGalerkinMat7Cons3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                      p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
         else
 
-          ! Non-conservative treatment of convection operator
+          ! Non-conservative formulation of convection operator
           
           select case(ndim)
           case (NDIM1D)
-            call doGalerkinMat7_nc1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                     p_Cx, p_u, p_ConvOp)
+            call doGalerkinMat7Nonc1D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                      p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doGalerkinMat7_nc2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                     p_Cx, p_Cy, p_u, p_ConvOp)
+            call doGalerkinMat7Nonc2D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                      p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doGalerkinMat7_nc3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
-                                     p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+            call doGalerkinMat7Nonc3D(p_Kld, p_Kcol, p_Ksep, rconvMatrix%NEQ,&
+                                      p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
         end if
@@ -910,21 +908,21 @@ contains
 
           if (bconservative) then
 
-            ! Conservative treatment of convection operator
+            ! Conservative formulation of convection operator
 
             select case(ndim)
             case (NDIM1D)
-              call doUpwindMat9_ordAFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              call doUpwindOAFCMat9Cons1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                           rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
                                           p_IsuperdiagonalEdgesIdx,&
                                           p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM2D)
-              call doUpwindMat9_ordAFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              call doUpwindOAFCMat9Cons2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                           rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
                                           p_IsuperdiagonalEdgesIdx,&
                                           p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM3D)
-              call doUpwindMat9_ordAFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              call doUpwindOAFCMat9Cons3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                           rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
                                           p_IsuperdiagonalEdgesIdx,&
                                           p_IverticesAtEdge, p_DcoefficientsAtEdge)
@@ -932,24 +930,24 @@ contains
 
           else
 
-            ! Non-conservative treatment of convection operator
+            ! Non-conservative formulation of convection operator
 
             select case(ndim)
             case (NDIM1D)
-              call doUpwindMat9_ordAFC_nc1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                            rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
-                                            p_IsuperdiagonalEdgesIdx,&
-                                            p_IverticesAtEdge, p_DcoefficientsAtEdge)
+              call doUpwindOAFCMat9Nonc1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                          rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM2D)
-              call doUpwindMat9_ordAFC_nc2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                            rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
-                                            p_IsuperdiagonalEdgesIdx,&
-                                            p_IverticesAtEdge, p_DcoefficientsAtEdge)
+              call doUpwindOAFCMat9Nonc2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM3D)
-              call doUpwindMat9_ordAFC_nc3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                            rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                            p_IsuperdiagonalEdgesIdx,&
-                                            p_IverticesAtEdge, p_DcoefficientsAtEdge)
+              call doUpwindOAFCMat9Nonc3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                          p_IsuperdiagonalEdgesIdx,&
+                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             end select
 
           end if
@@ -965,43 +963,43 @@ contains
           
           if (bconservative) then
             
-            ! Conservative treatment of convection operator
+            ! Conservative formulation of convection operator
             
             select case(ndim)
             case (NDIM1D)
-              call doUpwindMat9_AFC_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                       rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doUpwindMat9_AFC_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                       rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doUpwindMat9_AFC_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                       rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
-                                       p_IsuperdiagonalEdgesIdx,&
-                                       p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          else
-
-            ! Non-conservative treatment of convection operator
-
-            select case(ndim)
-            case (NDIM1D)
-              call doUpwindMat9_AFC_nc1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              call doUpwindAFCMat9Cons1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                          rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
                                          p_IsuperdiagonalEdgesIdx,&
                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM2D)
-              call doUpwindMat9_AFC_nc2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              call doUpwindAFCMat9Cons2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
                                          p_IsuperdiagonalEdgesIdx,&
                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
             case (NDIM3D)
-              call doUpwindMat9_AFC_nc3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              call doUpwindAFCMat9Cons3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                         rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
+                                         p_IsuperdiagonalEdgesIdx,&
+                                         p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            end select
+
+          else
+
+            ! Non-conservative formulation of convection operator
+
+            select case(ndim)
+            case (NDIM1D)
+              call doUpwindAFCMat9Nonc1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                         rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp,&
+                                         p_IsuperdiagonalEdgesIdx,&
+                                         p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM2D)
+              call doUpwindAFCMat9Nonc2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                         rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp,&
+                                         p_IsuperdiagonalEdgesIdx,&
+                                         p_IverticesAtEdge, p_DcoefficientsAtEdge)
+            case (NDIM3D)
+              call doUpwindAFCMat9Nonc3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                          rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp,&
                                          p_IsuperdiagonalEdgesIdx,&
                                          p_IverticesAtEdge, p_DcoefficientsAtEdge)
@@ -1021,34 +1019,34 @@ contains
         
         if (bconservative) then
           
-          ! Conservative treatment of convection operator
+          ! Conservative formulation of convection operator
 
           select case(ndim)
           case (NDIM1D)
-            call doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                 rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
+            call doUpwindMat9Cons1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                    rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                 rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
+            call doUpwindMat9Cons2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                    rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                 rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+            call doUpwindMat9Cons3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                    rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
         else
 
-          ! Non-conservative treatment of convection operator
+          ! Non-conservative formulation of convection operator
 
           select case(ndim)
           case (NDIM1D)
-            call doUpwindMat9_nc1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                   rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
+            call doUpwindMat9Nonc1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                    rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doUpwindMat9_nc2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                   rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
+            call doUpwindMat9Nonc2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                    rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doUpwindMat9_nc3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                   rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+            call doUpwindMat9Nonc3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                    rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
         end if
@@ -1059,34 +1057,34 @@ contains
         
         if (bconservative) then
           
-          ! Conservative treatment of convection operator
+          ! Conservative formulation of convection operator
 
           select case(ndim)
           case (NDIM1D)
-            call doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                   rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
+            call doGalerkinMat9Cons1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                      rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                   rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
+            call doGalerkinMat9Cons2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                      rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                   rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+            call doGalerkinMat9Cons3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                      rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
         else
 
-          ! Non-conservative treatment of convection operator
+          ! Non-conservative formulation of convection operator
 
           select case(ndim)
           case (NDIM1D)
-            call doGalerkinMat9_nc1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                     rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
+            call doGalerkinMat9Nonc1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                      rconvMatrix%NEQ, p_Cx, p_u, p_ConvOp)
           case (NDIM2D)
-            call doGalerkinMat9_nc2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                     rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
+            call doGalerkinMat9Nonc2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                      rconvMatrix%NEQ, p_Cx, p_Cy, p_u, p_ConvOp)
           case (NDIM3D)
-            call doGalerkinMat9_nc3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-                                     rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
+            call doGalerkinMat9Nonc3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                      rconvMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_ConvOp)
           end select
 
         end if
@@ -1111,9 +1109,9 @@ contains
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
+    subroutine doGalerkinMat7Cons1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -1163,14 +1161,14 @@ contains
           K(ji) = K(ji) + k_ji
         end do
       end do
-    end subroutine doGalerkinMat7_1D
+    end subroutine doGalerkinMat7Cons1D
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doGalerkinMat7_nc1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
+    subroutine doGalerkinMat7Nonc1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -1213,14 +1211,14 @@ contains
           K(jj) = K(jj) - k_ji
         end do
       end do
-    end subroutine doGalerkinMat7_nc1D    
+    end subroutine doGalerkinMat7Nonc1D    
     
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
+    subroutine doGalerkinMat7Cons2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -1271,14 +1269,14 @@ contains
           K(ji) = K(ji) + k_ji
         end do
       end do
-    end subroutine doGalerkinMat7_2D
+    end subroutine doGalerkinMat7Cons2D
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doGalerkinMat7_nc2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
+    subroutine doGalerkinMat7Nonc2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -1322,15 +1320,15 @@ contains
           K(jj) = K(jj) - k_ji
         end do
       end do
-    end subroutine doGalerkinMat7_nc2D
+    end subroutine doGalerkinMat7Nonc2D
 
     
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
+    subroutine doGalerkinMat7Cons3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -1382,14 +1380,14 @@ contains
           K(ji) = K(ji) + k_ji
         end do
       end do
-    end subroutine doGalerkinMat7_3D
+    end subroutine doGalerkinMat7Cons3D
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doGalerkinMat7_nc3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
+    subroutine doGalerkinMat7Nonc3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -1434,14 +1432,14 @@ contains
           K(jj) = K(jj) - k_ji
         end do
       end do
-    end subroutine doGalerkinMat7_nc3D
+    end subroutine doGalerkinMat7Nonc3D
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
+    subroutine doGalerkinMat9Cons1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -1491,14 +1489,14 @@ contains
           K(ji) = K(ji) + k_ji
         end do
       end do
-    end subroutine doGalerkinMat9_1D
+    end subroutine doGalerkinMat9Cons1D
     
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 1D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doGalerkinMat9_nc1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
+    subroutine doGalerkinMat9Nonc1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -1541,14 +1539,14 @@ contains
           K(jj) = K(jj) - k_ji
         end do
       end do
-    end subroutine doGalerkinMat9_nc1D
+    end subroutine doGalerkinMat9Nonc1D
     
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
+    subroutine doGalerkinMat9Cons2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -1599,14 +1597,14 @@ contains
           K(ji) = K(ji) + k_ji
         end do
       end do
-    end subroutine doGalerkinMat9_2D
+    end subroutine doGalerkinMat9Cons2D
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 2D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doGalerkinMat9_nc2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
+    subroutine doGalerkinMat9Nonc2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -1650,14 +1648,14 @@ contains
           K(jj) = K(jj) - k_ji
         end do
       end do
-    end subroutine doGalerkinMat9_nc2D
+    end subroutine doGalerkinMat9Nonc2D
     
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
+    subroutine doGalerkinMat9Cons3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -1709,14 +1707,14 @@ contains
           K(ji) = K(ji) + k_ji
         end do
       end do
-    end subroutine doGalerkinMat9_3D
+    end subroutine doGalerkinMat9Cons3D
 
     !**************************************************************
     ! Assemble high-order Galerkin operator K in 3D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doGalerkinMat9_nc3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
+    subroutine doGalerkinMat9Nonc3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -1761,14 +1759,14 @@ contains
           K(jj) = K(jj) - k_ji
         end do
       end do
-    end subroutine doGalerkinMat9_nc3D
+    end subroutine doGalerkinMat9Nonc3D
 
     !**************************************************************
     ! Assemble low-order operator L in 1D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doUpwindMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
+    subroutine doUpwindMat7Cons1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -1827,14 +1825,14 @@ contains
           L(jj) = L(jj) - d_ij
         end do
       end do
-    end subroutine doUpwindMat7_1D
+    end subroutine doUpwindMat7Cons1D
     
     !**************************************************************
     ! Assemble low-order operator L in 1D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doUpwindMat7_nc1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
+    subroutine doUpwindMat7Nonc1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -1884,14 +1882,14 @@ contains
           L(jj) = L(jj) - k_ji
         end do
       end do
-    end subroutine doUpwindMat7_nc1D
+    end subroutine doUpwindMat7Nonc1D
 
     !**************************************************************
     ! Assemble low-order operator L in 2D.
     ! All matrices are stored in matrix format 7
     ! Conservative treatement
     
-    subroutine doUpwindMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
+    subroutine doUpwindMat7Cons2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -1951,14 +1949,14 @@ contains
           L(jj) = L(jj) - d_ij
         end do
       end do
-    end subroutine doUpwindMat7_2D
+    end subroutine doUpwindMat7Cons2D
 
     !**************************************************************
     ! Assemble low-order operator L in 2D.
     ! All matrices are stored in matrix format 7
     ! Non-conservative treatement
     
-    subroutine doUpwindMat7_nc2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
+    subroutine doUpwindMat7Nonc2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -2009,14 +2007,14 @@ contains
           L(jj) = L(jj) - k_ji
         end do
       end do
-    end subroutine doUpwindMat7_nc2D
+    end subroutine doUpwindMat7Nonc2D
     
     !**************************************************************
     ! Assemble low-order operator L in 3D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doUpwindMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
+    subroutine doUpwindMat7Cons3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -2077,14 +2075,14 @@ contains
           L(jj) = L(jj) - d_ij
         end do
       end do
-    end subroutine doUpwindMat7_3D
+    end subroutine doUpwindMat7Cons3D
 
     !**************************************************************
     ! Assemble low-order operator L in 3D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doUpwindMat7_nc3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
+    subroutine doUpwindMat7Nonc3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -2136,14 +2134,14 @@ contains
           L(jj) = L(jj) - k_ji
         end do
       end do
-    end subroutine doUpwindMat7_nc3D
+    end subroutine doUpwindMat7Nonc3D
 
     !**************************************************************
     ! Assemble low-order operator L in 1D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doUpwindMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
+    subroutine doUpwindMat9Cons1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -2202,14 +2200,14 @@ contains
           L(jj) = L(jj) - d_ij
         end do
       end do
-    end subroutine doUpwindMat9_1D
+    end subroutine doUpwindMat9Cons1D
 
     !**************************************************************
     ! Assemble low-order operator L in 1D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doUpwindMat9_nc1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
+    subroutine doUpwindMat9Nonc1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -2259,14 +2257,14 @@ contains
           L(jj) = L(jj) - k_ji
         end do
       end do
-    end subroutine doUpwindMat9_nc1D
+    end subroutine doUpwindMat9Nonc1D
     
     !**************************************************************
     ! Assemble low-order operator L in 2D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doUpwindMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
+    subroutine doUpwindMat9Cons2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -2326,14 +2324,14 @@ contains
           L(jj) = L(jj) - d_ij
         end do
       end do
-    end subroutine doUpwindMat9_2D
+    end subroutine doUpwindMat9Cons2D
 
     !**************************************************************
     ! Assemble low-order operator L in 2D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doUpwindMat9_nc2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
+    subroutine doUpwindMat9Nonc2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -2384,14 +2382,14 @@ contains
           L(jj) = L(jj) - k_ji
         end do
       end do
-    end subroutine doUpwindMat9_nc2D
+    end subroutine doUpwindMat9Nonc2D
     
     !**************************************************************
     ! Assemble low-order operator L in 3D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doUpwindMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
+    subroutine doUpwindMat9Cons3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -2452,14 +2450,14 @@ contains
           L(jj) = L(jj) - d_ij
         end do
       end do
-    end subroutine doUpwindMat9_3D
+    end subroutine doUpwindMat9Cons3D
 
     !**************************************************************
     ! Assemble low-order operator L in 3D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doUpwindMat9_nc3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
+    subroutine doUpwindMat9Nonc3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -2511,17 +2509,17 @@ contains
           L(jj) = L(jj) - k_ji
         end do
       end do
-    end subroutine doUpwindMat9_nc3D
+    end subroutine doUpwindMat9Nonc3D
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 1D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
     
-    subroutine doUpwindMat7_AFC_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,& 
-                                   IsuperdiagonalEdgesIdx,&
-                                   IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindAFCMat7Cons1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,& 
+                                     IsuperdiagonalEdgesIdx,&
+                                     IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -2600,15 +2598,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_AFC_1D
+    end subroutine doUpwindAFCMat7Cons1D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 1D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
     
-    subroutine doUpwindMat7_AFC_nc1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,& 
+    subroutine doUpwindAFCMat7Nonc1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,& 
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -2680,18 +2678,18 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_AFC_nc1D
+    end subroutine doUpwindAFCMat7Nonc1D
 
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 2D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat7_AFC_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
-                                   IsuperdiagonalEdgesIdx,&
-                                   IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindAFCMat7Cons2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
+                                     IsuperdiagonalEdgesIdx,&
+                                     IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -2771,15 +2769,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_AFC_2D
+    end subroutine doUpwindAFCMat7Cons2D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 2D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
 
-    subroutine doUpwindMat7_AFC_nc2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
+    subroutine doUpwindAFCMat7Nonc2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -2852,17 +2850,17 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_AFC_nc2D
+    end subroutine doUpwindAFCMat7Nonc2D
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 3D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat7_AFC_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
-                                   IsuperdiagonalEdgesIdx,&
-                                   IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindAFCMat7Cons3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                     IsuperdiagonalEdgesIdx,&
+                                     IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -2943,15 +2941,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_AFC_3D
+    end subroutine doUpwindAFCMat7Cons3D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 3D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
 
-    subroutine doUpwindMat7_AFC_nc3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+    subroutine doUpwindAFCMat7Nonc3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -3025,17 +3023,17 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_AFC_nc3D
+    end subroutine doUpwindAFCMat7Nonc3D
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 1D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat9_AFC_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L,&
-                                   IsuperdiagonalEdgesIdx,&
-                                   IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindAFCMat9Cons1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L,&
+                                     IsuperdiagonalEdgesIdx,&
+                                     IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -3114,15 +3112,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_AFC_1D
+    end subroutine doUpwindAFCMat9Cons1D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 1D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
 
-    subroutine doUpwindMat9_AFC_nc1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L,&
+    subroutine doUpwindAFCMat9Nonc1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L,&
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -3194,17 +3192,17 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_AFC_nc1D
+    end subroutine doUpwindAFCMat9Nonc1D
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 2D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat9_AFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
-                                   IsuperdiagonalEdgesIdx,&
-                                   IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindAFCMat9Cons2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
+                                     IsuperdiagonalEdgesIdx,&
+                                     IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -3284,15 +3282,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_AFC_2D
+    end subroutine doUpwindAFCMat9Cons2D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge
     ! orientation in 2D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
 
-    subroutine doUpwindMat9_AFC_nc2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
+    subroutine doUpwindAFCMat9Nonc2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -3365,17 +3363,17 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_AFC_nc2D
+    end subroutine doUpwindAFCMat9Nonc2D
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge 
     ! orientation in 3D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat9_AFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
-                                   IsuperdiagonalEdgesIdx,&
-                                   IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindAFCMat9Cons3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                     IsuperdiagonalEdgesIdx,&
+                                     IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -3456,15 +3454,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_AFC_3D
+    end subroutine doUpwindAFCMat9Cons3D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data w/o edge 
     ! orientation in 3D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
 
-    subroutine doUpwindMat9_AFC_nc3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+    subroutine doUpwindAFCMat9Nonc3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -3538,15 +3536,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_AFC_nc3D
+    end subroutine doUpwindAFCMat9Nonc3D
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 1D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat7_ordAFC_1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,&
+    subroutine doUpwindOAFCMat7Cons1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,&
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -3632,17 +3630,17 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_ordAFC_1D
+    end subroutine doUpwindOAFCMat7Cons1D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 1D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
 
-    subroutine doUpwindMat7_ordAFC_nc1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,&
-                                        IsuperdiagonalEdgesIdx,&
-                                        IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindOAFCMat7Nonc1D(Kld, Kcol, Ksep, NEQ, Cx, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
+                                      IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -3717,15 +3715,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_ordAFC_nc1D
+    end subroutine doUpwindOAFCMat7Nonc1D
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 2D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat7_ordAFC_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
+    subroutine doUpwindOAFCMat7Cons2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -3812,17 +3810,17 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_ordAFC_2D
+    end subroutine doUpwindOAFCMat7Cons2D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 2D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
 
-    subroutine doUpwindMat7_ordAFC_nc2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
-                                        IsuperdiagonalEdgesIdx,&
-                                        IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindOAFCMat7Nonc2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
+                                      IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -3898,15 +3896,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_ordAFC_nc2D
+    end subroutine doUpwindOAFCMat7Nonc2D
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 3D.
     ! All matrices are stored in matrix format 7
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat7_ordAFC_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+    subroutine doUpwindOAFCMat7Cons3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -3994,17 +3992,17 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_ordAFC_3D
+    end subroutine doUpwindOAFCMat7Cons3D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 3D.
     ! All matrices are stored in matrix format 7
-    ! Non-conservative treatment
+    ! Non-conservative formulation
 
-    subroutine doUpwindMat7_ordAFC_nc3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
-                                        IsuperdiagonalEdgesIdx,&
-                                        IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindOAFCMat7Nonc3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
+                                      IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol
@@ -4081,15 +4079,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat7_ordAFC_nc3D
+    end subroutine doUpwindOAFCMat7Nonc3D
         
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 1D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat9_ordAFC_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L,&
+    subroutine doUpwindOAFCMat9Cons1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L,&
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -4175,17 +4173,17 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_ordAFC_1D
+    end subroutine doUpwindOAFCMat9Cons1D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 1D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat9_ordAFC_nc1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L,&
-                                        IsuperdiagonalEdgesIdx,&
-                                        IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindOAFCMat9Nonc1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
+                                      IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -4260,15 +4258,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_ordAFC_nc1D
+    end subroutine doUpwindOAFCMat9Nonc1D
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 2D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat9_ordAFC_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
+    subroutine doUpwindOAFCMat9Cons2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -4355,17 +4353,17 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_ordAFC_2D
+    end subroutine doUpwindOAFCMat9Cons2D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 2D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
 
-    subroutine doUpwindMat9_ordAFC_nc2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
-                                        IsuperdiagonalEdgesIdx,&
-                                        IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindOAFCMat9Nonc2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
+                                      IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -4441,15 +4439,15 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_ordAFC_nc2D
+    end subroutine doUpwindOAFCMat9Nonc2D
     
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 3D.
     ! All matrices are stored in matrix format 9
-    ! Conservative treatment
+    ! Conservative formulation
 
-    subroutine doUpwindMat9_ordAFC_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+    subroutine doUpwindOAFCMat9Cons3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
@@ -4537,17 +4535,17 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_ordAFC_3D
+    end subroutine doUpwindOAFCMat9Cons3D
 
     !**************************************************************
     ! Assemble low-order operator L and AFC data with edge
     ! orientation in 3D.
     ! All matrices are stored in matrix format 9
-    ! Non-conservative treatment
+    ! Non-conservative formulation
 
-    subroutine doUpwindMat9_ordAFC_nc3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
-                                        IsuperdiagonalEdgesIdx,&
-                                        IverticesAtEdge, DcoefficientsAtEdge)
+    subroutine doUpwindOAFCMat9Nonc3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L,&
+                                      IsuperdiagonalEdgesIdx,&
+                                      IverticesAtEdge, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
       integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
@@ -4624,7 +4622,7 @@ contains
       
       ! Set index for last entry
       IsuperdiagonalEdgesIdx(NEQ+1) = iedge+1
-    end subroutine doUpwindMat9_ordAFC_nc3D
+    end subroutine doUpwindOAFCMat9Nonc3D
 
   end subroutine gfsc_buildConvOperatorScalar
 
