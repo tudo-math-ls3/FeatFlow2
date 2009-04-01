@@ -31,6 +31,7 @@ program stokes
 
   use stokes2d_method0_simple
   use stokes2d_method1_mg
+  use stokes2d_method1_schur
   use stokes2d_method2_sv
   use stokes2d_method2_gv
   use stokes3d_method0_simple
@@ -64,6 +65,12 @@ program stokes
   call output_line('Calculating 2D Stokes-Problem 1 - multigrid')
   call output_line('-------------------------------------------')
   call stokes2d_1_mg
+
+  ! Call the problem to solve. 2d stokes 1:
+  call output_lbrk()
+  call output_line('Calculating 2D Stokes-Problem 1 - Schur-Complement')
+  call output_line('--------------------------------------------------')
+  call stokes2d_1_schur
 
   ! Call the problem to solve. 2d stokes 2:
   call output_lbrk()
