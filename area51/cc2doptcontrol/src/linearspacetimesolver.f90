@@ -4957,8 +4957,8 @@ contains
     type(t_matrixScalar), pointer :: p_rmatrix
     type(t_matrixBlock), target :: rmatrixGlobal
     type(t_matrixBlock) :: rtempMatrix
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
+    integer, dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kcol
     real(DP), dimension(:), pointer :: p_DA
     integer :: ixfirst,ixlast,iyfirst,iylast
     type(t_matrixBlock) :: rsubmatrix,rtempSubmatrix
@@ -5132,8 +5132,8 @@ contains
     ! the global space time matrix.
     type(t_matrixBlock), intent(INOUT) :: rmatrix
     
-      integer(PREC_VECIDX), dimension(:), allocatable :: Iidx
-      integer(PREC_VECIDX) :: ivelSize,ipSize,neq
+      integer, dimension(:), allocatable :: Iidx
+      integer :: ivelSize,ipSize,neq
       integer :: i
       type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     
@@ -5191,8 +5191,8 @@ contains
     type(t_ccmatrixComponents) :: rmatrixComponents
     type(t_vectorBlock) :: rvector1,rvector2,rvector3
     integer :: isubstep,ileft,iright,ix
-    integer(PREC_VECIDX), dimension(1) :: Irows
-    integer(PREC_VECIDX) :: idiag
+    integer, dimension(1) :: Irows
+    integer :: idiag
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
       
     p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscretisation
@@ -5422,18 +5422,18 @@ contains
     type(t_matrixScalar), intent(INOUT) :: rmatrix
     
     ! Number of rows/columns in the matrix
-    integer(PREC_VECIDX), intent(IN) :: NCOLS
-    integer(PREC_VECIDX), intent(IN) :: NEQ
+    integer, intent(IN) :: NCOLS
+    integer, intent(IN) :: NEQ
     
     ! Number of the row that should contain the line '1...1'.
-    integer(PREC_VECIDX), intent(IN) :: irow
+    integer, intent(IN) :: irow
     
       ! local variables
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kdiagonal
+      integer, dimension(:), pointer :: p_Kcol
+      integer, dimension(:), pointer :: p_Kld
+      integer, dimension(:), pointer :: p_Kdiagonal
       real(DP), dimension(:), pointer :: p_Ddata
-      integer(PREC_VECIDX) :: i
+      integer :: i
       
       ! The matrix should get the shape:
       !   1 1 1 1 ... 1 1 1
@@ -5494,17 +5494,17 @@ contains
     type(t_matrixScalar), intent(INOUT) :: rmatrix
     
     ! Number of rows/columns in the matrix
-    integer(PREC_VECIDX), intent(IN) :: NEQ
+    integer, intent(IN) :: NEQ
     
     ! Number of the row that should contain the 'one'
-    integer(PREC_VECIDX), intent(IN) :: irow
+    integer, intent(IN) :: irow
     
       ! local variables
-      integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-      integer(PREC_MATIDX), dimension(:), pointer :: p_Kdiagonal
+      integer, dimension(:), pointer :: p_Kcol
+      integer, dimension(:), pointer :: p_Kld
+      integer, dimension(:), pointer :: p_Kdiagonal
       real(DP), dimension(:), pointer :: p_Ddata
-      integer(PREC_VECIDX) :: i
+      integer :: i
       
       ! Create the matrix by hand. If necessary, allocate memory.
       if (rmatrix%h_Kld .eq. ST_NOHANDLE) then
@@ -6661,7 +6661,7 @@ end subroutine
 
     ! local variables
     integer :: ilev,NLMAX,NEQtime
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_sptilsMGLevelInfo), pointer :: p_rmgLevel
     
     ! A-priori we have no error...

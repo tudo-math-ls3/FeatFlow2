@@ -130,7 +130,7 @@ module spacetimevectors
     logical :: btestfctSpace = .false.
     
     ! Number of equations in each subvector of the 'global time-step vector'.
-    integer(PREC_VECIDX) :: NEQ = 0
+    integer :: NEQ = 0
     
     ! Number of subvectors saved in p_IdataHandleList.
     integer :: NEQtime = 0
@@ -170,7 +170,7 @@ contains
 
 !<input>
   ! Number of equations in the vectors
-  integer(PREC_VECIDX), intent(IN) :: NEQ
+  integer, intent(IN) :: NEQ
   
   ! Number of DOF's in time to maintain.
   ! The number of subvectors that is reserved is therefore ntimesteps+1!
@@ -644,7 +644,7 @@ contains
 !</subroutine>
 
     integer :: i
-    integer(PREC_VECIDX), dimension(1) :: Isize
+    integer, dimension(1) :: Isize
     type(t_vectorBlock) :: rxBlock,ryBlock
 
     ! DEBUG!!!
@@ -712,7 +712,7 @@ contains
 !</subroutine>
 
     integer :: i
-    integer(PREC_VECIDX), dimension(1) :: Isize
+    integer, dimension(1) :: Isize
     type(t_vectorBlock) :: rxBlock,ryBlock
     
     ! DEBUG!!!
@@ -794,7 +794,7 @@ contains
 !</function>
 
     integer :: i
-    integer(PREC_VECIDX), dimension(1) :: Isize
+    integer, dimension(1) :: Isize
     real(DP) :: dres
     type(t_vectorBlock) :: rxBlock,ryBlock
     
@@ -876,7 +876,7 @@ contains
 !</function>
 
     integer :: i,irow
-    integer(PREC_VECIDX), dimension(1) :: Isize
+    integer, dimension(1) :: Isize
     real(DP) :: dres,a
     type(t_vectorBlock) :: rxBlock,ryBlock
     
@@ -958,7 +958,7 @@ contains
   
 !</function>
 
-    integer(PREC_VECIDX), dimension(1) :: Isize
+    integer, dimension(1) :: Isize
     type(t_vectorBlock) :: rxBlock
     real(DP) :: dnorm
     integer :: i
@@ -1102,7 +1102,7 @@ contains
 
 !</subroutine>
 
-    integer(PREC_VECIDX), dimension(:), allocatable :: Isize
+    integer, dimension(:), allocatable :: Isize
     type(t_vectorBlock) :: rvectorTmp
     integer :: i
     real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2
@@ -1157,7 +1157,7 @@ contains
 
 !</subroutine>
 
-    integer(PREC_VECIDX), dimension(1) :: Isize
+    integer, dimension(1) :: Isize
     type(t_vectorBlock) :: rvectorTmp
     integer :: i
     real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2
@@ -1550,7 +1550,7 @@ contains
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dx
     type(t_vectorBlock), pointer :: p_rx
-    integer(PREC_VECIDX), dimension(1) :: Isize
+    integer, dimension(1) :: Isize
     
     if (present(rtempVector)) then
       p_rx => rtempVector
@@ -1657,7 +1657,7 @@ contains
 !</subroutine>
 
     integer :: i,j
-    integer(PREC_VECIDX), dimension(1) :: Isize
+    integer, dimension(1) :: Isize
     type(t_vectorBlock) :: rxBlock,ryBlock
     
     ! DEBUG!!!

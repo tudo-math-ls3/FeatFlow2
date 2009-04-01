@@ -607,7 +607,7 @@ contains
       type(t_vectorBlock), pointer :: p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3
       type(t_interlevelProjectionBlock), pointer :: p_rprojection
       type(t_ccmatrixComponents) :: rmatrixAssembly
-      integer(PREC_MATIDX), dimension(1), parameter :: Irows = (/1/)
+      integer, dimension(1), parameter :: Irows = (/1/)
 
       ! A filter chain for the linear solver
       type(t_filterChain), dimension(:), pointer :: p_RfilterChain

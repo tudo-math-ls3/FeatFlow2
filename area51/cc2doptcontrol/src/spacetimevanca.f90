@@ -88,13 +88,13 @@ module spacetimevanca
   type t_matrixPositions
   
     ! Matrix positions in the FEM matrices.
-    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IposA  => null()
+    integer, dimension(:,:), pointer :: p_IposA  => null()
     
     ! Matrix positions in the B-matrices.
-    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IposB  => null()
+    integer, dimension(:,:), pointer :: p_IposB  => null()
     
     ! matrix positions in the C matrix.
-    integer(PREC_MATIDX), dimension(:,:), pointer :: p_IposC  => null()
+    integer, dimension(:,:), pointer :: p_IposC  => null()
   
   end type
   
@@ -429,30 +429,30 @@ contains
   ! matrix structure 9.
   
   ! The column structure of the matrix.
-  integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol
+  integer, dimension(:), intent(IN) :: Kcol
 
   ! The row structure of the matrix.
-  integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld
+  integer, dimension(:), intent(IN) :: Kld
   
   ! The DOF's in the trial space that belong to the local matrix.
   ! These correspond to the columns of the local matrix.
-  integer(PREC_VECIDX), dimension(:), intent(IN) :: IdofsTrial
+  integer, dimension(:), intent(IN) :: IdofsTrial
 
   ! The DOF's in the test space that belong to the local matrix.
   ! THese correspond to the rows of the local matrix.
-  integer(PREC_VECIDX), dimension(:), intent(IN) :: IdofsTest
+  integer, dimension(:), intent(IN) :: IdofsTest
   
   ! A 2D array containing the positions in the global matrix that
   ! belong to the local matrix. The index array is set up transposed
   ! to get quicker memory access!
   ! Iidx must be a square matrix with 
   ! DIMENSION(size(IdofsTest),size(IdofsTrial))
-  integer(PREC_MATIDX), dimension(:,:), intent(OUT) :: Iidx
+  integer, dimension(:,:), intent(OUT) :: Iidx
   
     ! local variables
     integer :: i,k
-    integer(PREC_MATIDX) :: j
-    integer(PREC_VECIDX) :: idoflocal,icol
+    integer :: j
+    integer :: idoflocal,icol
     
     ! Loop over the matrix rows.
     do i=1,size(IdofsTrial)
@@ -538,20 +538,20 @@ contains
                               iposLocalDualVelocityY + ndofLocalVelocityY
 
     ! local variables
-    integer(PREC_VECIDX) :: iposGlobalPrimalVelocityX,iposGlobalPrimalVelocityY
-    integer(PREC_VECIDX) :: iposGlobalPrimalPressure
-    integer(PREC_VECIDX) :: iposGlobalDualVelocityX,iposGlobalDualVelocityY
-    integer(PREC_VECIDX) :: iposGlobalDualPressure 
-    integer(PREC_ELEMENTIDX) :: iel,NEL
-    integer(PREC_VERTEXIDX) :: NVT
-    integer(PREC_DOFIDX) :: NEQ
+    integer :: iposGlobalPrimalVelocityX,iposGlobalPrimalVelocityY
+    integer :: iposGlobalPrimalPressure
+    integer :: iposGlobalDualVelocityX,iposGlobalDualVelocityY
+    integer :: iposGlobalDualPressure 
+    integer :: iel,NEL
+    integer :: NVT
+    integer :: NEQ
     integer(PREC_EDGEIDX), dimension(:,:), pointer :: p_IedgesAtElement
-    integer(PREC_DOFIDX), dimension(ndofLocalVelocityX) :: IvelocityDofs
-    integer(PREC_DOFIDX), dimension(ndofLocalPressure) :: IpressureDofs
-    !INTEGER(PREC_MATIDX), DIMENSION(ndofLocalVelocity,ndofLocalVelocity) :: ImatPosVel
-    !INTEGER(PREC_MATIDX), DIMENSION(ndofLocalPressure,ndofLocalVelocity) :: ImatPosPres
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KcolA,p_KcolB,p_KcolC
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KldA,p_KldB,p_KldC
+    integer, dimension(ndofLocalVelocityX) :: IvelocityDofs
+    integer, dimension(ndofLocalPressure) :: IpressureDofs
+    !integer, DIMENSION(ndofLocalVelocity,ndofLocalVelocity) :: ImatPosVel
+    !integer, DIMENSION(ndofLocalPressure,ndofLocalVelocity) :: ImatPosPres
+    integer, dimension(:), pointer :: p_KcolA,p_KcolB,p_KcolC
+    integer, dimension(:), pointer :: p_KldA,p_KldB,p_KldC
     real(DP), dimension(ndofLocal) :: DxLocal, DbLocal
     
     integer :: nblockSize,i,j,k,ichunk,NEQtime,ichunkpos,istep,ipos,iiteration
@@ -569,7 +569,7 @@ contains
     type(t_chunkVector), dimension(:), allocatable :: Rvectors
     
     ! Global DOF's in one block of the current chunk
-    integer(PREC_VECIDX), dimension(:), allocatable :: IchunkDofs
+    integer, dimension(:), allocatable :: IchunkDofs
     
     ! Matrix position structure.
     ! Here, the positions of the matrix elements are saved, corresponding to
@@ -583,8 +583,8 @@ contains
     ! local matrix,vectors
     type(t_matrixScalar) :: rmatrixLocal
     real(DP), dimension(:), pointer :: p_DaLocal
-    integer(PREC_MATIDX), dimension(:), pointer :: p_KcolLocal
-    integer(PREC_VECIDX), dimension(:), pointer :: p_KldLocal
+    integer, dimension(:), pointer :: p_KcolLocal
+    integer, dimension(:), pointer :: p_KldLocal
     type(t_vectorScalar) :: rrhsLocal
     real(DP), dimension(:), pointer :: p_DrhsLocal
     integer(I32), dimension(:,:), pointer :: p_ImatrixMapping
@@ -1329,31 +1329,31 @@ contains
     ! velocity and pressure DOF's.
     
     ! Array with velocity DOF's.
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: IvelocityDofs
+    integer, dimension(:), intent(IN) :: IvelocityDofs
     
     ! Array with pressure DOF's.
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: IpressureDofs
+    integer, dimension(:), intent(IN) :: IpressureDofs
     
     ! A t_matrixPositions structure specifying the positions that
     ! are affected by the DOF's in the global matrices
     type(t_matrixPositions), intent(IN) :: rmatrixPositions
 
     ! Structure of FEM matrices for the velocity
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA
+    integer, dimension(:), intent(IN) :: KcolA
+    integer, dimension(:), intent(IN) :: KldA
 
     ! Structure of FEM matrices for the gradient
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolB
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: KldB
+    integer, dimension(:), intent(IN) :: KcolB
+    integer, dimension(:), intent(IN) :: KldB
     
     ! Structure of FEM matrices for the pressure. Optional.
-    integer(PREC_VECIDX), dimension(:), intent(IN), optional :: KcolC
-    integer(PREC_MATIDX), dimension(:), intent(IN), optional :: KldC
+    integer, dimension(:), intent(IN), optional :: KcolC
+    integer, dimension(:), intent(IN), optional :: KldC
     
       ! local variables
       integer :: i,j
-      integer(PREC_MATIDX) :: k
-      integer(PREC_DOFIDX) :: idof
+      integer :: k
+      integer :: idof
     
       ! Search for the matrix positions in the velocity and pressure matrix.
       ! IvelocityDofs specify the rows in the A- and B-matrix where we have
@@ -1414,10 +1414,10 @@ contains
     type(t_matrixRow), dimension(:), intent(IN) :: Rmatrixrows
     
     ! The velocity DOF's under consideration
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: IvelocityDofs
+    integer, dimension(:), intent(IN) :: IvelocityDofs
     
     ! The pressure DOF's under consideration
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: IpressureDofs
+    integer, dimension(:), intent(IN) :: IpressureDofs
     
     ! An integer array that specifies the start positions of the matrix columns
     ! in the local block matrix.
@@ -1428,22 +1428,22 @@ contains
     type(t_matrixPositions), intent(IN) :: rmatrixPositions
     
     ! Column/row structure of the mass/Laplace matrices
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA
+    integer, dimension(:), intent(IN) :: KcolA
+    integer, dimension(:), intent(IN) :: KldA
 
     ! Column/row structure of the B matrices
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolB
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: KldB
+    integer, dimension(:), intent(IN) :: KcolB
+    integer, dimension(:), intent(IN) :: KldB
 
     ! Column/row structure of the C matrices. Optional.
     ! If not present, there is no C-matrix.
-    integer(PREC_VECIDX), dimension(:), intent(IN), optional :: KcolC
-    integer(PREC_MATIDX), dimension(:), intent(IN), optional :: KldC
+    integer, dimension(:), intent(IN), optional :: KcolC
+    integer, dimension(:), intent(IN), optional :: KldC
     
     ! The local matrix that is to be filled with data.
     real(DP), dimension(:), intent(OUT) :: Da
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld
+    integer, dimension(:), intent(IN) :: Kcol
+    integer, dimension(:), intent(IN) :: Kld
     
       ! Local variables
       integer :: irow,icolumn,ioffsetX,ioffsetY,irowOffsetY
@@ -1642,15 +1642,15 @@ contains
 
     ! Destination matrix
     real(DP), dimension(:), intent(OUT) :: Db
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: KldB
+    integer, dimension(:), intent(IN) :: KldB
     
     ! Rows in the source matrix that should be extracted.
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Idofs
+    integer, dimension(:), intent(IN) :: Idofs
     
     ! Array with matrix positions. The rows in this array
     ! define for every entry in Idof the positions in the full matrix of
     ! the entries that have to be extracted and written to the local matrix.
-    integer(PREC_MATIDX), dimension(:,:), intent(IN) :: ImatrixPositions
+    integer, dimension(:,:), intent(IN) :: ImatrixPositions
     
     ! Scaling factor for the matrix
     real(DP), intent(IN) :: dscale
@@ -1669,7 +1669,7 @@ contains
     
       ! local variables
       integer :: i,j
-      integer(PREC_MATIDX) :: k,irowPosB
+      integer :: k,irowPosB
       
       if (.not. associated(p_Da)) return
       
@@ -1721,13 +1721,13 @@ contains
     type(t_chunkVector), dimension(3), intent(IN) :: Rvectors
     
     ! The velocity DOF's under consideration
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: IvelocityDofs
+    integer, dimension(:), intent(IN) :: IvelocityDofs
     
     ! The pressure DOF's under consideration
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: IpressureDofs
+    integer, dimension(:), intent(IN) :: IpressureDofs
     
     ! A list of all DOF's in the current chunk on the current element
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: IchunkDofs
+    integer, dimension(:), intent(IN) :: IchunkDofs
     
     ! A t_matrixPositions structure specifying the positions that
     ! are affected by the DOF's in the global matrices
@@ -1742,17 +1742,17 @@ contains
     logical, intent(IN) :: blastTimestep
     
     ! Column/row structure of the mass/Laplace matrices
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolA
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: KldA
+    integer, dimension(:), intent(IN) :: KcolA
+    integer, dimension(:), intent(IN) :: KldA
 
     ! Column/row structure of the B matrices
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolB
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: KldB
+    integer, dimension(:), intent(IN) :: KcolB
+    integer, dimension(:), intent(IN) :: KldB
 
     ! Column/row structure of the C matrices. Optional.
     ! If not present, there is no C-matrix.
-    integer(PREC_VECIDX), dimension(:), intent(IN), optional :: KcolC
-    integer(PREC_MATIDX), dimension(:), intent(IN), optional :: KldC
+    integer, dimension(:), intent(IN), optional :: KcolC
+    integer, dimension(:), intent(IN), optional :: KldC
     
     ! The local defect in one row of a chunk
     real(DP), dimension(:), intent(OUT), target :: Dd
@@ -1923,7 +1923,7 @@ contains
     ! Adds a local correction vector to the global solution
     
     ! A list of all DOF's in the current chunk on the current element
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: IchunkDofs
+    integer, dimension(:), intent(IN) :: IchunkDofs
     
     ! The local defect in one row of a chunk
     real(DP), dimension(:), intent(IN), target :: Dd
@@ -1952,7 +1952,7 @@ contains
     ! for the rows defined in the array Idofs.
     
     ! The rows in the matrix that correspond to the elements in Db.
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: Idofs
+    integer, dimension(:), intent(IN) :: Idofs
     
     ! Scaling factor for the matrix
     real(DP), intent(IN) :: dscale
@@ -1961,8 +1961,8 @@ contains
     ! if set to NULL(), there is no matrix, so no matrix vector multiplication
     ! will be done.
     real(DP), dimension(:), pointer :: p_Da
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: Kcol
-    integer(PREC_MATIDX), dimension(:), intent(IN) :: Kld
+    integer, dimension(:), intent(IN) :: Kcol
+    integer, dimension(:), intent(IN) :: Kld
     
     ! Solution vector; is multiplied by the matrix and subtracted from b.
     real(DP), dimension(:), intent(IN) :: Dx
@@ -1996,10 +1996,10 @@ contains
     ! for the rows defined in the array Idofs.
     
     ! Velocity DOF's under consideration
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: IvelocityDofs
+    integer, dimension(:), intent(IN) :: IvelocityDofs
 
     ! Pressure DOF's under consideration
-    integer(PREC_DOFIDX), dimension(:), intent(IN) :: IpressureDofs
+    integer, dimension(:), intent(IN) :: IpressureDofs
     
     ! Scaling factor for the matrix
     real(DP), intent(IN) :: dscale
@@ -2008,11 +2008,11 @@ contains
     ! if set to NULL(), there is no matrix, so no matrix vector multiplication
     ! will be done.
     real(DP), dimension(:), pointer :: p_DB
-    integer(PREC_VECIDX), dimension(:), intent(IN) :: KcolB
+    integer, dimension(:), intent(IN) :: KcolB
     
     ! Index array specifying the entries (rows) in the B-matrix which are affected
     ! by the DOF's in IvelocityDofs. DIMENSION(#velocity DOF's,#pressure DOF's).
-    integer(PREC_MATIDX), dimension(:,:), intent(IN) :: ImatrixPos
+    integer, dimension(:,:), intent(IN) :: ImatrixPos
     
     ! Solution vector; is multiplied by the matrix and subtracted from b.
     real(DP), dimension(:), intent(IN) :: Dx
@@ -2022,7 +2022,7 @@ contains
     real(DP), dimension(:), intent(INOUT) :: Db
     
       integer :: i,j
-      integer(PREC_MATIDX) :: k
+      integer :: k
       
       if (associated(p_DB) .and. (dscale .ne. 0.0_DP)) then
       

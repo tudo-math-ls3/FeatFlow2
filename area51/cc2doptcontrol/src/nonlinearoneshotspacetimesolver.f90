@@ -140,8 +140,8 @@ contains
 !    TYPE(t_matrixBlock) :: rglobalA
 !    TYPE(t_linsolNode), POINTER :: rsolverNode
 !    TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
-!    INTEGER(PREC_VECIDX), DIMENSION(:), ALLOCATABLE :: Isize
-!    INTEGER(PREC_VECIDX), DIMENSION(6) :: Isize2
+!    integer, DIMENSION(:), ALLOCATABLE :: Isize
+!    integer, DIMENSION(6) :: Isize2
 !    
 !    REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd
 !    
@@ -663,8 +663,8 @@ contains
     type(t_matrixBlock) :: rglobalA
     type(t_linsolNode), pointer :: rsolverNode,p_rpreconditioner
     type(t_matrixBlock), dimension(1) :: Rmatrices
-    integer(PREC_VECIDX), dimension(:), allocatable :: Isize
-    integer(PREC_VECIDX), dimension(6) :: Isize2
+    integer, dimension(:), allocatable :: Isize
+    integer, dimension(6) :: Isize2
     real(DP) :: dtheta
     type(t_ccmatrixComponents) :: rmatrixComponents
     type(t_matrixBlock) :: rmatrix

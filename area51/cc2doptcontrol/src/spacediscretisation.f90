@@ -1021,7 +1021,7 @@ contains
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
     integer :: ilev
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
 
     ! Get the parameter what to do with rvector
@@ -1140,7 +1140,7 @@ contains
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfileString
     integer :: ilev
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     logical :: bformatted
 

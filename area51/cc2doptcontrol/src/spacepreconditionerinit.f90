@@ -816,7 +816,7 @@ contains
     ! local variables
     integer :: NLMIN,NLMAX
     integer :: i,icomponents
-    integer(PREC_VECIDX) :: imaxmem
+    integer :: imaxmem
     character(LEN=PARLST_MLDATA) :: ssolverName,sstring
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 

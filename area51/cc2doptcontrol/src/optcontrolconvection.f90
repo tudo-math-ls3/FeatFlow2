@@ -157,7 +157,7 @@ module optcontrolconvection
     logical, dimension(EL_MAXNDER) :: Bder
     
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), pointer :: Idofs
+    integer, dimension(:,:), pointer :: Idofs
     
     ! Allocateable arrays for the values of the basis functions - 
     ! for test and trial spaces.
@@ -191,10 +191,10 @@ module optcontrolconvection
     
     ! Local matrices, used during the assembly.
     ! Values and positions of values in the global matrix.
-    integer(PREC_DOFIDX), dimension(:,:,:), pointer :: Kentry
+    integer, dimension(:,:,:), pointer :: Kentry
     
     ! Additional contributions for the submatrices A11, A12, A21, A22 stemming from Newton.
-    integer(PREC_DOFIDX), dimension(:,:,:), pointer :: Kentry12
+    integer, dimension(:,:,:), pointer :: Kentry12
     
     ! Maximum velocity magnitude
     real(DP) :: dumax
@@ -216,8 +216,14 @@ module optcontrolconvection
     real(DP), dimension(:,:,:), pointer :: DpvelXderiv,DpvelYderiv
     real(DP), dimension(:,:,:), pointer :: DdvelXderiv,DdvelYderiv
     
-    ! Pointer to the primal/dual velocity DOF's on the elements
+    ! Pointer to the primal/dual velocity DOF's on the elements where to
+    ! evaluate the matrices.
     real(DP), dimension(:,:,:), pointer :: DpvelDofs,DdvelDofs
+
+    ! Pointer to the primal/dual velocity DOF's on the elements which are
+    ! multiplied to the local matrices to get the derivative of the
+    ! operator.
+    real(DP), dimension(:,:,:), pointer :: DpvelDofsAlt,DdvelDofsAlt
     
   end type
 
@@ -2337,7 +2343,8 @@ contains
 
 !<subroutine>
 
-  subroutine conv_strdiffOptC2dinitasm (rdiscretisation,ielemDistribution,roptcassemblyinfo)
+  subroutine conv_strdiffOptC2dinitasm (rdiscretisation,ielemDistribution,&
+      roptcassemblyinfo,balternativeVelocity)
   
 !<description>
   ! Initialise the roptcassemblyinfo structure for the assembly of
@@ -2351,6 +2358,9 @@ contains
   ! Id of the element distribution to be processed.
   integer, intent(in) :: ielemDistribution
   
+  ! OPTIONAL: Create arrays for an additional velocity, independent of the
+  ! evaluation point of the matrices. If not specified, FALSE is assumed.
+  logical, intent(in), optional :: balternativeVelocity
 !</input>
   
 !<output>
@@ -2459,6 +2469,20 @@ contains
         roptcassemblyinfo%indof,roptcassemblyinfo%nelementsPerBlock,NDIM2D))
     allocate (roptcassemblyinfo%DdvelDofs(&
         roptcassemblyinfo%indof,roptcassemblyinfo%nelementsPerBlock,NDIM2D))
+       
+    ! The alternative velocity coincides with the standard velocity.
+    roptcassemblyinfo%DpvelDofsAlt => roptcassemblyinfo%DpvelDofs
+    roptcassemblyinfo%DdvelDofsAlt => roptcassemblyinfo%DdvelDofs
+
+    if (present(balternativeVelocity)) then
+      if (balternativeVelocity) then
+        ! Create an additional evaluation point for the velocity.
+        allocate (roptcassemblyinfo%DpvelDofsAlt(&
+            roptcassemblyinfo%indof,roptcassemblyinfo%nelementsPerBlock,NDIM2D))
+        allocate (roptcassemblyinfo%DdvelDofsAlt(&
+            roptcassemblyinfo%indof,roptcassemblyinfo%nelementsPerBlock,NDIM2D))
+      end if
+    end if
     
     ! Indicate that cubature points must still be initialised in the element set.
     roptcassemblyinfo%bcubPtsInitialised = .false.
@@ -2485,7 +2509,8 @@ contains
 
   subroutine conv_strdiffOptC2dinitelemset (rvelmatrix,rvelmatrixoffdiag,&
       rvelocityVectorPrimal,rvelocityVectorDual,&
-      roptcoperator,roptcassemblyinfo,istartElement,iendElement)
+      roptcoperator,roptcassemblyinfo,istartElement,iendElement,&
+      rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
   
 !<description>
   ! Initialise the roptcassemblyinfo structure for the assembly of
@@ -2502,10 +2527,10 @@ contains
   ! velocity space for offdiagonal blocks.
   type(t_matrixScalar), intent(in) :: rvelmatrixoffdiag
   
-  ! Velocity vector, primal equation (Block 1/2)
+  ! Velocity vector, primal equation (Block 1/2) for the evaluation of the matrices
   type(t_vectorBlock), intent(in) :: rvelocityVectorPrimal
 
-  ! Velocity vector, dual equation (Blcok 4/5)
+  ! Velocity vector, dual equation (Blcok 4/5) for the evaluation of the matrices
   type(t_vectorBlock), intent(in) :: rvelocityVectorDual
 
   ! Structure defining the operator to set up.
@@ -2516,6 +2541,13 @@ contains
   
   ! Index of the last element.
   integer, intent(in) :: iendElement
+
+  ! OPTIONAL: Alternative Velocity vector, primal equation (Block 1/2).
+  type(t_vectorBlock), intent(in), optional :: rvelocityVectorPrimalAlt
+
+  ! OPTIONAL: Alternative Velocity vector, dual equation (Blcok 4/5).
+  type(t_vectorBlock), intent(in), optional :: rvelocityVectorDualAlt
+
 !</input>
 
 !<inputoutput>
@@ -2527,10 +2559,10 @@ contains
 
     ! local variables
     integer :: iel, idofe, jdofe, jcol0, jcol, jdfg
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld
-    integer(PREC_VECIDX), dimension(:), pointer :: p_Kcol12
-    integer(PREC_MATIDX), dimension(:), pointer :: p_Kld12
+    integer, dimension(:), pointer :: p_Kcol
+    integer, dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kcol12
+    integer, dimension(:), pointer :: p_Kld12
 
     ! Primal and dual velocity
     real(DP), dimension(:), pointer :: p_DpvelocityX, p_DpvelocityY
@@ -2788,6 +2820,25 @@ contains
         roptcassemblyinfo%DdvelDofs(idofe,iel,2) = p_DdvelocityY(jdofe)
       end do
     end do
+
+    if (present(rvelocityVectorPrimalAlt)) then
+      ! Also fetch the alternative velocity.
+      call lsyssc_getbase_double (rvelocityVectorPrimalAlt%RvectorBlock(1),p_DpvelocityX)
+      call lsyssc_getbase_double (rvelocityVectorPrimalAlt%RvectorBlock(2),p_DpvelocityY)
+      call lsyssc_getbase_double (rvelocityVectorDualAlt%RvectorBlock(4),p_DdvelocityX)
+      call lsyssc_getbase_double (rvelocityVectorDualAlt%RvectorBlock(5),p_DdvelocityY)
+
+      ! Extract the velocity DOF's omn the elements.
+      do iel=1,iendelement-istartElement+1
+        do idofe = 1,roptcassemblyinfo%indof
+          jdofe = roptcassemblyinfo%Idofs(idofe,iel)
+          roptcassemblyinfo%DpvelDofsAlt(idofe,iel,1) = p_DpvelocityX(jdofe)
+          roptcassemblyinfo%DpvelDofsAlt(idofe,iel,2) = p_DpvelocityY(jdofe)
+          roptcassemblyinfo%DdvelDofsAlt(idofe,iel,1) = p_DdvelocityX(jdofe)
+          roptcassemblyinfo%DdvelDofsAlt(idofe,iel,2) = p_DdvelocityY(jdofe)
+        end do
+      end do
+    end if
     
   end subroutine
   
@@ -2822,6 +2873,17 @@ contains
     deallocate(roptcassemblyinfo%DpvelYderiv)
     deallocate(roptcassemblyinfo%DdvelXderiv)
     deallocate(roptcassemblyinfo%DdvelYderiv)
+    
+    if (associated(roptcassemblyinfo%DpvelDofsAlt,roptcassemblyinfo%DpvelDofs)) then
+      deallocate(roptcassemblyinfo%DpvelDofsAlt)
+      deallocate(roptcassemblyinfo%DdvelDofsAlt)
+    else
+      nullify(roptcassemblyinfo%DpvelDofsAlt)
+      nullify(roptcassemblyinfo%DdvelDofsAlt)
+    end if
+    
+    deallocate(roptcassemblyinfo%DpvelDofs)
+    deallocate(roptcassemblyinfo%DdvelDofs)
     
     deallocate(roptcassemblyinfo%p_DcubPtsRef)
 
@@ -2871,7 +2933,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_ELEMENTIDX) :: ielset,ielmax
+  integer :: ielset,ielmax
   
   ! Matrix structure arrays
   real(DP), dimension(:), pointer :: p_Da11,p_Da22,p_Da44,p_Da55
@@ -3168,11 +3230,27 @@ contains
 
 !<subroutine>
   subroutine conv_strdiffOptC2dgetDerMatrix (rmatrix,roptcoperator,dweight,&
-      rvelocityVectorPrimal,rvelocityVectorDual,dh)
+      rvelocityVectorPrimal,rvelocityVectorDual,dh,&
+      rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
 !<description>
   ! Calculate the derivative matrix of the nonlinear operator:
   !   dweight*A(rvelocityVector)
 !</description>
+
+!<remarks>
+  ! rvelocityVectorPrimalAlt / rvelocityVectorDualAlt allows to specify an
+  ! alternative velocity in the following sense:
+  ! If NOT specified, the routine assumes that an operator
+  !   R(x) = A(x)x
+  ! is given and calculates the derivative with respect to x. On the other hand,
+  ! if y:= rvelocityVectorPrimalAlt/rvelocityVectorDualAlt is specified,
+  ! the routine assumes that the operator is given in the form
+  !   R(x) = R(x,y) = A(x)y
+  ! and calculates the derivative only with respect to x.
+  ! This can be used to calculate the derivative matrix of subblocks in
+  ! a block matrix, where the block A(x) changes while the corresponding
+  ! evaluation point y stays fixed.
+!</remarks>
 
 !<input>
 
@@ -3194,6 +3272,18 @@ contains
   
   ! Step length for the discrete derivative.
   real(dp), intent(in) :: dh
+
+  ! Alternative Velocity vector for the nonlinearity to be multiplied to the
+  ! matrix. The first blocks 1/2 in this vector define the evaluation
+  ! point (primal velocity).
+  ! If not present, this coincides with rvelocityVectorPrimal
+  type(t_vectorBlock), intent(in), optional :: rvelocityVectorPrimalAlt
+
+  ! Alternative Velocity vector for the nonlinearity to be multiplied to the
+  ! matrix. The first blocks 4/5 in this vector define the evaluation
+  ! point (dual velocity).
+  ! If not present, this coincides with rvelocityVectorDual.
+  type(t_vectorBlock), intent(in), optional :: rvelocityVectorDualAlt
   
 !</input>
 
@@ -3208,7 +3298,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_ELEMENTIDX) :: ielset,ielmax,idof,iel
+  integer :: ielset,ielmax,idof,iel
   real(dp) :: dweight2
   
   ! Matrix structure arrays
@@ -3290,7 +3380,7 @@ contains
     
     ! Initialise the asembly of the local matrices.
     call conv_strdiffOptC2dinitasm (rvelocityVectorPrimal%p_rblockDiscr%RspatialDiscr(1),&
-        1,roptcassemblyinfo)
+        1,roptcassemblyinfo,present(rvelocityVectorPrimalAlt))
 
     ! Calculate the maximum norm of the actual velocity field
     ! Round up the norm to 1D-8 if it's too small...
@@ -3403,11 +3493,13 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
@@ -3456,14 +3548,14 @@ contains
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da11)) then
           call incorporateLocalMatVecCol (DentryA11,p_Da11,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
           end if
@@ -3471,14 +3563,14 @@ contains
 
         if (associated(p_Da21)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da21,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
           end if
@@ -3487,25 +3579,25 @@ contains
 
         if (associated(p_Da41)) then
           call incorporateLocalMatVecCol (DentryA41,p_Da41,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA44,p_Da41,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA45,p_Da41,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if                                            
 
 
         if (associated(p_Da51)) then
           call incorporateLocalMatVecCol (DentryA52,p_Da51,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
                                                       
           call incorporateLocalMatVecCol (DentryA54,p_Da51,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA55,p_Da51,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if
             
       end do
@@ -3518,11 +3610,13 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
@@ -3571,14 +3665,14 @@ contains
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da11)) then
           call incorporateLocalMatVecCol (DentryA11,p_Da11,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
           end if
@@ -3586,14 +3680,14 @@ contains
 
         if (associated(p_Da21)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da21,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
           end if
@@ -3602,25 +3696,25 @@ contains
 
         if (associated(p_Da41)) then
           call incorporateLocalMatVecCol (DentryA41,p_Da41,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA44,p_Da41,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA45,p_Da41,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if                                            
 
 
         if (associated(p_Da51)) then
           call incorporateLocalMatVecCol (DentryA52,p_Da51,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
                                                       
           call incorporateLocalMatVecCol (DentryA54,p_Da51,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA55,p_Da51,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if
 
       end do
@@ -3635,11 +3729,13 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
@@ -3688,14 +3784,14 @@ contains
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da12)) then
           call incorporateLocalMatVecCol (DentryA11,p_Da12,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
           end if
@@ -3703,14 +3799,14 @@ contains
 
         if (associated(p_Da22)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da22,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else                                            
             call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
           end if
@@ -3719,25 +3815,25 @@ contains
 
         if (associated(p_Da42)) then
           call incorporateLocalMatVecCol (DentryA41,p_Da42,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA44,p_Da42,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA45,p_Da42,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if                                            
 
 
         if (associated(p_Da52)) then
           call incorporateLocalMatVecCol (DentryA52,p_Da52,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
                                                       
           call incorporateLocalMatVecCol (DentryA54,p_Da52,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA55,p_Da52,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if
             
       end do
@@ -3750,11 +3846,13 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
@@ -3803,14 +3901,14 @@ contains
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da12)) then
           call incorporateLocalMatVecCol (DentryA11,p_Da12,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
           end if
@@ -3818,14 +3916,14 @@ contains
 
         if (associated(p_Da22)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da22,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
           end if
@@ -3834,25 +3932,25 @@ contains
 
         if (associated(p_Da42)) then
           call incorporateLocalMatVecCol (DentryA41,p_Da42,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA44,p_Da42,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA45,p_Da42,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if                                            
 
 
         if (associated(p_Da52)) then
           call incorporateLocalMatVecCol (DentryA52,p_Da52,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
                                                       
           call incorporateLocalMatVecCol (DentryA54,p_Da52,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA55,p_Da52,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if
             
       end do
@@ -3867,11 +3965,13 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
@@ -3920,14 +4020,14 @@ contains
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da14)) then
           call incorporateLocalMatVecCol (DentryA11,p_Da14,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
           end if
@@ -3935,14 +4035,14 @@ contains
 
         if (associated(p_Da24)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da24,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
           end if
@@ -3951,25 +4051,25 @@ contains
 
         if (associated(p_Da44)) then
           call incorporateLocalMatVecCol (DentryA41,p_Da44,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA44,p_Da44,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA45,p_Da44,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if                                            
 
 
         if (associated(p_Da54)) then
           call incorporateLocalMatVecCol (DentryA52,p_Da54,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
                                                       
           call incorporateLocalMatVecCol (DentryA54,p_Da54,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA55,p_Da54,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if
             
       end do
@@ -3982,11 +4082,13 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
@@ -4035,14 +4137,14 @@ contains
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da14)) then
           call incorporateLocalMatVecCol (DentryA11,p_Da14,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
           end if
@@ -4050,14 +4152,14 @@ contains
 
         if (associated(p_Da24)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da24,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
           end if
@@ -4066,25 +4168,25 @@ contains
 
         if (associated(p_Da44)) then
           call incorporateLocalMatVecCol (DentryA41,p_Da44,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA44,p_Da44,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA45,p_Da44,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if                                            
 
 
         if (associated(p_Da54)) then
           call incorporateLocalMatVecCol (DentryA52,p_Da54,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
                                                       
           call incorporateLocalMatVecCol (DentryA54,p_Da54,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA55,p_Da54,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if
             
       end do
@@ -4100,11 +4202,13 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
@@ -4153,14 +4257,14 @@ contains
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da15)) then
           call incorporateLocalMatVecCol (DentryA11,p_Da15,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
           end if
@@ -4168,14 +4272,14 @@ contains
 
         if (associated(p_Da25)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da25,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
           end if
@@ -4184,25 +4288,25 @@ contains
 
         if (associated(p_Da45)) then
           call incorporateLocalMatVecCol (DentryA41,p_Da45,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA44,p_Da45,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA45,p_Da45,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if                                            
 
 
         if (associated(p_Da55)) then
           call incorporateLocalMatVecCol (DentryA52,p_Da55,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
                                                       
           call incorporateLocalMatVecCol (DentryA54,p_Da55,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA55,p_Da55,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if
             
       end do
@@ -4215,11 +4319,13 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,2),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         else
           call conv_strdiffOptC2dinitelemset (rmatrix%RmatrixBlock(1,1),&
               rmatrix%RmatrixBlock(1,1),rvelocityVectorPrimal,rvelocityVectorDual,&
-              roptcoperator,roptcassemblyinfo,ielset,ielmax)
+              roptcoperator,roptcassemblyinfo,ielset,ielmax,&
+            rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
         end if
         
         ! Increase the idof'th entry in the velocity evaluation point by h.
@@ -4268,16 +4374,16 @@ contains
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da15)) then
           call incorporateLocalMatVecCol (DentryA11,p_Da15,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
             ! Note that dcontrolMultiplier is negative, so we have to switch
             ! the min and the max!!!
             call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
           end if
@@ -4285,14 +4391,14 @@ contains
 
         if (associated(p_Da25)) then
           call incorporateLocalMatVecCol (DentryA22,p_Da25,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
 
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
             call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
-                                            roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp,&
+                                            roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
                                             roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
                                             roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
           end if
@@ -4301,25 +4407,25 @@ contains
 
         if (associated(p_Da45)) then
           call incorporateLocalMatVecCol (DentryA41,p_Da45,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA44,p_Da45,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA45,p_Da45,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if                                            
 
 
         if (associated(p_Da55)) then
           call incorporateLocalMatVecCol (DentryA52,p_Da55,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DpvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DpvelDofsAlt,2,idof,dweight2,Dtemp)
                                                       
           call incorporateLocalMatVecCol (DentryA54,p_Da55,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,1,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
 
           call incorporateLocalMatVecCol (DentryA55,p_Da55,roptcassemblyinfo%Kentry,&
-                                          roptcassemblyinfo%DdvelDofs,2,idof,dweight2,Dtemp)
+                                          roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
         end if
             
       end do
@@ -4477,7 +4583,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer(PREC_ELEMENTIDX) :: ielset,ielmax
+  integer :: ielset,ielmax
   
   ! Local matrices
   real(DP), dimension(:,:,:), allocatable :: DentryA11
@@ -4583,7 +4689,8 @@ contains
       ! Initialise the element set, compute the basis functions in the
       ! cubature points.
       call conv_strdiffOptC2dinitelemset (rvelMatrix,rvelMatrix,&
-          rvelocityVectorPrimal,rvelocityVectorDual,roptcoperator,roptcassemblyinfo,ielset,ielmax)
+          rvelocityVectorPrimal,rvelocityVectorDual,roptcoperator,&
+          roptcassemblyinfo,ielset,ielmax)
 
       ! Clear the local matrices. If the Newton part is to be calculated,
       ! we must clear everything, otherwise only Dentry.
@@ -4784,7 +4891,7 @@ contains
     ! local variables
     real(DP) :: dlocalH,du1,du2,dunorm,dreLocal,dnuR,dumaxR
     integer :: iel
-    integer(PREC_DOFIDX) :: idof
+    integer :: idof
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
@@ -4863,9 +4970,9 @@ contains
   ! triangulation.
   
   ! Element where the local h should be calculated
-  integer(PREC_ELEMENTIDX), intent(IN)               :: JEL
+  integer, intent(IN)               :: JEL
   
-  integer(PREC_VERTEXIDX), dimension(TRIA_MAXNVE2D,*), intent(IN) :: Kvert
+  integer, dimension(TRIA_MAXNVE2D,*), intent(IN) :: Kvert
   real(DP), dimension(NDIM2D,*), intent(IN)          :: Dcorvg
   
   ! norm ||u||_T = mean velocity through element T=JEL
@@ -4879,7 +4986,7 @@ contains
   
   ! local variables
   real(DP) :: dlambda
-  integer(PREC_VERTEXIDX) :: NECK1,NECK2,NECK3,NECK4
+  integer :: NECK1,NECK2,NECK3,NECK4
   real(DP) :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
   real(DP) :: dalphaMax, dalpha
 

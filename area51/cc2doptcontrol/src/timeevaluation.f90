@@ -246,7 +246,7 @@ contains
     type(t_vectorBlock), intent(INOUT) :: rvector
     
       ! local variables
-      integer(PREC_DOFIDX) :: i
+      integer :: i
       type(t_vectorBlock) :: rvec1,rvec2
       real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
       

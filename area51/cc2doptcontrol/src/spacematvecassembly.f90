@@ -130,6 +130,9 @@ module spacematvecassembly
   ! Bypass memory allocation for matrices.
   integer(I32), parameter :: CMASM_QUICKREFERENCES        = 4
   
+  ! Don't clear the old matrix
+  integer(i32), parameter :: CMASM_NOCLEAR                = 8
+  
 !</constantblock>
 
 !<constantblock description="Identifiers for the IUPWIND parameter that specifies how to set up the nonlinearity or stabilisation.">
@@ -447,7 +450,7 @@ contains
     type(t_bilinearForm), intent(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
+    integer, intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     integer, intent(IN)                                         :: npointsPerElement
@@ -460,11 +463,11 @@ contains
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1081,28 +1084,31 @@ contains
         rmatrix%RmatrixBlock(1:2,4:5)%dscaleFactor = 1.0_DP
         rmatrix%RmatrixBlock(4:5,1:2)%dscaleFactor = 1.0_DP
 
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
-        
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,4))        
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,5))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,4))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,5))
-        
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,4))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,4))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,5))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,5))
-        
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,1))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,2))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,1))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,2))
-        
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,6))
+        ! Clear the old matrix
+        if (iand(coperation,CMASM_NOCLEAR) .eq. 0) then
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
+          
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,4))        
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,5))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,4))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,5))
+          
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,4))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,4))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,5))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,5))
+          
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,1))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,2))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,1))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,2))
+          
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,6))
+        end if
         
         ! The B1/B2 matrices exist up to now only in rmatrixComponents.
         ! Put a copy of them into the block matrix.
