@@ -1855,7 +1855,7 @@ contains
     type(t_linsolNode), pointer :: p_rsolverNode, p_rprecSolver
     type(t_filterChain), dimension(3), target :: RfilterChain
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-    type(t_linsolMGLevelInfo2), pointer     :: p_rlevelInfo
+    type(t_linsolMG2LevelInfo), pointer     :: p_rlevelInfo
 
     ! NLMAX receives the level where we want to solve.
     integer :: NLMIN,NLMAX
@@ -2140,14 +2140,14 @@ contains
               call linsol_initMultigrid2(p_rsolverNode,NLMAX-NLMIN+1,p_RfilterChain)
               
               ! Add the coarse grid solver
-              call linsol_getMultigridLevel2 (p_rsolverNode,1,p_rlevelInfo)
+              call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
               call linsol_initVANKA (p_rprecSolver,0.7_DP,LINSOL_VANKA_GENERAL)
               call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rprecSolver,p_RfilterChain)
               p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = 1000
               !call linsol_initUMFPACK4(p_rlevelInfo%p_rcoarseGridSolver)
               
               do ilevel = NLMIN+1,NLMAX
-                call linsol_getMultigridLevel2 (p_rsolverNode,ilevel-NLMIN+1,p_rlevelInfo)
+                call linsol_getMultigrid2Level (p_rsolverNode,ilevel-NLMIN+1,p_rlevelInfo)
               
                 ! Add the smoother
                 call linsol_initVANKA (p_rprecSolver,1.0_DP,LINSOL_VANKA_GENERAL)
@@ -2159,7 +2159,9 @@ contains
                 call mlprj_initProjectionDiscr (Rlevel(ilevel)%rprojection,&
                     Rlevel(ilevel)%rdiscretisation)
                     
-                p_rlevelInfo%rinterlevelProjection = Rlevel(ilevel)%rprojection
+                ! Set up the interlevel projection structure on all levels
+                call linsol_initProjMultigrid2Level(p_rlevelInfo,&
+                    Rlevel(ilevel)%rprojection)
 
               end do
               
