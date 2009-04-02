@@ -379,7 +379,7 @@ contains
     ! Add the coarse grid level.
     ! Please note that we do not pass an interlevel projection structure
     ! to this routine - the multigrid solver will create one on its own.
-    call linsol_addMultigridLevel(p_rsubsolverA,p_rlevelInfo, &
+    call linsol_addMultiGridLevel2(p_rlevelInfo, p_rsubsolverA, &
                                    null(), null(), p_rcoarseGridSolver)
 
     ! Now set up the other levels...
@@ -393,7 +393,7 @@ contains
       
       ! And add this multi-grid level. We won't pass a projection structure
       ! here either - let multigrid create one on its own.
-      call linsol_addMultiGridLevel2(p_rsubsolverA, p_rlevelInfo, &
+      call linsol_addMultiGridLevel2(p_rlevelInfo, p_rsubsolverA, &
                                      p_rsmoother, p_rsmoother, null())
       
     end do
