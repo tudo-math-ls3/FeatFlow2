@@ -552,7 +552,7 @@ contains
     
     ! Add the coarse grid level.
     call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,rprojection,&
-                                  null(), null(), p_rcoarseGridSolver)
+                                  p_rcoarseGridSolver=p_rcoarseGridSolver)
 
     ! Now set up the other levels...
     do i = NLMIN+1, NLMAX
@@ -566,7 +566,7 @@ contains
       ! And add this multi-grid level. We will use the same smoother
       ! for pre- and post-smoothing.
       call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,rprojection,&
-                                    p_rsmoother, p_rsmoother, null())
+                                    p_rsmoother, p_rsmoother)
       
     end do
     

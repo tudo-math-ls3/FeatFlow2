@@ -117,7 +117,7 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
 
     ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -130,7 +130,7 @@ contains
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 
     ! One level of multigrid
-    type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     
     ! NLMIN receives the level of the coarse grid.
     integer :: NLMIN
@@ -390,14 +390,17 @@ contains
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    call linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,p_RfilterChain)
     
     ! Set up a coarse grid solver.
-    call linsol_initUMFPACK4 (p_rcoarsegridSolver)
+    ! The coarse grid in multigrid is always grid 1!
+    call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
+    call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
     
-    ! Add the coarse grid level.
-    call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,&
-        Rlevels(NLMIN)%rprojection,null(), null(), p_rcoarseGridSolver)
+    ! Set up a coarse grid solver.
+    ! The coarse grid in multigrid is always grid 1!
+    call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
+    call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
 
     ! Now set up the other levels...
     do i = NLMIN+1, NLMAX
@@ -413,8 +416,12 @@ contains
       
       ! And add this multi-grid level. We will use the same smoother
       ! for pre- and post-smoothing.
-      call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,&
-          Rlevels(i)%rprojection,p_rsmoother, p_rsmoother, null())
+      call linsol_getMultigrid2Level (p_rsolverNode,i-NLMIN+1,p_rlevelInfo)
+      p_rlevelInfo%p_rpresmoother => p_rsmoother
+      p_rlevelInfo%p_rpostsmoother => p_rsmoother
+      
+      ! Attach our user-defined projection to the level.
+      call linsol_initProjMultigrid2Level(p_rlevelInfo,Rlevels(i)%rprojection)
       
     end do
     

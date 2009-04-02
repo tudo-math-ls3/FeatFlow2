@@ -513,7 +513,7 @@ contains
     type(t_ucdExport) :: rexport
     
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
-    integer :: ioutputUCD,ieltype,ilevelUCD
+    integer :: ioutputUCD,ilevelUCD
     
     character(SYS_STRLEN) :: sfile,sfilename
     

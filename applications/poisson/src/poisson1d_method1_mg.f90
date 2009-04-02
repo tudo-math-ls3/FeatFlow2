@@ -107,7 +107,7 @@ contains
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
     ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -119,11 +119,8 @@ contains
     type(t_filterChain), dimension(1), target :: RfilterChain
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
-    ! An interlevel projection structure for changing levels
-    type(t_interlevelProjectionBlock) :: rprojection
-
     ! One level of multigrid
-    type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
 
     ! Error indicator during initialisation of the solver
     integer :: ierror    
@@ -332,23 +329,17 @@ contains
 
     ! Now we have to build up the level information for multigrid.
     !
-    ! At first, initialise a standard interlevel projection structure. We
-    ! can use the same structure for all levels.
-    call mlprj_initProjectionMat (rprojection,Rlevels(nlevels)%rmatrix)
-
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    call linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,nlevels,p_RfilterChain)
     
     ! Set up a coarse grid solver.
-    call linsol_initUMFPACK4 (p_rcoarsegridSolver)
+    ! The coarse grid in multigrid is always grid 1!
+    call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
+    call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
     
-    ! Add the coarse grid level.
-    call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,rprojection,&
-                                  null(), null(), p_rcoarseGridSolver)
-
     ! Now set up the other levels...
     do i = 2, nlevels
     
@@ -360,8 +351,9 @@ contains
       
       ! And add this multi-grid level. We will use the same smoother
       ! for pre- and post-smoothing.
-      call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,rprojection,&
-                                    p_rsmoother, p_rsmoother, null())
+      call linsol_getMultigrid2Level (p_rsolverNode,i,p_rlevelInfo)
+      p_rlevelInfo%p_rpresmoother => p_rsmoother
+      p_rlevelInfo%p_rpostsmoother => p_rsmoother
       
     end do
 
@@ -434,9 +426,6 @@ contains
     
     ! Release the solver node and all subnodes attached to it (if at all):
     call linsol_releaseSolver (p_rsolverNode)
-    
-    ! Release the multilevel projection structure.
-    call mlprj_doneProjection (rprojection)
     
     ! Release the block matrices/vectors
     call lsysbl_releaseVector (rtempBlock)
