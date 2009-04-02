@@ -30,6 +30,7 @@ module elemdbg2d_test1
   use spdiscprojection
   use convection
   use collection
+  use sortstrategy
     
   use elemdbg2d_callback
   use disto2d_aux
@@ -71,7 +72,7 @@ contains
   real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2, ddist2
   character(LEN=64) :: selement,scubature
   type(t_bilinearForm) :: rform
-  integer :: iwritemesh
+  integer :: iwritemesh, h_Ipermute
   type(t_ucdexport) :: rexport
   real(DP), dimension(:), pointer :: p_Ddata
   real(DP) :: dnu,dbeta1,dbeta2,dupsam,dgamma
@@ -79,6 +80,8 @@ contains
   type(t_convStreamlineDiffusion) :: rconfigSD
   type(t_jumpStabilisation) :: rconfigEOJ
   type(t_collection) :: rcollect
+  
+    h_Ipermute = ST_NOHANDLE
 
     ! Fetch minimum and maximum levels
     call parlst_getvalue_int(rparam, sConfigSection, 'NLMIN', NLMIN, -1)
@@ -159,23 +162,23 @@ contains
     ! Print out that we are going to do:
     select case(itest)
     case(201)
-      call output_line('System.........: L2-projection')
+      call output_line('System.............: L2-projection')
     case(202)
-      call output_line('System.........: Poisson')
+      call output_line('System.............: Poisson')
     case(203)
-      call output_line('System.........: Convection-Diffusion')
-      call output_line('DNU............: ' // trim(sys_sdEP(dnu,20,12)))
-      call output_line('DBETA1.........: ' // trim(sys_sdEP(dbeta1,20,12)))
-      call output_line('DBETA2.........: ' // trim(sys_sdEP(dbeta2,20,12)))
+      call output_line('System.............: Convection-Diffusion')
+      call output_line('DNU................: ' // trim(sys_sdEP(dnu,20,12)))
+      call output_line('DBETA1.............: ' // trim(sys_sdEP(dbeta1,20,12)))
+      call output_line('DBETA2.............: ' // trim(sys_sdEP(dbeta2,20,12)))
       select case(istabil)
       case(0)
-        call output_line('Stabilisation..: none')
+        call output_line('Stabilisation......: none')
       case(1)
-        call output_line('Stabilisation..: Streamline-Diffusion')
-        call output_line('DUPSAM.........: ' // trim(sys_sdEP(dupsam,20,12)))
+        call output_line('Stabilisation......: Streamline-Diffusion')
+        call output_line('DUPSAM.............: ' // trim(sys_sdEP(dupsam,20,12)))
       case(2)
-        call output_line('Stabilisation..: Jump-Stabilisation')
-        call output_line('DGAMMA.........: ' // trim(sys_sdEP(dgamma,20,12)))
+        call output_line('Stabilisation......: Jump-Stabilisation')
+        call output_line('DGAMMA.............: ' // trim(sys_sdEP(dgamma,20,12)))
       case default
         call output_line('Invalid ISTABIL parameter', &
           OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
@@ -188,11 +191,11 @@ contains
     end select
     select case(isolution)
     case(0)
-      call output_line('Solution.......: u(x,y) = sin(pi*x) * sin(pi*y)')
+      call output_line('Solution...........: u(x,y) = sin(pi*x) * sin(pi*y)')
     case(1)
-      call output_line('Solution.......: u(x,y) = x')
+      call output_line('Solution...........: u(x,y) = x')
     case(2)
-      call output_line('Solution.......: u(x,y) = y')
+      call output_line('Solution...........: u(x,y) = y')
     case default
       call output_line('Invalid ISOLUTION parameter', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
@@ -200,16 +203,16 @@ contains
     end select
     select case(cshape)
     case(BGEOM_SHAPE_TRIA)
-      call output_line('Coarse Mesh....: TRIA.tri')
+      call output_line('Coarse Mesh........: TRIA.tri')
     case(BGEOM_SHAPE_QUAD)
-      call output_line('Coarse Mesh....: QUAD.tri')
+      call output_line('Coarse Mesh........: QUAD.tri')
     case default
       call output_line('Element is not a valid 2D element!', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
       call sys_halt()
     end select
-    call output_line('NLMIN..........: ' // trim(sys_siL(NLMIN,4)))
-    call output_line('NLMAX..........: ' // trim(sys_siL(NLMAX,4)))
+    call output_line('NLMIN..............: ' // trim(sys_siL(NLMIN,4)))
+    call output_line('NLMAX..............: ' // trim(sys_siL(NLMAX,4)))
     select case(idistType)
     case(0)
       ! no distortion => nothing else to print
@@ -231,25 +234,25 @@ contains
     if((idistType .ge. 2) .and. (idistType .le. 3)) then
       call output_line('Mesh Distortion 2..: ' // trim(sys_sdL(ddist2,8)))
     end if
-    call output_line('Element........: ' // trim(selement))
-    call output_line('Cubature rule..: ' // trim(scubature))
+    call output_line('Element............: ' // trim(selement))
+    call output_line('Cubature rule......: ' // trim(scubature))
     select case(isolver)
     case(0)
-      call output_line('Solver.........: UMFPACK4')
+      call output_line('Solver.............: UMFPACK4')
     case(1)
-      call output_line('Solver.........: CG-SSOR')
-      call output_line('Relaxation.....: ' // trim(sys_sdL(drelax,8)))
+      call output_line('Solver.............: CG-SSOR')
+      call output_line('Relaxation.........: ' // trim(sys_sdL(drelax,8)))
     case(2)
-      call output_line('Solver.........: BiCGStab-ILU(0)')
+      call output_line('Solver.............: BiCGStab-ILU(0)')
     case default
       call output_line('Invalid ISOLVER parameter', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
       call sys_halt()
     end select
-    call output_line('Output Level...: ' // trim(sys_siL(ioutput,4)))
-    call output_line('Maximum Iter...: ' // trim(sys_siL(nmaxiter,12)))
-    call output_line('Absolute EPS...: ' // trim(sys_sdEP(depsAbs,20,12)))
-    call output_line('Relative EPS...: ' // trim(sys_sdEP(depsRel,20,12)))
+    call output_line('Output Level.......: ' // trim(sys_siL(ioutput,4)))
+    call output_line('Maximum Iter.......: ' // trim(sys_siL(nmaxiter,12)))
+    call output_line('Absolute EPS.......: ' // trim(sys_sdEP(depsAbs,20,12)))
+    call output_line('Relative EPS.......: ' // trim(sys_sdEP(depsRel,20,12)))
     call output_lbrk()
     
     ! Copy important parameters into quick-access arrays of the collection,
@@ -455,10 +458,21 @@ contains
         call linsol_initCG(p_rsolver, p_rprecond)
       
       case (2)
-        ! BiCGStab-ILU(0) solver
+        ! BiCGStab-ILU(0) solver with RCMK
         nullify(p_rprecond)
         call linsol_initMILUs1x1(p_rprecond,0,0.0_DP)
         call linsol_initBiCGStab(p_rsolver, p_rprecond)
+        
+        ! Calculate a RCMK permutation
+        call sstrat_calcRevCuthillMcKee(rmatrix%RmatrixBlock(1,1), h_Ipermute)
+        
+        ! Permute matrix and vectors
+        call lsyssc_sortMatrix(rmatrix%RmatrixBlock(1,1), .true., &
+                               SSTRAT_RCM, h_Ipermute)
+        call lsyssc_sortVectorInSitu(rvecSol%RvectorBlock(1), &
+            rvecTmp%RvectorBlock(1), SSTRAT_RCM, h_Ipermute)
+        call lsyssc_sortVectorInSitu(rvecRhs%RvectorBlock(1), &
+            rvecTmp%RvectorBlock(1), SSTRAT_RCM, h_Ipermute)
       
       end select
       
@@ -476,6 +490,12 @@ contains
       
       ! Solve the system
       call linsol_solveAdaptively (p_rsolver,rvecSol,rvecRhs,rvecTmp)
+      
+      ! If we have a permutation, unsort the solution vector
+      if(h_Ipermute .ne. ST_NOHANDLE) then
+        call lsyssc_sortVectorInSitu(rvecSol%RvectorBlock(1), &
+            rvecTmp%RvectorBlock(1), -SSTRAT_RCM)
+      end if
       
       ! Calculate the errors to the reference function
       rerror%p_RvecCoeff => rvecSol%RvectorBlock(1:1)
@@ -523,6 +543,7 @@ contains
       call lsysbl_releaseVector (rvecSol)
       call lsysbl_releaseVector (rvecRhs)
       call lsysbl_releaseMatrix (rmatrix)
+      if(h_Ipermute .ne. ST_NOHANDLE) call storage_free(h_Ipermute)
       call bcasm_releaseDiscreteBC (rdiscreteBC)
       call spdiscr_releaseBlockDiscr(rdiscretisation)
       call tria_done (rtriangulation)

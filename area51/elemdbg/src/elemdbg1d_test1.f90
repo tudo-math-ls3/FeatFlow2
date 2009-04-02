@@ -28,7 +28,9 @@ module elemdbg1d_test1
   use meshmodification
   use ucd
   use spdiscprojection
+  use convection
   use collection
+  use sortstrategy
     
   use elemdbg1d_callback
   
@@ -67,14 +69,16 @@ contains
   real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2
   character(LEN=64) :: selement,scubature
   type(t_bilinearForm) :: rform
-  integer :: iwritemesh
+  integer :: iwritemesh, h_Ipermute
   type(t_ucdexport) :: rexport
   real(DP), dimension(:), pointer :: p_Ddata
-  real(DP) :: dnu,dbeta1 !,dupsam,dgamma
+  real(DP) :: dnu,dbeta1,dupsam,dgamma
   integer :: istabil, isolution
   !type(t_convStreamlineDiffusion) :: rconfigSD
-  !type(t_jumpStabilisation) :: rconfigEOJ
+  type(t_jumpStabilisation) :: rconfigEOJ
   type(t_collection) :: rcollect
+  
+    h_Ipermute = ST_NOHANDLE
     
     ! Fetch minimum and maximum levels
     call parlst_getvalue_int(rparam, sConfigSection, 'NLMIN', NLMIN, -1)
@@ -119,6 +123,11 @@ contains
     call parlst_getvalue_double(rparam, sConfigSection, 'DNU', dnu, 1.0_DP)
     call parlst_getvalue_double(rparam, sConfigSection, 'DBETA1', dbeta1, 0.0_DP)
     
+    ! Fetch stabilisation parameters
+    call parlst_getvalue_int(rparam, sConfigSection, 'ISTABIL', istabil, 0)
+    call parlst_getvalue_double(rparam, sConfigSection, 'DUPSAM', dupsam, 1.0_DP)
+    call parlst_getvalue_double(rparam, sConfigSection, 'DGAMMA', dgamma, 0.01_DP)
+    
     ! Fetch relaxation parameter for CG-SSOR
     call parlst_getvalue_double(rparam, sConfigSection, 'DRELAX', drelax, 1.2_DP)
 
@@ -153,26 +162,26 @@ contains
     ! Print out that we are going to do:
     select case(itest)
     case(101)
-      call output_line('System.........: L2-projection')
+      call output_line('System.............: L2-projection')
     case(102)
-      call output_line('System.........: Poisson')
+      call output_line('System.............: Poisson')
     case(103)
-      call output_line('System.........: Convection-Diffusion')
-      call output_line('DNU............: ' // trim(sys_sdEP(dnu,20,12)))
+      call output_line('System.............: Convection-Diffusion')
+      call output_line('DNU................: ' // trim(sys_sdEP(dnu,20,12)))
       if(isolution .eq. 2) then
-        call output_line('DBETA1.........: ' // trim(sys_sdEP(1.0_DP,20,12)))
+        call output_line('DBETA1.............: ' // trim(sys_sdEP(1.0_DP,20,12)))
       else
-        call output_line('DBETA1.........: ' // trim(sys_sdEP(dbeta1,20,12)))
+        call output_line('DBETA1.............: ' // trim(sys_sdEP(dbeta1,20,12)))
       end if
       select case(istabil)
       case(0)
-        call output_line('Stabilisation..: none')
+        call output_line('Stabilisation......: none')
       !case(1)
-      !  call output_line('Stabilisation..: Streamline-Diffusion')
-      !  call output_line('DUPSAM.........: ' // trim(sys_sdEP(dupsam,20,12)))
-      !case(2)
-      !  call output_line('Stabilisation..: Jump-Stabilisation')
-      !  call output_line('DGAMMA.........: ' // trim(sys_sdEP(dgamma,20,12)))
+      !  call output_line('Stabilisation......: Streamline-Diffusion')
+      !  call output_line('DUPSAM.............: ' // trim(sys_sdEP(dupsam,20,12)))
+      case(2)
+        call output_line('Stabilisation......: Jump-Stabilisation')
+        call output_line('DGAMMA.............: ' // trim(sys_sdEP(dgamma,20,12)))
       case default
         call output_line('Invalid ISTABIL parameter', &
           OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg1d_1')
@@ -185,14 +194,14 @@ contains
     end select
     select case(isolution)
     case(0)
-      call output_line('Solution.......: u(x) = sin(pi*x)')
+      call output_line('Solution...........: u(x) = sin(pi*x)')
     case(1)
-      call output_line('Solution.......: u(x) = x')
+      call output_line('Solution...........: u(x) = x')
     case(2)
       ! Check if the solution is available
       if(itest .eq. 103) then
         ! solution is valid
-        call output_line('Solution.......: u(x) = (exp(1/nu) -' // &
+        call output_line('Solution...........: u(x) = (exp(1/nu) -' // &
                          ' exp(x/nu)) / (exp(1/nu) + 1)')
         dbeta1 = 1.0_DP
       else
@@ -205,8 +214,8 @@ contains
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg1d_1')
       call sys_halt()
     end select
-    call output_line('NLMIN..........: ' // trim(sys_siL(NLMIN,4)))
-    call output_line('NLMAX..........: ' // trim(sys_siL(NLMAX,4)))
+    call output_line('NLMIN..............: ' // trim(sys_siL(NLMIN,4)))
+    call output_line('NLMAX..............: ' // trim(sys_siL(NLMAX,4)))
     select case(idistType)
     case(0)
       ! no distortion => nothing else to print
@@ -221,25 +230,25 @@ contains
       call output_line('Distortion Level...: ' // trim(sys_siL(idistLevel,4)))
       call output_line('Mesh Distortion....: ' // trim(sys_sdL(ddist,8)))
     end if
-    call output_line('Element........: ' // trim(selement))
-    call output_line('Cubature rule..: ' // trim(scubature))
+    call output_line('Element............: ' // trim(selement))
+    call output_line('Cubature rule......: ' // trim(scubature))
     select case(isolver)
     case(0)
-      call output_line('Solver.........: UMFPACK4')
+      call output_line('Solver.............: UMFPACK4')
     case(1)
-      call output_line('Solver.........: CG-SSOR')
-      call output_line('Relaxation.....: ' // trim(sys_sdL(drelax,8)))
+      call output_line('Solver.............: CG-SSOR')
+      call output_line('Relaxation.........: ' // trim(sys_sdL(drelax,8)))
     case(2)
-      call output_line('Solver.........: BiCGStab-ILU(0)')
+      call output_line('Solver.............: BiCGStab-ILU(0)')
     case default
       call output_line('Invalid ISOLVER parameter', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg1d_1')
       call sys_halt()
     end select
-    call output_line('Output Level...: ' // trim(sys_siL(ioutput,4)))
-    call output_line('Maximum Iter...: ' // trim(sys_siL(nmaxiter,12)))
-    call output_line('Absolute EPS...: ' // trim(sys_sdEP(depsAbs,20,12)))
-    call output_line('Relative EPS...: ' // trim(sys_sdEP(depsRel,20,12)))
+    call output_line('Output Level.......: ' // trim(sys_siL(ioutput,4)))
+    call output_line('Maximum Iter.......: ' // trim(sys_siL(nmaxiter,12)))
+    call output_line('Absolute EPS.......: ' // trim(sys_sdEP(depsAbs,20,12)))
+    call output_line('Relative EPS.......: ' // trim(sys_sdEP(depsRel,20,12)))
     call output_lbrk()
 
     ! Copy important parameters into quick-access arrays of the collection,
@@ -360,6 +369,15 @@ contains
         rform%Dcoefficients(1) = dnu
         rform%Dcoefficients(2) = dbeta1
         call bilf_buildMatrixScalar (rform,.false.,rmatrix%RmatrixBlock(1,1))
+
+        if(istabil .eq. 2) then
+          ! Assemble the jump stabilisation
+          rconfigEOJ%dgamma = dgamma
+          rconfigEOJ%dgammastar = dgamma
+          rconfigEOJ%dnu = dnu
+          call conv_JumpStabilisation1d (rconfigEOJ, CONV_MODMATRIX, &
+                                         rmatrix%RmatrixBlock(1,1))
+        end if
       
       end select
       
@@ -390,10 +408,21 @@ contains
         call linsol_initCG(p_rsolver, p_rprecond)
       
       case (2)
-        ! BiCGStab-ILU(0) solver
+        ! BiCGStab-ILU(0) solver with RCMK
         nullify(p_rprecond)
         call linsol_initMILUs1x1(p_rprecond,0,0.0_DP)
         call linsol_initBiCGStab(p_rsolver, p_rprecond)
+        
+        ! Calculate a RCMK permutation
+        call sstrat_calcRevCuthillMcKee(rmatrix%RmatrixBlock(1,1), h_Ipermute)
+        
+        ! Permute matrix and vectors
+        call lsyssc_sortMatrix(rmatrix%RmatrixBlock(1,1), .true., &
+                               SSTRAT_RCM, h_Ipermute)
+        call lsyssc_sortVectorInSitu(rvecSol%RvectorBlock(1), &
+            rvecTmp%RvectorBlock(1), SSTRAT_RCM, h_Ipermute)
+        call lsyssc_sortVectorInSitu(rvecRhs%RvectorBlock(1), &
+            rvecTmp%RvectorBlock(1), SSTRAT_RCM, h_Ipermute)
       
       end select
       
@@ -411,6 +440,12 @@ contains
       
       ! Solve the system
       call linsol_solveAdaptively (p_rsolver,rvecSol,rvecRhs,rvecTmp)
+      
+      ! If we have a permutation, unsort the solution vector
+      if(h_Ipermute .ne. ST_NOHANDLE) then
+        call lsyssc_sortVectorInSitu(rvecSol%RvectorBlock(1), &
+            rvecTmp%RvectorBlock(1), -SSTRAT_RCM)
+      end if
       
       ! Calculate the errors to the reference function
       rerror%p_RvecCoeff => rvecSol%RvectorBlock(1:1)
@@ -458,6 +493,7 @@ contains
       call lsysbl_releaseVector (rvecSol)
       call lsysbl_releaseVector (rvecRhs)
       call lsysbl_releaseMatrix (rmatrix)
+      if(h_Ipermute .ne. ST_NOHANDLE) call storage_free(h_Ipermute)
       call bcasm_releaseDiscreteBC (rdiscreteBC)
       call spdiscr_releaseBlockDiscr(rdiscretisation)
       call tria_done (rtriangulation)
