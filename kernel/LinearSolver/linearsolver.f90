@@ -13025,8 +13025,8 @@ contains
                     
 !<description>
   ! Searches inside of the multigrid structure for level ilevel and returns
-  ! a pointer to the corresponding p_rlevelInfo structure
-  ! (or NULL() if the level does not exist).
+  ! a pointer to the corresponding p_rlevelInfo structure-
+  ! If the level does not exist, an error is thrown.
 !</description>
   
 !<inputoutput>
@@ -13040,8 +13040,7 @@ contains
 !</input>  
   
 !<output>
-  ! A pointer to the corresponding t_levelInfo structure or NULL()
-  ! if the level does not exist.
+  ! A pointer to the corresponding t_levelInfo structure.
   type(t_linsolMG2LevelInfo), pointer     :: p_rlevelInfo
 !</output>  
   
@@ -13054,6 +13053,10 @@ contains
         (ilevel .le. rsolverNode%p_rsubnodeMultigrid2%nlevels)) then
       ! Get it.
       p_rlevelInfo => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+    else
+      call output_line('Level out of range!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'linsol_getMultigrid2Level')
+      call sys_halt()
     end if
 
   end subroutine
