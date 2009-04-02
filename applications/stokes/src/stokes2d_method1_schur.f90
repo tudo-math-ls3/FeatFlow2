@@ -152,7 +152,7 @@ contains
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! One level of multigrid
-    type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     
     ! NLMIN receives the level of the coarse grid.
     integer :: NLMIN
@@ -371,16 +371,12 @@ contains
     ! A-submatrices!
     ! (Todo: Test whether multigrid survives without a filter chain in the 
     !        case of 'harder' problems, too...)
-    call linsol_initMultigrid (p_rsubsolverA)
+    call linsol_initMultigrid2 (p_rsubsolverA,NLMAX-NLMIN+1)
     
-    ! Set up an UMFPACK4 solver as coarse grid solver:
-    call linsol_initUMFPACK4 (p_rcoarseGridSolver)
-    
-    ! Add the coarse grid level.
-    ! Please note that we do not pass an interlevel projection structure
-    ! to this routine - the multigrid solver will create one on its own.
-    call linsol_addMultiGridLevel2(p_rlevelInfo, p_rsubsolverA, &
-                                   null(), null(), p_rcoarseGridSolver)
+    ! Set up a coarse grid solver.
+    ! The coarse grid in multigrid is always grid 1!
+    call linsol_getMultigrid2Level (p_rsubsolverA,1,p_rlevelInfo)
+    call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
 
     ! Now set up the other levels...
     do i = NLMIN+1, NLMAX
@@ -390,11 +386,12 @@ contains
       
       ! We will use 4 smoothing steps with damping parameter 0.7
       call linsol_convertToSmoother(p_rsmoother, 4, 0.7_DP)
-      
-      ! And add this multi-grid level. We won't pass a projection structure
-      ! here either - let multigrid create one on its own.
-      call linsol_addMultiGridLevel2(p_rlevelInfo, p_rsubsolverA, &
-                                     p_rsmoother, p_rsmoother, null())
+
+      ! Put the smoother into the level info structure as presmoother
+      ! and postsmoother
+      call linsol_getMultigrid2Level (p_rsubsolverA,i-NLMIN+1,p_rlevelInfo)
+      p_rlevelInfo%p_rpresmoother => p_rsmoother
+      p_rlevelInfo%p_rpostsmoother => p_rsmoother
       
     end do
     

@@ -151,7 +151,7 @@ contains
     type(t_interlevelProjectionBlock) :: rprojection
 
     ! One level of multigrid
-    type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     
     ! NLMIN receives the level of the coarse grid.
     integer :: NLMIN
@@ -638,7 +638,7 @@ contains
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    call linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,p_RfilterChain)
 
     ! As we will use multigrid as a preconditioner for the non-linear loop,
     ! we set the maximum allowed iterations to 10 and the relative convergence
@@ -657,9 +657,9 @@ contains
     ! does not print any residuals or warning messages...
     p_rcoarseGridSolver%ioutputLevel = -1
     
-    ! Add the coarse grid level.
-    call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,rprojection,&
-                                  null(), null(), p_rcoarseGridSolver)
+    ! The coarse grid in multigrid is always grid 1!
+    call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
+    p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
 
     ! Now set up the other levels...
     do i = NLMIN+1, NLMAX
@@ -672,8 +672,9 @@ contains
       
       ! And add this multi-grid level. We will use the same smoother
       ! for pre- and post-smoothing.
-      call linsol_addMultiGridLevel(p_rlevelInfo,p_rsolverNode,rprojection,&
-                                    p_rsmoother, p_rsmoother, null())
+      call linsol_getMultigrid2Level (p_rsolverNode,i-NLMIN+1,p_rlevelInfo)
+      p_rlevelInfo%p_rpresmoother => p_rsmoother
+      p_rlevelInfo%p_rpostsmoother => p_rsmoother
       
     end do
     
