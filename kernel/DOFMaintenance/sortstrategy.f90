@@ -79,6 +79,7 @@ module sortstrategy
   use element
   use triangulation
   use linearsystemscalar
+  use adjacency
 
   implicit none
   
@@ -220,6 +221,57 @@ contains
 
 !<subroutine>
 
+  subroutine sstrat_calcRevCuthillMcKee (rmatrix, h_Ipermutation)
+  
+!<description>
+  ! Computes a column renumbering strategy using the of reverse Cuthill-McKee
+  ! algorithm. The algorithm acceps a scalar matrix rmatrix and uses its
+  ! structure to calculate the renumbering.
+!</description>
+    
+!<input>
+  ! Matrix which should be used to calculate the renumbering strategy
+  type(t_matrixScalar), intent(IN) :: rmatrix
+!</input>
+    
+!<output>
+  ! A storage handle to the permutation array.
+  integer, intent(OUT) :: h_Ipermutation
+!</output>    
+
+!</subroutine>
+  
+  ! The permutation array
+  integer, dimension(:), pointer :: p_Ipermutation, p_Iaux
+  integer :: i,n,h_Iaux
+
+    ! Allocate an array for holding the resorting strategy.
+    call storage_new ('sstrat_calcRevCuthillMcKee', 'Ipermutation', &
+          2*rmatrix%NEQ, ST_INT, h_Ipermutation, ST_NEWBLOCK_NOINIT)
+    call storage_getbase_int(h_Ipermutation, p_Ipermutation)
+    
+    ! Calculate ordering - choose a root of minimal degree and sort
+    ! level sets by non-decreasing degree. And reverse the ordering.
+    call adj_calcCuthillMcKee(rmatrix%h_Kld, rmatrix%h_Kcol, h_Iaux, &
+        ior(ADJ_CMK_FLAG_REVERSE, &
+        ior(ADJ_CMK_FLAG_SORT_MIN, ADJ_CMK_FLAG_ROOT_MIN)))
+    call storage_getbase_int(h_Iaux, p_Iaux)
+    
+    ! Calculate permuations
+    n = size(p_Iaux)
+    do i = 1, n
+      p_Ipermutation(i) = p_Iaux(i)
+      p_Ipermutation(n+p_Iaux(i)) = i
+    end do
+
+    call storage_free(h_Iaux)
+    
+  end subroutine  
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine sstrat_calcCuthillMcKee_h (rmatrix, h_Ipermutation)
   
 !<description>
@@ -252,54 +304,6 @@ contains
     ! Call the algorithm itself
     call sstrat_calcCuthillMcKee_p(rmatrix, p_Ipermutation)
   
-  end subroutine  
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine sstrat_calcRevCuthillMcKee (rmatrix, h_Ipermutation)
-  
-!<description>
-  ! Computes a column renumbering strategy using the of reverse Cuthill-McKee
-  ! algorithm. The algorithm acceps a scalar matrix rmatrix and uses its
-  ! structure to calculate the renumbering.
-!</description>
-    
-!<input>
-  ! Matrix which should be used to calculate the renumbering strategy
-  type(t_matrixScalar), intent(IN) :: rmatrix
-!</input>
-    
-!<output>
-  ! A storage handle to the permutation array.
-  integer, intent(OUT) :: h_Ipermutation
-!</output>    
-
-!</subroutine>
-  
-  ! The permutation array
-  integer, dimension(:), pointer :: p_Ipermutation
-  integer :: i,x,n
-
-    ! Calculate a 'forward' Cuthill-McKee permutation
-    call sstrat_calcCuthillMcKee(rmatrix, h_Ipermutation)
-
-    ! Get the calculated permutation
-    call storage_getbase_int(h_Ipermutation, p_Ipermutation)
-    
-    ! Reverse the ordering
-    n = size(p_Ipermutation) / 2
-    do i = 1, n / 2
-      x = p_Ipermutation(i)
-      p_Ipermutation(i) = p_Ipermutation(n-i+1)
-      p_Ipermutation(n-i+1) = x
-    end do
-    
-    ! Recalculate inverse permuation
-    call sstrat_calcInversePermutation(p_Ipermutation(1:n), &
-                                       p_Ipermutation(n+1:2*n))
-    
   end subroutine  
 
   ! ***************************************************************************
