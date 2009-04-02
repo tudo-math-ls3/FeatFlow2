@@ -10495,16 +10495,22 @@ contains
     allocate(p_rlevelInfo)
     
     ! Attach the sub-solvers
-    if (associated(p_rcoarseGridSolver)) then
-      p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
+    if(present(p_rcoarseGridSolver)) then
+      if (associated(p_rcoarseGridSolver)) then
+        p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
+      end if
     end if
 
-    if (associated(p_rpresmoother)) then
-      p_rlevelInfo%p_rpresmoother => p_rpresmoother
+    if(present(p_rpresmoother)) then
+      if (associated(p_rpresmoother)) then
+        p_rlevelInfo%p_rpresmoother => p_rpresmoother
+      end if
     end if
 
-    if (associated(p_rpostsmoother)) then
-      p_rlevelInfo%p_rpostsmoother => p_rpostsmoother
+    if(present(p_rpostsmoother)) then
+      if (associated(p_rpostsmoother)) then
+        p_rlevelInfo%p_rpostsmoother => p_rpostsmoother
+      end if
     end if
     
     ! Attach the projection structure and set bautoProjection to .false. to
@@ -10641,16 +10647,22 @@ contains
     p_rlevelInfo%bautoProjection = .true.
     
     ! Attach the sub-solvers
-    if (associated(p_rcoarseGridSolver)) then
-      p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
+    if(present(p_rcoarseGridSolver)) then
+      if (associated(p_rcoarseGridSolver)) then
+        p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
+      end if
     end if
 
-    if (associated(p_rpresmoother)) then
-      p_rlevelInfo%p_rpresmoother => p_rpresmoother
+    if(present(p_rpresmoother)) then
+      if (associated(p_rpresmoother)) then
+        p_rlevelInfo%p_rpresmoother => p_rpresmoother
+      end if
     end if
 
-    if (associated(p_rpostsmoother)) then
-      p_rlevelInfo%p_rpostsmoother => p_rpostsmoother
+    if(present(p_rpostsmoother)) then
+      if (associated(p_rpostsmoother)) then
+        p_rlevelInfo%p_rpostsmoother => p_rpostsmoother
+      end if
     end if
 
     ! Attach the level-info structure to the linked list.
