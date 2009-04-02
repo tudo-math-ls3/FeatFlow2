@@ -22,16 +22,19 @@
 !# 1.) sstrat_calcCuthillMcKee
 !#     -> Calculate column numbering using the Cuthill McKee algorithm
 !#
-!# 2.) sstrat_calcXYZsorting
+!# 2.) sstrat_calcRevCuthillMcKee
+!#     -> Calculate column numbering using reverse Cuthill-McKee algorithm.
+!#
+!# 3.) sstrat_calcXYZsorting
 !#     -> Calculates rowwise renumbering based on Cartesian coordinates
 !#
-!# 3.) sstrat_calcFEASTsorting
+!# 4.) sstrat_calcFEASTsorting
 !#     -> Calculates FEAST rowwise renumbering based cell adjacencies
 !#
-!# 4.) sstrat_calcStochastic
+!# 5.) sstrat_calcStochastic
 !#     -> Calculates stoastic renumbering (i.e. a random permutation)
 !#
-!# 5.) sstrat_calcHierarchical
+!# 6.) sstrat_calcHierarchical
 !#     -> Calculates a renumbering strategy based on element patches
 !#        in a level hierarchy
 !#
@@ -155,6 +158,11 @@ module sortstrategy
 !</types>
 
   private :: t_levelHirarchy
+  
+  interface sstrat_calcCuthillMcKee
+    module procedure sstrat_calcCuthillMcKee_p
+    module procedure sstrat_calcCuthillMcKee_h
+  end interface
 
 contains
 
@@ -207,11 +215,98 @@ contains
     call sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine sstrat_calcCuthillMcKee (rmatrix,Ipermutation)
+
+  subroutine sstrat_calcCuthillMcKee_h (rmatrix, h_Ipermutation)
+  
+!<description>
+  ! Computes a column renumbering strategy using the algorithm
+  ! of Cuthill-McKee. The algorithm acceps a scalar matrix rmatrix and
+  ! uses its structure to calculate the renumbering. The result
+  ! Ipermutation then receives the permutation and its inverse.
+!</description>
+    
+!<input>
+  ! Matrix which should be used to calculate the renumbering strategy
+  type(t_matrixScalar), intent(IN) :: rmatrix
+!</input>
+    
+!<output>
+  ! A storage handle to the permutation array.
+  integer, intent(OUT) :: h_Ipermutation
+!</output>    
+
+!</subroutine>
+
+  ! The permutation array
+  integer, dimension(:), pointer :: p_Ipermutation
+
+    ! Allocate an array for holding the resorting strategy.
+    call storage_new ('sstrat_calcCuthillMcKee_h', 'Ipermutation', &
+          2*rmatrix%NEQ, ST_INT, h_Ipermutation, ST_NEWBLOCK_ZERO)
+    call storage_getbase_int(h_Ipermutation,p_Ipermutation)
+    
+    ! Call the algorithm itself
+    call sstrat_calcCuthillMcKee_p(rmatrix, p_Ipermutation)
+  
+  end subroutine  
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_calcRevCuthillMcKee (rmatrix, h_Ipermutation)
+  
+!<description>
+  ! Computes a column renumbering strategy using the of reverse Cuthill-McKee
+  ! algorithm. The algorithm acceps a scalar matrix rmatrix and uses its
+  ! structure to calculate the renumbering.
+!</description>
+    
+!<input>
+  ! Matrix which should be used to calculate the renumbering strategy
+  type(t_matrixScalar), intent(IN) :: rmatrix
+!</input>
+    
+!<output>
+  ! A storage handle to the permutation array.
+  integer, intent(OUT) :: h_Ipermutation
+!</output>    
+
+!</subroutine>
+  
+  ! The permutation array
+  integer, dimension(:), pointer :: p_Ipermutation
+  integer :: i,x,n
+
+    ! Calculate a 'forward' Cuthill-McKee permutation
+    call sstrat_calcCuthillMcKee(rmatrix, h_Ipermutation)
+
+    ! Get the calculated permutation
+    call storage_getbase_int(h_Ipermutation, p_Ipermutation)
+    
+    ! Reverse the ordering
+    n = size(p_Ipermutation) / 2
+    do i = 1, n / 2
+      x = p_Ipermutation(i)
+      p_Ipermutation(i) = p_Ipermutation(n-i+1)
+      p_Ipermutation(n-i+1) = x
+    end do
+    
+    ! Recalculate inverse permuation
+    call sstrat_calcInversePermutation(p_Ipermutation(1:n), &
+                                       p_Ipermutation(n+1:2*n))
+    
+  end subroutine  
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_calcCuthillMcKee_p (rmatrix,Ipermutation)
   
   !<description>
     ! Computes a column renumbering strategy using the algorithm
