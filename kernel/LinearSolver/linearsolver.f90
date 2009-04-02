@@ -52,7 +52,7 @@
 !# 7.) linsol_releaseSolver           - Clean up solver structures, remove the
 !#                                      solver structure from the heap.
 !#
-!# For initialising a multigrid solver, this sequenc changes a bit,
+!# For initialising a multigrid solver, this sequence changes a bit,
 !# since the data of multiple levels have to be associated to
 !# the solver before invoking it:
 !#
@@ -99,6 +99,53 @@
 !#                                      attached subsolvers (smoothers, coarse grid 
 !#                                      solver) from the heap.
 !#
+!# For initialising a multigrid solver, this sequence changes a bit,
+!# since the data of multiple levels have to be associated to
+!# the solver before invoking it:
+!#
+!# 1.) linsol_initMultigrid2          - Initialises multigrid solver, returns a 
+!#                                      solver structure identifying the solver
+!# 2.) a) linsol_getMultigrid2Level   - Get a pointer to the level information
+!#
+!#     b) On the coarse grid:
+!#          linsol_initXXXX           - Initialise coarse grid solver structure
+!#
+!#        On finer grids up to the maximum level:
+!#          linsol_initXXXX
+!#        + linsol_convertToSmoother  - Initialise a solver structure that can be 
+!#                                      attached as smoother to one level of multigrid.
+!#                                      *Not on the coarse grid!'
+!#     c) Add the pointer into the structure taken from a.). Write the pointer
+!#        to there as coarse grid solver or smoother.
+!#
+!#     Steps a)-c) must be repeated for all levels. In linsol_getMultigrid2Level,
+!#     counting always starts with level 1.
+!#
+!# 3.) linsol_matricesCompatible      - Check if the system matrices are compatible
+!#                                      to the solver; this can be omitted if one knows
+!#                                      the solver and its properties.
+!#     linsol_setMatrices             - Attach the system matrices of all levels to the
+!#                                      solver
+!# 4.) linsol_initStructure           - Allow the solvers to perform problem-
+!#                                      structure specific initialisation
+!#                                      (e.g. symbolical factorisation).
+!#                                      During this phase, each solver allocates
+!#                                      temporary memory it needs for the solution
+!#                                      process
+!# 5.) linsol_initData                - Allow the solvers to perform problem-
+!#                                      data specific initialisation
+!#                                      (e.g. numerical factorisation)
+!# 6.) linsol_precondDefect           - Precondition a defect vector 
+!# or  linsol_solveAdaptively         - Solve the problem with an initial 
+!#                                      solution vector
+!# 7.) linsol_doneData                - Release problem-data specific information
+!# 8.) linsol_doneStructure           - Release problem-structure specific 
+!#                                      information. Release temporary memory.
+!# 9.) linsol_releaseSolver           - Clean up solver structures, remove the
+!#                                      solver structure from the heap. Remove all
+!#                                      attached subsolvers (smoothers, coarse grid 
+!#                                      solver) from the heap.
+!#
 !# Remark: THE SYSTEM MATRIX PRESCRIBES THE SPATIAL DISCRETISATION AND 
 !#         THE BOUNDARY CONDITIONS!
 !#
@@ -106,6 +153,54 @@
 !# consequence, when an application calls a solver, the RHS/solution
 !# vectors passed to the solver must match in their discretisation/
 !# boundary conditions to the matrices attached previously!
+!#
+!# <!-- ------------------------------DEPRECATED START-------------------------------
+!# For initialising a multigrid solver, this sequence changes a bit,
+!# since the data of multiple levels have to be associated to
+!# the solver before invoking it:
+!#
+!# 1.) linsol_initMultigrid           - Initialises multigrid  solver, returns a 
+!#                                      solver structure identifying the solver
+!# 2.) a) On the coarse grid:
+!#          linsol_initXXXX           - Initialise coarse grid solver structure
+!#
+!#        On finer grids up to the maximum level:
+!#          linsol_initXXXX
+!#        + linsol_convertToSmoother  - Initialise a solver structure that can be 
+!#                                      attached as smoother to one level of multigrid.
+!#                                      *Not on the coarse grid!'
+!#     b) linsol_addMultigridLevel    - Add a multigrid level. First the coarse grid
+!#                                      must be added, then level 2, then level 3 etc.
+!#
+!#     Steps a), b) must be repeated for all levels.
+!#
+!#     Btw., levels can be removed from the solver with linsol_removeMultigridLevel.
+!#     The level stucture can be obtained with linsol_getMultigridLevel.
+!#
+!# 3.) linsol_matricesCompatible      - Check if the system matrices are compatible
+!#                                      to the solver; this can be omitted if one knows
+!#                                      the solver and its properties.
+!#     linsol_setMatrices             - Attach the system matrices of all levels to the
+!#                                      solver
+!# 4.) linsol_initStructure           - Allow the solvers to perform problem-
+!#                                      structure specific initialisation
+!#                                      (e.g. symbolical factorisation).
+!#                                      During this phase, each solver allocates
+!#                                      temporary memory it needs for the solution
+!#                                      process
+!# 5.) linsol_initData                - Allow the solvers to perform problem-
+!#                                      data specific initialisation
+!#                                      (e.g. numerical factorisation)
+!# 6.) linsol_precondDefect           - Precondition a defect vector 
+!# or  linsol_solveAdaptively         - Solve the problem with an initial 
+!#                                      solution vector
+!# 7.) linsol_doneData                - Release problem-data specific information
+!# 8.) linsol_doneStructure           - Release problem-structure specific 
+!#                                      information. Release temporary memory.
+!# 9.) linsol_releaseSolver           - Clean up solver structures, remove the
+!#                                      solver structure from the heap. Remove all
+!#                                      attached subsolvers (smoothers, coarse grid 
+!#                                      solver) from the heap.
 !#
 !# The following routines serve as auxiliary routines for the application to
 !# maintain a Multigrid solver node:
@@ -125,13 +220,40 @@
 !#
 !# 5.) linsol_getMultigridLevelCount
 !#     -> Returns number of currently attached levels
+!# ------------------------------DEPRECATED STOP-------------------------------- -->
+!# The following routines serve as auxiliary routines for the application to
+!# maintain a Multigrid solver node:
 !#
-!# 6.) linsol_convertToSmoother
+!# 1.) linsol_convertToSmoother
 !#     -> Converts a solver node into a smoother for multigrid smoothing.
 !#
-!# 7.) linsol_alterSolver
+!# 2.) linsol_alterSolver
 !#     -> Allows direct modification of an existing solver. Passes a command
 !#        block to all subsolvers in a solver tree.
+!#
+!# 3.) linsol_initProjMultigrid2Level
+!#     -> Initialise the multigrid projection structure of one level
+!#        with the standard projection or
+!#     -> Initialise the multigrid projection structure of one level
+!#        with a user defined projection
+!#
+!# 4.) linsol_initProjMultigrid2
+!#     -> Initialise the multigrid projection structure on all uninitialised levels
+!#        with the standard projectino
+!#
+!# The following routines serve as auxiliary routines for tghe MG2-solver.
+!#
+!# 1.) linsol_cleanMultigrid2Levels
+!#     -> Deletes all levels and attached solver structures
+!#
+!# 2.) linsol_getMultigrid2Level
+!#     -> Returns the level structure of a specific level
+!#
+!# 3.) linsol_getMultigrid2LevelCount
+!#     -> Returns number of currently attached levels
+!#
+!# 4.) linsol_doneProjMultigrid2
+!#     -> Release the projection information
 !#
 !#
 !# Implementational details / structure of the solver library
@@ -388,6 +510,7 @@
 !#      12.) linsol_initMultigrid2
 !#           -> Multigrid preconditioner; alternative implementation using
 !#              an array to store level information rather than a linear list.
+!#              Simplified interface.
 !#
 !# 9.) What is this linsol_matricesCompatible?
 !#
@@ -415,6 +538,67 @@
 !#
 !#     i.e. here not the defect is damped but the operator itself.
 !#
+!# 11.) What's the difference between "Multigrid 1" and "Multigrid 2" and
+!#      which one should I use?
+!#
+!#      You should use "Multigrid 2". This solver has a simplified
+!#      and more clear interface and has some automatism for creating
+!#      appropriate multilevel projection routines. It's simply easier.
+!#      The original "Multigrid 1" variant used a linear list for maintaining
+!#      the levels in hope to be able to add levels more easily. We skipped
+!#      this idea in a later implementation as the array implementation
+!#      can handle that case with a similar ease.
+!#
+!# 12.) I want to use a special prolongation/restriction in the multigrid,
+!#      but I cannot see how to specify it.
+!#
+!#      It's possible to specify the prolongation/restriction by
+!#      manually initialising the projection structure. There are two
+!#      possibilities for that:
+!#
+!#      a) Complete user defined projection.
+!#         Here the user has do define all projection structures as follows:
+!#
+!#        1) linsol_initMultigrid2
+!#        2) On all levels except for the coarse level
+!#             linsol_getMultigrid2Level
+!#             + Create a projection structure rprojection for that level
+!#             + use linsol_initProjMultigrid2Level(...,rprojection)
+!#               to attach the projection structure to that level
+!#        3) On all levels:
+!#             linsol_getMultigrid2Level
+!#             + Add pointers to the coarse grid solve / all smoothers on all levels.
+!#
+!#        4) linsol_setMatrices
+!#        5) linsol_initStructure
+!#        ...
+!#
+!#        So you can attach the user defined projection structure with
+!#        linsol_initProjMultigrid2Level after linsol_initMultigrid2.
+!#        The application has to maintain the projection structure and
+!#        release its memory only after releasing the solver.
+!#
+!#     b) Changing the default projection.
+!#        Here we first initialise the projection and change it later.
+!#        1) linsol_initMultigrid2
+!#
+!#        2) Initialise the default projection
+!#             linsol_initProjMultigrid2
+!#
+!#        3) On all levels except for the coarse level
+!#             linsol_getMultigrid2Level(...,p_rlevelInfo)
+!#             + Change the p_rlevelInfo%p_rprojection structure as needed
+!#
+!#        3) On all levels:
+!#             linsol_getMultigrid2Level
+!#             + Add pointers to the coarse grid solve / all smoothers on all levels.
+!#
+!#        4) linsol_setMatrices
+!#        5) linsol_initStructure
+!#        ...
+!#
+!#        Here, the projection structure is maintained by the solver and
+!#        automatically released.
 !# </purpose>
 !##############################################################################
 
@@ -451,7 +635,7 @@ module linearsolver
   public :: t_linsolMGTiming
   public :: t_linsolMGLevelInfo
   public :: t_linsolSubnodeMultigrid
-  public :: t_linsolMGLevelInfo2
+  public :: t_linsolMG2LevelInfo
   public :: t_linsolSubnodeMultigrid2
   public :: t_linsol_alterSolverConfig
   public :: linsol_setMatrices
@@ -490,6 +674,11 @@ module linearsolver
 !    module procedure linsol_addMultigridLevel1
 !    module procedure linsol_addMultigridLevel2
 !  end interface
+
+  interface linsol_initProjMultigrid2Level
+    module procedure linsol_initProjMG2LvByPrj
+    module procedure linsol_initProjMG2LvByDiscr
+  end interface
 
 ! *****************************************************************************
 ! *****************************************************************************
@@ -1584,11 +1773,61 @@ module linearsolver
   ! The solver subnode t_linsolSubnodeMultigrid holds pointers to the head
   ! and the tail of the list.
   
-  type t_linsolMGLevelInfo2
+  type t_linsolMG2LevelInfo
   
     ! A level identifier. Can be set to identify the global number of the
     ! level, this structure refers to. Only for output purposes.
     integer                        :: ilevel                 = 0
+    
+    !<!-- ----------------------------------------------------------------------
+    ! Specification of the subsolver components.
+    ! Must be initialised by the user prior to calling multigrid!
+    ! --------------------------------------------------------------------- -->
+    
+    ! A pointer to the solver node for the presmoothing or NULL(),
+    ! if no presmoother is used.
+    type(t_linsolNode), pointer         :: p_rpresmoother         => null()
+
+    ! A pointer to the solver node for the postsmoothing or NULL(),
+    ! if no presmoother is used.
+    type(t_linsolNode), pointer         :: p_rpostsmoother        => null()
+
+    ! A pointer to the solver node for the coarse grid solver if
+    ! the level corresponding to this structure represents the coarse
+    ! grid. NULL() otherwise.
+    type(t_linsolNode), pointer         :: p_rcoarseGridSolver    => null()
+    
+    ! A pointer to a filter chain, as this solver supports filtering.
+    ! The filter chain must be configured for being applied to defect vectors.
+    type(t_filterChain), dimension(:),pointer      :: p_RfilterChain => null()
+    
+    !<!-- ----------------------------------------------------------------------
+    ! OPTIONAL parameters.
+    ! May be initialised by the user in case of special situations
+    ! --------------------------------------------------------------------- -->
+    
+    ! OPTIONAL: An interlevel projection structure that configures the transport
+    ! of defect/solution vectors from one level to another.
+    ! For the coarse grid, this structure is ignored.
+    ! For a finer grid (e.g. level 4), this defines the grid transfer
+    ! between the current and the lower level (so here between level 3 and
+    ! level 4).
+    !
+    ! If the user needs a special projection strategy, he/she can either
+    ! set a pointer to a user defined projection strategy here or
+    ! modify the strategy after doing linsol_initStructure().
+    type(t_interlevelProjectionBlock), pointer   :: p_rprojection => NULL()
+    
+    ! <!-- ----------------------------------------------------------------------
+    ! INTERNAL VARIABLES.
+    ! These variables are internally maintained by the MG solver and don't have 
+    ! to be modified in any sense.
+    ! ---------------------------------------------------------------------- -->
+    
+    ! Specifies if we use the standard interlevel projection strategy.
+    ! If this is set to FALSE, the user set the p_rprojection to
+    ! a user defined projection strategy, so we don's have to touch it.
+    logical :: bstandardProjection = .false.
     
     ! t_matrixBlock structure that holds the system matrix.
     type(t_matrixBlock)                :: rsystemMatrix
@@ -1620,31 +1859,6 @@ module linearsolver
     ! in initStructure and released in doneStructure.
     type(t_vectorBlock)                 :: rsolutionVector
 
-    ! A pointer to the solver node for the presmoothing or NULL(),
-    ! if no presmoother is used.
-    type(t_linsolNode), pointer         :: p_rpresmoother         => null()
-
-    ! A pointer to the solver node for the postsmoothing or NULL(),
-    ! if no presmoother is used.
-    type(t_linsolNode), pointer         :: p_rpostsmoother        => null()
-
-    ! A pointer to the solver node for the coarse grid solver if
-    ! the level corresponding to this structure represents the coarse
-    ! grid. NULL() otherwise.
-    type(t_linsolNode), pointer         :: p_rcoarseGridSolver    => null()
-    
-    ! A pointer to a filter chain, as this solver supports filtering.
-    ! The filter chain must be configured for being applied to defect vectors.
-    type(t_filterChain), dimension(:),pointer      :: p_RfilterChain => null()
-    
-    ! An interlevel projection structure that configures the transport
-    ! of defect/solution vectors from one level to another.
-    ! For the coarse grid, this structure is ignored.
-    ! For a finer grid (e.g. level 4), this defines the grid transfer
-    ! between the current and the lower level (so here between level 3 and
-    ! level 4).
-    type(t_interlevelProjectionBlock)   :: rinterlevelProjection
-    
     ! STATUS/INTERNAL: MG cycle information.
     ! Number of cycles to perform on this level.
     integer                        :: ncycles
@@ -1708,8 +1922,11 @@ module linearsolver
     ! The standard setting/initialisation is suitable for conforming elements.
     type(t_coarseGridCorrection)  :: rcoarseGridCorrection
     
+    ! Number of levels level in MG.
+    integer :: nlevels = 1
+    
     ! A pointer to the level info structures for all the levels in multigrid
-    type(t_linsolMGLevelInfo2), dimension(:), pointer :: p_RlevelInfo
+    type(t_linsolMG2LevelInfo), dimension(:), pointer :: p_RlevelInfo
     
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
@@ -9840,8 +10057,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: isubgroup,i
-  type(t_linsolSubnodeCG), pointer :: p_rsubnode
+  integer :: isubgroup
     
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
@@ -9983,7 +10199,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: isubgroup,i
+  integer :: isubgroup
     
     ! by default, initialise solver subroup 0
     isubgroup = 0
@@ -10207,7 +10423,7 @@ contains
   ! The solver structure of the multigrid solver, where the level
   ! should be added to. Must already be initialised for the multigrid
   ! solver.
-  type(t_linsolNode)                             :: rsolverNode
+  type(t_linsolNode), intent(inout)                   :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -10222,7 +10438,7 @@ contains
   ! spatial discretisation structures on different levels are 'compatible'
   ! what they have to be anyway), so the same structure can be used
   ! to initialise all levels!
-  type(t_interlevelProjectionBlock) :: rprojection
+  type(t_interlevelProjectionBlock), intent(in) :: rprojection
   
   ! Optional: A pointer to the solver structure of a solver that should be 
   ! used for presmoothing. This structure is used as a template to create an
@@ -10362,7 +10578,7 @@ contains
   ! The solver structure of the multigrid solver, where the level
   ! should be added to. Must already be initialised for the multigrid
   ! solver.
-  type(t_linsolNode)                             :: rsolverNode
+  type(t_linsolNode),intent(inout)          :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -10728,47 +10944,6 @@ contains
   
   ! ***************************************************************************
 
-!<subroutine>
-  
-  subroutine linsol_getMultigridLevel2 (rsolverNode,ilevel,p_rlevelInfo)
-                    
-!<description>
-  ! Searches inside of the multigrid structure for level ilevel and returns
-  ! a pointer to the corresponding p_rlevelInfo structure
-  ! (or NULL() if the level does not exist).
-!</description>
-  
-!<inputoutput>
-  ! The solver structure of the multigrid solver
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
-!</inputoutput>
-
-!<input>
-  ! Number of the level to fetch.
-  integer, intent(IN) :: ilevel
-!</input>  
-  
-!<output>
-  ! A pointer to the corresponding t_levelInfo structure or NULL()
-  ! if the level does not exist.
-  type(t_linsolMGLevelInfo2), pointer     :: p_rlevelInfo
-!</output>  
-  
-!</subroutine>
-
-    nullify(p_rlevelInfo)
-
-    ! Do we have the level?
-    if ((ilevel .gt. 0) .and. &
-        (ilevel .le. size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo))) then
-      ! Get it.
-      p_rlevelInfo => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
-    end if
-
-  end subroutine
-
-  ! ***************************************************************************
-
 !<function>
   
   integer function linsol_getMultigridLevelCount (rsolverNode)
@@ -10791,98 +10966,6 @@ contains
     linsol_getMultigridLevelCount = rsolverNode%p_rsubnodeMultigrid%nlevels
 
   end function
-  
-  ! ***************************************************************************
-
-!<subroutine>
-  
-  subroutine linsol_doneMultigrid2Level (rlevelInfo)
-                    
-!<description>
-  ! Cleans up the multigrid level structure rlevelInfo. All memory allocated
-  ! in this structure is released.
-!</description>
-  
-!<inputoutput>
-  ! The t_levelInfo structure to clean up.
-  type(t_linsolMGLevelInfo2), intent(INOUT)     :: rlevelInfo
-!</inputoutput>
-
-!</subroutine>
-  
-    ! Release the temporary vectors of this level. 
-    ! The vector may not exist - if the application has not called
-    ! initStructure!
-    if (rlevelInfo%rrhsVector%NEQ .ne. 0) &
-      call lsysbl_releaseVector(rlevelInfo%rrhsVector)
-
-    if (rlevelInfo%rtempVector%NEQ .ne. 0) &
-      call lsysbl_releaseVector(rlevelInfo%rtempVector)
-
-    if (rlevelInfo%rsolutionVector%NEQ .ne. 0) &
-      call lsysbl_releaseVector(rlevelInfo%rsolutionVector)
-
-    ! Release sub-solvers if associated.
-    !
-    ! Caution: Pre- and postsmoother may be identical!
-    if (associated(rlevelInfo%p_rpostSmoother) .and. &
-        (.not. associated(rlevelInfo%p_rpreSmoother, rlevelInfo%p_rpostSmoother))) then
-      call linsol_releaseSolver(rlevelInfo%p_rpostsmoother)
-    end if
-
-    if (associated(rlevelInfo%p_rpresmoother)) then
-      call linsol_releaseSolver(rlevelInfo%p_rpresmoother)
-    end if
-
-    if (associated(rlevelInfo%p_rcoarseGridSolver)) then
-      call linsol_releaseSolver(rlevelInfo%p_rcoarseGridSolver)
-    end if
-    
-    ! Clean up the associated matrix if there is one.
-    ! Of course, the memory of the matrices will not be deallocated
-    ! because the matrices belong to the application, not to the solver!
-    call lsysbl_releaseMatrix(rlevelInfo%rsystemMatrix)
-
-  end subroutine
-  
-  ! ***************************************************************************
-
-!<subroutine>
-  
-  subroutine linsol_cleanMultigrid2Levels (rsolverNode)
-                    
-!<description>
-  ! This routine removes all level information from the MG solver and releases
-  ! all attached solver nodes on all levels (smoothers, coarse grid solvers,
-  ! ...). 
-  !
-  ! The level info array is not released.
-!</description>
-  
-!<inputoutput>
-  ! The solver structure of the multigrid solver.
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
-!</inputoutput>
-
-!</subroutine>
-
-  integer :: ilevel
-
-    ! Make sure the solver node is configured for multigrid
-    if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
-        (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_cleanMultigrid2Levels')
-      call sys_halt()
-    end if
-
-    ! Remove all the levels
-    do ilevel = 1,size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
-      call linsol_doneMultigrid2Level (&
-          rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel))
-    end do
-
-  end subroutine
   
   ! ***************************************************************************
 
@@ -12905,6 +12988,350 @@ contains
   
   end subroutine
   
+! *****************************************************************************
+! Routines for the Multigrid-2 solver
+! *****************************************************************************
+  
+  ! ***************************************************************************
+
+!<function>
+  
+  integer function linsol_getMultigrid2LevelCount (rsolverNode)
+                    
+!<description>
+  ! Returns the number of levels currently attached to the multigrid solver.
+!</description>
+  
+!<input>
+  ! The solver structure of the multigrid solver
+  type(t_linsolNode), intent(INOUT) :: rsolverNode
+!</input>
+
+!<return>
+  ! The number of levels in the MG solver.
+!</return>
+  
+!</function>
+
+    linsol_getMultigrid2LevelCount = rsolverNode%p_rsubnodeMultigrid2%nlevels
+
+  end function
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_getMultigrid2Level (rsolverNode,ilevel,p_rlevelInfo)
+                    
+!<description>
+  ! Searches inside of the multigrid structure for level ilevel and returns
+  ! a pointer to the corresponding p_rlevelInfo structure
+  ! (or NULL() if the level does not exist).
+!</description>
+  
+!<inputoutput>
+  ! The solver structure of the multigrid solver
+  type(t_linsolNode), intent(INOUT) :: rsolverNode
+!</inputoutput>
+
+!<input>
+  ! Number of the level to fetch.
+  integer, intent(IN) :: ilevel
+!</input>  
+  
+!<output>
+  ! A pointer to the corresponding t_levelInfo structure or NULL()
+  ! if the level does not exist.
+  type(t_linsolMG2LevelInfo), pointer     :: p_rlevelInfo
+!</output>  
+  
+!</subroutine>
+
+    nullify(p_rlevelInfo)
+
+    ! Do we have the level?
+    if ((ilevel .gt. 0) .and. &
+        (ilevel .le. rsolverNode%p_rsubnodeMultigrid2%nlevels)) then
+      ! Get it.
+      p_rlevelInfo => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneMultigrid2Level (rlevelInfo)
+                    
+!<description>
+  ! Cleans up the multigrid level structure rlevelInfo. All memory allocated
+  ! in this structure is released.
+!</description>
+  
+!<inputoutput>
+  ! The t_levelInfo structure to clean up.
+  type(t_linsolMG2LevelInfo), intent(INOUT)     :: rlevelInfo
+!</inputoutput>
+
+!</subroutine>
+  
+    ! Release the temporary vectors of this level. 
+    ! The vector may not exist - if the application has not called
+    ! initStructure!
+    if (rlevelInfo%rrhsVector%NEQ .ne. 0) &
+      call lsysbl_releaseVector(rlevelInfo%rrhsVector)
+
+    if (rlevelInfo%rtempVector%NEQ .ne. 0) &
+      call lsysbl_releaseVector(rlevelInfo%rtempVector)
+
+    if (rlevelInfo%rsolutionVector%NEQ .ne. 0) &
+      call lsysbl_releaseVector(rlevelInfo%rsolutionVector)
+
+    ! Release sub-solvers if associated.
+    !
+    ! Caution: Pre- and postsmoother may be identical!
+    if (associated(rlevelInfo%p_rpostSmoother) .and. &
+        (.not. associated(rlevelInfo%p_rpreSmoother, rlevelInfo%p_rpostSmoother))) then
+      call linsol_releaseSolver(rlevelInfo%p_rpostsmoother)
+    end if
+
+    if (associated(rlevelInfo%p_rpresmoother)) then
+      call linsol_releaseSolver(rlevelInfo%p_rpresmoother)
+    end if
+
+    if (associated(rlevelInfo%p_rcoarseGridSolver)) then
+      call linsol_releaseSolver(rlevelInfo%p_rcoarseGridSolver)
+    end if
+    
+    ! Clean up the associated matrix if there is one.
+    ! Of course, the memory of the matrices will not be deallocated
+    ! because the matrices belong to the application, not to the solver!
+    call lsysbl_releaseMatrix(rlevelInfo%rsystemMatrix)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_cleanMultigrid2Levels (rsolverNode)
+                    
+!<description>
+  ! This routine removes all level information from the MG solver and releases
+  ! all attached solver nodes on all levels (smoothers, coarse grid solvers,
+  ! ...). 
+  !
+  ! The level info array is not released.
+!</description>
+  
+!<inputoutput>
+  ! The solver structure of the multigrid solver.
+  type(t_linsolNode), intent(INOUT) :: rsolverNode
+!</inputoutput>
+
+!</subroutine>
+
+  integer :: ilevel
+
+    ! Make sure the solver node is configured for multigrid
+    if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
+        (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
+      call output_line ('Multigrid structure not initialised!', &
+          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_cleanMultigrid2Levels')
+      call sys_halt()
+    end if
+
+    ! Remove all the levels
+    do ilevel = 1,rsolverNode%p_rsubnodeMultigrid2%nlevels
+      call linsol_doneMultigrid2Level (&
+          rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel))
+    end do
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initProjMG2LvByPrj (rlevelInfo,rinterlevelProjection)
+  
+!<description>
+  ! Initialises the interlevel projection structure for one level.
+!</description>
+  
+!<inputoutput>
+  ! The t_levelInfo structure to set up.
+  type(t_linsolMG2LevelInfo), intent(inout)     :: rlevelInfo
+  
+  ! User-specified interlevel projection structure.
+  ! Multigrid will use the given projection structure for doing prolongation/
+  ! restriction.
+  type(t_interlevelProjectionBlock), intent(in), target  :: rinterlevelProjection 
+!</inputoutput>
+
+!</subroutine>
+
+    ! Check if the pointer to the projection structure is already assigned.
+    ! If that's the case, release it.
+    if (rlevelInfo%bstandardProjection) then
+      ! Release the old standard projection structure.
+      if (associated(rlevelInfo%p_rprojection)) then
+        call mlprj_doneProjection (rlevelInfo%p_rprojection)
+        deallocate (rlevelInfo%p_rprojection)
+      end if
+    end if
+    
+    ! Remember the user specified projection
+    rlevelInfo%p_rprojection => rinterlevelProjection
+    rlevelInfo%bstandardProjection = .false.
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initProjMG2LvByDiscr (rlevelInfo,rdiscrCoarse,rdiscrFine)
+  
+!<description>
+  ! Initialises the interlevel projection structure for one level
+  ! based on coarse/fine grid discretisation structures.
+!</description>
+  
+!<inputoutput>
+  ! The t_levelInfo structure to set up.
+  type(t_linsolMG2LevelInfo), intent(inout)     :: rlevelInfo
+!</inputoutput>
+
+!</input>
+  ! Discretisation structure of the coarse level.
+  type(t_blockDiscretisation), intent(in), target   :: rdiscrCoarse 
+
+  ! Discretisation structure of the fine level.
+  type(t_blockDiscretisation), intent(in), target   :: rdiscrFine 
+!</input>
+
+!</subroutine>
+
+    ! Check if the pointer to the projection structure is already assigned.
+    ! If that's the case, release it.
+    if (rlevelInfo%bstandardProjection) then
+      ! Release the old standard projection structure.
+      if (associated(rlevelInfo%p_rprojection)) then
+        call mlprj_doneProjection (rlevelInfo%p_rprojection)
+      else
+        ! Allocate a new projection structure
+        allocate(rlevelInfo%p_rprojection)
+      end if
+    else
+      ! Allocate a new projection structure
+      rlevelInfo%bstandardProjection = .true.
+      allocate(rlevelInfo%p_rprojection)
+    end if
+    
+    ! Initialise the projection structure with standard parameters.
+    call mlprj_initProjectionDiscr (rlevelInfo%p_rprojection,rdiscrCoarse)
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initProjMultigrid2 (rsolverNode)
+  
+!<description>
+  ! Initialises the interlevel projection structure for all levels
+  ! using the standard parameters for prolongation/restriction.
+  !
+  ! The routine can be called only after the matrices are attached to
+  ! the solver with the setMatrices routine. It will automatically detect
+  ! if the caller already specified user defined projection structures
+  ! by a call to linsol_initProjMultigrid2LvByPrj().
+  !
+  ! The routine is called during initStructure but can also be called
+  ! manually in advance after setMatrices() if the caller wants to
+  ! alter the projection structures manually.
+!</description>
+  
+!<inputoutput>
+  ! A t_linsolNode structure. defining the solver.
+  type(t_linsolNode), intent(inout)             :: rsolverNode
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: ilevel, nlmax
+    type(t_blockDiscretisation), pointer :: p_rdiscrCoarse,p_rdiscrFine
+    
+    nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
+    
+    ! Loop through all levels. Whereever the projection structure
+    ! is missing, create it.
+    do ilevel = 2,nlmax
+      if (.not. associated( &
+          rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)% &
+          p_rprojection)) then
+        
+        ! Initialise the projection structure.
+        p_rdiscrCoarse => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel-1)%rsystemmatrix%&
+          p_rblockDiscrTrial
+        p_rdiscrFine => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)%rsystemmatrix%&
+          p_rblockDiscrTrial
+        call linsol_initProjMG2LvByDiscr (rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
+            p_rdiscrCoarse,p_rdiscrFine)
+        
+      end if
+    end do
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneProjMultigrid2 (rsolverNode)
+  
+!<description>
+  ! Releases all automatically allocated interlevel projection structures
+  ! for all levels in the MG solver.
+!</description>
+  
+!<inputoutput>
+  ! A  t_linsolNode structure. defining the solver.
+  type(t_linsolNode), intent(inout)             :: rsolverNode
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: ilevel, nlmax
+    
+    nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
+    
+    ! Loop through all levels. Whereever the projection structure
+    ! is missing, create it.
+    do ilevel = 2,nlmax
+      if (associated(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)% &
+          p_rprojection)) then
+        if (rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)% &
+            bstandardProjection) then
+          call mlprj_doneProjection (rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)%&
+              p_rprojection)
+          deallocate (rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)%p_rprojection)
+        else
+          ! Just nullify the pointer, the structure does not belong to us.
+          nullify (rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)%p_rprojection)
+        end if
+        
+        rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)% &
+            bstandardProjection = .false.
+        
+      end if
+    end do
+    
+  end subroutine
+  
   ! ***************************************************************************
 
 !<subroutine>
@@ -12969,6 +13396,7 @@ contains
     
     ! Allocate level information data
     allocate(p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(nlevels))
+    p_rsolverNode%p_rsubnodeMultigrid2%nlevels = nlevels
     
     ! Attach the filter if given. 
     if (present(p_Rfilter)) then
@@ -13002,11 +13430,11 @@ contains
 
   ! local variables
   integer :: i
-  type(t_linsolMGLevelInfo2), pointer :: p_rcurrentLevel
+  type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
 
     ! Pass the command structure to all subsolvers and smoothers
     ! on all levels.
-    do i=1,size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+    do i=1,rsolverNode%p_rsubnodeMultigrid2%nlevels
     
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(i)
       
@@ -13062,7 +13490,7 @@ contains
 !</subroutine>
 
   ! local variables
-  type(t_linsolMGLevelInfo2), pointer :: p_rcurrentLevel
+  type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
   integer                       :: ilevel,nlmax
   
     ! Make sure the solver node is configured for multigrid
@@ -13074,7 +13502,7 @@ contains
     end if
     
     ! Make sure we have the right amount of matrices
-    if (size(Rmatrices) .ne. size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)) then
+    if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeMultigrid2%nlevels) then
       call output_line ('Wrong number of matrices!', &
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_setMatrixMultigrid2')
       call sys_halt()
@@ -13087,7 +13515,7 @@ contains
     ! pass only that part of the Rmatrices array that belongs
     ! to the range of levels between the coarse grid and the current grid.
     
-    nlmax = size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+    nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
     do ilevel = 1,nlmax
     
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
@@ -13155,7 +13583,7 @@ contains
 !</subroutine>
 
   ! local variables
-  type(t_linsolMGLevelInfo2), pointer :: p_rcurrentLevel
+  type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
   integer                       :: ilevel,ccompatLevel
     
     ! Normally, we can handle the matrix.
@@ -13173,7 +13601,7 @@ contains
     end if
     
     ! Make sure we have the right amount of matrices
-    if (size(Rmatrices) .ne. size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)) then
+    if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeMultigrid2%nlevels) then
       call output_line ('Wrong number of matrices!', &
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_matCompatMultigrid2')
       call sys_halt()
@@ -13186,7 +13614,7 @@ contains
     ! pass only that part of the Rmatrices array that belongs
     ! to the range of levels between the coarse grid and the current grid.
     
-    do ilevel = 1,size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+    do ilevel = 1,rsolverNode%p_rsubnodeMultigrid2%nlevels
     
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
     
@@ -13292,7 +13720,7 @@ contains
 !</subroutine>
 
   ! local variables
-  type(t_linsolMGLevelInfo2), pointer :: p_rcurrentLevel,p_rprevLevel
+  type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel,p_rprevLevel
   integer :: isubgroup,nlmax,ilevel
   integer :: imemmax
   type(t_matrixBlock), pointer :: p_rmatrix
@@ -13320,8 +13748,8 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureMultigrid2')
       call sys_halt()
     end if
-
-    nlmax = size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+    
+    nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
 
     ! Check for every level, if there's a presmoother, postsmoother or
     ! coarse grid solver structure attached. 
@@ -13348,6 +13776,9 @@ contains
     
     ! Cancel here, if we don't belong to the subgroup to be initialised
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Initialise the interlevel projection as far as it's not already initialised
+    call linsol_initProjMultigrid2 (rsolverNode)
 
     imemmax = 0
 
@@ -13398,7 +13829,7 @@ contains
         ! in case there is temporary memory needed.
         ! The system matrix on the fine/coarse grid specifies the discretisation.
         imemmax = max(imemmax,mlprj_getTempMemoryMat ( &
-                      p_rcurrentLevel%rinterlevelProjection, &
+                      p_rcurrentLevel%p_rprojection, &
                       p_rprevLevel%rsystemMatrix,&
                       p_rcurrentLevel%rsystemMatrix))
       end if
@@ -13488,7 +13919,7 @@ contains
 !</subroutine>
 
   ! local variables
-  type(t_linsolMGLevelInfo2), pointer :: p_rcurrentLevel
+  type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
   integer :: isubgroup,ilevel
   
     ! A-priori we have no error...
@@ -13517,7 +13948,7 @@ contains
     ! Check for every level, if there's a presmoother, postsmoother or
     ! coarse grid solver structure attached. 
     
-    do ilevel = 1,size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+    do ilevel = 1,rsolverNode%p_rsubnodeMultigrid2%nlevels
     
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
 
@@ -13577,7 +14008,7 @@ contains
 !</subroutine>
 
   ! local variables
-  type(t_linsolMGLevelInfo2), pointer :: p_rcurrentLevel
+  type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
   integer :: isubgroup,ilevel
   
     ! by default, initialise solver subroup 0
@@ -13603,7 +14034,7 @@ contains
     ! Check for every level, if there's a presmoother, postsmoother or
     ! coarse grid solver structure attached. 
     
-    do ilevel = size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo),1,-1
+    do ilevel = rsolverNode%p_rsubnodeMultigrid2%nlevels,1,-1
     
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
       
@@ -13663,7 +14094,7 @@ contains
 !</subroutine>
 
   ! local variables
-  type(t_linsolMGLevelInfo2), pointer :: p_rcurrentLevel
+  type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
   integer :: isubgroup,ilevel,nlmax
   
     ! by default, initialise solver subroup 0
@@ -13686,7 +14117,7 @@ contains
       call sys_halt()
     end if
     
-    nlmax = size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+    nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
 
     ! Check for every level, if there's a presmoother, postsmoother or
     ! coarse grid solver structure attached. 
@@ -13756,6 +14187,10 @@ contains
     if (rsolverNode%p_rsubnodeMultigrid2%rprjTempVector%NEQ .gt. 0) then
       call lsyssc_releaseVector (rsolverNode%p_rsubnodeMultigrid2%rprjTempVector)
     end if
+    
+    ! Release the interlevel projection structures as far as they were 
+    ! automatically created.
+    call linsol_doneProjMultigrid2 (rsolverNode)
 
   end subroutine
   
@@ -13854,7 +14289,7 @@ contains
   type(t_linsolSubnodeMultigrid2), pointer :: p_rsubnode
   
   ! The current level and the next lower one.
-  type(t_linsolMGLevelInfo2), pointer :: p_rcurrentLevel,p_rlowerLevel
+  type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel,p_rlowerLevel
   
     ! Solve the system!
     
@@ -13891,7 +14326,7 @@ contains
     end if
 
     ! Maximum level
-    nlmax = size(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+    nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
 
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
@@ -14130,7 +14565,7 @@ contains
               if (ilev .gt. 2) then
               
                 ! We don't project to the coarse grid
-                call mlprj_performRestriction (p_rcurrentLevel%rinterlevelProjection,&
+                call mlprj_performRestriction (p_rcurrentLevel%p_rprojection,&
                       p_rlowerLevel%rrhsVector, &
                       p_rcurrentLevel%rtempVector, &
                       p_rsubnode%rprjTempVector)
@@ -14194,7 +14629,7 @@ contains
               else
               
                 ! The vector is to be restricted to the coarse grid.
-                call mlprj_performRestriction (p_rcurrentLevel%rinterlevelProjection,&
+                call mlprj_performRestriction (p_rcurrentLevel%p_rprojection,&
                       p_rlowerLevel%rsolutionVector, &
                       p_rcurrentLevel%rtempVector, &
                       p_rsubnode%rprjTempVector)
@@ -14296,7 +14731,7 @@ contains
                     RvectorBlock(1:nblocks)%isortStrategy) 
                 end if
               end if
-              call mlprj_performProlongation (p_rcurrentLevel%rinterlevelProjection,&
+              call mlprj_performProlongation (p_rcurrentLevel%p_rprojection,&
                     p_rlowerLevel%rsolutionVector, &
                     p_rcurrentLevel%rtempVector, &
                     p_rsubnode%rprjTempVector)
