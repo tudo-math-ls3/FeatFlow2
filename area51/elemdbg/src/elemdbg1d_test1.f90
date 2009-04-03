@@ -73,7 +73,7 @@ contains
   type(t_ucdexport) :: rexport
   real(DP), dimension(:), pointer :: p_Ddata
   real(DP) :: dnu,dbeta1,dupsam,dgamma
-  integer :: istabil, isolution
+  integer :: istabil, isolution, ifillin
   !type(t_convStreamlineDiffusion) :: rconfigSD
   type(t_jumpStabilisation) :: rconfigEOJ
   type(t_collection) :: rcollect
@@ -130,6 +130,9 @@ contains
     
     ! Fetch relaxation parameter for CG-SSOR
     call parlst_getvalue_double(rparam, sConfigSection, 'DRELAX', drelax, 1.2_DP)
+
+    ! Fetch fill-in level for ILU(k) preconditioner
+    call parlst_getvalue_int(rparam, sConfigSection, 'IFILLIN', ifillin, 0)
 
     ! Writing of the mesh    
     call parlst_getvalue_int(rparam, sConfigSection, 'IWRITEMESH', iwritemesh, 0)
@@ -239,7 +242,13 @@ contains
       call output_line('Solver.............: CG-SSOR')
       call output_line('Relaxation.........: ' // trim(sys_sdL(drelax,8)))
     case(2)
-      call output_line('Solver.............: BiCGStab-ILU(0)')
+      call output_line('Solver.............: BiCGStab-ILU(k)')
+      if(ifillin .lt. 0) then
+        call output_line('IFILLIN must not be less than 0', &
+          OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
+        call sys_halt()
+      end if
+      call output_line('Allowed Fill-In....: ' // trim(sys_siL(ifillin,4)))
     case default
       call output_line('Invalid ISOLVER parameter', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg1d_1')
@@ -408,9 +417,9 @@ contains
         call linsol_initCG(p_rsolver, p_rprecond)
       
       case (2)
-        ! BiCGStab-ILU(0) solver with RCMK
+        ! BiCGStab-ILU(k) solver with RCMK
         nullify(p_rprecond)
-        call linsol_initMILUs1x1(p_rprecond,0,0.0_DP)
+        call linsol_initMILUs1x1(p_rprecond,ifillin,0.0_DP)
         call linsol_initBiCGStab(p_rsolver, p_rprecond)
         
         ! Calculate a RCMK permutation
