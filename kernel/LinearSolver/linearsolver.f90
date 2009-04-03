@@ -3718,16 +3718,12 @@ contains
       ! Apply the filter chain to the vector
       call filter_applyFilterChainVec (p_rdef, p_RfilterChain)
     end if
-    if (bprec) then
-      ! Perform preconditioning with the assigned preconditioning
-      ! solver structure.
-      call linsol_precondDefect (p_rprecSubnode,p_rdef)
-    end if
     
     ! Get the norm of the residuum
     dres = lsysbl_vectorNorm (p_rdef,rsolverNode%iresNorm)
-    if (.not.((dres .ge. 1E-99_DP) .and. &
-              (dres .le. 1E99_DP))) dres = 0.0_DP
+    !if (.not.((dres .ge. 1E-99_DP) .and. &
+    !          (dres .le. 1E99_DP))) dres = 0.0_DP
+    if (dres .lt. 1E-99_DP) dres = 0.0_DP
 
     ! Initialize starting residuum
     rsolverNode%dinitialDefect = dres
@@ -3757,23 +3753,24 @@ contains
       do ite = 1,rsolverNode%nmaxIterations
       
         rsolverNode%icurrentIteration = ite
+
+        if (bprec) then
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          call linsol_precondDefect (p_rprecSubnode,p_rdef)
+        end if
         
         ! In p_rdef, we now have the current residuum $P^{-1} (b-Ax)$.
         ! Add it (damped) to the current iterate p_x to get
         !   $$ x  :=  x  +  \omega P^{-1} (b-Ax) $$
         call lsysbl_vectorLinearComb (p_rdef ,p_rx,domega,1.0_DP)
-
+        
         ! Calculate the residuum for the next step : (b-Ax)
         call lsysbl_copyVector (rd,p_rdef)
         call lsysbl_blockMatVec (p_rmatrix, p_rx,p_rdef, -1.0_DP,1.0_DP)
         if (bfilter) then
           ! Apply the filter chain to the vector
           call filter_applyFilterChainVec (p_rdef, p_RfilterChain)
-        end if
-        if (bprec) then
-          ! Perform preconditioning with the assigned preconditioning
-          ! solver structure.
-          call linsol_precondDefect (p_rprecSubnode,p_rdef)
         end if
         
         ! Get the norm of the new (final?) residuum
@@ -3815,7 +3812,7 @@ contains
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
           call output_line ('DefCorr: Iteration '// &
-              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+              trim(sys_siL(ite,10))//',  !!RES!! = '//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
 
