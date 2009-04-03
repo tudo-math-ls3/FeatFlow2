@@ -10182,7 +10182,7 @@ contains
           rconfig%ccubType,rconfig%dnu,rdiscretisation)
       end if
 
-!    else if (rconfig%cjump .eq. CONV_JUMP_REACTIVE) then
+    else if (rconfig%cjump .eq. CONV_JUMP_REACTIVE) then
 !      if (present(rdefect)) then
 !      
 !        ! Modify the defect?
@@ -10195,12 +10195,12 @@ contains
 !
 !      end if
 !      
-!      ! Modify the matrix?
-!      if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
-!        call jstab_calcReacJumpStabilisation (&
-!          rmatrix,rconfig%dgamma,rconfig%dtheta,&
-!          rconfig%ccubType,rconfig%dnu,rdiscretisation)
-!      end if
+      ! Modify the matrix?
+      if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
+        call jstab_calcReacJumpStabilisation (&
+          rmatrix,rconfig%dgamma,rconfig%dtheta,&
+          rconfig%ccubType,rconfig%dnu,rdiscretisation)
+      end if
 
     else
       call output_line ('Unknown jump stabilisation', &

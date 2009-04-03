@@ -35,7 +35,10 @@
 !# 3.) jstab_ueoJumpStabil3d_m_unidble
 !#     -> The actual matrix computation routine for 3D domains.
 !#
-!# 4.) jstab_ueoJumpStabil1d_m_unidble
+!# 4.) jstab_reacJumpStabil3d_m_unidble
+!#     -> The actual matrix computation routine for 3D domains.
+!#
+!# 5.) jstab_ueoJumpStabil1d_m_unidble
 !#     -> The actual matrix computation routine for 1D domains.
 !#
 !# </purpose>
@@ -140,9 +143,6 @@ contains
       call sys_halt()
       
     end select
-    
-
-    ! Modify the matrix.
 
   end subroutine
   
@@ -748,7 +748,172 @@ contains
   end subroutine
   
   ! ***************************************************************************
+  
+  !<subroutine>
 
+    pure subroutine jstab3d_aux_calcQuadDetj(Dvtx, Dpts, Ddetj)
+  
+  !<description>
+    ! INTERNAL AUXILIARY ROUTINE:
+    ! This routine calculates the 'jacobian determinants' of a bilinear mapping
+    ! from the 2D reference quadrilateral onto a face in 3D.
+    ! The 'determinant' of a 3x2 jacobian matrix is defined as the euclid norm
+    ! of the 3D cross-product of the jacobian matrix's columns.
+  !</description>
+  
+  !<input>
+    ! The coordinates of the face's corner vertices.
+    real(DP), dimension(3,4), intent(IN) :: Dvtx
+    
+    ! The points for which the 'jacobian determinants' are to be calculated,
+    ! given in 2D reference quadrilateral coordinates.
+    real(DP), dimension(:,:), intent(IN) :: Dpts
+  !</input>
+  
+  !<output>
+    ! The 'jacobian determinants' of the mapping.
+    real(DP), dimension(:), intent(OUT) :: Ddetj
+  !</output>
+  
+  !</subroutine>
+    
+    ! Some local variables
+    integer :: ipt
+    real(DP), dimension(3,3) :: Dtrafo
+    real(DP), dimension(3,2) :: Djac
+    real(DP), dimension(3) :: Dcp
+    
+      ! Calculate the coefficients of the bilinear mapping, but without
+      ! the constant terms, as we won't need them here...
+      Dtrafo(:,1) = 0.25_DP*(-Dvtx(:,1)+Dvtx(:,2)+Dvtx(:,3)-Dvtx(:,4))
+      Dtrafo(:,2) = 0.25_DP*(-Dvtx(:,1)-Dvtx(:,2)+Dvtx(:,3)+Dvtx(:,4))
+      Dtrafo(:,3) = 0.25_DP*( Dvtx(:,1)-Dvtx(:,2)+Dvtx(:,3)-Dvtx(:,4))
+      
+      ! Loop over all points
+      do ipt = 1, ubound(Dpts,2)
+      
+        ! Calculate jacobian matrix of the bilinear mapping R^2 -> R^3
+        Djac(:,1) = Dtrafo(:,1) + Dpts(2,ipt)*Dtrafo(:,3)
+        Djac(:,2) = Dtrafo(:,2) + Dpts(1,ipt)*Dtrafo(:,3)
+        
+        ! Calculate cross-product of the columns of the jacobian matrix
+        Dcp(1) = Djac(2,1)*Djac(3,2) - Djac(3,1)*Djac(2,2)
+        Dcp(2) = Djac(3,1)*Djac(1,2) - Djac(1,1)*Djac(3,2)
+        Dcp(3) = Djac(1,1)*Djac(2,2) - Djac(2,1)*Djac(1,2)
+        
+        ! Now the 'jacobian determinant' is the euclid norm of the
+        ! cross-product vector we've calculated.
+        Ddetj(ipt) = sqrt(Dcp(1)**2 + Dcp(2)**2 + Dcp(3)**2)
+      
+      end do ! ipt
+    
+    end subroutine jstab3d_aux_calcQuadDetj
+  
+  ! ***************************************************************************
+    
+  !<subroutine>
+    
+    pure subroutine jstab3d_aux_mapQuadToHexa(iat, itwist, Dpts2D, Dpts3D)
+  
+  !<description>
+    ! INTERNAL AUXILIARY ROUTINE:
+    ! Maps a set of points given on the 2D reference quadrilateral onto
+    ! one of the local faces of a 3D reference hexahedron.
+  !</description>
+  
+  !<input>
+    ! The index of the local face onto which the points are to mapped.
+    ! Is silently assumed to be 1 <= iat <= 6.
+    integer, intent(IN) :: iat
+    
+    ! The twist index of the hexahedron.
+    integer(I32), intent(IN) :: itwist
+    
+    ! The points which are to be mapped, given in 2D quadrilateral
+    ! reference coordinates.
+    real(DP), dimension(:,:), intent(IN) :: Dpts2D
+  !</input>
+  
+  !<output>
+    ! The mapped points, given in 3D hexahedron reference coordinates.
+    real(DP), dimension(:,:), intent(OUT) :: Dpts3D
+  !</output>
+  
+  !</subroutine>
+  
+    real(DP), dimension(2,ubound(Dpts2D,2)) :: Dpts
+    integer :: ipt
+  
+      ! Transform the points using the twist for this face
+      select case(iand(int(ishft(itwist,-(9+3*iat))),7))
+      case(0)
+        Dpts(:,:) =  Dpts2D(:,:)
+      case(1)
+        Dpts(1,:) =  Dpts2D(2,:)
+        Dpts(2,:) = -Dpts2D(1,:)
+      case(2)
+        Dpts(:,:) = -Dpts2D(:,:)
+      case(3)
+        Dpts(1,:) = -Dpts2D(2,:)
+        Dpts(2,:) =  Dpts2D(1,:)
+      case(4)
+        Dpts(1,:) =  Dpts2D(2,:)
+        Dpts(2,:) =  Dpts2D(1,:)
+      case(5)
+        Dpts(1,:) = -Dpts2D(1,:)
+        Dpts(2,:) =  Dpts2D(2,:)
+      case(6)
+        Dpts(1,:) = -Dpts2D(2,:)
+        Dpts(2,:) = -Dpts2D(1,:)
+      case(7)
+        Dpts(1,:) =  Dpts2D(1,:)
+        Dpts(2,:) = -Dpts2D(2,:)
+      end select
+      
+      ! Okay, which face to we have here?
+      select case(iat)
+      case(1) ! bottom face
+        do ipt = 1, ubound(Dpts2D,2)
+          Dpts3D(1,ipt) =  Dpts(1,ipt)
+          Dpts3D(2,ipt) =  Dpts(2,ipt)
+          Dpts3D(3,ipt) = -1.0_DP
+        end do ! ipt
+      case(2) ! front face
+        do ipt = 1, ubound(Dpts2D,2)
+          Dpts3D(1,ipt) =  Dpts(2,ipt)
+          Dpts3D(2,ipt) = -1.0_DP
+          Dpts3D(3,ipt) =  Dpts(1,ipt)
+        end do ! ipt
+      case(3) ! right face
+        do ipt = 1, ubound(Dpts2D,2)
+          Dpts3D(1,ipt) =  1.0_DP
+          Dpts3D(2,ipt) = -Dpts(2,ipt)
+          Dpts3D(3,ipt) = -Dpts(1,ipt)
+        end do ! ipt
+      case(4) ! back face
+        do ipt = 1, ubound(Dpts2D,2)
+          Dpts3D(1,ipt) = -Dpts(1,ipt)
+          Dpts3D(2,ipt) =  1.0_DP
+          Dpts3D(3,ipt) = -Dpts(2,ipt)
+        end do ! ipt
+      case(5) ! left face
+        do ipt = 1, ubound(Dpts2D,2)
+          Dpts3D(1,ipt) = -1.0_DP
+          Dpts3D(2,ipt) =  Dpts(1,ipt)
+          Dpts3D(3,ipt) =  Dpts(1,ipt)
+        end do ! ipt
+      case(6) ! top face
+        do ipt = 1, ubound(Dpts2D,2)
+          Dpts3D(1,ipt) = -Dpts(2,ipt)
+          Dpts3D(2,ipt) = -Dpts(1,ipt)
+          Dpts3D(3,ipt) =  1.0_DP
+        end do ! ipt
+      end select
+    
+    end subroutine jstab3d_aux_mapQuadToHexa
+
+  ! ***************************************************************************
+  
 !<subroutine>
 
   subroutine jstab_ueoJumpStabil3d_m_unidble ( &
@@ -1138,175 +1303,8 @@ contains
     
     ! That's it
   
-  contains ! some auxiliary routines
+  end subroutine
 
-  ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  
-  !<subroutine>
-
-    pure subroutine jstab3d_aux_calcQuadDetj(Dvtx, Dpts, Ddetj)
-  
-  !<description>
-    ! INTERNAL AUXILIARY ROUTINE:
-    ! This routine calculates the 'jacobian determinants' of a bilinear mapping
-    ! from the 2D reference quadrilateral onto a face in 3D.
-    ! The 'determinant' of a 3x2 jacobian matrix is defined as the euclid norm
-    ! of the 3D cross-product of the jacobian matrix's columns.
-  !</description>
-  
-  !<input>
-    ! The coordinates of the face's corner vertices.
-    real(DP), dimension(3,4), intent(IN) :: Dvtx
-    
-    ! The points for which the 'jacobian determinants' are to be calculated,
-    ! given in 2D reference quadrilateral coordinates.
-    real(DP), dimension(:,:), intent(IN) :: Dpts
-  !</input>
-  
-  !<output>
-    ! The 'jacobian determinants' of the mapping.
-    real(DP), dimension(:), intent(OUT) :: Ddetj
-  !</output>
-  
-  !</subroutine>
-    
-    ! Some local variables
-    integer :: ipt
-    real(DP), dimension(3,3) :: Dtrafo
-    real(DP), dimension(3,2) :: Djac
-    real(DP), dimension(3) :: Dcp
-    
-      ! Calculate the coefficients of the bilinear mapping, but without
-      ! the constant terms, as we won't need them here...
-      Dtrafo(:,1) = 0.25_DP*(-Dvtx(:,1)+Dvtx(:,2)+Dvtx(:,3)-Dvtx(:,4))
-      Dtrafo(:,2) = 0.25_DP*(-Dvtx(:,1)-Dvtx(:,2)+Dvtx(:,3)+Dvtx(:,4))
-      Dtrafo(:,3) = 0.25_DP*( Dvtx(:,1)-Dvtx(:,2)+Dvtx(:,3)-Dvtx(:,4))
-      
-      ! Loop over all points
-      do ipt = 1, ubound(Dpts,2)
-      
-        ! Calculate jacobian matrix of the bilinear mapping R^2 -> R^3
-        Djac(:,1) = Dtrafo(:,1) + Dpts(2,ipt)*Dtrafo(:,3)
-        Djac(:,2) = Dtrafo(:,2) + Dpts(1,ipt)*Dtrafo(:,3)
-        
-        ! Calculate cross-product of the columns of the jacobian matrix
-        Dcp(1) = Djac(2,1)*Djac(3,2) - Djac(3,1)*Djac(2,2)
-        Dcp(2) = Djac(3,1)*Djac(1,2) - Djac(1,1)*Djac(3,2)
-        Dcp(3) = Djac(1,1)*Djac(2,2) - Djac(2,1)*Djac(1,2)
-        
-        ! Now the 'jacobian determinant' is the euclid norm of the
-        ! cross-product vector we've calculated.
-        Ddetj(ipt) = sqrt(Dcp(1)**2 + Dcp(2)**2 + Dcp(3)**2)
-      
-      end do ! ipt
-    
-    end subroutine jstab3d_aux_calcQuadDetj
-  
-  ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    
-  !<subroutine>
-    
-    pure subroutine jstab3d_aux_mapQuadToHexa(iat, itwist, Dpts2D, Dpts3D)
-  
-  !<description>
-    ! INTERNAL AUXILIARY ROUTINE:
-    ! Maps a set of points given on the 2D reference quadrilateral onto
-    ! one of the local faces of a 3D reference hexahedron.
-  !</description>
-  
-  !<input>
-    ! The index of the local face onto which the points are to mapped.
-    ! Is silently assumed to be 1 <= iat <= 6.
-    integer, intent(IN) :: iat
-    
-    ! The twist index of the hexahedron.
-    integer(I32), intent(IN) :: itwist
-    
-    ! The points which are to be mapped, given in 2D quadrilateral
-    ! reference coordinates.
-    real(DP), dimension(:,:), intent(IN) :: Dpts2D
-  !</input>
-  
-  !<output>
-    ! The mapped points, given in 3D hexahedron reference coordinates.
-    real(DP), dimension(:,:), intent(OUT) :: Dpts3D
-  !</output>
-  
-  !</subroutine>
-  
-    real(DP), dimension(2,ubound(Dpts2D,2)) :: Dpts
-    integer :: ipt
-  
-      ! Transform the points using the twist for this face
-      select case(iand(int(ishft(itwist,-(9+3*iat))),7))
-      case(0)
-        Dpts(:,:) =  Dpts2D(:,:)
-      case(1)
-        Dpts(1,:) =  Dpts2D(2,:)
-        Dpts(2,:) = -Dpts2D(1,:)
-      case(2)
-        Dpts(:,:) = -Dpts2D(:,:)
-      case(3)
-        Dpts(1,:) = -Dpts2D(2,:)
-        Dpts(2,:) =  Dpts2D(1,:)
-      case(4)
-        Dpts(1,:) =  Dpts2D(2,:)
-        Dpts(2,:) =  Dpts2D(1,:)
-      case(5)
-        Dpts(1,:) = -Dpts2D(1,:)
-        Dpts(2,:) =  Dpts2D(2,:)
-      case(6)
-        Dpts(1,:) = -Dpts2D(2,:)
-        Dpts(2,:) = -Dpts2D(1,:)
-      case(7)
-        Dpts(1,:) =  Dpts2D(1,:)
-        Dpts(2,:) = -Dpts2D(2,:)
-      end select
-      
-      ! Okay, which face to we have here?
-      select case(iat)
-      case(1) ! bottom face
-        do ipt = 1, ubound(Dpts2D,2)
-          Dpts3D(1,ipt) =  Dpts(1,ipt)
-          Dpts3D(2,ipt) =  Dpts(2,ipt)
-          Dpts3D(3,ipt) = -1.0_DP
-        end do ! ipt
-      case(2) ! front face
-        do ipt = 1, ubound(Dpts2D,2)
-          Dpts3D(1,ipt) =  Dpts(2,ipt)
-          Dpts3D(2,ipt) = -1.0_DP
-          Dpts3D(3,ipt) =  Dpts(1,ipt)
-        end do ! ipt
-      case(3) ! right face
-        do ipt = 1, ubound(Dpts2D,2)
-          Dpts3D(1,ipt) =  1.0_DP
-          Dpts3D(2,ipt) = -Dpts(2,ipt)
-          Dpts3D(3,ipt) = -Dpts(1,ipt)
-        end do ! ipt
-      case(4) ! back face
-        do ipt = 1, ubound(Dpts2D,2)
-          Dpts3D(1,ipt) = -Dpts(1,ipt)
-          Dpts3D(2,ipt) =  1.0_DP
-          Dpts3D(3,ipt) = -Dpts(2,ipt)
-        end do ! ipt
-      case(5) ! left face
-        do ipt = 1, ubound(Dpts2D,2)
-          Dpts3D(1,ipt) = -1.0_DP
-          Dpts3D(2,ipt) =  Dpts(1,ipt)
-          Dpts3D(3,ipt) =  Dpts(1,ipt)
-        end do ! ipt
-      case(6) ! top face
-        do ipt = 1, ubound(Dpts2D,2)
-          Dpts3D(1,ipt) = -Dpts(2,ipt)
-          Dpts3D(2,ipt) = -Dpts(1,ipt)
-          Dpts3D(3,ipt) =  1.0_DP
-        end do ! ipt
-      end select
-    
-    end subroutine jstab3d_aux_mapQuadToHexa
-  
-  end subroutine jstab_ueoJumpStabil3d_m_unidble
-  
   ! ***************************************************************************
 
 !<subroutine>
@@ -2308,9 +2306,24 @@ contains
       call sys_halt()
     end if
 
-    ! Modify the matrix.
-    call jstab_reacJumpStabil2d_m_unidbl (&
+    ! Check which element we have here...
+    select case(elem_igetShape(rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement))
+    case (BGEOM_SHAPE_QUAD)
+      ! 2D quadrilateral element
+      call jstab_reacJumpStabil2d_m_unidbl (&
         rmatrix,dgamma,dtheta,ccubType,dnu,rdiscretisation)
+
+    case (BGEOM_SHAPE_HEXA)
+      ! 3D hexahedron element
+      call jstab_reacJumpStabil3d_m_unidbl (&
+        rmatrix,dgamma,dtheta,ccubType,dnu,rdiscretisation)
+    
+    case default
+      call output_line ('Unsupported element.', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'jstab_calcUEOJumpStabilisation')
+      call sys_halt()
+      
+    end select
 
   end subroutine
   
@@ -2899,6 +2912,385 @@ contains
 
     deallocate(IdofsTempl) 
 
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine jstab_reacJumpStabil3d_m_unidble ( &
+      rmatrixScalar,dgamma,dtheta,ccubType,dnu,rdiscretisation)
+      
+!<description>
+  ! Unified edge oriented jump stabilisation, 3D version for uniform
+  ! hexahedron elements.
+  !
+  ! Adds the reactive jump stabilisation to the matrix rmatrix:
+  ! $$< Ju,v > = \sum_E \gamma \nu 1/|E| \int_E [u] [v] ds$$
+  !
+  ! Uniform discretisation, double precision structure-7 and 9 matrix.
+  !
+  ! For a rerefence about the stabilisation, see
+  ! [Ouazzi, A.; Finite Element Simulation of Nonlinear Fluids, Application
+  ! to Granular Material and Powder; Shaker Verlag, ISBN 3-8322-5201-0, p. 55ff]
+  !
+  ! WARNING: For edge oriented stabilisation, the underlying matrix rmatrix
+  !   must have an extended stencil! The matrix structure must be set up with
+  !   the BILF_MATC_EDGEBASED switch!!!
+!</description>
+  
+!<input>
+  ! Stabilisation parameter. Standard=0.01
+  real(DP), intent(IN) :: dgamma
+  
+  ! Multiplication factor for the stabilisation matrix when adding
+  ! it to the global matrix. Standard value = 1.0.
+  real(DP), intent(IN) :: dtheta
+  
+  ! 2D cubature formula to use for quadrilateral integration
+  ! Standard = CUB_G2_2D.
+  integer, intent(IN) :: ccubType
+  
+  ! Viscosity parameter for the matrix if viscosity is constant.
+  real(DP), intent(IN) :: dnu
+
+  ! OPTIONAL: Alternative discretisation structure to use for setting up
+  ! the jump stabilisaton. This allows to use a different FE pair for
+  ! setting up the stabilisation than the matrix itself.
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+!</input>
+  
+!<inputoutput>
+  ! The system matrix to be modified. Must be format 7 or 9.
+  type(t_matrixScalar), intent(INOUT), target :: rmatrixScalar
+!</inputoutput>
+
+!</subroutine>
+
+  ! The triangulation structure - to shorten some things...
+  type(t_triangulation), pointer :: p_rtria
+  
+  ! Current element distribution
+  type(t_elementDistribution), pointer :: p_relemDist
+  
+  ! Underlying discretisation structure
+  type(t_spatialDiscretisation), pointer :: p_rdiscr
+  
+  ! Some triangulation arrays we need frequently
+  integer, dimension(:,:), pointer :: p_IelementsAtFace
+  integer, dimension(:,:), pointer :: p_IfacesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtFace
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  integer(I32), dimension(:), pointer :: p_ItwistIndex
+  
+  ! Pointer to KLD, KCOL, DA
+  integer, dimension(:), pointer :: p_Kld
+  integer, dimension(:), pointer :: p_Kcol
+  real(DP), dimension(:), pointer :: p_Da
+  
+  ! Number of DOFs - per element and per patch
+  integer :: ndofs, ndofsPatch, idof,idofp,idof1,idof2
+  
+  ! Variables for the cubature formula
+  integer :: ncubp, icubp
+  real(DP), dimension(:,:), allocatable :: DcubPts2D
+  real(DP), dimension(:,:,:), allocatable :: DcubPts3D
+  real(DP), dimension(:), allocatable :: Domega, Dweights
+  
+  ! Variables for the DOF-mapping
+  integer, dimension(:,:), allocatable :: Idofs
+  
+  ! Face corner vertices
+  real(DP), dimension(3,4) :: DfaceVerts
+
+  ! An element evaluation structure
+  type(t_evalElementSet) :: reval
+  
+  ! Derivative specifiers
+  logical, dimension(EL_MAXNDER) :: Bder
+  
+  ! Arrays for the evaluation of the elements
+  real(DP), dimension(:,:,:,:), allocatable :: Dbas
+  
+  ! An array for the evaluation of the Jump
+  real(DP), dimension(:,:), allocatable :: Djump
+  
+  ! An array for the local DOFs of the patch
+  integer, dimension(:), allocatable :: IdofsPatch
+  
+  ! The local matrix
+  real(DP), dimension(:,:), allocatable :: Dmatrix
+
+  ! some other local variables
+  integer(I32) :: celement, cevalTag, ctrafo
+  integer :: i, j, iel1, iel2, iat, iat1, iat2, idx, irow
+  integer, dimension(2) :: Iel
+  real(DP) :: dquadArea, dcoeff, dvalue
+
+
+    ! Get a pointer to the triangulation and discretisation.
+    p_rtria => rmatrixScalar%p_rspatialDiscrTest%p_rtriangulation
+    p_rdiscr => rmatrixScalar%p_rspatialDiscrTest
+    
+    ! If a discretisation structure is present, take that one.
+    if (present(rdiscretisation)) &
+      p_rdiscr => rdiscretisation
+
+    ! Get the arrays from the triangulation
+    call storage_getbase_int2d (p_rtria%h_IfacesAtElement, p_IfacesAtElement)
+    call storage_getbase_int2d (p_rtria%h_IelementsAtFace, p_IelementsAtFace)
+    call storage_getbase_int2d (p_rtria%h_IverticesAtFace, p_IverticesAtFace)
+    call storage_getbase_double2d(p_rtria%h_DvertexCoords, p_DvertexCoords)
+    call storage_getbase_int32(p_rtria%h_ItwistIndex, p_ItwistIndex)
+    
+    ! Get KLD, KCol and Da
+    call lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
+    call lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
+    call lsyssc_getbase_double (rmatrixScalar,p_Da)
+    
+    ! Get the number of points for cubature formula
+    ncubp = cub_igetNumPts(ccubType)
+    
+    ! Allocate the arrays for the 2D cubature rule
+    allocate(DcubPts2D(2,ncubp))
+    allocate(Domega(ncubp))
+    allocate(Dweights(ncubp))
+    
+    ! Get the cubature formula itself
+    call cub_getCubature(ccubType, DcubPts2D, Domega)
+
+    ! Allocate an array for the 3D rules - the content is initialised later
+    allocate(DcubPts3D(3,ncubp,2))
+
+    ! Activate the one and only element distribution
+    p_relemDist => p_rdiscr%RelementDistr(1)
+
+    ! Get the number of DOFs
+    celement = p_relemDist%celement
+    ndofs = elem_igetNDofLoc(celement)
+      
+    ! Get the trafo type
+    ctrafo = elem_igetTrafoType(celement)
+    
+    ! Get the evaluation tag of the element
+    cevalTag = elem_getEvaluationTag(celement)
+    
+    ! Do not calculate reference coordiantes - we'll do this manually.
+    cevalTag = iand(cevalTag, not(EL_EVLTAG_REFPOINTS))
+
+    ! Set up the Bder array - we'll need the function values
+    Bder = .false.
+    Bder(DER_FUNC3D) = .true.
+    
+    ! Allocate an array for the DOF-mapping
+    allocate(Idofs(ndofs,2))
+    
+    ! Allocate an array for the element evaluation
+    allocate(Dbas(ndofs,elem_getMaxDerivative(celement),ncubp,2))
+    
+    ! Allocate an array for the DOFs on the patch
+    allocate(IdofsPatch(2*ndofs))
+    
+    ! Allocate an array for the jumps
+    allocate(Djump(ncubp,2*ndofs))
+    
+    ! Allocate the local matrix
+    allocate(Dmatrix(2*ndofs,2*ndofs))
+    
+    ! Okay, loop over all faces of the mesh
+    do iat = 1, p_rtria%NAT
+    
+      ! Get the indices of the elements adjacent to the current face
+      iel1 = p_IelementsAtFace(1,iat)
+      iel2 = p_IelementsAtFace(2,iat)
+      
+      ! If iel2 is 0, then the face is a boundary face and we can skip it
+      if(iel2 .eq. 0) cycle
+      
+      ! Copy (iel1,iel2) into an array
+      Iel(:) = (/ iel1, iel2 /)
+      
+      ! Find out which of the element's local faces corresponds
+      ! to the global face we're currently processing.
+      do iat1 = 1, 6
+        if(p_IfacesAtElement(iat1, iel1) .eq. iat) exit
+      end do
+      do iat2 = 1, 6
+        if(p_IfacesAtElement(iat2, iel2) .eq. iat) exit
+      end do
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! STEP 1: Evaluate elements
+      ! In this step, we'll map the cubature points onto both hexahedra,
+      ! evaluate the element on both cells and perform the DOF-mapping.
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Now let's calculate the reference coordinates for the two hexahedra
+      call jstab3d_aux_mapQuadToHexa(iat1, p_ItwistIndex(iel1), DcubPts2D, &
+                                     DcubPts3D(:,:,1))
+      call jstab3d_aux_mapQuadToHexa(iat2, p_ItwistIndex(iel2), DcubPts2D, &
+                                     DcubPts3D(:,:,2))
+
+      ! Prepare the element evaluation structure
+      call elprep_prepareSetForEvaluation (reval, cevalTag, p_rtria, Iel, &
+                                           ctrafo, DpointsRef=DcubPts3D)
+      
+      ! Evaluate the element
+      call elem_generic_sim2(celement, reval, Bder, Dbas)
+
+      ! Perform the DOF-mapping for both elements
+      call dof_locGlobMapping_mult(p_rdiscr, Iel, Idofs)
+    
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! STEP 2: Calculate Jumps
+      ! In this step, we'll calculate the jumps and, at the same
+      ! time, we will calculate the DOFs of the current element patch.
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Reset Djump
+      Djump = 0.0_DP
+      
+      ! First, copy the evaluation of the first element's values to the
+      ! Djump array. At the same time, copy the DOF indices of the first
+      ! element into IdofsPatch
+      do idof = 1, ndofs
+        do icubp = 1, ncubp
+          Djump(icubp,idof) = Dbas(idof,DER_FUNC3D,icubp,1)
+        end do ! icubp
+        IdofsPatch(idof) = Idofs(idof,1)
+      end do ! idof
+      
+      ! Currently, we have ndofs DOFs in our patch - these are the DOFs of
+      ! the first element in the patch.
+      ndofsPatch = ndofs
+      
+      ! Now comes the interesting part: Calculate the jumps.
+      ! So loop over all local DOFs on the second element
+      do idof = 1, ndofs
+
+        ! Now let's see whether the current DOF (of the second element)
+        ! is already in the patch. Please note that it is sufficient to check
+        ! only the first ndofs entries in IdofsPatch, as all entries beyond
+        ! ndofs belong to the second element that we're currently processing.
+        do idofp = 1, ndofs
+          if(IdofsPatch(idofp) .eq. Idofs(idof,2)) exit
+        end do
+        
+        ! Update the DOF-map for the patch in the case the the current DOF was
+        ! not already in the list.
+        if(idofp .gt. ndofs) then
+          ndofsPatch = ndofsPatch + 1
+          idofp = ndofsPatch
+          IdofsPatch(idofp) = Idofs(idof,2)
+        end if
+        
+        ! Calculate the jump in all points
+        do icubp = 1, ncubp
+          Djump(icubp,idofp) = Djump(icubp,idofp) &
+                             - Dbas(idof,DER_FUNC3D,icubp,2)
+        end do
+
+      end do ! idof
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! STEP 3: Prepare for integration
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      ! Now let's calculate the integration weights for the face.
+      ! We'll need the four corner vertices of the face for this.
+      do i = 1, 4
+        do j = 1, 3
+          DfaceVerts(j,i) = p_DvertexCoords(j, p_IverticesAtFace(i,iat))
+        end do
+      end do
+      
+      ! Calculate the 'jacobian determinants' of the bilinear mapping
+      call jstab3d_aux_calcQuadDetj(DfaceVerts, DcubPts2D, Dweights)
+      
+      ! And finally, multiply the 'jacobian determinants' by Domega to get
+      ! the integration weights for the current face. At the same time,
+      ! calculate the area of the face.
+      dquadArea = 0.0_DP
+      do icubp = 1, ncubp
+        Dweights(icubp) = Dweights(icubp) * Domega(icubp)
+        dquadArea = dquadArea + Dweights(icubp)
+      end do
+      
+      ! Calculate the coefficient for the integral
+      dcoeff = & !max(dgammastar * dnu * dquadArea, &
+                !dgamma * dquadArea**2 !)
+                dgamma * dquadArea
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! STEP 4: Calculate local matrix
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Reset the local matrix for this patch
+      Dmatrix = 0.0_DP
+      
+      ! Okay, let's loop over all DOFs in the current patch, once for the
+      ! test and once for the trial space.
+      do idof1 = 1, ndofsPatch
+        do idof2 = 1, ndofsPatch
+          
+          ! Integrate the jump
+          dvalue = 0.0_DP
+          do icubp = 1, ncubp
+            dvalue = dvalue + Dweights(icubp) *  &
+                Djump(icubp,idof1)*Djump(icubp,idof2)
+          end do ! icubp
+          
+          ! Store the entry in the local matrix, weighted by dcoeff
+          Dmatrix(idof1,idof2) = dcoeff*dvalue
+
+        end do ! idof2
+      end do ! idof1
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! STEP 5: Update global matrix
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Loop over all DOFs in test space
+      do idof1 = 1, ndofsPatch
+      
+        ! Get the index of the row
+        irow = IdofsPatch(idof1)
+        
+        ! Loop over all DOFs in trial space
+        do idof2 = 1, ndofsPatch
+          
+          ! Try to find the entry in the global matrix
+          do idx = p_Kld(irow), p_Kld(irow+1)-1
+            if(p_Kcol(idx) .eq. IdofsPatch(idof2)) then
+              p_Da(idx) = p_Da(idx) + dtheta*Dmatrix(idof1,idof2)
+              exit
+            end if 
+          end do ! idx
+          
+        end do ! idof2
+      
+      end do ! idof1 
+      
+      ! Proceed with the next face
+      
+    end do ! iat
+    
+    ! Release the element set
+    call elprep_releaseElementSet(reval)
+    
+    ! Deallocate everything we've allocated
+    deallocate(Dmatrix)
+    deallocate(Djump)
+    deallocate(IdofsPatch)
+    deallocate(Dbas)
+    deallocate(Idofs)
+    deallocate(DcubPts3D)
+    deallocate(Dweights)
+    deallocate(Domega)
+    deallocate(DcubPts2D)
+    
+    ! That's it
+  
   end subroutine
 
 ! ***************************************************************************
