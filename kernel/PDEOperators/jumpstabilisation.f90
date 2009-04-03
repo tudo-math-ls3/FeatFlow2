@@ -2918,7 +2918,7 @@ contains
   
 !<subroutine>
 
-  subroutine jstab_reacJumpStabil3d_m_unidble ( &
+  subroutine jstab_reacJumpStabil3d_m_unidbl ( &
       rmatrixScalar,dgamma,dtheta,ccubType,dnu,rdiscretisation)
       
 !<description>
