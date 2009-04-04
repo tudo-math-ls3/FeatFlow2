@@ -3217,9 +3217,7 @@ contains
       end do
       
       ! Calculate the coefficient for the integral
-      dcoeff = & !max(dgammastar * dnu * dquadArea, &
-                !dgamma * dquadArea**2 !)
-                dgamma * dquadArea
+      dcoeff = dgamma * dnu / sqrt(dquadArea)
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! STEP 4: Calculate local matrix
