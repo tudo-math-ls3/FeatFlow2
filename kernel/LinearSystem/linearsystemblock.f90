@@ -6700,6 +6700,12 @@ contains
   ! will calculate the length of each vector in the vector field and store it to
   ! rvectorVecMag (if present). The maximum vector length is returned in the parameter
   ! dunorm (if present). All subvectors must have the same length.
+  !
+  ! IMPORTANT NOTE: This routine works algebraically. It should not be used
+  ! to calculate the maximum vector length of a vector field given by a
+  ! finite element function (like a velocity field), as this would need the 
+  ! evaluation of finite elements! This is NOT done here. Use routines from
+  ! the feevaluation.f90 module instead!
 !</description>
   
 !<input>

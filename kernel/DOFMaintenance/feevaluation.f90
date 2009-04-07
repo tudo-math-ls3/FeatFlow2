@@ -17,10 +17,12 @@
 !#     -> Evaluate a FE function simultaneously in multiple points on
 !#        one element. The element containing the point must be given.
 !#
-!# 2.) fevl_evaluate_sim
+!# 3.) fevl_evaluate_sim
 !#     -> Evaluate a FE function simultaneously in multiple points on
 !#        multiple elements. Elements containing the points must be given.
 !#
+!# 4.) fevl_getVectorMagnitude
+!#     -> Calculate the maximum norm of a given FEM vector field.
 !# </purpose>
 !##############################################################################
 
@@ -28,10 +30,13 @@ module feevaluation
 
   use fsystem
   use linearsystemscalar
+  use linearsystemblock
   use triasearch
   use element
   use elementpreprocessing
   use domainintegration
+  use derivatives
+  use spdiscprojection
   
   implicit none
 
@@ -1538,7 +1543,7 @@ contains
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
-  ! DIMENSION(npoints,nelements).
+  ! DIMENSION(#possible terms,npoints,nelements).
   real(DP), dimension(:,:,:), intent(OUT) :: Dvalues
 !</output>
 
@@ -1638,6 +1643,113 @@ contains
   if (rdomainIntSubset%celement .ne. celement) then
     deallocate (p_IdofsTrial)
   end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_getVectorMagnitude (rvector,dumax)
+                                      
+!<description>
+  ! Routine to calculate the vector magnitude of a FE vector field.
+!</description>
+
+!<input>
+  ! A given finite element vector field. May be e.g. a velocity field.
+  type(t_vectorBlock), intent(IN)            :: rvector
+!</input>
+
+!<output>
+  ! The maximum vector field length. E.g. if rvector is a velocity field,
+  ! this returns the maximum velocity.
+  real(DP) :: dumax
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Dvalues,p_Dvalues2
+    integer :: i,j,celement
+    logical :: bevaluate
+
+    ! There are some special cases that we can handle directly.
+    ! If all FE spaces are primal spaces (P1,Q1,...), we can just
+    ! calculate dumax using lsysbl_getVectorMagnitude.
+    ! Otherwise, we project the vector into a Q1 space
+    ! and get the maximum value from the values in the vertices.
+    bevaluate = .true.
+    
+    do i=2,rvector%nblocks
+      ! All vectors must have the same shape
+      if (rvector%RvectorBlock(i)%p_rspatialDiscr%inumFESpaces .ne. &
+          rvector%RvectorBlock(1)%p_rspatialDiscr%inumFESpaces) then
+         bevaluate = .false.
+         exit
+      end if
+      
+      do j=1,rvector%RvectorBlock(i)%p_rspatialDiscr%inumFESpaces
+        celement = rvector%RvectorBlock(i)%p_rspatialDiscr%RelementDistr(j)%celement
+        if (celement .ne. &
+            rvector%RvectorBlock(1)%p_rspatialDiscr%RelementDistr(j)%celement) then
+           bevaluate = .false.
+           exit
+        end if
+        
+        select case (elem_getPrimaryElement(celement))
+        case (EL_P0_1D,EL_P1_1D,EL_P2_1D,&
+              EL_P0_2D,EL_P1_2D,EL_P2_2D,EL_P3_2D,EL_P1T_2D,&
+              EL_Q0_2D,EL_Q1_2D,EL_Q2_2D,EL_Q3_2D,EL_Q1T_2D,&
+              EL_P0_3D,EL_P1_3D,EL_P2_3D,EL_Q0_3D,EL_Q1_3D,EL_Q2_3D,EL_Q1T_3D)
+        case default
+           bevaluate = .false.
+           exit
+        end select
+        
+      end do
+    end do
+    
+    if (.not. bevaluate) then
+    
+      ! Evaluate directly
+      call lsysbl_getVectorMagnitude (rvector,dumax=dumax)
+    
+    else
+    
+      ! Calculate the VecMag value by projection into the vertices.
+      ! We project each component separately and sum up in p_Dvalues2.
+      call spdp_projectToVertices (rvector%RvectorBlock(1), p_Dvalues, DER_FUNC)
+      
+      ! If there is more than one block...
+      if (rvector%nblocks .gt. 1) then
+       
+        ! Calculate val=sqrt(val^2 + val2^2 + val3^2 + ...)
+       
+        do i=1,size(p_Dvalues)
+          p_Dvalues(i) = p_Dvalues(i)**2
+        end do
+      
+        do i=2,rvector%nblocks
+          call spdp_projectToVertices (rvector%RvectorBlock(i), p_Dvalues2, DER_FUNC)
+
+          do j=1,size(p_Dvalues)
+            p_Dvalues(j) = p_Dvalues(j) + p_Dvalues2(j)**2
+          end do
+        end do
+
+        do i=1,size(p_Dvalues)
+          p_Dvalues(i) = sqrt(p_Dvalues(i))
+        end do
+
+      end if
+      
+      ! Get dumax
+      dumax = lalg_norm(p_Dvalues,LINALG_NORMMAX,n=size(p_Dvalues))
+      
+      deallocate(p_Dvalues,p_Dvalues2)
+      
+    end if
 
   end subroutine
 
