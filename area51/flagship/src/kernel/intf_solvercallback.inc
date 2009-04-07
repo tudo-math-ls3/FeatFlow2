@@ -19,7 +19,7 @@
 
     subroutine fcb_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
                                     rsolution, rsolutionInitial, rrhs, rres,&
-                                    istep, ioperationSpec, rcollection, istatus)
+                                    istep, ioperationSpec, rcollection, istatus, rb)
 
       use collection
       use linearsystemblock
@@ -36,6 +36,9 @@
 
       ! specifier for operations
       integer(I32), intent(IN) :: ioperationSpec
+
+      ! OPTIONAL: constant right-hand side vector
+      type(t_vectorBlock), intent(IN), optional :: rb
 !</input>
 
 !<inputoutput>
