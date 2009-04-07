@@ -428,8 +428,9 @@ contains
 !<subroutine>
 
   subroutine codire_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                     rsolution, rsolutionInitial, rrhs, rres,&
-                                     istep, ioperationSpec, rcollection, istatus)
+                                     rsolution, rsolutionInitial,&
+                                     rrhs, rres, istep, ioperationSpec,&
+                                     rcollection, istatus, rb)
 
 !<description>
     ! This subroutine is called by the nonlinear solver and it is responsible
@@ -445,6 +446,9 @@ contains
     
     ! specifier for operations
     integer(I32), intent(IN) :: ioperationSpec
+
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorBlock), intent(IN), optional :: rb
 !</input>
 
 !<inputoutput>
@@ -506,7 +510,7 @@ contains
 
       call codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
                                rsolution, rsolutionInitial,&
-                               rrhs, rres, istep, rcollection)
+                               rrhs, rres, istep, rcollection, rb)
      end if
     
     
@@ -2979,7 +2983,7 @@ contains
         end do
       end do
 
-      flux = flux0
+!!!      flux = flux0
 
     end subroutine buildFlux2d
 
@@ -3172,8 +3176,8 @@ contains
 !</output>
 !</subroutine>
 
-    k_ij = -p_DvelocityX(j)*C_ji(1)
-    k_ji = -p_DvelocityX(i)*C_ij(1)
+    k_ij = p_DvelocityX(j)*C_ij(1)
+    k_ji = p_DvelocityX(i)*C_ji(1)
 
   end subroutine codire_calcDualConvConst1d
 
@@ -3240,8 +3244,8 @@ contains
 !</output>
 !</subroutine>
 
-    k_ij = -p_DvelocityX(j)*C_ji(1)-p_DvelocityY(j)*C_ji(2)
-    k_ji = -p_DvelocityX(i)*C_ij(1)-p_DvelocityY(i)*C_ij(2)
+    k_ij = p_DvelocityX(j)*C_ij(1)+p_DvelocityY(j)*C_ij(2)
+    k_ji = p_DvelocityX(i)*C_ji(1)+p_DvelocityY(i)*C_ji(2)
 
   end subroutine codire_calcDualConvConst2d
 
@@ -3308,8 +3312,8 @@ contains
 !</output>
 !</subroutine>
 
-    k_ij = -p_DvelocityX(j)*C_ji(1)-p_DvelocityY(j)*C_ji(2)-p_DvelocityZ(j)*C_ji(3)
-    k_ji = -p_DvelocityX(i)*C_ij(1)-p_DvelocityY(i)*C_ij(2)-p_DvelocityZ(i)*C_ij(3)
+    k_ij = p_DvelocityX(j)*C_ij(1)+p_DvelocityY(j)*C_ij(2)+p_DvelocityZ(j)*C_ij(3)
+    k_ji = p_DvelocityX(i)*C_ji(1)+p_DvelocityY(i)*C_ji(2)+p_DvelocityZ(i)*C_ji(3)
 
   end subroutine codire_calcDualConvConst3d
 
