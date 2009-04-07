@@ -117,6 +117,9 @@ module codire_basic
   ! surface integral target functional
   integer, parameter, public :: TFUNC_SURFINTG = 2
 
+  ! analytical value for target functional
+  integer, parameter, public :: TFUNC_ANALYTIC = 3
+
 !</constantblock>
 
 
