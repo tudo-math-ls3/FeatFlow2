@@ -316,9 +316,9 @@ program agridgen
     ivt = nlayers*(i-1)
 
      write(cbuffer1, '(I)') mod(i-1,         nsegments)+nvt-nsegments+1
-     write(cbuffer2, '(I)') mod(i,           nsegments)+nvt-nsegments+1
+     write(cbuffer2, '(I)') mod(ivt,         nsegments*nlayers)+nvt+1
      write(cbuffer3, '(I)') mod(ivt+nlayers, nsegments*nlayers)+nvt+1
-     write(cbuffer4, '(I)') mod(ivt,         nsegments*nlayers)+nvt+1
+     write(cbuffer4, '(I)') mod(i,           nsegments)+nvt-nsegments+1
 
      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
                       trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
