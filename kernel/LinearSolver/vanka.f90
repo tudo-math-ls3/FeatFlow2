@@ -176,6 +176,11 @@ module vanka
   private
   
   public :: t_vanka
+  public :: t_vankaGeneral
+  public :: t_vankaPointer2DNavSt
+  public :: t_matrixPointer79Vanka
+  public :: t_vankaPointer2DNavStOptC
+  public :: t_vankaPointer3DNavSt 
   public :: vanka_initConformal
   public :: vanka_doneConformal
   public :: vanka_conformal
