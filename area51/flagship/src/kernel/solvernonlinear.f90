@@ -653,7 +653,7 @@ contains
       
       call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
                                 rsolution, rsolutionInitial, p_rrhs, p_rres,&
-                                0, ioperationSpec, rcollection, istatus)
+                                0, ioperationSpec, rcollection, istatus, rb)
 
       ! Check callback function status
       if (istatus < 0) then
@@ -688,7 +688,7 @@ contains
 
       call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
                                 rsolution, rsolutionInitial, p_rrhs, p_rres,&
-                                0, ioperationSpec, rcollection, istatus)
+                                0, ioperationSpec, rcollection, istatus, rb)
 
       ! Check callback function status
       if (istatus < 0) then
@@ -797,7 +797,7 @@ contains
         call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
                                   rsolution, rsolutionInitial, p_rrhs, p_rres,&
                                   iiterations, ioperationSpec,&
-                                  rcollection, istatus)
+                                  rcollection, istatus, rb)
         
         ! Check callback function status
         if (istatus < 0) then
@@ -853,7 +853,7 @@ contains
         call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
                                   rsolution, rsolutionInitial, p_rrhs, p_rres,&
                                   iiterations, ioperationSpec,&
-                                  rcollection, istatus)
+                                  rcollection, istatus, rb)
         
         ! Check callback function status
         if (istatus < 0) then
@@ -933,7 +933,7 @@ contains
                                 rsolution, rsolutionInitial, p_rufs, p_raux,&
                                 p_rrhs, p_rres, p_rresfs, fcb_nlsolverCallback,&
                                 doldDefect, drtjs, eta, redfac, iiterations,&
-                                rcollection, istatus)
+                                rcollection, istatus, rb)
         
         ! Perform failsave defect correction if required
         if (istatus < 0) then
@@ -1065,7 +1065,7 @@ contains
   subroutine nlsol_backtracking(rproblemLevel, rtimestep, rsolver,&
                                 rsolution, rsolutionInitial, rsolutionFailsave, raux,&
                                 rrhs, rres, rresFailsave, fcb_nlsolverCallback, doldDefect,&
-                                drtjs, eta, redfac, iiterations, rcollection, istatus)
+                                drtjs, eta, redfac, iiterations, rcollection, istatus, rb)
 
 !<description>
     ! This subroutine performs backtracking for the (inexact) Newton
@@ -1084,6 +1084,9 @@ contains
 
     ! iteration number
     integer, intent(IN) :: iiterations
+
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorBlock), intent(IN), optional :: rb
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -1174,9 +1177,9 @@ contains
       ! Compute new provisional defect
       ioperationSpec = NLSOL_OPSPEC_CALCRESIDUAL
 
-      call fcb_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                rsolution, rsolutionInitial, rrhs, rres,&
-                                iiterations, ioperationSpec, rcollection, istatus)
+      call fcb_nlsolverCallback(rproblemLevel, rtimestep, rsolver, rsolution,&
+                                rsolutionInitial, rrhs, rres, iiterations,&
+                                ioperationSpec, rcollection, istatus, rb)
       
       if (istatus < 0) exit backtrack
 
