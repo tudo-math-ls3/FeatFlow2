@@ -1974,7 +1974,7 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
     logical, dimension(:), pointer :: p_BisactiveElement
-    real(DP) :: dexacterror, dexacttargetfunc, dprotectLayerTolerance
+    real(DP) :: dexacterror, dexacttargetfunc, dtargetfunc, dprotectLayerTolerance
     integer :: i, convectionAFC, diffusionAFC
     integer :: lumpedMassMatrix, templateMatrix
     integer :: itargetfunctype, iexacttargetfunctype, igridindicator
@@ -1984,6 +1984,8 @@ contains
     ! symbolic variable names
     character(LEN=*), dimension(4), parameter ::&
                       cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
+    character(LEN=*), dimension(1), parameter ::&
+                      cvartime   = (/ (/'t'/) /)
 
 
     !---------------------------------------------------------------------------
@@ -1991,7 +1993,7 @@ contains
     !---------------------------------------------------------------------------
 
     ! Create vector for nodal errors
-    call lsysbl_createVectorBlock(rsolutionPrimal, rvector)
+    call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true., ST_DOUBLE)
 
     ! Ok, this is a little bit tricky. We compute the standard residual vector
     ! for the zeroth iteration and switch off all types of stabilization.
@@ -2004,11 +2006,8 @@ contains
     ! Calculate the standard Galerkin residual
     call codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
                              rsolutionPrimal, rsolutionPrimal,&
-                             rvector, rvector, 0, rcollection)
-    
-    ! Add contribution from the constant right-hand side
-    if (present(rrhs)) call lsysbl_vectorLinearComb(rrhs, rvector, 1.0_DP, 1.0_DP)
-    
+                             rvector, rvector, 0, rcollection, rrhs)
+        
     ! Ok, now we have to switch on all types of stabilization
     call collct_setvalue_int(rcollection, 'convectionAFC', convectionAFC, .false.)
     call collct_setvalue_int(rcollection, 'diffusionAFC',  diffusionAFC, .false.)
@@ -2036,7 +2035,6 @@ contains
       call lsyssc_getbase_double(rmatrix, p_DlumpedMassMatrix)
 
     end if   ! lumpedMassMatrix > 0
-
     
     ! Now we compute the nodal error contributions
     do i = 1, size(p_DsolutionDual,1)
@@ -2049,8 +2047,8 @@ contains
     ! posteriori error estimator.
     call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
     call pperr_scalar(rvector%RvectorBlock(1), PPERR_L1ERROR,&
-                      derror, relementError=rerror)
- 
+                      derror, relementError=rerror)   
+
     ! Release the vector of nodal error values
     call lsysbl_releaseVector(rvector)
 
@@ -2118,6 +2116,36 @@ contains
       call output_line('Target functionals in terms of surface integrals are not implemented',&
                        OU_CLASS_ERROR,OU_MODE_STD,'codire_estimateTargetFuncError')
       call sys_halt()
+      
+
+    case (TFUNC_ANALYTIC)
+      ! Initialize exact target functionals from analytic profile
+      call flagship_readParserFromFile(sindatfileName, '['//trim(sexacttargetfuncName)//']',&
+                                       cvartime, rfparser)
+
+      ! Evaluate exact target functional
+      call fparser_evalFunction(rfparser, 1, (/rtimestep%dTime/), dexacttargetfunc)
+
+      ! Release function parsers
+      call fparser_release(rfparser)
+
+      ! Compute the value of the quantity of interest of the discrete solution
+      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetfunc)
+
+      ! Compute the exact error of the quantity of interest
+      dexacterror = dexacttargetfunc-dtargetfunc
+
+      call output_lbrk()
+      call output_line('Error Analysis')
+      call output_line('--------------')
+      call output_line('exact target functional value:           '//trim(sys_sdEP(dexacttargetfunc,15,6)))
+      call output_line('approximate target functional value:     '//trim(sys_sdEP(dtargetfunc,15,6)))
+      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(derror,15,6)))
+      call output_line('exact error in quantity of interest:     '//trim(sys_sdEP(abs(dexacterror),15,6)))
+      call output_line('effectivity index:                       '//trim(sys_sdEP(derror/abs(dexacterror),15,6)))
+      call output_line('relative effectivity index:              '//trim(sys_sdEP(abs((derror-abs(dexacterror))/&
+                                                                                  dexacttargetfunc),15,6)))
+      call output_lbrk()
       
 
     case DEFAULT
