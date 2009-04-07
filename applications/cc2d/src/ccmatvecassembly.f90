@@ -80,7 +80,7 @@ module ccmatvecassembly
   use statistics
   
   use convection
-    
+  
   implicit none
   
 !<constants>
@@ -115,6 +115,8 @@ module ccmatvecassembly
   ! Fast Edge-oriented stabilisation; configured by dupsam as 'gamma'. Preconputed matrix.
   integer, parameter :: CCMASM_STAB_FASTEDGEORIENTED  = 3
 
+  ! Streamline diffusion; configured by dupsam. New implementation
+  integer, parameter :: CCMASM_STAB_STREAMLINEDIFF2   = 4
 !</constantblock>
 
 !<constantblock description="Matrix type ID's specifying the general matrix class to set up.">
@@ -244,6 +246,7 @@ module ccmatvecassembly
   end type
 
 !</typeblock>
+
 
 !</types>
 
@@ -639,6 +642,7 @@ contains
     integer :: iupwind
     type(t_convUpwind) :: rupwind
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+    type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(t_jumpStabilisation) :: rjumpStabil
     real(DP) :: dvecWeight
     
@@ -783,6 +787,28 @@ contains
                               dvecWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               rmatrix)
+                              
+        case (CCMASM_STAB_STREAMLINEDIFF2)
+
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%dnu
+          
+          ! Set stabilisation parameter
+          rstreamlineDiffusion2%dupsam = rnonlinearCCMatrix%dupsam
+          
+          ! Set calculation method for local H
+          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%clocalH
+          
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma
+          
+          ! Weight for the Newton part; =0 deactivates Newton.
+          rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
+          
+          ! Call the SD method to calculate the nonlinearity.
+          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector)
+
 
         case (CCMASM_STAB_UPWIND)
           ! Set up the upwind structure for the creation of the defect.
@@ -1171,7 +1197,7 @@ contains
     !    ( B1^T B2^T .   ) 
     ! 
     ! Create a temporary matrix that covers this structure.
-    call lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
+    call lsysbl_createMatBlockByDiscr (rnonlinearCCMatrix%p_rdiscretisation,rmatrix)
     
     ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect 
     ! needs this template matrix to provide the structure for the stabilisation
@@ -1198,10 +1224,6 @@ contains
     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2,&
         rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-    ! Update the structural information of the block matrix, as we manually
-    ! changed the submatrices:
-    call lsysbl_updateMatStrucInfo (rmatrix)
-    
     ! In the first step, we assemble the defect that arises in the velocity 
     ! components. This is characterised by the following submatrix:
     !
@@ -1290,6 +1312,7 @@ contains
     logical :: bshared
     type(t_convUpwind) :: rupwind
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+    type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(T_jumpStabilisation) :: rjumpStabil
     
     ! DEBUG!!!
@@ -1363,6 +1386,27 @@ contains
                               dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
                               rmatrix,rsolution=rvector,rdefect=rdefect)
+                              
+        case (CCMASM_STAB_STREAMLINEDIFF2)     
+                  
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%dnu
+          
+          ! Set stabilisation parameter
+          rstreamlineDiffusion2%dupsam = rnonlinearCCMatrix%dupsam
+          
+          ! Set calculation method for local H
+          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%clocalH
+          
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma
+          
+          ! Weight for the Newtop part; =0 deactivates Newton.
+          rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
+                              
+          call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
+              rvector,rdefect,rvelocityVector)
                               
         case (CCMASM_STAB_UPWIND)
           ! Set up the upwind structure for the creation of the defect.
@@ -1570,5 +1614,7 @@ contains
     end subroutine
 
   end subroutine
+
+! *****************************************************************************
 
 end module

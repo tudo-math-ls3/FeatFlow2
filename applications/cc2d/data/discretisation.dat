@@ -120,10 +120,11 @@ iElementType       = 3
 # ------------------------------------------------------------------------
 
 # Type of stabilization of the convective term. 
-# 0=Streamline Diffusion
+# 0=Streamline Diffusion (Q1~, Q2)
 # 1=upwind
 # 2=unified edge oriented jump stabilisation
 # 3=fast unified edge oriented jump stabilisation (precomputed matrix)
+# 4=Streamline Diffusion, element independent implementation
 
 iUpwind            = 0
 
