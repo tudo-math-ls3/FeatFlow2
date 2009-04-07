@@ -163,7 +163,7 @@ function signal_SIGINT(signum) result(sigcount)
   integer, save :: icount = 0
   
   sigcount = icount
-  
+
   if (signum .eq. -1) then
     
     ! Reset counter
