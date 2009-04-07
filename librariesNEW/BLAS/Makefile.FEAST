@@ -161,9 +161,9 @@ ALLOBJ=$(SBLAS1) $(SBLAS2) $(SBLAS3) $(DBLAS1) $(DBLAS2) $(DBLAS3)	\
 	$(CBLAS1) $(CBLAS2) $(CBLAS3) $(ZBLAS1) 	\
 	$(ZBLAS2) $(ZBLAS3) $(ALLBLAS)
 
-$(BLASLIB): $(ALLOBJ)
-	$(ARCH) $(ARCHFLAGS) $@ $(ALLOBJ)
-	$(RANLIB) $@
+#$(BLASLIB): $(ALLOBJ)
+#	$(ARCH) $(ARCHFLAGS) $@ $(ALLOBJ)
+#	$(RANLIB) $@
 
 single: $(SBLAS1) $(ALLBLAS) $(SBLAS2) $(SBLAS3)
 	$(ARCH) $(ARCHFLAGS) $(BLASLIB) $(SBLAS1) $(ALLBLAS) \
@@ -189,6 +189,20 @@ FRC:
 	@FRC=$(FRC)
 
 
+#-------------------------------------------------------------------------------
+# Create the library
+#-------------------------------------------------------------------------------
+# Note:
+# Explicitly take precautions to reflect the considerations in Section 11.3 of 
+# the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
+# This Makefile is potentially called simultaneously from multiple make processes,
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent 
+# attempts to create the archive should not happen. Try to avoid it with the
+# standard FEAT2 lock file mechanism.
+include ../create_library.mk
+$(BLASLIB):  LOCKFILE = ../LOCK.creating.libblas.a
+$(BLASLIB):  WAITTIME = 10
+$(BLASLIB):  RETRIES  = 24
 # Separate target for those parts of blas that are needed for FEAST.
 # You should not just use 'make single double' as this would result
 # in the library being rebuilt every time you invoke 'make'.
@@ -197,10 +211,12 @@ FRC:
 # So, build a single and double precision blas version.
 $(BLASLIB): $(SBLAS1) $(ALLBLAS) $(SBLAS2) $(SBLAS3) \
 	    $(DBLAS1) $(DBLAS2) $(DBLAS3)
-	$(ARCH) $(ARCHFLAGS) $(BLASLIB) \
-		$(SBLAS1) $(ALLBLAS) $(SBLAS2) $(SBLAS3) \
-		$(DBLAS1) $(DBLAS2) $(DBLAS3)
-	$(RANLIB) $(BLASLIB)
+	@$(CREATE_LIB)
+
+#	$(ARCH) $(ARCHFLAGS) $(BLASLIB) \
+#		$(SBLAS1) $(ALLBLAS) $(SBLAS2) $(SBLAS3) \
+#		$(DBLAS1) $(DBLAS2) $(DBLAS3)
+#	$(RANLIB) $(BLASLIB)
 
 
 # Function to delete a single file at once
@@ -271,7 +287,7 @@ $(OBJDIR):
 # overwritten by its copy from the tarball. Beware of doing that.
 # Things get worse when multiple external Makefiles call this Makefile in
 # parallel and ask for the compilation of the library. This happens regularly
-# when compiling the FEAST regression benchmark as this is usually done in
+# when compiling the FEAT2 regression benchmark as this is usually done in
 # parallel with up to 32 processes.
 # The extraction of tarballs needs to be serialised somehow - which is not
 # possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
@@ -301,7 +317,7 @@ $(SRC_BLAS): $(LAST_FILE_FROM_BLAS_TARBALL)
 
 # To catch the case where several applications simultaneously
 # try to build the BLAS library (e.g. parallel make of the 
-# FEAST regression benchmark), this extractions needs to deploy
+# FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
 $(LAST_FILE_FROM_BLAS_TARBALL):  NAME     = "BLAS reference implementation sources"
 $(LAST_FILE_FROM_BLAS_TARBALL):  TARBALL  = ../blas.tgz

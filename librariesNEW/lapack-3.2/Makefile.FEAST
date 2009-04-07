@@ -50,9 +50,9 @@ endif
 
 OBJ = $(patsubst %.f, $(OBJDIR)/%.o, $(notdir $(SRCLIST)))
 
-$(LAPACKLIB): $(OBJ)
-	$(ARCH) $(ARCHFLAGS) $(LAPACKLIB) $(OBJ)
-	$(RANLIB) $(LAPACKLIB)
+#$(LAPACKLIB): $(OBJ)
+#	$(ARCH) $(ARCHFLAGS) $(LAPACKLIB) $(OBJ)
+#	$(RANLIB) $(LAPACKLIB)
 
 # Function to delete a single file at once
 define remove_file
@@ -101,6 +101,24 @@ $(OBJDIR):
 
 
 #-------------------------------------------------------------------------------
+# Create the library
+#-------------------------------------------------------------------------------
+# Note:
+# Explicitly take precautions to reflect the considerations in Section 11.3 of 
+# the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
+# This Makefile is potentially called simultaneously from multiple make processes,
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent 
+# attempts to create the archive should not happen. Try to avoid it with the
+# standard FEAT2 lock file mechanism.
+include ../create_library.mk
+$(LAPACKLIB):  LOCKFILE = ../LOCK.creating.liblapack.a
+$(LAPACKLIB):  WAITTIME = 10
+$(LAPACKLIB):  RETRIES  = 24
+$(LAPACKLIB): $(OBJ)
+	@$(CREATE_LIB)
+
+
+#-------------------------------------------------------------------------------
 # Unpack tarball as required.
 #-------------------------------------------------------------------------------
 # Note: This is trickier than one might think:
@@ -119,7 +137,7 @@ $(OBJDIR):
 # overwritten by its copy from the tarball. Beware of doing that.
 # Things get worse when multiple external Makefiles call this Makefile in
 # parallel and ask for the compilation of the library. This happens regularly
-# when compiling the FEAST regression benchmark as this is usually done in
+# when compiling the FEAT2 regression benchmark as this is usually done in
 # parallel with up to 32 processes.
 # The extraction of tarballs needs to be serialised somehow - which is not
 # possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
@@ -129,6 +147,10 @@ $(OBJDIR):
 #-------------------------------------------------------------------------------
 # Automatically extract LAPACK tarball when required.
 #-------------------------------------------------------------------------------
+
+# Function to unpack a tarball - as a serialised operation
+# using a locking mechanism
+include ../unpack.mk
 
 # List of required source files from LAPACK package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -145,7 +167,7 @@ $(SRC_LAPACK): $(LAST_FILE_FROM_LAPACK_TARBALL)
 
 # To catch the case where several applications simultaneously
 # try to build the LAPACK library (e.g. parallel make of the 
-# FEAST regression benchmark), this extractions needs to deploy
+# FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
 $(LAST_FILE_FROM_LAPACK_TARBALL):  NAME     = "LAPACK 3.2 reference implementation sources"
 $(LAST_FILE_FROM_LAPACK_TARBALL):  TARBALL  = ../lapack-3.2.tgz
@@ -157,48 +179,6 @@ $(LAST_FILE_FROM_LAPACK_TARBALL):
 	@echo "# Patching LAPACK 3.2 sources to get rid of non-Fortran 77 'exit' occurrences..."
 	patch -p1 < ../lapack-3.2_pgi-6.x-8.x.patch
 	@echo "# Sources patched."
-
-
-
-# Function to unpack a tarball - as a serialised operation
-# using a locking mechanism
-UNPACK=trap "rm -f $(LOCKFILE)" 2 3 9; \
-	if test -f $(LOCKFILE); then \
-	    loop=0; \
-	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
-		echo; \
-		echo "\#"; \
-		echo "\# Detected a concurrent attempt to unpack $(TARBALL)."; \
-		echo "\# Waiting for the other process to finish."; \
-		echo "\#"; \
-		echo "\# If you are sure that this is a false alarm, simply remove the file"; \
-		echo "\# <"`pwd`"/$(LOCKFILE)>."; \
-		echo "\# Then, compilation will proceed automatically."; \
-		echo "\#"; \
-		echo; \
-		sleep $(WAITTIME); \
-		loop=`expr $${loop} + 1`; \
-	    done; \
-	    if test -f $(LOCKFILE); then \
-		echo; \
-		echo "\#"; \
-		echo "\# Lock for unpacking $(TARBALL) has not been released"; \
-		echo "\# within "`expr $(WAITTIME) \* $(RETRIES)`" seconds. Giving up."; \
-		echo "\#"; \
-		echo "\# In case of a false alarm please manually remove the file"; \
-		echo "\# <$(LOCKFILE)>."; \
-		echo "\#"; \
-		echo; \
-		exit 1; \
-	    fi; \
-	else \
-	    touch $(LOCKFILE); \
-	    echo "\# Extracting $(NAME)..."; \
-	    gzip -dc $(TARBALL) | ( cd ..; tar -xvf - ); \
-	    rm -f $(LOCKFILE); \
-	fi; \
-	trap - 2 3 9;
-
 
 
 
