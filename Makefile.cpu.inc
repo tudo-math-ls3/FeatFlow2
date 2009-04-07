@@ -436,7 +436,6 @@ endif
 
 ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-.*-ompi),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/openmpi-generic.mk
 # Add preprocessor flag to enable 64bit UMFPACK support.
 # UMFPACK documentation states to also add -DLP64, but there is no
