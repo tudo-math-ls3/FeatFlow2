@@ -5488,8 +5488,8 @@ contains
       end if
       
       ! Apply the nodal limiter
-      rp =  ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP)
-      rm = -ML*qm; rm = afcstab_limit(-pm, rm, 0.0_DP)
+      rp = ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP)
+      rm = ML*qm; rm = afcstab_limit( pm, rm, 0.0_DP)
       
       ! Limiting procedure
       do iedge = 1, NEDGE
@@ -5566,8 +5566,8 @@ contains
       end if
       
       ! Apply the nodal limiter
-      rp =  ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP)
-      rm = -ML*qm; rm = afcstab_limit(-pm, rm, 0.0_DP)
+      rp = ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP)
+      rm = ML*qm; rm = afcstab_limit( pm, rm, 0.0_DP)
       
       ! Limiting procedure
       do iedge = 1, NEDGE
@@ -5854,8 +5854,8 @@ contains
         
       
       ! Apply the nodal limiter
-      rp =  ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP, 1.0_DP)
-      rm = -ML*qm; rm = afcstab_limit(-pm, rm, 0.0_DP, 1.0_DP)
+      rp = ML*qp; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
+      rm = ML*qm; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
       
       ! Limiting procedure
       do iedge = 1, NEDGE
@@ -5935,8 +5935,8 @@ contains
       end do
       
       ! Apply the nodal limiter
-      rp =  ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP, 1.0_DP)
-      rm = -ML*qm; rm = afcstab_limit(-pm, rm, 0.0_DP, 1.0_DP)
+      rp = ML*qp; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
+      rm = ML*qm; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
       
       ! Limiting procedure
       do iedge = 1, NEDGE
@@ -6145,8 +6145,8 @@ contains
       end do
       
       ! Apply the nodal limiter
-      rp = afcstab_limit( pp, qp, 0.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 0.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 0.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 0.0_DP, 1.0_DP)
 
       ! Apply limiter
       do iedge = 1, NEDGE
@@ -6399,8 +6399,8 @@ contains
       end do
 
       ! Apply nodal limiter
-      rp = afcstab_limit( pp, qp, 0.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 0.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 0.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 0.0_DP, 1.0_DP)
 
       ! Apply limiter
       do iedge = 1, NEDGE
@@ -6608,8 +6608,8 @@ contains
       end do
       
       ! Apply the nodal limiter
-      rp = afcstab_limit( pp, qp, 0.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 0.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 0.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 0.0_DP, 1.0_DP)
       
       ! Apply limiter
       do iedge = 1, NEDGE
@@ -9081,8 +9081,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rploc(:,0:nloc) = afcstab_limit(pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(pmloc(:,0:nloc), qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -9748,8 +9748,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rploc(:,0:nloc) = afcstab_limit(pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(pmloc(:,0:nloc), qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -11693,8 +11693,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rploc(:,0:nloc) = afcstab_limit(pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(pmloc(:,0:nloc), qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -11836,8 +11836,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rploc(:,0:nloc) = afcstab_limit(pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(pmloc(:,0:nloc), qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -11979,8 +11979,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rploc(:,0:nloc) = afcstab_limit(pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(pmloc(:,0:nloc), qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -12804,8 +12804,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rploc(:,0:nloc) = afcstab_limit(pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(pmloc(:,0:nloc), qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -12954,8 +12954,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rploc(:,0:nloc) = afcstab_limit(pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(pmloc(:,0:nloc), qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -13104,8 +13104,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rploc(:,0:nloc) = afcstab_limit(pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(pmloc(:,0:nloc), qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -13931,8 +13931,8 @@ contains
 
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        rploc(:,0:nloc) = afcstab_limit( pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        rmloc(:,0:nloc) = afcstab_limit(-pmloc(:,0:nloc),-qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rploc(:,0:nloc) = afcstab_limit(pploc(:,0:nloc), qploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        rmloc(:,0:nloc) = afcstab_limit(pmloc(:,0:nloc), qmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
