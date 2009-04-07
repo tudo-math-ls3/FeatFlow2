@@ -115,52 +115,15 @@ $(OBJDIR)/libamdf77.a: $(AMDF77)
 # Explicitly take precautions to reflect the considerations in Section 11.3 of 
 # the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
 # This Makefile is potentially called simultaneously from multiple make processes,
-# e.g. when compiling the FEAST regression benchmark in parallel. Concurrent 
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent 
 # attempts to create the archive should not happen. Try to avoid it with the
-# usual FEAST lock file mechanism.
+# standard FEAT2 lock file mechanism.
+include ../create_library.mk
 $(OBJDIR)/libamd.a:  LOCKFILE = ../LOCK.creating.libamd.a
 $(OBJDIR)/libamd.a:  WAITTIME = 2
 $(OBJDIR)/libamd.a:  RETRIES  = 10
 $(OBJDIR)/libamd.a: $(OBJDIR)/amd_global.o $(AMDI) $(AMDL)
-	@trap "rm -f $(LOCKFILE)" 2 3 9; \
-	if test -f $(LOCKFILE); then \
-	    loop=0; \
-	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
-		echo; \
-		echo "#"; \
-		echo "# Detected a concurrent attempt to create $@."; \
-		echo "# Waiting for the other process to finish."; \
-		echo "#"; \
-		echo "# If you are sure that this is a false alarm, simply remove the file"; \
-		echo "# <"`pwd`"/$(LOCKFILE)>."; \
-		echo "# Then, compilation will proceed automatically."; \
-		echo "#"; \
-		echo; \
-		sleep $(WAITTIME); \
-		loop=`expr $${loop} + 1`; \
-	    done; \
-	    if test -f $(LOCKFILE); then \
-		echo; \
-		echo "#"; \
-		echo "# Lock for creating $@"; \
-		echo "# was not released within "`expr $(WAITTIME) \* $(RETRIES)`" seconds."; \
-		echo "# Giving up."; \
-		echo "#"; \
-		echo "# In case of a false alarm please manually remove the file"; \
-		echo "# <$(LOCKFILE)>."; \
-		echo "#"; \
-		echo; \
-		exit 1; \
-	    fi; \
-	else \
-	    touch $(LOCKFILE); \
-	    echo $(AR) $@ $^; \
-	    $(AR) $@ $^; \
-	    echo $(RANLIB) $@; \
-	    $(RANLIB) $@; \
-	    rm -f $(LOCKFILE); \
-	fi; \
-	trap - 2 3 9;
+	@$(CREATE_LIB)
 
 
 
@@ -197,7 +160,7 @@ $(OBJDIR):
 # tarball. Beware of doing that.
 # Things get worse when multiple external Makefiles call this Makefile in
 # parallel and ask for the compilation of the library. This happens regularly
-# when compiling the FEAST regression benchmark as this is usually done in
+# when compiling the FEAT2 regression benchmark as this is usually done in
 # parallel with up to 32 processes.
 # The extraction of tarballs needs to be serialised somehow - which is not
 # possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
@@ -224,7 +187,7 @@ $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
 
 # To catch the case where several applications simultaneously
 # try to build the UMFPACK library (e.g. parallel make of the 
-# FEAST regression benchmark), this extractions needs to deploy
+# FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
 $(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2 sources"
 $(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = ../AMD-2.2.tar.gz
@@ -239,6 +202,10 @@ $(LAST_FILE_FROM_AMD_TARBALL):
 # Automatically extract UFconfig tarball when required.
 #-------------------------------------------------------------------------------
 
+# Function to unpack a tarball - as a serialised operation
+# using a locking mechanism
+include ../unpack.mk
+
 # List of required source files from UFconfig package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
@@ -251,48 +218,7 @@ $(UFCONFIG):  WAITTIME = 1
 $(UFCONFIG):  RETRIES  = 10
 $(UFCONFIG):
 	@$(call UNPACK)
-
-
-
-# Function to unpack a tarball - as a serialised operation
-# using a locking mechanism
-UNPACK=trap "rm -f $(LOCKFILE)" 2 3 9; \
-	if test -f $(LOCKFILE); then \
-	    loop=0; \
-	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
-		echo; \
-		echo "\#"; \
-		echo "\# Detected a concurrent attempt to unpack $(TARBALL)."; \
-		echo "\# Waiting for the other process to finish."; \
-		echo "\#"; \
-		echo "\# If you are sure that this is a false alarm, simply remove the file"; \
-		echo "\# <"`pwd`"/$(LOCKFILE)>."; \
-		echo "\# Then, compilation will proceed automatically."; \
-		echo "\#"; \
-		echo; \
-		sleep $(WAITTIME); \
-		loop=`expr $${loop} + 1`; \
-	    done; \
-	    if test -f $(LOCKFILE); then \
-		echo; \
-		echo "\#"; \
-		echo "\# Lock for unpacking $(TARBALL) has not been released"; \
-		echo "\# within "`expr $(WAITTIME) \* $(RETRIES)`" seconds. Giving up."; \
-		echo "\#"; \
-		echo "\# In case of a false alarm please manually remove the file"; \
-		echo "\# <$(LOCKFILE)>."; \
-		echo "\#"; \
-		echo; \
-		exit 1; \
-	    fi; \
-	else \
-	    touch $(LOCKFILE); \
-	    echo "\# Extracting $(NAME)..."; \
-	    gzip -dc $(TARBALL) | ( cd ..; tar -xvf - ); \
-	    rm -f $(LOCKFILE); \
-	fi; \
-	trap - 2 3 9;
-
+	
 
 #-------------------------------------------------------------------------------
 # Clean up targets
