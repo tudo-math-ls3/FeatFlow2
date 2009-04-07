@@ -955,7 +955,7 @@ contains
 !</result>
 !</function>
 
-    if (p > 1e-12_DP) then
+    if (abs(p) > 1e-12_DP) then
       r = q/p
     else
       r = default
@@ -991,8 +991,8 @@ contains
 !</result>
 !</function>
     
-    if (p*dbound > q + 1e-12_DP) then
-      r = q/p
+    if (abs(p) > 1e-12_DP) then
+      r = min(q/p, dbound)
     else
       r = default
     end if
