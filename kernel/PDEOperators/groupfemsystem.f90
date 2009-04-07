@@ -83,6 +83,10 @@
 !#                              gfsys_buildResBlockTVD
 !#     -> assemble the residual for FEM-TVD stabilisation
 !#
+!# 7.) gfsys_buildCorrectorLinFCT = gfsys_buildCorrScalarLinFCT /
+!#                                  gfsys_buildCorrBlockLinFCT
+!#     -> assembled the correction for the linearized FEM-FCT stabilisation
+!#
 !#
 !# The following internal routines are available:
 !#
@@ -117,6 +121,7 @@ module groupfemsystem
   public :: gfsys_buildDivOperator
   public :: gfsys_buildResidual
   public :: gfsys_buildResidualTVD
+  public :: gfsys_buildCorrectorLinFCT
 
   ! *****************************************************************************
   ! *****************************************************************************
@@ -203,6 +208,11 @@ module groupfemsystem
   interface gfsys_buildResidualTVD
     module procedure gfsys_buildResScalarTVD
     module procedure gfsys_buildResBlockTVD
+  end interface
+
+  interface gfsys_buildCorrectorLinFCT
+    module procedure gfsys_buildCorrScalarLinFCT
+    module procedure gfsys_buildCorrBlockLinFCT
   end interface
 
   ! *****************************************************************************
@@ -3904,8 +3914,8 @@ contains
       end do
 
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
       
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -4049,8 +4059,8 @@ contains
       end do
       
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's for Y-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -4139,8 +4149,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Y-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
       
       ! Loop over all rows (forward)
       do i = 1, NEQ
@@ -4286,8 +4296,8 @@ contains
       end do
 
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's for Y-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -4376,8 +4386,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Y-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's for Z-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -4467,8 +4477,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Z-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -4611,8 +4621,8 @@ contains
       end do
 
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
       
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -4755,8 +4765,8 @@ contains
       end do
       
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's for Y-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -4845,8 +4855,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Y-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
       
       ! Loop over all rows (forward)
       do i = 1, NEQ
@@ -4992,8 +5002,8 @@ contains
       end do
 
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's for Y-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -5082,8 +5092,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Y-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's for Z-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -5173,8 +5183,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Z-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -5488,8 +5498,8 @@ contains
       end do
 
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
       
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -5627,8 +5637,8 @@ contains
       end do
       
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's for Y-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -5714,8 +5724,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Y-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
       
       ! Loop over all rows (forward)
       do i = 1, NEQ
@@ -5855,8 +5865,8 @@ contains
       end do
 
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's for Y-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -5942,8 +5952,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Y-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's for Z-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -6030,8 +6040,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Z-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -6168,8 +6178,8 @@ contains
       end do
 
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
       
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -6307,8 +6317,8 @@ contains
       end do
       
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's for Y-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -6394,8 +6404,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Y-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Loop over all rows (forward)
       do i = 1, NEQ
@@ -6535,8 +6545,8 @@ contains
       end do
 
       ! Compute nodal correction factors for X-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's for Y-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -6622,8 +6632,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Y-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's for Z-direction
       pp = 0;  pm = 0;  qp = 0;  qm = 0
@@ -6710,8 +6720,8 @@ contains
       end do
 
       ! Compute nodal correction factors for Z-direction
-      rp = afcstab_limit( pp, qp, 1.0_DP, 1.0_DP)
-      rm = afcstab_limit(-pm,-qm, 1.0_DP, 1.0_DP)
+      rp = afcstab_limit(pp, qp, 1.0_DP, 1.0_DP)
+      rm = afcstab_limit(pm, qm, 1.0_DP, 1.0_DP)
 
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -6762,6 +6772,75 @@ contains
       end do
     end subroutine doLimitTVDMat9_3D
   end subroutine gfsys_buildResScalarTVD
+
+  ! *****************************************************************************
+  
+!<subroutine>
+
+  subroutine gfsys_buildCorrBlockLinFCT(RcoeffMatrices, ru,&
+                                        fcb_calcCharacteristics, rafcstab, rcorr)
+
+!<description>
+    ! This subroutine assembles the correction for linearized FEM-FCT
+    ! schemes.  If the vectors contain only one block, then the scalar
+    ! counterpart of this routine is called with the scalar subvectors.
+!</subroutine>
+
+!<input>
+    ! array of coefficient matrices C = (phi_i,D phi_j)
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: ru
+
+    ! callback functions to compute local matrices
+    include 'intf_gfsyscallback.inc'
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(INOUT) :: rafcstab
+
+    ! correction vector
+    type(t_vectorBlock), intent(INOUT) :: rcorr
+!</inputoutput>
+!</subroutine>
+
+  end subroutine gfsys_buildCorrBlockLinFCT
+
+  ! *****************************************************************************
+  
+!<subroutine>
+
+  subroutine gfsys_buildCorrScalarLinFCT(RcoeffMatrices, ru,&
+                                         fcb_calcCharacteristics, rafcstab, rcorr)
+
+!<description>
+    ! This subroutine assembles the correction for linearized FEM-FCT schemes.
+!</subroutine>
+
+!<input>
+    ! array of coefficient matrices C = (phi_i,D phi_j)
+    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+
+    ! solution vector
+    type(t_vectorScalar), intent(IN) :: ru
+
+    ! callback functions to compute local matrices
+    include 'intf_gfsyscallback.inc'
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(INOUT) :: rafcstab
+
+    ! correction vector
+    type(t_vectorScalar), intent(INOUT) :: rcorr
+!</inputoutput>
+!</subroutine>
+
+  end subroutine gfsys_buildCorrScalarLinFCT
+
 
   !*****************************************************************************
   !*****************************************************************************
