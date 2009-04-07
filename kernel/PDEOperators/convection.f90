@@ -10340,7 +10340,7 @@ contains
   ! OPTIONAL: A callback routine for a nonconstant $\nu$.
   ! Must be present if dnu is set to be nonconstant by rconfig%bconstNu=.false.
   ! or rconfig%bconstAlpha=.false..
-  include 'intf_sdcoefficient.inc'
+  include '../DOFMaintenance/intf_sdcoefficient.inc'
   optional :: ffunctionCoefficient
 !</input>
 
@@ -10421,7 +10421,7 @@ contains
   ! OPTIONAL: A callback routine for a nonconstant $\nu$.
   ! Must be present if dnu is set to be nonconstant by rconfig%bconstNu=.false.
   ! or rconfig%bconstAlpha=.false..
-  include 'intf_sdcoefficient.inc'
+  include '../DOFMaintenance/intf_sdcoefficient.inc'
   optional :: ffunctionCoefficient
 !</input>
 
@@ -10546,7 +10546,7 @@ contains
   ! OPTIONAL: A callback routine for a nonconstant $\nu$.
   ! Must be present if dnu is set to be nonconstant by rconfig%bconstNu=.false.
   ! or rconfig%bconstAlpha=.false..
-  include 'intf_sdcoefficient.inc'
+  include '../DOFMaintenance/intf_sdcoefficient.inc'
   optional :: ffunctionCoefficient
 !</input>
 
