@@ -71,6 +71,7 @@ purge:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(OBJ) $(LAPACKLIB), $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
+	-rm -rf BLAS INSTALL LICENSE Makefile README SRC make.inc.example
 
 #-------------------------------------------------------------------------------
 # Before creating any object file, first create the object directory.
