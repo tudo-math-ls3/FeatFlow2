@@ -411,6 +411,7 @@ contains
     rnonlinearCCMatrix%deta = 0.0_DP
     rnonlinearCCMatrix%dtau = 0.0_DP
     rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
+    rnonlinearCCMatrix%isubequation = rproblem%isubequation
     rnonlinearCCMatrix%dnu = rproblem%dnu
     rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
     rnonlinearCCMatrix%p_rdiscretisation => &

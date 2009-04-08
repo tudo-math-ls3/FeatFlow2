@@ -169,6 +169,11 @@ module ccmatvecassembly
     ! = 0.0 deactivates the Newton part.
     real(DP) :: dnewton = 0.0_DP
 
+    ! Type of the tensor in the Stokes matrix.
+    ! =0: Use gradient tensor.
+    ! =1: Use deformation tensor
+    integer :: isubequation = 0
+
     ! STABILISATION: Parameter that defines how to set up the nonlinearity and 
     ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx 
     ! constants. Standard is CCMASM_STAB_STREAMLINEDIFF.
@@ -465,8 +470,10 @@ contains
       bfulltensor = cmatrixType .eq. CCMASM_MTP_FULLTENSOR
       
       if (cmatrixType .eq. CCMASM_MTP_AUTOMATIC) then
-        ! Should we assemble Newton? If yes, we have a full-tensor matrix.
-        bfulltensor = rnonlinearCCMatrix%dnewton .ne. 0.0_DP
+        ! Should we assemble Newton or the deformation tensor? 
+        ! If yes, we have a full-tensor matrix.
+        bfulltensor = (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) .or. &
+                      (rnonlinearCCMatrix%isubequation .ne. 0)
       end if
     
       ! Ask the problem structure to give us the discretisation structure
@@ -720,7 +727,8 @@ contains
       
       ! If the submatrices A12 and A21 exist, fill them with zero.
       ! If they don't exist, we don't have to do anything.
-      if (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) then
+      if ((rnonlinearCCMatrix%dnewton .ne. 0.0_DP) .or. &
+          (rnonlinearCCMatrix%isubequation .ne. 0)) then
         rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
         rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
       else
@@ -736,24 +744,30 @@ contains
       ! ---------------------------------------------------
       ! Plug in the Stokes matrix?
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
-        call lsyssc_matrixLinearComb (&
-            rnonlinearCCMatrix%p_rmatrixStokes     ,rnonlinearCCMatrix%dtheta,&
-            rmatrix%RmatrixBlock(1,1),1.0_DP,&
-            rmatrix%RmatrixBlock(1,1),&
-            .false.,.false.,.true.,.true.)
-            
-        if (.not. bshared) then
+        ! Plug in the Stokes matrix in case of the gradient tensor.
+        ! In case of the deformation tensor, that's done during
+        ! the assembly of the nonlinearity.
+        if (rnonlinearCCMatrix%isubequation .eq. 0) then
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rmatrixStokes   ,rnonlinearCCMatrix%dtheta,&
-              rmatrix%RmatrixBlock(2,2),1.0_DP,&
-              rmatrix%RmatrixBlock(2,2),&
+              rnonlinearCCMatrix%p_rmatrixStokes     ,rnonlinearCCMatrix%dtheta,&
+              rmatrix%RmatrixBlock(1,1),1.0_DP,&
+              rmatrix%RmatrixBlock(1,1),&
               .false.,.false.,.true.,.true.)
+              
+          if (.not. bshared) then
+            call lsyssc_matrixLinearComb (&
+                rnonlinearCCMatrix%p_rmatrixStokes   ,rnonlinearCCMatrix%dtheta,&
+                rmatrix%RmatrixBlock(2,2),1.0_DP,&
+                rmatrix%RmatrixBlock(2,2),&
+                .false.,.false.,.true.,.true.)
+          end if
         end if
       end if
       
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
-      if (rnonlinearCCMatrix%dgamma .ne. 0.0_DP) then
+      if ((rnonlinearCCMatrix%dgamma .ne. 0.0_DP) .or. &
+          (rnonlinearCCMatrix%isubequation .ne. 0)) then
       
         if (.not. present(rvector)) then
           call output_line ('Velocity vector not present!', &
@@ -806,6 +820,12 @@ contains
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
           
+          ! Assemble the deformation tensor?
+          if (rnonlinearCCMatrix%isubequation .ne. 0) then
+            rstreamlineDiffusion2%dbeta = 0.5_DP
+            rstreamlineDiffusion2%dbetaT = 0.5_DP
+          end if
+
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector)
 
@@ -1343,18 +1363,30 @@ contains
       ! ---------------------------------------------------
       ! Subtract the Stokes matrix stuff?
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
-            rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
-            -rnonlinearCCMatrix%dtheta, 1.0_DP)
+      
+        ! In case of the gradient tensor, we can directly substract
+        ! the Stokes matrix.
+        if (rnonlinearCCMatrix%isubequation .eq. 0) then
+      
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
+              rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
+              -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
-            rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
-            -rnonlinearCCMatrix%dtheta, 1.0_DP)
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
+              rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
+              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+              
+        end if
+        
+        ! Otherwise, the operator is substracted during the assembly branch
+        ! of the nonlinearity.
+        
       end if
       
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
-      if (rnonlinearCCMatrix%dgamma .ne. 0.0_DP) then
+      if ((rnonlinearCCMatrix%dgamma .ne. 0.0_DP) .or. &
+          (rnonlinearCCMatrix%isubequation .ne. 0)) then
       
         ! Type of stablilisation?
         select case (rnonlinearCCMatrix%iupwind)
@@ -1404,6 +1436,12 @@ contains
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
+          
+          ! Assemble the deformation tensor?
+          if (rnonlinearCCMatrix%isubequation .ne. 0) then
+            rstreamlineDiffusion2%dbeta = 0.5_DP
+            rstreamlineDiffusion2%dbetaT = 0.5_DP
+          end if
                               
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
               rvector,rdefect,rvelocityVector)

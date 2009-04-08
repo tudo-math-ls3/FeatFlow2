@@ -565,6 +565,7 @@ contains
       rnonlinearCCMatrix%dtau = 1.0_DP
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
+      rnonlinearCCMatrix%isubequation = rproblem%isubequation
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
       rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
       rnonlinearCCMatrix%p_rdiscretisation => &
@@ -762,6 +763,7 @@ contains
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
+      rnonlinearCCMatrix%isubequation = rproblem%isubequation
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
       rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
@@ -1330,6 +1332,7 @@ contains
           rnonlinearCCMatrix%deta = 1.0_DP
           rnonlinearCCMatrix%dtau = 1.0_DP
           rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
+          rnonlinearCCMatrix%isubequation = rproblem%isubequation
           rnonlinearCCMatrix%dnu = rproblem%dnu
           rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
           rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
