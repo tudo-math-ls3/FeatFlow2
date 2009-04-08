@@ -8,11 +8,11 @@ COMPILERNAME = SUNSTUDIO
 
 # Default: No compiler wrapper commands
 # This works both for builds of serial and parallel applications
-F77       = f77
-F90       = f90
-CC        = cc
-CXX       = CC
-LD        = f90
+F77       = sunf77
+F90       = sunf90
+CC        = suncc
+CXX       = sunCC
+LD        = sunf90
 
 # If preprocessor switch -DENABLE_SERIAL_BUILD does not occur in compiler flags,
 # a build for parallel execution is requested.
