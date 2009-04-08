@@ -2162,10 +2162,10 @@ sub create_feastAppMakefile {
 
 
     ##############################################################################
-    # Libraries (coproc, metis, umfpack, blas, lapack)
+    # Libraries (coproc, metis, umfpack, blas, lapack, splib)
     print MAKEFILE_HDL
         "##############################################################################\n" .
-        "# Libraries (coproc, metis, umfpack, AMD, blas, lapack)\n\n" .
+        "# Libraries (coproc, metis, umfpack, AMD, blas, lapack, splib)\n\n" .
 
         "# A prerequisite for all libraries is that the object directory\n" .
         "# to store should exist. The pipe is to determine that we want\n" .
@@ -2269,12 +2269,23 @@ sub create_feastAppMakefile {
         "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
         "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" GOTOBLAS_PATCH_FOR_LAPACK=\"\$(GOTOBLAS_PATCH_FOR_LAPACK)\" \\\n" .
-        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
+        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
-    # This is technically wrong, it suffices to pass the HAS_* flags only to the coproc library.
-    # But I do not speak enough perl to do this, so we just pass these flags to all libraries,
-    # silently assuming that all other libs' clean targets will not break if they see them.
-    # [dom, October 30 2008]
+    # splib path settings
+        "# splib library path settings\n" .
+        "\$(OBJDIR_LIB)/libsplib.a clean-splib purge-splib: \\\n" .
+        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/splib\n\n" .
+
+    # splib library
+        "# Create splib library\n" .
+	".PHONY: \$(OBJDIR_LIB)/libsplib.a\n" .
+        "\$(OBJDIR_LIB)/libsplib.a:\n" .
+        "\t\@echo \"# Building splib library\"\n" .
+        "\t(cd \$(DIR) && \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
 
     # Clean rule for every library
     print MAKEFILE_HDL
@@ -2282,6 +2293,10 @@ sub create_feastAppMakefile {
         "\$(BUILDLIB:%=clean-%):\n" .
         "\t\@( cd \$(DIR) && \\\n" .
         "\t    \$(MAKE) -f Makefile.FEAST OBJDIR=\"\$(OBJDIR_LIB)\" ";
+    # This is technically wrong, it suffices to pass the HAS_* flags only to the coproc library.
+    # But I do not speak enough perl to do this, so we just pass these flags to all libraries,
+    # silently assuming that all other libs' clean targets will not break if they see them.
+    # [dom, October 30 2008]
     $tmparray = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
     foreach $entry ( @{ $tmparray } ) {
 	print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
@@ -2315,8 +2330,8 @@ sub create_feastAppMakefile {
     # e.g. invoke 'make metis', 'make libmetis' or 'make libmetis.a' to
     #      have \$(OBJDIR_LIB)/libmetis.a' built
         "# Shortcuts for all libraries:\n" .
-        "# e.g. invoke 'make metis', 'make libmetis' or 'make libmetis.a' to\n" .
-        "#      have \$(OBJDIR_LIB)/libmetis.a' built\n" .
+        "# e.g. invoke 'make umfpack', 'make libumfpack' or 'make libumfpack.a' to\n" .
+        "#      have \$(OBJDIR_LIB)/libumfpack.a' built\n" .
         ".PHONY: \$(BUILDLIB) \\\n" .
         "\t\$(patsubst %, lib%, \$(BUILDLIB)) \\\n" .
         "\t\$(patsubst %, lib%.a, \$(BUILDLIB))\n" .
@@ -2996,7 +3011,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"  list-ids       print a list of valid build IDs for current host\"\n" .
         "\t\@echo \"  list-all-ids   print a list of all valid build IDs\"\n" .
         "\t\@echo \"  <library>      compile only <library>, where <library> is one of\"\n" .
-        "\t\@echo \"                   'metis', 'umfpack', 'blas', 'lapack' etc.\"\n" .
+        "\t\@echo \"                   'umfpack', 'blas', 'lapack', 'splib' etc.\"\n" .
         "\t\@echo \"  <object file>  compile <object file>, where <object file> is one of FEAST's\"\n" .
         "\t\@echo \"                   object files. (The object directory can be omitted). Those\"\n" .
         "\t\@echo \"                   modules <object file> depends on will be built if necessary\"\n" .
@@ -3895,7 +3910,7 @@ sub show_help {
         "                    have the Makefile compensate for this annoyance.\n" .
         "--inc=<dir>         F77/F90/C/C++ header files in <dir>\n" .
         "--buildlib=<string> Specify libraries to build\n" .
-        "                    (like: coproc umfpack blas lapack metis)\n" .
+        "                    (like: umfpack blas lapack splib)\n" .
         "--libdir=<dir>      Object code libraries in DIR\n" .
         "--libs=ARG          Libraries to include in build\n" .
         "--mpiinc=<string>   Include directive for MPI header files\n" .
