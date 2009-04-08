@@ -2,7 +2,7 @@
 
 default: $(OBJDIR)/libsplib.a
 
-SRCLIST= precond/ilus.f precond/lusl.f precond/numfac.f precond/symbfac.f
+SRCLIST= precond/ilus.f precond/lusl.f precond/numfac.f precond/symbfac.f precond/tridsl.f
 
 OBJS = $(patsubst %.f, $(OBJDIR)/%.o, $(notdir $(SRCLIST)))
 
@@ -75,6 +75,10 @@ $(OBJDIR):
 #-------------------------------------------------------------------------------
 # Automatically extract SPLIB tarball when required.
 #-------------------------------------------------------------------------------
+
+# Function to unpack a tarball - as a serialised operation
+# using a locking mechanism
+include ../unpack.mk
 
 # List of required source files from SPLIB package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
