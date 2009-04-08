@@ -74,10 +74,26 @@ NLMAX              = 4
 iequation    = 0
 
 # Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
+# A value > 0 requires to set iupwind >= 4 to activate the extended assembly!
 
 isubEquation = 0
 
-# Viscosity parmeter 1/NU
+# Model to use for the viscosity.
+# A value > 0 requires to set iupwind >= 4 to activate the extended assembly!
+# =0: Constant viscosity NU = 1/RE (standard)
+# =1: Power law nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
+
+cviscoModel = 0
+
+# Exponent parameter for the viscosity model
+
+dviscoexponent = 2.0
+
+# Epsilon regularisation for the viscosity model
+
+dviscoEps = 0.01
+
+# Viscosity parmeter 1/NU if the viscosity is constant
 
 RE                 = 1000
 
@@ -125,8 +141,11 @@ iElementType       = 3
 # 2=unified edge oriented jump stabilisation
 # 3=fast unified edge oriented jump stabilisation (precomputed matrix)
 # 4=Streamline Diffusion, element independent implementation
+# 5=unified edge oriented jump stabilisation with the nonlinear terms
+#   matrix being assembled by the element independent implementation
+#   Streamline Diffusion method
 
-iUpwind            = 0
+iUpwind            = 5
 
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
