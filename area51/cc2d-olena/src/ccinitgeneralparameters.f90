@@ -246,6 +246,45 @@ contains
         rproblem%rparamList)
 
   end subroutine
+  
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_initConcParameters (rproblem)
+  
+!<description>
+  ! Initialises the structure rproblem with data from the initialisation
+  ! files.
+  !
+  ! The parameters in rproblem\%rparameters are evaluated.
+  ! Important parameters are written to the problem structure
+  ! rproblem and/or the enclosed collection rproblem\%rcollection.
+!</description>
+  
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(INOUT) :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+    real(DP) :: daconcentr, dbconcentr
+    
+
+    call parlst_getvalue_double (rproblem%rparamList,'CC-CONCENTRATIONPARAM',&
+                                 'daconcentr',daconcentr,1.0_DP)
+
+    rproblem%daconcentr = daconcentr
+    
+    call parlst_getvalue_double (rproblem%rparamList,'CC-CONCENTRATIONPARAM',&
+                                 'dbconcentr',dbconcentr,1.0_DP)
+
+    rproblem%dbconcentr = dbconcentr
+    
+    
+  end subroutine
 
   ! ***************************************************************************
 

@@ -186,6 +186,8 @@ contains
     rnonlinearCCMatrix%dtheta = 1.0_DP   ! A velocity block
     rnonlinearCCMatrix%deta = 1.0_DP     ! A gradient block
     rnonlinearCCMatrix%dtau = 1.0_DP     ! A divergence block
+    rnonlinearCCMatrix%daconcentr = rproblem%daconcentr
+    rnonlinearCCMatrix%dbconcentr = rproblem%dbconcentr
     rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%rdiscretisation
     rnonlinearCCMatrix%p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
     rnonlinearCCMatrix%p_rmatrixTemplateGradient => rlevelInfo%rmatrixTemplateGradient

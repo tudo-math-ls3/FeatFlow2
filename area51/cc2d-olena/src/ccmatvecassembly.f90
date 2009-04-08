@@ -166,6 +166,12 @@ module ccmatvecassembly
     ! Weight for the Newton matrix N*(u).
     ! = 0.0 deactivates the Newton part.
     real(DP) :: dnewton = 0.0_DP
+    
+    !aconcentr-parameter that switch the I(3,3) on/off in the matrix
+    real(DP) :: daconcentr = 0.0_DP
+    
+    !bconcentr-parameter that switch the I(3,4) on/off in the matrix
+    real(DP) :: dbconcentr = 0.0_DP
 
     ! STABILISATION: Parameter that defines how to set up the nonlinearity and 
     ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx 
@@ -411,8 +417,29 @@ contains
       
       rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearCCMatrix%dtau
       rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearCCMatrix%dtau
+      ! Assemble the submatrices due to concentration coupling
+      !          
+      !    ( .    .    .    . ) 
+      !    ( .    .    .    . ) 
+      !    ( .    .    aI   bI)
+      !    ( .    .    .    . ) 
       
+      call assembleCoupConcentrBlock (rnonlinearCCMatrix,rmatrix,&
+        iand(coperation,CMASM_QUICKREFERENCES) .ne. 0)
+     
       
+      !Initialise the weights for thes matrices 
+      
+      rmatrix%RmatrixBlock(3,3)%dscaleFactor = rnonlinearCCMatrix%daconcentr
+      rmatrix%RmatrixBlock(3,4)%dscaleFactor = rnonlinearCCMatrix%dbconcentr
+      
+      call matio_writeMatrixHR (rmatrix%RmatrixBlock(3,3), 'bl33',&
+                                  .true., 0, 'mat33', '(E20.5)')
+  
+  
+      call matio_writeMatrixHR (rmatrix%RmatrixBlock(3,4), 'bl34',&
+                                  .true., 0, 'mat34', '(E20.5)')
+
       
       ! Matrix restriction
       ! ---------------------------------------------------
@@ -464,7 +491,7 @@ contains
       ! A pointer to the system matrix and the RHS/solution vectors.
       type(t_matrixScalar), pointer :: p_rmatrixTemplateFEM
       
-      TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateQ1
+      TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateQ1,p_rmatrixTemplatePMass,p_rmatrixTemplateCoupMass 
       ! A pointer to the discretisation structure with the data.
       type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
@@ -491,15 +518,15 @@ contains
         call sys_halt()
       end if
       
-   !
+ 
       
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       if (associated(p_rdiscretisation)) then
         call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
       else
-        ! No discretisation structure; create the matrix directly as 3x3 matrix.
-        call lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
+        ! No discretisation structure; create the matrix directly as 4x4 matrix.
+        call lsysbl_createEmptyMatrix (rmatrix,NDIM2D+2)
       end if
         
       ! Let's consider the global system in detail. The standard matrix It has 
@@ -618,7 +645,18 @@ contains
       call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2, &
                                     rmatrix%RmatrixBlock(3,2),&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+                                    
+      p_rmatrixTemplatePMass => rnonlinearCCMatrix%p_rmatrixTemplatePMass 
+                                   
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplatePMass,&
+                                   rmatrix%RmatrixBlock(3,3),&
+                                   LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      
+      p_rmatrixTemplateCoupMass => rnonlinearCCMatrix%p_rmatrixTemplateCoupMass 
     
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateCoupMass,&
+                                   rmatrix%RmatrixBlock(3,4),&
+                                   LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       ! That's it, all submatrices are basically set up.
       !
       ! Update the structural information of the block matrix, as we manually
@@ -1104,13 +1142,11 @@ contains
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
                                     
     end subroutine
-
-  end subroutine
-
-  ! ***************************************************************************
+      
+      ! ***************************************************************************
   SUBROUTINE assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,rconcentration,dvectorWeight)
         
-    ! Assembles the concentration matrix in the block matrix rmatrix at position (1,1):
+    ! Assembles the concentration matrix in the block matrix rmatrix at position (4,4):
     !
     ! rmatrix := dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
     !            dnewton*N*(p_rvector)
@@ -1139,7 +1175,7 @@ contains
     !REAL(DP), DIMENSION(:), POINTER :: p_h_Da
    
     IF  (.NOT. lsyssc_hasMatrixContent (rmatrix%rmatrixBlock(4,4))) THEN 
-      CALL lsyssc_allocEmptyMatrix (rmatrix%rmatrixBlock(4,4),LSYSSC_SETM_ZERO)     
+      CALL lsyssc_allocEmptyMatrix (rmatrix%rmatrixBlock(4,4),LSYSSC_SETM_UNDEFINED)     
     END IF
     
     CALL lsyssc_initialiseIdentityMatrix (rmatrix%rmatrixBlock(4,4))
@@ -1150,7 +1186,111 @@ contains
 !      CALL storage_getbase_double(rmatrix%rmatrixBlock(4,4)%h_DA, p_h_Da)
 !     p_h_Da(:) = 1.0_dp
     
-    END SUBROUTINE    
+    END SUBROUTINE  
+    
+    ! ***************************************************************************
+  SUBROUTINE assembleCoupConcentrBlock (rnonlinearCCMatrix,rmatrix,bsharedMatrix)
+    
+    ! Initialises the gradient/divergence matrices with entries from
+    ! the rnonlinearCCMatrix structure.
+    !
+    ! The routine copies references from the submatrices to rmatrix,
+    ! but it does not initialise any matrix weights / scaling factors.
+    !
+    ! If bsharedMatrix=TRUE, the matrix is created using references to the
+    ! matrix building blocks in rlevelInfo, thus sharing all information
+    ! with those matrices in rnonlinearCCMatrix. In this case, the caller must
+    ! not change the matrix entries, because this would change the
+    ! original 'template' matrices!
+    ! (This can be used e.g. for setting up a matrix for building a defect
+    !  vector without copying matrix data.)
+    ! If bsharedMatrix=TRUE on the other hand, the matrix entries of the
+    ! original template (B-) matrices are copied in memory,
+    ! so the new matrix is allowed to be changed!
+
+    ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
+    ! about how to set up the matrix. 
+    type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
+
+    ! Block matrix where the B-matrices should be set up
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
+
+    ! Whether or not the matrix entries of the source gradient-matrices 
+    ! should be copied in memory. 
+    !
+    ! If set to FALSE, the routine tries to initialise rmatrix
+    ! only with references to the original matrices, thus the caller must not
+    ! change the entries. Nevertheless, if rmatrix is the owner of one of the
+    ! submatrices, the routine will always copy the matrix entries,
+    ! as otherwise memory would have to be deallocated!
+    !
+    ! If set to TRUE, the entries of the source matrices in rnonlinearCCMatrix are
+    ! copied, so the caller can change rmatrix afterwards (e.g. to implement
+    ! boundary conditions).
+    logical, intent(IN) :: bsharedMatrix
+
+      ! local variables
+      integer :: idubStructure,idubContent
+      
+      ! Initialise a copy flag that tells the duplicateMatrix-routine whether to
+      ! copy the entries or to create references.
+      if (bsharedMatrix) then
+      
+        idubContent = LSYSSC_DUP_SHARE
+        
+        ! Normally we share entries -- except for if the submatrices belong to
+        ! rmatrix! To avoid memory deallocation in this case, we copy
+        ! the entries.
+        if ((.not. lsyssc_isMatrixContentShared(Rmatrix%RmatrixBlock(3,3))) .or.&
+            (.not. lsyssc_isMatrixContentShared(Rmatrix%RmatrixBlock(3,4)))) then
+          idubContent = LSYSSC_DUP_COPY
+        end if
+        
+      else
+      
+        idubContent = LSYSSC_DUP_COPY
+        
+      end if
+      
+      idubStructure = LSYSSC_DUP_SHARE
+      
+      ! Let's consider the global system in detail:
+      !
+      !    ( A11  A12  B1  ) = ( A11  A12  A13 )
+      !    ( A21  A22  B2  )   ( A21  A22  A23 )
+      !    ( B1^T B2^T 0   )   ( A31  A32  A33 )
+      !
+      ! We exclude the velocity submatrices here, so our system looks like:
+      !
+      !    (           B1 ) = (           A13 )
+      !    (           B2 )   (           A23 )
+      !    ( B1^T B2^T    )   ( A31  A32  A33 )
+
+      ! The B1/B2 matrices exist up to now only in rnonlinearCCMatrix.
+      ! Put a copy of them into the block matrix.
+      !
+      ! Note that we share the structure of B1/B2 with those B1/B2 of the
+      ! block matrix, while we create copies of the entries. The B-blocks
+      ! are already prepared and memory for the entries is already allocated;
+      ! so we only have to copy the entries.
+      !
+      ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
+      ! memory if necessary.
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixTemplatePMass, &
+                                    rmatrix%RmatrixBlock(3,3),&
+                                    idubStructure,idubContent)
+
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixTemplateCoupMass, &
+                                    rmatrix%RmatrixBlock(3,4),&
+                                    idubStructure,idubContent)
+
+                                    
+    end subroutine
+    
+  end subroutine
+
+  
+
     !***********************************************************************************************
 !<subroutine>
 
@@ -1263,7 +1403,7 @@ contains
     CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixTemplateQ1,&
         rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
         
-    CALL assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,rx%rvectorBlock(4),1.0_DP) 
+    !CALL assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,rx%rvectorBlock(4),1.0_DP) 
 
     ! Update the structural information of the block matrix, as we manually
     ! changed the submatrices:
@@ -1299,6 +1439,10 @@ contains
     
     rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearCCMatrix%dtau
     rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearCCMatrix%dtau
+    
+    ! Initialise the weights for the I(3,3) and I(3,4) matrices
+    rmatrix%RmatrixBlock(3,3)%dscaleFactor = rnonlinearCCMatrix%daconcentr
+    rmatrix%RmatrixBlock(3,4)%dscaleFactor = rnonlinearCCMatrix%dbconcentr
 
     ! ------------------------------------------------
     ! Build the defect by matrix-vector multiplication

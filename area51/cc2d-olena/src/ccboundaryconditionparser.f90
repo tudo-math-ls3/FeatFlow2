@@ -151,7 +151,7 @@ contains
     integer :: ibctyp,icount,iexptyp
     integer, dimension(2) :: IminIndex,imaxIndex
     real(DP) :: dvalue,dpar1,dpar2
-    character(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2
+    character(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2,sbdex4
     character(LEN=PARLST_MLNAME) :: cname
     integer, dimension(NDIM2D) :: IvelEqns
     type(t_collection) :: rlocalCollection
@@ -349,8 +349,8 @@ contains
             
             case (1)
               ! Simple Dirichlet boundary
-              ! Read the line again, get the expressions for X- and Y-velocity
-              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+              ! Read the line again, get the expressions for X- , Y-velocity and concentration
+              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex4
               
               ! For any string <> '', create the appropriate Dirichlet boundary
               ! condition and add it to the list of boundary conditions.
@@ -435,6 +435,43 @@ contains
                 ! Assemble the BC's.
                 call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,2,rboundaryRegion,rdiscreteBC,&
+                    cc_getBDconditions,rcoll,casmComplexity)
+                    
+               end if 
+                
+                   
+                if (sbdex4 .ne. '') then
+              
+                ! C-concentration
+                !
+                ! The 1st element in IquickAccess saves the component number.
+                rcoll%IquickAccess(2) = 4
+                
+                ! IquickAccess(3) saves the type of the expression
+                iexptyp = collct_getvalue_int (rcoll, sbdex4)
+                rcoll%IquickAccess(3) = iexptyp
+                
+                ! The 1st element in the sting quick access array is
+                ! the name of the expression to evaluate.
+                rcoll%SquickAccess(1) = sbdex4
+                
+                ! Dquickaccess(4) / IquickAccess(4) saves information
+                ! about the expression.
+                select case (iexptyp)
+                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                  ! Constant or parabolic profile
+                  rcoll%Dquickaccess(4) = &
+                      collct_getvalue_real (rcoll,sbdex4, 0, SEC_SBDEXPRESSIONS)
+                case (BDC_EXPRESSION)
+                  ! Expression. Write the identifier for the expression
+                  ! as itag into the boundary condition structure.
+                  rcoll%IquickAccess(4) = &
+                      collct_getvalue_int (rcoll,sbdex4, 0, SEC_SBDEXPRESSIONS)
+                end select
+              
+                ! Assemble the BC's.
+                call bcasm_newDirichletBConRealBD (&
+                    rdiscretisation,4,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll,casmComplexity)
 
               end if

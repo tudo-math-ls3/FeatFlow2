@@ -434,6 +434,11 @@ module ccnonlinearcore
     ! TAU-parameter that switch the B^T-term on/off
     real(DP) :: dtau = 0.0_DP
     
+    !aconcentr-parameter that switch the I(3,3) on/off in the matrix
+    real(DP) :: daconcentr = 0.0_DP
+    
+    !bconcentr-parameter that switch the I(3,4) on/off in the matrix
+    real(DP) :: dbconcentr = 0.0_DP
     
     ! Minimum allowed damping parameter; OMGMIN
     real(DP) :: domegaMin = 0.0_DP
@@ -573,6 +578,8 @@ contains
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
+      rnonlinearCCMatrix%daconcentr = rproblem%daconcentr
+      rnonlinearCCMatrix%dbconcentr = rproblem%daconcentr
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
@@ -777,6 +784,8 @@ contains
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
+      rnonlinearCCMatrix%daconcentr = rproblem%daconcentr
+      rnonlinearCCMatrix%dbconcentr = rproblem%daconcentr
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
@@ -1351,6 +1360,8 @@ contains
           if (bassembleNewton) rnonlinearCCMatrix%dnewton = rnonlinearIteration%dgamma
           rnonlinearCCMatrix%deta = 1.0_DP
           rnonlinearCCMatrix%dtau = 1.0_DP
+          rnonlinearCCMatrix%daconcentr = rproblem%daconcentr
+          rnonlinearCCMatrix%dbconcentr = rproblem%daconcentr
           rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
           rnonlinearCCMatrix%dnu = rproblem%dnu
           rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
@@ -1457,10 +1468,13 @@ contains
         else
           
           ! The 3,3-block must be a zero-matrix. So if it's present, clear it.
-          if (lsysbl_isSubmatrixPresent(p_rmatrix,3,3)) &
-            call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
+   !       if (lsysbl_isSubmatrixPresent(p_rmatrix,3,3)) &
+   !         call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
           
         end if        
+
+     ! call matio_writeMatrixHR (p_rmatrix%RmatrixBlock(3,3), 'bl33later',&
+     !                            .true., 0, 'mat33later.txt', '(E20.5)')
 
       end subroutine
       

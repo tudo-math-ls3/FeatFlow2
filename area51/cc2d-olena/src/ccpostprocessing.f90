@@ -275,8 +275,8 @@ contains
 !</subroutine>
     
     ! local variables
-    real(DP),dimension(3) :: Derr
-    real(DP) :: derrorVel, derrorP
+    real(DP),dimension(4) :: Derr
+    real(DP) :: derrorVel, derrorP, derrorConc
     integer :: icalcL2,icalcH1
     
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
@@ -308,14 +308,20 @@ contains
 
       derrorP = Derr(3)
       
+      call pperr_scalar (rsolution%RvectorBlock(4),PPERR_L2ERROR,Derr(4),&
+                         ffunction_TargetC,rproblem%rcollection)
+
+      derrorConc = Derr(4)
+      
       call output_line ('||u-reference||_L2 = '//trim(sys_sdEP(derrorVel,15,6)) )
       call output_line ('||p-reference||_L2 = '//trim(sys_sdEP(derrorP,15,6)) )
+      call output_line ('||c-reference||_L2 = '//trim(sys_sdEP(derrorConc,15,6)) )
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
     end if
 
-    if (icalcL2 .ne. 0) then
+    if (icalcH1 .ne. 0) then
     
       call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
     

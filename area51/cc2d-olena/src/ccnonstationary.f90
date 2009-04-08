@@ -412,6 +412,8 @@ contains
     rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * real(1-rproblem%iequation,DP)
     rnonlinearCCMatrix%deta = 0.0_DP
     rnonlinearCCMatrix%dtau = 0.0_DP
+    rnonlinearCCMatrix%daconcentr = rproblem%daconcentr
+    rnonlinearCCMatrix%dbconcentr = rproblem%dbconcentr
     rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
     rnonlinearCCMatrix%dnu = rproblem%dnu
     rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
@@ -483,6 +485,8 @@ contains
     rnonlinearIterationTmp%dgamma = rtimestepping%dweightMatrixLHS * real(1-rproblem%iequation,DP)
     rnonlinearIterationTmp%deta   = 1.0_DP
     rnonlinearIterationTmp%dtau   = 1.0_DP
+    rnonlinearIterationTmp%daconcentr = rproblem%daconcentr 
+    rnonlinearIterationTmp%dbconcentr = rproblem%dbconcentr
 
     ! Scale the pressure by the length of the time step. The core equation routines
     ! handle the equation
@@ -625,7 +629,7 @@ contains
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
     CALL spdiscr_initBlockDiscr (rdiscretisation,1,&
-                                 p_rproblem_lvl%rtriangulation, rproblem%rboundary)
+                                   p_rproblem_lvl%rtriangulation, rproblem%rboundary)
                                    
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.

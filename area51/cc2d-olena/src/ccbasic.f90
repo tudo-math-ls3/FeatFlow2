@@ -250,6 +250,7 @@ module ccbasic
     
     ! Viscosity parameter nu = 1/Re
     real(DP) :: dnu
+    real(DP) :: daconcentr, dbconcentr
     
     ! Type of problem.
     ! =0: Stokes.

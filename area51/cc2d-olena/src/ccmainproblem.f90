@@ -141,7 +141,7 @@ contains
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
     call cc_initParameters (p_rproblem)
-    
+    call cc_initConcParameters (p_rproblem)
     ! So now the different steps - one after the other.
     !
     ! Initialisation

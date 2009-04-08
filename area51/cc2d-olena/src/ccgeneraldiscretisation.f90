@@ -82,6 +82,7 @@ module ccgeneraldiscretisation
   use cccallback
   use ccnonlinearcoreinit
   
+  use analyticprojection
   implicit none
   
 contains
@@ -376,17 +377,18 @@ contains
     end select
   
     ! Now we can start to initialise the discretisation. At first, set up
-    ! a block discretisation structure that specifies 3 blocks in the
+    ! a block discretisation structure that specifies 4 blocks in the
     ! solution vector.
     call spdiscr_initBlockDiscr (&
         rdiscretisation,nequations,rtriangulation,rboundary)
 
     ! rdiscretisation%RspatialDiscr is a list of scalar 
     ! discretisation structures for every component of the solution vector.
-    ! We have a solution vector with three components:
+    ! We have a solution vector with four components:
     !  Component 1 = X-velocity
     !  Component 2 = Y-velocity
     !  Component 3 = Pressure
+    !  Component 4 = Concentration 
     ! For simplicity, we set up one discretisation structure for the 
     ! velocity...
     call spdiscr_initDiscr_simple ( &
@@ -454,45 +456,53 @@ contains
 
 !</subroutine>
 
-  ! Number of equations in our problem. velocity+velocity+pressure = 3
-  integer, parameter :: nequations = 3
+  ! Number of equations in our problem. velocity+velocity+pressure+concentration = 4
+  integer, parameter :: nequations = 4
   
   ! local variables
-  integer :: ieltypeUV, ieltypeP
+  integer :: ieltypeUV, ieltypeP, ieltypeC
   
     ! Initialise the element type identifiers according to ielementType
     select case (ielementType)
     case (0)
       ieltypeUV = EL_E031
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (1)
       ieltypeUV = EL_E030
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (2)
       ieltypeUV = EL_EM31
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (3)
       ieltypeUV = EL_EM30
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (4)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1
+      ieltypeC = EL_Q1
                   
     case (5)
       ieltypeUV = EL_EM30_UNPIVOTED
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (6)
       ieltypeUV = EL_EM30_UNSCALED
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (7)
       ieltypeUV = EL_EB50
       ieltypeP = EL_QP1
+      ieltypeC = EL_Q1
 
     case default
       call output_line (&
@@ -514,6 +524,9 @@ contains
         
     call spdiscr_deriveSimpleDiscrSc (rsourceDiscretisation%RspatialDiscr(3),  &
         ieltypeP, SPDISC_CUB_NOCHANGE,rdestDiscretisation%RspatialDiscr(3))
+        
+    call spdiscr_deriveSimpleDiscrSc (rsourceDiscretisation%RspatialDiscr(4),  &
+        ieltypeP, SPDISC_CUB_NOCHANGE,rdestDiscretisation%RspatialDiscr(4))    
   
   end subroutine
 
@@ -1316,7 +1329,13 @@ contains
                 p_rdiscretisation%RspatialDiscr(3),rlinform,.true.,&
                 rvector1%RvectorBlock(3),coeff_AnalyticSolution_P,&
                 rproblem%rcollection)
-                                  
+      
+      ! Concentration:
+      !call linf_buildVectorScalar (&
+      !         p_rdiscretisation%RspatialDiscr(4),rlinform,.true.,&
+      !          rvector1%RvectorBlock(4),coeff_AnalyticSolution_C,&
+      !          rproblem%rcollection)                          
+      call anprj_discrDirect (rvector%RvectorBlock(4),ffunction_TargetC)                          
       ! Clean up the collection (as we are done with the assembly.
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
