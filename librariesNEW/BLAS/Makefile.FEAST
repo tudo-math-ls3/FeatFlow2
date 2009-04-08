@@ -244,6 +244,14 @@ purge:
 			 $(SBLAS1) $(SBLAS2) $(SBLAS3) \
 			 $(ZBLAS1) $(ZBLAS2) $(ZBLAS3) $(BLASLIB), $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
+	-$(foreach file, $(SRC_ALLBLAS) $(SRC_CB1AUX) $(SRC_ZB1AUX) \
+			 $(SRC_CBLAS1) $(SRC_CBLAS2) $(SRC_CBLAS3) \
+			 $(SRC_DBLAS1) $(SRC_DBLAS2) $(SRC_DBLAS3) \
+			 $(SRC_SBLAS1) $(SRC_SBLAS2) $(SRC_SBLAS3) \
+			 $(SRC_ZBLAS1) $(SRC_ZBLAS2) $(SRC_ZBLAS3) \
+			 csrot.f drotm.f drotmg.f dsdot.f scabs1.f \
+			 sdsdot.f srotm.f srotmg.f zdrot.f \
+			 Makefile make.inc, $(remove_file))
 
 
 #-------------------------------------------------------------------------------
@@ -298,11 +306,13 @@ $(OBJDIR):
 # Automatically extract BLAS tarball when required.
 #-------------------------------------------------------------------------------
 
+# Function to unpack a tarball - as a serialised operation
+# using a locking mechanism
+include ../unpack.mk
+
 # List of required source files from BLAS package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
-
-
 SRC_BLAS = $(SRC_SBLAS1) $(SRC_CBLAS1) $(SRC_DBLAS1) $(SRC_ZBLAS1) \
 	   $(SRC_CB1AUX) $(SRC_ZB1AUX) $(SRC_ALLBLAS) \
 	   $(SRC_SBLAS2) $(SRC_CBLAS2) $(SRC_DBLAS2) $(SRC_ZBLAS2) \
@@ -326,46 +336,5 @@ $(LAST_FILE_FROM_BLAS_TARBALL):  WAITTIME = 3
 $(LAST_FILE_FROM_BLAS_TARBALL):  RETRIES  = 10
 $(LAST_FILE_FROM_BLAS_TARBALL):
 	@$(call UNPACK)
-
-
-
-# Function to unpack a tarball - as a serialised operation
-# using a locking mechanism
-UNPACK=trap "rm -f $(LOCKFILE)" 2 3 9; \
-	if test -f $(LOCKFILE); then \
-	    loop=0; \
-	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
-		echo; \
-		echo "\#"; \
-		echo "\# Detected a concurrent attempt to unpack $(TARBALL)."; \
-		echo "\# Waiting for the other process to finish."; \
-		echo "\#"; \
-		echo "\# If you are sure that this is a false alarm, simply remove the file"; \
-		echo "\# <"`pwd`"/$(LOCKFILE)>."; \
-		echo "\# Then, compilation will proceed automatically."; \
-		echo "\#"; \
-		echo; \
-		sleep $(WAITTIME); \
-		loop=`expr $${loop} + 1`; \
-	    done; \
-	    if test -f $(LOCKFILE); then \
-		echo; \
-		echo "\#"; \
-		echo "\# Lock for unpacking $(TARBALL) has not been released"; \
-		echo "\# within "`expr $(WAITTIME) \* $(RETRIES)`" seconds. Giving up."; \
-		echo "\#"; \
-		echo "\# In case of a false alarm please manually remove the file"; \
-		echo "\# <$(LOCKFILE)>."; \
-		echo "\#"; \
-		echo; \
-		exit 1; \
-	    fi; \
-	else \
-	    touch $(LOCKFILE); \
-	    echo "\# Extracting $(NAME)..."; \
-	    gzip -dc $(TARBALL) | ( cd ..; tar -xvf - ); \
-	    rm -f $(LOCKFILE); \
-	fi; \
-	trap - 2 3 9;
 
 
