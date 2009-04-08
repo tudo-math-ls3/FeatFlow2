@@ -2204,21 +2204,6 @@ sub create_feastAppMakefile {
     print MAKEFILE_HDL
 	")\n\n" .
 
-    # metis library path settings
-        "# metis library path settings\n" .
-        "\$(OBJDIR_LIB)/libmetis.a clean-metis purge-metis: \\\n" .
-        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/metis\n\n" .
-
-    # metis library
-        "# Create metis library\n" .
-        "\$(OBJDIR_LIB)/libmetis.a:\n" .
-        "\t\@echo \"# Building metis library\"\n" .
-        "\t(cd \$(DIR) && \\\n" .
-        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
-        "\t\tCC=\"\$(CC)\" CFLAGSC=\"\$(CFLAGSC)\" \\\n" .
-        "\t\tAR=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
-        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
-
     # umfpack library path settings
         "# umfpack library path settings\n" .
         "\$(OBJDIR_LIB)/libumfpack.a clean-umfpack purge-umfpack: \\\n" .
@@ -2232,7 +2217,7 @@ sub create_feastAppMakefile {
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
         "\t\tCC=\"\$(CC)\" CXXVERSION=\"\$(CXXVERSION)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
-        "\t\tAR=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\" ID=\"\$(ID)\")\n\n" .
 
     # AMD library path settings
@@ -2248,7 +2233,7 @@ sub create_feastAppMakefile {
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
         "\t\tCC=\"\$(CC)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
-        "\t\tAR=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
     # blas path settings
