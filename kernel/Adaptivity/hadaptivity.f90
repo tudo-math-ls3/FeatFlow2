@@ -1085,7 +1085,7 @@ contains
       case (NDIM2D)
         ! Perform element refinement in 2D
         call hadapt_refine2D(rhadapt, rcollection, fcb_hadaptCallback)
-        
+
         ! Perform element coarsening in 2D
         call hadapt_coarsen2D(rhadapt, rcollection, fcb_hadaptCallback)
 
