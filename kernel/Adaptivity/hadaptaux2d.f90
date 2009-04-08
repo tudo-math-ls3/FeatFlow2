@@ -3068,12 +3068,12 @@ contains
 !</description>
 
 !<input>
-    ! adaptivity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(IN) :: rhadapt
 !</input>
 
 !<result>
-    ! number of elements after refinement
+    ! Number of elements after refinement
     integer :: nel
 !</result>
 !</function>
@@ -3138,7 +3138,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -3149,7 +3149,7 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_Imarker
     integer :: iel
-    
+
     ! Check if dynamic data structures are o.k. and if 
     ! cells are marked for refinement
     if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA2D) .ne.&
@@ -3164,7 +3164,7 @@ contains
     
     ! Set pointers
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
-        
+
     ! Perform red-green refinement
     do iel = 1, size(p_Imarker, 1)
       
@@ -3264,7 +3264,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
     
     ! OPTIONAL Collection
@@ -3292,8 +3292,8 @@ contains
 
     ! Set pointers
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
-    
 
+    
     ! Perform hierarchical red-green recoarsening
     element: do iel = size(p_Imarker,1), 1, -1
 
@@ -3304,55 +3304,67 @@ contains
         ! and those which are marked for refinement.
         
       case(MARK_CRS_2TRIA1TRIA)
-        call coarsen_2Tria1Tria(rhadapt,iel,&
+        call coarsen_2Tria1Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
         
       case(MARK_CRS_4TRIA1TRIA)
-        call coarsen_4Tria1Tria(rhadapt,iel,&
+        call coarsen_4Tria1Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
 
       case(MARK_CRS_4TRIA2TRIA_1,&
            MARK_CRS_4TRIA2TRIA_2,&
            MARK_CRS_4TRIA2TRIA_3)
-        call coarsen_4Tria2Tria(rhadapt, iel, p_Imarker(iel),&
+        call coarsen_4Tria2Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
 
       case(MARK_CRS_3TRIA1QUAD)
-        call coarsen_3Tria1Quad(rhadapt, iel,&
+        call coarsen_3Tria1Quad(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
 
       case(MARK_CRS_4TRIA1QUAD)
-        call coarsen_4Tria1Quad(rhadapt, iel,&
+        call coarsen_4Tria1Quad(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
         
       case(MARK_CRS_4TRIA3TRIA_LEFT,&
            MARK_CRS_4TRIA3TRIA_RIGHT)
-        call coarsen_4Tria3Tria(rhadapt, iel, p_Imarker(iel),&
+        call coarsen_4Tria3Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
 
       case(MARK_CRS_2QUAD1QUAD)
-        call coarsen_2Quad1Quad(rhadapt, iel,&
+        call coarsen_2Quad1Quad(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
 
       case(MARK_CRS_2QUAD3TRIA)
-        call coarsen_2Quad3Tria(rhadapt, iel,&
+        call coarsen_2Quad3Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
         
       case(MARK_CRS_4QUAD1QUAD)
-        call coarsen_4Quad1Quad(rhadapt, iel,&
+        call coarsen_4Quad1Quad(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
 
       case(MARK_CRS_4QUAD2QUAD)
-        call coarsen_4Quad2Quad(rhadapt, iel,&
+        call coarsen_4Quad2Quad(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
 
       case(MARK_CRS_4QUAD3TRIA)
-        call coarsen_4Quad3Tria(rhadapt, iel,&
+        call coarsen_4Quad3Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
         
       case(MARK_CRS_4QUAD4TRIA)
-        call coarsen_4Quad4Tria(rhadapt, iel,&
+        call coarsen_4Quad4Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
+        p_Imarker(iel) = MARK_ASIS
 
       case DEFAULT
         call output_line('Invalid recoarsening marker!',&
@@ -3455,7 +3467,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
@@ -4083,7 +4095,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -4112,7 +4124,7 @@ contains
     y2 = qtree_getY(rhadapt%rVertexCoordinates2D, i2)
 
     ! Compute coordinates of new vertex 
-    Dcoord = 0.5_DP*(/x1+x2, y1+y2/)
+    Dcoord = 0.5_DP * (/x1+x2, y1+y2/)
 
     ! Search for vertex coordinates in quadtree: 
     ! If the vertex already exists, e.g., it was added when the 
@@ -4207,7 +4219,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -4224,7 +4236,7 @@ contains
     real(DP), dimension(NDIM2D) :: Dcoord
     integer, dimension(1) :: Ielements
     integer, dimension(5) :: Ivertices
-    real(DP) :: x1,y1,x2,y2,x3,y3,x4,y4,x21,y21,x31,y31,x24,y24,alpha
+    real(DP) :: x1,y1,x2,y2,x3,y3,x4,y4
     integer :: inode,ipos
     
     ! Compute coordinates of new vertex
@@ -4236,12 +4248,8 @@ contains
     y3 = qtree_getY(rhadapt%rVertexCoordinates2D, i3)
     x4 = qtree_getX(rhadapt%rVertexCoordinates2D, i4)
     y4 = qtree_getY(rhadapt%rVertexCoordinates2D, i4)
-
-    x21 = x2-x1; x31 = x3-x1; x24 = x2-x4
-    y21 = y2-y1; y31 = y3-y1; y24 = y2-y4
-    alpha = (x21*y24-y21*x24)/(x31*y24-y31*x24)
     
-    Dcoord = (/x1+alpha*x31, y1+alpha*y31/)
+    Dcoord = 0.25_DP * (/x1+x2+x3+x4, y1+y2+y3+y4/)
 
     ! Search for vertex coordinates in quadtree
     if (qtree_searchInQuadtree(rhadapt%rVertexCoordinates2D, Dcoord,&
@@ -4296,7 +4304,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 
@@ -4464,21 +4472,21 @@ contains
 !</description>
 
 !<input>
-    ! position number of the element in dynamic data structure
+    ! Position number of the element in dynamic data structure
     integer, intent(IN) :: ipos
 
-    ! numbers of the element nodes
+    ! Numbers of the element nodes
     integer, intent(IN) :: i1,i2,i3
 
-    ! numbers of the surrounding elements
+    ! Numbers of the surrounding elements
     integer, intent(IN) :: e1,e2,e3
 
-    ! numbers of the surrounding mid-elements
+    ! Numbers of the surrounding mid-elements
     integer, intent(IN) :: e4,e5,e6
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
@@ -4502,21 +4510,21 @@ contains
 !</description>
 
 !<input>
-    ! position number of the element in dynamic data structure
+    ! Position number of the element in dynamic data structure
     integer, intent(IN) :: ipos
 
-    ! numbers of the element nodes
+    ! Numbers of the element nodes
     integer, intent(IN) :: i1,i2,i3,i4
 
-    ! numbers of the surrounding elements
+    ! Numbers of the surrounding elements
     integer, intent(IN) :: e1,e2,e3,e4
 
-    ! numbers of the surrounding mid-elements
+    ! Numbers of the surrounding mid-elements
     integer, intent(IN) :: e5,e6,e7,e8
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
@@ -4539,18 +4547,18 @@ contains
 !</description>
 
 !<input>
-    ! numbers of the element nodes
+    ! Numbers of the element nodes
     integer, intent(IN) :: i1,i2,i3
 
-    ! numbers of the surrounding elements
+    ! Numbers of the surrounding elements
     integer, intent(IN) :: e1,e2,e3
 
-    ! numbers of the surrounding mid-elements
+    ! Numbers of the surrounding mid-elements
     integer, intent(IN) :: e4,e5,e6
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
@@ -4577,18 +4585,18 @@ contains
 !</description>
 
 !<input>
-    ! numbers of the element nodes
+    ! Numbers of the element nodes
     integer, intent(IN) :: i1,i2,i3,i4
 
-    ! numbers of the surrounding elements
+    ! Numbers of the surrounding elements
     integer, intent(IN) :: e1,e2,e3,e4
 
-    ! numbers of the surrounding mid-elements
+    ! Numbers of the surrounding mid-elements
     integer, intent(IN) :: e5,e6,e7,e8
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
@@ -4848,7 +4856,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
@@ -4996,7 +5004,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
@@ -5110,7 +5118,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 !</inputoutput>
 !</subroutine>
@@ -5208,7 +5216,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -5346,7 +5354,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -5545,7 +5553,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -5691,7 +5699,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -5839,7 +5847,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -6001,7 +6009,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -6165,7 +6173,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -6321,7 +6329,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -6457,7 +6465,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -6622,7 +6630,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -6792,7 +6800,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
 
     ! OPTIONAL: Collection
@@ -6910,7 +6918,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_2Tria1Tria(rhadapt, iel, rcollection, fcb_hadaptCallback)
+  subroutine coarsen_2Tria1Tria(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines two triangles resulting from a 1-tria : 2-tria
@@ -6955,6 +6963,9 @@ contains
 !<inputoutput>
     ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection    
@@ -7041,8 +7052,13 @@ contains
     ! Delete element IEL or IEL1 depending on which element has smaller
     ! element number, that is, is not equal to JEL
     call remove_element2D(rhadapt, ielRemove, ielReplace)
-    if (ielReplace .ne. 0)&
-        call update_AllElementNeighbors2D(rhadapt, ielReplace, ielRemove)
+    if (ielReplace .ne. 0) then
+      call update_AllElementNeighbors2D(rhadapt, ielReplace, ielRemove)
+      if (ielReplace .lt. iel) then
+        Imarker(ielRemove)  = Imarker(ielReplace)
+        Imarker(ielReplace) = MARK_ASIS
+      end if
+    end if
     
     
     ! Update list of elements meeting at vertices
@@ -7095,7 +7111,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_4Tria1Tria(rhadapt, iel, rcollection, fcb_hadaptCallback)
+  subroutine coarsen_4Tria1Tria(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four triangles resulting from a
@@ -7130,6 +7146,9 @@ contains
 !<inputoutput>
     ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+    
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -7219,16 +7238,31 @@ contains
     ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
     ! element corresponds to element with minimum number JEL
     call remove_element2D(rhadapt, IsortedElements(4), ielReplace)
-    if (ielReplace .ne. 0)&
-        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
+    if (ielReplace .ne. 0) then
+      call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(4)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
 
     call remove_element2D(rhadapt, IsortedElements(3), ielReplace)
-    if (ielReplace .ne. 0)&
-        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(3))
+    if (ielReplace .ne. 0) then
+      call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(3))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(3)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
 
     call remove_element2D(rhadapt, IsortedElements(2), ielReplace)
-    if (ielReplace .ne. 0)&
-        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(2))
+    if (ielReplace .ne. 0) then
+      call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(2))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(2)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
 
 
     ! Update list of elements meeting at vertices.
@@ -7271,14 +7305,14 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_4Tria2Tria(rhadapt, iel, imarker,&
+  subroutine coarsen_4Tria2Tria(rhadapt, Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four triangles resulting from a
     ! 1-tria : 4-tria refinement into two green triangle.
     ! The local position (node 1,2,3 of the interior element) of the midpoint 
-    ! vertex that should be kept is identified by the marker imarker. 
+    ! vertex that should be kept is identified by the marker. 
     ! By definition, iel is the number of the inner red triangle.
     ! Be warned, this numbering convention is not checked since the
     ! routine is only called internally and cannot be used from outside.
@@ -7309,9 +7343,6 @@ contains
     ! Element number of the inner red triangle
     integer, intent(IN) :: iel
 
-    ! Identifiert for element marker
-    integer, intent(IN) :: imarker
-
     ! Callback function
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
@@ -7320,6 +7351,9 @@ contains
 !<inputoutput>
     ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -7364,7 +7398,7 @@ contains
 
 
     ! Which midpoint vertex should be kept?
-    select case(imarker)
+    select case(Imarker(iel))
     case(MARK_CRS_4TRIA2TRIA_1)     
       ! Update list of neighboring elements
       call update_ElementNeighbors2D(rhadapt, e1, e4, iel2, iel1, jel2, jel1)
@@ -7381,13 +7415,23 @@ contains
 
       ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
       ! elements correspond to the two elements with smallest numbers
-      call remove_element2D(rhadapt, IsortedElements(4), ielReplace)
-      if (ielReplace .ne. 0)&
-          call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
+      call remove_element2D(rhadapt, IsortedElements(4), ielReplace)      
+      if (ielReplace .ne. 0) then
+        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
+        if (ielReplace .lt. iel) then
+          Imarker(IsortedElements(4)) = Imarker(ielReplace)
+          Imarker(ielReplace)         = MARK_ASIS
+        end if
+      end if
 
       call remove_element2D(rhadapt, IsortedElements(3), ielReplace)
-      if (ielReplace .ne. 0)&
-          call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(3))
+      if (ielReplace .ne. 0) then
+        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(3))
+        if (ielReplace .lt. iel) then
+          Imarker(IsortedElements(3)) = Imarker(ielReplace)
+          Imarker(ielReplace)         = MARK_ASIS
+        end if
+      end if
 
       
       ! Update list of elements meeting at vertices.
@@ -7466,12 +7510,22 @@ contains
       ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
       ! elements correspond to the two elements with smallest numbers
       call remove_element2D(rhadapt, IsortedElements(4), ielReplace)
-      if (ielReplace .ne. 0)&
-          call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
+      if (ielReplace .ne. 0) then
+        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
+        if (ielReplace .lt. iel) then
+          Imarker(IsortedElements(4)) = Imarker(ielReplace)
+          Imarker(ielReplace)         = MARK_ASIS
+        end if
+      end if
 
       call remove_element2D(rhadapt, IsortedElements(3), ielReplace)
-      if (ielReplace .ne. 0)&
-          call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(3))
+      if (ielReplace .ne. 0) then
+        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(3))
+        if (ielReplace .lt. iel) then
+          Imarker(IsortedElements(3)) = Imarker(ielReplace)
+          Imarker(ielReplace)         = MARK_ASIS
+        end if
+      end if
 
 
       ! Update list of elements meeting at vertices
@@ -7548,12 +7602,22 @@ contains
       ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
       ! elements correspond to the two elements with smallest numbers
       call remove_element2D(rhadapt, IsortedElements(4), ielReplace)
-      if (ielReplace .ne. 0)&
-          call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
+      if (ielReplace .ne. 0) then
+        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
+        if (ielReplace .lt. iel) then
+          Imarker(IsortedElements(4)) = Imarker(ielReplace)
+          Imarker(ielReplace)         = MARK_ASIS
+        end if
+      end if
 
       call remove_element2D(rhadapt, IsortedElements(3), ielReplace)
-      if (ielReplace .ne. 0)&
-          call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(3))
+      if (ielReplace .ne. 0) then
+        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(3))
+        if (ielReplace .lt. iel) then
+          Imarker(IsortedElements(3)) = Imarker(ielReplace)
+          Imarker(ielReplace)         = MARK_ASIS
+        end if
+      end if
 
 
       ! Update list of elements meeting at vertices.
@@ -7626,7 +7690,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_4Quad1Quad(rhadapt, iel, rcollection, fcb_hadaptCallback)
+  subroutine coarsen_4Quad1Quad(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four quadrilaterals resulting from a
@@ -7663,8 +7727,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -7763,16 +7830,31 @@ contains
     ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
     ! element corresponds to element with minimum number JEL
     call remove_element2D(rhadapt,IsortedElements(4), ielReplace)
-    if (ielReplace .ne. 0)&
-        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
-
+    if (ielReplace .ne. 0) then
+      call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(4)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
+    
     call remove_element2D(rhadapt, IsortedElements(3), ielReplace)
-    if (ielReplace .ne. 0)&
-        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(3))
-
+    if (ielReplace .ne. 0) then
+      call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(3))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(3)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
+    
     call remove_element2D(rhadapt, IsortedElements(2), ielReplace)
-    if (ielReplace .ne. 0)&
-        call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(2))
+    if (ielReplace .ne. 0) then
+      call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(2))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(2)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
 
 
     ! Update list of elements meeting at vertices.
@@ -7822,7 +7904,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_4Quad2Quad(rhadapt,iel,rcollection,fcb_hadaptCallback)
+  subroutine coarsen_4Quad2Quad(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four quadrilaterals resulting from a
@@ -7859,8 +7941,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -7925,13 +8010,23 @@ contains
     ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
     ! elements corresponds to elements with minimum numbers JEL1 and JEL2
     call remove_element2D(rhadapt,IsortedElements(4),ielReplace)
-    if (ielReplace.ne.0)&
-        call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(4))
+    if (ielReplace.ne.0) then
+      call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(4))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(4)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
     
     call remove_element2D(rhadapt,IsortedElements(3),ielReplace)
-    if (ielReplace.ne.0)&
-        call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(3))
-
+    if (ielReplace.ne.0) then
+      call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(3))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(3)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
+    
 
     ! Update list of elements meeting at vertices.
     ! Note that all elements are removed in the first step. Afterwards,
@@ -8008,7 +8103,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_4Quad3Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
+  subroutine coarsen_4Quad3Tria(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four quadrilaterals resulting from a
@@ -8045,8 +8140,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -8113,8 +8211,13 @@ contains
 
     ! Delete the element with the largest element number
     call remove_element2D(rhadapt,IsortedElements(4),ielReplace)
-    if (ielReplace.ne.0)&
-        call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(4))
+    if (ielReplace.ne.0) then
+      call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(4))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(4)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
 
 
     ! Update list of elements meeting at vertices.
@@ -8186,7 +8289,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_4Quad4Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
+  subroutine coarsen_4Quad4Tria(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four quadrilaterals resulting from a
@@ -8225,8 +8328,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -8304,7 +8410,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_2Quad1Quad(rhadapt,iel,rcollection,fcb_hadaptCallback)
+  subroutine coarsen_2Quad1Quad(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines two quadrilaterals resulting from a
@@ -8341,8 +8447,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -8423,8 +8532,13 @@ contains
 
       ! Delete element IEL1
       call remove_element2D(rhadapt,iel1,ielReplace)
-      if (ielReplace.ne.0)&
-          call update_AllElementNeighbors2D(rhadapt,ielReplace,iel1)
+      if (ielReplace.ne.0) then
+        call update_AllElementNeighbors2D(rhadapt,ielReplace,iel1)
+        if (ielReplace .lt. iel) then
+          Imarker(iel1)       = Imarker(ielReplace)
+          Imarker(ielReplace) = MARK_ASIS
+        end if
+      end if
 
 
       ! Update list of elements meeting at vertices.
@@ -8486,8 +8600,13 @@ contains
 
       ! Delete element IEL
       call remove_element2D(rhadapt,iel,ielReplace)
-      if (ielReplace.ne.0)&
-          call update_AllElementNeighbors2D(rhadapt,ielReplace,iel)
+      if (ielReplace.ne.0) then
+        call update_AllElementNeighbors2D(rhadapt,ielReplace,iel)
+        if (ielReplace .lt. iel) then
+          Imarker(iel)        = Imarker(ielReplace)
+          Imarker(ielReplace) = MARK_ASIS
+        end if
+      end if
       
 
       ! Update list of elements meeting at vertices.
@@ -8523,7 +8642,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_2Quad3Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
+  subroutine coarsen_2Quad3Tria(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines two quadrilaterals resulting from a
@@ -8562,8 +8681,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -8635,7 +8757,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_3Tria1Quad(rhadapt,iel,rcollection,fcb_hadaptCallback)
+  subroutine coarsen_3Tria1Quad(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines three triangles resulting from a
@@ -8666,8 +8788,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -8753,12 +8878,22 @@ contains
 
     ! Delete the two elements with the largest element numbers
     call remove_element2D(rhadapt,IsortedElements(3),ielReplace)
-    if (ielReplace.ne.0)&
-        call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(3))
+    if (ielReplace.ne.0) then
+      call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(3))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(3)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
 
     call remove_element2D(rhadapt,IsortedElements(2),ielReplace)
-    if (ielReplace.ne.0)&
-        call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(2))
+    if (ielReplace.ne.0) then
+      call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(2))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(2)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
 
 
     ! Update list of elements meeting at vertices.
@@ -8825,7 +8960,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_4Tria1Quad(rhadapt,iel,rcollection,fcb_hadaptCallback)
+  subroutine coarsen_4Tria1Quad(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four triangles resulting from a
@@ -8858,8 +8993,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+    
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -8950,16 +9088,31 @@ contains
     ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
     ! element corresponds to element with minimum number JEL
     call remove_element2D(rhadapt,IsortedElements(4),ielReplace)
-    if (ielReplace.ne.0)&
-        call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(4))
+    if (ielReplace.ne.0) then
+      call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(4))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(4)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
 
     call remove_element2D(rhadapt,IsortedElements(3),ielReplace)
-    if (ielReplace.ne.0)&
-        call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(3))
+    if (ielReplace.ne.0) then
+      call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(3))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(3)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
     
     call remove_element2D(rhadapt,IsortedElements(2),ielReplace)
-    if (ielReplace.ne.0)&
-        call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(2))
+    if (ielReplace.ne.0) then
+      call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(2))
+      if (ielReplace .lt. iel) then
+        Imarker(IsortedElements(2)) = Imarker(ielReplace)
+        Imarker(ielReplace)         = MARK_ASIS
+      end if
+    end if
 
     
     ! Update list of elements meeting at vertices.
@@ -9026,7 +9179,7 @@ contains
 
 !<subroutine>
 
-  subroutine coarsen_4Tria3Tria(rhadapt,iel,imarker,rcollection,fcb_hadaptCallback)
+  subroutine coarsen_4Tria3Tria(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four triangles resulting from a
@@ -9053,17 +9206,17 @@ contains
     ! Number of element to be refined
     integer, intent(IN) :: iel
 
-    ! Identifier for element marker
-    integer, intent(IN) :: imarker
-
     ! Callback function
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
-    ! adativity structure
+    ! Adaptivity structure
     type(t_hadapt), intent(INOUT) :: rhadapt
+
+    ! Marker array
+    integer, dimension(:), intent(INOUT) :: Imarker
 
     ! OPTIONAL: Collection
     type(t_collection), intent(INOUT), optional :: rcollection
@@ -9112,7 +9265,7 @@ contains
     jel3=IsortedElements(3)
     
     ! Which midpoint vertex should be kept?
-    select case(imarker)
+    select case(Imarker(iel))
     case(MARK_CRS_4TRIA3TRIA_RIGHT)
       ! Update list of neighboring elements
       call update_ElementNeighbors2D(rhadapt,e1,e5,iel1,jel1,jel1)
@@ -9130,8 +9283,13 @@ contains
       ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
       ! elements correspond to the two elements with smallest numbers
       call remove_element2D(rhadapt,IsortedElements(4),ielReplace)
-      if (ielReplace.ne.0)&
-          call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(4))
+      if (ielReplace.ne.0) then
+        call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(4))
+        if (ielReplace .lt. iel) then
+          Imarker(IsortedElements(4)) = Imarker(ielReplace)
+          Imarker(ielReplace)         = MARK_ASIS
+        end if
+      end if
 
 
       ! Update list of elements meeting at vertices.
@@ -9229,8 +9387,13 @@ contains
       ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
       ! elements correspond to the two elements with smallest numbers
       call remove_element2D(rhadapt,IsortedElements(4),ielReplace)
-      if (ielReplace.ne.0)&
-          call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(4))
+      if (ielReplace.ne.0) then
+        call update_AllElementNeighbors2D(rhadapt,ielReplace,IsortedElements(4))
+        if (ielReplace .lt. iel) then
+          Imarker(IsortedElements(4)) = Imarker(ielReplace)
+          Imarker(ielReplace)         = MARK_ASIS
+        end if
+      end if
 
 
       ! Update list of elements meeting at vertices.
@@ -9330,7 +9493,7 @@ contains
 !</description>
 
 !<input>
-    ! Adaptive data structure
+    ! Adaptivity structure
     type(t_hadapt), intent(IN) :: rhadapt
 
     ! Number of element for which state should be computed
