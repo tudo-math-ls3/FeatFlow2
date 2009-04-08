@@ -50,7 +50,6 @@ module mhd_callback
   implicit none
 
   private
-  public :: mhd_nlsolverCallback
   public :: mhd_calcVelocityField
   public :: mhd_calcSourceTerm
   public :: mhd_hadaptCallbackScalar2d
