@@ -381,8 +381,24 @@ contains
     
     ! Forces on the object
     real(DP), dimension(NDIM2D) :: Dforces
-    real(DP) :: df1,df2
+    real(DP) :: dbdForcesCoeff1,dbdForcesCoeff2
     type(t_boundaryRegion) :: rregion
+    integer :: cformulation
+    integer :: ibodyForcesFormulation,icalcBodyForces,ibodyForcesBdComponent
+    
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'icalcBodyForces', icalcBodyForces, 1)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'ibodyForcesFormulation', ibodyForcesFormulation, -1)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'ibodyForcesBdComponent', ibodyForcesBdComponent, 2)
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'dbdForcesCoeff1', dbdForcesCoeff1, rproblem%dnu)
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'dbdForcesCoeff2', dbdForcesCoeff2, 0.1_DP * 0.2_DP**2)
+    
+    ! Probably cancel the calculation
+    if (icalcBodyForces .eq. 0) return
     
     ! If we have a uniform discretisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
@@ -393,11 +409,28 @@ contains
       ! Calculate drag-/lift coefficients on the 2nd boundary component.
       ! This is for the benchmark channel!
       call boundary_createRegion (rproblem%rboundary, &
-          2, 0, rregion)
+          ibodyForcesBdComponent, 0, rregion)
       rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-      df1 = 1.0_DP/1000.0_DP
-      df2 = 0.1_DP * 0.2_DP**2
-      call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,df1,df2)
+      
+      ! Select the tensor formulation to use.
+      select case (ibodyForcesFormulation)
+      case (0)
+        cformulation = PPNAVST_GRADIENTTENSOR_SIMPLE
+      case (1)
+        cformulation = PPNAVST_GRADIENTTENSOR
+      case (2)
+        cformulation = PPNAVST_DEFORMATIONTENSOR
+      case default
+        ! Automatic mode.
+        ! Use the deformation tensor formulation for the forces if
+        ! we are in the deformation tensor formulation
+        cformulation = PPNAVST_GRADIENTTENSOR_SIMPLE
+        if (rproblem%isubequation .eq. 1) &
+          cformulation = PPNAVST_DEFORMATIONTENSOR
+      end select
+        
+      call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,&
+          dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
 
       call output_lbrk()
       call output_line ('Body forces')

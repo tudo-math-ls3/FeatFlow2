@@ -121,3 +121,36 @@ ierrorAnalysisH1 = 0
 # =1: Calculate the energy
 
 icalcKineticEnergy = 1
+
+# ------------------------------------------------------------------------
+# Body forces
+
+# Calculate the body forces
+# =0: Don't calculate
+# =1: Calculate (standard)
+
+icalcBodyForces = 1
+
+# Specifies the tensor structure to use for the computation.
+# =-1: automatic
+# = 0: simple gradient tensor, constant nu
+# = 1: full gradient tensor, constant nu
+# = 2: deformation tensor, constant nu
+
+ibodyForcesFormulation = -1
+
+# Number of the boundary component where to calculate the body forces.
+# For flow around cylinder, this is =2 e.g.
+
+ibodyForcesBdComponent = 2
+
+# 1st coefficient in the boundary integral of the drag coefficient.
+# If this is commented out, 1/RE is assumed.
+
+# dbdForcesCoeff1 = 0.001
+
+# 2nd coefficient in the boundary integral of the drag coefficient.
+# If this is commented out, 0.004 is assumed (corresonds to flow 
+# around cylinder with RE=1000)
+
+# dbdForcesCoeff2 = 0.004
