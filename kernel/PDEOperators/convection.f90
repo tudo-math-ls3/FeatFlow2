@@ -10990,7 +10990,7 @@ contains
           rintSubset%p_IdofsTrial => Idofs
           rintSubset%celement = p_relementDistr%celement
 
-          if (rconfig%bconstNu) then
+          if (.not. rconfig%bconstNu) then
             call ffunctionCoefficient (0,p_rdiscr, &
                       int(IELmax-IELset+1),ncubp,&
                       revalElementSet%p_DpointsReal,&
@@ -10998,7 +10998,7 @@ contains
                       Dnu(:,1:IELmax-IELset+1_I32),rcollection)
           end if
 
-          if (rconfig%bconstAlpha) then
+          if (.not. rconfig%bconstAlpha) then
             call ffunctionCoefficient (1,p_rdiscr, &
                       int(IELmax-IELset+1),ncubp,&
                       revalElementSet%p_DpointsReal,&

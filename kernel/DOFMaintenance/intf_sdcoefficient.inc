@@ -70,12 +70,8 @@
   !<output>
     ! This array has to receive the values of the coefficients
     ! in all the points specified in Dpoints.
-    ! Dvalues(:,:,1) has to return a nonconstant $\nu$ coefficient
-    !   (if the $\nu$ is nonconstant, otherwise it can be undefined).
-    ! Dvalues(:,:,2) has to return a nonconstant $\alpha$ coefficient
-    !   (if the $\alpha$ is nonconstant, otherwise it can be undefined).
-    !   DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(OUT)                      :: Dcoefficients
+    ! cterm specifies what to evaluate.
+    real(DP), dimension(:,:), intent(out) :: Dcoefficients
   !</output>
     
   !</subroutine>
