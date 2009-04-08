@@ -241,11 +241,18 @@ module convection
     ! specified by the callback routine!
     real(DP) :: dalpha = 0.0_DP
 
-    ! Weighting factor for the Stokes matrix nu*Laplace.
+    ! Weighting factor for the Stokes matrix nu*div(grad(.)) = nu*Laplace.
     ! =0.0: don't incorporate Stokes matrix into the operator.
     ! This factor is multiplied to a probably nonconstant dnu
     ! specified by the callback routine!
     real(DP) :: dbeta = 0.0_DP
+    
+    ! Weighting factor for the transposed Stokes matrix
+    ! nu*div(grad(.)^T) which is typically used in the deformatino tensor.
+    ! =0.0: don't incorporate.
+    ! This factor is multiplied to a probably nonconstant dnu
+    ! specified by the callback routine!
+    real(DP) :: dbetaT = 0.0_DP    
     
     ! Weighting factor for the convective part u*gread(.).
     ! =0.0: don't incorporate convective part (=Stokes problem)
@@ -10703,7 +10710,8 @@ contains
     if (rconfig%dnewton .ne. 0.0_DP) &
       inonlinComplexity = 3
 
-    if ((rconfig%ddeltaT .ne. 0.0_DP) .or. (rconfig%dnewtonT .ne. 0.0_DP)) &
+    if ((rconfig%ddeltaT .ne. 0.0_DP) .or. (rconfig%dnewtonT .ne. 0.0_DP) .or. &
+        (rconfig%dbetaT .ne. 0.0_DP)) &
       inonlinComplexity = 4
                                 
     ! Get the maximum velocity -- if we have a nonlinearity
@@ -10919,50 +10927,54 @@ contains
             
         else if (inonlinComplexity .ge. 4) then
         
-          ! We need the velocity an the gradients.
-          ! Loop over all elements in the current set
-          do IEL=1,IELmax-IELset+1
+          if (present(rvelocity)) then
           
-            ! Loop over all cubature points on the current element
-            do ICUBP = 1, ncubp
+            ! We need the velocity an the gradients.
+            ! Loop over all elements in the current set
+            do IEL=1,IELmax-IELset+1
             
-              du1loc = 0.0_DP
-              du2loc = 0.0_DP
-              du1locx = 0.0_DP
-              du1locy = 0.0_DP
-              du2locx = 0.0_DP
-              du2locy = 0.0_DP
-            
-              ! Perform a loop through the trial DOF's.
-              do JDOFE=1,indof
-
-                ! Get the value of the (test) basis function 
-                db = Dbas(JDOFE,1,ICUBP,IEL)
-                dbx = Dbas(JDOFE,DER_DERIV_X,ICUBP,IEL)
-                dby = Dbas(JDOFE,DER_DERIV_Y,ICUBP,IEL)
-                
-                ! Sum up to the value in the cubature point
-                JDFG = Idofs(JDOFE,IEL)
-                du1loc = du1loc + p_Du1(JDFG)*db
-                du2loc = du2loc + p_Du2(JDFG)*db
-                du1locx = du1locx + p_Du1(JDFG)*dbx
-                du1locy = du1locy + p_Du1(JDFG)*dby
-                du2locx = du2locx + p_Du2(JDFG)*dbx
-                du2locy = du2locy + p_Du2(JDFG)*dby
-
-              end do ! JDOFE
+              ! Loop over all cubature points on the current element
+              do ICUBP = 1, ncubp
               
-              ! Save the computed velocity
-              Dvelocity(1,ICUBP,IEL) = du1loc
-              Dvelocity(2,ICUBP,IEL) = du2loc
-              DvelocityUderiv(1,ICUBP,IEL) = du1locx
-              DvelocityUderiv(2,ICUBP,IEL) = du1locy
-              DvelocityVderiv(1,ICUBP,IEL) = du2locx
-              DvelocityVderiv(2,ICUBP,IEL) = du2locy
+                du1loc = 0.0_DP
+                du2loc = 0.0_DP
+                du1locx = 0.0_DP
+                du1locy = 0.0_DP
+                du2locx = 0.0_DP
+                du2locy = 0.0_DP
+              
+                ! Perform a loop through the trial DOF's.
+                do JDOFE=1,indof
+
+                  ! Get the value of the (test) basis function 
+                  db = Dbas(JDOFE,1,ICUBP,IEL)
+                  dbx = Dbas(JDOFE,DER_DERIV_X,ICUBP,IEL)
+                  dby = Dbas(JDOFE,DER_DERIV_Y,ICUBP,IEL)
+                  
+                  ! Sum up to the value in the cubature point
+                  JDFG = Idofs(JDOFE,IEL)
+                  du1loc = du1loc + p_Du1(JDFG)*db
+                  du2loc = du2loc + p_Du2(JDFG)*db
+                  du1locx = du1locx + p_Du1(JDFG)*dbx
+                  du1locy = du1locy + p_Du1(JDFG)*dby
+                  du2locx = du2locx + p_Du2(JDFG)*dbx
+                  du2locy = du2locy + p_Du2(JDFG)*dby
+
+                end do ! JDOFE
+                
+                ! Save the computed velocity
+                Dvelocity(1,ICUBP,IEL) = du1loc
+                Dvelocity(2,ICUBP,IEL) = du2loc
+                DvelocityUderiv(1,ICUBP,IEL) = du1locx
+                DvelocityUderiv(2,ICUBP,IEL) = du1locy
+                DvelocityVderiv(1,ICUBP,IEL) = du2locx
+                DvelocityVderiv(2,ICUBP,IEL) = du2locy
+              
+              end do ! ICUBP
+              
+            end do ! IEL
             
-            end do ! ICUBP
-            
-          end do ! IEL
+          end if
           
         end if
         
@@ -11254,10 +11266,10 @@ contains
         end if
 
        
-        ! If dny != 0 or dalpha != 0, add the Laplace/Mass matrix to the
+        ! If dbeta != 0 or dalpha != 0, add the Laplace/Mass matrix to the
         ! local matrices.
-        if ((.not. rconfig%bconstAlpha) .or. (.not. rconfig%bconstNu) .or. &
-            (rconfig%dalpha .ne. 0.0_DP) .or. (rconfig%dbeta .ne. 0.0_DP) ) then
+        if ((.not. rconfig%bconstAlpha) .or. (rconfig%dalpha .ne. 0.0_DP) .or. &
+            (rconfig%dbeta .ne. 0.0_DP) ) then
         
           if (inonlinComplexity .le. 1) then
             
@@ -11269,7 +11281,7 @@ contains
               ! Loop over all cubature points on the current element
               do ICUBP = 1, ncubp
               
-                ! Current local nu
+                ! Current local nu / alpha
                 dnuloc = rconfig%dbeta * Dnu(icubp,iel)
                 dalphaloc = rconfig%dalpha * Dalpha(icubp,iel)
 
@@ -11285,10 +11297,6 @@ contains
 
                 OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
-                ! Current velocity in this cubature point:
-                du1loc = Dvelocity (1,ICUBP,IEL)
-                du2loc = Dvelocity (2,ICUBP,IEL)
-                
                 ! Outer loop over the DOF's i=1..indof on our current element, 
                 ! which corresponds to the basis functions Phi_i:
 
@@ -11355,9 +11363,6 @@ contains
 
                 OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
-                du1loc = Dvelocity (1,ICUBP,IEL)
-                du2loc = Dvelocity (2,ICUBP,IEL)
-                
                 do IDOFE=1,indof
                 
                   HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
@@ -11387,7 +11392,89 @@ contains
           end if
           
         end if
+
+        ! Should we assemble the 'transposed Stokes' operator
+        if (rconfig%dbetaT .ne. 0.0_DP) then
         
+          ! Build only A11, there is A11=A22.
+
+          ! Loop over the elements in the current set.
+          do IEL=1,IELmax-IELset+1
+
+            ! Loop over all cubature points on the current element
+            do ICUBP = 1, ncubp
+            
+              ! Current local nu
+              dnuloc = rconfig%dbetaT * Dnu(icubp,iel)
+
+              ! Calculate the current weighting factor in the cubature formula
+              ! in that cubature point.
+              !
+              ! Normally, we have to take the absolut value of the determinant 
+              ! of the mapping here!
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that's normal!
+              ! But because this routine only works in 2D, we can skip
+              ! the ABS here!
+
+              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+
+              ! Outer loop over the DOF's i=1..indof on our current element, 
+              ! which corresponds to the basis functions Phi_i:
+
+              do IDOFE=1,indof
+              
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! (our "O")  for function value and first derivatives for the 
+                ! current DOF into HBASIy:
+              
+                HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
+                HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
+                
+                ! Inner loop over the DOF's j=1..indof, which corresponds to
+                ! the basis function Phi_j:
+
+                do JDOFE=1,indof
+                  
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! (out "X") for function value and first derivatives for the 
+                  ! current DOF into HBASJy:
+                
+                  HBASJ2 = Dbas(JDOFE,2,ICUBP,IEL)
+                  HBASJ3 = Dbas(JDOFE,3,ICUBP,IEL)
+
+                  ! Finally calculate the contribution to the system
+                  ! matrix. Depending on the configuration of DNU,
+                  ! dalpha,... this decomposes into:
+                  !
+                  ! AH = dny*(grad(phi_j,grad(phi_i)) | -dny*Laplace(u) = -dbeta*Stokes
+                  !    + dalpha*(phi_j*phi_i)         | Mass matrix
+                  
+                  AH11 = dnuloc*(HBASI2*HBASJ2)
+                  AH12 = dnuloc*(HBASI3*HBASJ2)
+                  AH21 = dnuloc*(HBASI2*HBASJ3)
+                  ! AH22 = AH11, so don't compute.
+        
+                  ! Weighten the calculated value AH by the cubature
+                  ! weight OM and add it to the local matrix. After the
+                  ! loop over all DOF's is finished, each entry contains
+                  ! the calculated integral.
+
+                  DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
+                  DentryA12(JDOFE,IDOFE,IEL) = DentryA12(JDOFE,IDOFE,IEL)+OM*AH12
+                  DentryA21(JDOFE,IDOFE,IEL) = DentryA21(JDOFE,IDOFE,IEL)+OM*AH21
+                  DentryA22(JDOFE,IDOFE,IEL) = DentryA22(JDOFE,IDOFE,IEL)+OM*AH11
+                  
+                end do ! IDOFE
+                
+              end do ! JDOFE
+
+            end do ! ICUBP 
+          
+          end do ! IEL
+
+        end if
+                
         ! Should we assemble the Newton matrices?
         if (rconfig%dnewton .ne. 0.0_DP) then
         
