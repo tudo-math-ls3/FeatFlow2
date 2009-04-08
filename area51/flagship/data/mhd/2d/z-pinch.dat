@@ -35,11 +35,11 @@ algorithm = transient_primal
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = bin/coarse.prm
+prmfile = bin/dummy.prm
 #grids/2d/z-pinch_tria.prm
 
 # file which contains the triangulation
-trifile = bin/coarse.tri
+trifile = bin/dummy.tri
 #grids/2d/z-pinch_tria.tri
 
 # convert mesh to triangular mesh?
@@ -337,10 +337,10 @@ istabilisation = 1
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.01
+dstepUCD = 0.0
 
 # file for UCD output of solution
-ucdsolution = out/dummy_fct
+ucdsolution = out/dummy_fct_lev1
 
 # file for UCD output of error
 ucderror = out/z-pinch_error
@@ -382,13 +382,13 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime =  0.9
+dfinalTime = 1.0
 
 # initial time step size
-dinitialStep = 1e-8
+dinitialStep = 1e-3
 
 # lower bound for the admissible time step
-dminStep = 1e-8
+dminStep = 1e-3
 
 # upper bound for the admissible time step
 dmaxStep = 1e-3
@@ -745,7 +745,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 0
+npreadapt = 4
 
 # number of adaptation steps
 nadapt = 0
@@ -754,10 +754,10 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.0
+dstepadapt = 1e-3
 
 # maximum number of refinement levels
-nsubdividemax = 2
+nsubdividemax = 4
 
 # adaptation strategy
 # 1 = red-green
@@ -796,7 +796,7 @@ dnoisefilter = 0.05
 dabsfilter = 0.001
 
 # number of protection layers
-nprotectLayers = 3
+nprotectLayers = 1
 
 # tolerance for protection layers
 dprotectLayerTolerance = 0.3
