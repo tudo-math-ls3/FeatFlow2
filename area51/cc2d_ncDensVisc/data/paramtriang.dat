@@ -1,0 +1,14 @@
+# ------------------------------------------------------------------------
+# Parametrization and triangulation
+#
+# This file contains parameters about the parametrization and
+# (coarse grid) triangulation of the problem.
+# ------------------------------------------------------------------------
+
+[PARAMTRIANG]
+
+# Filename of the parametrisation of the domain
+sParametrisation = './pre/QUAD.prm'
+
+# Filename of the coarse grid mesh
+sMesh = './pre/QUAD.tri'
