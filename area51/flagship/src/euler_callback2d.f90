@@ -819,11 +819,8 @@ contains
     ! local variables
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j,ci,cj,Ei,Ej
     real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
-
-
-    real(DP) :: ui,vi,uj,vj,ci,cj,Ei,Ej
 
     !---------------------------------------------------------------------------
     ! Evaluate the Galerkin fluxes
@@ -831,59 +828,47 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute auxiliary values
-    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
-    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
-    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
-    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    ! Compute velocities and energy
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); rv2i = vi*U_i(3)
+    ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
     ! Compute fluxes for x-direction
-    dF1_ij(1) = U_i(2)                             - U_j(2)
-    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
-    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+    dF1_ij(1) = U_i(2)                           - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
+    dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
 
     ! Compute fluxes for y-direction
-    dF2_ij(1) = U_i(3)                             - U_j(3)
-    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
-    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+    dF2_ij(1) = U_i(3)                           - U_j(3)
+    dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
+    dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
 
     ! Assembly fluxes
-    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
-    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
+    F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
 
 
     !---------------------------------------------------------------------------
     ! Evaluate the scalar dissipation 
     !---------------------------------------------------------------------------
-    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
-    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
-
+    
+    ! Compute enthalpy
     hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
     hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
 
+    ! Compute speed of sound
     ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
     cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
-    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
-                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
-
-!!$    ! Compute enthalpy
-!!$    hi = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-!!$    hj = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-!!$
-!!$    ! Compute auxiliary variables
-!!$    aux1 = aux3*a(1) + aux4*a(2)
-!!$    aux2 = aux7*a(1) + aux8*a(2)
-!!$    aux5 = sqrt(max(-G1*(0.5_DP*(aux3*aux3+aux4*aux4)-hi), SYS_EPSREAL))
-!!$    aux6 = sqrt(max(-G1*(0.5_DP*(aux7*aux7+aux8*aux8)-hj), SYS_EPSREAL))
-
-
-!!$    ! Scalar dissipation for the Rusanov flux
-!!$    d_ij = dscale*max( abs(aux1) + aux5*aux, abs(aux2) + aux6*aux)
-
-    ! Multiply the solution difference by the artificial diffusion factor
+    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))*cj,&
+                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)*C_ji(1)+C_ji(2)*C_ji(2))*ci )
+    
+    ! Scalar dissipation for the Rusanov flux
     Diff = dscale*d_ij*(U_j-U_i)
 
     ! Add the artificial diffusion to the fluxes
