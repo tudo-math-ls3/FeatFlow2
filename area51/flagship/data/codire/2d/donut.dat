@@ -649,7 +649,7 @@ nmaxIterations = 200
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 8
+isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -709,7 +709,7 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 0
+nsubdividemax = 1
 
 # adaptation strategy
 # 1 = red-green
