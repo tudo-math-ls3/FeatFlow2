@@ -87,7 +87,7 @@ sreactionname =
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = rhs
+srhsname =
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -121,7 +121,7 @@ stargetfuncname = targetfunctional
 # 1 = volume integral
 # 2 = surface integral
 # 3 = analytical target functional
-iexacttargetfunctype = 1
+iexacttargetfunctype = 3
 
 # section name of exact target functional
 sexacttargetfuncname = exacttargetfunctional
@@ -264,16 +264,16 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.0
+dfinalTime = 10.0
 
 # initial time step size
-dinitialStep = 0.01
+dinitialStep = 0.001
 
 # lower bound for the admissible time step
-dminStep = 0.01
+dminStep = 0.001
 
 # upper bound for the admissible time step
-dmaxStep = 0.01
+dmaxStep = 0.001
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -315,10 +315,10 @@ depsSteady = 1e-12
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 8
 
 # maximum multigrid level number
-nlmax = 5
+nlmax = 8
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -455,7 +455,7 @@ nmaxIterations = 1000
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 2
+iprecond = 3
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -491,7 +491,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-10
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -640,7 +640,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of linear steps
-nmaxIterations = 100
+nmaxIterations = 200
 
 # type of linear solver
 #  2 = Jacobi
@@ -649,19 +649,19 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 8
 
 # dimension of the Krylov subspace for FGMRES method
-nkrylov = 10
+nkrylov = 25
 
 # linear relaxation parameter
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-14
+depsAbs = 1e-20
 
 # relative tolerance for residual
-depsRel = 1e-1
+depsRel = 1e-2
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -700,7 +700,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 0
+nadapt = 1
 
 # time for grid adaptivity
 dtimeadapt = 0.0
@@ -709,17 +709,17 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 5
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 1e-6
+drefinementTolerance = 1e-5
 
 # coarsening tolerance
-dcoarseningTolerance = 1e-8
+dcoarseningTolerance = 1e-6  #1e-8
 
 
 ################################################################################
