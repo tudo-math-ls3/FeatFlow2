@@ -38,7 +38,7 @@ CREATE_LIB=trap "rm -f $(LOCKFILE)" 2 3 9; \
 	    echo $(ARCH) $@ $^; \
 	    $(ARCH) $@ $^ && \
 	    echo $(RANLIB) $@; \
-	    $(RANLIB) $@ && \
+	    $(RANLIB) $@; \
 	    rm -f $(LOCKFILE); \
 	fi; \
 	trap - 2 3 9;
