@@ -2912,17 +2912,17 @@ contains
       ! Loop over all rows
       do i = 1, NEQ
         
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-
-        ! Compute coefficient
-        C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
-
-        ! Compute convection coefficients
-        call codire_calcPrimalConvConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
-
-        ! Update the time rate of change vector
-        troc(i) = troc(i) + dscale*k_ii*u(i)
+!!$        ! Get position of diagonal entry
+!!$        ii = Kdiagonal(i)
+!!$
+!!$        ! Compute coefficient
+!!$        C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
+!!$
+!!$        ! Compute convection coefficients
+!!$        call codire_calcPrimalConvConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+!!$
+!!$        ! Update the time rate of change vector
+!!$        troc(i) = troc(i) + dscale*k_ii*u(i)
 
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2947,8 +2947,8 @@ contains
           aux = d_ij*(u(j)-u(i))
           
           ! Update the time rate of change vector
-          troc(i) = troc(i) + dscale * (k_ij*u(j) + aux)
-          troc(j) = troc(j) + dscale * (k_ji*u(i) - aux)
+          troc(i) = troc(i) + dscale * (k_ij*(u(j)-u(i)) + aux)
+          troc(j) = troc(j) + dscale * (k_ji*(u(i)-u(j)) - aux)
 
           ! Compute raw antidiffusive flux
           flux0(iedge) = -aux
@@ -2982,8 +2982,6 @@ contains
           
         end do
       end do
-
-!!!      flux = flux0
 
     end subroutine buildFlux2d
 
@@ -3026,13 +3024,17 @@ contains
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
 
-          ! Apply minmod prelimiter
-          f_ij = flux(iedge)
-          diff = u(j)-u(i)
+          ! Apply minmod prelimiter ...
+          f_ij = minmod(flux(iedge), flux0(iedge))
+          
+          ! ... and store prelimited flux
+          flux(iedge) = f_ij
 
-          if (f_ij * diff > 0) then
-            f_ij = 0.0_DP;  flux(iedge) = f_ij
-          end if
+          diff = u(j)-u(i)
+!!$          f_ij = flux(iedge)
+!!$          if (f_ij * diff > 0) then
+!!$            f_ij = 0.0_DP;  flux(iedge) = f_ij
+!!$          end if
 
           ! Sums of raw antidiffusive fluxes
           pp(i) = pp(i) + max(0.0_DP,  f_ij)
