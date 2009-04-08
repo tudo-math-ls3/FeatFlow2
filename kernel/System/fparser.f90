@@ -2888,8 +2888,9 @@ contains
     Comp%StackPtr     = 0
     Comp%isVectorizable = .true.
 
-    ! Neither the stack for the bytecode nor the stack for the immediate expressions
-    ! can exceed the size of the function string. Hence, allocate some initial memory
+    ! Neither the stack for the bytecode nor the stack for the
+    ! immediate expressions can exceed the size of the function
+    ! string. Hence, allocate some initial memory
     isize=FunctionSize(Func)
     allocate(Comp%ByteCode(isize),Comp%Immed(isize))
 
@@ -2897,20 +2898,28 @@ contains
     ind = CompileExpression(Comp,Func,1,Var)
     
     ! Adjust memory size of bytecode stack
-    allocate(ByteCode(Comp%ByteCodeSize))
-    ByteCode=Comp%ByteCode
-    deallocate(Comp%ByteCode)
-    allocate(Comp%ByteCode(Comp%ByteCodeSize))
-    Comp%ByteCode=ByteCode
-    deallocate(ByteCode)
+    if (Comp%ByteCodeSize .eq. 0) then
+      deallocate(Comp%ByteCode)
+    else
+      allocate(ByteCode(Comp%ByteCodeSize))
+      ByteCode=Comp%ByteCode(1:Comp%ByteCodeSize)
+      deallocate(Comp%ByteCode)
+      allocate(Comp%ByteCode(Comp%ByteCodeSize))
+      Comp%ByteCode=ByteCode
+      deallocate(ByteCode)
+    end if
     
     ! Adjust memory size of immediate stack
-    allocate(Immed(Comp%ImmedSize))
-    Immed=Comp%Immed
-    deallocate(Comp%Immed)
-    allocate(Comp%Immed(Comp%ImmedSize))
-    Comp%Immed=Immed
-    deallocate(Immed)
+    if (Comp%ImmedSize .eq. 0) then
+      deallocate(Comp%Immed)
+    else
+      allocate(Immed(Comp%ImmedSize))
+      Immed=Comp%Immed(1:Comp%ImmedSize)
+      deallocate(Comp%Immed)
+      allocate(Comp%Immed(Comp%ImmedSize))
+      Comp%Immed=Immed
+      deallocate(Immed)
+    end if
   end subroutine Compile
 
   ! *****************************************************************************
