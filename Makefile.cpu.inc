@@ -164,19 +164,15 @@ INC           =
 # List of files only needed for a specific build ID
 # (please include path information, at best using Makefile variables)
 SRCEXTRA      = $(FEASTBASEDIR)/kernel/Postprocessing/gmvwritef.c \
-		$(FEASTBASEDIR)/kernel/System/signal_ccode.c \
-		$(FEASTBASEDIR)/libraries/minisplib/src/ilus.f \
-		$(FEASTBASEDIR)/libraries/minisplib/src/lusl.f \
-		$(FEASTBASEDIR)/libraries/minisplib/src/numfac.f \
-		$(FEASTBASEDIR)/libraries/minisplib/src/symbfac.f
+		$(FEASTBASEDIR)/kernel/System/signal_ccode.c
 
 # List of all libraries available (queried for purge* targets)
-ALLLIB        = amd blas lapack umfpack
+ALLLIB        = amd blas lapack splib umfpack
 
 # libraries to be built (e.g. 'blas' if there is no system-wide blas;
 # on a typical system set this to 'metis umfpack' only)
 # (Non-alphabetic order. Order should be like in linker step)
-BUILDLIB      = umfpack amd 
+BUILDLIB      = umfpack amd splib
 
 # directories to look in for library archives
 LIBDIR        = -L$(OBJDIR)
@@ -922,6 +918,28 @@ CFLAGSC       := -xP $(CFLAGSC)
 CFLAGSCXX     := -xP $(CFLAGSCXX)
 LDFLAGS       := -xP $(LDFLAGS)
 endif
+endif
+
+
+ifeq ($(call match,$(ID),pc-coresolo-linux-gcc-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=prescott $(CFLAGSF77)
+CFLAGSF90     := -march=prescott $(CFLAGSF90)
+CFLAGSC       := -march=prescott $(CFLAGSC)
+CFLAGSCXX     := -march=prescott $(CFLAGSCXX)
+LDFLAGS       := -march=prescott $(LDFLAGS)
+endif
+endif
+
+
+ifeq ($(call match,$(ID),pc-coresolo-linux-sunstudio-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
 endif
 
 
