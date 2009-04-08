@@ -52,7 +52,7 @@ ssmootherSection = 'CC-SMOOTHER'
 # =1: Defect correction with diagonal VANCA preconditioning.
 # =2: BiCGStab with diagonal VANCA preconditioning
 
-icoarseGridSolverType = 2
+icoarseGridSolverType = 0
 
 # Name of the section in this file which configures the coarse grid solver.
 

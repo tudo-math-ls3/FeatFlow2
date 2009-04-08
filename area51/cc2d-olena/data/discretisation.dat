@@ -8,14 +8,28 @@
 ###################
 [CC-DISCRETISATION]
 ###################
+# Type of the initial solution.
+# =0: Use zero solution.
+# =1: Read from file. isolutionStart specifies the level of the initial 
+#     solution, ssolutionStart specifies the filename to be read.
+#     THe file is expected as formatted text file.
+# =2: Read from file. isolutionStart specifies the level of the initial 
+#     solution, ssolutionStart specifies the filename to be read.
+#     The file is expected as unformatted binary file.
+#     (smaller, but processor dependent and not human readable!)
+# =3: Analytical initial solution. Create the solution by calling
+#     the callback functions coeff_AnalyticSolution_X, 
+#     coeff_AnalyticSolution_Y, coeff_AnalyticSolution_P,coeff_AnalyticSolution_C
+#     in cccallback.f90.
 
-# Creation of start vector of the (stationary and nonstationary) simulation.
-# |.|=0: ZERO, <>0: read from CSTART; 
-# |.|=1: read start vector from sStart vector on level NLMAX,
-# |.|=2: read start vector from sStart  on level NLMAX-1.
-# etc...
-# <0: sStart is unformatted file 
-#     (smaller, but processor dependent and not human readable)
+ctypeInitialSolution = 3
+
+# If ctypeInitialSolution=1: Level of the initial solution in the file
+# to be read.
+# =1,2,3,...: File ssolutionStart specifies a solution on 
+#             level isolutionStart.
+# =0,-1,-2,...: File ssolutionStart specifies a solution on 
+#               level (NLMAX+isolutionStart).
 
 isolutionStart     = 0
 
@@ -45,11 +59,11 @@ sSolutionWrite     = 'ns/DX4'
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 1
+NLMIN              = 2
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 3
+NLMAX              = 2
 
 
 # ------------------------------------------------------------------------
@@ -64,7 +78,7 @@ isubEquation = 0
 
 # Viscosity parmeter 1/NU
 
-RE                 = 1000
+RE                 = 5000
 
 # Type of right hand side. 
 # 0=zero
@@ -94,10 +108,13 @@ iBoundary          = 2
 # 4 = Q2 (E013) / Q2 (E013) / QP1
 # 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
 # 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+#  7 = Q1~(EM30) / Q1~(EM30) / Q0 new interface implementation
+# 10 = Q2~(EB50) / Q2~(EB50) / QP1
+# 11 = Q2~(EM50) / Q2~(EM50) / QP1
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
 # (QP1  = Quadrilateral discontinuous P1 element)
 
-iElementType       = 3
+iElementType       = 5
 
 # ------------------------------------------------------------------------
 
@@ -207,3 +224,14 @@ iintARIndicatorEX3YVel   = 1
 # standard = 20.0
 
 dintARboundEX3YVel       = 20.0
+
+
+#############
+[CC-CONCENTRATIONPARAM]
+#############
+
+#coefficient in front of martix I(3,3)
+daconcentr = -1.0
+
+#coefficient in front of matrix I(3,4)
+dbconcentr = -1.0

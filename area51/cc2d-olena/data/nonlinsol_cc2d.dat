@@ -20,7 +20,7 @@ nminIterations     = 1
 # in nonstationary simulations: per time step.
 # Former NLMAX
 
-nmaxIterations     = 10
+nmaxIterations     = 20
 
 # (absolute) limit for U-defects, standard = 1.0E-5
 
@@ -86,12 +86,12 @@ spreconditionerAdaptiveNewton = 'CC-ADAPTIVENEWTONITERATION'
 # lower limit for opt. OMEGA in nonlinear defect correction, 
 # <0: no rel. changes
 
-domegaMin          = 0.0
+domegaMin          = 1.0
 
 # upper limit for opt. OMEGA in nonlinear defect correction,
 # <0: no rel. changes
 
-domegaMax          = 2.0
+domegaMax          = 1.0
 
 # initial value limit for opt. OMEGA in nonlinear defect correction
 
