@@ -172,7 +172,7 @@ contains
     
     ! local variables
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
-    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
 
     !---------------------------------------------------------------------------
     ! Evaluate the Galerkin fluxes
@@ -185,52 +185,53 @@ contains
     ! Here, we do not compute the pressure p and the enthalpy H but we
     ! calculate the fluxes from the conservative variables as follows:
     !
-    !      / U2                             \
-    ! F1 = | G1*U4-G14*aux1-G2*aux2         |
-    !      | U3*aux3                        |
-    !      \ (gamma*U4-G2*(aux1+aux2))*aux3 /
+    !      / U2                           \
+    ! F1 = | G1*U4-G14*ru2i-G2*rv2i       |
+    !      | U3*ui                        |
+    !      \ (gamma*U4-G2*(ru2i+rv2i))*ui /
     !
-    !      / U3                             \
-    ! F2 = | U3*aux3 = U2*aux4              |
-    !      | G1*U4-G14*aux2-G2*aux1         |
-    !      \ (gamma*U4-G2*(aux1+aux2))*aux4 /
+    !      / U3                           \
+    ! F2 = | U3*ui = U2*vi                |
+    !      | G1*U4-G14*rv2i-G2*ru2i       |
+    !      \ (gamma*U4-G2*(ru2i+rv2i))*vi /
     !
-    ! where the auxiliary values are defined as follows:
+    ! where the auxiliary values for node i are defined as follows:
     !
-    ! aux1 = U2*U2/U1 = aux3*U2
-    ! aux2 = U3*U3/U1 = aux4*U3
-    ! aux3 = U2/U1
-    ! aux4 = U3/U1
+    ! ru2i = U2*U2/U1 = ui*U2
+    ! rv2i = U3*U3/U1 = vi*U3
+    ! ui = U2/U1
+    ! vi = U3/U1
     !
     ! and the predefined constants are given by:
     !
     ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
     !
-    ! The auxiliary quantities aux[1-4] and aux[5-8] are used 
-    ! for the values in nodes i and j, respectively.
+    ! The auxiliary values for node j are defined accordingly.
     ! ---------------------------------------------------------------------------
 
-    ! Compute auxiliary values
-    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
-    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
-    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
-    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    ! Compute velocities and energy
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); rv2i = vi*U_i(3)
+    ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
     ! Compute fluxes for x-direction
-    dF1_ij(1) = U_i(2)                             - U_j(2)
-    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
-    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+    dF1_ij(1) = U_i(2)                           - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
+    dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
 
     ! Compute fluxes for y-direction
-    dF2_ij(1) = U_i(3)                             - U_j(3)
-    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
-    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+    dF2_ij(1) = U_i(3)                           - U_j(3)
+    dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
+    dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
 
     ! Assembly fluxes
-    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
-    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
+    F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
 
   end subroutine euler_calcFluxGalerkin2d
 
@@ -269,7 +270,7 @@ contains
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
 
     !---------------------------------------------------------------------------
     ! Evaluate the Galerkin fluxes
@@ -277,23 +278,25 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute auxiliary values
-    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
-    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
-    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
-    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    ! Compute velocities and energy
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); rv2i = vi*U_i(3)
+    ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
     ! Compute fluxes for x-direction
-    dF1_ij(1) = U_i(2)                             -  U_j(2)
-    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
-    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+    dF1_ij(1) = U_i(2)                           - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
+    dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
 
     ! Compute fluxes for y-direction
-    dF2_ij(1) = U_i(3)                             - U_j(3)
-    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
-    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+    dF2_ij(1) = U_i(3)                           - U_j(3)
+    dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
+    dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
 
     ! Compute skew-symmetric coefficient
     a = dscale * 0.5_DP*(C_ij-C_ji)
@@ -336,8 +339,8 @@ contains
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
+    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
+    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux,vel,cs
 
     !---------------------------------------------------------------------------
     ! Evaluate the Galerkin fluxes
@@ -345,27 +348,29 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute auxiliary values
-    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
-    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
-    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
-    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    ! Compute velocities and energy
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); rv2i = vi*U_i(3)
+    ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
     ! Compute fluxes for x-direction
-    dF1_ij(1) = U_i(2)                             - U_j(2)
-    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
-    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+    dF1_ij(1) = U_i(2)                           - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
+    dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
 
     ! Compute fluxes for y-direction
-    dF2_ij(1) = U_i(3)                             - U_j(3)
-    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
-    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+    dF2_ij(1) = U_i(3)                           - U_j(3)
+    dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
+    dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
 
     ! Assembly fluxes
-    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
-    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
+    F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
 
 
     !---------------------------------------------------------------------------
@@ -377,20 +382,20 @@ contains
 
     ! Compute Roe mean values
     aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-    u_ij = (aux*aux3+aux7)/(aux+1.0_DP)
-    v_ij = (aux*aux4+aux8)/(aux+1.0_DP)
+    u_ij = (aux*ui+uj)/(aux+1.0_DP)
+    v_ij = (aux*vi+vj)/(aux+1.0_DP)
     q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
     hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
     hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
     H_ij = (aux*hi+hj)/(aux+1.0_DP)
 
     ! Compute auxiliary variables
-    aux  = sqrt(a(1)*a(1)+a(2)*a(2))
-    aux1 = u_ij*a(1) + v_ij*a(2)
-    aux2 = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
+    aux = sqrt(a(1)*a(1)+a(2)*a(2))
+    vel = u_ij*a(1) + v_ij*a(2)
+    cs  = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
 
     ! Scalar dissipation
-    d_ij = dscale * (abs(aux1) + aux*aux2)
+    d_ij = dscale * (abs(vel) + aux*cs)
 
     ! Multiply the solution difference by the artificial diffusion factor
     Diff = d_ij*(U_j-U_i)
@@ -434,7 +439,7 @@ contains
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
 
     !---------------------------------------------------------------------------
@@ -443,27 +448,29 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute auxiliary values
-    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
-    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
-    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
-    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    ! Compute velocities and energy
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); rv2i = vi*U_i(3)
+    ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
     ! Compute fluxes for x-direction
-    dF1_ij(1) = U_i(2)                             - U_j(2)
-    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
-    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+    dF1_ij(1) = U_i(2)                           - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
+    dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
 
     ! Compute fluxes for y-direction
-    dF2_ij(1) = U_i(3)                             - U_j(3)
-    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
-    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+    dF2_ij(1) = U_i(3)                           - U_j(3)
+    dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
+    dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
 
     ! Assembly fluxes
-    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
-    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
+    F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
 
 
     !---------------------------------------------------------------------------
@@ -475,8 +482,8 @@ contains
 
     ! Compute Roe mean values
     aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-    u_ij = (aux*aux3+aux7)/(aux+1.0_DP)
-    v_ij = (aux*aux4+aux8)/(aux+1.0_DP)
+    u_ij = (aux*ui+uj)/(aux+1.0_DP)
+    v_ij = (aux*vi+vj)/(aux+1.0_DP)
     q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
     hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
     hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
@@ -529,9 +536,9 @@ contains
     ! local variables
     real(DP), dimension(NVAR2D) :: dF1_ij,dF2_ij,Diff
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-    real(DP) :: aux,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
-    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,cs_ij
+    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
+    real(DP) :: aux,aux1,aux2,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
+    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,cs
 
 
     !---------------------------------------------------------------------------
@@ -540,27 +547,29 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute auxiliary values
-    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
-    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
-    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
-    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    ! Compute velocities and energy
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); rv2i = vi*U_i(3)
+    ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
     ! Compute fluxes for x-direction
-    dF1_ij(1) = U_i(2)                             - U_j(2)
-    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
-    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+    dF1_ij(1) = U_i(2)                           - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
+    dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
 
     ! Compute fluxes for y-direction
-    dF2_ij(1) = U_i(3)                             - U_j(3)
-    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
-    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+    dF2_ij(1) = U_i(3)                           - U_j(3)
+    dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
+    dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
 
     ! Assembly fluxes
-    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
-    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
+    F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
 
     
     !---------------------------------------------------------------------------
@@ -577,8 +586,8 @@ contains
       
       ! Compute Roe mean values
       aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-      u_ij = (aux*aux3+aux7)/(aux+1.0_DP)
-      v_ij = (aux*aux4+aux8)/(aux+1.0_DP)
+      u_ij = (aux*ui+uj)/(aux+1.0_DP)
+      v_ij = (aux*vi+vj)/(aux+1.0_DP)
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
@@ -589,12 +598,12 @@ contains
       vPow2 = v_ij*v_ij
       q_ij  = 0.5_DP*(uPow2+vPow2)
       cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-      cs_ij = sqrt(cPow2)
+      cs = sqrt(cPow2)
       
       ! Compute eigenvalues
-      l1 = abs(aux-cs_ij)
+      l1 = abs(aux-cs)
       l2 = abs(aux)
-      l3 = abs(aux+cs_ij)
+      l3 = abs(aux+cs)
       l4 = abs(aux)
 
       ! Compute solution difference U_i-U_j
@@ -602,7 +611,7 @@ contains
       
       ! Compute auxiliary quantities for characteristic variables
       aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
-      aux2 = 0.5_DP*(aux*Diff(1)-a(1)*Diff(2)-a(2)*Diff(3))/cs_ij
+      aux2 = 0.5_DP*(aux*Diff(1)-a(1)*Diff(2)-a(2)*Diff(3))/cs
 
       ! Compute characteristic variables multiplied by the corresponding eigenvalue
       w1 = l1 * (aux1 + aux2)
@@ -612,9 +621,9 @@ contains
 
       ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
       Diff(1) = dscale * anorm * ( w1 + w2 + w3 )
-      Diff(2) = dscale * anorm * ( (u_ij-cs_ij*a(1))*w1 + u_ij*w2 + (u_ij+cs_ij*a(1))*w3 + a(2)*w4 )
-      Diff(3) = dscale * anorm * ( (v_ij-cs_ij*a(2))*w1 + v_ij*w2 + (v_ij+cs_ij*a(2))*w3 - a(1)*w4 )
-      Diff(4) = dscale * anorm * ( (H_ij-cs_ij*aux)*w1  + q_ij*w2 + (H_ij+cs_ij*aux)*w3  + (u_ij*a(2)-v_ij*a(1))*w4 )
+      Diff(2) = dscale * anorm * ( (u_ij-cs*a(1))*w1 + u_ij*w2 + (u_ij+cs*a(1))*w3 + a(2)*w4 )
+      Diff(3) = dscale * anorm * ( (v_ij-cs*a(2))*w1 + v_ij*w2 + (v_ij+cs*a(2))*w3 - a(1)*w4 )
+      Diff(4) = dscale * anorm * ( (H_ij-cs*aux)*w1  + q_ij*w2 + (H_ij+cs*aux)*w3  + (u_ij*a(2)-v_ij*a(1))*w4 )
       
       ! Add the artificial diffusion to the fluxes
       F_ij = F_ij+Diff
@@ -656,9 +665,9 @@ contains
     ! local variables
     real(DP), dimension(NVAR2D) :: dF1_ij,dF2_ij,Diff
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
-    real(DP) :: aux,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
-    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,cs_ij
+    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
+    real(DP) :: aux,aux1,aux2,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
+    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,cs
 
 
     !---------------------------------------------------------------------------
@@ -667,28 +676,29 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute auxiliary values
-    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
-    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
-    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
-    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    ! Compute velocities and energy
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); rv2i = vi*U_i(3)
+    ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
     ! Compute fluxes for x-direction
-    dF1_ij(1) = U_i(2)                             - U_j(2)
-    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
-    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+    dF1_ij(1) = U_i(2)                           - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
+    dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
 
     ! Compute fluxes for y-direction
-    dF2_ij(1) = U_i(3)                             - U_j(3)
-    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
-    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+    dF2_ij(1) = U_i(3)                           - U_j(3)
+    dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
+    dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
 
     ! Assembly fluxes
-    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
-    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
-
+    F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
 
     
     !---------------------------------------------------------------------------
@@ -705,8 +715,8 @@ contains
       
       ! Compute Roe mean values
       aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-      u_ij = (aux*aux3+aux7)/(aux+1.0_DP)
-      v_ij = (aux*aux4+aux8)/(aux+1.0_DP)
+      u_ij = (aux*ui+uj)/(aux+1.0_DP)
+      v_ij = (aux*vi+vj)/(aux+1.0_DP)
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
@@ -716,16 +726,16 @@ contains
       vPow2 = v_ij*v_ij
       q_ij  = 0.5_DP*(uPow2+vPow2)
       cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-      cs_ij = sqrt(cPow2)
+      cs = sqrt(cPow2)
 
       !-------------------------------------------------------------------------
       ! Dimensional splitting: x-direction
       !-------------------------------------------------------------------------
       
       ! Compute eigenvalues
-      l1 = abs(u_ij-cs_ij)
+      l1 = abs(u_ij-cs)
       l2 = abs(u_ij)
-      l3 = abs(u_ij+cs_ij)
+      l3 = abs(u_ij+cs)
       l4 = abs(u_ij)
 
       ! Compute solution difference U_i-U_j
@@ -733,7 +743,7 @@ contains
       
       ! Compute auxiliary quantities for characteristic variables
       aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
-      aux2 = 0.5_DP*(u_ij*Diff(1)-Diff(2))/cs_ij
+      aux2 = 0.5_DP*(u_ij*Diff(1)-Diff(2))/cs
 
       ! Compute characteristic variables multiplied by the corresponding eigenvalue
       w1 = l1 * (aux1 + aux2)
@@ -743,9 +753,9 @@ contains
 
       ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
       Diff(1) = dscale * a(1) * ( w1 + w2 + w3 )
-      Diff(2) = dscale * a(1) * ( (u_ij-cs_ij)*w1 + u_ij*w2 + (u_ij+cs_ij)*w3 )
+      Diff(2) = dscale * a(1) * ( (u_ij-cs)*w1 + u_ij*w2 + (u_ij+cs)*w3 )
       Diff(3) = dscale * a(1) * ( v_ij*w1 + v_ij*w2 + v_ij*w3 - w4 )
-      Diff(4) = dscale * a(1) * ( (H_ij-cs_ij*u_ij)*w1  + q_ij*w2 + (H_ij+cs_ij*u_ij)*w3  -v_ij*w4 )
+      Diff(4) = dscale * a(1) * ( (H_ij-cs*u_ij)*w1  + q_ij*w2 + (H_ij+cs*u_ij)*w3  -v_ij*w4 )
       
       ! Add the artificial diffusion to the fluxes
       F_ij = F_ij+Diff
@@ -756,9 +766,9 @@ contains
       ! Dimensional splitting: y-direction
       !-------------------------------------------------------------------------
       ! Compute eigenvalues
-      l1 = abs(v_ij-cs_ij)
+      l1 = abs(v_ij-cs)
       l2 = abs(v_ij)
-      l3 = abs(v_ij+cs_ij)
+      l3 = abs(v_ij+cs)
       l4 = abs(v_ij)
 
       ! Compute solution difference U_i-U_j
@@ -766,7 +776,7 @@ contains
       
       ! Compute auxiliary quantities for characteristic variables
       aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
-      aux2 = 0.5_DP*(v_ij*Diff(1)-Diff(3))/cs_ij
+      aux2 = 0.5_DP*(v_ij*Diff(1)-Diff(3))/cs
 
       ! Compute characteristic variables multiplied by the corresponding eigenvalue
       w1 = l1 * (aux1 + aux2)
@@ -777,8 +787,8 @@ contains
       ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
       Diff(1) = dscale * a(2) * ( w1 + w2 + w3 )
       Diff(2) = dscale * a(2) * ( u_ij*w1 + u_ij*w2 + u_ij*w3 + w4 )
-      Diff(3) = dscale * a(2) * ( (v_ij-cs_ij)*w1 + v_ij*w2 + (v_ij+cs_ij)*w3 )
-      Diff(4) = dscale * a(2) * ( (H_ij-cs_ij*v_ij)*w1  + q_ij*w2 + (H_ij+cs_ij*v_ij)*w3  + u_ij*w4 )
+      Diff(3) = dscale * a(2) * ( (v_ij-cs)*w1 + v_ij*w2 + (v_ij+cs)*w3 )
+      Diff(4) = dscale * a(2) * ( (H_ij-cs*v_ij)*w1  + q_ij*w2 + (H_ij+cs*v_ij)*w3  + u_ij*w4 )
       
       ! Add the artificial diffusion to the fluxes
       F_ij = F_ij+Diff
@@ -910,7 +920,7 @@ contains
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: aux1,aux2,aux3,aux4,aux5,aux6,aux7,aux8
+    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j,ci,cj,Ei,Ej
     real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
 
     !---------------------------------------------------------------------------
@@ -919,50 +929,50 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute auxiliary values
-    aux3 = U_i(2)/U_i(1);  aux4 = U_i(3)/U_i(1)
-    aux1 = aux3*U_i(2);    aux2 = aux4*U_i(3)
-    aux7 = U_j(2)/U_j(1);  aux8 = U_j(3)/U_j(1)
-    aux5 = aux7*U_j(2);    aux6 = aux8*U_j(3)
+    ! Compute velocities and energy
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); rv2i = vi*U_i(3)
+    ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
     ! Compute fluxes for x-direction
-    dF1_ij(1) = U_i(2)                             - U_j(2)
-    dF1_ij(2) = G1*U_i(4)-G14*aux1-G2*aux2         - (G1*U_j(4)-G14*aux5-G2*aux6)
-    dF1_ij(3) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux3 - ((GAMMA*U_j(4)-G2*(aux5+aux6))*aux7)
+    dF1_ij(1) = U_i(2)                           - U_j(2)
+    dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
+    dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
 
     ! Compute fluxes for y-direction
-    dF2_ij(1) = U_i(3)                             - U_j(3)
-    dF2_ij(2) = U_i(3)*aux3                        - U_j(3)*aux7
-    dF2_ij(3) = G1*U_i(4)-G14*aux2-G2*aux1         - (G1*U_j(4)-G14*aux6-G2*aux5)
-    dF2_ij(4) = (GAMMA*U_i(4)-G2*(aux1+aux2))*aux4 - (GAMMA*U_j(4)-G2*(aux5+aux6))*aux8
+    dF2_ij(1) = U_i(3)                           - U_j(3)
+    dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
+    dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
 
     ! Assembly fluxes
-    F_ij = dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
-    F_ji = dscale * (-C_ji(1)*dF1_ij - C_ji(2)*dF2_ij)
+    F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
+    F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
 
 
     !---------------------------------------------------------------------------
     ! Evaluate the scalar dissipation 
     !---------------------------------------------------------------------------
 
-    ! Compute skew-symmetric coefficient
-    a = 0.5_DP*(C_ij-C_ji)
-
     ! Compute enthalpy
-    hi = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-    hj = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
+    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
 
-    ! Compute auxiliary variables
-    aux5 = sqrt(max(-G1*(0.5_DP*(aux3*aux3+aux4*aux4)-hi), SYS_EPSREAL))
-    aux6 = sqrt(max(-G1*(0.5_DP*(aux7*aux7+aux8*aux8)-hj), SYS_EPSREAL))
-    
+    ! Compute speed of sound
+    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+
+    d_ij = max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
+                abs(C_ji(1)*ui) + abs(C_ji(1))*ci )&
+         + max( abs(C_ij(2)*vj) + abs(C_ij(2))*cj,&
+                abs(C_ji(2)*vi) + abs(C_ji(2))*ci )
+
     ! Scalar dissipation for the Rusanov flux
-    d_ij = dscale * ( abs(a(1)) * max( abs(aux3) + aux5, abs(aux7) + aux6) +&
-                      abs(a(2)) * max( abs(aux4) + aux5, abs(aux8) + aux6) )
-
-    ! Multiply the solution difference by the artificial diffusion factor
-    Diff = d_ij*(U_j-U_i)
+    Diff = dscale*d_ij*(U_j-U_i)
 
     ! Add the artificial diffusion to the fluxes
     F_ij = F_ij+Diff
@@ -1432,7 +1442,7 @@ contains
     real(DP), dimension(NVAR2D,NVAR2D) :: R_ij,L_ij
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: aux,hi,hj,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij
-    real(DP) :: l1,l2,l3,l4,anorm,c1,c2,cs_ij,cPow2,vel
+    real(DP) :: l1,l2,l3,l4,anorm,c1,c2,cs,cPow2,vel
 
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1)
@@ -1469,19 +1479,19 @@ contains
       c2    = a(2)/anorm
       vel   = c1*u_ij+c2*v_ij
       cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-      cs_ij = sqrt(cPow2)
+      cs = sqrt(cPow2)
       
       ! Diagonal matrix of eigenvalues
-      l1 = abs(vel-cs_ij)
+      l1 = abs(vel-cs)
       l2 = abs(vel)
-      l3 = abs(vel+cs_ij)
+      l3 = abs(vel+cs)
       l4 = abs(vel)
       
       ! Matrix of right eigenvectors
       R_ij(1,1) =  l1
-      R_ij(2,1) =  l1*(u_ij-cs_ij*c1)
-      R_ij(3,1) =  l1*(v_ij-cs_ij*c2)
-      R_ij(4,1) =  l1*(H_ij-cs_ij*vel)
+      R_ij(2,1) =  l1*(u_ij-cs*c1)
+      R_ij(3,1) =  l1*(v_ij-cs*c2)
+      R_ij(4,1) =  l1*(H_ij-cs*vel)
       
       R_ij(1,2) =  l2
       R_ij(2,2) =  l2*u_ij
@@ -1489,9 +1499,9 @@ contains
       R_ij(4,2) =  l2*q_ij
       
       R_ij(1,3) =  l3
-      R_ij(2,3) =  l3*(u_ij+cs_ij*c1)
-      R_ij(3,3) =  l3*(v_ij+cs_ij*c2)
-      R_ij(4,3) =  l3*(H_ij+cs_ij*vel)
+      R_ij(2,3) =  l3*(u_ij+cs*c1)
+      R_ij(3,3) =  l3*(v_ij+cs*c2)
+      R_ij(4,3) =  l3*(H_ij+cs*vel)
       
       R_ij(1,4) =  0.0_DP
       R_ij(2,4) =  l4*c2
@@ -1499,19 +1509,19 @@ contains
       R_ij(4,4) =  l4*(u_ij*c2-v_ij*c1)
       
       ! Matrix of left eigenvectors
-      L_ij(1,1) = 0.5_DP*(G1*q_ij+cs_ij*vel)/cPow2
+      L_ij(1,1) = 0.5_DP*(G1*q_ij+cs*vel)/cPow2
       L_ij(2,1) = (cPow2-G1*q_ij)/cPow2
-      L_ij(3,1) = 0.5_DP*(G1*q_ij-cs_ij*vel)/cPow2
+      L_ij(3,1) = 0.5_DP*(G1*q_ij-cs*vel)/cPow2
       L_ij(4,1) = v_ij*c1-u_ij*c2
       
-      L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs_ij*c1)/cPow2
+      L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs*c1)/cPow2
       L_ij(2,2) = G1*u_ij/cPow2
-      L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs_ij*c1)/cPow2
+      L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs*c1)/cPow2
       L_ij(4,2) = c2
       
-      L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs_ij*c2)/cPow2
+      L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs*c2)/cPow2
       L_ij(2,3) = G1*v_ij/cPow2
-      L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs_ij*c2)/cPow2
+      L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs*c2)/cPow2
       L_ij(4,3) = -c1
       
       L_ij(1,4) =  G2/cPow2
@@ -1578,7 +1588,7 @@ contains
     ! local variable
     real(DP), dimension(NVAR2D,NVAR2D) :: R_ij,L_ij
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij,vel,c1,c2,cPow2,cs_ij,l1,l2,l3,l4
+    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij,vel,c1,c2,cPow2,cs,l1,l2,l3,l4
     real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
 
     ! Compute auxiliary variables
@@ -1654,19 +1664,19 @@ contains
 
       ! Compute speed of sound
       cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-      cs_ij = sqrt(cPow2)
+      cs = sqrt(cPow2)
       
       ! Diagonal matrix of eigenvalues
-      l1 = abs(vel-cs_ij)
+      l1 = abs(vel-cs)
       l2 = abs(vel)
-      l3 = abs(vel+cs_ij)
+      l3 = abs(vel+cs)
       l4 = abs(vel)
       
       ! Matrix of right eigenvectors
       R_ij(1,1) =  l1
-      R_ij(2,1) =  l1*(u_ij-cs_ij*c1)
-      R_ij(3,1) =  l1*(v_ij-cs_ij*c2)
-      R_ij(4,1) =  l1*(H_ij-cs_ij*vel)
+      R_ij(2,1) =  l1*(u_ij-cs*c1)
+      R_ij(3,1) =  l1*(v_ij-cs*c2)
+      R_ij(4,1) =  l1*(H_ij-cs*vel)
       
       R_ij(1,2) =  l2
       R_ij(2,2) =  l2*u_ij
@@ -1674,9 +1684,9 @@ contains
       R_ij(4,2) =  l2*q_ij
       
       R_ij(1,3) =  l3
-      R_ij(2,3) =  l3*(u_ij+cs_ij*c1)
-      R_ij(3,3) =  l3*(v_ij+cs_ij*c2)
-      R_ij(4,3) =  l3*(H_ij+cs_ij*vel)
+      R_ij(2,3) =  l3*(u_ij+cs*c1)
+      R_ij(3,3) =  l3*(v_ij+cs*c2)
+      R_ij(4,3) =  l3*(H_ij+cs*vel)
       
       R_ij(1,4) =  0.0_DP
       R_ij(2,4) =  l4*c2
@@ -1684,19 +1694,19 @@ contains
       R_ij(4,4) =  l4*(u_ij*c2-v_ij*c1)
       
       ! Matrix of left eigenvectors
-      L_ij(1,1) = 0.5_DP*(G1*q_ij+cs_ij*vel)/cPow2
+      L_ij(1,1) = 0.5_DP*(G1*q_ij+cs*vel)/cPow2
       L_ij(2,1) = (cPow2-G1*q_ij)/cPow2
-      L_ij(3,1) = 0.5_DP*(G1*q_ij-cs_ij*vel)/cPow2
+      L_ij(3,1) = 0.5_DP*(G1*q_ij-cs*vel)/cPow2
       L_ij(4,1) = v_ij*c1-u_ij*c2
 
-      L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs_ij*c1)/cPow2
+      L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs*c1)/cPow2
       L_ij(2,2) = G1*u_ij/cPow2
-      L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs_ij*c1)/cPow2
+      L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs*c1)/cPow2
       L_ij(4,2) = c2
 
-      L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs_ij*c2)/cPow2
+      L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs*c2)/cPow2
       L_ij(2,3) = G1*v_ij/cPow2
-      L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs_ij*c2)/cPow2
+      L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs*c2)/cPow2
       L_ij(4,3) = -c1
 
       L_ij(1,4) =  G2/cPow2
@@ -1973,7 +1983,7 @@ contains
 
     ! local variables
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs_ij,aux,aux1,aux2,hi,hj,cPow2,uPow2,vPow2,a1,a2,anorm    
+    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,hi,hj,cPow2,uPow2,vPow2,a1,a2,anorm    
     
     ! Compute norm of weighting coefficient
     anorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
@@ -1998,23 +2008,23 @@ contains
       vPow2 = v_ij*v_ij
       q_ij  = 0.5_DP*(uPow2+vPow2)
       cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-      cs_ij = sqrt(cPow2)  
+      cs = sqrt(cPow2)  
       aux   = a1*u_ij+a2*v_ij
 
       ! Compute diagonal matrix of eigenvalues (if present)
       if (present(Lbd_ij)) then
-        Lbd_ij(1) = aux-cs_ij
+        Lbd_ij(1) = aux-cs
         Lbd_ij(2) = aux
-        Lbd_ij(3) = aux+cs_ij
+        Lbd_ij(3) = aux+cs
         Lbd_ij(4) = aux
       end if
 
       ! Compute matrix of right eigenvectors
       if (present(R_ij)) then
         R_ij( 1) =  1.0_DP
-        R_ij( 2) =  u_ij-cs_ij*a1
-        R_ij( 3) =  v_ij-cs_ij*a2
-        R_ij( 4) =  H_ij-cs_ij*aux
+        R_ij( 2) =  u_ij-cs*a1
+        R_ij( 3) =  v_ij-cs*a2
+        R_ij( 4) =  H_ij-cs*aux
 
         R_ij( 5) =  1.0_DP
         R_ij( 6) =  u_ij
@@ -2022,9 +2032,9 @@ contains
         R_ij( 8) =  q_ij
 
         R_ij( 9) =  1.0_DP
-        R_ij(10) =  u_ij+cs_ij*a1
-        R_ij(11) =  v_ij+cs_ij*a2
-        R_ij(12) =  H_ij+cs_ij*aux
+        R_ij(10) =  u_ij+cs*a1
+        R_ij(11) =  v_ij+cs*a2
+        R_ij(12) =  H_ij+cs*aux
         R_ij(13) =  0.0_DP
 
         R_ij(14) =  a2
@@ -2034,19 +2044,19 @@ contains
 
       ! Compute matrix of left eigenvectors
       if (present(L_ij)) then
-        L_ij( 1) =  0.5_DP*(G1*q_ij+cs_ij*aux)/cPow2
+        L_ij( 1) =  0.5_DP*(G1*q_ij+cs*aux)/cPow2
         L_ij( 2) = (cPow2-G1*q_ij)/cPow2
-        L_ij( 3) =  0.5_DP*(G1*q_ij-cs_ij*aux)/cPow2
+        L_ij( 3) =  0.5_DP*(G1*q_ij-cs*aux)/cPow2
         L_ij( 4) =  v_ij*a1-u_ij*a2
 
-        L_ij( 5) =  0.5_DP*(-G1*u_ij-cs_ij*a1)/cPow2
+        L_ij( 5) =  0.5_DP*(-G1*u_ij-cs*a1)/cPow2
         L_ij( 6) =  G1*u_ij/cPow2
-        L_ij( 7) =  0.5_DP*(-G1*u_ij+cs_ij*a1)/cPow2
+        L_ij( 7) =  0.5_DP*(-G1*u_ij+cs*a1)/cPow2
         L_ij( 8) =  a2
 
-        L_ij( 9) =  0.5_DP*(-G1*v_ij-cs_ij*a2)/cPow2
+        L_ij( 9) =  0.5_DP*(-G1*v_ij-cs*a2)/cPow2
         L_ij(10) =  G1*v_ij/cPow2
-        L_ij(11) =  0.5_DP*(-G1*v_ij+cs_ij*a2)/cPow2
+        L_ij(11) =  0.5_DP*(-G1*v_ij+cs*a2)/cPow2
         L_ij(12) = -a1
 
         L_ij(13) =  G2/cPow2
@@ -2062,7 +2072,7 @@ contains
         
         ! Compute auxiliary quantities for characteristic variables
         aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
-        aux2 = 0.5_DP*(aux*Diff(1)-a1*Diff(2)-a2*Diff(3))/cs_ij
+        aux2 = 0.5_DP*(aux*Diff(1)-a1*Diff(2)-a2*Diff(3))/cs
         
         ! Compute characteristic variables
         W_ij(1) = anorm * (aux1 + aux2)
