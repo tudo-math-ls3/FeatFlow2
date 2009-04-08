@@ -255,7 +255,18 @@ module ccbasic
     ! =0: (Navier-)Stokes with gradient tensor
     ! =1: (Navier-)Stokes with deformation tensor
     integer :: isubEquation
+    
+    ! Model for the viscosity.
+    ! =0: Constant viscosity.
+    ! =1: Power law nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
+    integer :: cviscoModel 
         
+    ! Exponent parameter for the viscosity model
+    real(DP) :: dviscoexponent
+
+    ! Epsilon regularisation for the viscosity model
+    real(DP) :: dviscoEps
+
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
 

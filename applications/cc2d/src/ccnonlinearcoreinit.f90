@@ -183,6 +183,9 @@ contains
     rnonlinearCCMatrix%deta = 1.0_DP     ! A gradient block
     rnonlinearCCMatrix%dtau = 1.0_DP     ! A divergence block
     rnonlinearCCMatrix%isubequation = rproblem%isubequation   ! Init the equation type
+    rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
+    rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
+    rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
     rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%rdiscretisation
     rnonlinearCCMatrix%p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
     rnonlinearCCMatrix%p_rmatrixTemplateGradient => rlevelInfo%rmatrixTemplateGradient

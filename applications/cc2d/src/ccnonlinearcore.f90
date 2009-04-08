@@ -566,6 +566,9 @@ contains
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%isubequation = rproblem%isubequation
+      rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
+      rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
+      rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
       rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
       rnonlinearCCMatrix%p_rdiscretisation => &
@@ -764,6 +767,9 @@ contains
       rnonlinearCCMatrix%dtau = 1.0_DP
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%isubequation = rproblem%isubequation
+      rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
+      rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
+      rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
       rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
@@ -1333,6 +1339,9 @@ contains
           rnonlinearCCMatrix%dtau = 1.0_DP
           rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
           rnonlinearCCMatrix%isubequation = rproblem%isubequation
+          rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
+          rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
+          rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
           rnonlinearCCMatrix%dnu = rproblem%dnu
           rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
           rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH

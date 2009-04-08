@@ -605,6 +605,7 @@ contains
     cmatBuildType = BILF_MATC_ELEMENTBASED
     
     if ((rproblem%rstabilisation%iupwind .eq. CCMASM_STAB_EDGEORIENTED) .or. &
+        (rproblem%rstabilisation%iupwind .eq. CCMASM_STAB_EDGEORIENTED2) .or. &
         (rproblem%rstabilisation%iupwind .eq. CCMASM_STAB_FASTEDGEORIENTED)) then
       cmatBuildType = BILF_MATC_EDGEBASED
     end if

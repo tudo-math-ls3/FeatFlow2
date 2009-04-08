@@ -200,13 +200,22 @@ contains
     call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
                               'MT_OutputLevel',rproblem%MT_OutputLevel,2)
 
+    ! Get the viscosity model
+    ! Standard = 0 = constant viscosity
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'cviscoModel',rproblem%cviscoModel,0)
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'dviscoexponent',rproblem%dviscoexponent,2.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'dviscoEps',rproblem%dviscoEps,0.01_DP)
+
     ! Get the viscosity parameter, save it to the problem structure
     ! as well as into the collection.
     ! Note that the parameter in the DAT file is 1/nu !
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'RE',dnu,1000.0_DP)
 
-    dnu = 1E0_DP/dnu
+    dnu = 1.0_DP/dnu
     rproblem%dnu = dnu
     
     ! Get min/max level from the parameter file.
