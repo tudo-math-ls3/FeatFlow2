@@ -689,179 +689,6 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_estimateRecoveryError(rparlist, ssectionName, rproblemLevel, rsolution, rerror)
-
-!<description>
-    ! Uses the level-set function for error estimation
-!</description>
-
-!<input>
-    ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
-
-    ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
-
-    ! solution vector
-    type(t_vectorBlock), intent(IN) :: rsolution
-
-    ! problem level structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
-!</input>
-
-!<output>
-    ! element-wise error distribution
-    type(t_vectorScalar), intent(OUT) :: rerror
-!</output>
-!</subroutine>
-
-    ! section names
-    character(LEN=SYS_STRLEN) :: sindatfileName
-    character(LEN=SYS_STRLEN) :: serrorestimatorName
-    character(LEN=SYS_STRLEN) :: sexactsolutionName
-
-    ! local variables
-    real(DP), dimension(:), pointer :: p_Ddata, p_Derror
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:,:), pointer :: p_IneighboursAtElement
-    logical, dimension(:), pointer :: p_BisactiveElement
-    real(DP) :: dprotectLayerTolerance, ddistance
-    integer :: iel, ivt, ive
-    integer :: iprotectLayer, nprotectLayers
-    integer :: h_BisactiveElement
-    
-
-
-    call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
-    call lsyssc_getbase_double(rerror, p_Derror)
-    call lsysbl_getbase_double(rsolution, p_Ddata)
-            
-    call storage_getbase_int2d(rproblemLevel%rtriangulation%h_IverticesAtElement,&
-                               p_IverticesAtElement)
-
-    ielloop: do iel = 1, rproblemLevel%rtriangulation%NEL
-      
-      do ive = 1, tria_getNVE(p_IverticesAtElement, iel)
-
-        ivt = p_IverticesAtElement(ive, iel)
-        
-        if (p_Ddata(ivt) .ge. 0.0_DP) then
-          p_Derror(iel) = 1.0_DP
-          cycle ielloop
-        else
-          p_Derror(iel) = 0.0_DP
-        end if       
-
-      end do
-      
-    end do ielloop
-
-
-    !---------------------------------------------------------------------------
-    ! Calculate protection layers
-    !---------------------------------------------------------------------------
-
-    call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
-    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'nprotectLayers', nprotectLayers, 0)
-    call parlst_getvalue_double(rparlist, trim(serrorestimatorName),&
-                                'dprotectLayerTolerance', dprotectLayerTolerance, 0.0_DP)
-
-    if (nprotectLayers > 0) then
-
-      ! Create auxiliary memory
-      h_BisactiveElement = ST_NOHANDLE
-      call storage_new('codire_estimateRecoveryError',' BisactiveElement',&
-                       rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
-                       h_BisactiveElement, ST_NEWBLOCK_NOINIT)
-      call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
-      
-      ! Set pointers
-      call storage_getbase_int2D(&
-          rproblemLevel%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
-      call storage_getbase_int2D(&
-          rproblemLevel%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-      call lsyssc_getbase_double(rerror, p_Ddata)
-
-      ! Compute protection layers
-      do iprotectLayer = 1, nprotectLayers
-        
-        ! Reset activation flag
-        p_BisActiveElement = .false.
-        
-        ! Compute a single-width protection layer
-        call doProtectionLayerUniform(p_IverticesAtElement, p_IneighboursAtElement,&
-                                      rproblemLevel%rtriangulation%NEL,&
-                                      dprotectLayerTolerance, p_Ddata, p_BisActiveElement)
-      end do
-
-      ! Release memory
-      call storage_free(h_BisactiveElement)
-
-    end if
-
-  contains
-    
-    ! Here, the real working routines follow.
-    
-    !**************************************************************
-    ! Compute one uniformly distributed protection layer
-
-    subroutine doProtectionLayerUniform(IverticesAtElement, IneighboursAtElement, NEL,&
-                                        dthreshold, Ddata, BisactiveElement)
-
-      integer, dimension(:,:), intent(IN) :: IverticesAtElement
-      integer, dimension(:,:), intent(IN) :: IneighboursAtElement     
-      real(DP), intent(IN) :: dthreshold
-      integer, intent(IN) :: NEL
-      
-      real(DP), dimension(:), intent(INOUT) :: Ddata
-      logical, dimension(:), intent(INOUT) :: BisactiveElement
-      
-      
-      ! local variables
-      integer :: iel,jel,ive
-
-      ! Loop over all elements in triangulation
-      do iel = 1, NEL
-        
-        ! Do nothing if element belongs to active layer
-        if (BisactiveElement(iel)) cycle
-
-        ! Do nothing if element indicator does not exceed threshold
-        if (Ddata(iel) .le. dthreshold) cycle
-
-        ! Loop over neighbouring elements
-        do ive = 1, tria_getNVE(IverticesAtElement, iel)
-          
-          ! Get number of neighbouring element
-          jel = IneighboursAtElement(ive, iel)
-
-          ! Do nothing at the boundary
-          if (jel .eq. 0) cycle
-
-          ! Check if element belongs to active layer
-          if (BisactiveElement(jel)) then
-            ! If yes, then just update the element indicator
-            Ddata(jel) = max(Ddata(jel), Ddata(iel))
-          else
-            ! Otherwise, we have to check if the neighbouring element
-            ! exceeds the prescribed threshold level. If this is the case
-            ! it will be processed later or has already been processed
-            if (Ddata(jel) .lt. dthreshold) then
-              Ddata(jel) = max(Ddata(jel), Ddata(iel))
-              BisactiveElement(jel) = .true.
-            end if
-          end if
-        end do
-      end do
-    end subroutine doProtectionLayerUniform
-   
-  end subroutine mhd_estimateRecoveryError
-
-  !*****************************************************************************
-
-!<subroutine>
-
   subroutine mhd_adaptTriangulation(rhadapt, rtriangulationSrc, rindicator,&
                                     rcollection, rtriangulationDest)
 
@@ -1019,7 +846,7 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Vector for the element-wise error distribution
-    type(t_vectorScalar) :: relementError1, relementError2
+    type(t_vectorScalar) :: relementError
 
     ! Structure for h-adaptation
     type(t_hadapt) :: rhadapt
@@ -1035,14 +862,13 @@ contains
     character(LEN=SYS_STRLEN) :: soutputName
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, isystemFormat
     integer :: discretisationEuler, discretisationTransport
     integer :: isize, ipreadapt, npreadapt, nerrorvariable
     integer, external :: signal_SIGINT
-    
 
+    
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
 
@@ -1183,33 +1009,22 @@ contains
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
             
-!!$            call mhd_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-!!$                                           rsolutionTransport, relementError1)
-
-!!$            ! Compute the error estimator using recovery techniques
-!!$            call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-!!$                                              rsolutionTransport, rtimestepEuler%dinitialTime,&
-!!$                                              relementError1, derror)
-!!$
             ! Compute the error estimator using recovery techniques
-            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
-                                             relementError1, derror)
+            call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+                                              rsolutionTransport, rtimestepEuler%dinitialTime,&
+                                              relementError, derror)
 !!$
-!!$            call lsyssc_getbase_double(relementError1, p_Ddata1)
-!!$            call lsyssc_getbase_double(relementError2, p_Ddata2)
-!!$            
-!!$            p_Ddata1 = max(p_Ddata1, p_Ddata2)
-
-
+!!$            ! Compute the error estimator using recovery techniques
+!!$            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+!!$                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
+!!$                                             relementError, derror)
 
             ! Perform h-adaptation and update the triangulation structure
             call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                        relementError1, rcollection)
+                                        relementError, rcollection)
             
             ! Release element-wise error distribution
-            call lsyssc_releaseVector(relementError1)
-!!$            call lsyssc_releaseVector(relementError2)
+            call lsyssc_releaseVector(relementError)
 
             ! Generate standard mesh from raw mesh
             call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
@@ -1298,90 +1113,85 @@ contains
       ! Compute Euler model for full time step: U^n -> U^{n+1}
       !-------------------------------------------------------------------------
 
-      ! Start time measurement for solution procedure
-      call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
-
-      ! Attach solution u^n from scalar model to collection
-      rcollectionEuler%p_rvectorQuickAccess1 => rsolutionTransport
-
-      ! What time-stepping scheme should be used?
-      select case(rtimestepEuler%ctimestepType)
-        
-      case (TSTEP_RK_SCHEME)
-        
-        ! Adopt explicit Runge-Kutta scheme
-        call tstep_performRKStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
-                                 rsolutionEuler, euler_nlsolverCallback, rcollectionEuler) !! mhd_xxx
-        
-      case (TSTEP_THETA_SCHEME)
-        
-        ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
-                                    rsolutionEuler, euler_nlsolverCallback, rcollectionEuler) !! mhd_xxx
-
-        ! Perform characteristic FCT postprocessing
-!        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
-!                                     rsolutionEuler, rcollectionEuler)
-        
-      case DEFAULT
-        call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
-        call sys_halt()
-      end select
-
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(rappDescrEuler%rtimerSolution)
+!!$      ! Start time measurement for solution procedure
+!!$      call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
+!!$
+!!$      ! Attach solution u^n from scalar model to collection
+!!$      rcollectionEuler%p_rvectorQuickAccess1 => rsolutionTransport
+!!$
+!!$      ! What time-stepping scheme should be used?
+!!$      select case(rtimestepEuler%ctimestepType)
+!!$        
+!!$      case (TSTEP_RK_SCHEME)
+!!$        
+!!$        ! Adopt explicit Runge-Kutta scheme
+!!$        call tstep_performRKStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
+!!$                                 rsolutionEuler, euler_nlsolverCallback, rcollectionEuler)
+!!$        
+!!$      case (TSTEP_THETA_SCHEME)
+!!$        
+!!$        ! Adopt two-level theta-scheme
+!!$        call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
+!!$                                    rsolutionEuler, euler_nlsolverCallback, rcollectionEuler)
+!!$
+!!$        ! Perform characteristic FCT postprocessing
+!!$        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
+!!$                                     rsolutionEuler, rcollectionEuler)
+!!$        
+!!$      case DEFAULT
+!!$        call output_line('Unsupported time-stepping algorithm!',&
+!!$                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
+!!$        call sys_halt()
+!!$      end select
+!!$
+!!$      ! Stop time measurement for solution procedure
+!!$      call stat_stopTimer(rappDescrEuler%rtimerSolution)
 
       
       !-------------------------------------------------------------------------
       ! Compute scalar transport model for full time step: u^n -> u^{n+1}
       !-------------------------------------------------------------------------
       
-      ! Start time measurement for solution procedure
-      call stat_startTimer(rappDescrTransport%rtimerSolution, STAT_TIMERSHORT)
+!!$      ! Start time measurement for solution procedure
+!!$      call stat_startTimer(rappDescrTransport%rtimerSolution, STAT_TIMERSHORT)
+!!$
+!!$      ! Set velocity field v^{n+1} for scalar model problem
+!!$      call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)      
+!!$
+!!$      ! What time-stepping scheme should be used?
+!!$      select case(rtimestepTransport%ctimestepType)
+!!$        
+!!$      case (TSTEP_RK_SCHEME)
+!!$        
+!!$        ! Adopt explicit Runge-Kutta scheme
+!!$        call tstep_performRKStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
+!!$                                 rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+!!$        
+!!$      case (TSTEP_THETA_SCHEME)
+!!$        
+!!$        ! Adopt two-level theta-scheme
+!!$        call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
+!!$                                    rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+!!$
+!!$        ! Perform characteristic FCT postprocessing
+!!$        call codire_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
+!!$                                      rsolutionTransport, rcollectionTransport)
+!!$          
+!!$      case DEFAULT
+!!$        call output_line('Unsupported time-stepping algorithm!',&
+!!$                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
+!!$        call sys_halt()
+!!$      end select
+!!$      
+!!$      ! Stop time measurement for solution procedure
+!!$      call stat_stopTimer(rappDescrTransport%rtimerSolution)
 
-      ! Set velocity field v^{n+1} for scalar model problem
-      call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)      
+      ! Compute analytical solution to transport problem
+      rtimestepTransport%dTime = rtimestepTransport%dTime + rtimestepTransport%dStep
+      call codire_initSolution(rparlist, ssectionnameTransport, p_rproblemLevel,&
+                               rtimestepTransport%dTime, rsolutionTransport)
 
-      ! What time-stepping scheme should be used?
-      select case(rtimestepTransport%ctimestepType)
-        
-      case (TSTEP_RK_SCHEME)
-        
-        ! Adopt explicit Runge-Kutta scheme
-        call tstep_performRKStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
-                                 rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
-        
-      case (TSTEP_THETA_SCHEME)
-        
-        ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
-                                    rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
-
-        ! Perform characteristic FCT postprocessing
-!        call codire_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
-!                                      rsolutionTransport, rcollectionTransport)
-          
-      case DEFAULT
-        call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
-        call sys_halt()
-      end select
-      
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(rappDescrTransport%rtimerSolution)
-
-
-      ! Synchronized time step size
-      
-      rtimestepEuler%dTime     = rtimestepEuler%dTime-rtimestepEuler%dStep
-      rtimestepTransport%dTime = rtimestepTransport%dTime-rtimestepTransport%dStep
-      
-      rtimestepTransport%dStep  = rtimestepEuler%dStep
-      rtimestepTransport%dStep1 = rtimestepEuler%dStep1
-
-      rtimestepEuler%dTime     = rtimestepEuler%dTime+rtimestepEuler%dStep
-      rtimestepTransport%dTime = rtimestepTransport%dTime+rtimestepTransport%dStep
+      print *, "Solution at time ",rtimestepTransport%dTime
 
       !-------------------------------------------------------------------------
       ! Compute source term for full time step
@@ -1389,14 +1199,14 @@ contains
       ! U^{n+1} - \tilde U^{n+1} = dt * (S^{n+1} - S^n)
       !-------------------------------------------------------------------------
 
-      ! Start time measurement for solution procedure
-      call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
-
-      call mhd_calcSourceTerm(p_rproblemLevel, rtimestepTransport, &
-                              rsolutionTransport, rsolutionEuler, rcollectionEuler)
-
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(rappDescrEuler%rtimerSolution)
+!!$      ! Start time measurement for solution procedure
+!!$      call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
+!!$
+!!$      call mhd_calcSourceTerm(p_rproblemLevel, rtimestepTransport,&
+!!$                              rsolutionTransport, rsolutionEuler, rcollectionEuler)
+!!$
+!!$      ! Stop time measurement for solution procedure
+!!$      call stat_stopTimer(rappDescrEuler%rtimerSolution)
       
 
       ! Reached final time, then exit the infinite time loop?
@@ -1408,23 +1218,24 @@ contains
       ! Post-process intermediate solution
       !-------------------------------------------------------------------------
       
-      if ((dstepUCD .gt. 0.0_DP) .and. (rtimestepEuler%dTime .ge. dtimeUCD .or.&
-                                        rtimestepTransport%dTime .ge. dtimeUCD)) then
-        
-        ! Set time for next intermediate solution export
-        dtimeUCD = dtimeUCD + dstepUCD
-        
-        ! Start time measurement for post-processing
-        call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
-        
-        ! Export the intermediate solution
-        call mhd_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
-                                rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
-        
-        ! Stop time measurement for post-processing
-        call stat_stopTimer(rappDescrEuler%rtimerPrepostProcess)
-        
-      end if
+!!$      if ((dstepUCD .gt. 0.0_DP) .and. (rtimestepEuler%dTime .ge. dtimeUCD .or.&
+!!$                                        rtimestepTransport%dTime .ge. dtimeUCD)) then
+!!$        
+!!$        ! Set time for next intermediate solution export
+!!$        dtimeUCD = dtimeUCD + dstepUCD
+!!$        
+!!$        ! Start time measurement for post-processing
+!!$        call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
+
+!!$      if (rtimestepTransport%dTime .ge. 0.88) then
+!!$        ! Export the intermediate solution
+!!$        call mhd_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
+!!$                                rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)        
+!!$      end if
+!!$        ! Stop time measurement for post-processing
+!!$        call stat_stopTimer(rappDescrEuler%rtimerPrepostProcess)
+!!$        
+!!$      end if
 
 
       !-------------------------------------------------------------------------
@@ -1443,30 +1254,25 @@ contains
         ! Start time measurement for error estimation
         call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
         
-!!$        ! Compute the error estimator using recovery techniques
-!!$        call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-!!$                                          rsolutionTransport, rtimestepTransport%dTime,&
-!!$                                          relementError1, derror)
+        ! Compute the error estimator using recovery techniques
+        call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+                                          rsolutionTransport, rtimestepTransport%dTime,&
+                                          relementError, derror)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
 
 
-        ! Start time measurement for error estimation
-        call stat_startTimer(rappDescrEuler%rtimerErrorEstimation, STAT_TIMERSHORT)
-        
-        ! Compute the error estimator using recovery techniques
-        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-                                         rsolutionEuler, rtimestepEuler%dTime,&
-                                         relementError1, derror)
-        
-        ! Stop time measurement for error estimation
-        call stat_stopTimer(rappDescrEuler%rtimerErrorEstimation)
-
-!!$        call lsyssc_getbase_double(relementError1, p_Ddata1)
-!!$        call lsyssc_getbase_double(relementError2, p_Ddata2)
+!!$        ! Start time measurement for error estimation
+!!$        call stat_startTimer(rappDescrEuler%rtimerErrorEstimation, STAT_TIMERSHORT)
 !!$        
-!!$        p_Ddata1 = max(p_Ddata1, p_Ddata2)
+!!$        ! Compute the error estimator using recovery techniques
+!!$        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+!!$                                         rsolutionEuler, rtimestepEuler%dTime,&
+!!$                                         relementError, derror)
+!!$        
+!!$        ! Stop time measurement for error estimation
+!!$        call stat_stopTimer(rappDescrEuler%rtimerErrorEstimation)
 
         !-------------------------------------------------------------------------
         ! Perform h-adaptation
@@ -1487,11 +1293,10 @@ contains
         
         ! Perform h-adaptation and update the triangulation structure
         call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                    relementError1, rcollection)
+                                    relementError, rcollection)
         
         ! Release element-wise error distribution
-        call lsyssc_releaseVector(relementError1)
-        call lsyssc_releaseVector(relementError2)
+        call lsyssc_releaseVector(relementError)
 
         ! Update the template matrix according to the sparsity pattern
         call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
