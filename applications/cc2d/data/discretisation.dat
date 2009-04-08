@@ -145,7 +145,7 @@ iElementType       = 3
 #   matrix being assembled by the element independent implementation
 #   Streamline Diffusion method
 
-iUpwind            = 5
+iUpwind            = 0
 
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
