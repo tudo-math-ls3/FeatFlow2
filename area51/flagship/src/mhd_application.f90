@@ -1009,15 +1009,15 @@ contains
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
             
-            ! Compute the error estimator using recovery techniques
-            call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-                                              rsolutionTransport, rtimestepEuler%dinitialTime,&
-                                              relementError, derror)
-!!$
 !!$            ! Compute the error estimator using recovery techniques
-!!$            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-!!$                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
-!!$                                             relementError, derror)
+!!$            call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+!!$                                              rsolutionTransport, rtimestepEuler%dinitialTime,&
+!!$                                              relementError, derror)
+
+            ! Compute the error estimator using recovery techniques
+            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                             relementError, derror)
 
             ! Perform h-adaptation and update the triangulation structure
             call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
@@ -1113,85 +1113,79 @@ contains
       ! Compute Euler model for full time step: U^n -> U^{n+1}
       !-------------------------------------------------------------------------
 
-!!$      ! Start time measurement for solution procedure
-!!$      call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
-!!$
-!!$      ! Attach solution u^n from scalar model to collection
-!!$      rcollectionEuler%p_rvectorQuickAccess1 => rsolutionTransport
-!!$
-!!$      ! What time-stepping scheme should be used?
-!!$      select case(rtimestepEuler%ctimestepType)
-!!$        
-!!$      case (TSTEP_RK_SCHEME)
-!!$        
-!!$        ! Adopt explicit Runge-Kutta scheme
-!!$        call tstep_performRKStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
-!!$                                 rsolutionEuler, euler_nlsolverCallback, rcollectionEuler)
-!!$        
-!!$      case (TSTEP_THETA_SCHEME)
-!!$        
-!!$        ! Adopt two-level theta-scheme
-!!$        call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
-!!$                                    rsolutionEuler, euler_nlsolverCallback, rcollectionEuler)
-!!$
+      ! Start time measurement for solution procedure
+      call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
+
+      ! Attach solution u^n from scalar model to collection
+      rcollectionEuler%p_rvectorQuickAccess1 => rsolutionTransport
+
+      ! What time-stepping scheme should be used?
+      select case(rtimestepEuler%ctimestepType)
+        
+      case (TSTEP_RK_SCHEME)
+        
+        ! Adopt explicit Runge-Kutta scheme
+        call tstep_performRKStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
+                                 rsolutionEuler, euler_nlsolverCallback, rcollectionEuler)
+        
+      case (TSTEP_THETA_SCHEME)
+        
+        ! Adopt two-level theta-scheme
+        call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
+                                    rsolutionEuler, euler_nlsolverCallback, rcollectionEuler)
+
 !!$        ! Perform characteristic FCT postprocessing
 !!$        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
 !!$                                     rsolutionEuler, rcollectionEuler)
-!!$        
-!!$      case DEFAULT
-!!$        call output_line('Unsupported time-stepping algorithm!',&
-!!$                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
-!!$        call sys_halt()
-!!$      end select
-!!$
-!!$      ! Stop time measurement for solution procedure
-!!$      call stat_stopTimer(rappDescrEuler%rtimerSolution)
+        
+      case DEFAULT
+        call output_line('Unsupported time-stepping algorithm!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
+        call sys_halt()
+      end select
+
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(rappDescrEuler%rtimerSolution)
 
       
       !-------------------------------------------------------------------------
       ! Compute scalar transport model for full time step: u^n -> u^{n+1}
       !-------------------------------------------------------------------------
       
-!!$      ! Start time measurement for solution procedure
-!!$      call stat_startTimer(rappDescrTransport%rtimerSolution, STAT_TIMERSHORT)
-!!$
-!!$      ! Set velocity field v^{n+1} for scalar model problem
-!!$      call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)      
-!!$
-!!$      ! What time-stepping scheme should be used?
-!!$      select case(rtimestepTransport%ctimestepType)
-!!$        
-!!$      case (TSTEP_RK_SCHEME)
-!!$        
-!!$        ! Adopt explicit Runge-Kutta scheme
-!!$        call tstep_performRKStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
-!!$                                 rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
-!!$        
-!!$      case (TSTEP_THETA_SCHEME)
-!!$        
-!!$        ! Adopt two-level theta-scheme
-!!$        call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
-!!$                                    rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
-!!$
-!!$        ! Perform characteristic FCT postprocessing
-!!$        call codire_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
-!!$                                      rsolutionTransport, rcollectionTransport)
-!!$          
-!!$      case DEFAULT
-!!$        call output_line('Unsupported time-stepping algorithm!',&
-!!$                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
-!!$        call sys_halt()
-!!$      end select
-!!$      
-!!$      ! Stop time measurement for solution procedure
-!!$      call stat_stopTimer(rappDescrTransport%rtimerSolution)
+      ! Start time measurement for solution procedure
+      call stat_startTimer(rappDescrTransport%rtimerSolution, STAT_TIMERSHORT)
 
-      ! Compute analytical solution to transport problem
-      rtimestepTransport%dTime = rtimestepTransport%dTime + rtimestepTransport%dStep
-      call codire_initSolution(rparlist, ssectionnameTransport, p_rproblemLevel,&
-                               rtimestepTransport%dTime, rsolutionTransport)
+      ! Set velocity field v^{n+1} for scalar model problem
+      call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)      
 
-      print *, "Solution at time ",rtimestepTransport%dTime
+      ! What time-stepping scheme should be used?
+      select case(rtimestepTransport%ctimestepType)
+        
+      case (TSTEP_RK_SCHEME)
+        
+        ! Adopt explicit Runge-Kutta scheme
+        call tstep_performRKStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
+                                 rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+        
+      case (TSTEP_THETA_SCHEME)
+        
+        ! Adopt two-level theta-scheme
+        call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
+                                    rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+
+        ! Perform characteristic FCT postprocessing
+        call codire_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
+                                      rsolutionTransport, rcollectionTransport)
+          
+      case DEFAULT
+        call output_line('Unsupported time-stepping algorithm!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
+        call sys_halt()
+      end select
+      
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(rappDescrTransport%rtimerSolution)
+
 
       !-------------------------------------------------------------------------
       ! Compute source term for full time step
@@ -1199,14 +1193,14 @@ contains
       ! U^{n+1} - \tilde U^{n+1} = dt * (S^{n+1} - S^n)
       !-------------------------------------------------------------------------
 
-!!$      ! Start time measurement for solution procedure
-!!$      call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
-!!$
-!!$      call mhd_calcSourceTerm(p_rproblemLevel, rtimestepTransport,&
-!!$                              rsolutionTransport, rsolutionEuler, rcollectionEuler)
-!!$
-!!$      ! Stop time measurement for solution procedure
-!!$      call stat_stopTimer(rappDescrEuler%rtimerSolution)
+      ! Start time measurement for solution procedure
+      call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
+
+      call mhd_calcSourceTerm(p_rproblemLevel, rtimestepTransport,&
+                              rsolutionTransport, rsolutionEuler, rcollectionEuler)
+
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(rappDescrEuler%rtimerSolution)
       
 
       ! Reached final time, then exit the infinite time loop?
@@ -1218,24 +1212,23 @@ contains
       ! Post-process intermediate solution
       !-------------------------------------------------------------------------
       
-!!$      if ((dstepUCD .gt. 0.0_DP) .and. (rtimestepEuler%dTime .ge. dtimeUCD .or.&
-!!$                                        rtimestepTransport%dTime .ge. dtimeUCD)) then
-!!$        
-!!$        ! Set time for next intermediate solution export
-!!$        dtimeUCD = dtimeUCD + dstepUCD
-!!$        
-!!$        ! Start time measurement for post-processing
-!!$        call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
+      if ((dstepUCD .gt. 0.0_DP) .and. (rtimestepEuler%dTime .ge. dtimeUCD .or.&
+                                        rtimestepTransport%dTime .ge. dtimeUCD)) then
+        
+        ! Set time for next intermediate solution export
+        dtimeUCD = dtimeUCD + dstepUCD
+        
+        ! Start time measurement for post-processing
+        call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
+        
+        ! Export the intermediate solution
+        call mhd_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
+                                rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)        
 
-!!$      if (rtimestepTransport%dTime .ge. 0.88) then
-!!$        ! Export the intermediate solution
-!!$        call mhd_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
-!!$                                rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)        
-!!$      end if
-!!$        ! Stop time measurement for post-processing
-!!$        call stat_stopTimer(rappDescrEuler%rtimerPrepostProcess)
-!!$        
-!!$      end if
+        ! Stop time measurement for post-processing
+        call stat_stopTimer(rappDescrEuler%rtimerPrepostProcess)
+        
+      end if
 
 
       !-------------------------------------------------------------------------
@@ -1251,28 +1244,36 @@ contains
         ! Perform recovery-based error estimation
         !-----------------------------------------------------------------------
         
-        ! Start time measurement for error estimation
-        call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
-        
-        ! Compute the error estimator using recovery techniques
-        call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-                                          rsolutionTransport, rtimestepTransport%dTime,&
-                                          relementError, derror)
-        
-        ! Stop time measurement for error estimation
-        call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
-
-
 !!$        ! Start time measurement for error estimation
-!!$        call stat_startTimer(rappDescrEuler%rtimerErrorEstimation, STAT_TIMERSHORT)
+!!$        call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
 !!$        
 !!$        ! Compute the error estimator using recovery techniques
-!!$        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-!!$                                         rsolutionEuler, rtimestepEuler%dTime,&
-!!$                                         relementError, derror)
+!!$        call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+!!$                                          rsolutionTransport, rtimestepTransport%dTime,&
+!!$                                          relementError, derror)
 !!$        
 !!$        ! Stop time measurement for error estimation
-!!$        call stat_stopTimer(rappDescrEuler%rtimerErrorEstimation)
+!!$        call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
+
+
+        ! Start time measurement for error estimation
+        call stat_startTimer(rappDescrEuler%rtimerErrorEstimation, STAT_TIMERSHORT)
+        
+        ! Compute the error estimator using recovery techniques
+        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+                                         rsolutionEuler, rtimestepEuler%dTime,&
+                                         relementError, derror)
+
+!!$        call flagship_initUCDexport(p_rproblemLevel, 'out//error',&
+!!$                                1, rexport, ifilenumber); ifilenumber = ifilenumber+1
+!!$
+!!$        call lsyssc_getbase_double(relementError, p_Ddata)
+!!$        call ucd_addVariableElementBased (rexport, 'err', UCD_VAR_STANDARD, p_Ddata)
+!!$        call ucd_write  (rexport)
+!!$        call ucd_release(rexport)
+        
+        ! Stop time measurement for error estimation
+        call stat_stopTimer(rappDescrEuler%rtimerErrorEstimation)
 
         !-------------------------------------------------------------------------
         ! Perform h-adaptation
