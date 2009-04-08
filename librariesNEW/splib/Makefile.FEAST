@@ -1,5 +1,22 @@
 # -*- makefile -*-
 
+#-------------------------------------------------------------------------------
+# Default values for compiler and archiver. Usually explicitly overritten
+# by call from FEAT2 application.
+#-------------------------------------------------------------------------------
+FORTRAN = gfortran
+OPTS    = -O
+ARCH    = ar -rv
+RANLIB  = ranlib
+OBJDIR  = object
+
+
+
+#-------------------------------------------------------------------------------
+# From here till the end of the file are additional instructions added for
+# smooth FEAST integration:
+#-------------------------------------------------------------------------------
+
 default: $(OBJDIR)/libsplib.a
 
 SRCLIST= precond/ilus.f precond/lusl.f precond/numfac.f precond/symbfac.f precond/tridsl.f
@@ -7,10 +24,6 @@ SRCLIST= precond/ilus.f precond/lusl.f precond/numfac.f precond/symbfac.f precon
 OBJS = $(patsubst %.f, $(OBJDIR)/%.o, $(notdir $(SRCLIST)))
 
 
-#-------------------------------------------------------------------------------
-# From here till the end of the file are additional instructions added for
-# smooth FEAST integration:
-#-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 # Create the library
@@ -38,7 +51,7 @@ $(OBJDIR)/libsplib.a: $(OBJS)
 # An order-only prerequisite shall not be put on the same line as a prerequisite
 # of an implicit rule. Otherwise the target defined in this implicit rule is
 # rebuilt every time you invoke make!
-$(OBJDIR)/%.o: | $(OBJDIR)
+$(OBJS): | $(OBJDIR)
 $(OBJDIR)/%.o: precond/%.f
 	$(FORTRAN) $(OPTS) -c $< -o $@
 
