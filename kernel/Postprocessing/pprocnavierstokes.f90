@@ -36,13 +36,39 @@ module pprocnavierstokes
 
   implicit none
 
+!<constants>
+
+!<constantblock description = "Identifies the underlying operator.">
+
+  ! Use the simple gradient tensor formulation for computing the forces.
+  ! This formulation exploits a special trick only available in 2D
+  ! to compute the coefficients by
+  !   Cd = 1/df1 int ( df2 * du_tx/dn - p n_x)
+  !   Cl = 1/df1 int ( df2 * du_ty/dn - p n_y)
+  ! In 3D, PPNAVST_GRADIENTTENSOR_SIMPLE coincides with PPNAVST_GRADIENTTENSOR.
+  integer, parameter :: PPNAVST_GRADIENTTENSOR_SIMPLE = 0
+
+  ! Use the gradient tensor formulation for computing the forces.
+  ! This is the standard formulation
+  !   C = 1/df1 int (df2 * sigma n - pI)
+  ! with sigma = grad(u)) being the gradient tensor.
+  integer, parameter :: PPNAVST_GRADIENTTENSOR = 1
+
+  ! Use the deformation tensor formulation for computing the forces.
+  ! This is the standard formulation
+  !   C = 1/df1 int (df2 * sigma n - pI)
+  ! with sigma = 1/2 (grad(u) + grad(u)^T) being the deformation tensor.
+  integer, parameter :: PPNAVST_DEFORMATIONTENSOR = 2
+  
+!</constantblock>
+
 contains
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine ppns2D_bdforces_uniform (rvector,rregion,Dforces,ccub,df1,df2)
+  subroutine ppns2D_bdforces_uniform (rvector,rregion,Dforces,ccub,df1,df2,cformulation)
 
 !<description>
   ! Calculates the drag-/lift-forces acting on a part of the real
@@ -78,6 +104,12 @@ contains
   ! If neglected, df2=2.0 is assumed.
   real(DP), intent(IN), optional      :: df2
   
+  ! OPTIONAL: Type of tensor to use for the computation.
+  ! May be either PPNAVST_GRADIENTTENSOR_XXXX for the gradient tensor or
+  ! PPNAVST_GDEFORMATIONTENSOR for the deformation tensor formulation.
+  ! If not present, PPNAVST_GRADIENTTENSOR_SIMPLE is assumed.
+  integer, intent(in), optional :: cformulation
+  
 !</input>
 
 !<output>
@@ -91,7 +123,7 @@ contains
     select case(cub_igetShape(ccub))
     case (BGEOM_SHAPE_LINE)
       ! It's a 1D cubature formula - call line integration version.
-      call ppns2D_bdforces_uni_line(rvector,rregion,Dforces,ccub,df1,df2)
+      call ppns2D_bdforces_uni_line(rvector,rregion,Dforces,ccub,df1,df2,cformulation)
     
     case (BGEOM_SHAPE_TRIA, BGEOM_SHAPE_QUAD)
       ! It's a 2D cubature formula - call volume integration version.
@@ -110,7 +142,7 @@ contains
 
 !<subroutine>
 
-  subroutine ppns2D_bdforces_uni_line(rvector,rregion,Dforces,ccub,df1,df2)
+  subroutine ppns2D_bdforces_uni_line(rvector,rregion,Dforces,ccub,df1,df2,cformulation)
 
 !<description>
   ! Calculates the drag-/lift-forces acting on a part of the real
@@ -167,6 +199,12 @@ contains
   ! If neglected, df2=2.0 is assumed.
   real(DP), intent(IN), optional      :: df2
   
+  ! OPTIONAL: Type of tensor to use for the computation.
+  ! May be either PPNAVST_GRADIENTTENSOR_XXXX for the gradient tensor or
+  ! PPNAVST_GDEFORMATIONTENSOR for the deformation tensor formulation.
+  ! If not present, PPNAVST_GRADIENTTENSOR_SIMPLE is assumed.
+  integer, intent(in), optional :: cformulation
+
 !</input>
 
 !<output>
@@ -242,11 +280,14 @@ contains
   integer :: neqU,neqP
   integer :: iedge,iedgeglobal
   integer :: iel
-  real(DP) :: dvtp1,dvtp2,dedgelen, dweight,dut,dpf1,dpf2
+  real(DP) :: dvtp1,dvtp2,dedgelen, dweight,dut,dpf1,dpf2,dval1,dval2
   real(DP), dimension(2) :: DintU, DintP
   real(DP) :: dpres
   real(DP), dimension(NDIM2D) :: dvt1,dvt2,dtangential,dnormal
   integer(I32), dimension(:), pointer :: p_ItwistIndex
+  
+  ! Type of formulation
+  integer :: cform
 
     ! Get the vector data
     neqU = rvector%RvectorBlock(1)%NEQ
@@ -279,6 +320,10 @@ contains
       print *,'ppns2D_bdforces_uniform: Resorted vectors not supported!'
       call sys_halt()
     end if
+    
+    ! Get the used formulation; gradient or deformation tensor.
+    cform = PPNAVST_GRADIENTTENSOR_SIMPLE
+    if (present(cformulation)) cform = cformulation
     
     ! Get pointers to the spatial discretisation structures of the
     ! veloctiy and pressure
@@ -492,46 +537,157 @@ contains
                                   BderP, DbasP, ncubp, DpointsRef,p_ItwistIndex(iel))
         end if
         
-        ! Loop over the cubature points on the current element
-        ! to assemble the integral
-        do icubp = 1,ncubp
-        
-          ! Calculate the OMEGA for the integration by multiplication
-          ! of the integration coefficient by the Jacobian of the
-          ! mapping.
-          ! The determinant of the mapping of the unit interval [-1,1]
-          ! to the real line is 0.5*length of the line!
+        ! Which tensor formulation do we have?
+        select case (cform)
+        case (PPNAVST_GRADIENTTENSOR_SIMPLE)
+          ! 'Simple' gradient tensor formulation
+          !
+          ! Loop over the cubature points on the current element
+          ! to assemble the integral
+          do icubp = 1,ncubp
+          
+            ! Calculate the OMEGA for the integration by multiplication
+            ! of the integration coefficient by the Jacobian of the
+            ! mapping.
+            ! The determinant of the mapping of the unit interval [-1,1]
+            ! to the real line is 0.5*length of the line!
+              
+            dweight = Domega(icubp)*0.5_DP*dedgelen
             
-          dweight = Domega(icubp)*0.5_DP*dedgelen
-          
-          ! Loop through the DOF's on our element and calculate
-          ! the tangential U as well as P.
-          dut = 0.0_DP
-          do idfl=1,idoflocU
-            dut = dut &
-            + p_DdataUX(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_X,icubp)*Dtangential(1) &
-                                      * Dnormal(1) &
-            + p_DdataUY(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_X,icubp)*Dtangential(2) &
-                                      * Dnormal(1) &
-            + p_DdataUX(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_Y,icubp)*Dtangential(1) &
-                                      * Dnormal(2) &
-            + p_DdataUY(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_Y,icubp)*Dtangential(2) &
-                                      * Dnormal(2)
-          end do
+            ! Loop through the DOF's on our element and calculate
+            ! the tangential U as well as P.
+            dut = 0.0_DP
+            do idfl=1,idoflocU
+              dut = dut &
+              + p_DdataUX(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_X,icubp)*Dtangential(1) &
+                                        * Dnormal(1) &
+              + p_DdataUY(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_X,icubp)*Dtangential(2) &
+                                        * Dnormal(1) &
+              + p_DdataUX(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_Y,icubp)*Dtangential(1) &
+                                        * Dnormal(2) &
+              + p_DdataUY(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_Y,icubp)*Dtangential(2) &
+                                        * Dnormal(2)
+            end do
 
-          dpres = 0.0_DP
-          do idfl=1,idoflocP
-            dpres = dpres+p_DdataP(IdofsP(idfl))*DbasP(idfl,DER_FUNC,icubp)
-          end do
+            dpres = 0.0_DP
+            do idfl=1,idoflocP
+              dpres = dpres+p_DdataP(IdofsP(idfl))*DbasP(idfl,DER_FUNC,icubp)
+            end do
+            
+            ! Sum this up to the two integral contributions for the pressure and
+            ! velocity.
+            DintU(1) = DintU(1) + dweight * dut * Dnormal(2)
+            DintU(2) = DintU(2) - dweight * dut * Dnormal(1)
+            DintP(1) = DintP(1) - dweight * dpres * Dnormal(1)
+            DintP(2) = DintP(2) - dweight * dpres * Dnormal(2)
           
-          ! Sum this up to the two integral contributions for the pressure and
-          ! velocity.
-          DintU(1) = DintU(1) + dweight * dut * Dnormal(2)
-          DintU(2) = DintU(2) - dweight * dut * Dnormal(1)
-          DintP(1) = DintP(1) - dweight * dpres * Dnormal(1)
-          DintP(2) = DintP(2) - dweight * dpres * Dnormal(2)
+          end do ! icubp
         
-        end do ! icubp
+        case (PPNAVST_GRADIENTTENSOR)
+          ! 'Full' Gradient tensor formulation
+          !
+          ! We need to calculate the integral based on the following integrand:
+          !   |-p         |   (du1/dx  du1/dy )   ( n_x )
+          !   |       -p  | + (du2/dx  du2/dy ) * ( n_y )
+          !
+          ! Loop over the cubature points on the current element
+          ! to assemble the integral
+          do icubp = 1,ncubp
+          
+            ! Calculate the OMEGA for the integration by multiplication
+            ! of the integration coefficient by the Jacobian of the
+            ! mapping.
+            ! The determinant of the mapping of the unit interval [-1,1]
+            ! to the real line is 0.5*length of the line!
+              
+            dweight = Domega(icubp)*0.5_DP*dedgelen
+            
+            ! Loop through the DOF's on our element and calculate
+            ! the tangential U as well as P.
+            dval1 = 0.0_DP
+            dval2 = 0.0_DP
+            do idfl=1,idoflocU
+              dval1 = dval1 + (p_DdataUX(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_X,icubp)) &
+                              * Dnormal(1) &
+                            + (p_DdataUX(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_Y,icubp)) &
+                              * Dnormal(2)
+                              
+              dval2 = dval2 + (p_DdataUY(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_X,icubp)) &
+                              * Dnormal(1) &
+                            + (p_DdataUY(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_Y,icubp)) &
+                              * Dnormal(2)
+            end do
+
+            dpres = 0.0_DP
+            do idfl=1,idoflocP
+              dpres = dpres + p_DdataP(IdofsP(idfl))*DbasP(idfl,DER_FUNC,icubp)
+            end do
+            
+            ! Sum this up to the two integral contributions for the pressure and
+            ! velocity.
+            DintU(1) = DintU(1) + dweight * dval1
+            DintU(2) = DintU(2) + dweight * dval2
+            DintP(1) = DintP(1) - dweight * dpres * Dnormal(1)
+            DintP(2) = DintP(2) - dweight * dpres * Dnormal(2)
+          
+          end do ! icubp
+        
+        case (PPNAVST_DEFORMATIONTENSOR)
+        
+          ! Deformation tensor formulation
+          !
+          ! We need to calculate the integral based on the following integrand:
+          !   |-p         |   (du1/dx               1/2 (du1/dy+du2/dx) )   ( n_x )
+          !   |       -p  | + (1/2 (du1/dy+du2/dx)  du2/dy              ) * ( n_y )
+          !
+          ! Loop over the cubature points on the current element
+          ! to assemble the integral
+          do icubp = 1,ncubp
+          
+            ! Calculate the OMEGA for the integration by multiplication
+            ! of the integration coefficient by the Jacobian of the
+            ! mapping.
+            ! The determinant of the mapping of the unit interval [-1,1]
+            ! to the real line is 0.5*length of the line!
+              
+            dweight = Domega(icubp)*0.5_DP*dedgelen
+            
+            ! Loop through the DOF's on our element and calculate
+            ! the tangential U as well as P.
+            dval1 = 0.0_DP
+            dval2 = 0.0_DP
+            do idfl=1,idoflocU
+              dval1 = dval1 + 2.0_DP*(p_DdataUX(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_X,icubp)) &
+                              * Dnormal(1) &
+                            + (p_DdataUX(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_Y,icubp)) &
+                              * Dnormal(2) &
+                            + (p_DdataUY(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_X,icubp)) &
+                              * Dnormal(2)
+                              
+              dval2 = dval2 + 2.0_DP*(p_DdataUY(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_Y,icubp)) &
+                              * Dnormal(2) &
+                            + (p_DdataUX(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_Y,icubp)) &
+                              * Dnormal(1) &
+                            + (p_DdataUY(IdofsU(idfl)) * DbasU(idfl,DER_DERIV_X,icubp)) &
+                              * Dnormal(1)
+            end do
+
+            dpres = 0.0_DP
+            do idfl=1,idoflocP
+              dpres = dpres + p_DdataP(IdofsP(idfl))*DbasP(idfl,DER_FUNC,icubp)
+            end do
+            
+            ! Sum this up to the two integral contributions for the pressure and
+            ! velocity.
+            DintU(1) = DintU(1) + dweight * dval1
+            DintU(2) = DintU(2) + dweight * dval2
+            DintP(1) = DintP(1) - dweight * dpres * Dnormal(1)
+            DintP(2) = DintP(2) - dweight * dpres * Dnormal(2)
+          
+          end do ! icubp
+        
+        
+        end select
           
       end if
       
@@ -673,7 +829,7 @@ contains
   integer :: iedge,iedgeglobal
   integer :: iel
   real(DP) :: dvtp1,dvtp2, dweight,dpf1,dpf2
-  real(DP) :: du1x,du1y,du1v,du2x,du2y,du2v,dpv,dax,day,dav,darx,dary
+  real(DP) :: du1x,du1y,du1v,du2x,du2y,du2v,dpv,dax,day
   real(DP), dimension(2) :: DintU, DintP, DintV
   real(DP), dimension(NDIM2D) :: dvt1,dvt2
   integer(I32), dimension(:), pointer :: p_ItwistIndex
