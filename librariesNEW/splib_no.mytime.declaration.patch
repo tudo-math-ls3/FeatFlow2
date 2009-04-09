@@ -1,0 +1,14 @@
+--- precond/lusl.f	1997-09-22 15:01:31.000000000 +0200
++++ precond/lusl.f.nomytimedeclaration	2009-04-09 11:26:08.000000000 +0200
+@@ -130,8 +130,9 @@
+ c     Instrumentation variables for timing.
+ c     =====================================
+       include '../include/heads.inc'
+-      real*8 mytime, tstart
+-      external mytime
++C      real*8 mytime
++C      external mytime
++      real*8 tstart
+ 
+ c========================================================================
+ c      Beginning of Executable Statements

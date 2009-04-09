@@ -116,6 +116,11 @@ $(LAST_FILE_FROM_SPLIB_TARBALL):  WAITTIME = 3
 $(LAST_FILE_FROM_SPLIB_TARBALL):  RETRIES  = 10
 $(LAST_FILE_FROM_SPLIB_TARBALL):
 	@$(call UNPACK)
+	@echo "# Patching SPLIB sources to get rid of an unused variable declaration causing a"
+	@echo "# dependency on a symbol not required otherwise. This prevents linker problems"
+	@echo "# with g95."
+	patch -p0 < ../splib_no.mytime.declaration.patch
+	@echo "# Sources patched."
 
 
 #-------------------------------------------------------------------------------
