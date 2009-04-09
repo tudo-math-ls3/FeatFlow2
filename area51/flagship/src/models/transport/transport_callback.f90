@@ -99,7 +99,6 @@ module transport_callback
 
   use afcstabilisation
   use boundaryfilter
-  use transport_basic
   use collection
   use flagship_basic
   use flagship_callback
@@ -116,6 +115,7 @@ module transport_callback
   use statistics
   use storage
   use timestepaux
+  use transport_basic
 
   implicit none
 
@@ -135,6 +135,8 @@ module transport_callback
   public :: transp_hadaptCallback2d
   public :: transp_hadaptCallback3d
   public :: transp_calcLinearizedFCT
+
+  public :: transp_calcprimalconvconst2d
 
 !<globals>
 
@@ -2867,8 +2869,8 @@ contains
                      rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy, p_data, p_flux, p_flux0)
 
     ! Build the correction
-    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                             nedge, p_ML, p_flux, p_flux0, p_data, p_u)
+    call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
+                         nedge, p_ML, p_flux, p_flux0, p_data, p_u)
     
     ! Set boundary conditions explicitly
     call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
@@ -2912,17 +2914,17 @@ contains
       ! Loop over all rows
       do i = 1, NEQ
         
-!!$        ! Get position of diagonal entry
-!!$        ii = Kdiagonal(i)
-!!$
-!!$        ! Compute coefficient
-!!$        C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
-!!$
-!!$        ! Compute convection coefficients
-!!$        call transp_calcPrimalConvConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
-!!$
-!!$        ! Update the time rate of change vector
-!!$        troc(i) = troc(i) + dscale*k_ii*u(i)
+        ! Get position of diagonal entry
+        ii = Kdiagonal(i)
+
+        ! Compute coefficient
+        C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
+
+        ! Compute convection coefficients
+        call transp_calcPrimalConvConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+
+        ! Update the time rate of change vector
+        troc(i) = troc(i) + dscale*k_ii*u(i)
 
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -2947,8 +2949,8 @@ contains
           aux = d_ij*(u(j)-u(i))
           
           ! Update the time rate of change vector
-          troc(i) = troc(i) + dscale * (k_ij*(u(j)-u(i)) + aux)
-          troc(j) = troc(j) + dscale * (k_ji*(u(i)-u(j)) - aux)
+          troc(i) = troc(i) + dscale * (k_ij*u(j) + aux)
+          troc(j) = troc(j) + dscale * (k_ji*u(i) - aux)
 
           ! Compute raw antidiffusive flux
           flux0(iedge) = -aux
@@ -2987,8 +2989,8 @@ contains
 
     !***************************************************************************
     
-    subroutine buildCorrectionCons(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE,&
-                                   ML, flux, flux0, data, u)
+    subroutine buildCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE,&
+                               ML, flux, flux0, data, u)
 
       
       real(DP), dimension(:), intent(IN) :: ML,flux0
@@ -3096,7 +3098,7 @@ contains
         u(i) = u(i) + data(i)/ML(i)
       end do
 
-    end subroutine buildCorrectionCons
+    end subroutine buildCorrection
 
     !***************************************************************************
 
