@@ -1134,9 +1134,9 @@ contains
         call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
                                     rsolutionEuler, euler_nlsolverCallback, rcollectionEuler)
 
-!!$        ! Perform characteristic FCT postprocessing
-!!$        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
-!!$                                     rsolutionEuler, rcollectionEuler)
+        ! Perform characteristic FCT postprocessing
+        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
+                                     rsolutionEuler, rcollectionEuler)
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -1176,10 +1176,6 @@ contains
         ! Perform characteristic FCT postprocessing
         call transp_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
                                       rsolutionTransport, rcollectionTransport)
-
-        ! Perform characteristic FCT postprocessing
-        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
-                                     rsolutionEuler, rcollectionEuler)
           
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -1190,11 +1186,6 @@ contains
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescrTransport%rtimerSolution)
 
-!!$      ! Perform characteristic FCT postprocessing in a synchronized
-!!$      ! fashion for the Euler model and the transport equation
-!!$      call mhd_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, p_rproblemLevel,&
-!!$                                 rtimestepEuler, rsolutionEuler, rsolutionTransport,&
-!!$                                 rcollectionEuler)
 
       !-------------------------------------------------------------------------
       ! Compute source term for full time step
@@ -1272,14 +1263,6 @@ contains
         call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
                                          rsolutionEuler, rtimestepEuler%dTime,&
                                          relementError, derror)
-
-!!$        call flagship_initUCDexport(p_rproblemLevel, 'out//error',&
-!!$                                1, rexport, ifilenumber); ifilenumber = ifilenumber+1
-!!$
-!!$        call lsyssc_getbase_double(relementError, p_Ddata)
-!!$        call ucd_addVariableElementBased (rexport, 'err', UCD_VAR_STANDARD, p_Ddata)
-!!$        call ucd_write  (rexport)
-!!$        call ucd_release(rexport)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rappDescrEuler%rtimerErrorEstimation)
