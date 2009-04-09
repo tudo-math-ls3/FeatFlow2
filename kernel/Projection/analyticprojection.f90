@@ -343,9 +343,7 @@ contains
 !</description>
 
 !<input>
-  ! A callback routine for the function to be discretised. The callback routine
-  ! has the same syntax as that for evaluating analytic functions for the 
-  ! computation of RHS vectors.
+  ! A callback routine for the function to be discretised.
   include '../Postprocessing/intf_refFunctionSc.inc'
 
   ! OPTIONAL: A pointer to a collection structure. This structure is 

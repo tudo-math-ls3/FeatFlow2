@@ -248,52 +248,52 @@ module transformation
 
 !<constantblock description="id values for coordinate systems">
   ! Undefined coordinate system or no coordinate system
-  integer, parameter :: TRAFO_CS_UNDEFINED   = 0
+  integer(I32), parameter :: TRAFO_CS_UNDEFINED   = 0
 
   ! Parameter value [-1..1] on reference interval in 1D
-  integer, parameter :: TRAFO_CS_REF1D       = TRAFO_DIM_1D + 1
+  integer(I32), parameter :: TRAFO_CS_REF1D       = TRAFO_DIM_1D + 1
 
   ! Barycentric coordinates on triangle
-  integer, parameter :: TRAFO_CS_BARY2DTRI   = TRAFO_DIM_2D + 2
+  integer(I32), parameter :: TRAFO_CS_BARY2DTRI   = TRAFO_DIM_2D + 2
 
   ! 2D coordinates on reference triangle
-  integer, parameter :: TRAFO_CS_REF2DTRI    = TRAFO_DIM_2D + 3
+  integer(I32), parameter :: TRAFO_CS_REF2DTRI    = TRAFO_DIM_2D + 3
 
   ! 2D coordinates on real triangle
-  integer, parameter :: TRAFO_CS_REAL2DTRI   = TRAFO_DIM_2D + 4
+  integer(I32), parameter :: TRAFO_CS_REAL2DTRI   = TRAFO_DIM_2D + 4
   
   ! 2D coordinates on reference quadrilateral
-  integer, parameter :: TRAFO_CS_REF2DQUAD   = TRAFO_DIM_2D + 5
+  integer(I32), parameter :: TRAFO_CS_REF2DQUAD   = TRAFO_DIM_2D + 5
 
   ! 2D coordinates on real quadrilateral
-  integer, parameter :: TRAFO_CS_REAL2DQUAD  = TRAFO_DIM_2D + 6
+  integer(I32), parameter :: TRAFO_CS_REAL2DQUAD  = TRAFO_DIM_2D + 6
   
   ! Barycentric coordinates on tetrahedron
-  integer, parameter :: TRAFO_CS_BARY3DTETRA = TRAFO_DIM_3D + 10
+  integer(I32), parameter :: TRAFO_CS_BARY3DTETRA = TRAFO_DIM_3D + 10
   
   ! 3D coordinates on reference tetrahedron
-  integer, parameter :: TRAFO_CS_REF3DTETRA  = TRAFO_DIM_3D + 11
+  integer(I32), parameter :: TRAFO_CS_REF3DTETRA  = TRAFO_DIM_3D + 11
   
   ! 3D coodinates on real tetrahedron
-  integer, parameter :: TRAFO_CS_REAL3DTETRA = TRAFO_DIM_3D + 12
+  integer(I32), parameter :: TRAFO_CS_REAL3DTETRA = TRAFO_DIM_3D + 12
   
   ! 3D coordinates on reference hexahedron
-  integer, parameter :: TRAFO_CS_REF3DHEXA   = TRAFO_DIM_3D + 13
+  integer(I32), parameter :: TRAFO_CS_REF3DHEXA   = TRAFO_DIM_3D + 13
   
   ! 3D coordinates on real hexahedron
-  integer, parameter :: TRAFO_CS_REAL3DHEXA  = TRAFO_DIM_3D + 14
+  integer(I32), parameter :: TRAFO_CS_REAL3DHEXA  = TRAFO_DIM_3D + 14
   
   ! 3D coordinates on reference pyramid
-  integer, parameter :: TRAFO_CS_REF3DPYRA   = TRAFO_DIM_3D + 15
+  integer(I32), parameter :: TRAFO_CS_REF3DPYRA   = TRAFO_DIM_3D + 15
   
   ! 3D coordinates on real pyramid
-  integer, parameter :: TRAFO_CS_REAL3DPYRA  = TRAFO_DIM_3D + 16
+  integer(I32), parameter :: TRAFO_CS_REAL3DPYRA  = TRAFO_DIM_3D + 16
   
   ! 3D coordinates on reference prism
-  integer, parameter :: TRAFO_CS_REF3DPRISM  = TRAFO_DIM_3D + 17
+  integer(I32), parameter :: TRAFO_CS_REF3DPRISM  = TRAFO_DIM_3D + 17
   
   ! 3D coordinates on real prism
-  integer, parameter :: TRAFO_CS_REAL3DPRISM = TRAFO_DIM_3D + 18
+  integer(I32), parameter :: TRAFO_CS_REAL3DPRISM = TRAFO_DIM_3D + 18
 !</constantblock>
 
 !</constants>
@@ -2635,7 +2635,7 @@ contains
   ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
   ! the type of the coordinate system that is used for specifying the coordinates
   ! on the reference element.
-  integer, intent(IN) :: icoordSystem
+  integer(I32), intent(IN) :: icoordSystem
   
   ! Number of the local edge of the element where to map the points to.
   integer, intent(IN) :: iedge

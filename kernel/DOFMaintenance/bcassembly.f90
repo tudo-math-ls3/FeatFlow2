@@ -1154,6 +1154,10 @@ contains
   ! is set to the local vertex number of that vertex, otherwise it's set to to 0.
   ! If an edge of the element touches it, the corresponding entry in IvtLocal 
   ! is set to the local edge number of that edge, otherwise it's set to to 0.
+  !
+  ! If neighter IvtLocal nor IedgeLocal is present, the routine calculates
+  ! the maximum number of elements that the boundary region covers, including
+  ! all edges and vertices.
 !</description>
 
 !<input>
@@ -1168,9 +1172,9 @@ contains
   ! Number of edges in the boundary region, including repetitions.
   integer, intent(OUT) :: ncount
 
-  ! Array that receives a list of elements that touch the boundary region.
+  ! OPTIONAL: Array that receives a list of elements that touch the boundary region.
   ! Elements may be inside here more than once.
-  integer, dimension(:), intent(OUT) :: IelList
+  integer, dimension(:), intent(OUT), optional :: IelList
 
   ! OPTIONAL: Index list. Receives for every element touching the BC region an index
   ! into the IelementsAtBoundary where the element can be found.
@@ -1181,6 +1185,9 @@ contains
   ! repeated in IelList and IvertexList contains all vertices that touch.
   ! If not present, elements that touch the boundary region only with a point
   ! are ignored.
+  ! If neighter IvtLocal nor IedgeLocal is present, the routine calculates
+  ! the maximum number of elements that the boundary region covers, including
+  ! all edges and vertices.
   integer, dimension(:), intent(OUT), optional :: IvtLocal
 
   ! OPTIONAL: For each element on the boundary, local index of an edge touching the
@@ -1188,6 +1195,9 @@ contains
   ! repeated in IelList and IedgeList contains all edges that touch.
   ! If not present, elements that touch the boundary region only with an edge
   ! are ignored.
+  ! If neighter IvtLocal nor IedgeLocal is present, the routine calculates
+  ! the maximum number of elements that the boundary region covers, including
+  ! all edges and vertices.
   integer, dimension(:), intent(OUT), optional :: IedgeLocal
   
 !</output>
@@ -1202,7 +1212,7 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtElement,p_IedgesAtElement
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer :: i,iidx,iel,ivt,iedge
-    logical :: bvertexInside, bedgeInside
+    logical :: bvertexInside, bedgeInside,bcheckall
     
     ! Get the parameter value array from the triangulation
     call storage_getbase_double (rtriangulation%h_DedgeParameterValue, &
@@ -1228,15 +1238,21 @@ contains
     bvertexInside = .false.
     bedgeInside = .false.
     
+    ! If both destination arrays are missing, calculate the maximum number
+    ! of elements in the region.
+    bcheckall = .false.
+    if (.not. present(IvtLocal) .and. .not. present(IedgeLocal)) &
+        bcheckall = .true.
+    
     ! Loop through all elements on the boundary. If we find any in the boundary
     ! region, take it!
     elementloop: do i=p_IboundaryCpIdx(rregion%iboundCompIdx),p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
     
       ! Check if the vertex or edge touches the boundary region
-      if (present(IvtLocal)) &
+      if (present(IvtLocal) .or. bcheckall) &
         bvertexInside = boundary_isInRegion (rregion,rregion%iboundCompIdx,p_DvertexParameterValue(i))
         
-      if (present(IedgeLocal)) &
+      if (present(IedgeLocal) .or. bcheckall) &
         bedgeInside = boundary_isInRegion (rregion,rregion%iboundCompIdx,p_DedgeParameterValue(i))
       
       if (bvertexInside .or. bedgeInside) then
@@ -1246,13 +1262,13 @@ contains
         iel = p_IelementsAtBoundary(i)
         ivt = p_IverticesAtBoundary(i)
         iedge = p_IedgesAtBoundary(i)
-        IelList(ncount) = iel
+        if (present(IelList))    IelList(ncount) = iel
         if (present(IelListIdx)) IelListIdx(ncount) = i
         if (present(IvtLocal))   IvtLocal(ncount) = 0
         if (present(IedgeLocal)) IedgeLocal(ncount) = 0
         
         ! Remember the vertex and/or edge
-        if (bvertexInside) then
+        if (bvertexInside .and. present(IvtLocal)) then
         
           ! Search the local number of the vertex that we found
           do iidx = 1,ubound(p_IverticesAtElement,1)
@@ -1279,7 +1295,7 @@ contains
 
         ! This point is only reached, if the vertex is not inside.
         ! Check the edge.
-        if (bedgeInside) then
+        if (bedgeInside .and. present(IedgeLocal)) then
           ! Search the local number of the edge that we found
           do iidx = 1,ubound(p_IedgesAtElement,1)
             if (p_IedgesAtElement(iidx,iel) .eq. iedge) then
