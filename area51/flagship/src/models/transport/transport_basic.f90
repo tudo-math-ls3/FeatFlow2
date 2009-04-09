@@ -10,7 +10,7 @@
 !# </purpose>
 !##############################################################################
 
-module codire_basic
+module transport_basic
 
   use fparser
   use fsystem
@@ -19,7 +19,7 @@ module codire_basic
   implicit none
 
   private
-  public :: t_codire
+  public :: t_transport
   
 
 !<constants>
@@ -183,7 +183,7 @@ module codire_basic
 
   ! This structure contains all required data to describe an instance
   ! of the convection-diffusion-reaction benchmark application
-  type t_codire
+  type t_transport
 
     ! Dimension of the problem
     integer :: ndimension
@@ -257,10 +257,10 @@ module codire_basic
     ! Timer for pre- and post-processing
     type(t_timer) :: rtimerPrePostprocess
     
-  end type t_codire
+  end type t_transport
 
 !</typeblock>
 
 !</type>
 
-end module codire_basic
+end module transport_basic
