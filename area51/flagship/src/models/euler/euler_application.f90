@@ -35,7 +35,7 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) euler
+!# 1.) euler_app
 !#     -> The main routine of the application called from the main problem
 !#
 !#
@@ -133,7 +133,7 @@ module euler_application
   implicit none
 
   private
-  public :: euler
+  public :: euler_app
   public :: euler_initApplication
   public :: euler_initCollection
   public :: euler_initSolvers
@@ -154,7 +154,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler(rparlist)
+  subroutine euler_app(rparlist)
 
 !<description>
     ! This is the main application for the compressible Euler
@@ -227,19 +227,19 @@ contains
     call collct_init(rcollection)
 
     ! Initialize the application descriptor
-    call euler_initApplication(rparlist, 'euler', rappDescriptor)
+    call euler_initApplication(rparlist, 'euler_app', rappDescriptor)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
 
     ! Initialize the global collection
-    call euler_initCollection(rappDescriptor, rparlist, 'euler', rcollection)
+    call euler_initCollection(rappDescriptor, rparlist, 'euler_app', rcollection)
 
     ! Initialize the solver structures
-    call euler_initSolvers(rparlist, 'euler', rtimestep, rsolver)
+    call euler_initSolvers(rparlist, 'euler_app', rtimestep, rsolver)
 
     ! Initialize the abstract problem structure
-    call euler_initProblem(rparlist, 'euler',&
+    call euler_initProblem(rparlist, 'euler_app',&
                            solver_getMinimumMultigridlevel(rsolver),&
                            solver_getMaximumMultigridlevel(rsolver),&
                            rproblem, rcollection)
@@ -264,12 +264,12 @@ contains
     if (rtimestep%dfinalTime > 0) then
       
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, 'euler', 'algorithm', algorithm)
-      call parlst_getvalue_string(rparlist, 'euler', 'indatfile', sindatfileName)
+      call parlst_getvalue_string(rparlist, 'euler_app', 'algorithm', algorithm)
+      call parlst_getvalue_string(rparlist, 'euler_app', 'indatfile', sindatfileName)
       
       ! The boundary condition for the primal problem is required for all 
       ! solution strategies so initialize it from the parameter file
-      call parlst_getvalue_string(rparlist, 'euler', 'sprimalbdrcondname', sbdrcondName)
+      call parlst_getvalue_string(rparlist, 'euler_app', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
       
@@ -280,16 +280,16 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call euler_solveTransientPrimal(rappDescriptor, rparlist, 'euler',&
+        call euler_solveTransientPrimal(rappDescriptor, rparlist, 'euler_app',&
                                         rbdrCondPrimal, rproblem, rtimestep,&
                                         rsolver, rsolutionPrimal, rcollection)
-        call euler_outputSolution(rparlist, 'euler', rproblem%p_rproblemLevelMax,&
+        call euler_outputSolution(rparlist, 'euler_app', rproblem%p_rproblemLevelMax,&
                                   rsolutionPrimal, dtime=rtimestep%dTime)
 
         
       case DEFAULT
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler')
+                         OU_CLASS_ERROR,OU_MODE_STD,'euler_app')
         call sys_halt()
       end select
     end if
@@ -332,7 +332,7 @@ contains
     ! Output statistics
     call euler_outputStatistics(rappDescriptor, rtimerTotal)
 
-  end subroutine euler
+  end subroutine euler_app
 
   !*****************************************************************************
 
@@ -1751,7 +1751,7 @@ contains
 
       ! Create auxiliary memory
       h_BisactiveElement = ST_NOHANDLE
-      call storage_new('codire_estimateRecoveryError',' BisactiveElement',&
+      call storage_new('transp_estimateRecoveryError',' BisactiveElement',&
                        rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
                        h_BisactiveElement, ST_NEWBLOCK_NOINIT)
       call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)

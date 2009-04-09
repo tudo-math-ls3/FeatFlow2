@@ -48,9 +48,9 @@ module mhd_application
 
   use afcstabilisation
   use boundaryfilter
-  use codire_application
-  use codire_basic
-  use codire_callback
+  use transport_application
+  use transport_basic
+  use transport_callback
   use collection
   use euler_application
   use euler_basic
@@ -80,7 +80,7 @@ module mhd_application
   implicit none
 
   private
-  public :: mhd_simple
+  public :: mhd_simple_app
 
 contains
 
@@ -88,7 +88,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_simple(rparlist)
+  subroutine mhd_simple_app(rparlist)
 
 !<description>
     ! This is the main application for the simplified MHD equations. It
@@ -111,7 +111,7 @@ contains
     ! Application descriptors which hold all internal information
     ! for the compressible Euler model and the scalar transport model
     type(t_euler) :: rappDescrEuler
-    type(t_codire) :: rappDescrTransport
+    type(t_transport) :: rappDescrTransport
 
     ! Boundary condition structure for the primal problem
     type(t_boundaryCondition) :: rbdrCondEuler, rbdrCondTransport
@@ -164,7 +164,7 @@ contains
 
     ! Initialize the application descriptors
     call euler_initApplication(rparlist, ssectionNameEuler, rappDescrEuler)
-    call codire_initApplication(rparlist, ssectionNameTransport, rappDescrTransport)
+    call transp_initApplication(rparlist, ssectionNameTransport, rappDescrTransport)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
@@ -172,11 +172,11 @@ contains
     
     ! Initialize the global collections
     call euler_initCollection(rappDescrEuler, rparlist, ssectionNameEuler, rcollectionEuler)
-    call codire_initCollection(rappDescrTransport, rparlist, ssectionNameTransport, rcollectionTransport)
+    call transp_initCollection(rappDescrTransport, rparlist, ssectionNameTransport, rcollectionTransport)
 
     ! Initialize the solver structures
     call euler_initSolvers(rparlist, ssectionNameEuler, rtimestepEuler, rsolverEuler)
-    call codire_initSolvers(rparlist, ssectionNameTransport, rtimestepTransport, rsolverTransport)
+    call transp_initSolvers(rparlist, ssectionNameTransport, rtimestepTransport, rsolverTransport)
 
     ! Initialize the abstract problem structure
     nlmin = min(solver_getMinimumMultigridlevel(rsolverEuler),&
@@ -189,7 +189,7 @@ contains
 
     ! Initialize the individual problem levels
     call euler_initAllProblemLevels(rappDescrEuler, rproblem, rcollectionEuler)
-    call codire_initAllProblemLevels(rappDescrTransport, rproblem, rcollectionTransport)
+    call transp_initAllProblemLevels(rappDescrTransport, rproblem, rcollectionTransport)
 
     ! Prepare internal data arrays of the solver structure for Euler model
     systemMatrix = collct_getvalue_int(rcollectionEuler, 'systemMatrix') 
@@ -247,7 +247,7 @@ contains
       
     case DEFAULT
       call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'mhd_simple')
+                       OU_CLASS_ERROR,OU_MODE_STD,'mhd_simple_app')
       call sys_halt()
     end select
 
@@ -289,7 +289,7 @@ contains
     call solver_releaseSolver(rsolverTransport)
     
     ! Release application descriptor
-    call codire_doneApplication(rappDescrTransport)
+    call transp_doneApplication(rappDescrTransport)
 
     ! Release boundary conditions
     call bdrf_release(rbdrCondTransport)
@@ -322,9 +322,9 @@ contains
     call output_lbrk()
     call output_separator(OU_SEP_MINUS)
     call output_line('Scalar transport model')       
-    call codire_outputStatistics(rappDescrTransport, rtimerTotal)
+    call transp_outputStatistics(rappDescrTransport, rtimerTotal)
 
-  end subroutine mhd_simple
+  end subroutine mhd_simple_app
   
   !*****************************************************************************
 
@@ -816,7 +816,7 @@ contains
 !<inputoutput>
     ! application descriptor
     type(t_euler), intent(INOUT) ::  rappDescrEuler
-    type(t_codire), intent(INOUT) :: rappDescrTransport
+    type(t_transport), intent(INOUT) :: rappDescrTransport
 
     ! problem structure
     type(t_problem), intent(INOUT) :: rproblem
@@ -938,7 +938,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionTransport, .false., ST_DOUBLE)
-    call codire_initSolution(rparlist, ssectionNameTransport, p_rproblemLevel,&
+    call transp_initSolution(rparlist, ssectionNameTransport, p_rproblemLevel,&
                              rtimestepTransport%dinitialTime, rsolutionTransport)
     call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation,&
                                    rsolutionTransport, rtimestepTransport%dinitialTime)
@@ -1010,7 +1010,7 @@ contains
           do ipreadapt = 1, npreadapt
             
 !!$            ! Compute the error estimator using recovery techniques
-!!$            call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+!!$            call transp_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
 !!$                                              rsolutionTransport, rtimestepEuler%dinitialTime,&
 !!$                                              relementError, derror)
 
@@ -1035,7 +1035,7 @@ contains
 
             ! Re-initialize all constant coefficient matrices
             call euler_initProblemLevel(rappDescrEuler, p_rproblemLevel, rcollectionEuler)
-            call codire_initProblemLevel(rappDescrTransport, p_rproblemLevel, rcollectionTransport)
+            call transp_initProblemLevel(rappDescrTransport, p_rproblemLevel, rcollectionTransport)
 
             ! Resize the solution vector for the Euler model accordingly
             systemMatrix = collct_getvalue_int(rcollectionEuler, 'systemMatrix')
@@ -1050,7 +1050,7 @@ contains
             ! Re-generate the initial solution vectors
             call euler_initSolution(rparlist, ssectionnameEuler, p_rproblemLevel,&
                                     rtimestepEuler%dinitialTime, rsolutionEuler)
-            call codire_initSolution(rparlist, ssectionnameTransport, p_rproblemLevel,&
+            call transp_initSolution(rparlist, ssectionnameTransport, p_rproblemLevel,&
                                      rtimestepTransport%dinitialTime, rsolutionTransport)
             
             
@@ -1165,16 +1165,16 @@ contains
         
         ! Adopt explicit Runge-Kutta scheme
         call tstep_performRKStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
-                                 rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+                                 rsolutionTransport, transp_nlsolverCallback, rcollectionTransport)
         
       case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
-                                    rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
+                                    rsolutionTransport, transp_nlsolverCallback, rcollectionTransport)
 
 !!$        ! Perform characteristic FCT postprocessing
-!!$        call codire_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
+!!$        call transp_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
 !!$                                      rsolutionTransport, rcollectionTransport)
           
       case DEFAULT
@@ -1248,7 +1248,7 @@ contains
 !!$        call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
 !!$        
 !!$        ! Compute the error estimator using recovery techniques
-!!$        call codire_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
+!!$        call transp_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
 !!$                                          rsolutionTransport, rtimestepTransport%dTime,&
 !!$                                          relementError, derror)
 !!$        
@@ -1325,7 +1325,7 @@ contains
         
         ! Re-initialize all constant coefficient matrices
         call euler_initProblemLevel(rappDescrEuler, p_rproblemLevel, rcollectionEuler)
-        call codire_initProblemLevel(rappDescrTransport, p_rproblemLevel, rcollectionTransport)
+        call transp_initProblemLevel(rappDescrTransport, p_rproblemLevel, rcollectionTransport)
         
         ! Resize the solution vector accordingly
         systemMatrix = collct_getvalue_int(rcollectionEuler, 'systemMatrix')

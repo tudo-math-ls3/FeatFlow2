@@ -10,7 +10,7 @@
 
 program flagship
 
-  use codire_application
+  use transport_application
   use euler_application
   use fparser
   use genoutput
@@ -101,14 +101,14 @@ program flagship
 
   ! Call application module
   select case(trim(application))
-  case('codire')
-    call codire(rparlist)
+  case('transport')
+    call transp_app(rparlist)
 
   case('euler')
-    call euler(rparlist)
+    call euler_app(rparlist)
 
   case('mhdsimple')
-    call mhd_simple(rparlist)
+    call mhd_simple_app(rparlist)
 
   case DEFAULT
     call output_line('Invalid application name!',&

@@ -12,7 +12,7 @@
 
 module mhd_basic
 
-  use codire_basic
+  use transport_basic
   use euler_basic
 
   implicit none
@@ -33,7 +33,7 @@ module mhd_basic
     type(t_euler) :: rappDescrEuler
 
     ! Application descriptor for the scalar transport model
-    type(t_codire) :: rappDescrTransport
+    type(t_transport) :: rappDescrTransport
     
   end type t_mhdSimple
 

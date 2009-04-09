@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> codire_application </name>
+!# <name> transport_application </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -52,99 +52,99 @@
 !# 
 !# The following routines are available:
 !#
-!# 1.) codire
+!# 1.) transp_app
 !#     -> The main routine of the application called from the main problem
 !#
-!# 2.) codire_initApplication
+!# 2.) transp_initApplication
 !#     -> Initializes the application descriptor by the parameter
 !#        settings given by the parameter list
 !#
-!# 3.) codire_doneApplication
+!# 3.) transp_doneApplication
 !#     -> Finalizes the application descriptor
 !# 
-!# 4.) codire_initCollection
+!# 4.) transp_initCollection
 !#     -> Initializes the collection structure based on the parameter
 !#        settings given by the application descriptor
 !#
-!# 5.) codire_initSolvers
+!# 5.) transp_initSolvers
 !#     -> Initializes the solve structures from the parameter list
 !#
-!# 6.) codire_initProblem
+!# 6.) transp_initProblem
 !#     -> Initializes the global problem structure based on the
 !#        parameter settings given by the parameter list
 !#
-!# 7.) codire_initProblemLevel
+!# 7.) transp_initProblemLevel
 !#     -> Initializes the individual problem level based on the
 !#        parameter settings given by the application descriptor
 !#
-!# 8.) codire_initAllProblemLevels
+!# 8.) transp_initAllProblemLevels
 !#     -> Initializes all problem levels attached to the global
 !#        problem structure based on the parameter settings
 !#        given by the parameter list
 !#
-!# 9.) codire_initSolution
+!# 9.) transp_initSolution
 !#     -> Initializes the solution vector based on the parameter
 !#        settings given by the parameter list
 !#
-!# 10.) codire_initRHS
+!# 10.) transp_initRHS
 !#      -> Initializes the right-hand side vector based on the
 !#         parameter settings given by the application descriptor
 !#
-!# 11.) codire_initTargetFunc
+!# 11.) transp_initTargetFunc
 !#      -> Initializes the target functional for the dual problem
 !#
-!# 12.) codire_outputSolution
+!# 12.) transp_outputSolution
 !#      -> Outputs the solution vector to file in UCD format
 !#
-!# 13.) codire_outputStatistics
+!# 13.) transp_outputStatistics
 !#      -> Outputs the application statitics
 !#
-!# 14.) codire_estimateTargetFuncError
+!# 14.) transp_estimateTargetFuncError
 !#      -> Estimates the error in the quantity of interest
 !#
-!# 15.) codire_estimateRecoveryError
+!# 15.) transp_estimateRecoveryError
 !#      -> Estimates the solution error using recovery techniques
 !#
-!# 16.) codire_adaptTriangulation
+!# 16.) transp_adaptTriangulation
 !#      -> Performs h-adaptation for the given triangulation
 !#
-!# 17.) codire_solveTransientPrimal
+!# 17.) transp_solveTransientPrimal
 !#      -> Solves the primal formulation of the time-dependent 
 !#         convection-diffusion-reaction equation.
 !#
-!# 18.) codire_solvePseudoTransientPrimal
+!# 18.) transp_solvePseudoTransientPrimal
 !#      -> Solves the primal formulation of the steady 
 !#         convection-diffusion-reaction equation using pseudo time-stepping.
 !#
-!# 19.) codire_solvePseudoTransientPrimalDual
+!# 19.) transp_solvePseudoTransientPrimalDual
 !#      -> Solves the primal and the dual formulation of the steady 
 !#         convection-diffusion-reaction equation using pseudo time-stepping.
 !#
-!# 20.) codire_solveSteadyStatePrimal
+!# 20.) transp_solveSteadyStatePrimal
 !#      -> Solves the primal formulation of the steady 
 !#         convection-diffusion-reaction equation directly
 !#
-!# 21.) codire_solveSteadyStatePrimalDual
+!# 21.) transp_solveSteadyStatePrimalDual
 !#      -> Solves the primal and the dual formulation of the steady 
 !#         convection-diffusion-reaction equation directly
 !#
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) codire_parseCmdlArguments
+!# 1.) transp_parseCmdlArguments
 !#     -> Parses the list of commandline arguments and overwrites
 !#        parameter values from the parameter files
 !# 
 !# </purpose>
 !##############################################################################
 
-module codire_application
+module transport_application
 
   use afcstabilisation
   use bilinearformevaluation
   use boundaryfilter
-  use codire_basic
-  use codire_callback
+  use transport_basic
+  use transport_callback
   use collection
   use flagship_basic
   use fparser
@@ -175,26 +175,26 @@ module codire_application
   implicit none
   
   private
-  public :: codire
-  public :: codire_initApplication
-  public :: codire_doneApplication
-  public :: codire_initCollection
-  public :: codire_initSolvers
-  public :: codire_initProblem
-  public :: codire_initProblemLevel
-  public :: codire_initAllProblemLevels
-  public :: codire_initSolution
-  public :: codire_initRHS
-  public :: codire_initTargetFunc
-  public :: codire_outputSolution
-  public :: codire_outputStatistics
-  public :: codire_estimateTargetFuncError
-  public :: codire_estimateRecoveryError
-  public :: codire_adaptTriangulation
-  public :: codire_solveTransientPrimal
-  public :: codire_solvePseudoTransientPrimal
-  public :: codire_solveSteadyStatePrimal
-  public :: codire_solveSteadyStatePrimalDual
+  public :: transp_app
+  public :: transp_initApplication
+  public :: transp_doneApplication
+  public :: transp_initCollection
+  public :: transp_initSolvers
+  public :: transp_initProblem
+  public :: transp_initProblemLevel
+  public :: transp_initAllProblemLevels
+  public :: transp_initSolution
+  public :: transp_initRHS
+  public :: transp_initTargetFunc
+  public :: transp_outputSolution
+  public :: transp_outputStatistics
+  public :: transp_estimateTargetFuncError
+  public :: transp_estimateRecoveryError
+  public :: transp_adaptTriangulation
+  public :: transp_solveTransientPrimal
+  public :: transp_solvePseudoTransientPrimal
+  public :: transp_solveSteadyStatePrimal
+  public :: transp_solveSteadyStatePrimalDual
 
 
 contains
@@ -203,7 +203,7 @@ contains
 
 !<subroutine>
 
-  subroutine codire(rparlist)
+  subroutine transp_app(rparlist)
 
 !<description>
     ! This is the main application for the convection-diffusion-reaction 
@@ -225,7 +225,7 @@ contains
 
     ! Application descriptor which holds all internal information
     ! for the convection-diffusion-reaction application
-    type(t_codire) :: rappDescriptor
+    type(t_transport) :: rappDescriptor
 
     ! Boundary condition structure for the primal problem
     type(t_boundaryCondition) :: rbdrCondPrimal
@@ -271,31 +271,31 @@ contains
     
     ! Overwrite global configuration from command line arguments. After
     ! this subroutine has been called, the parameter list remains unchanged.
-    call codire_parseCmdlArguments(rparlist)
+    call transp_parseCmdlArguments(rparlist)
 
     ! Initialize global collection structure
     call collct_init(rcollection)
 
     ! Initialize the application descriptor
-    call codire_initApplication(rparlist, 'codire', rappDescriptor)
+    call transp_initApplication(rparlist, 'transp_app', rappDescriptor)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
     
     ! Initialize the global collection
-    call codire_initCollection(rappDescriptor, rparlist, 'codire', rcollection)
+    call transp_initCollection(rappDescriptor, rparlist, 'transp_app', rcollection)
 
     ! Initialize the solver structures
-    call codire_initSolvers(rparlist, 'codire', rtimestep, rsolver)
+    call transp_initSolvers(rparlist, 'transp_app', rtimestep, rsolver)
 
     ! Initialize the abstract problem structure
-    call codire_initProblem(rparlist, 'codire',&
+    call transp_initProblem(rparlist, 'transp_app',&
                             solver_getMinimumMultigridlevel(rsolver),&
                             solver_getMaximumMultigridlevel(rsolver),&
                             rproblem, rcollection)
 
     ! Initialize the individual problem levels
-    call codire_initAllProblemLevels(rappDescriptor, rproblem, rcollection)
+    call transp_initAllProblemLevels(rappDescriptor, rproblem, rcollection)
 
     ! Prepare internal data arrays of the solver structure
     systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix') 
@@ -314,12 +314,12 @@ contains
     if (rtimestep%dfinalTime > 0) then
       
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, 'codire', 'algorithm', algorithm)
-      call parlst_getvalue_string(rparlist, 'codire', 'indatfile', sindatfileName)
+      call parlst_getvalue_string(rparlist, 'transp_app', 'algorithm', algorithm)
+      call parlst_getvalue_string(rparlist, 'transp_app', 'indatfile', sindatfileName)
       
       ! The boundary conditions for the primal problem are required for all 
       ! solution strategies. So initialize them from the parameter file.
-      call parlst_getvalue_string(rparlist, 'codire', 'sprimalbdrcondname', sbdrcondName)
+      call parlst_getvalue_string(rparlist, 'transp_app', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
       
@@ -330,10 +330,10 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call codire_solveTransientPrimal(rappDescriptor, rparlist, 'codire',&
+        call transp_solveTransientPrimal(rappDescriptor, rparlist, 'transp_app',&
                                          rbdrCondPrimal, rproblem, rtimestep,&
                                          rsolver, rsolutionPrimal, rcollection)
-        call codire_outputSolution(rparlist, 'codire', rproblem%p_rproblemLevelMax,&
+        call transp_outputSolution(rparlist, 'transp_app', rproblem%p_rproblemLevelMax,&
                                    rsolutionPrimal, dtime=rtimestep%dTime)
         
       case ('transient_primaldual')
@@ -348,10 +348,10 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call codire_solvePseudoTransientPrimal(rappDescriptor, rparlist, 'codire',&
+        call transp_solvePseudoTransientPrimal(rappDescriptor, rparlist, 'transp_app',&
                                                rbdrCondPrimal, rproblem, rtimestep,&
                                                rsolver, rsolutionPrimal, rcollection)
-        call codire_outputSolution(rparlist, 'codire', rproblem%p_rproblemLevelMax,&
+        call transp_outputSolution(rparlist, 'transp_app', rproblem%p_rproblemLevelMax,&
                                    rsolutionPrimal, dtime=rtimestep%dTime)
 
 
@@ -367,10 +367,10 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call codire_solveSteadyStatePrimal(rappDescriptor, rparlist, 'codire',&
+        call transp_solveSteadyStatePrimal(rappDescriptor, rparlist, 'transp_app',&
                                            rbdrCondPrimal, rproblem, rtimestep,&
                                            rsolver, rsolutionPrimal, rcollection)
-        call codire_outputSolution(rparlist, 'codire', rproblem%p_rproblemLevelMax,&
+        call transp_outputSolution(rparlist, 'transp_app', rproblem%p_rproblemLevelMax,&
                                    rsolutionPrimal, dtime=rtimestep%dTime)
 
 
@@ -378,21 +378,21 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call parlst_getvalue_string(rparlist, 'codire', 'sdualbdrcondname', sbdrcondName)
+        call parlst_getvalue_string(rparlist, 'transp_app', 'sdualbdrcondname', sbdrcondName)
         call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
 
-        call codire_solveSteadyStatePrimalDual(rappDescriptor, rparlist, 'codire',&
+        call transp_solveSteadyStatePrimalDual(rappDescriptor, rparlist, 'transp_app',&
                                                rbdrCondPrimal, rbdrCondDual,&
                                                rproblem, rtimestep, rsolver,&
                                                rsolutionPrimal, rsolutionDual, rcollection)
-        call codire_outputSolution(rparlist, 'codire', rproblem%p_rproblemLevelMax,&
+        call transp_outputSolution(rparlist, 'transp_app', rproblem%p_rproblemLevelMax,&
                                    rsolutionPrimal, rsolutionDual, rtimestep%dTime)
 
 
       case DEFAULT
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire')
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
         call sys_halt()
       end select
     end if
@@ -417,7 +417,7 @@ contains
     call problem_releaseProblem(rproblem)
 
     ! Release application descriptor
-    call codire_doneApplication(rappDescriptor)
+    call transp_doneApplication(rappDescriptor)
     
     ! Release boundary conditions
     call bdrf_release(rbdrCondPrimal)
@@ -437,15 +437,15 @@ contains
     call stat_stopTimer(rtimerTotal)
 
     ! Output statistics
-    call codire_outputStatistics(rappDescriptor, rtimerTotal)
+    call transp_outputStatistics(rappDescriptor, rtimerTotal)
     
-  end subroutine codire
+  end subroutine transp_app
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_initApplication(rparlist, ssectionName, rappDescriptor)
+  subroutine transp_initApplication(rparlist, ssectionName, rappDescriptor)
 
 !<description>
     ! This subroutine initializes the application descriptor by the
@@ -462,7 +462,7 @@ contains
 
 !<output>
     ! application descriptor
-    type(t_codire), intent(OUT) :: rappDescriptor
+    type(t_transport), intent(OUT) :: rappDescriptor
 !</output>
 !</subroutine>
 
@@ -558,13 +558,13 @@ contains
 
     end if
 
-  end subroutine codire_initApplication
+  end subroutine transp_initApplication
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_doneApplication(rappDescriptor)
+  subroutine transp_doneApplication(rappDescriptor)
 
 !<description>
     ! This subroutine finalizes the application descriptor
@@ -572,7 +572,7 @@ contains
 
 !<inputoutput>
     ! application descriptor
-    type(t_codire), intent(INOUT) :: rappDescriptor
+    type(t_transport), intent(INOUT) :: rappDescriptor
 !</inputoutput>
 !</subroutine>
 
@@ -596,13 +596,13 @@ contains
       call fparser_release(rappDescriptor%rfparserTargetFunc)
     end if
 
-  end subroutine codire_doneApplication
+  end subroutine transp_doneApplication
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_initCollection(rappDescriptor, rparlist, ssectionName, rcollection)
+  subroutine transp_initCollection(rappDescriptor, rparlist, ssectionName, rcollection)
 
 !<description>
     ! This subroutine initializes the collection based on
@@ -611,7 +611,7 @@ contains
 
 !<input>
     ! application descriptor
-    type(t_codire), intent(IN) :: rappDescriptor
+    type(t_transport), intent(IN) :: rappDescriptor
 
     ! parameter list
     type(t_parlist), intent(IN) :: rparlist
@@ -751,13 +751,13 @@ contains
       call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ',  0, .true.)
     end if
 
-  end subroutine codire_initCollection
+  end subroutine transp_initCollection
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
+  subroutine transp_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
 !<description>
     ! This subroutine initializes the time-stepping structure and
@@ -809,13 +809,13 @@ contains
     end if
     call solver_updateStructure(rsolver)
     
-  end subroutine codire_initSolvers
+  end subroutine transp_initSolvers
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_initProblem(rparlist, ssectionName, nlmin, nlmax,&
+  subroutine transp_initProblem(rparlist, ssectionName, nlmin, nlmax,&
                                 rproblem, rcollection)
 
 !<description>
@@ -911,13 +911,13 @@ contains
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
 
-  end subroutine codire_initProblem
+  end subroutine transp_initProblem
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_initProblemLevel(rappDescriptor, rproblemLevel, rcollection)
+  subroutine transp_initProblemLevel(rappDescriptor, rproblemLevel, rcollection)
 
 !<description>
     ! This subroutine initielizes the individual problem level. It
@@ -927,7 +927,7 @@ contains
 
 !<input>
     ! application descriptor
-    type(t_codire), intent(IN) :: rappDescriptor
+    type(t_transport), intent(IN) :: rappDescriptor
 !</input>
 
 !<inputoutput>
@@ -1004,7 +1004,7 @@ contains
                                         p_rtriangulation, p_rboundary)
         case DEFAULT
           call output_line('Unsupproted element type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
+                           OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
           call sys_halt()
         end select
         
@@ -1044,7 +1044,7 @@ contains
                                          p_rtriangulation, p_rboundary)
         case DEFAULT
           call output_line('Unsupproted element type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
+                           OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
           call sys_halt()
         end select
       
@@ -1062,13 +1062,13 @@ contains
                                         p_rtriangulation, p_rboundary)
         case DEFAULT
           call output_line('Unsupproted element type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
+                           OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
           call sys_halt()
         end select
         
       case DEFAULT
         call output_line('Invalid number of spatial dimensions',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire_initProblemLevel')
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
         call sys_halt()
       end select
 
@@ -1461,13 +1461,13 @@ contains
       
     end subroutine initDiffusionMatrix3D
     
-  end subroutine codire_initProblemLevel
+  end subroutine transp_initProblemLevel
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_initAllProblemLevels(rappDescriptor, rproblem, rcollection)
+  subroutine transp_initAllProblemLevels(rappDescriptor, rproblem, rcollection)
 
 !<description>
     ! This subroutine initializes the all problem levels attached to
@@ -1478,7 +1478,7 @@ contains
 
 !<input>
     ! application descriptor
-    type(t_codire), intent(IN) :: rappDescriptor
+    type(t_transport), intent(IN) :: rappDescriptor
 !</input>
 
 !<inputoutput>
@@ -1499,19 +1499,19 @@ contains
     do while(associated(p_rproblemLevel))
       
       ! Initialize individual problem level
-      call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
       
       ! Switch to next coarser level
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
 
-  end subroutine codire_initAllProblemLevels
+  end subroutine transp_initAllProblemLevels
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_initSolution(rparlist, ssectionName, rproblemLevel, dtime, rvector)
+  subroutine transp_initSolution(rparlist, ssectionName, rproblemLevel, dtime, rvector)
 
 !<description>
     ! This subroutine initializes the solution vector
@@ -1617,17 +1617,17 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of solution profile!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'codire_initSolution')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'transp_initSolution')
       call sys_halt()
     end select
 
-  end subroutine codire_initSolution
+  end subroutine transp_initSolution
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_initRHS(rappDescriptor, rproblemLevel, dtime, rvector)
+  subroutine transp_initRHS(rappDescriptor, rproblemLevel, dtime, rvector)
 
 !<description>
     ! This subroutine initializes the right-hand side vector.
@@ -1635,7 +1635,7 @@ contains
 
 !<input>
     ! application descriptor
-    type(t_codire), intent(IN) :: rappDescriptor
+    type(t_transport), intent(IN) :: rappDescriptor
 
     ! problem level structure
     type(t_problemLevel), intent(IN), target :: rproblemLevel
@@ -1676,7 +1676,7 @@ contains
       ! Build the discretized right-hand side vector
       call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
                                   rform, .true., rvector%RvectorBlock(1),&
-                                  codire_coeffVectorAnalytic, rcollection)
+                                  transp_coeffVectorAnalytic, rcollection)
 
       ! Release collection structure
       call collct_done(rcollection)
@@ -1684,17 +1684,17 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of target functional!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initRHS')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_initRHS')
       call sys_halt()
     end select
 
-  end subroutine codire_initRHS
+  end subroutine transp_initRHS
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_initTargetFunc(rappDescriptor, rproblemLevel, dtime, rvector)
+  subroutine transp_initTargetFunc(rappDescriptor, rproblemLevel, dtime, rvector)
 
 !<description>
     ! This subroutine initializes the target functional which serves as
@@ -1704,7 +1704,7 @@ contains
 
 !<input>
     ! application descriptor
-    type(t_codire), intent(IN) :: rappDescriptor
+    type(t_transport), intent(IN) :: rappDescriptor
 
     ! problem level structure
     type(t_problemLevel), intent(IN), target :: rproblemLevel
@@ -1750,7 +1750,7 @@ contains
       ! Build the discretized target functional
       call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
                                   rform, .true., rvector%RvectorBlock(1),&
-                                  codire_coeffVectorAnalytic, rcollection)
+                                  transp_coeffVectorAnalytic, rcollection)
 
       ! Release collection structure
       call collct_done(rcollection)
@@ -1758,17 +1758,17 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of target functional!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_initTargetFunc')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_initTargetFunc')
       call sys_halt()
     end select
     
-  end subroutine codire_initTargetFunc
+  end subroutine transp_initTargetFunc
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_outputSolution(rparlist, ssectionName, rproblemLevel,&
+  subroutine transp_outputSolution(rparlist, ssectionName, rproblemLevel,&
                                    rsolutionPrimal, rsolutionDual, dtime)
 
 !<description>
@@ -1838,13 +1838,13 @@ contains
     call ucd_write  (rexport)
     call ucd_release(rexport)
 
-  end subroutine codire_outputSolution
+  end subroutine transp_outputSolution
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_outputStatistics(rappDescriptor, rtimerTotal)
+  subroutine transp_outputStatistics(rappDescriptor, rtimerTotal)
 
 !<description>
     ! This subroutine output application statistics
@@ -1852,7 +1852,7 @@ contains
 
 !<input>
     ! application descriptor
-    type(t_codire), intent(INOUT) :: rappDescriptor
+    type(t_transport), intent(INOUT) :: rappDescriptor
 
     ! timer for total time measurement
     type(t_timer), intent(IN) :: rtimerTotal
@@ -1903,13 +1903,13 @@ contains
                      trim(adjustl(sys_sdE(dtotalTime, 5))))
     call output_lbrk()
 
-  end subroutine codire_outputStatistics
+  end subroutine transp_outputStatistics
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_estimateTargetFuncError(rparlist, ssectionName, rproblemLevel,&
+  subroutine transp_estimateTargetFuncError(rparlist, ssectionName, rproblemLevel,&
                                             rtimestep, rsolver, rsolutionPrimal,&
                                             rsolutionDual, rcollection, rerror,&
                                             derror, rrhs)
@@ -2004,7 +2004,7 @@ contains
     call collct_setvalue_int(rcollection, 'diffusionAFC',  -abs(diffusionAFC), .false.)
 
     ! Calculate the standard Galerkin residual
-    call codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
+    call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
                              rsolutionPrimal, rsolutionPrimal,&
                              rvector, rvector, 0, rcollection, rrhs)
         
@@ -2081,14 +2081,14 @@ contains
 
       ! Compute the error of the quantity of interest
       call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dexacterror,&
-                                  codire_refFuncAnalytic, rcollectionTmp)
+                                  transp_refFuncAnalytic, rcollectionTmp)
 
       ! Compute the value of the quantity of interest. Create an empty
       ! vector which is initialized by zeros and compute the 'error'
       ! between this vector and the analytic quantity of interest.
       call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
       call pperr_scalarTargetFunc(rvector%RvectorBlock(1), dexacttargetfunc,&
-                                  codire_refFuncAnalytic, rcollectionTmp)
+                                  transp_refFuncAnalytic, rcollectionTmp)
       call lsysbl_releaseVector(rvector)
 
       ! Inverse the sign of the exact target functional since we computed $J(0-u)$
@@ -2114,7 +2114,7 @@ contains
 
     case (TFUNC_SURFINTG)
       call output_line('Target functionals in terms of surface integrals are not implemented',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_estimateTargetFuncError')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
       call sys_halt()
       
 
@@ -2172,7 +2172,7 @@ contains
 
       case DEFAULT
       call output_line('Invalid type of grid indicator!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_estimateTargetFuncError')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
       call sys_halt()
     end select
 
@@ -2190,7 +2190,7 @@ contains
 
       ! Create auxiliary memory
       h_BisactiveElement = ST_NOHANDLE
-      call storage_new('codire_estimateRecoveryError',' BisactiveElement',&
+      call storage_new('transp_estimateRecoveryError',' BisactiveElement',&
                        rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
                        h_BisactiveElement, ST_NEWBLOCK_NOINIT)
       call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
@@ -2276,13 +2276,13 @@ contains
       end do
     end subroutine doProtectionLayerUniform
 
-  end subroutine codire_estimateTargetFuncError
+  end subroutine transp_estimateTargetFuncError
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_estimateRecoveryError(rparlist, ssectionName, rproblemLevel,&
+  subroutine transp_estimateRecoveryError(rparlist, ssectionName, rproblemLevel,&
                                           rsolution, dtime, rerror, derror)
 
 !<description>
@@ -2397,7 +2397,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of error estimator!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_estimateRecoveryError')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateRecoveryError')
       call sys_halt()
     end select
 
@@ -2420,7 +2420,7 @@ contains
       
       ! Calculate the H1-error of the reference solution
       call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dexacterror,&
-                        codire_refFuncAnalytic, rcollection)
+                        transp_refFuncAnalytic, rcollection)
 
       ! Release collection structure
       call collct_done(rcollection)
@@ -2572,7 +2572,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of grid indicator!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_estimateRecoveryError')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateRecoveryError')
       call sys_halt()
     end select
 
@@ -2585,7 +2585,7 @@ contains
 
       ! Create auxiliary memory
       h_BisactiveElement = ST_NOHANDLE
-      call storage_new('codire_estimateRecoveryError',' BisactiveElement',&
+      call storage_new('transp_estimateRecoveryError',' BisactiveElement',&
                        rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
                        h_BisactiveElement, ST_NEWBLOCK_NOINIT)
       call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
@@ -2671,13 +2671,13 @@ contains
       end do
     end subroutine doProtectionLayerUniform
    
-  end subroutine codire_estimateRecoveryError
+  end subroutine transp_estimateRecoveryError
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_adaptTriangulation(rhadapt, rtriangulationSrc, rindicator,&
+  subroutine transp_adaptTriangulation(rhadapt, rtriangulationSrc, rindicator,&
                                        rcollection, rtriangulationDest)
 
 !<description>
@@ -2727,16 +2727,16 @@ contains
     ! How many spatial dimensions do we have?
     select case(rtriangulationSrc%ndim)
     case (NDIM1D)
-      call codire_hadaptCallback1D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
-      call hadapt_performAdaptation(rhadapt, rindicator, rcollection, codire_hadaptCallback1D)
+      call transp_hadaptCallback1D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+      call hadapt_performAdaptation(rhadapt, rindicator, rcollection, transp_hadaptCallback1D)
       
     case (NDIM2D)
-      call codire_hadaptCallback2D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
-      call hadapt_performAdaptation(rhadapt, rindicator, rcollection, codire_hadaptCallback2D)
+      call transp_hadaptCallback2D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+      call hadapt_performAdaptation(rhadapt, rindicator, rcollection, transp_hadaptCallback2D)
 
     case (NDIM3D)
-      call codire_hadaptCallback3D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
-      call hadapt_performAdaptation(rhadapt, rindicator, rcollection, codire_hadaptCallback3D)
+      call transp_hadaptCallback3D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+      call hadapt_performAdaptation(rhadapt, rindicator, rcollection, transp_hadaptCallback3D)
     end select
 
     ! Do we have a destination triangulation or should the source
@@ -2750,13 +2750,13 @@ contains
     ! Generate raw mesh from adaptation structure
     call hadapt_generateRawMesh(rhadapt, p_rtriangulation)
 
-  end subroutine codire_adaptTriangulation
+  end subroutine transp_adaptTriangulation
 
   !*****************************************************************************
 
 !<subroutine>
 
-    subroutine codire_solveTransientPrimal(rappDescriptor, rparlist, ssectionName,&
+    subroutine transp_solveTransientPrimal(rappDescriptor, rparlist, ssectionName,&
                                            rbdrCond, rproblem, rtimestep, rsolver,&
                                            rsolution, rcollection)
 
@@ -2783,7 +2783,7 @@ contains
 
 !<inputoutput>
     ! application descriptor
-    type(t_codire), intent(INOUT) :: rappDescriptor
+    type(t_transport), intent(INOUT) :: rappDescriptor
 
     ! problem structure
     type(t_problem), intent(INOUT) :: rproblem
@@ -2844,7 +2844,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
-    call codire_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
                              rtimestep%dinitialTime, rsolution)
     call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
                                    rsolution, rtimestep%dinitialTime)
@@ -2894,12 +2894,12 @@ contains
           do ipreadapt = 1, npreadapt
 
             ! Compute the error estimator using recovery techniques
-            call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
+            call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
                                               rsolution, rtimestep%dinitialTime,&
                                               relementError, derror)
 
             ! Perform h-adaptation and update the triangulation structure
-            call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
+            call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
                                            relementError, rcollection)
             
             ! Release element-wise error distribution
@@ -2917,13 +2917,13 @@ contains
                 p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
 
             ! Re-generate the initial solution vector and impose boundary conditions explicitly
-            call codire_initSolution(rparlist, ssectionname, p_rproblemLevel,&
+            call transp_initSolution(rparlist, ssectionname, p_rproblemLevel,&
                                      rtimestep%dinitialTime, rsolution)
             call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
                                            rsolution, rtimestep%dinitialTime)
 
             ! Re-initialize all constant coefficient matrices
-            call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+            call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
           end do
           
           ! Prepare internal data arrays of the solver structure
@@ -2945,13 +2945,13 @@ contains
     ! Initialize right-hand side vector
     if (rappDescriptor%irhstype > 0) then
       call lsysbl_createVectorBlock(rsolution, rrhs)
-      call codire_initRHS(rappDescriptor, p_rproblemLevel,&
+      call transp_initRHS(rappDescriptor, p_rproblemLevel,&
                           rtimestep%dinitialTime, rrhs)
     end if
 
     ! Calculate the initial velocity field
     nlmin = solver_getMinimumMultigridlevel(rsolver)
-    call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+    call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
                                   rtimestep%dinitialTime, rcollection, nlmin)
     
     ! Attach the boundary condition to the solver structure
@@ -2972,7 +2972,7 @@ contains
       
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
-      call codire_outputSolution(rparlist, ssectionName, p_rproblemLevel,&
+      call transp_outputSolution(rparlist, ssectionName, p_rproblemLevel,&
                                  rsolution, dtime=rtimestep%dTime)
       
       !-------------------------------------------------------------------------
@@ -2990,12 +2990,12 @@ contains
         if (rappDescriptor%irhstype > 0) then
           ! Explicit Runge-Kutta scheme with non-zero right-hand side vector
           call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
-                                   rsolution, codire_nlsolverCallback,&
+                                   rsolution, transp_nlsolverCallback,&
                                    rcollection, rrhs)
         else
           ! Explicit Runge-Kutta scheme without right-hand side vector
           call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
-                                   rsolution, codire_nlsolverCallback,&
+                                   rsolution, transp_nlsolverCallback,&
                                    rcollection)
         end if
         
@@ -3004,18 +3004,18 @@ contains
         if (rappDescriptor%irhstype > 0) then
           ! Two-level theta-scheme with non-zero right-hand side vector
           call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                      rsolution, codire_nlsolverCallback,&
+                                      rsolution, transp_nlsolverCallback,&
                                       rcollection, rrhs)
         else
           ! Two-level theta-scheme without right-hand side vector
           call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                      rsolution, codire_nlsolverCallback,&
+                                      rsolution, transp_nlsolverCallback,&
                                       rcollection)
         end if
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire_solveTransientPrimal')
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_solveTransientPrimal')
         call sys_halt()
       end select
       
@@ -3039,7 +3039,7 @@ contains
         call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
 
         ! Export the intermediate solution
-        call codire_outputSolution(rparlist, ssectionName, p_rproblemLevel,&
+        call transp_outputSolution(rparlist, ssectionName, p_rproblemLevel,&
                                    rsolution, dtime=rtimestep%dTime)
 
         ! Stop time measurement for post-processing
@@ -3065,7 +3065,7 @@ contains
         call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
         
         ! Compute the error estimator using recovery techniques
-        call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
+        call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
                                           rsolution, rtimestep%dTime, relementError, derror)
         
         ! Stop time measurement for error estimation
@@ -3087,7 +3087,7 @@ contains
         call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
         
         ! Perform h-adaptation and update the triangulation structure
-        call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
+        call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
                                        relementError, rcollection)
         
         ! Release element-wise error distribution
@@ -3123,7 +3123,7 @@ contains
         call stat_startTimer(rappDescriptor%rtimerAssemblyCoeff, STAT_TIMERSHORT)
         
         ! Re-initialize all constant coefficient matrices
-        call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+        call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
         
         ! Prepare internal data arrays of the solver structure
         systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
@@ -3133,14 +3133,14 @@ contains
         
         ! Re-calculate the velocity field
         nlmin = solver_getMinimumMultigridlevel(rsolver)
-        call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+        call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
                                       rtimestep%dTime, rcollection, nlmin)
 
         ! Re-initialize the right-hand side vector
         if (rappDescriptor%irhstype > 0) then
           call lsysbl_resizeVectorBlock(rrhs,&
               p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
-          call codire_initRHS(rappDescriptor, p_rproblemLevel,&
+          call transp_initRHS(rappDescriptor, p_rproblemLevel,&
                               rtimestep%dinitialTime, rrhs)
         end if
 
@@ -3151,7 +3151,7 @@ contains
 
         ! Re-calculate the time-dependent velocity field
         nlmin = solver_getMinimumMultigridlevel(rsolver)
-        call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+        call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
                                       rtimestep%dTime, rcollection, nlmin)
        
       end if
@@ -3170,13 +3170,13 @@ contains
       call lsysbl_releaseVector(rrhs)
     end if
 
-  end subroutine codire_solveTransientPrimal
+  end subroutine transp_solveTransientPrimal
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_solvePseudoTransientPrimal(rappDescriptor, rparlist, ssectionName,&
+  subroutine transp_solvePseudoTransientPrimal(rappDescriptor, rparlist, ssectionName,&
                                                rbdrCond, rproblem, rtimestep, rsolver,&
                                                rsolution, rcollection)
 !<description>
@@ -3200,7 +3200,7 @@ contains
 
 !<inputoutput>
     ! application descriptor
-    type(t_codire), intent(INOUT) :: rappDescriptor
+    type(t_transport), intent(INOUT) :: rappDescriptor
 
     ! problem structure
     type(t_problem), intent(INOUT) :: rproblem
@@ -3260,7 +3260,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
-    call codire_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
+    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
     call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
 
     !---------------------------------------------------------------------------
@@ -3312,7 +3312,7 @@ contains
 
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+      call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
                                     rtimestep%dTime, rcollection, nlmin)
 
       ! Attach the boundary condition to the solver structure
@@ -3328,11 +3328,11 @@ contains
       ! Check if right-hand side vector exists
       if (rappDescriptor%irhstype > 0) then
         call lsysbl_createVectorBlock(rsolution, rrhs)
-        call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        call transp_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
-                                         rsolution, codire_nlsolverCallback,&
+                                         rsolution, transp_nlsolverCallback,&
                                          rcollection, rrhs)
 
         ! Release right-hand side vector
@@ -3342,7 +3342,7 @@ contains
 
         ! Solve the primal problem without right-hand side
         call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
-                                         rsolution, codire_nlsolverCallback,&
+                                         rsolution, transp_nlsolverCallback,&
                                          rcollection)
       end if
 
@@ -3360,7 +3360,7 @@ contains
       call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Compute the error estimator using recovery techniques
-      call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
+      call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
                                         rsolution, 1.0_DP, relementError, derror)
 
       ! Stop time measurement for error estimation
@@ -3382,7 +3382,7 @@ contains
       call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
       
       ! Perform h-adaptation and update the triangulation structure
-      call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
+      call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
                                      relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
@@ -3417,7 +3417,7 @@ contains
       call stat_startTimer(rappDescriptor%rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
       ! Re-initialize all constant coefficient matrices
-      call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
       systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
@@ -3437,13 +3437,13 @@ contains
       call grph_releaseGraph(rgraph)
     end if    
     
-  end subroutine codire_solvePseudoTransientPrimal
+  end subroutine transp_solvePseudoTransientPrimal
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_solveSteadyStatePrimal(rappDescriptor, rparlist, ssectionName,&
+  subroutine transp_solveSteadyStatePrimal(rappDescriptor, rparlist, ssectionName,&
                                            rbdrCond, rproblem, rtimestep, rsolver,&
                                            rsolution, rcollection)
 
@@ -3468,7 +3468,7 @@ contains
 
 !<inputoutput>
     ! application descriptor
-    type(t_codire), intent(INOUT) :: rappDescriptor
+    type(t_transport), intent(INOUT) :: rappDescriptor
 
     ! problem structure
     type(t_problem), intent(INOUT) :: rproblem
@@ -3535,7 +3535,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
-    call codire_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
+    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
     call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)    
 
     !---------------------------------------------------------------------------
@@ -3586,7 +3586,7 @@ contains
       
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+      call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
                                     rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition to the solver structure
@@ -3602,11 +3602,11 @@ contains
       ! Check if right-hand side vector exists
       if (rappDescriptor%irhstype > 0) then
         call lsysbl_createVectorblock(rsolution, rrhs)
-        call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        call transp_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, codire_nlsolverCallback,&
+                                    rsolution, transp_nlsolverCallback,&
                                     rcollection, rrhs)
 
         ! Release right-hand side vector
@@ -3616,7 +3616,7 @@ contains
         
         ! Solve the primal problem without right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, codire_nlsolverCallback,&
+                                    rsolution, transp_nlsolverCallback,&
                                     rcollection)
       end if
             
@@ -3634,7 +3634,7 @@ contains
       call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Compute the error estimator using recovery techniques
-      call codire_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
+      call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
                                         rsolution, 1.0_DP, relementError, derror)
 
       ! Stop time measurement for error estimation
@@ -3656,7 +3656,7 @@ contains
       call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
       
       ! Perform h-adaptation and update the triangulation structure
-      call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
+      call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
                                      relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
@@ -3691,7 +3691,7 @@ contains
       call stat_startTimer(rappDescriptor%rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
       ! Re-initialize all constant coefficient matrices
-      call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
       systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
@@ -3711,13 +3711,13 @@ contains
       call grph_releaseGraph(rgraph)
     end if
 
-  end subroutine codire_solveSteadyStatePrimal
+  end subroutine transp_solveSteadyStatePrimal
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_solveSteadyStatePrimalDual(rappDescriptor, rparlist, ssectionName,&
+  subroutine transp_solveSteadyStatePrimalDual(rappDescriptor, rparlist, ssectionName,&
                                                rbdrCondPrimal, rbdrCondDual, rproblem,&
                                                rtimestep, rsolver, rsolutionPrimal,&
                                                rsolutionDual, rcollection)
@@ -3748,7 +3748,7 @@ contains
 
 !<inputoutput>
     ! application descriptor
-    type(t_codire), intent(INOUT) :: rappDescriptor
+    type(t_transport), intent(INOUT) :: rappDescriptor
 
     ! problem structure
     type(t_problem), intent(INOUT) :: rproblem
@@ -3818,7 +3818,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionPrimal, .false., ST_DOUBLE)
-    call codire_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
                              0.0_DP, rsolutionPrimal)
     call bdrf_filterVectorExplicit(rbdrCondPrimal, p_rproblemLevel%rtriangulation,&
                                    rsolutionPrimal, 0.0_DP)
@@ -3871,7 +3871,7 @@ contains
       
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+      call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
                                     rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition to the solver structure
@@ -3887,11 +3887,11 @@ contains
       ! Check if right-hand side vector exists
       if (rappDescriptor%irhstype > 0) then
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
-        call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        call transp_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolutionPrimal, codire_nlsolverCallback,&
+                                    rsolutionPrimal, transp_nlsolverCallback,&
                                     rcollection, rrhs)
 
         ! Release right-hand side vector
@@ -3901,7 +3901,7 @@ contains
         
         ! Solve the primal problem without right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolutionPrimal, codire_nlsolverCallback,&
+                                    rsolutionPrimal, transp_nlsolverCallback,&
                                     rcollection)
       end if
 
@@ -3917,7 +3917,7 @@ contains
       call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Initialize target functional
-      call codire_initTargetFunc(rappDescriptor, p_rproblemLevel,&
+      call transp_initTargetFunc(rappDescriptor, p_rproblemLevel,&
                                  1.0_DP, rtargetFunc)
       
       ! Stop time measurement for error estimation
@@ -3947,7 +3947,7 @@ contains
       
       ! Solve the dual problem
       call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                  rsolutionDual, codire_nlsolverCallback,&
+                                  rsolutionDual, transp_nlsolverCallback,&
                                   rcollection, rtargetFunc)
     
       ! Release discretized target functional
@@ -3968,7 +3968,7 @@ contains
       
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call codire_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+      call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
                                     rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition to the solver structure
@@ -3982,10 +3982,10 @@ contains
 
         ! Initialize right-hand side vector
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
-        call codire_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        call transp_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
 
         ! Compute the error in the quantity of interest
-        call codire_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
+        call transp_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
                                             rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
                                             rcollection, relementError, derror, rrhs)
 
@@ -3995,7 +3995,7 @@ contains
       else
 
         ! Compute the error in the quantity of interest
-        call codire_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
+        call transp_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
                                             rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
                                             rcollection, relementError, derror)
 
@@ -4020,7 +4020,7 @@ contains
       call collct_setvalue_vec(rcollection, 'solutionvector', rsolutionPrimal, .true.)
       
       ! Perform h-adaptation and update the triangulation structure
-      call codire_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
+      call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
                                      relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
@@ -4056,7 +4056,7 @@ contains
       call stat_startTimer(rappDescriptor%rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
       ! Re-initialize all constant coefficient matrices
-      call codire_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
       systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
@@ -4076,7 +4076,7 @@ contains
       call grph_releaseGraph(rgraph)
     end if
 
-  end subroutine codire_solveSteadyStatePrimalDual
+  end subroutine transp_solveSteadyStatePrimalDual
 
   !*****************************************************************************
   ! AUXILIARY ROUTINES
@@ -4084,7 +4084,7 @@ contains
 
 !<subroutine>
 
-  subroutine codire_parseCmdlArguments(rparlist)
+  subroutine transp_parseCmdlArguments(rparlist)
 
 !<description>
     ! This subroutine parses the commandline arguments and modifies the
@@ -4164,6 +4164,6 @@ contains
       end select
     end do cmdarg
 
-  end subroutine codire_parseCmdlArguments
+  end subroutine transp_parseCmdlArguments
 
-end module codire_application
+end module transport_application

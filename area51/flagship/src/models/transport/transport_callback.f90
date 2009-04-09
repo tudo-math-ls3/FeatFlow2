@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> codire_callback </name>
+!# <name> transport_callback </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,97 +9,97 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) codire_coeffVectorAnalytic
+!# 1.) transp_coeffVectorAnalytic
 !#     -> Callback routine for the evaluation of linear forms
 !#        using an analytic expression for the load-vector
 !#
-!# 2.) codire_refFuncAnalytic
+!# 2.) transp_refFuncAnalytic
 !#     -> Callback routine for the evaluation of the reference
 !#        function for error estimation using an analytic expression
 !#
-!# 3.) codire_nlsolverCallback
+!# 3.) transp_nlsolverCallback
 !#     -> Callback routine for the nonlinear solver
 !#
-!# 4.) codire_calcPreconditioner
+!# 4.) transp_calcPreconditioner
 !#     -> Calculates the nonlinear preconditioner
 !#
-!# 5.) codire_calcJacobian
+!# 5.) transp_calcJacobian
 !#     -> Calculates the Jacobian matrix
 !#
-!# 6.) codire_applyJacobian
+!# 6.) transp_applyJacobian
 !#     -> Applies the Jacobian matrix to a given vector
 !#
-!# 7.) codire_calcResidual
+!# 7.) transp_calcResidual
 !#     -> Calculates the nonlinear residual vector
 !#
-!# 8.) codire_calcRHS
+!# 8.) transp_calcRHS
 !#     -> Calculates the constant right-hand side vector
 !#
-!# 9.) codire_setBoundary
+!# 9.) transp_setBoundary
 !#     -> Imposes boundary conditions for nonlinear solver
 !#
-!# 10.) codire_calcVelocityField
+!# 10.) transp_calcVelocityField
 !#      -> Calculates the velocity field
 !#
-!# 11.) codire_setVelocityField
+!# 11.) transp_setVelocityField
 !#      -> Sets the velocity field internally
 !#
-!# 12.) codire_hadaptCallback1d
+!# 12.) transp_hadaptCallback1d
 !#      -> Performs application specific tasks in the adaptation algorithm in 1D
 !#
-!# 13.) codire_hadaptCallback2d
+!# 13.) transp_hadaptCallback2d
 !#      -> Performs application specific tasks in the adaptation algorithm in 2D
 !#
-!# 14.) codire_hadaptCallback3d
+!# 14.) transp_hadaptCallback3d
 !#      -> Performs application specific tasks in the adaptation algorithm in 3D
 !#
-!# 15.) codire_calcLinearizedFCT
+!# 15.) transp_calcLinearizedFCT
 !#      -> Calculates the linearized FCT correction
 !#
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) codire_calcPrimalConvConst1d
+!# 1.) transp_calcPrimalConvConst1d
 !#     -> Calculates the transport coefficients for linear convection in 1D
 !#
-!# 2.) codire_calcDualConvConst1d
+!# 2.) transp_calcDualConvConst1d
 !#     -> Calculates the transport coefficients for linear convection in 1D
 !#
-!# 3.) codire_calcPrimalConvConst2d
+!# 3.) transp_calcPrimalConvConst2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
 !#
-!# 4.) codire_calcDualConvConst2d
+!# 4.) transp_calcDualConvConst2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
 !#
-!# 5.) codire_calcPrimalConvConst3d
+!# 5.) transp_calcPrimalConvConst3d
 !#     -> Calculates the transport coefficients for linear convection in 3D
 !#
-!# 6.) codire_calcDualConvConst3d
+!# 6.) transp_calcDualConvConst3d
 !#     -> Calculates the transport coefficients for linear convection in 3D
 !#
-!# 7.) codire_calcConvectionBurgersSpT2d
+!# 7.) transp_calcConvectionBurgersSpT2d
 !#     -> Calculates the transport coefficients for Burgers' equation in space-time
 !#
-!# 8.) codire_calcConvectionBuckLevSpT2d
+!# 8.) transp_calcConvectionBuckLevSpT2d
 !#     -> Calculates the transport coefficients for Buckley-Leverett equation in space-time
 !#
-!# 9.) codire_calcConvectionBurgers1d
+!# 9.) transp_calcConvectionBurgers1d
 !#     -> Calculates the transport coefficients for Burgers' equation in 1D
 !#
-!# 10.) codire_calcConvectionBurgers2d
+!# 10.) transp_calcConvectionBurgers2d
 !#      -> Calculates the transport coefficients for Burgers' equation in 2D
 !#
-!# 11.) codire_calcConvectionBuckLev1d
+!# 11.) transp_calcConvectionBuckLev1d
 !#      -> Calculates the transport coefficients for Buckley-Leverett equation in 1D
 !#
 !# </purpose>
 !##############################################################################
 
-module codire_callback
+module transport_callback
 
   use afcstabilisation
   use boundaryfilter
-  use codire_basic
+  use transport_basic
   use collection
   use flagship_basic
   use flagship_callback
@@ -120,21 +120,21 @@ module codire_callback
   implicit none
 
   private
-  public :: codire_coeffVectorAnalytic
-  public :: codire_refFuncAnalytic
-  public :: codire_nlsolverCallback
-  public :: codire_setBoundary
-  public :: codire_calcPreconditioner
-  public :: codire_calcJacobian
-  public :: codire_applyJacobian
-  public :: codire_calcResidual
-  public :: codire_calcRHS
-  public :: codire_calcVelocityField
-  public :: codire_setVelocityField
-  public :: codire_hadaptCallback1d
-  public :: codire_hadaptCallback2d
-  public :: codire_hadaptCallback3d
-  public :: codire_calcLinearizedFCT
+  public :: transp_coeffVectorAnalytic
+  public :: transp_refFuncAnalytic
+  public :: transp_nlsolverCallback
+  public :: transp_setBoundary
+  public :: transp_calcPreconditioner
+  public :: transp_calcJacobian
+  public :: transp_applyJacobian
+  public :: transp_calcResidual
+  public :: transp_calcRHS
+  public :: transp_calcVelocityField
+  public :: transp_setVelocityField
+  public :: transp_hadaptCallback1d
+  public :: transp_hadaptCallback2d
+  public :: transp_hadaptCallback3d
+  public :: transp_calcLinearizedFCT
 
 !<globals>
 
@@ -157,7 +157,7 @@ contains
 
 !<subroutine>
 
-  subroutine codire_coeffVectorAnalytic(rdiscretisation, rform, nelements,&
+  subroutine transp_coeffVectorAnalytic(rdiscretisation, rform, nelements,&
                                         npointsPerElement, Dpoints, IdofsTest,&
                                         rdomainIntSubset, Dcoefficients, rcollection)
     
@@ -272,13 +272,13 @@ contains
 
     end if
     
-  end subroutine codire_coeffVectorAnalytic
+  end subroutine transp_coeffVectorAnalytic
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_refFuncAnalytic(cderivative,rdiscretisation, nelements,&
+  subroutine transp_refFuncAnalytic(cderivative,rdiscretisation, nelements,&
                                     npointsPerElement, Dpoints, IdofsTest,&
                                     rdomainIntSubset, Dvalues, rcollection)
     
@@ -421,13 +421,13 @@ contains
       Dvalues = 0.0_DP
     end select
   
-  end subroutine codire_refFuncAnalytic
+  end subroutine transp_refFuncAnalytic
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
+  subroutine transp_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
                                      rsolution, rsolutionInitial,&
                                      rrhs, rres, istep, ioperationSpec,&
                                      rcollection, istatus, rb)
@@ -490,7 +490,7 @@ contains
         (iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)      .ne. 0) .or.&
         (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0)) then
      
-      call codire_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
+      call transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
                                      rsolution, rcollection)
     end if
 
@@ -499,7 +499,7 @@ contains
 !!$    ! --------------------------------------------------------------------------
 !!$    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
 !!$
-!!$      call codire_calcrhs(rproblemLevel, rtimestep, rsolver,&
+!!$      call transp_calcrhs(rproblemLevel, rtimestep, rsolver,&
 !!$                          rsolution, rvector, rcollection)
 !!$    end if
           
@@ -508,7 +508,7 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
-      call codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
+      call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
                                rsolution, rsolutionInitial,&
                                rrhs, rres, istep, rcollection, rb)
      end if
@@ -518,7 +518,7 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
       
-      call codire_calcJacobian(rproblemLevel, rtimestep, rsolver,&
+      call transp_calcJacobian(rproblemLevel, rtimestep, rsolver,&
                                rsolution, rsolutionInitial, rcollection)
     end if
     
@@ -527,7 +527,7 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
-      call codire_setBoundary(rproblemLevel, rtimestep, rsolver,&
+      call transp_setBoundary(rproblemLevel, rtimestep, rsolver,&
                               rsolution, rsolutionInitial, rres, rcollection)
     end if
     
@@ -547,13 +547,13 @@ contains
     ! Set status flag
     istatus = 0
     
-  end subroutine codire_nlsolverCallback
+  end subroutine transp_nlsolverCallback
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
+  subroutine transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
                                        rsolution, rcollection)
 
 !<description>
@@ -672,7 +672,7 @@ contains
 
     case (DIFFUSION_VARIABLE)
       call output_line('Variable diffusion matrices are yet not implemented!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPreconditioner')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPreconditioner')
       call sys_halt()
 
       ! Set update notification in problem level structure
@@ -681,7 +681,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPreconditioner')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPreconditioner')
       call sys_halt()
     end select
     
@@ -728,7 +728,7 @@ contains
         ! linear velocity
 
         velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
-        call codire_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
+        call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
         if (bbuildAFC) then
           
@@ -736,21 +736,21 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, codire_calcPrimalConvConst1d,&
+                rsolution, transp_calcPrimalConvConst1d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, codire_calcPrimalConvConst2d,&
+                rsolution, transp_calcPrimalConvConst2d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, codire_calcPrimalConvConst3d,&
+                rsolution, transp_calcPrimalConvConst3d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
           end select
@@ -761,21 +761,21 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, codire_calcPrimalConvConst1d,&
+                rsolution, transp_calcPrimalConvConst1d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, codire_calcPrimalConvConst2d,&
+                rsolution, transp_calcPrimalConvConst2d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, codire_calcPrimalConvConst3d,&
+                rsolution, transp_calcPrimalConvConst3d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
           end select
@@ -796,7 +796,7 @@ contains
           
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBurgersSpT2d,&
+              rsolution, transp_calcConvectionBurgersSpT2d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
@@ -804,7 +804,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBurgersSpT2d,&
+              rsolution, transp_calcConvectionBurgersSpT2d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
               bisConservative = bconservative)
 
@@ -822,7 +822,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBuckLevSpT2d,&
+              rsolution, transp_calcConvectionBuckLevSpT2d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
@@ -831,7 +831,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBurgersSpT2d,&
+              rsolution, transp_calcConvectionBurgersSpT2d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
               bisConservative = bconservative)
 
@@ -849,7 +849,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, codire_calcConvectionBurgers1d,&
+              rsolution, transp_calcConvectionBurgers1d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
@@ -857,7 +857,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, codire_calcConvectionBurgers1d,&
+              rsolution, transp_calcConvectionBurgers1d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
               bisConservative = bconservative)
 
@@ -875,7 +875,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBurgers2d,&
+              rsolution, transp_calcConvectionBurgers2d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
@@ -883,7 +883,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcConvectionBurgers2d,&
+              rsolution, transp_calcConvectionBurgers2d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
               bisConservative = bconservative)
 
@@ -901,7 +901,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, codire_calcConvectionBuckLev1d,&
+              rsolution, transp_calcConvectionBuckLev1d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
@@ -909,7 +909,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, codire_calcConvectionBuckLev1d,&
+              rsolution, transp_calcConvectionBuckLev1d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
               bisConservative = bconservative)
 
@@ -922,7 +922,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid velocity profile!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPreconditioner')
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPreconditioner')
         call sys_halt()
       end select
 
@@ -938,7 +938,7 @@ contains
         ! linear velocity
 
         velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
-        call codire_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
+        call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
         if (bbuildAFC) then
 
@@ -946,21 +946,21 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, codire_calcDualConvConst1d,&
+                rsolution, transp_calcDualConvConst1d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, codire_calcDualConvConst2d,&
+                rsolution, transp_calcDualConvConst2d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, codire_calcDualConvConst3d,&
+                rsolution, transp_calcDualConvConst3d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
           end select
@@ -971,21 +971,21 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, codire_calcDualConvConst1d,&
+                rsolution, transp_calcDualConvConst1d,&
                 bstabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, codire_calcDualConvConst2d,&
+                rsolution, transp_calcDualConvConst2d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, codire_calcDualConvConst3d,&
+                rsolution, transp_calcDualConvConst3d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
           end select
@@ -1016,7 +1016,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid velocity profile!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire_calcPreconditioner')
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPreconditioner')
         call sys_halt()
       end select
 
@@ -1088,13 +1088,13 @@ contains
     ! Stop time measurement for global operator
     call stat_stopTimer(rtimer)
     
-  end subroutine codire_calcPreconditioner
+  end subroutine transp_calcPreconditioner
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_calcJacobian(rproblemLevel, rtimestep, rsolver,&
+  subroutine transp_calcJacobian(rproblemLevel, rtimestep, rsolver,&
                                  rsolution, rsolutionInitial, rcollection)
 
 !<description>
@@ -1199,7 +1199,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_calcJacobian')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
       call sys_halt()
     end select
     
@@ -1227,25 +1227,25 @@ contains
             VELOCITY_TIMEDEP) 
         ! linear velocity
         velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
-        call codire_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
+        call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, codire_calcPrimalConvConst1d, hstep, bStabilize,&
+              rsolution, transp_calcPrimalConvConst1d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
 
         case (NDIM2D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcPrimalConvConst2d, hstep, bStabilize,&
+              rsolution, transp_calcPrimalConvConst2d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
 
         case (NDIM3D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rsolution, codire_calcPrimalConvConst3d, hstep, bStabilize,&
+              rsolution, transp_calcPrimalConvConst3d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
         end select
       
@@ -1253,40 +1253,40 @@ contains
         ! nonlinear Burgers' equation in space-time
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rsolution, codire_calcConvectionBurgersSpT2d, hstep, bStabilize,&
+            rsolution, transp_calcConvectionBurgersSpT2d, hstep, bStabilize,&
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
-            codire_calcConvectionBuckLevSpT2d, hstep, bStabilize,&
+            transp_calcConvectionBuckLevSpT2d, hstep, bStabilize,&
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers' equation in 1D
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
-            codire_calcConvectionBurgers1d, hstep, bStabilize,&
+            transp_calcConvectionBurgers1d, hstep, bStabilize,&
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers' equation in 2D
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
-            codire_calcConvectionBurgers2d, hstep, bStabilize,&
+            transp_calcConvectionBurgers2d, hstep, bStabilize,&
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
-            codire_calcConvectionBuckLev1d, hstep, bStabilize,&
+            transp_calcConvectionBuckLev1d, hstep, bStabilize,&
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
       case DEFAULT
         call output_line('Unsupported velocity type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire_calcJacobian')
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
         call sys_halt()
       end select
 
@@ -1300,25 +1300,25 @@ contains
             VELOCITY_TIMEDEP) 
         ! linear velocity
         velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
-        call codire_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
+        call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, codire_calcDualConvConst1d, hstep, bStabilize,&
+              rsolution, transp_calcDualConvConst1d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
 
         case (NDIM2D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, codire_calcDualConvConst2d, hstep, bStabilize,&
+              rsolution, transp_calcDualConvConst2d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
 
         case (NDIM3D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rsolution, codire_calcDualConvConst3d, hstep, bStabilize,&
+              rsolution, transp_calcDualConvConst3d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
         end select
         
@@ -1339,7 +1339,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupported velocity type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'codire_calcJacobian')
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
         call sys_halt()
       end select
 
@@ -1421,7 +1421,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_calcJacobian')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
       call sys_halt()
     end select
 
@@ -1483,14 +1483,14 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, codire_calcConvectionBurgersSpT2d,&
+                                     rsolution, transp_calcConvectionBurgersSpT2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
                                      rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, codire_calcConvectionBurgersSpT2d,&
+                                     rsolution, transp_calcConvectionBurgersSpT2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1498,7 +1498,7 @@ contains
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                   rsolution, codire_calcConvectionBurgersSpT2d,&
+                                   rsolution, transp_calcConvectionBurgersSpT2d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1507,7 +1507,7 @@ contains
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                                   rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsolution, rsolutionInitial, codire_calcConvectionBurgersSpT2d,&
+                                  rsolution, rsolutionInitial, transp_calcConvectionBurgersSpT2d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
                                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1526,14 +1526,14 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, codire_calcConvectionBuckLevSpT2d,&
+                                     rsolution, transp_calcConvectionBuckLevSpT2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
                                      rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, codire_calcConvectionBuckLevSpT2d,&
+                                     rsolution, transp_calcConvectionBuckLevSpT2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1541,7 +1541,7 @@ contains
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                   rsolution, codire_calcConvectionBuckLevSpT2d,&
+                                   rsolution, transp_calcConvectionBuckLevSpT2d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1550,7 +1550,7 @@ contains
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                                   rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsolution, rsolutionInitial, codire_calcConvectionBuckLevSpT2d,&
+                                  rsolution, rsolutionInitial, transp_calcConvectionBuckLevSpT2d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
                                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1569,14 +1569,14 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, codire_calcConvectionBurgers1d,&
+                                     rsolution, transp_calcConvectionBurgers1d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
                                      rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, codire_calcConvectionBurgers1d,&
+                                     rsolution, transp_calcConvectionBurgers1d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1584,7 +1584,7 @@ contains
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                   rsolution, codire_calcConvectionBurgers1d,&
+                                   rsolution, transp_calcConvectionBurgers1d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1593,7 +1593,7 @@ contains
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                                   rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsolution, rsolutionInitial, codire_calcConvectionBurgers1d,&
+                                  rsolution, rsolutionInitial, transp_calcConvectionBurgers1d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
                                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1612,14 +1612,14 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, codire_calcConvectionBurgers2d,&
+                                     rsolution, transp_calcConvectionBurgers2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
                                      rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, codire_calcConvectionBurgers2d,&
+                                     rsolution, transp_calcConvectionBurgers2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1627,7 +1627,7 @@ contains
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                   rsolution, codire_calcConvectionBurgers2d,&
+                                   rsolution, transp_calcConvectionBurgers2d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1636,7 +1636,7 @@ contains
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                                   rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsolution, rsolutionInitial, codire_calcConvectionBurgers2d,&
+                                  rsolution, rsolutionInitial, transp_calcConvectionBurgers2d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
                                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1655,14 +1655,14 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                     rsolution, codire_calcConvectionBuckLev1d,&
+                                     rsolution, transp_calcConvectionBuckLev1d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
                                      rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                     rsolution, codire_calcConvectionBuckLev1d,&
+                                     rsolution, transp_calcConvectionBuckLev1d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1670,7 +1670,7 @@ contains
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                   rsolution, codire_calcConvectionBuckLev1d,&
+                                   rsolution, transp_calcConvectionBuckLev1d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1679,7 +1679,7 @@ contains
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                                   rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsolution, rsolutionInitial, codire_calcConvectionBuckLev1d,&
+                                  rsolution, rsolutionInitial, transp_calcConvectionBuckLev1d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
                                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1688,7 +1688,7 @@ contains
       
     case DEFAULT
       call output_line('Unsupported velocity type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_calcJacobian')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
       call sys_halt()
     end select
     
@@ -1723,13 +1723,13 @@ contains
     ! Stop time measurement for matrix evaluation
     call stat_stopTimer(rtimer)
 
-  end subroutine codire_calcJacobian
+  end subroutine transp_calcJacobian
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_applyJacobian(rproblemLevel, rx, ry, cx, cy, rcollection)
+  subroutine transp_applyJacobian(rproblemLevel, rx, ry, cx, cy, rcollection)
 
 !<description>
     ! This subroutine applies the (scaled) Jacobian matrix to 
@@ -1769,13 +1769,13 @@ contains
     call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
                              rx%RvectorBlock(1), ry%RvectorBlock(1), cx, cy)
 
-  end subroutine codire_applyJacobian
+  end subroutine transp_applyJacobian
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_calcRHS(rproblemLevel, rtimestep, rsolver,&
+  subroutine transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
                             rsolution, rsolutionInitial, rrhs, istep, rcollection)
 
 !<description>
@@ -1829,7 +1829,7 @@ contains
     ! needs to be updated in each nonlinear iteration. The update 
     ! routine is written such that it first determines if the problem
     ! is nonlinear and returns without matrix update otherwise.
-    call codire_calcPreconditioner(rproblemLevel, rtimestep, rsolver, rsolution, rcollection)
+    call transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver, rsolution, rcollection)
 
 
     ! Get parameters from collection which are required unconditionally
@@ -1903,13 +1903,13 @@ contains
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(rtimer)
 
-  end subroutine codire_calcRHS
+  end subroutine transp_calcRHS
     
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_calcResidual(rproblemLevel, rtimestep, rsolver,&
+  subroutine transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
                                  rsolution, rsolutionInitial, rrhs, rres,&
                                  ite, rcollection, rb)
 
@@ -2238,13 +2238,13 @@ contains
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(rtimer)
     
-  end subroutine codire_calcResidual
+  end subroutine transp_calcResidual
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_setBoundary(rproblemLevel, rtimestep, rsolver,&
+  subroutine transp_setBoundary(rproblemLevel, rtimestep, rsolver,&
                                 rsolution, rsolutionInitial, rres, rcollection)
 
 !<description>
@@ -2295,7 +2295,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'codire_setBoundary')
+                       OU_CLASS_ERROR, OU_MODE_STD,'transp_setBoundary')
       call sys_halt()
     end select
     
@@ -2309,13 +2309,13 @@ contains
                              rsolution, rres, rsolutionInitial,&
                              rtimestep%dTime)
 
-  end subroutine codire_setBoundary
+  end subroutine transp_setBoundary
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_calcVelocityField(rappDescriptor, rproblemLevel,&
+  subroutine transp_calcVelocityField(rappDescriptor, rproblemLevel,&
                                       dtime, rcollection, nlminOpt)
 
 !<description>
@@ -2325,7 +2325,7 @@ contains
 
 !<input>
     ! application descriptor
-    type(t_codire), intent(IN) :: rappDescriptor
+    type(t_transport), intent(IN) :: rappDescriptor
 
     ! simulation time
     real(DP), intent(IN) :: dtime
@@ -2417,13 +2417,13 @@ contains
       
     end do
 
-  end subroutine codire_calcVelocityField
+  end subroutine transp_calcVelocityField
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_setVelocityField(rvector)
+  subroutine transp_setVelocityField(rvector)
 
 !<description>
     ! This subroutine sets the global pointer to the velocity vector
@@ -2454,17 +2454,17 @@ contains
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'codire_setVelocityField')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_setVelocityField')
       call sys_halt()
     end select
     
-  end subroutine codire_setVelocityField
+  end subroutine transp_setVelocityField
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine transp_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2557,13 +2557,13 @@ contains
 
     end select
     
-  end subroutine codire_hadaptCallback1d
+  end subroutine transp_hadaptCallback1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine transp_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2671,13 +2671,13 @@ contains
 
     end select
 
-  end subroutine codire_hadaptCallback2d
+  end subroutine transp_hadaptCallback2d
 
    !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine transp_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2784,13 +2784,13 @@ contains
       call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
     end select
     
-  end subroutine codire_hadaptCallback3d
+  end subroutine transp_hadaptCallback3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine codire_calcLinearizedFCT(rbdrCond, rproblemLevel, rtimestep, rsolution, rcollection)
+  subroutine transp_calcLinearizedFCT(rbdrCond, rproblemLevel, rtimestep, rsolution, rcollection)
 
 !<description>
     ! This subroutine calculates the linearized FCT correction
@@ -2919,7 +2919,7 @@ contains
 !!$        C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
 !!$
 !!$        ! Compute convection coefficients
-!!$        call codire_calcPrimalConvConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+!!$        call transp_calcPrimalConvConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
 !!$
 !!$        ! Update the time rate of change vector
 !!$        troc(i) = troc(i) + dscale*k_ii*u(i)
@@ -2938,7 +2938,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call codire_calcPrimalConvConst2d(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call transp_calcPrimalConvConst2d(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
           
           ! Artificial diffusion coefficient
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
@@ -3113,13 +3113,13 @@ contains
       end if
     end function minmod
     
-  end subroutine codire_calcLinearizedFCT
+  end subroutine transp_calcLinearizedFCT
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine codire_calcPrimalConvConst1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcPrimalConvConst1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3147,13 +3147,13 @@ contains
     k_ij = -p_DvelocityX(j)*C_ij(1)
     k_ji = -p_DvelocityX(i)*C_ji(1)
 
-  end subroutine codire_calcPrimalConvConst1d
+  end subroutine transp_calcPrimalConvConst1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine codire_calcDualConvConst1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcDualConvConst1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3181,13 +3181,13 @@ contains
     k_ij = p_DvelocityX(j)*C_ij(1)
     k_ji = p_DvelocityX(i)*C_ji(1)
 
-  end subroutine codire_calcDualConvConst1d
+  end subroutine transp_calcDualConvConst1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine codire_calcPrimalConvConst2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcPrimalConvConst2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3215,13 +3215,13 @@ contains
     k_ij = -p_DvelocityX(j)*C_ij(1)-p_DvelocityY(j)*C_ij(2)
     k_ji = -p_DvelocityX(i)*C_ji(1)-p_DvelocityY(i)*C_ji(2)
 
-  end subroutine codire_calcPrimalConvConst2d
+  end subroutine transp_calcPrimalConvConst2d
 
   !*****************************************************************************
 
 !<subroutine>
   
-  pure subroutine codire_calcDualConvConst2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcDualConvConst2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3249,13 +3249,13 @@ contains
     k_ij = p_DvelocityX(j)*C_ij(1)+p_DvelocityY(j)*C_ij(2)
     k_ji = p_DvelocityX(i)*C_ji(1)+p_DvelocityY(i)*C_ji(2)
 
-  end subroutine codire_calcDualConvConst2d
+  end subroutine transp_calcDualConvConst2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine codire_calcPrimalConvConst3d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcPrimalConvConst3d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3283,13 +3283,13 @@ contains
     k_ij = -p_DvelocityX(j)*C_ij(1)-p_DvelocityY(j)*C_ij(2)-p_DvelocityZ(j)*C_ij(3)
     k_ji = -p_DvelocityX(i)*C_ji(1)-p_DvelocityY(i)*C_ji(2)-p_DvelocityZ(i)*C_ji(3)
 
-  end subroutine codire_calcPrimalConvConst3d
+  end subroutine transp_calcPrimalConvConst3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine codire_calcDualConvConst3d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcDualConvConst3d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3317,13 +3317,13 @@ contains
     k_ij = p_DvelocityX(j)*C_ij(1)+p_DvelocityY(j)*C_ij(2)+p_DvelocityZ(j)*C_ij(3)
     k_ji = p_DvelocityX(i)*C_ji(1)+p_DvelocityY(i)*C_ji(2)+p_DvelocityZ(i)*C_ji(3)
 
-  end subroutine codire_calcDualConvConst3d
+  end subroutine transp_calcDualConvConst3d
 
   !*****************************************************************************
     
 !<subroutine>
 
-  pure subroutine codire_calcConvectionBurgersSpT2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcConvectionBurgersSpT2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3352,13 +3352,13 @@ contains
     k_ij = -0.5_DP*(u_i+u_j)*C_ij(1)-C_ij(2)
     k_ji = -0.5_DP*(u_i+u_j)*C_ji(1)-C_ji(2)
 
-  end subroutine codire_calcConvectionBurgersSpT2d
+  end subroutine transp_calcConvectionBurgersSpT2d
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine codire_calcConvectionBuckLevSpT2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcConvectionBuckLevSpT2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3396,13 +3396,13 @@ contains
     k_ij = -v_j*C_ij(1)-C_ij(2)
     k_ji = -v_i*C_ji(1)-C_ji(2)
         
-  end subroutine codire_calcConvectionBuckLevSpT2d
+  end subroutine transp_calcConvectionBuckLevSpT2d
 
   !*****************************************************************************
     
 !<subroutine>
 
-  pure subroutine codire_calcConvectionBurgers1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcConvectionBurgers1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3429,13 +3429,13 @@ contains
     k_ij = -0.5_DP*(u_i+u_j)*C_ij(1)
     k_ji = -0.5_DP*(u_i+u_j)*C_ji(1)
 
-  end subroutine codire_calcConvectionBurgers1d
+  end subroutine transp_calcConvectionBurgers1d
 
   !*****************************************************************************
     
 !<subroutine>
 
-  pure subroutine codire_calcConvectionBurgers2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcConvectionBurgers2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3462,13 +3462,13 @@ contains
     k_ij = -0.5_DP*(u_i+u_j)*(C_ij(1)+C_ij(2))
     k_ji = -0.5_DP*(u_i+u_j)*(C_ji(1)+C_ji(2))
 
-  end subroutine codire_calcConvectionBurgers2d
+  end subroutine transp_calcConvectionBurgers2d
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine codire_calcConvectionBuckLev1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
+  pure subroutine transp_calcConvectionBuckLev1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
                                                 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3500,7 +3500,7 @@ contains
     k_ij = -(4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2)*C_ij(1)
     k_ji = -(4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2)*C_ji(1)
     
-  end subroutine codire_calcConvectionBuckLev1d
+  end subroutine transp_calcConvectionBuckLev1d
   
   
-end module codire_callback
+end module transport_callback
