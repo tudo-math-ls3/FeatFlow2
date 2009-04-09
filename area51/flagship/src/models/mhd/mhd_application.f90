@@ -48,9 +48,6 @@ module mhd_application
 
   use afcstabilisation
   use boundaryfilter
-  use transport_application
-  use transport_basic
-  use transport_callback
   use collection
   use euler_application
   use euler_basic
@@ -75,6 +72,9 @@ module mhd_application
   use storage
   use timestep
   use timestepaux
+  use transport_application
+  use transport_basic
+  use transport_callback
   use ucd
 
   implicit none
@@ -1173,9 +1173,13 @@ contains
         call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
                                     rsolutionTransport, transp_nlsolverCallback, rcollectionTransport)
 
-!!$        ! Perform characteristic FCT postprocessing
-!!$        call transp_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
-!!$                                      rsolutionTransport, rcollectionTransport)
+        ! Perform characteristic FCT postprocessing
+        call transp_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
+                                      rsolutionTransport, rcollectionTransport)
+
+        ! Perform characteristic FCT postprocessing
+        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
+                                     rsolutionEuler, rcollectionEuler)
           
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -1186,6 +1190,11 @@ contains
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescrTransport%rtimerSolution)
 
+!!$      ! Perform characteristic FCT postprocessing in a synchronized
+!!$      ! fashion for the Euler model and the transport equation
+!!$      call mhd_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, p_rproblemLevel,&
+!!$                                 rtimestepEuler, rsolutionEuler, rsolutionTransport,&
+!!$                                 rcollectionEuler)
 
       !-------------------------------------------------------------------------
       ! Compute source term for full time step
