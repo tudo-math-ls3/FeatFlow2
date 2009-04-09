@@ -72,6 +72,7 @@ module ccpostprocessing
   use pprocnavierstokes
   use pprocerror
   
+  use ccmatvecassembly
   use ccbasic
   use cccallback
   
@@ -354,6 +355,87 @@ contains
 
   end subroutine
 
+! *****************************************************************
+  
+!<subroutine>
+
+  subroutine ffunctionBDForcesVisco (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset, &
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use scalarpde
+  use domainintegration
+  use spatialdiscretisation
+  use collection
+  
+!<description>
+  ! Called in the postprocessing during the calculation of the body forces.
+  ! Returns a nonconstant coefficient in the body force integral.
+  !
+  ! Wrapper to the ffunctionViscoModel callback routine which has
+  ! nearly the same interface.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(IN)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  integer, dimension(:,:), intent(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(INOUT), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! cderivative will always be DER_FUNC here. Call ffunctionViscoModel
+    ! to calculate the viscosity into Dvalues at first.
+    call ffunctionViscoModel (1,rdiscretisation, &
+              nelements,npointsPerElement,Dpoints, &
+              IdofsTest,rdomainIntSubset, &
+              Dvalues,rcollection)
+              
+  end subroutine
+
 !******************************************************************************
 
 !<subroutine>
@@ -367,7 +449,7 @@ contains
   
 !<input>
   ! Solution vector to compute the norm/error from.
-  type(t_vectorBlock), intent(IN) :: rsolution
+  type(t_vectorBlock), intent(IN), target :: rsolution
 !</input>
 
 !<inputoutput>
@@ -378,6 +460,7 @@ contains
 !</subroutine>
     
     ! local variables
+    type(t_collection) :: rcollection
     
     ! Forces on the object
     real(DP), dimension(NDIM2D) :: Dforces
@@ -404,7 +487,7 @@ contains
     ! 2nd boundary component - if it exists.
     if ((rsolution%p_rblockDiscr%RspatialDiscr(1)% &
          ccomplexity .eq. SPDISC_UNIFORM) .and. &
-        (boundary_igetNBoundComp(rproblem%rboundary) .ge. 2)) then
+        (boundary_igetNBoundComp(rproblem%rboundary) .ge. ibodyForcesBdComponent)) then
 
       ! Calculate drag-/lift coefficients on the 2nd boundary component.
       ! This is for the benchmark channel!
@@ -412,35 +495,72 @@ contains
           ibodyForcesBdComponent, 0, rregion)
       rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
       
-      ! Select the tensor formulation to use.
-      select case (ibodyForcesFormulation)
-      case (0)
-        cformulation = PPNAVST_GRADIENTTENSOR_SIMPLE
+      select case (icalcBodyForces)
       case (1)
-        cformulation = PPNAVST_GRADIENTTENSOR
-      case (2)
-        cformulation = PPNAVST_DEFORMATIONTENSOR
-      case default
-        ! Automatic mode.
-        ! Use the deformation tensor formulation for the forces if
-        ! we are in the deformation tensor formulation
-        cformulation = PPNAVST_GRADIENTTENSOR_SIMPLE
-        if (rproblem%isubequation .eq. 1) &
-          cformulation = PPNAVST_DEFORMATIONTENSOR
-      end select
+        ! Old implementation:
+        call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,&
+            dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         
-      call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,&
-          dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
+      case (2)      
+        ! Extended calculation method.
+        !
+        ! Select the tensor formulation to use.
+        select case (ibodyForcesFormulation)
+        case (0)
+          cformulation = PPNAVST_GRADIENTTENSOR_SIMPLE
+        case (1)
+          cformulation = PPNAVST_GRADIENTTENSOR
+        case (2)
+          cformulation = PPNAVST_DEFORMATIONTENSOR
+        case default
+          ! Automatic mode.
+          ! Use the deformation tensor formulation for the forces if
+          ! we are in the deformation tensor formulation
+          cformulation = PPNAVST_GRADIENTTENSOR_SIMPLE
+          if (rproblem%isubequation .eq. 1) &
+            cformulation = PPNAVST_DEFORMATIONTENSOR
+        end select
+          
+        ! Prepare a collection structure in the form necessary for
+        ! the computation of a nonconstant viscosity<
+        !
+        ! IquickAccess(1) = cviscoModel
+        rcollection%IquickAccess(1) = rproblem%cviscoModel
+        
+        ! IquickAccess(2) = type of the tensor
+        rcollection%IquickAccess(2) = rproblem%isubequation
+        
+        ! DquickAccess(1) = nu
+        rcollection%DquickAccess(1) = rproblem%dnu
+        
+        ! DquickAccess(2) = dviscoexponent
+        ! DquickAccess(3) = dviscoEps
+        rcollection%DquickAccess(2) = rproblem%dviscoexponent
+        rcollection%DquickAccess(3) = rproblem%dviscoEps
+        
+        ! The first quick access array specifies the evaluation point
+        ! of the velocity -- if it exists.
+        rcollection%p_rvectorQuickAccess1 => rsolution
+          
+        if (rproblem%cviscoModel .eq. 0) then
+          call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G1_1D,&
+              dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
+        else
+          call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G1_1D,&
+              dbdForcesCoeff1,dbdForcesCoeff2,cformulation,ffunctionBDForcesVisco ,rcollection)
+        end if
+        
+      end select
 
       call output_lbrk()
       call output_line ('Body forces')
       call output_line ('-----------')
       call output_line ('Body forces real bd., bdc/horiz/vert')
-      call output_line (' 2 / ' &
+      call output_line (' '//trim(sys_siL(ibodyForcesBdComponent,10)) // ' / ' &
           //trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
           //trim(sys_sdEP(Dforces(2),15,6)) )
       
-    endif
+    end if
     
   end subroutine
 
@@ -1098,5 +1218,6 @@ contains
     call spdiscr_releaseDiscr(rpostprocessing%rdiscrConstant)
   
   end subroutine
+
 
 end module

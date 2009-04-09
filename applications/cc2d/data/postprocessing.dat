@@ -127,9 +127,10 @@ icalcKineticEnergy = 1
 
 # Calculate the body forces
 # =0: Don't calculate
-# =1: Calculate (standard)
+# =1: Calculate with standard FEAT-1 method
+# =2: Calculate with extended method, supporting mixed meshes and general elements (standard)
 
-icalcBodyForces = 1
+icalcBodyForces = 2
 
 # Specifies the tensor structure to use for the computation.
 # =-1: automatic

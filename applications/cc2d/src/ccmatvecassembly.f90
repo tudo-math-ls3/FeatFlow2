@@ -83,6 +83,8 @@ module ccmatvecassembly
   
   use convection
   
+  use pprocnavierstokes
+  
   implicit none
   
 !<constants>
@@ -274,7 +276,7 @@ module ccmatvecassembly
 
 contains
   
-! *****************************************************************************
+! *****************************************************************
 
 !<subroutine>
 
@@ -298,6 +300,17 @@ contains
   ! elements (cubature points) in in real coordinates.
   ! According to the terms in the linear form, the routine has to compute
   ! simultaneously for all these points.
+  !
+  ! The following data must be passed to this routine in the collection in order 
+  ! to work correctly:
+  !
+  ! IquickAccess(1) = cviscoModel
+  ! IquickAccess(2) = type of the tensor
+  ! DquickAccess(1) = nu
+  ! DquickAccess(2) = dviscoexponent
+  ! DquickAccess(3) = dviscoEps
+  ! p_rvectorQuickAccess1 => evaluation velocity vector
+  !
 !</description>
   
 !<input>
@@ -2101,6 +2114,5 @@ contains
     end subroutine
 
   end subroutine
-
 
 end module
