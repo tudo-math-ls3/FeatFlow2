@@ -143,8 +143,6 @@ module transport_application
   use afcstabilisation
   use bilinearformevaluation
   use boundaryfilter
-  use transport_basic
-  use transport_callback
   use collection
   use flagship_basic
   use fparser
@@ -170,6 +168,8 @@ module transport_application
   use storage
   use timestep
   use timestepaux
+  use transport_basic
+  use transport_callback
   use ucd
 
   implicit none
