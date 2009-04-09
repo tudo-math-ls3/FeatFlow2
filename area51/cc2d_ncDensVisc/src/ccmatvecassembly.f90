@@ -140,6 +140,8 @@ module ccmatvecassembly
 
 !</constantblock>
 
+  logical, parameter :: CCMASM_NONCNSTDENS           = .true.
+
 !</constants>
 
 !<types>
@@ -656,7 +658,7 @@ contains
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(t_jumpStabilisation) :: rjumpStabil
     type(t_matrixScalar) :: rMass1
-    type(t_matrixBlock) :: rmatrix1
+    type(t_matrixBlock) :: rmatrix1,rmatrix2
     real(DP) :: dvecWeight
     type(t_bilinearform) :: rform
     
@@ -696,7 +698,13 @@ contains
       ! Plug in the mass matrix?
       if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
        
-        if(.true.)then
+        if(CCMASM_NONCNSTDENS)then
+        
+        ! Allocate memory if necessary. Normally this should not be necessary...
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
+        end if
+        
         
         ! now set up a bilinearform 
         rform%itermCount = 1
@@ -712,7 +720,7 @@ contains
         call bilf_createMatrixStructure(rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
                                         rmatrix%RmatrixBlock(1,1)%cmatrixFormat,&
                                         rMass1,&
-                                        rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest)
+                                        rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest,BILF_MATC_EDGEBASED)
 
 
         ! Now we can build the matrix entries.
@@ -733,7 +741,15 @@ contains
 
         ! Adds constant times a matrix to another matrix
         !   rmatrixC = cA*rmatrixA + cB*rmatrixB                                     
-          
+        
+!        call lsysbl_duplicateMatrix(rmatrix,rmatrix2,LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
+!        call matio_writeMatrixHR (rmatrix2%RmatrixBlock(1,1), 'rmatrix2',&
+!                                  .TRUE., 0, 'rmatrix2.txt', '(E20.5)')
+!
+!        call matio_writeMatrixHR (rMass1, 'rMass1',&
+!                                  .TRUE., 0, 'rMass1.txt', '(E20.5)')
+        
+        !call lsysbl_clearMatrix(rmatrix2)
         ! hier selber die Masse Matrix aufbauen mit (phi_i,phi_j) und
         ! rho als nicht konstantem Koeffizienten
         call lsyssc_matrixLinearComb (&
@@ -742,16 +758,26 @@ contains
             rmatrix%RmatrixBlock(1,1),&
             .false.,.false.,.true.,.true.)
             
+!        call matio_writeMatrixHR (rform%RmatrixBlock(1,1), 'massbilf',&
+!                                  .TRUE., 0, 'massbilf.txt', '(E20.5)')
+            
+            
         if (.not. bshared) then
+          ! Allocate memory if necessary. Normally this should not be necessary...
+          if (.not. lsyssc_hasMatrixContent (rmatrix2%RmatrixBlock(2,2))) then
+            call lsyssc_allocEmptyMatrix (rmatrix2%RmatrixBlock(2,2),LSYSSC_SETM_UNDEFINED)
+          end if
+          
           call lsyssc_matrixLinearComb (&
-              rMass1 ,rnonlinearCCMatrix%dtheta,&
-              rmatrix%RmatrixBlock(2,2),1.0_DP,&
-              rmatrix%RmatrixBlock(2,2),&
-              .false.,.false.,.true.,.true.)        
+              rMass1,rnonlinearCCMatrix%dalpha,&
+              rmatrix2%RmatrixBlock(2,2),0.0_DP,&
+              rmatrix2%RmatrixBlock(2,2),&
+              .false.,.false.,.true.,.true.)
         end if            
             
         ! release the temporary matrix            
         call lsyssc_releaseMatrix(rMass1)
+        !call lsysbl_releaseMatrix(rmatrix2)
    
         else
         ! Allocate memory if necessary. Normally this should not be necessary...
@@ -759,11 +785,23 @@ contains
           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
         end if
       
+        call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'rmatrix',&
+                                  .TRUE., 0, 'rmatrix.txt', '(E20.5)')
+
+        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rmatrixMass, 'p_rmatrixMass',&
+                                  .TRUE., 0, 'p_rmatrixMass.txt', '(E20.5)')
+        
+        
+      
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rmatrixMass       ,rnonlinearCCMatrix%dalpha,&
             rmatrix%RmatrixBlock(1,1),0.0_DP,&
             rmatrix%RmatrixBlock(1,1),&
             .false.,.false.,.true.,.true.)
+
+        call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'mass',&
+                                  .TRUE., 0, 'mass.txt', '(E20.5)')
+
             
         if (.not. bshared) then
           ! Allocate memory if necessary. Normally this should not be necessary...
@@ -922,45 +960,45 @@ contains
           ! There's not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
-          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
+          ! Set stabilisation parameter
           rstreamlineDiffusion%dupsam = 0.0_DP
           
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = rnonlinearCCMatrix%dgamma
+          ! Set calculation method for local H
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
+          
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
-          call lsysbl_duplicateMatrix(rmatrix, rmatrix1,LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
-          call lsysbl_clearMatrix(rmatrix1)
-          
           call cc_nostabBilin (rvector, rvector, &
                                rstreamlineDiffusion, CONV_MODMATRIX, &
-                               rmatrix1,rproblem)
+                               rmatrix,rproblem)
           
           ! DEBUG                                     
-          call matio_writeMatrixHR (rmatrix1%RmatrixBlock(1,1), 'nonlin',&
-                                    .TRUE., 0, 'nonlin.txt', '(E20.5)')
+!          call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'nonlin',&
+!                                    .TRUE., 0, 'nonlin.txt', '(E20.5)')
 
           
           
           ! Call the SD method to calculate the nonlinearity.
-          call conv_streamlineDiffusionBlk2d (&
-                              rvector, rvector, &
-                              dvecWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrix)          
+!          call conv_streamlineDiffusionBlk2d (&
+!                              rvector, rvector, &
+!                              dvecWeight, 0.0_DP,&
+!                              rstreamlineDiffusion, CONV_MODMATRIX, &
+!                              rmatrix)          
+!
+!          ! DEBUG                                     
+!          call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'nonlinSD',&
+!                                    .TRUE., 0, 'nonlinSD.txt', '(E20.5)')
+!
+!
+!          ! DEBUG                                     
+!          call matio_writeMatrixHR (rmatrix%RmatrixBlock(2,2), 'nonlinSD22',&
+!                                    .TRUE., 0, 'nonlinSD22.txt', '(E20.5)')
 
-          ! DEBUG                                     
-          call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'nonlinSD',&
-                                    .TRUE., 0, 'nonlinSD.txt', '(E20.5)')
-
-
-          ! DEBUG                                     
-          call matio_writeMatrixHR (rmatrix%RmatrixBlock(2,2), 'nonlinSD22',&
-                                    .TRUE., 0, 'nonlinSD22.txt', '(E20.5)')
-
-        
+!          stop
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
@@ -1460,7 +1498,7 @@ contains
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(T_jumpStabilisation) :: rjumpStabil
     type(t_matrixScalar) :: rMass1
-    type(t_bilinearForm) :: rform    
+    type(t_bilinearForm) :: rform 
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
@@ -1478,7 +1516,7 @@ contains
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff?
       if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
-      if(.true.)then
+      if(CCMASM_NONCNSTDENS)then
       
         ! now set up a bilinearform 
         rform%itermCount = 1
@@ -1492,7 +1530,7 @@ contains
         call bilf_createMatrixStructure(rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
                                         rmatrix%RmatrixBlock(1,1)%cmatrixFormat,&
                                         rMass1,&
-                                        rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest)
+                                        rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest,BILF_MATC_EDGEBASED)
 
         call bilf_buildMatrixScalar (rform,.true.,&
                                      rMass1,cc_Rho,&
@@ -1629,14 +1667,18 @@ contains
           ! There's not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
-          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
+          ! Set stabilisation parameter
           rstreamlineDiffusion%dupsam = 0.0_DP
           
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = rnonlinearCCMatrix%dgamma
+          ! Set calculation method for local H
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
+          
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
+          
           
           if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
 
@@ -1663,16 +1705,23 @@ contains
                                rstreamlineDiffusion, CONV_MODDEFECT, &
                                rmatrix,rproblem,rsolution=rvector,rdefect=rdefect)
          
-         
-!          ! Call the SD method to calculate the nonlinearity.
+!          call vecio_writeBlockVectorHR (rdefect, 'def', .false.,&
+!                                    0, 'defnostab.txt', '(E20.5)')
+!         
+!         stop
+          ! Call the SD method to calculate the nonlinearity.
 !          call conv_streamlineDiffusionBlk2d (&
 !                              rvector, rvector, &
 !                              dvectorWeight, 0.0_DP,&
 !                              rstreamlineDiffusion, CONV_MODDEFECT, &
 !                              rmatrix,rsolution=rvector,rdefect=rdefect)          
-        
+!
+!          call vecio_writeBlockVectorHR (rdefect, 'defSD', .false.,&
+!                                    0, 'defnSD.txt', '(E20.5)')
+!          stop
+!        
           ! Set up the jump stabilisation structure.
-          ! There's not much to do, only initialise the viscosity...
+          ! There's not much to do, only initialise the viscosity...<
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
@@ -1784,8 +1833,8 @@ contains
                                rstreamlineDiffusion, CONV_MODDEFECT, &
                                rmatrix,rproblem,rsolution=rvector,rdefect=rdefect)
                                
-!          call vecio_writeBlockVectorHR (rdefect, 'def', .false.,&
-!                                    0, 'defnostab.txt', '(E20.5)')
+          call vecio_writeBlockVectorHR (rdefect, 'def', .false.,&
+                                    0, 'defnostab.txt', '(E20.5)')
               
               
                       
@@ -2171,8 +2220,8 @@ contains
                                    rproblem%rcollection)
 
       !!! DEBUG:
-      call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'matrix',&
-                                .TRUE., 0, 'matrixL.txt', '(D20.5)')
+!      call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'matrix',&
+!                                .TRUE., 0, 'matrixL.txt', '(D20.5)')
                     
     end if
 
