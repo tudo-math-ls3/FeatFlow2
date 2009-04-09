@@ -12,19 +12,19 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/codire/default.dat'
+  'data/transport/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
 
-application = codire
+application = transport
 
 ################################################################################
-[Codire]
+[Transport]
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/codire/2d/anisodiff.indat
+indatfile = data/transport/2d/anisodiff.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = boundary_conditions_primal

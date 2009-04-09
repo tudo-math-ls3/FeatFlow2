@@ -6,19 +6,19 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/codire/default.dat'
+  'data/transport/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
 
-application = codire
+application = transport
 
 ################################################################################
-[Codire]
+[Transport]
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/codire/2d/imagerotate.indat
+indatfile = data/transport/2d/imagerotate.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = boundary_conditions_primal
@@ -90,7 +90,7 @@ srhsname = rhs
 isolutiontype = 2
 
 # section name of initial solution
-ssolutionname = data/codire/2d/tux.pgm
+ssolutionname = data/transport/2d/tux.pgm
 
 # type of exact solution profile
 # 0 = no exact solution available
