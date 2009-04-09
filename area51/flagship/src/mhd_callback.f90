@@ -455,7 +455,8 @@ contains
           
           ! Compute source term
           if (DdataTransport(j) > sqrt(SYS_EPSREAL)) then
-            daux = dscale * MC(ij) * DdataTransport(j) * DdataEuler(1,j) / max(drad, 1.0e-4_DP)
+!!$            daux = dscale * MC(ij) * DdataTransport(j) * DdataEuler(1,j) / max(drad, 1.0e-4_DP)
+            daux = dscale * MC(ij) * DdataTransport(j) / max(drad, 1.0e-4_DP)
           else
             daux = 0.0_DP
           end if

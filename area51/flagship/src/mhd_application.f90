@@ -1173,9 +1173,9 @@ contains
         call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
                                     rsolutionTransport, codire_nlsolverCallback, rcollectionTransport)
 
-        ! Perform characteristic FCT postprocessing
-        call codire_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
-                                      rsolutionTransport, rcollectionTransport)
+!!$        ! Perform characteristic FCT postprocessing
+!!$        call codire_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
+!!$                                      rsolutionTransport, rcollectionTransport)
           
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
