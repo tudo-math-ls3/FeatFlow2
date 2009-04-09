@@ -10,7 +10,6 @@
 
 program flagship
 
-  use transport_application
   use euler_application
   use fparser
   use genoutput
@@ -18,6 +17,7 @@ program flagship
   use paramlist
   use signal
   use storage
+  use transport_application
   
   implicit none
   
