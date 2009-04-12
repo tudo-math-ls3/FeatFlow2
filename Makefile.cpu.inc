@@ -17,7 +17,7 @@
 ########################################################################
 #                                                                      #
 # Compile settings, variables and targets to be included in every      #
-# Makefile for FEAST applications                                      #
+# Makefile for FEAT2 applications                                      #
 #                                                                      #
 # Author    : Sven H.M. Buijssen                                       #
 # Maintainer: Chr. Becker, Sven H.M. Buijssen                          #
@@ -42,7 +42,7 @@ OPT := $(shell echo $(OPT) | tr '[a-z]' '[A-Z]')
 SHELL = /bin/sh
 
 # Set location of buildconf.h (i.e. file containing build ID
-# for automatic choice of best SBBLAS version within FEAST)
+# for automatic choice of best SBBLAS version within FEAT2)
 BUILDCONF_H = "buildconf.h"
 
 # Files to store compiler modification dates and compiler settings etc.
@@ -55,7 +55,7 @@ FILE_CXX_INFO     = env_cxx_compiler
 COMPILER_SETTINGS = env_compiler_settings
 
 # Directory where Makefile template files are stored
-TEMPLATESDIR = $(FEASTBASEDIR)/templates
+TEMPLATESDIR = $(FEAT2BASEDIR)/templates
 
 
 ##############################################################################
@@ -106,8 +106,8 @@ CDPATH =
 # C preprocessor
 CPP           = cpp
 
-# FEAST's preprocessor
-F90CPP        = $(FEASTBASEDIR)/bin/f90cpp
+# FEAT2's preprocessor
+F90CPP        = $(FEAT2BASEDIR)/bin/f90cpp
 
 # Fortran 77 compiler
 F77           = echo; echo "No Fortran 77 compiler specified."; echo; exit 1; echo
@@ -125,7 +125,7 @@ CFLAGSF90    := $(CFLAGSF90) -DENABLE_PARAMETER_CHECK -DENABLE_ERROR_TRACEBACK
 endif
 # Append all active flags found in feastcppswitches.h
 CFLAGSF90    := $(CFLAGSF90) $(foreach preprocessordirective, \
-			$(shell sed -e '/^\#/d; /^[ ]*$$/d;' $(FEASTBASEDIR)/feat2cppswitches.h), \
+			$(shell sed -e '/^\#/d; /^[ ]*$$/d;' $(FEAT2BASEDIR)/feat2cppswitches.h), \
 			-D$(preprocessordirective))
 
 # extension of files the compiler creates containing module information
@@ -163,8 +163,8 @@ INC           =
 
 # List of files only needed for a specific build ID
 # (please include path information, at best using Makefile variables)
-SRCEXTRA      = $(FEASTBASEDIR)/kernel/Postprocessing/gmvwritef.c \
-		$(FEASTBASEDIR)/kernel/System/signal_ccode.c
+SRCEXTRA      = $(FEAT2BASEDIR)/kernel/Postprocessing/gmvwritef.c \
+		$(FEAT2BASEDIR)/kernel/System/signal_ccode.c
 
 # List of all libraries available (queried for purge* targets)
 ALLLIB        = amd blas lapack splib umfpack
@@ -209,7 +209,7 @@ SBB_SRCEXTRA  = ztime.f
 
 
 ##############################################################################
-# FEAST supports both parallel and serial builds from the same
+# FEAT2 supports both parallel and serial builds from the same
 # application's source code. configure command line option '--mode=serial'
 # results in the Makefile variable MODE being set to SERIAL. Translate this
 # setting into one the C preprocessor understands.
@@ -1383,7 +1383,7 @@ include $(TEMPLATESDIR)/optmpich-generic.mk
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
 #
 # Code compiles, but does not run with OPT 1.0rc4. Dynamic linker
-# can not find libopt.so. (Not a FEAST problem, though.)
+# can not find libopt.so. (Not a FEAT2 problem, though.)
 #
 # Additionally, OPT 1.0rc4 needs additional arguments in MPI calls.
 # (Not sure about OPT 1.0 and above!!) parallel.f90 and parallelsys.f90
@@ -2138,10 +2138,10 @@ endif
 	    echo '  C preprocessor     : *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(F90CPP))"; then \
-	    echo '  FEAST preprocessor :' $(shell (which 2>/dev/null $(F90CPP) || \
+	    echo '  FEAT2 preprocessor :' $(shell (which 2>/dev/null $(F90CPP) || \
 		echo "\*\*\* $(F90CPP) not found ! \*\*\*")); \
 	else \
-	    echo '  FEAST preprocessor : *** not set ! ***'; \
+	    echo '  FEAT2 preprocessor : *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(F77))"; then \
 	    echo '  Fortran 77 compiler:' $(shell (which 2>/dev/null $(F77) || \

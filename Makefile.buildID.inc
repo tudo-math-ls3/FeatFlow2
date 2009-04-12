@@ -17,20 +17,20 @@
 ########################################################################
 #                                                                      #
 # Determine cpu, architecture and operating system and set a default   #
-# build ID. Is to be included in every Makefile for FEAST applications #
+# build ID. Is to be included in every Makefile for FEAT2 applications #
 #                                                                      #
 # Author    : Sven H.M. Buijssen                                       #
 # Maintainer: Chr. Becker, Sven H.M. Buijssen                          #
 # Version   : $Id: Makefile.buildID.inc,v 2.4 2009/01/13 19:33:43 buijssen Exp $
 ########################################################################
 
-# Path to this FEAST installation main directory
-ifeq ($(strip $(FEASTBASEDIR)),)
-FEASTBASEDIR:=../..
+# Path to this FEAT2 installation main directory
+ifeq ($(strip $(FEAT2BASEDIR)),)
+FEAT2BASEDIR:=../..
 endif
 
 # machine and architecture info, machine ID
-REALID:=$(shell $(FEASTBASEDIR)/bin/guess_id)
+REALID:=$(shell $(FEAT2BASEDIR)/bin/guess_id)
 ifeq ($(strip $(ID)),)
 ID:=$(REALID)
 endif
