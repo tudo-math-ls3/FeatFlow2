@@ -50,6 +50,7 @@ module error
   !Conversion error string to real
   integer, parameter :: ERR_STRING_TO_REAL = 0003
 
+  integer, parameter :: ERR_PARLST_ENV_VAR_NOT_FOUND = 0004
 
 !*********************************** 14 io *****************************************
   integer, parameter :: ERR_IO_FILEIO             = 1401
@@ -298,6 +299,9 @@ contains
 
     case (ERR_STRING_TO_REAL)
       Smessage(5) = "Error while converting string <" // trim(sarg1) // "> to real."
+
+    case (ERR_PARLST_ENV_VAR_NOT_FOUND)
+      Smessage(5) = "Environment variable <" // trim(sarg1) // "> not set."
 
 !*********************************** 14 io *****************************************
     case(ERR_IO_NOFREEUNIT)
