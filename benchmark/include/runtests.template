@@ -1,0 +1,1119 @@
+#!/bin/sh
+
+# ================================================================
+# Script that runs an arbitrary number of FEAT2 benchmark tests.
+# These tests are identified by their benchmark test id (e.g. BC0011,
+# SBBLAS0018, STOKES-SOL3-0001, generally any sequence of non-blanks
+# specified as value of the keyword 'testid') and defined in *.fbdef
+# files in the subdirectory 'tests/'.
+#
+# The script works on standalone workstations, pc clusters and
+# supercomputers like NEC SX-6/-8/-9 and IBM p690 systems.
+# ================================================================
+
+
+# 'fb_' in function names stands for 'FEAT2 benchmark'.
+# Variables are written in capital letters if used globally
+
+
+# ================================================================
+# Customisation section
+# ================================================================
+
+## Type:	boolean integer
+## Default:     <SET_VIA_MAKEFILE>, therein set to 0
+#
+# Quiet or verbose benchmark execution mode.
+#
+# Possible values are:
+#  * 0
+#        don't redirect standard output and error. No RUNLOGFILE will be
+#        created. Useful for debugging.
+#  * 1   (default value)
+#        redirect standard output and error to a file (see
+#        declaration of RUNLOGFILE). Display its content in case of error.
+#  * <SET_VIA_MAKEFILE>
+#        the value is set when invoking 'make *test'. The default value (1)
+#        may be overwritten by adding "SUPPRESSOUTPUT=<value>" on the command line,
+#        e.g.:         make singletests SUPPRESSOUTPUT=0
+SUPPRESSOUTPUT=<SET_VIA_MAKEFILE>
+
+
+## Type:	string
+#
+# Name of file to redirect standard output and standard error of a benchmark
+# run to. In case of error, the file will be renamed by appending benchmark ID
+# and multigrid level.
+RUNLOGFILE=runlog
+
+
+## Type:	string
+#
+# Name of file a benchmark application is supposed to create when it is run
+# with relevant data in it that can be compared to previous runs in order to
+# validate a program run.
+RESULTFILE=benchmarkresultfile
+
+
+## Type:	boolean integer
+## Default:     <SET_VIA_MAKEFILE>, therein set to 0
+#
+# Whether or not to execute benchmark within a debugger
+# (the particular debugger is hard-coded in fb_runAndEvalBenchmarkTest)
+#
+# Possible values are:
+#  * 0
+#        normal execution
+#  * DDT
+#        execute within debugger DDT
+#  * VALGRIND
+#        execute in valgrind
+#  * <SET_VIA_MAKEFILE>
+#        the value is set when invoking 'make *test'. The default value (0)
+#        may be overwritten by adding "DEBUGGER=<value>" on the command line,
+#        e.g.:         make singletests DEBUGGER=DDT
+DEBUGGER=<SET_VIA_MAKEFILE>
+
+
+## Type:	string
+## Default:     empty
+#
+# Command line arguments when running valgrind.
+VALGRIND_ARGS="--leak-check=full"
+#VALGRIND_ARGS="--leak-check=full --gen-suppressions=all"
+#VALGRIND_ARGS="--leak-check=full --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-gcc-blas-ompi.supp"
+#VALGRIND_ARGS="--leak-check=full --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-intel-blas-ompi.supp"
+
+
+## Type:	string
+## Default:     empty
+#
+# Command line arguments when running totalview.
+TOTALVIEW_ARGS=
+
+
+## Type:	string
+## Default:     empty (the appropriate value will be determined automatically)
+#
+# Type of batch system, if any.
+#
+# Possible values are:
+#  * <none>
+#          Don't use a queueing system
+#  * LIDO
+#          OpenPBS jobs, enqueued on LiDO
+#  * JUMP
+#          LoadLeveler jobs, enqueued on JUMP Juelich (p690 system)
+#  * NEC_intranode
+#          NEC SX jobs entailing not more than 8 cpus
+#  * NEC_internode
+#          NEC SX jobs entailing more than 8 cpus
+#
+# The scripts used to set up and start batch job scripts (bin/*schedule_*tests)
+# may set/overwrite this value dynamically when creating the batch script.
+# Whenever changing the syntax here, do not forget to adapt them!
+QUEUEINGSYSTEM=
+
+
+## Type:	string
+## Default:     empty (the appropriate value will be determined automatically)
+#
+# MPI environment to be used
+#
+# Depending on this setting the commands
+#  * to start an MPI daemon, if any,
+#  * to start an MPI programm,
+#  * to clean up an MPI environment and
+#  * to stop an MPI daemon, if any
+# are choosen later on.
+#
+# Possible values are (for linux32 and linux64 build IDs, other IDs use
+# hard-coded values throughout the benchmark)
+#
+#  * OpenMPI
+#  * LAMMPI
+#  * MPICH
+#  * MPICH2
+#  * MVAPICH
+#  * <SET_VIA_MAKEFILE>
+#        the value is set when invoking 'make *test.fbconf'. The default
+#        value (as hardcoded below, arch-dependent) may be overwritten
+#        by adding "MPIENV <value>" on the command line,
+#        e.g.:         make singletests MPIENV=MPICH2
+#
+# Whenever changing the syntax here, do not forget to adapt
+# bin/lido_schedule_tests as there 'sed' substitutions need to match
+# the line derived from this line after 'make <testsuite> <command line arguments>'
+# has updated it. Currently, with MPIENV not explicitly overwritten
+# on the make command line, it becomes 'MPIENV='.
+#
+MPIENV=<SET_VIA_MAKEFILE>
+
+
+# ================================================================
+# End of customisation section
+# ================================================================
+
+
+
+fb_initialiseEnv() {
+    # (the former header.inc file)
+
+    # Some systems have rather restrictive default umask settings,
+    # but typically the results of a nightly benchmark run (used as
+    # a regression test) should be accessible by all members of a
+    # group, not just by the one who ran the benchmark.
+    # (PBS, for instance, enforces a restrictive 0077 umask.)
+    umask 0027
+
+
+    # Empty declaration of variable that will later on contain all environment
+    # variables FEAT2 used in its configuration files. We will
+    # always append to this variable, that's why an initialisation is needed.
+    addEnvVars=""
+#    addEnvVars="--mca mpi_maffinity_alone 1 --mca mpi_paffinity_alone 1"
+#    addEnvVars="--mca mpi_maffinity_alone 1 --hostfile <file> --rankfile <file>"
+    # Syntax of Open MPI 1.x.x hostfile
+    #   <hostname>	slots=<no.>	max_slots=<no.>
+    # Per host on line.
+    #
+    # Syntax of Open MPI 1.3.x rankfile:
+    #   rank <rank no.>=<hostname>  slot=<core no.>:<socket no.>
+    # Per rank one line. Hence, a different rank file is required for different
+    # number of processes/parallel blocks.
+
+
+    # ================================================================
+    # Define MPI commands depending on top-of-file settings
+    # ================================================================
+    ARCH="`uname -m`";
+    case "${QUEUEINGSYSTEM}" in
+	# No queueing system
+	"")
+	    case "${ARCH}" in
+		# Alpha platform: yggdrasill, nidhoegg, ragnaroek
+		"alpha")
+		    # By default Digital MPI should be used on Alpha.
+		    # So, set MPIENV to "DigitalMPI" if it's not yet set to a particular
+		    # value.
+		    if test "x" = "${MPIENV}""x"; then
+			MPIENV=DigitalMPI
+		    fi
+
+		    case "${MPIENV}" in
+			# LAM/MPI on Alpha
+			"LAMMPI")
+			    MPIRC='mpirun C '
+			    MPICLEAN='lamclean'
+			    MPISTART='lamboot'
+			    MPISTOP='lamhalt'
+			    ;;
+
+			# DigitalMPI on Alpha
+			"DigitalMPI")
+			    MPIRC='dmpirun -np ${ntasks} '
+			    MPICLEAN='mpiclean >& /dev/null #'
+			    MPISTART='echo'
+			    MPISTOP='echo'
+			    ;;
+			*)
+			    echo "Script is not prepared to run on Alpha platforms with an MPI environment";
+			    echo "named <${MPIENV}>. Benchmark not executed.";
+			    exit 1;
+		    esac
+		    ;;
+
+		# Itanium2 server
+		"ia64")
+		    if test "x" = "${MPIENV}""x"; then
+			# No default set. Find out whether we are on a
+			# NEC SX gateway Itanium2 server and are using MPI/EX.
+			if test "`which mpirun`" = "/opt/NECmpi/bin/mpirun"; then
+			    MPIENV=MPIEX
+			else
+			    MPIENV=OpenMPI
+			fi
+		    fi
+
+		    case "${MPIENV}" in
+			# MPI/EX
+			"MPIEX")
+			    MPIRC='mpirun -np ${ntasks} '
+			    MPICLEAN='echo'
+			    MPISTART='echo'
+			    MPISTOP='echo'
+			    # Set special flag to ensure that in fb_runAndEvalBenchmarkTest measures
+			    # are taken that ensure that all environment variables set by this
+			    # script and referenced in any file read in by the FEAT2 application
+			    # are avaibable on all nodes (via MPIEXPORT)
+			    NECSXMODE=true
+
+			    # Ensure MKL libraries are found
+			    LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/MathKeisan/MKL/lib/64
+			    export LD_LIBRARY_PATH
+
+#			    F_PROGINF=DETAIL
+#			    MPIPROGINF=YES
+#			    F_FILEINF=YES
+#			    export F_PROGINF MPIPROGINF F_FILEINF
+			    ;;
+
+			# OpenMPI
+			"OpenMPI")
+			    MPIRC='mpirun  -np ${ntasks} '
+			    MPICLEAN='echo'
+			    MPISTART='echo'
+			    MPISTOP='echo'
+			    ;;
+		    esac
+		    ;;
+
+		# Catch-all for all non-queueing systems: Sun, Linux 32bit, Linux 64bit etc.
+		*)
+		    # By default OpenMPI should be used that's the MPI flavour still being
+		    # developed currently.
+		    # So, set MPIENV to "OpenMPI" if it's not yet set to a particular
+		    # value.
+		    if test "x" = "${MPIENV}""x"; then
+			MPIENV=OpenMPI
+		    fi
+
+		    case "${MPIENV}" in
+			# LAM/MPI
+			"LAMMPI")
+#			    MPIRC='mpirun C '
+			    MPIRC='mpirun  -np ${ntasks} '
+			    MPICLEAN='lamclean'
+			    MPISTART='lamboot'
+			    MPISTOP='lamhalt'
+			    ;;
+
+			# MPICH
+			"MPICH")
+			    MPIRC='mpirun  -np ${ntasks} '
+			    MPICLEAN='echo'
+			    MPISTART='echo'
+			    MPISTOP='echo'
+			    ;;
+
+			# MPICH2
+			"MPICH2")
+#			    MPIRC='mpirun C '
+			    MPIRC='mpirun  -np ${ntasks} '
+			    MPICLEAN='mpdcleanup'
+			    MPISTART='mpdboot -n 1 -1'
+			    MPISTOP='mpdallexit'
+			    ;;
+
+			# MVAPICH
+			"MVAPICH")
+			    MPIRC='mpirun  -np ${ntasks} '
+			    MPICLEAN='echo'
+			    MPISTART='echo'
+			    MPISTOP='echo'
+			    ;;
+
+			# OpenMPI
+			"OpenMPI")
+			    # mpool_sm_size:
+			    #     size of shared memory block for communication in bytes
+			    #     allocated per process at program start
+			    # btl self,sm,tcp:
+			    #     type and order to try to communicate via
+
+			    # 512 MB shared memory intranode communication buffer
+#			    MPIRC='mpirun  --mca mpool_sm_size 536870912 -np ${ntasks} '
+
+			    # 128 MB shared memory intranode communication buffer
+#			    MPIRC='mpirun  --mca mpool_sm_size 134217728 -np ${ntasks} '
+
+			    # 64 MB shared memory intranode communication buffer
+#			    MPIRC='mpirun  --mca mpool_sm_size 67108864  -np ${ntasks} '
+
+			    # Disable shared memory communication
+#			    MPIRC='mpirun  --mca btl tcp,self  -np ${ntasks} '
+
+			    # Default settings
+			    MPIRC='mpirun  -np ${ntasks} '
+
+			    MPICLEAN='echo'
+			    MPISTART='echo'
+			    MPISTOP='echo'
+
+			    # Update command line settings for TotalView Debugger
+			    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi Open\ MPI"
+			    ;;
+
+			# Unhandled case
+			*)
+			    echo "Script is not prepared to run on <${ARCH}> with an MPI environment";
+			    echo "named <${MPIENV}>. Benchmark not executed.";
+			    exit 1;
+			    ;;
+		    esac
+
+		    # If g95 is being used and a specific g95 environment variable is set,
+		    # issue a warning.
+		    if test -n "`echo ${BUILDID} | grep g95-`"; then
+			if test "${G95_MEM_INIT+set}" = set ; then
+			    echo "========================================================================";
+			    echo "WARNING: The environment variable G95_MEM_INIT was found to be set!";
+			    echo "It has been unset to ensure that even big jobs (that overload the";
+			    echo "host due to a large number of parallel blocks) will run.";
+			    echo "G95_MEM_INIT=0 will touch every byte that is allocated. Code that";
+			    echo "allocates more memory than it actually uses may allocate more";
+			    echo "memory than physically available or addressable. With G95_MEM_INIT=0";
+			    echo "that code will crash due to out-of-memory, without the environment";
+			    echo "setting the code will probably run.";
+			    echo "========================================================================";
+			    unset G95_MEM_INIT
+			fi
+		    fi
+	    esac
+	    ;;
+
+	# LiDO
+	"LIDO")
+	    # Remark:
+	    # To directly run jobs on the LiDO gateway nodes (which is a violation of
+	    # the user policy, but convenient to briefly test things), set above
+	    #    set QUEUEINGSYSTEM=
+	    #    set MPIENV=OpenMPI   (or LAMMPI, MPICH2 etc.)
+
+	    case "${MPIENV}" in
+		# LAM/MPI on LiDO
+		"LAMMPI")
+		    MPIRC='mpirun C '
+		    MPICLEAN='lamclean'
+		    # Boot MPI universe, but ignore any messages on stderr (like: "node 'foo' added to known hosts")
+		    MPISTART='lamboot -ssi boot_rsh_ignore_stderr 1 ${PBS_NODEFILE}'
+		    MPISTOP='lamhalt'
+		    # Update command line settings for TotalView Debugger
+		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"LAM\""
+		    ;;
+
+		# MPICH on LiDO
+		"MPICH")
+		    MPIRC='mpirun  -np ${ntasks} '
+		    MPICLEAN='echo'
+		    MPISTART='echo'
+		    MPISTOP='echo'
+		    # Update command line settings for TotalView Debugger
+		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"MPICH\""
+		    ;;
+
+		# MPICH2 on LiDO
+		"MPICH2")
+#		    MPIRC='mpirun C '
+		    MPIRC='mpirun  -np ${ntasks} '
+		    MPICLEAN='mpdcleanup'
+		    MPISTART='mpdboot -n 1 -1'
+		    MPISTOP='mpdallexit'
+		    # Update command line settings for TotalView Debugger
+		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"MPICH2\""
+		    ;;
+
+		# OpenMPI on LiDO
+		"OpenMPI")
+		    MPIRC='mpirun -np ${ntasks} '
+		    MPICLEAN='echo'
+		    MPISTART='echo'
+		    MPISTOP='echo'
+		    # bind an MPI process to a cpu and its memory; the linux scheduler sucks for MPI
+		    addEnvVars="${addEnvVars} --mca mpi_maffinity_alone 1 --mca mpi_paffinity_alone 1"
+		    # Update command line settings for TotalView Debugger
+		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"Open MPI\""
+		    ;;
+
+		# MVAPICH on LiDO
+		"MVAPICH")
+		    MPIRC='mpirun -np ${ntasks} '
+		    MPICLEAN='echo'
+		    MPISTART='echo'
+		    MPISTOP='echo'
+		    # Update command line settings for TotalView Debugger
+		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"MVAPICH\""
+#		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"MVAPICH2\""
+		    ;;
+
+		*)
+		    echo "Script is not prepared to run on LiDO with an MPI environment";
+		    echo "named <${MPIENV}>. Benchmark not executed.";
+		    exit 1;
+		    ;;
+	    esac
+	    ;;
+
+	# IBM JUMP p690
+	"JUMP")
+	    echo; # Nothing to be set as on IBM p690 we have to use LoadLeveler.
+		  # The binary is directly executed, no MPIRUN or similar comes
+		  # into action. So, nothing has to be set.
+	    ;;
+
+	# NEC SX with communication only inside of one node (not more than 8 cpus used)
+	"NEC_intranode")
+	    MPIRC='mpirun -np ${ntasks} '
+	    MPICLEAN='echo'
+	    MPISTART='echo'
+	    MPISTOP='echo'
+	    # Set special flag to ensure that in fb_runAndEvalBenchmarkTest measures
+	    # are taken that ensure that all environment variables set by this
+	    # script and referenced in any file read in by the FEAT2 application
+	    # are avaibable on all nodes (via MPIEXPORT)
+	    NECSXMODE=true
+
+#	    F_PROGINF=DETAIL
+#	    MPIPROGINF=YES
+#	    F_FILEINF=YES
+#	    export F_PROGINF MPIPROGINF F_FILEINF
+	    ;;
+
+	# NEC SX with communication between several nodes (more than 8 cpus used)
+	"NEC_internode")
+	    # a) -nn number of nodes, -nnp number of processors per node
+	    #    -np total number of processes requested
+	    #    Always allocate complete nodes, otherwise performance is
+	    #    affected by misbehaviour of concurrent processes.
+	    # b) $_MPINNODES refers to the number of nodes requested
+	    # with a '#PBS -b <nodes>' directive. This to avoid
+	    # redundance and possible sources of conflicting specifications.
+	    MPIRC='mpirun -nn $_MPINNODES -nnp 8 -np ${ntasks}'
+	    MPICLEAN='echo'
+	    MPISTART='echo'
+	    MPISTOP='echo'
+	    # Set special flag to ensure that in fb_runAndEvalBenchmarkTest measures
+	    # are taken that ensure that all environment variables set by this
+	    # script and referenced in any file read in by the FEAT2 application
+	    # are avaibable on all nodes (via MPIEXPORT)
+	    NECSXMODE=true
+
+#	    F_PROGINF=DETAIL
+#	    MPIPROGINF=YES
+#	    F_FILEINF=YES
+#	    export F_PROGINF MPIPROGINF F_FILEINF
+	    ;;
+
+	# Unhandled case: Queueing system unknown
+	*)
+	    echo "Script is not prepared to run on a queueing system named";
+	    echo "<${QUEUEINGSYSTEM}>. Benchmark not executed.";
+	    exit 1;
+	    ;;
+    esac
+
+    # ================================================================
+    # Section for variable initialisation
+    # ================================================================
+
+    # Initialise variables that keep book of benchmark progress and behaviour.
+    testall=0
+    testpass=0
+    testdeviant=0
+    testunverified=0
+    testexecfailed=0
+    listOfDeviantTests=""
+    listOfUnveriTests=""
+    listOfCrashedTests=""
+
+
+    # Environment variables FEAT2 uses in its configuration files that
+    # are *not* defined in any *.fbdef file (stored in subdirectory 'tests').
+    # Typically, variables defined in this function and in fb_runAndEvalBenchmarkTest
+    # should be listed in here.
+    # The environment variable "G95_MEM_SEGMENTS=0" tells g95 to suppress the
+    # annoying memory statistics at the end of the program run. (The variable does
+    # not really fit into the scheme here, but it is the simplest way to pass it
+    # to the benchmark.)
+    vars2exportAlways="EXECMODE MGLEVEL VISOUTPUTFILE G95_MEM_SEGMENTS"
+
+    # On NEC you might want additional information on a file run
+    # on a per file level. Then F_FILEINF needs to be set and
+    # exported to all MPI processes.
+    #vars2exportAlways="${vars2exportAlways} F_PROGINF F_FILEINF"
+
+    # G95 compiler (www.g95.org) has a feature to show still-allocated memory
+    # segments at program end (and where it has been allocated before).
+    # Suppress these messages in benchmark.
+    G95_MEM_SEGMENTS=0
+    export G95_MEM_SEGMENTS
+}
+
+
+
+fb_footer() {
+    # (the former footer.inc file)
+
+    echo
+    echo "SUMMARY:"
+    echo
+    echo "tests in total           : "${testall}
+    echo "tests successfully passed: "${testpass}
+    echo "tests deviant            : "${testdeviant}
+    echo "tests unverifiable       : "${testunverified}
+    echo "tests failing execution  : "${testexecfailed}
+    echo
+
+    # In order that an outer runregressiontest script easily gets to know
+    # which tests failed, store the information to file, too.
+    #set fileWithAllFailedTests = "failedtests_`hostname`"
+    #\rm -f ${fileWithAllFailedTests} || true
+    #touch ${fileWithAllFailedTests}
+
+    # Print list of failed tests
+    if test ${testdeviant} -gt 0; then
+	echo
+	echo "The tests with deviating results are coded in the following files:"
+	echo ${listOfDeviantTests} | tr ' ' '\n'
+    fi
+
+    # Print list of tests that could not be verified due to
+    # missing reference solution
+    if test ${testunverified} -gt 0; then
+	echo
+	echo "The tests that could not be verified due to a missing"
+	echo "reference solution are coded in the following files:"
+	echo ${listOfUnveriTests} | tr ' ' '\n'
+    fi
+
+    # Print list of tests that crashed
+    if test ${testexecfailed} -gt 0; then
+	echo
+	echo "The tests that crashed during execution are coded in"
+	echo "the following files:"
+	echo ${listOfCrashedTests} | tr ' ' '\n'
+    fi
+    echo
+}
+
+
+
+fb_raiseUnknownError() {
+    echo " "
+    echo "No valid FEAT2 log file slaveresult.[0-9] found."
+    echo " "
+    \cp -p ${EXECUTIONLOG} ${EXECUTIONLOG}.${TESTID}.lev${MGLEVEL} || echo "Error creating backup of ${EXECUTIONLOG}."
+}
+
+
+
+fb_runAndEvalBenchmarkTest() {
+    # (the former loop.inc file)
+
+    # set logfile for output during execution and remove contents of previous result comparison
+    EXECUTIONLOG=${LOGDIR}/${RUNLOGFILE}
+    \rm ${LOGDIR}/${RESULTFILE} 1>/dev/null 2>&1
+
+    # print out some general information
+    echo "TESTID    = "${TESTID}
+    echo "APP       = "${appname}
+
+    # add some class-specific information, add whatever you want to see for your applications
+    case "${CLASS}" in
+	# Matthias' apps:
+	FLAGSHIP)
+	    echo "DATFILE   = "${DATFILE}
+	    echo "MGLEVELS  = "${MGLEVELS}
+	    if test "${FOOBAR+set}" = set ; then
+		echo "FOOBAR    = "${FOOBAR}
+	    elif test "${FOOBAZ+set}" = set ; then
+		echo "FOOBAZ    = "${FOOBAZ}
+	    fi
+	    ;;
+
+	*)
+	    echo "# Warning: The function fb_runAndEvalBenchmarkTest is not prepared to handle application class <${CLASS}>."
+    esac
+
+    startdate=`date | awk '{print $4}'`
+    echo
+    echo "START : "${startdate}
+    echo
+
+    # #########################
+    # non-verbose mode
+    outputredirect=""
+    if test ${SUPPRESSOUTPUT} -eq 1; then
+	outputredirect=" >> ${EXECUTIONLOG}"
+    fi
+
+    # Execute only of FEAT2 benchmark binary is available
+    if test -r ${appname}; then
+	# Test binary for compatibility
+	case ${ARCH} in
+	    sun4u)
+		string="SPARC"
+		;;
+
+	    alpha)
+		string="alpha.*executable"
+		;;
+
+	    i*86)
+		string="Intel 80386"
+		;;
+
+	    x86_64)
+		string="AMD x86-64"
+		;;
+
+	    00223C3B4C00) # IBM p690
+		string="64-bit XCOFF"
+		;;
+
+	    *)
+	    # No compatibility testing for unhandled architecture.
+		string=" "
+	esac
+	stdoutput=`file ${appname} | grep "${string}"`
+	if test -z "${stdoutput}"; then
+	    # Binary incompatible
+	    echo "Binary <${appname}> incompatible. Please re-make / re-link."
+
+	else
+	    # Binary compatible, run test
+	    # As FEAT2 only supports serial applications, number of tasks is
+	    # always 1.
+	    ntasks=1
+
+	    # In case of parallel execution one more process than
+	    # parallel blocks is needed
+	    EXECMODE="`echo ${EXECMODE} | tr '[a-z]' '[A-Z]'`"
+	    if test "${EXECMODE}" = "PARALLEL"; then
+		ntasks=`expr $ntasks + 1`
+	    fi
+
+#	    if test -n "${NPART}" -a "${NPART}" != "FROM_FILE"; then
+#		ntasks=${NPART}
+#		ntasks=`expr $ntasks + 1`
+#		AUTOPART=YES
+#		export AUTOPART
+#	    fi
+
+	    # Initialise boolean variable
+	    execfailed=0
+
+#	    # ensure VISOUTPUTFILE is set
+#	    if test "${VISOUTPUTFILE+set}" != set ; then
+#		VISOUTPUTFILE=solution
+#	    fi
+#	    if test -z "${VISOUTPUTFILE}"; then
+#		VISOUTPUTFILE=solution
+#	    fi
+#	    export VISOUTPUTFILE
+
+	    case "${CLASS}" in
+		# OpenGL tests need write permission to NVIDIA device.
+		# Enable this.
+		DISK*)
+		    test -s /var/spool/gpuauth && xauth nmerge /var/spool/gpuauth
+		    ;;
+		COPROC*)
+		    test -s /var/spool/gpuauth && xauth nmerge /var/spool/gpuauth
+		    ;;
+	    esac
+
+
+	    # Loop over all multigrid levels
+	    for currentmglevel in `echo ${MGLEVELS} | sed 's/,/ /g'`; do
+		# If execution failed in a previous loop, exit the loop. Why?
+		# Well, after all: Failed is failed.
+		if test ${execfailed} -eq 1; then
+		    break
+		fi
+		MGLEVEL=${currentmglevel}
+		export MGLEVEL
+
+#		\rm ${LOGDIR}/slaveresult.* ${LOGDIR}/feastlog.* ${EXECUTIONLOG} 1>/dev/null 2>&1
+		\rm ${EXECUTIONLOG} 1>/dev/null 2>&1
+
+		# #########################
+		# Explicitly export those environment variables FEAT2 uses in its dat file
+		if test "${NECSXMODE+set}" = set ; then
+		    MPIEXPORT="$vars2export"
+		else
+		    if test "${MPIENV}" = "LAMMPI"; then
+			# LAM/MPI on LiDO
+			addEnvVarsWorkingCopy="${addEnvVars} -x `echo $vars2export | sed 's/ /,/g'`"
+		    elif test "${MPIENV}" = "OpenMPI"; then
+			# OpenMPI on LiDO
+			addEnvVarsWorkingCopy="${addEnvVars} -x `echo $vars2export | sed 's/ / -x /g'`"
+		    fi
+		fi
+
+
+		# ############################
+		# parallel
+		case "${EXECMODE}-${DEBUGGER}" in
+		    # ############################
+		    # parallel, normal execution
+		    PARALLEL-0)
+
+			# boot up MPI universe
+			eval ${MPISTART} ${outputredirect}
+
+			echo -n "Running "${currentmglevel}".... "
+
+			# Submitted via PBS?
+#			if test "${PBS_ENVIRONMENT+set}" = set ; then
+#			    echo "PBS job found"
+#			    eval ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
+#			else
+#			    echo "non-PBS scheduling"
+#			    eval ${MPIRC} --hostfile ~/hostfile.ib --nolocal ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
+#			fi
+
+#			echo ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
+			eval ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
+			# Show problems if any occured
+			if test $? -ne 0; then
+			    execfailed=1
+			    if test ${SUPPRESSOUTPUT} -eq 1; then
+				echo "Execution failed:"
+				cat ${EXECUTIONLOG}
+			    else
+				echo "Execution failed."
+			    fi
+			else
+			    echo "Done"
+			fi
+			;;
+
+
+		    # ############################
+		    # parallel, with some kind of debugger
+		    PARALLEL-*)
+			# boot up MPI universe
+			eval ${MPISTART} ${outputredirect}
+
+			# Passing an argument to the program to be debugged does not work.
+			# Store config file under default config file name.
+#			\cp -p ${DATFILE} master.dat
+
+			echo -n "Running "${currentmglevel}".... "
+
+			# DDT settings (w/o PBS)
+			if test "DDT" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    # Issue warning when Intel, PGI or Pathscale compiler are being used.
+			    if test -n "`echo ${BUILDID} | grep intel-`" -o \
+				    -n "`echo ${BUILDID} | grep pgi-`" -o \
+				    -n "`echo ${BUILDID} | grep psc-`"; then
+				echo
+				echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+				echo
+				echo "When debugging a program, try not to compile it with Intel Compilers and "
+				echo "debug it with gdb (plain or as backend in ddt). You will experience very "
+				echo "serious performance penalties, communication between ddt and gdb will "
+				echo "time-out very often. Support for idb in ddt exists, but according to the"
+				echo "ddt developers, the effort Intel (and Pathscale and PGI) invest into their"
+				echo "debuggers is significantly less than what the GNU community does. Instead"
+				echo "of using idb, try to trigger the bug and then debug the code with a gcc-compiled"
+				echo "binary!"
+				echo
+				echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+				echo
+			    fi
+			    ddt -np ${ntasks} ${PWD}/${appname}
+
+			    # DDT via PBS settings
+#			    mpirun -np NUM_PROCS_TAG ${addEnvVarsWorkingCopy} ddt-debugger PROGRAM_ARGUMENTS_TAG
+
+			elif test "TOTALVIEW" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    # use TotalView
+			    eval totalview ${TOTALVIEW_ARGS} -np ${ntasks} ${PWD}/${appname} -a ${DATFILE}
+
+			elif test "VALGRIND" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    # use valgrind
+#			    eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${DATFILE} ${outputredirect}
+			    eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${outputredirect}
+
+			elif test "RUN_DBX" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    # run_dbx settings
+#			    eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${DATFILE} ${outputredirect}
+			    eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${outputredirect}
+			fi
+
+			# Show problems if any occured
+			if test $? -ne 0; then
+			    execfailed=1
+			    if test ${SUPPRESSOUTPUT} -eq 1; then
+				echo "Execution failed:"
+				cat ${EXECUTIONLOG}
+			    else
+				echo "Execution failed."
+			    fi
+			else
+			    echo "Done"
+			fi
+			rm -f master.dat
+			;;
+
+
+		    # ############################
+		    # serial run, normal execution
+		    SERIAL-0)
+			# check if numactl is available
+			which numactl 1> /dev/null 2>&1
+			if test $? -ne 0; then
+			    echo -n "Running "${currentmglevel}" (without NUMACTL).... "
+			    eval ${PWD}/${appname} ${DATFILE} ${outputredirect}
+			else
+			    echo -n "Running "${currentmglevel}" (with NUMACTL).... "
+			    eval numactl --cpubind=0 --membind=0 ${PWD}/${appname} ${DATFILE} ${outputredirect}
+			fi
+			# Show problems if any occured
+			if test $? -ne 0; then
+			    execfailed=1
+			    if test ${SUPPRESSOUTPUT} -eq 1; then
+				echo "Execution failed:"
+				cat ${EXECUTIONLOG}
+			    else
+				echo "Execution failed."
+			    fi
+			else
+			    echo "Done"
+			fi
+			;;
+
+
+		    # ############################
+		    # serial run, with some kind of debugger
+		    SERIAL-*)
+			# Passing an argument to the program to be debugged does not work.
+			# Store config file under default config file name.
+#			\cp -p ${DATFILE} master.dat
+
+			echo -n "Running "${currentmglevel}".... "
+
+			# To select a debugger, (un)comment the appropriate lines. While being uncomfortable,
+			# this approach is considered as 'has to do' by the fb2 developers for the time being.
+			# If you believe that this sucks, please implement this feature properly by allowing
+			# multiple string values for DEBUGGER= and select-case'ing them here.
+
+			# Please remember that debugging optimised builds requires changing compiler flags
+			# in kernel/arch/templates to include -g which tells the compiler to include
+			# routine names, variable names etc. in the binary
+
+			if test "DDT" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    # Issue warning when Intel, PGI or Pathscale compiler are being used.
+			    if test -n "`echo ${BUILDID} | grep intel-`" -o \
+				    -n "`echo ${BUILDID} | grep pgi-`" -o \
+				    -n "`echo ${BUILDID} | grep psc-`"; then
+				echo
+				echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+				echo
+				echo "When debugging a program, try not to compile it with Intel Compilers and "
+				echo "debug it with gdb (plain or as backend in ddt). You will experience very "
+				echo "serious performance penalties, communication between ddt and gdb will "
+				echo "time-out very often. Support for idb in ddt exists, but according to the"
+				echo "ddt developers, the effort Intel (and Pathscale and PGI) invest into their"
+				echo "debuggers is significantly less than what the GNU community does. Instead"
+				echo "of using idb, try to trigger the bug and then debug the code with a gcc-compiled"
+				echo "binary!"
+				echo
+				echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+				echo
+			    fi
+
+			    ddt ${PWD}/${appname}
+
+			elif test "VALGRIND" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    # use valgrind
+			    eval valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${outputredirect}
+
+			elif test "GDB" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    # use gdb
+			    echo
+			    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+			    echo
+			    echo "Never try to perform debugging without SUPPRESSOUTPUT=0, as the"
+			    echo "debugger otherwise seems to hang the machine waiting for you to type run."
+			    echo
+			    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+			    echo
+			    eval gdb  ${PWD}/${appname} ${outputredirect}
+
+			elif test "DBX" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    eval dbx -r  ${PWD}/${appname} ${outputredirect}
+
+			elif test "RUN_DBX" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    # run_dbx settings
+			    eval run_dbx ${PWD}/${appname} ${outputredirect}
+
+			elif test "DDD" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    ddd ${PWD}/${appname}
+
+			elif test "PGI" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
+			    pgdbg ${PWD}/${appname}
+
+			fi
+
+
+			# Show problems if any occured
+			if test $? -ne 0; then
+			    execfailed=1
+			    if test ${SUPPRESSOUTPUT} -eq 1; then
+				echo "Execution failed:"
+				cat ${EXECUTIONLOG}
+			    else
+				echo "Execution failed."
+			    fi
+			else
+			    echo "Done"
+			fi
+			rm -f master.dat
+			;;
+		esac # serial/parallel
+
+
+		# Every application is supposed to output data that can be compared
+		# to previous results. Preferably line per program run.
+		# To provide utmost flexibility, based on either application name or
+	        # test class one can add tailored instructions here, e.g. to provide
+		# a header for the table like program output.
+		case "${CLASS}" in
+		    FLAGSHIP)
+			TABLE_HEADER='TODO_MATTHIAS_MOELLER'
+			;;
+
+		    *)
+			TABLE_HEADER='unhandled application/test class'
+			;;
+		esac
+	    done # end loop over all multigrid levels
+
+
+	    # Determine filename for the results
+	    FILENAME="test"${TESTID}".result"
+
+	    testall=`expr ${testall} + 1`
+
+	    # Execution error or missing results?
+	    if test ${execfailed} -eq 1 -o ! -s ${LOGDIR}/${RESULTFILE}; then
+		echo "TEST FAILED"
+		testexecfailed=`expr ${testexecfailed} + 1`
+		listOfCrashedTests=`echo ${listOfCrashedTests} ${TESTID}`
+
+		if test ${execfailed} -eq 1; then
+		    echo
+		    echo "No information on FEAT2 run available that can be compared against a"
+		    echo "reference solution due to execution failure."
+		    echo
+		else
+		    echo
+		    echo "No information on FEAT2 run available that can be compared against a"
+		    echo "reference solution due to missing log file <${LOGDIR}/${RESULTFILE}>."
+		    echo
+		fi
+		if test ${SUPPRESSOUTPUT} -eq 1; then
+		    \cp -p ${EXECUTIONLOG} ${EXECUTIONLOG}.${TESTID}.lev${MGLEVEL}
+		    if test $? -ne 0; then
+			echo "Error creating backup of ${EXECUTIONLOG}."
+		    fi
+		fi
+
+	    # Everything's fine, compare result with reference solution
+	    else
+		echo
+		echo "Storing results."
+		# Create directory structure where results are stored
+		# if necessary
+		if test ! -d results/${BUILDID}; then
+		    mkdir -p results/${BUILDID}
+		fi
+
+		# Store results to disk
+		\cp ${LOGDIR}/${RESULTFILE} results/${BUILDID}/${FILENAME}
+
+		# Compare with reference solution
+		if test -r refsol/${BUILDID}/${FILENAME}; then
+		    echo "Comparing current with reference solution..."
+		    diff -w results/${BUILDID}/${FILENAME} refsol/${BUILDID}/${FILENAME} >& ${LOGDIR}/diffresult
+		    # Check whether reference and current solution match
+		    if test $? -eq 0; then
+			echo "TEST OK"
+			testpass=`expr ${testpass} + 1`
+			echo
+			echo "${TABLE_HEADER}"
+			cat results/${BUILDID}/${FILENAME}
+			echo
+		    else
+			echo "TEST DEVIANT"
+			testdeviant=`expr ${testdeviant} + 1`
+			listOfDeviantTests=`echo ${listOfDeviantTests} ${TESTID}`
+			echo
+			echo "${TABLE_HEADER}"
+			cat ${LOGDIR}/diffresult
+			echo
+			echo "Difference:"
+#			perl include/diff_refsol_result.pl "${APPL}" results/${BUILDID}/${FILENAME} refsol/${BUILDID}/${FILENAME}
+			diff results/${BUILDID}/${FILENAME} refsol/${BUILDID}/${FILENAME}
+			echo
+		    fi
+		else
+		    # No reference solution available
+		    echo "TEST WITHOUT REFERENCE SOLUTION"
+		    testunverified=`expr ${testunverified} + 1`
+		    listOfUnveriTests=`echo ${listOfUnveriTests} ${TESTID}`
+		    echo
+		    echo "${TABLE_HEADER}"
+		    cat results/${BUILDID}/${FILENAME}
+		    echo
+		fi
+
+		# For some applications a couple of postprocessing steps,
+		# after having done all the refinement levels, is wanted. E.g.
+		# to compute L2 error reduction rates
+		case "${APPL}" in
+		    matmod)
+			grep "FBMARK" ${LOGDIR}/feastlog.001
+			;;
+
+		    navsto|stokes)
+			echo "error reduction rates"
+			perl include/comparenavstokes.pl results/${BUILDID}/${FILENAME}
+			;;
+		esac
+    	    fi
+
+	    # Clean up
+#	    /bin/rm feastlog.* ${EXECUTIONLOG} diffresult >& /dev/null
+	fi # binary compatible/incompatible
+    else
+	# No binary found
+	echo
+	echo "FEAT2 benchmark binary <${appname}> not found."
+	echo "TEST FAILED"
+	echo
+	testall=`expr ${testall} + 1`
+	testexecfailed=`expr ${testexecfailed} + 1`
+	listOfCrashedTests=`echo ${listOfCrashedTests} ${TESTID}`
+    fi
+
+    echo
+
+    enddate=`date | awk '{print $4}'`
+    echo "FINISH  : "${enddate}
+
+    echo $startdate $enddate  | awk '{ split($1, startTimeComp, ":"); split($2, endTimeComp, ":"); diff = 3600 * (endTimeComp[1] - startTimeComp[1]) + 60 * (endTimeComp[2] - startTimeComp[2]) + (endTimeComp[3] - startTimeComp[3]); hour = int(diff / 3600); diff = diff - 3600 * hour; min = int(diff / 60); diff = diff - 60 * min; printf "RUNTIME : %02d:%02d:%02d\n", hour, min, diff; }'
+
+    # shut down MPI universe
+    eval ${MPISTOP} ${outputredirect}
+
+    echo " "
+    echo " "
+    echo " "
+}
+
+
+
+
+# ================================================================
+# Run the benchmark
+# ================================================================
+
+# Clean up any temporary files from previous benchmark runs
+#\rm feastlog.* *.gmv *.gmv.[0-9]* slaveresult.* >& /dev/null
+
+fb_initialiseEnv
+

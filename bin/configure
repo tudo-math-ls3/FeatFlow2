@@ -18,20 +18,20 @@
 ########################################################################
 #
 # short description:
-#   script to create your FEAST application's Makefile
+#   script to create your FEAT2 application's Makefile
 #
 # long version:
-#   FEAST's bin/configure is a Perl script which basically does what you
+#   FEAT2's bin/configure is a Perl script which basically does what you
 #   would expect from a normal GNU configure: It determines a set of
-#   values necessary to compile your FEAST application on the machine you
+#   values necessary to compile your FEAT2 application on the machine you
 #   logged into, finds the dependencies between the sources files and
 #   finally creates a Makefile for your application. There are three
-#   reasons why the GNU configure wasn't used: First, FEAST is not
+#   reasons why the GNU configure wasn't used: First, FEAT2 is not
 #   published under GNU license yet and second, most of the stuff GNU
 #   configure does is not necessary for Fortran programs. It was designed
 #   to create Makefiles for C / C++ programs. Finally was it easier to
 #   design this Perl script to meet our needs than to learn to speak
-#   autoconf syntax and make it work for us. FEAST's bin/configure
+#   autoconf syntax and make it work for us. FEAT2's bin/configure
 #   accepts a bunch of command line arguments. You get a complete list
 #   via 'bin/configure --help'. Using these command line arguments you
 #   can override the default values of bin/configure,
@@ -116,22 +116,22 @@ my $progname = &basename($0);
 # (It would be different, though, if one could be sure that any FEAT2 application 
 #  resides in a directory exactly two hierarchy levels beneath the FEAT2 root 
 #  directory. Then we could simply set)
-my $FEASTBASEDIR = "../..";
+my $FEAT2BASEDIR = "../..";
 
 # version with absolute paths
-#my $FEASTBASEDIR = &abs_path(&dirname($0) . "/..");
+#my $FEAT2BASEDIR = &abs_path(&dirname($0) . "/..");
 
 # another version with absolute paths
 # (when changing to absolute paths again, be aware that copying of
 # included files to object directory may happen multiple times as
 # the file may get on the list with absolute and relative path)
-#my $FEASTBASEDIR = &get_feast_basedir(&cwd());
+#my $FEAT2BASEDIR = &get_feast_basedir(&cwd());
 
 # name of Makefile to create
 my $MAKEFILE     = "GNUmakefile";
 
 # some important files and directories.
-# The values are supposed to be relative to the FEAST main directory.
+# The values are supposed to be relative to the FEAT2 main directory.
 my $MAKEFILE_INC          = "Makefile.inc";
 my $MAKEFILE_BUILDID_INC  = "Makefile.buildID.inc";
 my $MAKEFILE_CPU_INC      = "Makefile.cpu.inc";
@@ -143,10 +143,10 @@ my $SRCDIR_APP            = ".";
 # Where to look by default for application-specific source files
 use constant SRCDIR_APP    => "src";
 
-# subdirectories to store FEAST and third-party libraries
+# subdirectories to store FEAT2 and third-party libraries
 #
-# (Third party libraries are independent of FEAST sources and, as such, can
-# be shared among all FEAST applications.)
+# (Third party libraries are independent of FEAT2 sources and, as such, can
+# be shared among all FEAT2 applications.)
 use constant OBJDIR        => "object/\$(ID)";
 use constant OBJDIR_LIB    => "object/\$(LIBID)";
 
@@ -406,7 +406,7 @@ GetOptions (
             "version"                       => \$cl{'version'},
             ) || ($unknownoption=1);
 
-$FEASTBASEDIR = ".." if ($cl{'regressionbenchmark'});
+$FEAT2BASEDIR = ".." if ($cl{'regressionbenchmark'});
 
 # Show version if requested
 &show_version() if ($cl{'version'});
@@ -457,7 +457,7 @@ if (! defined($cachedtests{'build-id'})) {
         die "\n$progname: ERROR:\n".
             "The build ID is not valid.\n" .
             "There is no such case handled in " .
-            &concat_filename($FEASTBASEDIR, $MAKEFILE_CPU_INC) . ".\n" .
+            &concat_filename($FEAT2BASEDIR, $MAKEFILE_CPU_INC) . ".\n" .
             "I refuse to create a Makefile.\n";
     }
 }
@@ -470,9 +470,9 @@ if (! defined($cachedtests{'build-id'})) {
 # updating whenever this is modified. Simply search for the next occurence of
 # 'coproc-bail-out' (without the quotation marks)
 my $entry = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
-# no support for *-*-*-psc-*, *-*-*-sunstudio-*, sx*-none-superux-f90-*
+# no support for *-*-*-psc-*, sx*-none-superux-f90-*
 if ($#{$entry} >= 0 &&
-    ($buildID_lib =~ m/^[^-]+-[^-]+-[^-]+-(psc|sunstudio)-[^-]+$/ ||
+    ($buildID_lib =~ m/^[^-]+-[^-]+-[^-]+-(psc)-[^-]+$/ ||
      $buildID_lib =~ m/^sx[^-]+-none-superux-f90-[^-]+$/)) {
     # Create an empty Makefile to prevent breaking compilation of
     # complete benchmark just because configuring one application
@@ -499,7 +499,7 @@ if ($#{$entry} >= 0 &&
     $! = 15;
     die "\n$progname: ERROR:\n".
 	"Coprocessor support is not available in combination with\n" .
-	"Pathscale, Sun Studio nor NEC compiler suites. Simply because the respective\n" .
+	"Pathscale and NEC compiler suites. Simply because the respective\n" .
 	"Fortran compilers create symbol names that can not be cross-language\n" .
 	"referenced in C code. I purposely refuse to create a Makefile.\n";
 }
@@ -512,16 +512,16 @@ if ( -e $MAKEFILE && -s $MAKEFILE ) {
 	    "Failed to rename $MAKEFILE to $MAKEFILE" . ".bak.\n";
 }
 
-# Now, create either the FEAST regression directory meta Makefile
-# or a Makefile for a simple FEAST application
+# Now, create either the FEAT2 regression directory meta Makefile
+# or a Makefile for a simple FEAT2 application
 if ($cl{'regressionbenchmark'}) {
     &create_feastBenchmarkMakefile();
     # Loop over all subdirectories matching src_* and
-    # configure the FEAST benchmark applications
+    # configure the FEAT2 benchmark applications
     opendir(DIRECTORY, ".") ||
         die "\n$progname: ERROR:\n" .
             "Can't open directory . for reading. This is supposed never to happen!\n";
-    my @srcdirs = grep /^src_/, readdir DIRECTORY;
+    my @srcdirs = grep /^(kernel_|apps_|area51_)/, readdir DIRECTORY;
     my $cwd = &cwd();
 
     # Pipe through command line options of regression benchmark configure
@@ -574,22 +574,41 @@ if ($cl{'regressionbenchmark'}) {
         my $dir = &concat_filename($cwd, $feastappdir);
         print "\n\nEntering directory <$dir>.\n";
         chdir $feastappdir;
-        # Call sub-configure with undocumented command line options
-        # that cause skipping of time-consuming (and, for benchmark
-        # applications' configure being sub-configure calls, redundant)
-        # sanity checks.
-        system("./configure --cached-make-program='$make' --cached-gnumake-version='$makeversion' --cached-make-sets-make-var --cached-build-id='$buildID' $options");
-	# Catch errors
-	if ($? != 0) {
+	# Ignore directory if no configure script available
+	if ( -e "configure" ) {
+	    # Call sub-configure with undocumented command line options
+	    # that cause skipping of time-consuming (and, for benchmark
+	    # applications' configure being sub-configure calls, redundant)
+	    # sanity checks.
+	    system("./configure --cached-make-program='$make' --cached-gnumake-version='$makeversion' --cached-make-sets-make-var --cached-build-id='$buildID' $options");
+	    # Catch errors
+	    if ($? != 0) {
+		$warnings .=
+		    "*************************************************************\n" .
+		    $progname.": WARNING:\n".
+		    "Invoking configure in subdirectory <$feastappdir> returned\n" .
+		    "error code " . ($? >> 8) . ". You might want to check.\n" .
+		    "*************************************************************\n\n";
+	    }
+	} else {
 	    $warnings .=
 		"*************************************************************\n" .
 		$progname.": WARNING:\n".
-		"Invoking configure in subdirectory <$feastappdir> returned\n" .
-		"error code " . ($? >> 8) . ". You might want to check.\n" .
+		"Skipping configure in subdirectory <$feastappdir> because\n" .
+		"there is no configure script in that directory. You might\n" .
+		"want to check.\n" .
 		"*************************************************************\n\n";
 	}
         print "Leaving directory <$dir>.\n";
         chdir "..";
+    }
+    if ($#srcdirs == -1) {
+	$warnings .=
+	    "*************************************************************\n" .
+	    $progname.": WARNING:\n".
+	    "No subdirectory with any of the prefixes \"kernel_\", \"apps_\"\n" .
+	    "or \"area51_\" could be found. You might want to check.\n" .
+	    "*************************************************************\n\n";
     }
     closedir(DIRECTORY);
 } else {
@@ -623,7 +642,7 @@ sub check_for_gnumake {
         $make = $cachedtests{'make-program'};
 
     } else {
-        # This is a simple configure of one FEAST application
+        # This is a simple configure of one FEAT2 application
 
         # If a special 'make' was specified on command line, use it,
         # otherwise you the default 'make'.
@@ -661,7 +680,7 @@ sub check_for_gnumake {
         print "yes (cached)\n";
 
     } else {
-        # This is a simple configure of one FEAST application
+        # This is a simple configure of one FEAT2 application
 
         $makeversion = `$make --version 2>/dev/null`;
         if ($makeversion =~ m/^GNU Make/i) {
@@ -956,7 +975,7 @@ sub check_options {
 
 
 
-# Function: Create Makefile for a FEAST application
+# Function: Create Makefile for a FEAT2 application
 sub create_feastAppMakefile {
     my $srclist_app = $_[0];
     my $entry;
@@ -975,7 +994,7 @@ sub create_feastAppMakefile {
     my $objectfiles_and_dependencies = "";
     # Determine Makefile dependency list for every kernel module object file
     foreach $entry (split(/\s+/, join(' ', SRCLIST_KERNEL))) {
-	$path{$entry} = &concat_filename($FEASTBASEDIR, $SRCDIR_KERNEL, $entry);
+	$path{$entry} = &concat_filename($FEAT2BASEDIR, $SRCDIR_KERNEL, $entry);
         $objectfiles_and_dependencies .=
             &make_dep_list(\%dependencyLists, $path{$entry},
                            "\$(SRCDIR_KERNEL)/" . $entry, 1, "o", "o",
@@ -985,7 +1004,7 @@ sub create_feastAppMakefile {
     # Dependencies of each object file from architecture-specific
     # kernel modules
     foreach $entry (split(/\s+/, join(' ', SRCLIST_ARCH))) {
-	$path{$entry} = &concat_filename($FEASTBASEDIR, $SRCDIR_ARCH, $entry);
+	$path{$entry} = &concat_filename($FEAT2BASEDIR, $SRCDIR_ARCH, $entry);
         $objectfiles_and_dependencies .=
             &make_dep_list(\%dependencyLists, $path{$entry},
                            "\$(SRCDIR_ARCH)/" . $entry, 1, ".o", "o",
@@ -1012,18 +1031,18 @@ sub create_feastAppMakefile {
 
     # Dependencies of Fortran 90 files listed in Makefile variable $(SRCEXTRA) 
     # can not be determined unfortunately at configure time. Because they may
-    # be defined using Makefile variables (e.g. $(FEASTBASEDIR)/kernel/arch/amub.f90)
+    # be defined using Makefile variables (e.g. $(FEAT2BASEDIR)/kernel/arch/amub.f90)
     # which cannnot easily be expanded by configure.
     $objectfiles_and_dependencies .=
 	"# Dependencies of Fortran 90 files listed in Makefile variable \$(SRCEXTRA)\n" .
 	"# can not be determined unfortunately at configure time and incorporated into\n" .
 	"# this Makefile. Because the path to these files or the files themselves may\n" .
-	"# be defined using Makefile variables (e.g. $(FEASTBASEDIR)/kernel/arch/amub.f90)\n" .
+	"# be defined using Makefile variables (e.g. $(FEAT2BASEDIR)/kernel/arch/amub.f90)\n" .
 	"# whose value cannnot easily be expanded by configure.\n\n";
 
     print "done\n";
 
-    # The instructions above ensure that for all FEAST source files
+    # The instructions above ensure that for all FEAT2 source files
     # a dependency list is written to the Makefile. Later, (generic)
     # compile rule will be added.
     # But sometimes, some source files are not required for a particular
@@ -1032,7 +1051,7 @@ sub create_feastAppMakefile {
     # In other words, if module A is not referenced anywhere, it should neither
     # be compiled nor included in the application binary.
     # Hence, loop again through (possibly all) files, starting
-    # with the program file, to find out which FEAST kernel files are really
+    # with the program file, to find out which FEAT2 kernel files are really
     # used. This could not be done previously as previously the loop forcibly
     # was over all source files.
     #
@@ -1111,7 +1130,7 @@ sub create_feastAppMakefile {
         "# Automatically generated by:                                          #\n";
     $entry = &get_version();
     print MAKEFILE_HDL
-        "#          FEAST-configure script v" . $entry . (" " x (36 - length($entry))) . "#\n" .
+        "#          FEAT2-configure script v" . $entry . (" " x (36 - length($entry))) . "#\n" .
 	"########################################################################\n" .
 	"\n";
 
@@ -1123,12 +1142,12 @@ sub create_feastAppMakefile {
 	    "ID                   := $cl{'ID'}\n\n";
     }
     print MAKEFILE_HDL
-        "# Path to this FEAST installation\n" .
-        "FEASTBASEDIR          = " . $FEASTBASEDIR . "\n\n" .
+        "# Path to this FEAT2 installation\n" .
+        "FEAT2BASEDIR          = " . $FEAT2BASEDIR . "\n\n" .
         "# Location of Makefile.buildID.inc\n" .
-        "MAKEFILE_BUILDID_INC  = \$(FEASTBASEDIR)/" . $MAKEFILE_BUILDID_INC . "\n\n" .
+        "MAKEFILE_BUILDID_INC  = \$(FEAT2BASEDIR)/" . $MAKEFILE_BUILDID_INC . "\n\n" .
         "# Location of Makefile.cpu.inc\n" .
-        "MAKEFILE_CPU_INC      = \$(FEASTBASEDIR)/" . $MAKEFILE_CPU_INC . "\n\n";
+        "MAKEFILE_CPU_INC      = \$(FEAT2BASEDIR)/" . $MAKEFILE_CPU_INC . "\n\n";
     $entry = (defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'};
     print MAKEFILE_HDL
         "# For development and debugging turn this to \"NO\", for good\n" .
@@ -1177,20 +1196,20 @@ sub create_feastAppMakefile {
     # Create section specifying source directories and source files
     print MAKEFILE_HDL
         "# source directories of sparse banded blas, kernel and application files\n" .
-        "SRCDIR_KERNEL = \$(FEASTBASEDIR)/" . $SRCDIR_KERNEL . "\n" .
-        "SRCDIR_ARCH   = \$(FEASTBASEDIR)/" . $SRCDIR_ARCH   . "\n" .
+        "SRCDIR_KERNEL = \$(FEAT2BASEDIR)/" . $SRCDIR_KERNEL . "\n" .
+        "SRCDIR_ARCH   = \$(FEAT2BASEDIR)/" . $SRCDIR_ARCH   . "\n" .
         "SRCDIR_APP    = " . $SRCDIR_APP    . "\n\n";
 
 
     # Determine object directories
     $objdir = OBJDIR;
     # The object directory for libraries should be shared among all
-    # FEAST applications. By design, there is no dependency of a
-    # library on the FEAST kernel or a FEAST application. Compiler
+    # FEAT2 applications. By design, there is no dependency of a
+    # library on the FEAT2 kernel or a FEAT2 application. Compiler
     # command line settings are identical for a library, regardless
-    # the FEAST application that needs it.
-    # FEAST applications are always stored two directory levels deeper
-    # than the FEAST base directory where the libraries are.
+    # the FEAT2 application that needs it.
+    # FEAT2 applications are always stored two directory levels deeper
+    # than the FEAT2 base directory where the libraries are.
     # The same structure should hold for object files:
     #    .../applications/poisson/object/<build ID>/
     #    .../applications/tutorial/object/<build ID>/
@@ -1202,10 +1221,10 @@ sub create_feastAppMakefile {
         my $objdirprefix = $cl{'objdirprefix'};
         chomp($objdirprefix);
 
-        # Try to remove path portion of $FEASTBASEDIR.
-        $objdirprefix =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
+        # Try to remove path portion of $FEAT2BASEDIR.
+        $objdirprefix =~ s/\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 
-        # Try to remove home directory portion of $FEASTBASEDIR.
+        # Try to remove home directory portion of $FEAT2BASEDIR.
         $objdirprefix =~ s/\Q$ENV{HOME}\E/\$(HOME)/;
 
 	# append default name for object directories
@@ -1217,10 +1236,10 @@ sub create_feastAppMakefile {
         my $objdirlibprefix = $cl{'objdirlibprefix'};
         chomp($objdirlibprefix);
 
-        # Try to remove path portion of $FEASTBASEDIR.
-        $objdirlibprefix =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
+        # Try to remove path portion of $FEAT2BASEDIR.
+        $objdirlibprefix =~ s/\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 
-        # Try to remove home directory portion of $FEASTBASEDIR.
+        # Try to remove home directory portion of $FEAT2BASEDIR.
         $objdirlibprefix =~ s/\Q$ENV{HOME}\E/\$(HOME)/;
 
 	# append default name for object directories
@@ -1230,7 +1249,7 @@ sub create_feastAppMakefile {
         "# Create an appropriate directory name for object files, based on build\n" .
         "# ID, execution mode and optimisation level.  \n" .
         "#\n" .
-        "# Object directory for FEAST object files. Build ID already contains\n" .
+        "# Object directory for FEAT2 object files. Build ID already contains\n" .
         "# most of the necessary information (even choice of MPI in case of parallel mode)\n" .
         "# we simply have to distinguish here the optimisation level (on/off aka yes/no)\n" .
         "OBJDIR = " . $objdir . "-opt\$(OPT)\n" .
@@ -1260,12 +1279,12 @@ sub create_feastAppMakefile {
     print MAKEFILE_HDL
         &format_list("PROGRAM_FILE   = ", 8, 70, &get_programsourcefile(), "\\\n", "\\") . "\n\n";
 
-    # The idea is to have only paths relative to FEASTBASEDIR.
+    # The idea is to have only paths relative to FEAT2BASEDIR.
     # Substitute absolute path information in @headerfiles accordingly.
     my @tmparray = ();
     foreach $entry (split(/\s+/, $HEADER_FILES_TO_COPY)) {
 	my $file_PathUsingBasedir = $entry;
-	$file_PathUsingBasedir =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
+	$file_PathUsingBasedir =~ s/\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 	push @tmparray, $file_PathUsingBasedir;
     }
     print MAKEFILE_HDL
@@ -1274,23 +1293,23 @@ sub create_feastAppMakefile {
 		     join(' ', sort @tmparray), "\\\n", "\\") . "\n\n";
     undef @tmparray;
 
-    # The idea is to have only paths relative to FEASTBASEDIR.
+    # The idea is to have only paths relative to FEAT2BASEDIR.
     # Substitute absolute path information in @headerfiles accordingly.
     my %tmparray = ();
     foreach $entry (@headerfiles) {
 	my $file_PathUsingBasedir = $entry;
-	$file_PathUsingBasedir =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
+	$file_PathUsingBasedir =~ s/\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 	# Remove relative paths. This approach is feasible as we can assume
 	# that not many Feat2 users will do weird stuff with symbolic links
 	# in their checkout. If they do, strange things may happen during 'make',
 	# but then that's the users fault. If we would not remove the relative
 	# path information here, 'make' would regularly complain about duplicate
 	# definitions for e.g.
-        # $(FEASTBASEDIR)/kernel/Projection/intf_coefficientVectorSc.inc
-        # $(FEASTBASEDIR)/kernel/Projection/intf_refFunctionSc.inc
+        # $(FEAT2BASEDIR)/kernel/Projection/intf_coefficientVectorSc.inc
+        # $(FEAT2BASEDIR)/kernel/Projection/intf_refFunctionSc.inc
 	# as they are referenced both without path and with path in Feat2 sources:
-        # $(FEASTBASEDIR)/kernel/Projection/../DOFMaintenance/intf_coefficientVectorSc.inc
-        # $(FEASTBASEDIR)/kernel/Projection/../Postprocessing/intf_refFunctionSc.inc
+        # $(FEAT2BASEDIR)/kernel/Projection/../DOFMaintenance/intf_coefficientVectorSc.inc
+        # $(FEAT2BASEDIR)/kernel/Projection/../Postprocessing/intf_refFunctionSc.inc
 	$file_PathUsingBasedir =~ s|/[^/]+/\.\./|/|;
 	$tmparray{$file_PathUsingBasedir} = 1;
     }
@@ -1400,7 +1419,7 @@ sub create_feastAppMakefile {
     # New style support for coprocessors
     #
     # It is somewhat counterintuitive and against our intention to include the
-    # instructions enabling coprocessor support in FEAST here instead of *before*
+    # instructions enabling coprocessor support in FEAT2 here instead of *before*
     # the previous section where Makefile.inc settings are overridden
     # with any setting from the command line. If settings are to be overridden
     # (e.g. CC, CFLAGSF90, BUILDLIB or APPONLYFLAGS), this operation should be the
@@ -1435,28 +1454,76 @@ sub create_feastAppMakefile {
 	if (defined($coprocs{'cuda10'})) {
 	    print MAKEFILE_HDL
 		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
+		"ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
+		"MESSAGE  := \$(MESSAGE) \\\n" .
+		"	    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
+		"	    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
+		"else\n" .
 		"APPONLYFLAGS := -DHAS_CUDA10 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
-		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n";
+		"endif\n" .
+		"ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
+		"MESSAGE  := \$(MESSAGE) \\\n" .
+		"	    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
+		"	    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
+		"else\n" .
+		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
+		"endif\n";
 	}
 	if (defined($coprocs{'cuda11'})) {
 	    print MAKEFILE_HDL
 		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
+		"ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
+		"MESSAGE  := \$(MESSAGE) \\\n" .
+		"	    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
+		"	    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
+		"else\n" .
 		"APPONLYFLAGS := -DHAS_CUDA11 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
-		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n";
+		"endif\n" .
+		"ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
+		"MESSAGE  := \$(MESSAGE) \\\n" .
+		"	    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
+		"	    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
+		"else\n" .
+		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
+		"endif\n";
 	}
 	if (defined($coprocs{'cuda13'})) {
 	    print MAKEFILE_HDL
 		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
+		"ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
+		"MESSAGE  := \$(MESSAGE) \\\n" .
+		"	    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
+		"	    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
+		"else\n" .
 		"APPONLYFLAGS := -DHAS_CUDA13 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
-		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n";
+		"endif\n" .
+		"ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
+		"MESSAGE  := \$(MESSAGE) \\\n" .
+		"	    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
+		"	    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
+		"else\n" .
+		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
+		"endif\n";
 	}
 
 	# if OPENGL is listed as coprocessor, X11, GL and GLEW need to be linked linked against the binary
 	if (defined($coprocs{'opengl'})) {
 	    print MAKEFILE_HDL
 		"# OPENGL is among the list of coprocessors, so link against X11, GL and GLEW and add appropriate includes.\n" .
-		"APPONLYFLAGS := -DHAS_OPENGL \$(APPONLYFLAGS) -I\$(GLEW_INC_PATH) \n" .
-		"LDFLAGS      := \$(LDFLAGS) -L\$(GLEW_LIB_PATH) -lGLEW -lGL -lGLU -lX11\n";
+		"ifeq (\$(strip \$(GLEW_INC_PATH)),)\n" .
+		"MESSAGE  := \$(MESSAGE) \\\n" .
+		"	    echo '*** Warning: GLEW_INC_PATH unset. Only standard include paths will'; \\\n" .
+		"	    echo '*** Warning: be searched for the file <GL/glew.h>.';\n" .
+		"else\n" .
+		"APPONLYFLAGS := -DHAS_OPENGL \$(APPONLYFLAGS) -I\$(GLEW_INC_PATH)\n" .
+		"endif\n" .
+		"ifeq (\$(strip \$(GLEW_LIB_PATH)),)\n" .
+		"MESSAGE  := \$(MESSAGE) \\\n" .
+		"	    echo '*** Warning: GLEW_LIB_PATH unset. Only standard library paths will'; \\\n" .
+		"	    echo '*** Warning: be searched for the library <libGLEW.{a,so}>.';\n" .
+		"else\n" .
+		"LDFLAGS      := \$(LDFLAGS) -L\$(GLEW_LIB_PATH) -lGLEW -lGL -lGLU -lX11\n" .
+		"endif\n";
 	}
 
 	print MAKEFILE_HDL "\n";
@@ -1538,7 +1605,7 @@ sub create_feastAppMakefile {
         "# Recursively remove directories. For the first two directory levels\n" .
         "# print an error message if removal failed. (The restriction to two\n" .
         "# levels is rather arbitrary. It's the least number of directory levels\n" .
-        "# created by a FEAST Makefile. To show an error message unconditionally\n" .
+        "# created by a FEAT2 Makefile. To show an error message unconditionally\n" .
 	"# is not desired as one would eventually always get an error message, at\n" .
 	"# least when trying to remove /)\n" .
 	"# The for loop is to deal with given directory wildcards like object/pc-*-*-*.\n" .
@@ -1737,10 +1804,6 @@ sub create_feastAppMakefile {
 	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCXX) ))\n" .
 	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with NEC compilers:';\n" .
 	"endif\n" .
-	"ifneq (, \$(findstring -DUSE_COMPILER_SUNSTUDIO ,\\\n" .
-	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCXX) ))\n" .
-	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with Sun Studio compiler suite:';\n" .
-	"endif\n\n" .
 	"# Throw error if value is set by now\n" .
 	"ifneq (,\$(DETAIL))\n" .
 	"MESSAGE := \$(MESSAGE) \\\n" .
@@ -1814,10 +1877,10 @@ sub create_feastAppMakefile {
             #         "Inform the configure maintainer about this case.\n";
             # } else {
 
-	    # The idea is to have only paths relative to FEASTBASEDIR.
+	    # The idea is to have only paths relative to FEAT2BASEDIR.
 	    # Substitute absolute path information accordingly.
 	    my $file_PathUsingBasedir = $entry;
-	    $file_PathUsingBasedir =~ s/\Q$FEASTBASEDIR\E/\$(FEASTBASEDIR)/;
+	    $file_PathUsingBasedir =~ s/\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 	    print MAKEFILE_HDL
 		&make_dep_list(\%dependencyLists, $entry,
 			       $file_PathUsingBasedir, 0, "", "o",
@@ -1834,7 +1897,7 @@ sub create_feastAppMakefile {
         "##############################################################################\n" .
         "# Compilation and link directives\n\n" .
 
-        "# default target: compile the FEAST application\n" .
+        "# default target: compile the FEAT2 application\n" .
         "all:\tgreeting \$(APPNAME)\n\n" .
 
     # debug build
@@ -1854,7 +1917,7 @@ sub create_feastAppMakefile {
         "# Link statement for application\n" .
         "\$(APPNAME): | \$(OBJDIR) \$(LIB)\n" .
         "\$(APPNAME): \$(OBJ)\n" .
-        "\t\@echo \"# Linking FEAST application <\$(APPNAME)>\"\n" .
+        "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)>\"\n" .
         "\t\$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n" .
         "ifneq (\$(MESSAGE),)\n" .
         "\t\@\$(MESSAGE)\n" .
@@ -1869,7 +1932,7 @@ sub create_feastAppMakefile {
         "#  will not harm other modules. Then, use this make target to\n" .
         "#  shortcut the build.)\n" .
         "link: | \$(OBJDIR)\n" .
-        "\t\@echo \"# Linking FEAST application <\$(APPNAME)>\"\n" .
+        "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)>\"\n" .
         "\t\$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n\n" .
 
     # Global dependencies for object files
@@ -2032,7 +2095,7 @@ sub create_feastAppMakefile {
         "\t      \$< \\\n" .
         "\t    > \$(TMPFILE)\n" .
         "\t\@echo \"# Compensating for line number changes in preprocessed \$<\"\n" .
-        "\tawk -f \$(FEASTBASEDIR)/bin/postprocess_cppoutput.awk \\\n" .
+        "\tawk -f \$(FEAT2BASEDIR)/bin/postprocess_cppoutput.awk \\\n" .
         "\t      \$(TMPFILE) \\\n" .
         "\t    > \$(OBJDIR)/\$(notdir \$<)\n" .
         "\trm -f \$(TMPFILE)\n" .
@@ -2050,7 +2113,7 @@ sub create_feastAppMakefile {
         "clean:\tclean-libs clean-app\n\n" .
 
     # clean-app statement
-        "# Clean all FEAST object files for current architecture\n" .
+        "# Clean all FEAT2 object files for current architecture\n" .
         "clean-app:\n" .
         "\t\@echo \"# Removing application binary\"\n" .
         "\t-rm -f \$(APPNAME) core\n" .
@@ -2085,22 +2148,22 @@ sub create_feastAppMakefile {
 
     # Purge statement
         "# Clean all object files for all architectures\n" .
-        "# (But be utmost restrictive by only removing files created by a (recent) FEAST Makefile.)\n" .
+        "# (But be utmost restrictive by only removing files created by a (recent) FEAT2 Makefile.)\n" .
         "purge:\tpurge-libs purge-app\n" .
         "\t\@echo \"# Removing Makefile\"\n" .
         "\t-rm -f $MAKEFILE $MAKEFILE.bak\n\n" .
 
-        "# Clean all FEAST object files for all architectures\n" .
-        "# (But be utmost restrictive by only removing files created by a (recent) FEAST Makefile.)\n" .
+        "# Clean all FEAT2 object files for all architectures\n" .
+        "# (But be utmost restrictive by only removing files created by a (recent) FEAT2 Makefile.)\n" .
         "purge-app: PURGEDIR = \$(dir \$(OBJDIR))\n" .
         "purge-app:\n" .
         "        # Go to the directories that contain the architecture-specific\n" .
         "        # object sub-directories and delete in those sub-directories\n" .
-        "        # * all object files in those where made from FEAST source files.\n" .
-        "        # * all module information files in those where made from FEAST\n" .
+        "        # * all object files in those where made from FEAT2 source files.\n" .
+        "        # * all module information files in those where made from FEAT2\n" .
         "        #   Fortran 90 source files.\n" .
         "\t\@echo\n" .
-        "\t\@echo \"# Cleaning up in FEAST object directory:\"\n" .
+        "\t\@echo \"# Cleaning up in FEAT2 object directory:\"\n" .
         "\t\@echo \"# Removing wrapped source files, object files and\"\n" .
         "\t\@echo \"# module information files.\"\n" .
         "\t-\$(foreach file, \\\n" .
@@ -2119,20 +2182,20 @@ sub create_feastAppMakefile {
         "\t    \$(remove_file))\n" .
         "\t\@echo \"# Removing object directories\"\n" .
         "\t\$(foreach dir, \$(PURGEDIR)*-*-*-*-*-opt*, \$(remove_directory))\n" .
-        "\t\@echo \"# Removing FEAST log and GMV & AVS output files\"\n" .
+        "\t\@echo \"# Removing FEAT2 log and GMV & AVS output files\"\n" .
         "\t-rm -f feastlog.* *.gmv *.inp\n" .
         "\t\@echo \"# Removing autopartitioning, profiling and core file\"\n" .
         "\t-rm -f autopart[0-4].fpart gmon.out core\n\n" .
 
     # purge-libs statement
         "# Clean all object files of all external libraries for all architectures\n" .
-        "# (But be utmost restrictive by only removing files created by a (recent) FEAST Makefile.)\n" .
+        "# (But be utmost restrictive by only removing files created by a (recent) FEAT2 Makefile.)\n" .
         "purge-libs: PURGEDIR = \$(dir \$(OBJDIR_LIB))\n" .
 	"# Ensure that all libraries are removed that have possibly been compiled\n" .
         "purge-libs: \$(ALLLIB:%=purge-%)\n" .
         "        # Go to the directories that contain the architecture-specific\n" .
         "        # object sub-directories and delete in those sub-directories\n" .
-        "        # * all libraries shipped with FEAST.\n" .
+        "        # * all libraries shipped with FEAT2.\n" .
         "\t\@echo \"# Removing \$(ALLLIB) libraries\"\n" .
         "\t\@echo \"# for all build IDs\"\n" .
         "\t-\$(foreach file, \\\n" .
@@ -2179,21 +2242,22 @@ sub create_feastAppMakefile {
     # coproc library path settings
         "# coproc library path settings\n" .
         "\$(OBJDIR_LIB)/libcoproc.a clean-coproc purge-coproc: \\\n" .
-        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/coproc\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/coproc\n\n" .
 
     # coproc library
         "# Create coproc library\n" .
+	".PHONY: \$(OBJDIR_LIB)/libcoproc.a\n" .
         "\$(OBJDIR_LIB)/libcoproc.a:\n" .
         "\t\@echo \"# Building unified coproc library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
-        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
-        "\t\tOPT=\"\$(OPT)\" FEASTBASEDIR=\"\$(FEASTBASEDIR)\" \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
+        "\t\tOPT=\"\$(OPT)\" FEAT2BASEDIR=\"\$(FEAT2BASEDIR)\" \\\n" .
         "\t\tBUILDID=\"\$(ID)\" \\\n" .
         "\t\tAPPONLYFLAGS=\"\$(APPONLYFLAGS)\" \\\n" .
-        "\t\tFEASTFLAGSFORTRAN=\"\$(CFLAGSF90)\" \\\n" .
-        "\t\tFEASTFLAGSC=\"\$(CFLAGSC)\" \\\n" .
-        "\t\tFEASTCOMPILER=\"\$(CC)\" \\\n" .
-        "\t\tAR=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tFEAT2FLAGSFORTRAN=\"\$(CFLAGSF90)\" \\\n" .
+        "\t\tFEAT2FLAGSC=\"\$(CFLAGSC)\" \\\n" .
+        "\t\tFEAT2COMPILER=\"\$(CC)\" \\\n" .
+        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\" \\\n" .
 	"\t\t";
 
@@ -2207,7 +2271,7 @@ sub create_feastAppMakefile {
     # umfpack library path settings
         "# umfpack library path settings\n" .
         "\$(OBJDIR_LIB)/libumfpack.a clean-umfpack purge-umfpack: \\\n" .
-        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/UMFPACK\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/UMFPACK\n\n" .
 
     # umfpack library
         "# Create umfpack library\n" .
@@ -2215,7 +2279,7 @@ sub create_feastAppMakefile {
         "\$(OBJDIR_LIB)/libumfpack.a:\n" .
         "\t\@echo \"# Building umfpack library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
-        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
         "\t\tCC=\"\$(CC)\" CXXVERSION=\"\$(CXXVERSION)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\" ID=\"\$(ID)\")\n\n" .
@@ -2223,7 +2287,7 @@ sub create_feastAppMakefile {
     # AMD library path settings
         "# AMD library path settings\n" .
         "\$(OBJDIR_LIB)/libamd.a clean-amd purge-amd: \\\n" .
-        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/AMD\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/AMD\n\n" .
 
     # AMD library
         "# Create AMD library\n" .
@@ -2231,7 +2295,7 @@ sub create_feastAppMakefile {
         "\$(OBJDIR_LIB)/libamd.a:\n" .
         "\t\@echo \"# Building amd library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
-        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
         "\t\tCC=\"\$(CC)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
@@ -2239,7 +2303,7 @@ sub create_feastAppMakefile {
     # blas path settings
         "# blas library path settings\n" .
         "\$(OBJDIR_LIB)/libblas.a clean-blas purge-blas: \\\n" .
-        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/BLAS\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/BLAS\n\n" .
 
     # blas library
         "# Create blas library\n" .
@@ -2247,7 +2311,7 @@ sub create_feastAppMakefile {
         "\$(OBJDIR_LIB)/libblas.a:\n" .
         "\t\@echo \"# Building blas library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
-        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
         "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
@@ -2255,7 +2319,7 @@ sub create_feastAppMakefile {
     # lapack path settings
         "# lapack library path settings\n" .
         "\$(OBJDIR_LIB)/liblapack.a clean-lapack purge-lapack: \\\n" .
-        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/lapack-3.2\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/lapack-3.2\n\n" .
 
     # lapack library
         "# Create lapack library\n" .
@@ -2266,7 +2330,7 @@ sub create_feastAppMakefile {
         "\$(OBJDIR_LIB)/liblapack.a:\n" .
         "\t\@echo \"# Building lapack library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
-        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
         "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" GOTOBLAS_PATCH_FOR_LAPACK=\"\$(GOTOBLAS_PATCH_FOR_LAPACK)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
@@ -2274,7 +2338,7 @@ sub create_feastAppMakefile {
     # splib path settings
         "# splib library path settings\n" .
         "\$(OBJDIR_LIB)/libsplib.a clean-splib purge-splib: \\\n" .
-        "\tDIR = \$(FEASTBASEDIR)/librariesNEW/splib\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/splib\n\n" .
 
     # splib library
         "# Create splib library\n" .
@@ -2282,7 +2346,7 @@ sub create_feastAppMakefile {
         "\$(OBJDIR_LIB)/libsplib.a:\n" .
         "\t\@echo \"# Building splib library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
-        "\t    $makeInMakefile -f Makefile.FEAST \$\@ \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
         "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
@@ -2292,7 +2356,7 @@ sub create_feastAppMakefile {
         "# Clean rule for every library\n" .
         "\$(BUILDLIB:%=clean-%):\n" .
         "\t\@( cd \$(DIR) && \\\n" .
-        "\t    \$(MAKE) -f Makefile.FEAST OBJDIR=\"\$(OBJDIR_LIB)\" ";
+        "\t    \$(MAKE) -f Makefile.FEAT2 OBJDIR=\"\$(OBJDIR_LIB)\" ";
     # This is technically wrong, it suffices to pass the HAS_* flags only to the coproc library.
     # But I do not speak enough perl to do this, so we just pass these flags to all libraries,
     # silently assuming that all other libs' clean targets will not break if they see them.
@@ -2310,7 +2374,7 @@ sub create_feastAppMakefile {
         "\$(ALLLIB:%=purge-%): PURGEDIR = \$(dir \$(OBJDIR_LIB))\n" .
         "\$(ALLLIB:%=purge-%):\n" .
         "\t\@( cd \$(DIR) && \\\n" .
-        "\t    \$(MAKE) -f Makefile.FEAST OBJDIR=\"\$(PURGEDIR)*-*-*-*-*-opt*\" ";
+        "\t    \$(MAKE) -f Makefile.FEAT2 OBJDIR=\"\$(PURGEDIR)*-*-*-*-*-opt*\" ";
     $tmparray = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
     foreach $entry ( @{ $tmparray } ) {
 	print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
@@ -2342,9 +2406,9 @@ sub create_feastAppMakefile {
         "\$(patsubst %, lib%.a, \$(BUILDLIB)):\n" .
         "\t@\$(MAKE) \$(OBJDIR_LIB)/\$@\n\n" .
 
-    # Shortcuts for all FEAST object files:
+    # Shortcuts for all FEAT2 object files:
     # e.g. invoke 'make assembly.o' to have 'make $(OBJDIR)/assembly.o' built
-        "# Shortcuts for all FEAST object files:\n" .
+        "# Shortcuts for all FEAT2 object files:\n" .
         "# e.g. invoke 'make assembly.o' to have 'make \$(OBJDIR)/assembly.o' built\n" .
         ".PHONY: \$(patsubst %.f, %.o, \$(notdir \$(SRCF77))) \\\n" .
         "\t\$(patsubst %.f90, %.o, \$(notdir \$(SRCF90) \$(notdir \$(PROGRAM_FILE)))) \\\n" .
@@ -2512,7 +2576,7 @@ sub create_feastAppMakefile {
         "        # INC           = [...]\n" .
         "        # The output is similar to the corresponding lines of 'make id' output.\n" .
         "        # Path information, however, needs to be removed from these settings.\n" .
-        "        # Otherwise, it would not be possible to share libraries among FEAST\n" .
+        "        # Otherwise, it would not be possible to share libraries among FEAT2\n" .
         "        # applications as the settings above often contain absolute paths to\n" .
         "        # object directories which would lead to conflicts, e.g.:\n" .
         "        # CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_disk/object\n" .
@@ -2577,7 +2641,7 @@ sub create_feastAppMakefile {
         "\tif test -n \"\$\${message}\"; then \\\n" .
         "\t    echo \$\${message} | perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
         "\t    echo \"#\";  \\\n" .
-        "\t    echo \"# FEAST application should be recompiled.\"; \\\n" .
+        "\t    echo \"# FEAT2 application should be recompiled.\"; \\\n" .
         "\t    echo \"# Please issue a\"; \\\n" .
 	"\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '/^.* -- / { sub(/^.* -- /, \"\"); print \$0}'`\"; \\\n" .
         "\t    echo \"# % \$(MAKE) \$\${overwrittenmakevars} clean-app; \$(MAKE) \$\${overwrittenmakevars} obj\"; \\\n" .
@@ -2652,7 +2716,7 @@ sub create_feastAppMakefile {
         "\tif test -n \"\$\${message}\"; then \\\n" .
         "\t    echo \$\${message} | perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
         "\t    echo \"#\";  \\\n" .
-        "\t    echo \"# Libraries FEAST relies on should be recompiled.\"; \\\n" .
+        "\t    echo \"# Libraries FEAT2 relies on should be recompiled.\"; \\\n" .
         "\t    echo \"# Please issue at least a\"; \\\n" .
 	"\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '/^.* -- / { sub(/^.* -- /, \"\"); print \$0}'`\"; \\\n" .
 #	"\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '{ for ( i = 1; i <= NF; i++ ) if (\$\$i ~ /[A-Z]*=/) printf \\\" \\\"\$\$i }'`\"; \\\n" .
@@ -2789,7 +2853,7 @@ sub create_feastAppMakefile {
         "# INC           = [...]\n" .
         "# The output is similar to the corresponding lines of 'make id' output.\n" .
         "# Path information, however, needs to be removed from these settings.\n" .
-        "# Otherwise, it would not be possible to share libraries among FEAST\n" .
+        "# Otherwise, it would not be possible to share libraries among FEAT2\n" .
         "# applications as the settings above often contain absolute paths to\n" .
         "# object directories which would lead to conflicts, e.g.:\n" .
         "# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_disk/object\n" .
@@ -2909,7 +2973,7 @@ sub create_feastAppMakefile {
         "\t\@echo; \\\n" .
         "\t echo '*** Error: Build ID \$(ID)'; \\\n" .
         "\t echo '***        is *not* valid for current host!'; \\\n" .
-        "\t echo '***        \$(FEASTBASEDIR)/bin/guess_id reported a host of type \$(REALID).'; \\\n" .
+        "\t echo '***        \$(FEAT2BASEDIR)/bin/guess_id reported a host of type \$(REALID).'; \\\n" .
         "\t echo '***        Cowardly refusing compilation.'; \\\n" .
         "\t echo;\n" .
 	"\t\@exit 1;\n" .
@@ -2998,7 +3062,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"  libs           compile all libraries specified in variable BUILDLIB\"\n" .
         "\t\@echo \"                   (currently: \$(BUILDLIB))\"\n" .
         "\t\@echo \"  clean          remove all object files and libraries\"\n" .
-        "\t\@echo \"  clean-app      remove only FEAST object files\"\n" .
+        "\t\@echo \"  clean-app      remove only FEAT2 object files\"\n" .
         "\t\@echo \"  clean-libs     remove libraries and the object files they are built from\"\n" .
         "\t\@echo \"  purge          remove all object files and libraries for all build IDs\"\n" .
         "\t\@echo \"  purge-libs     remove libraries and the object files they are built from\"\n" .
@@ -3012,7 +3076,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"  list-all-ids   print a list of all valid build IDs\"\n" .
         "\t\@echo \"  <library>      compile only <library>, where <library> is one of\"\n" .
         "\t\@echo \"                   'umfpack', 'blas', 'lapack', 'splib' etc.\"\n" .
-        "\t\@echo \"  <object file>  compile <object file>, where <object file> is one of FEAST's\"\n" .
+        "\t\@echo \"  <object file>  compile <object file>, where <object file> is one of FEAT2's\"\n" .
         "\t\@echo \"                   object files. (The object directory can be omitted). Those\"\n" .
         "\t\@echo \"                   modules <object file> depends on will be built if necessary\"\n" .
         "\t\@echo \"  link           force re-linking (do not bother whether any module needs \"\n" .
@@ -3072,10 +3136,439 @@ sub create_feastAppMakefile {
 #       Previous implementations with a static Makefile only reported correct
 #       build IDs in case default build IDs were used.
 sub create_feastBenchmarkMakefile {
+    my $entry;
+
+    print "creating $MAKEFILE.\n";
+    open(MAKEFILE_HDL, ">" , $MAKEFILE) or die "$progname: ERROR: Cannot open file <$MAKEFILE> for writing: $!\n";
+    print MAKEFILE_HDL
+        "#!/usr/bin/env make\n" .
+        "\n" .
+        "########################################################################\n" .
+        "#                                                                      #\n" .
+        "#         FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T          #\n" .
+        "#                                                                      #\n" .
+        "# Authors: Ch.Becker,                                                  #\n" .
+        "#          S.Buijssen, D.Goeddeke, M.Grajewski, H.Wobker,              #\n" .
+        "#          S.Kilian, S.Turek                                           #\n" .
+        "#                                                                      #\n" .
+        "# Contact: Applied Mathematics, Dortmund University of Technology      #\n" .
+        "#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
+        "#          Germany                                                     #\n" .
+        "#                                                                      #\n" .
+        "# Web:     http://www.feast.tu-dortmund.de                             #\n" .
+        "#          mailto:feast\@math.tu-dortmund.de                           #\n" .
+        "#                                                                      #\n" .
+        "########################################################################\n" .
+        "#                                                                      #\n" .
+        "# Makefile for FEAT2 regression benchmark                              #\n" .
+        "#                                                                      #\n" .
+        "########################################################################\n" .
+        "\n" .
+	"# Some variables\n\n";
+
+    if (defined($cl{'ID'})) {
+	print MAKEFILE_HDL
+	    "# Fix a particular build ID, do not use the default one\n" .
+	    "# (There are Makefile rules that will verify that the given build ID\n" .
+	    "#  matches the architecture, cpu and operating system at make runtime.)\n" .
+	    "ID                 := $cl{'ID'}\n\n";
+    }
+
+    $entry = (defined($cl{'MODE'})) ? $cl{'MODE'} : $defaults{'MODE'};
+    print MAKEFILE_HDL
+        "# Create test suite to execute serial or parallel binaries?\n" .
+        "MODE = $entry\n\n";
+
+    print MAKEFILE_HDL
+        "# Path to this FEAT2 installation\n" .
+        "FEAT2BASEDIR = ..\n" .
+        "\n" .
+        "# Location of Makefile.buildID.inc\n" .
+        "MAKEFILE_BUILDID_INC  = \$(FEAT2BASEDIR)/" . $MAKEFILE_BUILDID_INC . "\n\n" .
+        "# Location of Makefile.cpu.inc\n" .
+        "MAKEFILE_CPU_INC      = \$(FEAT2BASEDIR)/" . $MAKEFILE_CPU_INC . "\n\n" .
+        "\n" .
+        "# Name of FEAT2 benchmark control script\n" .
+        "SCRIPT   = runtests\n" .
+        "\n" .
+        "# Basename of all FEAT2 benchmark applications\n" .
+        "APPBASE  = feat2Benchmark\n" .
+        "\n" .
+        "# List of all application's source directories\n" .
+        "SRCDIRS  = \$(patsubst %/, %, \$(dir \$(wildcard \\\n" .
+        "\t\t\t\t\tkernel_*/$MAKEFILE \\\n" .
+        "\t\t\t\t\tapps_*/$MAKEFILE \\\n" .
+        "\t\t\t\t\tarea51_*/$MAKEFILE)))\n" .
+        "\n" .
+        "# List of all applications to compile\n" .
+        "APPS     = \$(patsubst kernel_%, \$(APPBASE)-%, \$(filter kernel_%, \$(SRCDIRS))) \\\n" .
+	"\t   \$(patsubst apps_%,   \$(APPBASE)-%, \$(filter apps_%,   \$(SRCDIRS))) \\\n" .
+	"\t   \$(patsubst area51_%, \$(APPBASE)-%, \$(filter area51_%, \$(SRCDIRS)))\n" .
+        "\n" .
+        "# Fail-safe source directory (for 'compile-libs', 'idonly')\n" .
+        "SRCDIR   = \$(firstword \$(SRCDIRS))\n" .
+        "\n" .
+        "# List of all *.fbdef files (containing benchmark test definitions)\n" .
+        "FBDEF    = \$(wildcard tests/*.fbdef)\n" .
+        "\n" .
+        "# List of all *.fbconf files (containing benchmark test IDs)\n" .
+        "FBCONF   = \$(wildcard *.fbconf)\n" .
+        "\n" .
+        "# All possible test sets\n" .
+        "TESTSETS = \$(FBCONF:%.fbconf=%)\n" .
+        "\n" .
+        "# Some targets only safely work if not called directly, but recursively\n" .
+        "# from this Makefile\n" .
+        "ifneq (\$(MAKELEVEL),0)\n" .
+        "SUBMAKE = \"YES\"\n" .
+        "endif\n" .
+        "\n" .
+        "\n" .
+        "##############################################################################\n" .
+        "# Import a default build ID setting in case no build ID has been set yet.\n" .
+        "include \$(MAKEFILE_BUILDID_INC)\n\n" .
+        "\n\n" .
+
+        "##############################################################################\n" .
+        "# The targets\n" .
+        "\n" .
+        "\n" .
+        "##############################################################################\n" .
+        "# Default target\n" .
+        ".PHONY:\tall\n" .
+        "all:\thelp\n" .
+        "\n" .
+        "\n" .
+
+    ##############################################################################
+    # Compiling
+        "##############################################################################\n" .
+        "# Compiling\n" .
+        "\n" .
+        "# Rules to compile every FEAT2 benchmark application\n" .
+        "# (Ensure that the third-party libraries blas, lapack, metis, umfpack are\n" .
+        "#  completely compiled *before* trying to compile any FEAT2 benchmark\n" .
+        "#  application. For serial make it does not matter, but parallel make\n" .
+        "#  would otherwise cause nothing but trouble as the libraries' object files\n" .
+        "#  and the resulting archives are shared among all FEAT2 benchmark applications\n" .
+        "#  in the same object directory. Within each FEAT2 benchmark application\n" .
+        "#  subfolder a sub-make of a parallel make process would try to compile\n" .
+        "#  the library to the same object file.)\n" .
+        ".PHONY:\tbenchmark compile compile-libs compile-apps compile-META libs\n" .
+        "compile:\tbenchmark\n" .
+        "benchmark:\n" .
+        "#\t\@\$(MAKE) compile-libs\n" .
+        "\t\@\$(MAKE) compile-apps\n" .
+        "\n" .
+        "#libs:\tcompile-libs\n" .
+        "#compile-libs:\n" .
+        "#\t\@\$(MAKE) -C\$(SRCDIR) libs\n" .
+        "\n" .
+	"# Generic rule to build a specific library only\n" .
+	".PHONY:\tamd blas coproc lapack libamd.a libblas.a libcoproc.a \\\n" .
+	"\tliblapack.a libmetis.a libsplib.a libumfpack.a metis splib umfpack\n" .
+	"amd blas coproc lapack libamd.a libblas.a libcoproc.a \\\n" .
+	"liblapack.a libmetis.a libsplib.a libumfpack.a metis splib umfpack:\n" .
+        "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
+        "\n" .
+        "compile-apps:\t\$(foreach APP, \$(APPS), \$(APP) )\n" .
+        "\n" .
+        "# Compile a single FEAT2 benchmark application\n" .
+	"# (Tricky part is reconstructing source directory name from application name.)\n" .
+	"# (Make apps phony targets otherwise switching build ID does not necessarily\n" .
+	"#  lead to a re-compilation)\n" .
+        ".PHONY:\t\$(APPS)\n" .
+        "\$(APPS):\n" .
+	"\t\@\$(MAKE) APPNAME=\$\@ \\\n" .
+	"\t\t SRCDIR=\$(filter \$(\@:\$(APPBASE)-%=kernel_%) \\\n" .
+	"\t\t\t\t \$(\@:\$(APPBASE)-%=apps_%) \\\n" .
+	"\t\t\t\t \$(\@:\$(APPBASE)-%=area51_%), \$(SRCDIRS)) compile-META\n" .
+        "\n" .
+        "# Compile a FEAT2 benchmark application\n" .
+        "compile-META:\n" .
+        "\t\@echo \"# Compiling FEAT2 benchmark application \$(APP)...\"\n" .
+        "\t\@( \$(MAKE) -C\$(SRCDIR) APPNAME=../\$(APPNAME) )\n" .
+        "\t\@echo \"# FEAT2 benchmark application \$(APPNAME) successfully compiled.\"\n" .
+        "\n" .
+        "\n" .
+        "# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #\n" .
+        "\n" .
+        "# Compile all FEAT2 benchmark applications forcing no optimisation\n" .
+        "# (to speed up things) and with per build ID unique application\n" .
+        "# names. This way, we can check on all our test platforms whether the\n" .
+        "# code still compiles before contributing new revisions to CVS. The\n" .
+        "# unique names allow for parallel compilation (in the same directory!).\n" .
+        ".PHONY:\ttest-compile test-compile-apps \$(APPS:%=test-compile-%)\n" .
+        "test-compile:\tOPT=NO\n" .
+        "test-compile:\n" .
+        "#\t\@\$(MAKE) compile-libs\n" .
+        "\t\@\$(MAKE) test-compile-apps\n" .
+        "\n" .
+        "test-compile-apps:\t\$(foreach APP, \$(APPS), test-compile-\$(APP) )\n" .
+        "\n" .
+        "# Compile a single FEAT2 benchmark application\n" .
+	"# (Tricky part is reconstructing source directory name from application name.)\n" .
+        "\$(APPS:%=test-compile-%):\n" .
+	"\t\@\$(MAKE) APPNAME=\$(\@:test-compile-%=\$(ID)-%) \\\n" .
+	"\t\t SRCDIR=\$(filter \$(\@:test-compile-\$(APPBASE)-%=kernel_%) \\\n" .
+	"\t\t\t\t \$(\@:test-compile-\$(APPBASE)-%=apps_%) \\\n" .
+	"\t\t\t\t \$(\@:test-compile-\$(APPBASE)-%=area51_%), \$(SRCDIRS)) compile-META\n" .
+        "\n" .
+        "\n" .
+
+     ##############################################################################
+     # Creating control scripts (for all tests, daily tests, single tests, in short
+     # for every *.fbconf file found in the current directory)
+        "##############################################################################\n" .
+        "# Creating control scripts (for all tests, daily tests, single tests, in short\n" .
+        "# for every *.fbconf file found in the current directory)\n" .
+        "\n" .
+        "# Create script which contains all the necessary information to run\n" .
+        "# and validate all the test cases contained in a accordingly named\n" .
+        "# *.fbconf file.\n" .
+        ".PHONY:\t\$(TESTSETS) create-script\n" .
+        "\$(TESTSETS):\n" .
+        "\t\@\$(MAKE) TESTCASES=\$\@.fbconf create-script\n" .
+        "\n" .
+        "# Create a sh script which contains all the necessary information to run\n" .
+        "# and validate all the test cases contained in tests/\$(TESTCASES).\n" .
+        "create-script:  SUPPRESSOUTPUT=1\n" .
+        "create-script:  DEBUGGER=0\n" .
+        "create-script:  MPIENV=\n" .
+        "create-script:\tinclude/runtests.template\n" .
+        "\t\@echo \"# Creating script to perform test whose IDs are coded in <\$(TESTCASES)>\"\n" .
+        "\n" .
+        "        # Include script template, applying defaults settings or overriding\n" .
+        "        # them with command line given settings:\n" .
+        "        # If SUPPRESSOUTPUT is specified on command line, its value is used,\n" .
+        "        # otherwise SUPPRESSOUTPUT keeps default value defined in this Makefile\n" .
+        "        # target's variable definition section.\n" .
+	"        # The same mechanism applies to DEBUGGER and MPIENV.\n" .
+	"\t\@cat include/runtests.template | \\\n" .
+        "\t\t sed -e \"s/^SUPPRESSOUTPUT=<SET_VIA_MAKEFILE>/SUPPRESSOUTPUT=\$(SUPPRESSOUTPUT)/; \\\n" .
+        "\t\t\ts/^DEBUGGER=<SET_VIA_MAKEFILE>/DEBUGGER=\$(DEBUGGER)/; \\\n" .
+        "\t\t\ts/^MPIENV=<SET_VIA_MAKEFILE>/MPIENV=\$(MPIENV)/;\" > \$(SCRIPT)\n".
+        "\n" .
+        "        # Determine build ID\n" .
+        "\t\@echo \"BUILDID=\$(LIBID)\" >> \$(SCRIPT);\n" .
+        "\t\@echo >> \$(SCRIPT);\n" .
+        "\n" .
+	"        # Applications are named according the scheme:\n" .
+	"        #   <APPL_BASENAME>-<application>\n" .
+	"        # where <application> is both found \n" .
+	"        # * in {kernel,apps,area51}_<application> and \n" .
+	"        # * as value of the keyword 'appl' in a *.fbdef file in subdirectory 'tests'.\n" .
+	"        #\n" .
+	"        # Define <APPL_BASENAME>\n" .
+        "\t\@(echo \"APPL_BASENAME=\"\$(APPBASE); echo) >> \$(SCRIPT)\n" .
+        "\n" .
+        "        # Create detailed instructions for each test in \$(TESTCASES)\n" .
+        "\t\@MODE=\$(MODE) ID=\$(LIBID) include/create_script.pl \$(TESTCASES) >> \$(SCRIPT)\n" .
+        "\n" .
+        "        # Call footer function\n" .
+        "\t\@( echo; echo fb_footer; echo; ) >> \$(SCRIPT)\n" .
+        "\n" .
+        "        # Give script executable permissions\n" .
+        "\t\@chmod a+x \$(SCRIPT)\n" .
+        "\t\@echo \"# Script named <\$(SCRIPT)> has been created.\"\n" .
+        "\n" .
+        "\n" .
+        "##############################################################################\n" .
+        "# Start FEAT2 benchmark application\n" .
+        "\n" .
+        ".PHONY:\trun\n" .
+        "run:\n" .
+        "\t\@./\$(SCRIPT)\n" .
+        "\n" .
+        "\n" .
+
+     ##############################################################################
+     # Cleaning up things
+        "##############################################################################\n" .
+        "# Cleaning up things\n" .
+        "\n" .
+        "# Clean up FEAT2 output and auxiliary files for the FEAT2 benchmark,\n" .
+        "# clean up all FEAT2 benchmark applications, libraries and object files\n" .
+        "# for current build ID.\n" .
+        ".PHONY:\tclean\n" .
+        "clean:\n" .
+        "\t-rm -f \$(APPS)\n" .
+        "\t-rm -f \$(SCRIPT)\n" .
+        "         # the following removes binaries created by test-compile (simultaneous \n" .
+        "         # compilation in one checkout with several build IDs) \n" .
+	"\t-rm -f \$(patsubst kernel_%, \$(ID)-\$(APPBASE)-%, \$(filter kernel_%, \$(SRCDIRS))) \\\n" .
+	"\t       \$(patsubst apps_%,   \$(ID)-\$(APPBASE)-%, \$(filter apps_%,   \$(SRCDIRS))) \\\n" .
+	"\t       \$(patsubst area51_%, \$(ID)-\$(APPBASE)-%, \$(filter area51_%, \$(SRCDIRS)))\n" .
+        "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
+        "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
+        "else\n" .
+	"\t\@\$(MAKE) -C\$(SRCDIR) clean-libs\n" .
+        "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -C\$(dir) clean-app ); )\n" .
+        "endif\n\n" .
+        "# Clean up all FEAT2 object files for all applications for current architecture\n" .
+        ".PHONY:\tclean-apps clean-app clean-libs purge\n" .
+        "clean-apps: clean-app\n\n" .
+        "# Clean up targets for all applications for current architecture\n" .
+        "clean-app:\n" .
+        "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
+        "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
+        "else\n" .
+        "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -C\$(dir) \$\@ ); )\n" .
+        "endif\n\n" .
+        "clean-libs:\n" .
+        "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
+        "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
+        "else\n" .
+	"\t\@\$(MAKE) -C\$(SRCDIR) clean-libs\n" .
+        "endif\n\n" .
+        "# Clean up FEAT2 output and auxiliary files for the FEAT2 benchmark,\n" .
+        "# clean up all FEAT2 benchmark applications, libraries and object files\n" .
+        "# for all build IDs.\n" .
+        "purge:\tclean\n" .
+        "\t\@\$(MAKE) -C\$(SRCDIR) purge-libs\n" .
+        "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -C\$(dir) purge-app ); )\n" .
+        "\t\@-\$(foreach dir, \$(SRCDIRS), rm \$(dir)/$MAKEFILE \$(dir)/$MAKEFILE.bak; )\n" .
+        "\n\n\n" .
+
+
+    ##############################################################################
+    # Auxiliary targets
+        "##############################################################################\n" .
+        "# Auxiliary targets\n\n" .
+
+    # easter eggs
+        "# easter egg support for common typos\n" .
+        ".PHONY:\truin\n" .
+        "ruin:\n" .
+        "\t\@echo \"make ruin? Well, that's appalling of you to ask for!\"\n" .
+        "\t\@echo \"I am dismayed!\"\n" .
+        "\t\@echo\n" .
+        "\t\@echo \"It took years to develop FEAT2 and to come up with its\"\n" .
+        "\t\@echo \"current state. Now, you are deliberately asking for dis-\"\n" .
+        "\t\@echo \"ruptive actions to be undertaken to turn your working copy\"\n" .
+        "\t\@echo \"of FEAT2 into a state of partial or complete disrepair.\"\n" .
+        "\t\@echo\n" .
+        "\t\@echo \"I'm not going to support 'make ruin'! Bye.     :-)\"\n" .
+        "\t\@echo\n" .
+        "\t\@exit 1\n\n" .
+        ".PHONY:\tdi iid idolny urn rnu comple complie copmile copmpile compiel .typo\n" .
+        "di:       .typo\n" .
+        "iid:      .typo\n" .
+        "idolny:   .typo\n" .
+        "urn:      .typo\n" .
+        "rnu:      .typo\n" .
+        "comple:   .typo\n" .
+        "complie:  .typo\n" .
+        "copmile:  .typo\n" .
+        "copmpile: .typo\n" .
+        "compiel:  .typo\n" .
+        ".typo:\n" .
+        "\t\@echo \"What?\"\n" .
+        "\t\@exit 1\n" .
+        "\n\n" .
+
+    # id
+        "# show current build ID and all compile settings applied.\n" .
+        "# These two targets are merely aliases for global target .id & .idonly\n" .
+        ".PHONY:\tid\n" .
+        "id:\n" .
+        "\t\@\$(foreach dir, \$(SRCDIRS), \\\n" .
+        "\t\tprintf \"# ===\"; \\\n" .
+        "\t\tlength=`echo \${dir} | wc -c`; i=\$\${length}; \\\n" .
+        "\t\twhile [ \$\${i} -ge 0 ]; do printf \"=\"; i=`expr \$\${i} - 1`; done; \\\n" .
+        "\t\tprintf \"===\\n\"; \\\n" .
+        "\t\tprintf \"# === %s ===\\n\" \${dir}; \\\n" .
+        "\t\tprintf \"# ===\"; \\\n" .
+        "\t\ti=\$\${length}; \\\n" .
+        "\t\twhile [ \$\${i} -ge 0 ]; do printf \"=\"; i=`expr \$\${i} - 1`; done; \\\n" .
+        "\t\tprintf \"===\\n\"; \\\n" .
+        "\t\tmake --no-print-directory -C '\${dir}' id; \\\n" .
+        "\t\techo; echo; )\n" .
+        "\n\n" .
+
+    # idonly
+        "# aliases for global target .idonly\n" .
+        "# show current build ID\n" .
+        ".PHONY:\tidonly\n" .
+        "idonly:   .idonly\n\n" .
+
+
+    # print a list of all valid build IDs for current host
+        "# print a list of all valid build IDs for current host\n" .
+        ".PHONY:\tlistids list.ids list-ids\n" .
+        "listids:\tlist-ids\n" .
+        "list.ids:\tlist-ids\n" .
+        "list-ids:\n" .
+        "\t\@echo \"The following are valid build IDs for current host:\"\n" .
+        "# It would be a lot nicer if we could distribute the following perl\n" .
+        "# command over several lines, but this breaks with GNU Make 3.81\n" .
+        "# (though it works with GNU Make 3.80).\n" .
+        "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
+        "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
+        "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
+
+
+    # print a list of all valid build IDs
+        "# print a list of all valid build IDs\n" .
+        ".PHONY:\tlistallids list.all.ids list-all-ids\n" .
+        "listallids:\tlist-all-ids\n" .
+        "list.all.ids:\tlist-all-ids\n" .
+        "list-all-ids:\n" .
+        "\t\@echo \"The following are all valid build IDs:\"\n" .
+        "# It would be a lot nicer if we could distribute the following perl\n" .
+        "# command over several lines, but this breaks with GNU Make 3.81\n" .
+        "# (though it works with GNU Make 3.80).\n" .
+        "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
+        "\t    \$(MAKEFILE_CPU_INC) | sort;\n\n" .
+        "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
+
+
+    # print help message
+        "# print a help screen\n" .
+        ".PHONY:\thelp\n" .
+        "help:\n" .
+        "\t\@echo \"Usage: make [targets...]\"\n" .
+        "\t\@echo\n" .
+        "\t\@echo \"where targets include:\"\n" .
+        "\t\@echo\n" .
+        "\t\@echo \"  help           display this help\"\n" .
+        "\t\@echo \"  clean          remove FEAT2 output and auxiliary files for all benchmark\"\n" .
+        "\t\@echo \"                 applications.\"\n" .
+        "\t\@echo\n" .
+        "\t\@echo \"  benchmark      compile all benchmark applications\"\n" .
+        "\t\@echo \"  test-compile   compile all benchmark applications without optimisation\"\n" .
+        "\t\@echo \"                 and with per build ID unique application names\"\n" .
+        "\t\@echo \"                 (Purpose: quick check whether code still compiles before\"\n" .
+        "\t\@echo \"                  contributing new revisions. Test compilation can be done\"\n" .
+        "\t\@echo \"                  in parallel (!) on all test build IDs.)\"\n" .
+        "\t\@echo \"  run            run benchmark application\"\n" .
+        "\t\@echo\n" .
+        "\t\@echo \"Generic targets:\"\n" .
+        "\t\@echo \"  \$(APPBASE)-<application>\"\n" .
+        "\t\@echo \"                 compile a single benchmark application only.\"\n" .
+        "\t\@echo \"                   For the current FEAT2 installation valid targets are:\"\n" .
+        "\t\@echo \$(APPS) | fold -s -w 60 | sed 's/ /, /g; s/^/                   /;'\n" .
+        "\t\@echo \"                 compile a single benchmark application only. Valid targets\"\n" .
+        "\t\@echo \"  <name>         create script to run all tests defined in file <name>.fbconf.\"\n" .
+        "\t\@echo \"                   For the current FEAT2 installation <name> can be any of:\"\n" .
+        "\t\@echo \$(TESTSETS) | fold -s -w 50 | sed 's/ /, /g; s/^/                   /;'\n" .
+        "\t\@echo\n" .
+        "\t\@echo \"Additional auxiliary targets include:\"\n" .
+        "\t\@echo \"  idonly         show current build ID\"\n" .
+        "\t\@echo \"  id             show current build ID and all compile settings applied\"\n" .
+        "\t\@echo \"  list.ids\"\n" .
+        "\t\@echo \"  list-ids\"\n" .
+        "\t\@echo \"  listids        print a list of valid build IDs for current host\"\n" .
+        "\t\@echo \"  list.all.ids\"\n" .
+        "\t\@echo \"  list-all-ids\"\n" .
+        "\t\@echo \"  listallids     print a list of all valid build IDs\"\n" .
+        "\t\@echo\n" .
+        "\n";
+
     close(MAKEFILE_HDL);
 
-    die "\n$progname: ERROR:\n".
-        "Creation of regression benchmark Makefile is currently unsupported.\n";
+#    die "\n$progname: ERROR:\n".
+#        "Creation of regression benchmark Makefile is currently unsupported.\n";
 }
 
 
@@ -3228,8 +3721,9 @@ sub get_buildID {
             # make[?]: Entering directory `<some dirs>/feast/feast/<some other dirs>'
             # See section 5.6.4 of GNU Make Manual,
             # http://www.gnu.org/software/make/manual/html_mono/make.html#IDX250
-            my $command = "cd \"" . &dirname(&concat_filename($FEASTBASEDIR, $MAKEFILE_INC)) .
-                          "\" && $make --no-print-directory -f " . &basename($MAKEFILE_INC) . " MODE=$mode .idonly";
+            my $command = "cd \"" . &dirname(&concat_filename($FEAT2BASEDIR, $MAKEFILE_INC)) .
+                          "\" && $make --no-print-directory -f " . &basename($MAKEFILE_INC) . 
+			  " MODE=$mode FEAT2BASEDIR=. .idonly";
             $buildID = `$command`;
             chomp($buildID);
         }
@@ -3301,7 +3795,7 @@ sub get_dependency {
 
 
 
-# Function which determines the base directory of the FEAST installation
+# Function which determines the base directory of the FEAT2 installation
 # from the string given as argument (which is supposed to be the invocation
 # path of this script).
 sub get_feast_basedir() {
@@ -3309,7 +3803,7 @@ sub get_feast_basedir() {
 
     my $path = &dirname($string);
 
-    # FEAST base dir is one directory higher than the directory bin/
+    # FEAT2 base dir is one directory higher than the directory bin/
     # where this script should be located.
     $path .= "/..";
 
@@ -3486,7 +3980,7 @@ sub get_sourcefilelist {
 
 # Function: Build list of valid build IDs from MAKEFILE_INC
 sub get_validIDs {
-    my $filename = &concat_filename($FEASTBASEDIR, $MAKEFILE_CPU_INC);
+    my $filename = &concat_filename($FEAT2BASEDIR, $MAKEFILE_CPU_INC);
 
     open(FILE, "<" , $filename) or
 	die "\n$progname: ERROR:\n".
@@ -3646,15 +4140,15 @@ sub list_ids {
 
 
 
-# Function which outputs all FEAST kernel files the application is built from
+# Function which outputs all FEAT2 kernel files the application is built from
 sub list_kernel_modules {
     my @list;
 
-    print "\nList of all FEAST kernel files the application is built from:\n";
+    print "\nList of all FEAT2 kernel files the application is built from:\n";
     foreach (split(/\s+/, SRCLIST_KERNEL)) {
-        push @list, &concat_filename($FEASTBASEDIR, $SRCDIR_KERNEL, $_);
+        push @list, &concat_filename($FEAT2BASEDIR, $SRCDIR_KERNEL, $_);
     }
-    (my $dir = File::Spec->catdir($FEASTBASEDIR, $SRCDIR_ARCH)) =~ s/\$\(ID\)/$buildID/;
+    (my $dir = File::Spec->catdir($FEAT2BASEDIR, $SRCDIR_ARCH)) =~ s/\$\(ID\)/$buildID/;
     foreach (split(/\s+/, SRCLIST_ARCH)) {
         s/ID/$buildID/;
         push @list, &concat_filename($dir, $_);
@@ -3720,7 +4214,7 @@ sub make_dep_list {
 	    # The approach differs depending on whether we have absolute
 	    # or relative base paths.
 	    # Absolute path case?
-	    if ($FEASTBASEDIR =~ m/^\//) {
+	    if ($FEAT2BASEDIR =~ m/^\//) {
 		$aux = &abs_path(&concat_filename(&dirname($fileToParse), $match));
 	    } else {
 		$aux = &concat_filename(&dirname($fileToParse), $match);
@@ -3747,7 +4241,7 @@ sub make_dep_list {
 
 
 
-# Function: Print statistics about Makefile for a FEAST application created just now
+# Function: Print statistics about Makefile for a FEAT2 application created just now
 sub print_statistics_about_feastAppMakefile {
     my $srclist_app = $_[0];
     my $string = "";
@@ -3840,7 +4334,7 @@ sub show_help {
         "                    host invoke '$progname --list-ids'.\n" .
         "                    For a complete list invoke '$progname --list-all-ids'\n" .
         "--regression-benchmark\n" .
-        "                    Create Makefile for FEAST regression benchmark and\n" .
+        "                    Create Makefile for FEAT2 regression benchmark and\n" .
         "                    fork configure calls for all benchmark applications,\n" .
         "                    i.e. all directories starting with 'src_'\n" .
         "--programfile=<file>\n" .
@@ -3862,9 +4356,9 @@ sub show_help {
 	"                    (default: none)\n" .
         "--objdir-lib-prefix=<dir>\n" .
 	"                    Prepend <dir> to paths of libraries' object files.\n" .
-	"                    Typically all libraries can be shared among all FEAST\n" .
-	"                    applications as they have no dependency on the FEAST\n" .
-	"                    kernel or a FEAST application and have always identical\n" .
+	"                    Typically all libraries can be shared among all FEAT2\n" .
+	"                    applications as they have no dependency on the FEAT2\n" .
+	"                    kernel or a FEAT2 application and have always identical\n" .
 	"                    compile settings. In particular when compiling the\n" .
 	"                    the regression benchmark it makes a big difference\n" .
 	"                    having to compile libraries only once (default: ../..).\n" .
@@ -3949,7 +4443,7 @@ sub show_help {
         "--list-all-ids      Print a list of all valid build IDs. Use any\n" .
         "                    of them as ARCH argument for --id option\n" .
         "--list-kernel-modules\n" .
-        "                    Print all FEAST kernel files the application is\n" .
+        "                    Print all FEAT2 kernel files the application is\n" .
         "                    built from\n" .
         "--list-app-modules  Print application's proprietary source files\n";
     exit 0;
