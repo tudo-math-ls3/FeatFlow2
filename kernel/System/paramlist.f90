@@ -1198,6 +1198,9 @@ contains
   call parlst_getvalue_string_indir (p_rsection, sparameter, svalue, sdefault,&
                                      isubstring)
 
+  ! Expand any environment variable
+  svalue = parlst_expandEnvVariables(svalue)
+
   end subroutine
   
   ! ***************************************************************************
@@ -1814,7 +1817,7 @@ contains
                                         sparameter, svalue, &
                                         isubstring=iarrayindex)
   end if
-  
+
   read(svalue,*) ivalue
 
   end subroutine
@@ -3077,5 +3080,144 @@ contains
     end do ! isection
     
   end subroutine
+
+  ! ***************************************************************************
+
+!<function>
+  function parlst_expandEnvVariables(sbuffer) result(sresult)
+
+  !<description>
+    ! This subroutine recursively expands all environment variables in the given
+    ! string sbuffer.
+  !</description>
+
+  !<input>
+    ! string
+    character(len=*), intent(in) :: sbuffer
+  !</input>
+
+  !<result>
+    character(len=SYS_STRLEN) :: sresult
+  !</result>
+
+  !<errors>
+    ! ERR_CONV_ENV_VAR_NOT_FOUND (critical)
+  !</errors>
+!</function>
+
+    ! flag
+    logical :: bfoundInEnv
+
+    ! start and end position of variable
+    integer(I32) :: istartPos, istopPosRelative
+
+    ! variable to expand environment variable on-the-fly to if found
+    character(len=SYS_STRLEN) :: sauxEnv
+
+
+    ! Initialise return value
+    sresult = trim(sbuffer)
+
+    ! check for a $ character
+    istartPos = index(sresult, "$")
+    do while (istartPos .gt. 0)
+      ! Detect end of variable: a variable ends at the first character that
+      ! is neither in '[A-Z]', '[0-9]' nor '_'.
+      istopPosRelative = verify(sresult(istartPos+1:), &
+                          "abcdefghijklmnopqrstuvwxyz" // &
+                          "ABCDEFGHIJKLMNOPQRSTUVWXYZ" // &
+                          "0123456789_")
+
+      bfoundInEnv = .FALSE.
+      ! Retrieve value of environment variable
+      ! (Do not forget to cut the dollar sign.)
+      bfoundInEnv = &
+           parlst_getenv_string(trim(&
+               sresult(istartPos + 1 : istartPos + istopPosRelative - 1)), sauxEnv)
+      if (bfoundInEnv) then
+        ! Replace environment variable by its content
+        sresult = sresult(1:istartPos-1) // &
+                  trim(sauxEnv) // &
+                  trim(sresult(istartPos + istopPosRelative:))
+      else
+        call error_print(ERR_PARLST_ENV_VAR_NOT_FOUND, "parlst_expandEnvVariables", &
+                         ERR_CRITICAL, &
+                         sarg1=trim(sresult(istartPos + 1 : istartPos + istopPosRelative - 1)))
+      endif
+
+      ! check for next $ character
+      istartPos = index(sresult, "$")
+    enddo
+
+  end function parlst_expandEnvVariables
+
+  ! ***************************************************************************
+
+!<function>
+  logical function parlst_getenv_string(svar, sresult)
+
+  !<description>
+    ! This functions returns the string value of a given enviroment variable. The routine
+    ! returns .TRUE., if the variable exists, otherwise .FALSE. .
+  !</description>
+
+  !<input>
+    ! name of the enviroment variable
+    character(len=*), intent(in) :: svar
+  !</input>
+
+  !<output>
+    ! value of the enviroment variable
+    character(len=SYS_STRLEN), intent(out) :: sresult
+  !</output>
+
+  !<result>
+    ! exit status
+  !</result>
+
+  !<errors>
+    ! none
+  !</errors>
+!</function>
+
+    character(len=SYS_STRLEN) :: svalueInEnv
+
+    integer :: nstatus
+
+#if defined USE_COMPILER_NEC || defined USE_COMPILER_PGI_6_1 || defined USE_COMPILER_PGI_6_2 || defined USE_COMPILER_PGI_7_0
+    call getenv(trim(svar), svalueInEnv)
+    if (trim(svalueInEnv) .eq. "") then
+      nstatus = 1
+    else
+      nstatus = 0
+    endif
+#else
+    call get_environment_variable(trim(svar), svalueInEnv, status=nstatus)
+#endif
+
+    select case (nstatus)
+    case (0)
+      ! Copy string only up to first whitespace character
+!      read(svalueInEnv, '(A)') sresult
+
+      ! Copy complete string
+      sresult = svalueInEnv
+      parlst_getenv_string = .TRUE.
+
+    case (1)
+      ! Environment variable does not exist
+      sresult = ""
+      parlst_getenv_string = .FALSE.
+
+    case default
+      !  2: Processor does not support environment variables
+      ! >2: Some error occurred
+      ! -1: variable svalueInEnv too short to absorb environment variables` content
+      sresult = ""
+      parlst_getenv_string = .FALSE.
+
+    end select
+
+  end function parlst_getenv_string
   
 end module
