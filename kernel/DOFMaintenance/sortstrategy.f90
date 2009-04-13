@@ -253,8 +253,9 @@ contains
     ! Calculate ordering - choose a root of minimal degree and sort
     ! level sets by non-decreasing degree. And reverse the ordering.
     call adj_calcCuthillMcKee(rmatrix%h_Kld, rmatrix%h_Kcol, h_Iaux, &
-        ior(ADJ_CMK_FLAG_REVERSE, &
-        ior(ADJ_CMK_FLAG_SORT_MIN, ADJ_CMK_FLAG_ROOT_MIN)))
+        ior(ADJ_CMK_FLAG_REVERSE, ADJ_CMK_FLAG_ROOT_MIN))
+        !ior(ADJ_CMK_FLAG_REVERSE, &
+        !ior(ADJ_CMK_FLAG_SORT_MIN, ADJ_CMK_FLAG_ROOT_MIN)))
     call storage_getbase_int(h_Iaux, p_Iaux)
     
     ! Calculate permuations
