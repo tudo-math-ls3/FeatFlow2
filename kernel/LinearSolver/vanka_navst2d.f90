@@ -51,11 +51,11 @@
 !# 
 !# 1.) Calculate the Schur-Complement of A:
 !#
-!#                       S := -C + D * A^-1 * B
+!#                       S := C - D * A^-1 * B
 !#
 !# 2.) Calculate pressure:
 !#
-!#                  p := S^-1 * (D * A^-1 * f_u - f_p)
+!#                  p := S^-1 * (f_p - D * A^-1 * f_u)
 !#
 !# 3.) Calculate velocity:
 !#
@@ -394,12 +394,18 @@ contains
     
     ! Are the A12/A21 matrices present?
     if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
+    
+      call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,2),&
+          rvanka%p_KcolA12)
+      call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
+          rvanka%p_KldA12)
       
       call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
-          rvanka%p_DA12 )
+          rvanka%p_DA12)
       
       call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
-          rvanka%p_DA21 )
+          rvanka%p_DA21)
+          
     end if
     
     ! Is the C-Matrix present?
@@ -1419,8 +1425,10 @@ contains
           daux1 = daux1 + p_DB1(i)*dt
           daux2 = daux2 + p_DB2(i)*dt
         end do ! i
-        dfu = dfu - Dmult(1,3)*daux1
-        dfv = dfv - Dmult(2,3)*daux2
+        !dfu = dfu - Dmult(1,3)*daux1
+        !dfv = dfv - Dmult(2,3)*daux2
+        dfu = dfu - Dmult(1,3)*daux1/domega
+        dfv = dfv - Dmult(2,3)*daux2/domega
         
         ! Divide by A(i,i) and update velocity
         i = p_KdiagA(idofu)
@@ -1449,7 +1457,7 @@ contains
         do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
           daux1 = daux1 + p_DA12(i)*p_DvecV(p_KcolA12(i))
         end do ! i
-        dfu = dfu - Dmult(1,2)*daux2
+        dfu = dfu - Dmult(1,2)*daux1
 
         ! Calculate B(i,.) * p(.)
         daux1 = 0.0_DP
@@ -1522,7 +1530,8 @@ contains
         dfp = dfp - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
         
         ! Update pressure DOF
-        p_DvecP(idofp) = p_DvecP(idofp) + domega*dfp*p_DS(idofp)
+        !p_DvecP(idofp) = p_DvecP(idofp) + domega*dfp*p_DS(idofp)
+        p_DvecP(idofp) = p_DvecP(idofp) + dfp*p_DS(idofp)
       
       end do ! idofp
     
@@ -3518,7 +3527,7 @@ contains
     do while(NELdone .lt. NEL)
     
       ! How many elements do we process this time?
-      NELtodo = MIN(NEL-NELdone,VANKA_NAVST2D_NELEMSIM)
+      NELtodo = min(NEL-NELdone,VANKA_NAVST2D_NELEMSIM)
       
       ! Perform the DOF-mapping for the pressure and
       call dof_locGlobMapping_mult(rvanka%p_rspatialDiscrV,&
@@ -3826,7 +3835,7 @@ contains
     do while(NELdone .lt. NEL)
     
       ! How many elements do we process this time?
-      NELtodo = MIN(NEL-NELdone,VANKA_NAVST2D_NELEMSIM)
+      NELtodo = min(NEL-NELdone,VANKA_NAVST2D_NELEMSIM)
       
       ! Perform the DOF-mapping for the pressure and
       call dof_locGlobMapping_mult(rvanka%p_rspatialDiscrV,&
