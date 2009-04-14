@@ -64,7 +64,7 @@ NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 1
+NLMAX              = 6
 
 
 # ------------------------------------------------------------------------
@@ -79,7 +79,13 @@ isubEquation = 0
 
 # Viscosity parmeter 1/NU
 
-RE                 = 100
+RE                 = 1000
+
+# Density for Region1
+RHO1                 = 1
+
+# Density for Region2
+RHO2                 = 1000
 
 # Type of right hand side. 
 # 0=zero
@@ -132,7 +138,7 @@ iUpwind            = 2
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
 
-dUpsam             = 0.01
+dUpsam             = 0.05
 
 # Calculation of local H for Streamline Diffusion
 # 0= set local H to sqrt(area(T))
