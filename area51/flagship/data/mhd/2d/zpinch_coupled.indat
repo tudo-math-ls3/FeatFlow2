@@ -1,0 +1,36 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                           Z-pinch implosion problem                          #
+################################################################################
+
+defconst: width = 0.05
+defconst: r0    = 1.0
+
+defexpr:  sqr1 = SQRT(x^2+y^2)
+defexpr:  rad  = (1-t^4)
+
+# Specify the initial solution
+[initial_solution]
+NCOMP
+5
+if(@sqr1 < _r0 - 1e-12, 1.0, if (@sqr1 > _r0 + _width + 1e-12, 0.5, 1e6))
+0.0
+0.0
+2.5
+if(@sqr1 < @rad-1e-12 | @sqr1 > @rad + _width + 1e-12, 0.0, 1e6)
+
+# Specify the boundary conditions
+[boundary_conditions_primal]
+NBCT
+1
+NEXPR
+5
+IBCT
+1
+NCOMP
+1
+PARAMETERS
+1.0  T  10  0.5  0.0  0.0  1.0  0.0
