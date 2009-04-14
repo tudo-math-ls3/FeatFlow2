@@ -277,19 +277,19 @@ contains
     call collct_init(rcollection)
 
     ! Initialize the application descriptor
-    call transp_initApplication(rparlist, 'transp_app', rappDescriptor)
+    call transp_initApplication(rparlist, 'transport', rappDescriptor)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
     
     ! Initialize the global collection
-    call transp_initCollection(rappDescriptor, rparlist, 'transp_app', rcollection)
+    call transp_initCollection(rappDescriptor, rparlist, 'transport', rcollection)
 
     ! Initialize the solver structures
-    call transp_initSolvers(rparlist, 'transp_app', rtimestep, rsolver)
+    call transp_initSolvers(rparlist, 'transport', rtimestep, rsolver)
 
     ! Initialize the abstract problem structure
-    call transp_initProblem(rparlist, 'transp_app',&
+    call transp_initProblem(rparlist, 'transport',&
                             solver_getMinimumMultigridlevel(rsolver),&
                             solver_getMaximumMultigridlevel(rsolver),&
                             rproblem, rcollection)
@@ -314,12 +314,12 @@ contains
     if (rtimestep%dfinalTime > 0) then
       
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, 'transp_app', 'algorithm', algorithm)
-      call parlst_getvalue_string(rparlist, 'transp_app', 'indatfile', sindatfileName)
+      call parlst_getvalue_string(rparlist, 'transport', 'algorithm', algorithm)
+      call parlst_getvalue_string(rparlist, 'transport', 'indatfile', sindatfileName)
       
       ! The boundary conditions for the primal problem are required for all 
       ! solution strategies. So initialize them from the parameter file.
-      call parlst_getvalue_string(rparlist, 'transp_app', 'sprimalbdrcondname', sbdrcondName)
+      call parlst_getvalue_string(rparlist, 'transport', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
       
@@ -330,10 +330,10 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call transp_solveTransientPrimal(rappDescriptor, rparlist, 'transp_app',&
+        call transp_solveTransientPrimal(rappDescriptor, rparlist, 'transport',&
                                          rbdrCondPrimal, rproblem, rtimestep,&
                                          rsolver, rsolutionPrimal, rcollection)
-        call transp_outputSolution(rparlist, 'transp_app', rproblem%p_rproblemLevelMax,&
+        call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
                                    rsolutionPrimal, dtime=rtimestep%dTime)
         
       case ('transient_primaldual')
@@ -348,10 +348,10 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call transp_solvePseudoTransientPrimal(rappDescriptor, rparlist, 'transp_app',&
+        call transp_solvePseudoTransientPrimal(rappDescriptor, rparlist, 'transport',&
                                                rbdrCondPrimal, rproblem, rtimestep,&
                                                rsolver, rsolutionPrimal, rcollection)
-        call transp_outputSolution(rparlist, 'transp_app', rproblem%p_rproblemLevelMax,&
+        call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
                                    rsolutionPrimal, dtime=rtimestep%dTime)
 
 
@@ -367,10 +367,10 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call transp_solveSteadyStatePrimal(rappDescriptor, rparlist, 'transp_app',&
+        call transp_solveSteadyStatePrimal(rappDescriptor, rparlist, 'transport',&
                                            rbdrCondPrimal, rproblem, rtimestep,&
                                            rsolver, rsolutionPrimal, rcollection)
-        call transp_outputSolution(rparlist, 'transp_app', rproblem%p_rproblemLevelMax,&
+        call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
                                    rsolutionPrimal, dtime=rtimestep%dTime)
 
 
@@ -378,15 +378,15 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call parlst_getvalue_string(rparlist, 'transp_app', 'sdualbdrcondname', sbdrcondName)
+        call parlst_getvalue_string(rparlist, 'transport', 'sdualbdrcondname', sbdrcondName)
         call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
 
-        call transp_solveSteadyStatePrimalDual(rappDescriptor, rparlist, 'transp_app',&
+        call transp_solveSteadyStatePrimalDual(rappDescriptor, rparlist, 'transport',&
                                                rbdrCondPrimal, rbdrCondDual,&
                                                rproblem, rtimestep, rsolver,&
                                                rsolutionPrimal, rsolutionDual, rcollection)
-        call transp_outputSolution(rparlist, 'transp_app', rproblem%p_rproblemLevelMax,&
+        call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
                                    rsolutionPrimal, rsolutionDual, rtimestep%dTime)
 
 
