@@ -18,6 +18,7 @@ program flagship
   use signal
   use storage
   use transport_application
+  use zpinch_application
   
   implicit none
   
@@ -109,6 +110,9 @@ program flagship
 
   case('mhdsimple')
     call mhd_simple_app(rparlist)
+
+  case('zpinch')
+    call zpinch_app(rparlist)   
 
   case DEFAULT
     call output_line('Invalid application name!',&
