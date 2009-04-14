@@ -227,19 +227,19 @@ contains
     call collct_init(rcollection)
 
     ! Initialize the application descriptor
-    call euler_initApplication(rparlist, 'euler_app', rappDescriptor)
+    call euler_initApplication(rparlist, 'euler', rappDescriptor)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
 
     ! Initialize the global collection
-    call euler_initCollection(rappDescriptor, rparlist, 'euler_app', rcollection)
+    call euler_initCollection(rappDescriptor, rparlist, 'euler', rcollection)
 
     ! Initialize the solver structures
-    call euler_initSolvers(rparlist, 'euler_app', rtimestep, rsolver)
+    call euler_initSolvers(rparlist, 'euler', rtimestep, rsolver)
 
     ! Initialize the abstract problem structure
-    call euler_initProblem(rparlist, 'euler_app',&
+    call euler_initProblem(rparlist, 'euler',&
                            solver_getMinimumMultigridlevel(rsolver),&
                            solver_getMaximumMultigridlevel(rsolver),&
                            rproblem, rcollection)
@@ -264,12 +264,12 @@ contains
     if (rtimestep%dfinalTime > 0) then
       
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, 'euler_app', 'algorithm', algorithm)
-      call parlst_getvalue_string(rparlist, 'euler_app', 'indatfile', sindatfileName)
+      call parlst_getvalue_string(rparlist, 'euler', 'algorithm', algorithm)
+      call parlst_getvalue_string(rparlist, 'euler', 'indatfile', sindatfileName)
       
       ! The boundary condition for the primal problem is required for all 
       ! solution strategies so initialize it from the parameter file
-      call parlst_getvalue_string(rparlist, 'euler_app', 'sprimalbdrcondname', sbdrcondName)
+      call parlst_getvalue_string(rparlist, 'euler', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
                                       '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
       
@@ -280,10 +280,10 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call euler_solveTransientPrimal(rappDescriptor, rparlist, 'euler_app',&
+        call euler_solveTransientPrimal(rappDescriptor, rparlist, 'euler',&
                                         rbdrCondPrimal, rproblem, rtimestep,&
                                         rsolver, rsolutionPrimal, rcollection)
-        call euler_outputSolution(rparlist, 'euler_app', rproblem%p_rproblemLevelMax,&
+        call euler_outputSolution(rparlist, 'euler', rproblem%p_rproblemLevelMax,&
                                   rsolutionPrimal, dtime=rtimestep%dTime)
 
         
