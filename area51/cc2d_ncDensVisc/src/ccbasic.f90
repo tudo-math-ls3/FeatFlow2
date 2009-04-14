@@ -244,6 +244,10 @@ module ccbasic
     
     ! Viscosity parameter nu = 1/Re
     real(DP) :: dnu
+
+    
+    real(DP) :: drho1
+    real(DP) :: drho2
     
     ! Type of problem.
     ! =0: Stokes.

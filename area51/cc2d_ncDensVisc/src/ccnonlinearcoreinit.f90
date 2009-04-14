@@ -194,6 +194,9 @@ contains
     rnonlinearCCMatrix%p_rmatrixD2 => rlevelInfo%rmatrixD2
     rnonlinearCCMatrix%p_rmatrixMass => rlevelInfo%rmatrixMass
     rnonlinearCCMatrix%p_rmatrixStabil => rlevelInfo%rmatrixStabil
+    
+    rnonlinearCCMatrix%drho1 = rproblem%drho1
+    rnonlinearCCMatrix%drho2 = rproblem%drho2
 
     call cc_assembleMatrix (CCMASM_ALLOCMEM,cmatrixType,&
       rmatrix,rnonlinearCCMatrix,rproblem)

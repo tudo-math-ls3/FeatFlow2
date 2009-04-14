@@ -189,7 +189,7 @@ contains
 
 !</subroutine>
 
-    real(DP) :: dnu
+    real(DP) :: dnu,drho1,drho2
     integer :: ilvmin,ilvmax,i1
 
     ! Get the output level for the whole application -- during the
@@ -208,6 +208,17 @@ contains
 
     dnu = 1E0_DP/dnu
     rproblem%dnu = dnu
+
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'RHO1',drho1,1.0_DP)
+
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'RHO2',drho2,1.0_DP)
+
+
+    rproblem%drho1 = drho1
+    rproblem%drho2 = drho2
+
     
     ! Get min/max level from the parameter file.
     !

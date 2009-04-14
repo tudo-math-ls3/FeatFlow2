@@ -251,6 +251,10 @@ module ccmatvecassembly
     ! Pointer to the Jump stabilisation matrix. 
     ! Only active if iupwind=CCMASM_STAB_FASTEDGEORIENTED, otherwise not associated
     type(t_matrixScalar), pointer :: p_rmatrixStabil => NULL()
+    
+    real(DP) :: drho1 = 1.0_DP
+    
+    real(DP) :: drho2 = 1.0_DP        
 
   end type
 
@@ -662,6 +666,10 @@ contains
     real(DP) :: dvecWeight
     type(t_bilinearform) :: rform
     
+    rproblem%rcollection%Dquickaccess(5) = rproblem%drho1    
+    rproblem%rcollection%Dquickaccess(6) = rproblem%drho2    
+    
+    
       ! Standard value for dvectorWeight is = -1.
       dvecWeight = -1.0_DP
       if (present(dvectorWeight)) dvecWeight = dvectorWeight
@@ -785,11 +793,11 @@ contains
           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
         end if
       
-        call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'rmatrix',&
-                                  .TRUE., 0, 'rmatrix.txt', '(E20.5)')
-
-        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rmatrixMass, 'p_rmatrixMass',&
-                                  .TRUE., 0, 'p_rmatrixMass.txt', '(E20.5)')
+!        call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'rmatrix',&
+!                                  .TRUE., 0, 'rmatrix.txt', '(E20.5)')
+!
+!        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rmatrixMass, 'p_rmatrixMass',&
+!                                  .TRUE., 0, 'p_rmatrixMass.txt', '(E20.5)')
         
         
       
@@ -799,8 +807,8 @@ contains
             rmatrix%RmatrixBlock(1,1),&
             .false.,.false.,.true.,.true.)
 
-        call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'mass',&
-                                  .TRUE., 0, 'mass.txt', '(E20.5)')
+!        call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'mass',&
+!                                  .TRUE., 0, 'mass.txt', '(E20.5)')
 
             
         if (.not. bshared) then
@@ -1359,6 +1367,9 @@ contains
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
+    
+    rproblem%rcollection%Dquickaccess(5) = rproblem%drho1    
+    rproblem%rcollection%Dquickaccess(6) = rproblem%drho2    
     
     call lsysbl_getbase_double (rx,p_DdataX)
     call lsysbl_getbase_double (rd,p_DdataD)
@@ -2313,7 +2324,7 @@ contains
     type(t_vectorScalar), pointer :: p_rvectorScalarUy
     ! here we store the values of u and rho
     real(dp), dimension(:,:,:), allocatable :: Dvalues
-    real(dp) :: dxcenter, dycenter, dradius, ddist,drho
+    real(dp) :: dxcenter, dycenter, dradius, ddist,drho,drho1,drho2
     type(t_triangulation), pointer :: p_rtriangulation
     ! Get the triangulation array for the point coordinates
     p_rtriangulation => rdiscretisationTrial%p_rtriangulation
@@ -2322,6 +2333,10 @@ contains
     dxcenter = 0.5
     dycenter = 0.5
     dradius  = 0.15
+    
+    drho1    = rcollection%Dquickaccess(5)
+    drho2    = rcollection%Dquickaccess(6)
+
 
     ! get the pointers form the collection
     p_rvectorScalarUx => rcollection%p_rvectorQuickAccess1%RvectorBlock(1)
@@ -2342,11 +2357,11 @@ contains
       do icup=1,npointsPerElement
         ddist = sqrt( (Dpoints(1,icup,iel) - dxcenter)**2 + (Dpoints(2,icup,iel)-dycenter)**2)
         if(ddist .le. dradius)then
-          Dcoefficients(1,icup,iel) = rform%Dcoefficients(1) * Dvalues(1,icup,iel) * 1.0_dp
-          Dcoefficients(2,icup,iel) = rform%Dcoefficients(2) * Dvalues(2,icup,iel) * 1.0_dp
+          Dcoefficients(1,icup,iel) = rform%Dcoefficients(1) * Dvalues(1,icup,iel) * drho2
+          Dcoefficients(2,icup,iel) = rform%Dcoefficients(2) * Dvalues(2,icup,iel) * drho2
         else
-          Dcoefficients(1,icup,iel) = rform%Dcoefficients(1) * Dvalues(1,icup,iel)
-          Dcoefficients(2,icup,iel) = rform%Dcoefficients(2) * Dvalues(2,icup,iel)
+          Dcoefficients(1,icup,iel) = rform%Dcoefficients(1) * Dvalues(1,icup,iel) * drho1
+          Dcoefficients(2,icup,iel) = rform%Dcoefficients(2) * Dvalues(2,icup,iel) * drho1
         end if
       end do
     end do
@@ -2435,11 +2450,14 @@ contains
     integer :: iel,icup,ive,nve
     ! here we store the values of u and rho
     real(dp), dimension(:,:,:), allocatable :: Dvalues
-    real(dp) :: dxcenter, dycenter, dradius, ddist,drho
+    real(dp) :: dxcenter, dycenter, dradius, ddist,drho,drho1,drho2
     real(dp), dimension(:), allocatable :: DrhoElement
     type(t_triangulation), pointer :: p_rtriangulation
     ! Get the triangulation array for the point coordinates
     p_rtriangulation => rdiscretisationTrial%p_rtriangulation
+
+    drho1    = rcollection%Dquickaccess(5)
+    drho2    = rcollection%Dquickaccess(6)
 
     ! Definition of the circle
     dxcenter = 0.5
@@ -2452,9 +2470,9 @@ contains
       do icup=1,npointsPerElement
         ddist = sqrt( (Dpoints(1,icup,iel) - dxcenter)**2 + (Dpoints(2,icup,iel)-dycenter)**2)
         if(ddist .le. dradius)then
-          Dcoefficients(1,icup,iel) = 1.0_dp
+          Dcoefficients(1,icup,iel) = drho2
         else
-          Dcoefficients(1,icup,iel) = 1.0_dp
+          Dcoefficients(1,icup,iel) = drho1
         end if
       end do
     end do

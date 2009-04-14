@@ -432,6 +432,10 @@ contains
     rnonlinearCCMatrix%p_rmatrixStabil => &
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStabil
         
+    rnonlinearCCMatrix%drho1 = rproblem%drho1
+    rnonlinearCCMatrix%drho2 = rproblem%drho2
+        
+        
     call cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,-1.0_DP,1.0_DP,rproblem)
 
     ! -------------------------------------------    

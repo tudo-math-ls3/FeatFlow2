@@ -533,9 +533,20 @@ contains
     
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
     integer :: ioutputUCD,ilevelUCD
-    integer(I32) :: ieltype
+    integer(I32) :: ieltype,ivt
+    
+    type(t_vectorScalar) :: vecDensity
+    
+    real(dp), dimension(:),pointer :: pDensity
+    real(DP) :: dxcenter,dycenter,dradius,ddist
+    real(dp), dimension(:,:),pointer :: p_Dvertices
     
     character(SYS_STRLEN) :: sfile,sfilename
+    
+    ! Definition of the circle
+    dxcenter = 0.5
+    dycenter = 0.5
+    dradius  = 0.15      
     
     if (present(dtime)) then
       ! In a nonstationary simulation, first check if we are allowed
@@ -659,6 +670,26 @@ contains
     ! of that level
     p_rtriangulation => rproblem%RlevelInfo(ilevelUCD)%rtriangulation
     
+    call lsyssc_createVector (vecDensity,p_rtriangulation%NVT,.true.,ST_DOUBLE)
+    call lsyssc_getbase_double (vecDensity,pDensity)
+
+    call storage_getbase_double2D (p_rtriangulation%h_DvertexCoords,&
+        p_DVertices)
+    
+    do ivt=1,p_rtriangulation%NVT
+    
+    ! loop over the elements and cubature points
+    ! and assign the coefficients 
+        ddist = sqrt( (p_DVertices(1,ivt) - dxcenter)**2 + (p_DVertices(2,ivt)-dycenter)**2)
+        if(ddist .le. dradius)then
+          pDensity(ivt) = rproblem%drho2
+        else
+          pDensity(ivt) = rproblem%drho1
+        end if
+      
+    end do      
+    
+    
     ! Start UCD export to GMV file:
     call output_lbrk ()
     call output_line ('Writing GMV file: '//sfile)
@@ -705,6 +736,10 @@ contains
     call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
     call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, &
         p_Ddata(1:p_rtriangulation%NEL))
+        
+    call ucd_addVariableVertexBased (rexport,'Density',UCD_VAR_STANDARD, &
+        pDensity(1:p_rtriangulation%NVT))
+        
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
@@ -731,6 +766,8 @@ contains
     
     ! Release the auxiliary vector
     call lsysbl_releaseVector (rprjVector)
+    
+    call lsyssc_releaseVector (vecDensity)    
     
     ! Release the discretisation structure.
     call spdiscr_releaseBlockDiscr (rprjDiscretisation)
