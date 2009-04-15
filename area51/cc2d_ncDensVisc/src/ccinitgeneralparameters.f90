@@ -40,7 +40,7 @@ module ccinitgeneralparameters
   use spdiscprojection
   use nonlinearsolver
   use paramlist
-  
+  use geometry
   use collection
   use convection
     
@@ -189,8 +189,9 @@ contains
 
 !</subroutine>
 
-    real(DP) :: dnu,drho1,drho2
+    real(DP) :: dnu,drho1,drho2,dx,dy,drad,dmass
     integer :: ilvmin,ilvmax,i1
+    type(t_geometryObject) :: rgeometryObject
 
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.
@@ -219,6 +220,26 @@ contains
     rproblem%drho1 = drho1
     rproblem%drho2 = drho2
 
+     ! get x,y coordinate and the radius
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'pX',dx,0.5_DP)
+
+    rproblem%dx = dx
+
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'pY',dy,0.5_DP)
+    rproblem%dy = dy
+
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'pRad',drad,0.15_DP)
+
+    rproblem%drad = drad
+    
+     ! get the mass of the particle
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'pMass',dmass,1.0_DP)
+
+    rproblem%dmass = dmass
     
     ! Get min/max level from the parameter file.
     !

@@ -63,7 +63,7 @@ module ccpostprocessing
   use paramlist
   use ccboundaryconditionparser
   use statistics
-  
+  use geometry
   use collection
   use convection
   
@@ -532,8 +532,8 @@ contains
     type(t_ucdExport) :: rexport
     
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
-    integer :: ioutputUCD,ilevelUCD
-    integer(I32) :: ieltype,ivt
+    integer :: ioutputUCD,ilevelUCD,ipolyHandle
+    integer(I32) :: ieltype,ivt,iin
     
     type(t_vectorScalar) :: vecDensity
     
@@ -541,12 +541,14 @@ contains
     real(DP) :: dxcenter,dycenter,dradius,ddist
     real(dp), dimension(:,:),pointer :: p_Dvertices
     
+    type(t_geometryObject), pointer :: p_rgeometryObject
+    
+    real(DP), dimension(:,:), pointer :: p_Dvertices1    
+    
     character(SYS_STRLEN) :: sfile,sfilename
     
-    ! Definition of the circle
-    dxcenter = 0.5
-    dycenter = 0.5
-    dradius  = 0.15      
+    ! get a pointer to the geometry object
+    p_rgeometryObject => collct_getvalue_geom (rproblem%rcollection, 'mini')        
     
     if (present(dtime)) then
       ! In a nonstationary simulation, first check if we are allowed
@@ -678,14 +680,12 @@ contains
     
     do ivt=1,p_rtriangulation%NVT
     
-    ! loop over the elements and cubature points
-    ! and assign the coefficients 
-        ddist = sqrt( (p_DVertices(1,ivt) - dxcenter)**2 + (p_DVertices(2,ivt)-dycenter)**2)
-        if(ddist .le. dradius)then
-          pDensity(ivt) = rproblem%drho2
-        else
-          pDensity(ivt) = rproblem%drho1
-        end if
+      call geom_isInGeometry (p_rgeometryObject, p_DVertices(:,ivt), iin)
+      if(iin .eq. 1)then 
+        pDensity(ivt) = rproblem%drho2
+      else
+        pDensity(ivt) = rproblem%drho1
+      end if
       
     end do      
     
@@ -720,7 +720,7 @@ contains
     call ucd_addCommentLine (rexport,'---------------')
     call ucd_addParameterList (rexport,rproblem%rparamList)
     call ucd_addCommentLine (rexport,'---------------')
-
+                       
     ! Write velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
@@ -760,6 +760,13 @@ contains
       
     end if
     
+    call geom_polygonise(p_rgeometryObject,ipolyHandle)
+    
+    ! Get the vertices
+    call storage_getbase_double2D(ipolyHandle, p_Dvertices1)
+    
+    call ucd_addPolygon(rexport,p_Dvertices1)
+    
     ! Write the file to disc, that's it.
     call ucd_write (rexport)
     call ucd_release (rexport)
@@ -768,6 +775,8 @@ contains
     call lsysbl_releaseVector (rprjVector)
     
     call lsyssc_releaseVector (vecDensity)    
+    
+    call storage_free(ipolyHandle)
     
     ! Release the discretisation structure.
     call spdiscr_releaseBlockDiscr (rprjDiscretisation)

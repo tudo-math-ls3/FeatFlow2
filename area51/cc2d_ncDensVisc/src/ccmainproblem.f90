@@ -40,7 +40,7 @@ module ccmainproblem
   use nonlinearsolver
   use paramlist
   use statistics
-  
+  use geometry  
   use collection
   use convection
     
@@ -101,7 +101,8 @@ contains
     type(t_timer) :: rtimerGridGeneration
     type(t_timer) :: rtimerMatrixGeneration
     type(t_timer) :: rtimerSolver
-    
+    type(t_geometryObject) :: rgeometryObject
+   
     integer :: i
     
     ! Ok, let's start. 
@@ -141,6 +142,17 @@ contains
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
     call cc_initParameters (p_rproblem)
+    
+    ! initialise the particle
+!    rgeometryObject%ndimension = NDIM2D
+!    
+!    call geom_init_circle(rgeometryObject,drad,(/dx,dy/))
+
+    rgeometryObject%ndimension = NDIM2D
+    
+    call geom_init_circle(rgeometryObject,p_rproblem%drad,(/p_rproblem%dx,p_rproblem%dy/))
+    
+    call collct_setvalue_geom(p_rproblem%rcollection, 'mini', rgeometryObject,.true.)
     
     ! So now the different steps - one after the other.
     !

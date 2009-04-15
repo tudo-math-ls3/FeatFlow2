@@ -245,6 +245,13 @@ module ccbasic
     ! Viscosity parameter nu = 1/Re
     real(DP) :: dnu
 
+    real(dp) :: dmass
+    
+    real(dp) :: dx
+    
+    real(dp) :: dy
+    
+    real(dp) :: drad
     
     real(DP) :: drho1
     real(DP) :: drho2

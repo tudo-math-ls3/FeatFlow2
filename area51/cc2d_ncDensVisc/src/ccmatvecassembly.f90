@@ -84,6 +84,7 @@ module ccmatvecassembly
   use ccbasic
   use stdoperators  
   use linearsystemscalar
+  use geometry
   
   implicit none
   
@@ -2319,20 +2320,26 @@ contains
   !</output>
     
   !</subroutine>
-    integer :: iel,icup,ive,nve
+    integer :: iel,icup,ive,nve,iin
     type(t_vectorScalar), pointer :: p_rvectorScalarUx
     type(t_vectorScalar), pointer :: p_rvectorScalarUy
     ! here we store the values of u and rho
     real(dp), dimension(:,:,:), allocatable :: Dvalues
     real(dp) :: dxcenter, dycenter, dradius, ddist,drho,drho1,drho2
     type(t_triangulation), pointer :: p_rtriangulation
+    
+    type(t_geometryObject), pointer :: p_rgeometryObject
+    
+    ! get a pointer to the geometry object
+    p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')       
+    
     ! Get the triangulation array for the point coordinates
     p_rtriangulation => rdiscretisationTrial%p_rtriangulation
 
     ! Definition of the circle
-    dxcenter = 0.5
-    dycenter = 0.5
-    dradius  = 0.15
+!    dxcenter = 0.5
+!    dycenter = 0.5
+!    dradius  = 0.15
     
     drho1    = rcollection%Dquickaccess(5)
     drho2    = rcollection%Dquickaccess(6)
@@ -2355,8 +2362,11 @@ contains
     ! and assign the coefficients 
     do iel=1,nelements
       do icup=1,npointsPerElement
-        ddist = sqrt( (Dpoints(1,icup,iel) - dxcenter)**2 + (Dpoints(2,icup,iel)-dycenter)**2)
-        if(ddist .le. dradius)then
+      
+!        ddist = sqrt( (Dpoints(1,icup,iel) - dxcenter)**2 + (Dpoints(2,icup,iel)-dycenter)**2)
+!        if(ddist .le. dradius)then
+        call geom_isInGeometry (p_rgeometryObject, Dpoints(:,icup,iel), iin)
+        if(iin .eq. 1)then 
           Dcoefficients(1,icup,iel) = rform%Dcoefficients(1) * Dvalues(1,icup,iel) * drho2
           Dcoefficients(2,icup,iel) = rform%Dcoefficients(2) * Dvalues(2,icup,iel) * drho2
         else
@@ -2447,12 +2457,18 @@ contains
   !</output>
     
   !</subroutine>
-    integer :: iel,icup,ive,nve
+    integer :: iel,icup,ive,nve,iin
     ! here we store the values of u and rho
     real(dp), dimension(:,:,:), allocatable :: Dvalues
     real(dp) :: dxcenter, dycenter, dradius, ddist,drho,drho1,drho2
     real(dp), dimension(:), allocatable :: DrhoElement
     type(t_triangulation), pointer :: p_rtriangulation
+    
+    type(t_geometryObject), pointer :: p_rgeometryObject
+    
+    ! get a pointer to the geometry object
+    p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')       
+    
     ! Get the triangulation array for the point coordinates
     p_rtriangulation => rdiscretisationTrial%p_rtriangulation
 
@@ -2460,22 +2476,26 @@ contains
     drho2    = rcollection%Dquickaccess(6)
 
     ! Definition of the circle
-    dxcenter = 0.5
-    dycenter = 0.5
-    dradius  = 0.15
+!    dxcenter = 0.5
+!    dycenter = 0.5
+!    dradius  = 0.15
 
     ! loop over the elements and cubature points
     ! and assign the coefficients 
     do iel=1,nelements
       do icup=1,npointsPerElement
-        ddist = sqrt( (Dpoints(1,icup,iel) - dxcenter)**2 + (Dpoints(2,icup,iel)-dycenter)**2)
-        if(ddist .le. dradius)then
+        
+!        ddist = sqrt( (Dpoints(1,icup,iel) - dxcenter)**2 + (Dpoints(2,icup,iel)-dycenter)**2)
+!        if(ddist .le. dradius)then
+        call geom_isInGeometry (p_rgeometryObject, Dpoints(:,icup,iel), iin)
+        if(iin .eq. 1)then 
           Dcoefficients(1,icup,iel) = drho2
         else
           Dcoefficients(1,icup,iel) = drho1
         end if
       end do
     end do
+    
   end subroutine
 
   ! ***************************************************************************
