@@ -87,6 +87,15 @@ RHO1                 = 1
 # Density for Region2
 RHO2                 = 1000
 
+# x coordinate of the particle
+pX                   = 0.5
+# y coordinate of the particle
+pY                   = 0.5
+# radius of the particle
+pRad                 = 0.15
+# mass of the particle
+pMass                = 1.0
+
 # Type of right hand side. 
 # 0=zero
 # 1=steady inhomog., analytically defined by coeff_RHS_x/coeff_RHS_y 
