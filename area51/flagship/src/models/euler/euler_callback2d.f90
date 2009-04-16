@@ -146,7 +146,7 @@ contains
   
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkin2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxGalerkin2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
@@ -162,6 +162,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -221,7 +224,7 @@ contains
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
@@ -239,7 +242,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkinNoBdr2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxGalerkinNoBdr2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
@@ -258,6 +261,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -290,7 +296,7 @@ contains
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
@@ -311,7 +317,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxScalarDiss2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxScalarDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -327,6 +333,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -360,7 +369,7 @@ contains
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
@@ -410,7 +419,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitScalarDiss2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxDSplitScalarDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -427,6 +436,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -460,7 +472,7 @@ contains
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
@@ -509,7 +521,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTensorDiss2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxTensorDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -525,6 +537,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -559,7 +574,7 @@ contains
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
@@ -637,7 +652,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitTensorDiss2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxDSplitTensorDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -654,6 +669,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -688,7 +706,7 @@ contains
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
@@ -802,7 +820,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxRusanov2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxRusanov2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -818,6 +836,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -850,7 +871,7 @@ contains
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
@@ -891,7 +912,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitRusanov2d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxDSplitRusanov2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -908,6 +929,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -941,7 +965,7 @@ contains
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
-    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - ((GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj)
+    dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
     ! Compute fluxes for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
@@ -984,7 +1008,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixDiagonalDiag2d(U_i, C_ii, dscale, K_ii)
+  subroutine euler_calcMatrixDiagonalDiag2d(U_i, C_ii, i, dscale, K_ii)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1000,6 +1024,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! row number
+    integer, intent(IN) :: i
 !</input>
 
 !<output>
@@ -1026,7 +1053,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixDiagonal2d(U_i, C_ii, dscale, K_ii)
+  subroutine euler_calcMatrixDiagonal2d(U_i, C_ii, i, dscale, K_ii)
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
@@ -1042,6 +1069,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! row number
+    integer, intent(IN) :: i
 !</input>
 
 !<output>
@@ -1087,7 +1117,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixGalerkinDiag2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 2D
@@ -1102,6 +1132,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -1138,7 +1171,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixGalerkin2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 2D
@@ -1153,6 +1186,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -1225,7 +1261,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixScalarDissDiag2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1241,6 +1277,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -1298,7 +1337,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixScalarDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1314,6 +1353,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -1414,7 +1456,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixTensorDissDiag2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1430,6 +1472,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -1561,7 +1606,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixTensorDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1577,6 +1622,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -1730,7 +1778,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanovDiag2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixRusanovDiag2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1746,6 +1794,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -1818,7 +1869,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanov2d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixRusanov2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1834,6 +1885,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>

@@ -145,7 +145,7 @@ contains
   
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkin3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxGalerkin3d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard Galerkin 
@@ -161,6 +161,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -175,7 +178,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkinNoBdr3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxGalerkinNoBdr3d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
@@ -194,6 +197,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -208,7 +214,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxScalarDiss3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxScalarDiss3d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -224,6 +230,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -238,7 +247,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitScalarDiss3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxDSplitScalarDiss3d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -255,6 +264,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -269,7 +281,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTensorDiss3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxTensorDiss3d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -285,6 +297,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -299,7 +314,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitTensorDiss3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxDSplitTensorDiss3d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -316,6 +331,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -330,7 +348,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxRusanov3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxRusanov3d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -346,6 +364,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -360,7 +381,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitRusanov3d(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxDSplitRusanov3d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -377,6 +398,9 @@ contains
 
     ! scaling coefficient
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -391,7 +415,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixDiagonalDiag3d(U_i, C_ii, dscale, K_ii)
+  subroutine euler_calcMatrixDiagonalDiag3d(U_i, C_ii, i, dscale, K_ii)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -407,6 +431,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! row number
+    integer, intent(IN) :: i
 !</input>
 
 !<output>
@@ -421,7 +448,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixDiagonal3d(U_i, C_ii, dscale, K_ii)
+  subroutine euler_calcMatrixDiagonal3d(U_i, C_ii, i, dscale, K_ii)
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
@@ -437,6 +464,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! row number
+    integer, intent(IN) :: i
 !</input>
 
 !<output>
@@ -451,7 +481,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixGalerkinDiag3d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 3D
@@ -466,6 +496,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -480,7 +513,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixGalerkin3d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
      ! This subroutine computes the Galerkin matrices in 3D
@@ -495,6 +528,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -509,7 +545,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixScalarDissDiag3d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -525,6 +561,9 @@ contains
     
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -539,7 +578,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixScalarDiss3d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -555,6 +594,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -569,7 +611,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixTensorDissDiag3d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
     !<description>
     ! This subroutine computes the Galerkin matrices
@@ -585,6 +627,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -599,7 +644,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixTensorDiss3d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -615,6 +660,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -629,7 +677,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanovDiag3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixRusanovDiag3d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -645,6 +693,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
@@ -659,7 +710,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanov3d(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixRusanov3d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -675,6 +726,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
 !</input>
 
 !<output>
