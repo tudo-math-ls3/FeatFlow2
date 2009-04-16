@@ -450,12 +450,15 @@ contains
           dang = atan2(x2, x1)
           
           ! Compute unit vector into origin
-          x1 = cos(dang)
-          x2 = sin(dang)
+          if (drad .gt. 1e-4) then
+            x1 = cos(dang)
+            x2 = sin(dang)
+          else
+            x1 = 0.0; x2 = 0.0
+          end if
           
           ! Compute source term
           if (DdataTransport(j) > sqrt(SYS_EPSREAL)) then
-!!$            daux = dscale * MC(ij) * DdataTransport(j) * DdataEuler(1,j) / max(drad, 1.0e-4_DP)
             daux = dscale * MC(ij) * DdataTransport(j) / max(drad, 1.0e-4_DP)
           else
             daux = 0.0_DP
