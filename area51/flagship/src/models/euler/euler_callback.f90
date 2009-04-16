@@ -146,6 +146,7 @@ contains
 !!$                         rsolution, rvector, rcollection)
 !!$    end if
 
+
     ! Do we have to calculate the residual
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
@@ -833,10 +834,7 @@ contains
     integer :: inviscidAFC, imasstype, idissipationtype
     integer :: iblock
 
-
-    ! Update the global system operator
-    call euler_calcPreconditioner(rproblemLevel, rtimestep, rsolver, rsolution, rcollection)
-
+    
     ! Start time measurement for residual/rhs evaluation
     rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
     call stat_startTimer(rtimer, STAT_TIMERSHORT)
@@ -2170,14 +2168,14 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Calculate low-order flux
-          call euler_calcFluxRusanov2d(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call euler_calcFluxRusanov2d(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Update the time rate of change vector
           troc(:,i) = troc(:,i) + F_ij
           troc(:,j) = troc(:,j) + F_ji
 
           ! Calculate diffusion coefficient
-          call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
           
           ! Compute solution difference
           Diff = u(:,i)-u(:,j)         
