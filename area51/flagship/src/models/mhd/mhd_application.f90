@@ -75,6 +75,9 @@ module mhd_application
   use transport_application
   use transport_basic
   use transport_callback
+  use transport_callback1d
+  use transport_callback2d
+  use transport_callback3d
   use ucd
 
   implicit none
@@ -1133,10 +1136,6 @@ contains
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler, rsolverEuler,&
                                     rsolutionEuler, euler_nlsolverCallback, rcollectionEuler)
-
-        ! Perform characteristic FCT postprocessing
-        call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel, rtimestepEuler,&
-                                     rsolutionEuler, rcollectionEuler)
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -1156,7 +1155,8 @@ contains
       call stat_startTimer(rappDescrTransport%rtimerSolution, STAT_TIMERSHORT)
 
       ! Set velocity field v^{n+1} for scalar model problem
-      call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)      
+      call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)
+      call transp_setVariable2d(rsolutionEuler)
 
       ! What time-stepping scheme should be used?
       select case(rtimestepTransport%ctimestepType)
@@ -1172,10 +1172,6 @@ contains
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(p_rproblemLevel, rtimestepTransport, rsolverTransport,&
                                     rsolutionTransport, transp_nlsolverCallback, rcollectionTransport)
-
-        ! Perform characteristic FCT postprocessing
-        call transp_calcLinearizedFCT(rbdrCondTransport, p_rproblemLevel, rtimestepTransport,&
-                                      rsolutionTransport, rcollectionTransport)
           
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -1185,6 +1181,11 @@ contains
       
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescrTransport%rtimerSolution)
+
+      
+      ! Perform characteristic FCT postprocessing
+      call mhd_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, p_rproblemLevel,&
+                                 rtimestepEuler, rsolutionEuler, rsolutionTransport, rcollectionEuler)
 
 
       !-------------------------------------------------------------------------
