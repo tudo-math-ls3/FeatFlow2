@@ -1806,14 +1806,12 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux1,aux2,hi,hj,ui,uj,vi,vj
-
-    real(DP) :: ci,cj,Ei,Ej,aux
-
+    real(DP) :: aux,hi,hj,ui,uj,vi,vj,ci,cj,Ei,Ej
+    
+    
     ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1)
-    uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1)
+    ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
+    uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
 
     ! Compute Galerkin coefficient K_ij
     K_ij(1) = 0.0_DP
@@ -1827,37 +1825,14 @@ contains
     K_ji(3) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
     K_ji(4) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
-!!$    ! Compute skew-symmetric coefficient and its norm
-!!$    a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$
-!!$    if (anorm .gt. SYS_EPSREAL) then
-!!$      
-!!$      ! Compute enthalpy
-!!$      hi   = GAMMA*U_i(4)/U_i(1)-G2*(ui*ui+vi*vi)
-!!$      hj   = GAMMA*U_j(4)/U_j(1)-G2*(uj*uj+vj*vj)
-!!$      
-!!$      ! Compute auxiliary values
-!!$      aux1 = abs(a(1)*ui+a(2)*vi) + anorm*sqrt(max(-G1*(ui*ui+vi*vi-hi), SYS_EPSREAL))
-!!$      aux2 = abs(a(1)*uj+a(2)*vj) + anorm*sqrt(max(-G1*(uj*uj+vj*vj-hj), SYS_EPSREAL))
-!!$
-!!$      ! Compute scalar dissipation
-!!$      D_ij = dscale*max(aux1,aux2)
-!!$      
-!!$    else
-!!$
-!!$      D_ij = 0.0_DP
-!!$
-!!$    end if
-
-    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
-    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
-
+    ! Compute auxiliary quantities
     hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
     hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
 
     ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
     cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
+    ! Compute dissipation tensor D_ij
     aux = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
 
@@ -1898,12 +1873,8 @@ contains
 
     ! local variable
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,hi,hj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-
-
-    real(DP) :: ci,cj
-
-
+    real(DP) :: aux,hi,hj,ci,cj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
+    
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
@@ -1956,44 +1927,17 @@ contains
     K_ji(15) = dscale*G1*C_ji(2)
     K_ji(16) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
-!!$    ! Compute coefficients
-!!$    a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
-!!$
-!!$    if (anorm .gt. SYS_EPSREAL) then
-!!$      
-!!$      ! Compute auxiliary values
-!!$      aux1 = abs(a(1)*ui+a(2)*vi) + anorm*sqrt(max(-G1*(qi-hi), SYS_EPSREAL))
-!!$      aux2 = abs(a(1)*uj+a(2)*vj) + anorm*sqrt(max(-G1*(qj-hj), SYS_EPSREAL))
-!!$      
-!!$      ! Compute scalar dissipation
-!!$      aux = dscale*max(aux1, aux2)
-!!$
-!!$      D_ij     = 0.0_DP
-!!$      D_ij( 1) = aux
-!!$      D_ij( 6) = aux
-!!$      D_ij(11) = aux
-!!$      D_ij(16) = aux
-!!$      
-!!$    else
-!!$
-!!$      D_ij = 0.0_DP
-!!$
-!!$    end if
-
-    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
-    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
-
+    ! Compute auxiliary quantities
     hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
     hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
 
     ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
     cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
-    aux = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
-               abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
-
-    aux = aux*dscale
-
+    ! Compute dissipation tensor D_ij
+    aux = dscale * max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
+                        abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
+    
     D_ij = 0.0_DP
     D_ij( 1) = aux
     D_ij( 6) = aux
