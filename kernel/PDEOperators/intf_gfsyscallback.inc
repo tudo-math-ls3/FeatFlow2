@@ -56,14 +56,14 @@
 
 !<subroutine>
 
-  subroutine fcb_calcFlux(U_i, U_j, C_ij, C_ji, dscale, F_ij, F_ji)
+  subroutine fcb_calcFlux(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
     use fsystem
 
 !<description>
     ! This subroutine computes the internodal fluxes.  Given the
-    ! conservative variables at the two states $i$ and $j$ and the
-    ! multi-component weighting coefficients, this routine computes:
+    ! variables at the two states $i$ and $j$ and the multi-component
+    ! weighting coefficients, this routine computes:
     !
     ! 1.) The internodal flux from node $j$ into node $i$: $F_{ij}$
     !
@@ -78,6 +78,7 @@
   real(DP), dimension(:), intent(IN)  :: U_i,U_j
   real(DP), dimension(:), intent(IN)  :: C_ij,C_ji
   real(DP),               intent(IN)  :: dscale
+  integer, intent(IN)                 :: i,j
 !</input>
 
 !<output>
@@ -92,21 +93,22 @@
 
 !<subroutine>
 
-  subroutine fcb_calcMatrixDiagonal(U_i, C_ii, dscale, K_ii)
+  subroutine fcb_calcMatrixDiagonal(U_i, C_ii, i, dscale, K_ii)
 
     use fsystem
 
 !<description>
-    ! Given the conservative variables at node $i$ and the weighting
-    ! coefficient $C_{ii}$, this subroutine computes the matrix
-    ! coefficient $K_{ii} which is assembled into the diagonal of the
-    ! global system matrix.
+    ! Given the variables at node $i$ and the weighting coefficient
+    ! $C_{ii}$, this subroutine computes the matrix coefficient
+    ! $K_{ii} which is assembled into the diagonal of the global
+    ! system matrix.
 !</description>
 
 !<input>
   real(DP), dimension(:), intent(IN)  :: U_i
   real(DP), dimension(:), intent(IN)  :: C_ii
   real(DP), intent(IN)                :: dscale
+  integer, intent(IN)                 :: i
 !</input>
 
 !<outptu>
@@ -121,23 +123,25 @@
 
 !<subroutine>
 
-  subroutine fcb_calcMatrix(U_i, U_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+  subroutine fcb_calcMatrix(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
     use fsystem
 
 !<description>
     ! This subroutine computes the local matrices for the edge
-    ! $ij$. Given the conservative variables at the two states $i$ and
-    ! $j$ and the multi-component weighting coefficients $C_{ij}$ and
-    ! $C_{ji}$, this subroutine computes the matrix coefficients
-    ! $K_{ij} and $K_{ji} which are assembled into the global system
-    ! matrix. Moreover, the diffusion coefficient $D_{ij}$ is computed.
+    ! $ij$. Given the variables at the two states $i$ and $j$ and the
+    ! multi-component weighting coefficients $C_{ij}$ and $C_{ji}$,
+    ! this subroutine computes the matrix coefficients $K_{ij} and
+    ! $K_{ji} which are assembled into the global system
+    ! matrix. Moreover, the diffusion coefficient $D_{ij}$ is
+    ! computed.
 !</description>
 
 !<input>
   real(DP), dimension(:), intent(IN)  :: U_i, U_j
   real(DP), dimension(:), intent(IN)  :: C_ij, C_ji
   real(DP), intent(IN)                :: dscale
+  integer, intent(IN)                 :: i,j
 !</input>
 
 !<outptu>

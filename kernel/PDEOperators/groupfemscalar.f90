@@ -455,7 +455,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvOperatorBlock(RcoeffMatrices, ru, fcb_calcConvection,&
+  subroutine gfsc_buildConvOperatorBlock(RcoeffMatrices, ru, fcb_calcMatrix,&
                                          bStabilise, bclear, rconvMatrix, rafcstab,&
                                          bisConservative)
     
@@ -517,7 +517,7 @@ contains
     else
       
       call gfsc_buildConvOperatorScalar(RcoeffMatrices, ru%RvectorBlock(1),&
-                                        fcb_calcConvection, bStabilise, bclear,&
+                                        fcb_calcMatrix, bStabilise, bclear,&
                                         rconvMatrix, rafcstab, bisConservative)
 
     end if
@@ -528,7 +528,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvOperatorScalar(RcoeffMatrices, ru, fcb_calcConvection,&
+  subroutine gfsc_buildConvOperatorScalar(RcoeffMatrices, ru, fcb_calcMatrix,&
                                           bStabilise, bclear, rconvMatrix, rafcstab,&
                                           bisConservative)
 
@@ -1122,7 +1122,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
-      real(DP) :: k_ii,k_ij,k_ji
+      real(DP) :: k_ii,k_ij,k_ji,d_ij
       integer :: ii,ij,ji,i,j
       
       
@@ -1136,7 +1136,7 @@ contains
         C_ii(1) = Cx(ii)
 
         ! Compute coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         K(ii) = K(ii) + k_ii
@@ -1154,7 +1154,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ij) = K(ij) + k_ij
@@ -1179,7 +1179,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
+      real(DP) :: k_ij,k_ji,d_ij
       integer :: ii,jj,ij,ji,i,j
       
       
@@ -1202,7 +1202,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ii) = K(ii) - k_ij
@@ -1229,7 +1229,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
-      real(DP) :: k_ii,k_ij,k_ji
+      real(DP) :: k_ii,k_ij,k_ji,d_ij
       integer :: ii,ij,ji,i,j
       
       
@@ -1243,7 +1243,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         K(ii) = K(ii) + k_ii
@@ -1262,7 +1262,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ij) = K(ij) + k_ij
@@ -1287,7 +1287,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
+      real(DP) :: k_ij,k_ji,d_ij
       integer :: ii,jj,ij,ji,i,j
       
       
@@ -1311,7 +1311,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ii) = K(ii) - k_ij
@@ -1339,7 +1339,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
-      real(DP):: k_ii,k_ij,k_ji
+      real(DP):: k_ii,k_ij,k_ji,d_ij
       integer :: ii,ij,ji,i,j
       
       
@@ -1353,7 +1353,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         K(ii) = K(ii) + k_ii
@@ -1373,7 +1373,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ij) = K(ij) + k_ij
@@ -1398,7 +1398,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP):: k_ij,k_ji
+      real(DP):: k_ij,k_ji,d_ij
       integer :: ii,jj,ij,ji,i,j
       
       
@@ -1423,7 +1423,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ii) = K(ii) - k_ij
@@ -1450,7 +1450,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
-      real(DP) :: k_ii,k_ij,k_ji
+      real(DP) :: k_ii,k_ij,k_ji,d_ij
       integer :: ii,ij,ji,i,j
       
             
@@ -1464,7 +1464,7 @@ contains
         C_ii(1) = Cx(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         K(ii) = K(ii) + k_ii
@@ -1482,7 +1482,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ij) = K(ij) + k_ij
@@ -1507,7 +1507,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
+      real(DP) :: k_ij,k_ji,d_ij
       integer :: ii,jj,ij,ji,i,j
       
             
@@ -1530,7 +1530,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ii) = K(ii) - k_ij
@@ -1557,7 +1557,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
-      real(DP) :: k_ii,k_ij,k_ji
+      real(DP) :: k_ii,k_ij,k_ji,d_ij
       integer :: ii,ij,ji,i,j
       
             
@@ -1571,7 +1571,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         K(ii) = K(ii) + k_ii
@@ -1590,7 +1590,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ij) = K(ij) + k_ij
@@ -1615,7 +1615,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
+      real(DP) :: k_ij,k_ji,d_ij
       integer :: ii,jj,ij,ji,i,j
       
             
@@ -1639,7 +1639,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ii) = K(ii) - k_ij
@@ -1666,7 +1666,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
-      real(DP) :: k_ii,k_ij,k_ji
+      real(DP) :: k_ii,k_ij,k_ji,d_ij
       integer :: ii,ij,ji,i,j
       
             
@@ -1680,7 +1680,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         K(ii) = K(ii) + k_ii
@@ -1700,7 +1700,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ij) = K(ij) + k_ij
@@ -1725,7 +1725,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji
+      real(DP) :: k_ij,k_ji,d_ij
       integer :: ii,jj,ij,ji,i,j
       
             
@@ -1750,7 +1750,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Assemble the global operator
           K(ii) = K(ii) - k_ij
@@ -1791,7 +1791,7 @@ contains
         C_ij(1) = Cx(ij)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -1809,10 +1809,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -1866,10 +1863,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -1914,7 +1908,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -1933,10 +1927,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -1991,11 +1982,8 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
           k_ji = k_ji + d_ij
@@ -2039,7 +2027,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -2059,10 +2047,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2118,10 +2103,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2166,7 +2148,7 @@ contains
         C_ij(1) = Cx(ij)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -2184,10 +2166,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2241,10 +2220,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2289,7 +2265,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -2308,10 +2284,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2366,10 +2339,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2414,7 +2384,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -2434,10 +2404,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2493,10 +2460,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2551,7 +2515,7 @@ contains
         C_ii(1) = Cx(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -2572,10 +2536,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2652,10 +2613,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2721,7 +2679,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -2743,10 +2701,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2824,10 +2779,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2892,7 +2844,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -2915,10 +2867,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -2997,10 +2946,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3065,7 +3011,7 @@ contains
         C_ii(1) = Cx(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -3086,10 +3032,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3166,10 +3109,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3234,7 +3174,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -3256,10 +3196,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3337,10 +3274,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3405,7 +3339,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -3428,10 +3362,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3510,10 +3441,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3578,7 +3506,7 @@ contains
         C_ii(1) = Cx(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -3599,10 +3527,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3684,10 +3609,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3757,7 +3679,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
         
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -3779,10 +3701,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3865,10 +3784,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -3938,7 +3854,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -3961,10 +3877,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -4048,10 +3961,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -4121,7 +4031,7 @@ contains
         C_ii(1) = Cx(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -4142,10 +4052,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -4227,10 +4134,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -4300,7 +4204,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii)
         
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -4322,10 +4226,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -4408,10 +4309,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -4481,7 +4379,7 @@ contains
         C_ii(1) = Cx(ii); C_ii(2) = Cy(ii); C_ii(3) = Cz(ii)
 
         ! Compute convection coefficients for diagonal
-        call fcb_calcConvection(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
         
         ! Update the diagonal coefficient
         L(ii) = L(ii) + k_ii
@@ -4504,10 +4402,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -4591,10 +4486,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute convection coefficients
-          call fcb_calcConvection(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          call fcb_calcMatrix(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply artificial diffusion
           k_ij = k_ij + d_ij
@@ -6639,7 +6531,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, ru, fcb_calcConvection,&
+  subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, ru, fcb_calcMatrix,&
                                          hstep, bStabilise, bclear, rjacobianMatrix)
 
 !<description>
@@ -6690,7 +6582,7 @@ contains
     else
       
       call gfsc_buildConvJacobianScalar(RcoeffMatrices, ru%RvectorBlock(1),&
-                                        fcb_calcConvection, hstep, bStabilise,&
+                                        fcb_calcMatrix, hstep, bStabilise,&
                                         bclear, rjacobianMatrix)
       
     end if
@@ -6701,7 +6593,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, ru, fcb_calcConvection,&
+  subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, ru, fcb_calcMatrix,&
                                           hstep, bStabilise, bclear, rjacobianMatrix)
 
 !<description>
@@ -6900,7 +6792,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -6952,13 +6844,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients k_ij and k_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij ,k_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij ,k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -6978,13 +6870,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -7021,7 +6913,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -7074,13 +6966,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients k_ij and k_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij ,k_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij ,k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -7100,13 +6992,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -7143,7 +7035,7 @@ contains
 
       ! local variables     
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -7197,13 +7089,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients k_ij and k_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -7223,13 +7115,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -7266,7 +7158,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
       
       
@@ -7318,13 +7210,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -7344,13 +7236,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -7387,7 +7279,7 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -7440,13 +7332,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -7466,13 +7358,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -7509,7 +7401,7 @@ contains
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,diff
+      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
       
 
@@ -7563,13 +7455,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -7589,13 +7481,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -7684,15 +7576,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7712,15 +7602,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7810,15 +7698,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7838,15 +7724,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -7937,15 +7821,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -7965,15 +7847,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -8062,15 +7942,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -8090,15 +7968,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -8188,15 +8064,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -8216,15 +8090,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -8315,15 +8187,13 @@ contains
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -8343,15 +8213,13 @@ contains
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
           ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
           ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
-          d_ij = max(-l_ij, 0.0_DP, -l_ji)
+          call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij =(a_ij+l_ij+d_ij)/2._DP
@@ -10152,7 +10020,7 @@ contains
   
 !<subroutine>
 
-  subroutine gfsc_buildJacobianBlockFCT(RcoeffMatrices, ru, fcb_calcConvection,&
+  subroutine gfsc_buildJacobianBlockFCT(RcoeffMatrices, ru, fcb_calcMatrix,&
                                         theta, tstep, hstep, bclear, rafcstab,&
                                         rjacobianMatrix, rconsistentMassMatrix)
 
@@ -10212,7 +10080,7 @@ contains
     else
 
       call gfsc_buildJacobianScalarFCT(RcoeffMatrices, ru%RvectorBlock(1),&
-                                       fcb_calcConvection, theta, tstep, hstep,&
+                                       fcb_calcMatrix, theta, tstep, hstep,&
                                        bclear, rafcstab, rjacobianMatrix,&
                                        rconsistentMassMatrix)
 
@@ -10223,7 +10091,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianScalarFCT(RcoeffMatrices, ru, fcb_calcConvection,&
+  subroutine gfsc_buildJacobianScalarFCT(RcoeffMatrices, ru, fcb_calcMatrix,&
                                          theta, tstep, hstep, bclear, rafcstab,&
                                          rjacobianMatrix, rconsistentMassMatrix)
 
@@ -10487,10 +10355,10 @@ contains
         !------------------------------------------------------------
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -10502,10 +10370,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -10528,10 +10396,10 @@ contains
         !------------------------------------------------------------
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
         f_i = a_ij*diff_j+flux0(iedge)
@@ -10543,10 +10411,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -10620,10 +10488,10 @@ contains
         !------------------------------------------------------------
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -10635,10 +10503,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -10661,10 +10529,10 @@ contains
         !------------------------------------------------------------
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
         f_i = a_ij*diff_j+flux0(iedge)
@@ -10676,10 +10544,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -10755,10 +10623,10 @@ contains
         !------------------------------------------------------------
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -10770,10 +10638,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -10796,10 +10664,10 @@ contains
         !------------------------------------------------------------
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
         f_i = a_ij*diff_j+flux0(iedge)
@@ -10811,10 +10679,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -10888,10 +10756,10 @@ contains
         !------------------------------------------------------------
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -10903,10 +10771,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -10929,10 +10797,10 @@ contains
         !------------------------------------------------------------
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
         f_i = a_ij*diff_j+flux0(iedge)
@@ -10944,10 +10812,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -11024,10 +10892,10 @@ contains
         !------------------------------------------------------------
 
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -11039,10 +10907,10 @@ contains
 
 
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = theta*tstep*d_ij
 
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -11065,10 +10933,10 @@ contains
         !------------------------------------------------------------
 
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = theta*tstep*d_ij
 
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
         f_i = a_ij*diff_j+flux0(iedge)
@@ -11080,10 +10948,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -11159,10 +11027,10 @@ contains
         !------------------------------------------------------------
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)+hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -11174,10 +11042,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)-hstep, u(j), C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -11200,10 +11068,10 @@ contains
         !------------------------------------------------------------
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)+hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        a_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
         f_i = a_ij*diff_j+flux0(iedge)
@@ -11215,10 +11083,10 @@ contains
         
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i), u(j)-hstep, C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = MC(ij)+theta*tstep*max(-l_ij, 0.0_DP, -l_ji)
+        b_ij = MC(ij)+theta*tstep*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -11245,7 +11113,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianBlockTVD(RcoeffMatrices, ru, fcb_calcConvection,&
+  subroutine gfsc_buildJacobianBlockTVD(RcoeffMatrices, ru, fcb_calcMatrix,&
                                         tstep, hstep, bclear, rafcstab,&
                                         rjacobianMatrix, bextendedSparsity)
 
@@ -11304,7 +11172,7 @@ contains
     else
 
       call gfsc_buildJacobianScalarTVD(RcoeffMatrices, ru%RvectorBlock(1),&
-                                       fcb_calcConvection, tstep, hstep,&
+                                       fcb_calcMatrix, tstep, hstep,&
                                        bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
 
     end if
@@ -11314,7 +11182,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianScalarTVD(RcoeffMatrices, ru, fcb_calcConvection,&
+  subroutine gfsc_buildJacobianScalarTVD(RcoeffMatrices, ru, fcb_calcMatrix,&
                                          tstep, hstep, bclear, rafcstab,&
                                          rjacobianMatrix, bextendedSparsity)
 
@@ -12102,12 +11970,9 @@ contains
         dsign = 3-2*iperturb
         
         ! Compute perturbed coefficients k_ij and k_ji
-        call fcb_calcConvection(u(i)+dsign*hstep_ik, u(j)+dsign*hstep_jk,&
-                                C_ij, C_ji, i, j, l_ij, l_ji)
+        call fcb_calcMatrix(u(i)+dsign*hstep_ik, u(j)+dsign*hstep_jk,&
+                            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
-        ! Compute diffusion coefficient
-        d_ij = max(-l_ij, 0.0_DP, -l_ji)
-
         ! Apply discrete upwinding
         l_ij = l_ij+d_ij
         l_ji = l_ji+d_ij
@@ -12319,7 +12184,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianBlockGP(RcoeffMatrices, rconsistentMassMatrix,&
-                                       ru, ru0, fcb_calcConvection, theta, tstep,&
+                                       ru, ru0, fcb_calcMatrix, theta, tstep,&
                                        hstep, bclear, rafcstab, rjacobianMatrix,&
                                        bextendedSparsity)
 
@@ -12389,7 +12254,7 @@ contains
       
       call gfsc_buildJacobianScalarGP(RcoeffMatrices, rconsistentMassMatrix,&
                                       ru%RvectorBlock(1), ru0%RvectorBlock(1),&
-                                      fcb_calcConvection, theta, tstep, hstep,&
+                                      fcb_calcMatrix, theta, tstep, hstep,&
                                       bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
 
     end if
@@ -12400,7 +12265,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianScalarGP(RcoeffMatrices, rconsistentMassMatrix,&
-                                        ru, ru0, fcb_calcConvection, theta, tstep,&
+                                        ru, ru0, fcb_calcMatrix, theta, tstep,&
                                         hstep, bclear, rafcstab, rjacobianMatrix,&
                                         bextendedSparsity)
 
@@ -13253,11 +13118,8 @@ contains
         dsign = -2*iperturb+3
         
         ! Compute perturbed velocity
-        call fcb_calcConvection(u(i)+dsign*hstep_ik,&
-            u(j)+dsign*hstep_jk, C_ij, C_ji, i, j, l_ij, l_ji)
-
-        ! Compute diffusion coefficient
-        d_ij = max(-l_ij, 0.0_DP, -l_ji)
+        call fcb_calcMatrix(u(i)+dsign*hstep_ik, u(j)+dsign*hstep_jk,&
+                            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Perform discrete upwinding
         l_ij = l_ij+d_ij

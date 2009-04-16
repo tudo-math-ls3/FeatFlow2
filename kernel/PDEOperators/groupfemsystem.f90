@@ -880,7 +880,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -903,7 +903,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
@@ -952,7 +952,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -976,7 +976,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
           
           ! Assemble the global operator
           do ivar = 1, NVAR
@@ -1025,7 +1025,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1050,7 +1050,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
           
           ! Assemble the global operator
           do ivar = 1, NVAR
@@ -1099,7 +1099,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1122,7 +1122,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
@@ -1171,7 +1171,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1195,7 +1195,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
@@ -1244,7 +1244,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1269,7 +1269,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Assemble the global operator
           do ivar = 1, NVAR
@@ -1319,7 +1319,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1345,7 +1345,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
           
           ! Apply matrices to the global operator
           do ivar = 1, NVAR
@@ -1398,7 +1398,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1425,7 +1425,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           do ivar = 1, NVAR
@@ -1478,7 +1478,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1506,7 +1506,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
           
           ! Apply matrices to the global operator
           do ivar = 1, NVAR
@@ -1559,7 +1559,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1585,7 +1585,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           do ivar = 1, NVAR
@@ -1638,7 +1638,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1665,7 +1665,7 @@ contains
           u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
           
           ! Apply matrices to the global operator
           do ivar = 1, NVAR
@@ -1718,7 +1718,7 @@ contains
         u_i = u(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1746,7 +1746,7 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute matrices
-          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           do ivar = 1, NVAR
@@ -2008,7 +2008,7 @@ contains
         C_ij(1) = Cx(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2026,7 +2026,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
           
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2070,7 +2070,7 @@ contains
         C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2089,7 +2089,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2133,7 +2133,7 @@ contains
         C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2153,7 +2153,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
           
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2197,7 +2197,7 @@ contains
         C_ij(1) = Cx(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2215,7 +2215,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2259,7 +2259,7 @@ contains
         C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2278,7 +2278,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2322,7 +2322,7 @@ contains
         C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2342,7 +2342,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2386,7 +2386,7 @@ contains
         C_ij(1) = Cx(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2404,7 +2404,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2448,7 +2448,7 @@ contains
         C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2467,7 +2467,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2511,7 +2511,7 @@ contains
         C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2531,7 +2531,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2575,7 +2575,7 @@ contains
         C_ij(1) = Cx(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2593,7 +2593,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2637,7 +2637,7 @@ contains
         C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2656,7 +2656,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2700,7 +2700,7 @@ contains
         C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2720,7 +2720,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute matrices
-          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, dscale, K_ij, K_ji, D_ij)
+          call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
           ! Apply matrices to the global operator
           K(:,ii) = K(:,ii)        + D_ij
@@ -2929,7 +2929,7 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -2981,7 +2981,7 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -3034,7 +3034,7 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -3085,7 +3085,7 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -3137,7 +3137,7 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -3191,7 +3191,7 @@ contains
           u_i = u(i,:); u_j = u(j,:)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
           ! Assemble residual vector
           res(i,:) = res(i,:)+F_ij
@@ -3387,7 +3387,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -3436,7 +3436,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -3486,7 +3486,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -3534,7 +3534,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -3582,7 +3582,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -3631,7 +3631,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble residual vector
           res(:,i) = res(:,i)+F_ij
@@ -3873,7 +3873,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
            
           ! Assemble high-order residual vector
           res(i,:) = res(i,:)+F_ij
@@ -4018,7 +4018,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
                    
           ! Assemble high-order residual vector
           res(i,:) = res(i,:)+F_ij
@@ -4255,7 +4255,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble high-order residual vector
           res(i,:) = res(i,:)+F_ij
@@ -4580,7 +4580,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble high-order residual vector
           res(i,:) = res(i,:)+F_ij
@@ -4724,7 +4724,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble high-order residual vector
           res(i,:) = res(i,:)+F_ij
@@ -4961,7 +4961,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
           
           ! Compute the fluxes
-          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u_i, u_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
                  
           ! Assemble high-order residual vector
           res(i,:) = res(i,:)+F_ij
@@ -5457,7 +5457,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble high-order residual vector
           res(:,i) = res(:,i)+F_ij
@@ -5596,7 +5596,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble high-order residual vector
           res(:,i) = res(:,i)+F_ij
@@ -5824,7 +5824,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
                     
           ! Assemble high-order residual vector
           res(:,i) = res(:,i)+F_ij
@@ -6137,7 +6137,7 @@ contains
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble high-order residual vector
           res(:,i) = res(:,i)+F_ij
@@ -6276,7 +6276,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble high-order residual vector
           res(:,i) = res(:,i)+F_ij
@@ -6504,7 +6504,7 @@ contains
           C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
 
           ! Compute the fluxes
-          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, dscale, F_ij, F_ji)
+          call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Assemble high-order residual vector
           res(:,i) = res(:,i)+F_ij
