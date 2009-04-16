@@ -44,53 +44,8 @@
 !# 11.) transp_setVelocityField
 !#      -> Sets the velocity field internally
 !#
-!# 12.) transp_hadaptCallback1d
-!#      -> Performs application specific tasks in the adaptation algorithm in 1D
-!#
-!# 13.) transp_hadaptCallback2d
-!#      -> Performs application specific tasks in the adaptation algorithm in 2D
-!#
-!# 14.) transp_hadaptCallback3d
-!#      -> Performs application specific tasks in the adaptation algorithm in 3D
-!#
-!# 15.) transp_calcLinearizedFCT
+!# 12.) transp_calcLinearizedFCT
 !#      -> Calculates the linearized FCT correction
-!#
-!#
-!# The following auxiliary routines are available:
-!#
-!# 1.) transp_calcPrimalConvConst1d
-!#     -> Calculates the transport coefficients for linear convection in 1D
-!#
-!# 2.) transp_calcDualConvConst1d
-!#     -> Calculates the transport coefficients for linear convection in 1D
-!#
-!# 3.) transp_calcPrimalConvConst2d
-!#     -> Calculates the transport coefficients for linear convection in 2D
-!#
-!# 4.) transp_calcDualConvConst2d
-!#     -> Calculates the transport coefficients for linear convection in 2D
-!#
-!# 5.) transp_calcPrimalConvConst3d
-!#     -> Calculates the transport coefficients for linear convection in 3D
-!#
-!# 6.) transp_calcDualConvConst3d
-!#     -> Calculates the transport coefficients for linear convection in 3D
-!#
-!# 7.) transp_calcConvectionBurgersSpT2d
-!#     -> Calculates the transport coefficients for Burgers' equation in space-time
-!#
-!# 8.) transp_calcConvectionBuckLevSpT2d
-!#     -> Calculates the transport coefficients for Buckley-Leverett equation in space-time
-!#
-!# 9.) transp_calcConvectionBurgers1d
-!#     -> Calculates the transport coefficients for Burgers' equation in 1D
-!#
-!# 10.) transp_calcConvectionBurgers2d
-!#      -> Calculates the transport coefficients for Burgers' equation in 2D
-!#
-!# 11.) transp_calcConvectionBuckLev1d
-!#      -> Calculates the transport coefficients for Buckley-Leverett equation in 1D
 !#
 !# </purpose>
 !##############################################################################
@@ -101,13 +56,13 @@ module transport_callback
   use boundaryfilter
   use collection
   use flagship_basic
-  use flagship_callback
+!  use flagship_callback
   use fparser
   use fsystem
   use genoutput
-  use graph
+!  use graph
   use groupfemscalar
-  use hadaptaux
+!  use hadaptaux
   use linearsystemblock
   use linearsystemscalar
   use problem
@@ -116,6 +71,9 @@ module transport_callback
   use storage
   use timestepaux
   use transport_basic
+  use transport_callback1d
+  use transport_callback2d
+  use transport_callback3d
 
   implicit none
 
@@ -131,27 +89,7 @@ module transport_callback
   public :: transp_calcRHS
   public :: transp_calcVelocityField
   public :: transp_setVelocityField
-  public :: transp_hadaptCallback1d
-  public :: transp_hadaptCallback2d
-  public :: transp_hadaptCallback3d
   public :: transp_calcLinearizedFCT
-
-  public :: transp_calcprimalconvconst2d
-
-!<globals>
-
-  !*****************************************************************
-  ! Pointers to the ACTIVE velocity field.
-  !
-  ! This global variable is not good programming style but it is the
-  ! only way to allow for an efficient access to the velocity data
-  ! from within the callback routines which are called repeatedly
-
-  real(DP), dimension(:), pointer, save :: p_DvelocityX => null()
-  real(DP), dimension(:), pointer, save :: p_DvelocityY => null()
-  real(DP), dimension(:), pointer, save :: p_DvelocityZ => null()
-
-!</globals>
 
 contains
 
@@ -738,21 +676,21 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcPrimalConvConst1d,&
+                rsolution, transp_calcMatrixPrimalConst1d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcPrimalConvConst2d,&
+                rsolution, transp_calcMatrixPrimalConst2d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, transp_calcPrimalConvConst3d,&
+                rsolution, transp_calcMatrixPrimalConst3d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
           end select
@@ -763,21 +701,21 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcPrimalConvConst1d,&
+                rsolution, transp_calcMatrixPrimalConst1d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcPrimalConvConst2d,&
+                rsolution, transp_calcMatrixPrimalConst2d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, transp_calcPrimalConvConst3d,&
+                rsolution, transp_calcMatrixPrimalConst3d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
           end select
@@ -798,7 +736,7 @@ contains
           
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcConvectionBurgersSpT2d,&
+              rsolution, transp_calcMatrixPrimalBurgersSpT2d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
@@ -806,7 +744,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcConvectionBurgersSpT2d,&
+              rsolution, transp_calcMatrixPrimalBurgersSpT2d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
               bisConservative = bconservative)
 
@@ -824,7 +762,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcConvectionBuckLevSpT2d,&
+              rsolution, transp_calcMatrixPrimalBuckLevSpT2d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
@@ -833,7 +771,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcConvectionBurgersSpT2d,&
+              rsolution, transp_calcMatrixPrimalBurgersSpT2d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
               bisConservative = bconservative)
 
@@ -851,7 +789,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcConvectionBurgers1d,&
+              rsolution, transp_calcMatrixPrimalBurgers1d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
@@ -859,7 +797,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcConvectionBurgers1d,&
+              rsolution, transp_calcMatrixPrimalBurgers1d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
               bisConservative = bconservative)
 
@@ -877,7 +815,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcConvectionBurgers2d,&
+              rsolution, transp_calcMatrixPrimalBurgers2d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
@@ -885,7 +823,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcConvectionBurgers2d,&
+              rsolution, transp_calcMatrixPrimalBurgers2d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
               bisConservative = bconservative)
 
@@ -903,7 +841,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcConvectionBuckLev1d,&
+              rsolution, transp_calcMatrixPrimalBuckLev1d,&
               .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
               rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
@@ -911,7 +849,7 @@ contains
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcConvectionBuckLev1d,&
+              rsolution, transp_calcMatrixPrimalBuckLev1d,&
               bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
               bisConservative = bconservative)
 
@@ -948,21 +886,21 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcDualConvConst1d,&
+                rsolution, transp_calcMatrixDualConst1d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcDualConvConst2d,&
+                rsolution, transp_calcMatrixDualConst2d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, transp_calcDualConvConst3d,&
+                rsolution, transp_calcMatrixDualConst3d,&
                 .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
                 rproblemLevel%Rafcstab(convectionAFC), bconservative)
           end select
@@ -973,21 +911,21 @@ contains
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcDualConvConst1d,&
+                rsolution, transp_calcMatrixDualConst1d,&
                 bstabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcDualConvConst2d,&
+                rsolution, transp_calcMatrixDualConst2d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, transp_calcDualConvConst3d,&
+                rsolution, transp_calcMatrixDualConst3d,&
                 bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
                 bisConservative = bconservative)
           end select
@@ -1235,19 +1173,19 @@ contains
         case (NDIM1D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcPrimalConvConst1d, hstep, bStabilize,&
+              rsolution, transp_calcMatrixPrimalConst1d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
 
         case (NDIM2D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcPrimalConvConst2d, hstep, bStabilize,&
+              rsolution, transp_calcMatrixPrimalConst2d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
 
         case (NDIM3D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rsolution, transp_calcPrimalConvConst3d, hstep, bStabilize,&
+              rsolution, transp_calcMatrixPrimalConst3d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
         end select
       
@@ -1255,35 +1193,35 @@ contains
         ! nonlinear Burgers' equation in space-time
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rsolution, transp_calcConvectionBurgersSpT2d, hstep, bStabilize,&
+            rsolution, transp_calcMatrixPrimalBurgersSpT2d, hstep, bStabilize,&
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
-            transp_calcConvectionBuckLevSpT2d, hstep, bStabilize,&
+            transp_calcMatrixPrimalBuckLevSpT2d, hstep, bStabilize,&
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers' equation in 1D
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
-            transp_calcConvectionBurgers1d, hstep, bStabilize,&
+            transp_calcMatrixPrimalBurgers1d, hstep, bStabilize,&
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers' equation in 2D
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
-            transp_calcConvectionBurgers2d, hstep, bStabilize,&
+            transp_calcMatrixPrimalBurgers2d, hstep, bStabilize,&
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
-            transp_calcConvectionBuckLev1d, hstep, bStabilize,&
+            transp_calcMatrixPrimalBuckLev1d, hstep, bStabilize,&
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
       case DEFAULT
@@ -1308,19 +1246,19 @@ contains
         case (NDIM1D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcDualConvConst1d, hstep, bStabilize,&
+              rsolution, transp_calcMatrixDualConst1d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
 
         case (NDIM2D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcDualConvConst2d, hstep, bStabilize,&
+              rsolution, transp_calcMatrixDualConst2d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
 
         case (NDIM3D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rsolution, transp_calcDualConvConst3d, hstep, bStabilize,&
+              rsolution, transp_calcMatrixDualConst3d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
         end select
         
@@ -1485,14 +1423,14 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, transp_calcConvectionBurgersSpT2d,&
+                                     rsolution, transp_calcMatrixPrimalBurgersSpT2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
                                      rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, transp_calcConvectionBurgersSpT2d,&
+                                     rsolution, transp_calcMatrixPrimalBurgersSpT2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1500,7 +1438,7 @@ contains
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                   rsolution, transp_calcConvectionBurgersSpT2d,&
+                                   rsolution, transp_calcMatrixPrimalBurgersSpT2d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1509,7 +1447,7 @@ contains
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                                   rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsolution, rsolutionInitial, transp_calcConvectionBurgersSpT2d,&
+                                  rsolution, rsolutionInitial, transp_calcMatrixPrimalBurgersSpT2d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
                                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1528,14 +1466,14 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, transp_calcConvectionBuckLevSpT2d,&
+                                     rsolution, transp_calcMatrixPrimalBuckLevSpT2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
                                      rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, transp_calcConvectionBuckLevSpT2d,&
+                                     rsolution, transp_calcMatrixPrimalBuckLevSpT2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1543,7 +1481,7 @@ contains
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                   rsolution, transp_calcConvectionBuckLevSpT2d,&
+                                   rsolution, transp_calcMatrixPrimalBuckLevSpT2d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1552,7 +1490,7 @@ contains
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                                   rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsolution, rsolutionInitial, transp_calcConvectionBuckLevSpT2d,&
+                                  rsolution, rsolutionInitial, transp_calcMatrixPrimalBuckLevSpT2d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
                                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1571,14 +1509,14 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, transp_calcConvectionBurgers1d,&
+                                     rsolution, transp_calcMatrixPrimalBurgers1d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
                                      rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, transp_calcConvectionBurgers1d,&
+                                     rsolution, transp_calcMatrixPrimalBurgers1d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1586,7 +1524,7 @@ contains
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                   rsolution, transp_calcConvectionBurgers1d,&
+                                   rsolution, transp_calcMatrixPrimalBurgers1d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1595,7 +1533,7 @@ contains
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                                   rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsolution, rsolutionInitial, transp_calcConvectionBurgers1d,&
+                                  rsolution, rsolutionInitial, transp_calcMatrixPrimalBurgers1d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
                                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1614,14 +1552,14 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, transp_calcConvectionBurgers2d,&
+                                     rsolution, transp_calcMatrixPrimalBurgers2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
                                      rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                     rsolution, transp_calcConvectionBurgers2d,&
+                                     rsolution, transp_calcMatrixPrimalBurgers2d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1629,7 +1567,7 @@ contains
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                                   rsolution, transp_calcConvectionBurgers2d,&
+                                   rsolution, transp_calcMatrixPrimalBurgers2d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1638,7 +1576,7 @@ contains
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                                   rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsolution, rsolutionInitial, transp_calcConvectionBurgers2d,&
+                                  rsolution, rsolutionInitial, transp_calcMatrixPrimalBurgers2d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
                                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1657,14 +1595,14 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                     rsolution, transp_calcConvectionBuckLev1d,&
+                                     rsolution, transp_calcMatrixPrimalBuckLev1d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix),&
                                      rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildJacobianFCT(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                     rsolution, transp_calcConvectionBuckLev1d,&
+                                     rsolution, transp_calcMatrixPrimalBuckLev1d,&
                                      rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                      rproblemLevel%Rafcstab(convectionAFC),&
                                      rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1672,7 +1610,7 @@ contains
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildJacobianTVD(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                                   rsolution, transp_calcConvectionBuckLev1d,&
+                                   rsolution, transp_calcMatrixPrimalBuckLev1d,&
                                    rtimestep%dStep, hstep, .false.,&
                                    rproblemLevel%Rafcstab(convectionAFC),&
                                    rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1681,7 +1619,7 @@ contains
       case (AFCSTAB_FEMGP)
         call gfsc_buildJacobianGP(rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                                   rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                  rsolution, rsolutionInitial, transp_calcConvectionBuckLev1d,&
+                                  rsolution, rsolutionInitial, transp_calcMatrixPrimalBuckLev1d,&
                                   rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                                   rproblemLevel%Rafcstab(convectionAFC),&
                                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2443,16 +2381,13 @@ contains
     ! What spatial dimension are we?
     select case(rvector%nblocks)
     case (NDIM1D)
-      call lsyssc_getbase_double(rvector%RvectorBlock(1), p_DvelocityX)
+      call transp_setVelocityField1d(rvector)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(rvector%RvectorBlock(1), p_DvelocityX)
-      call lsyssc_getbase_double(rvector%RvectorBlock(2), p_DvelocityY)
+      call transp_setVelocityField2d(rvector)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(rvector%RvectorBlock(1), p_DvelocityX)
-      call lsyssc_getbase_double(rvector%RvectorBlock(2), p_DvelocityY)
-      call lsyssc_getbase_double(rvector%RvectorBlock(3), p_DvelocityZ)
+      call transp_setVelocityField3d(rvector)
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
@@ -2461,332 +2396,6 @@ contains
     end select
     
   end subroutine transp_setVelocityField
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 1D.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(IN) :: iOperation
-
-    ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ivertices
-
-    ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ielements
-!</input>
-
-!<inputoutput>
-    ! Collection
-    type(t_collection), intent(INOUT) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolution
-    real(DP), dimension(:), pointer, save :: p_Dsolution
-
-
-    ! What operation should be performed?
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the solution vector
-      ! is stored in the second quick access string.
-
-      ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection,&
-                                        trim(rcollection%SquickAccess(2)))
-      call lsysbl_getbase_double(rsolution, p_Dsolution)
-      
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
-      
-      
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vector
-      nullify(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
-      
-
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector
-      if (rsolution%NEQ .ne. Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      p_Dsolution(Ivertices(1)) = 0.5_DP*(p_Dsolution(Ivertices(2))+&
-                                           p_Dsolution(Ivertices(3)))
-
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
-
-
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution
-      if (Ivertices(2) .ne. 0) then
-        p_Dsolution(Ivertices(1)) = p_Dsolution(Ivertices(2))
-      else
-        p_Dsolution(Ivertices(1)) = 0.0_DP
-      end if
-      
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
-
-
-    case DEFAULT
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
-
-    end select
-    
-  end subroutine transp_hadaptCallback1d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 2D.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(IN) :: iOperation
-
-    ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ivertices
-
-    ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ielements
-!</input>
-
-!<inputoutput>
-    ! Collection
-    type(t_collection), intent(INOUT) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolution
-    real(DP), dimension(:), pointer, save :: p_Dsolution
-
-
-    ! What operation should be performed
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the solution vector
-      ! is stored in the second quick access string.
-
-      ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection,&
-                                        trim(rcollection%SquickAccess(2)))
-      call lsysbl_getbase_double(rsolution, p_Dsolution)
-      
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
-
-
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vector
-      nullify(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
-
-      
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector
-      if (rsolution%NEQ .ne. Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      p_Dsolution(Ivertices(1)) = 0.5_DP*(p_Dsolution(Ivertices(2))+&    
-                                           p_Dsolution(Ivertices(3)))
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
-
-
-    case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      p_Dsolution(Ivertices(1)) = 0.25_DP*(p_Dsolution(Ivertices(2))+&
-                                            p_Dsolution(Ivertices(3))+&
-                                            p_Dsolution(Ivertices(4))+&
-                                            p_Dsolution(Ivertices(5)))
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
-
-      
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution
-      if (Ivertices(2) .ne. 0) then
-        p_Dsolution(Ivertices(1)) = p_Dsolution(Ivertices(2))
-      else
-        p_Dsolution(Ivertices(1)) = 0.0_DP
-      end if
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
-
-    
-    case DEFAULT
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
-
-    end select
-
-  end subroutine transp_hadaptCallback2d
-
-   !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 3D.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(IN) :: iOperation
-
-    ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ivertices
-
-    ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ielements
-!</input>
-
-!<inputoutput>
-    ! Collection
-    type(t_collection), intent(INOUT) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolution
-    real(DP), dimension(:), pointer, save :: p_Dsolution
-
-
-    ! What operation should be performed
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the solution vector
-      ! is stored in the second quick access string.
-
-      ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection,&
-                                        trim(rcollection%SquickAccess(2)))
-      call lsysbl_getbase_double(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
-
-
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vector
-      nullify(rsolution, p_Dsolution)
-      
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
-      
-      
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector
-      if (rsolution%NEQ .ne. Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      p_Dsolution(Ivertices(1)) = 0.5_DP*(p_Dsolution(Ivertices(2))+&    
-                                           p_Dsolution(Ivertices(3)))
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
-
-
-    case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      p_Dsolution(Ivertices(1)) = 0.25_DP*(p_Dsolution(Ivertices(2))+&
-                                            p_Dsolution(Ivertices(3))+&
-                                            p_Dsolution(Ivertices(4))+&
-                                            p_Dsolution(Ivertices(5)))
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
-
-    
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution
-      if (Ivertices(2) .ne. 0) then
-        p_Dsolution(Ivertices(1)) = p_Dsolution(Ivertices(2))
-      else
-        p_Dsolution(Ivertices(1)) = 0.0_DP
-      end if
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
-
-
-    case DEFAULT
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
-    end select
-    
-  end subroutine transp_hadaptCallback3d
 
   !*****************************************************************************
 
@@ -2921,7 +2530,7 @@ contains
         C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
 
         ! Compute convection coefficients
-        call transp_calcPrimalConvConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii)
+        call transp_calcMatrixPrimalConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
 
         ! Update the time rate of change vector
         troc(i) = troc(i) + dscale*k_ii*u(i)
@@ -2940,7 +2549,7 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call transp_calcPrimalConvConst2d(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji)
+          call transp_calcMatrixPrimalConst2d(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Artificial diffusion coefficient
           d_ij = max(-k_ij, 0.0_DP, -k_ji)
@@ -3116,393 +2725,5 @@ contains
     end function minmod
     
   end subroutine transp_calcLinearizedFCT
-
-  !*****************************************************************************
-  
-!<subroutine>
-
-  pure subroutine transp_calcPrimalConvConst1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 1D
-!</description>
-    
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji
-!</output>
-!</subroutine>
-
-    k_ij = -p_DvelocityX(j)*C_ij(1)
-    k_ji = -p_DvelocityX(i)*C_ji(1)
-
-  end subroutine transp_calcPrimalConvConst1d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcDualConvConst1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 1D
-!</description>
-    
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji
-!</output>
-!</subroutine>
-
-    k_ij = p_DvelocityX(j)*C_ij(1)
-    k_ji = p_DvelocityX(i)*C_ji(1)
-
-  end subroutine transp_calcDualConvConst1d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcPrimalConvConst2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D
-!</description>
-    
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji
-!</output>
-!</subroutine>
-
-    k_ij = -p_DvelocityX(j)*C_ij(1)-p_DvelocityY(j)*C_ij(2)
-    k_ji = -p_DvelocityX(i)*C_ji(1)-p_DvelocityY(i)*C_ji(2)
-
-  end subroutine transp_calcPrimalConvConst2d
-
-  !*****************************************************************************
-
-!<subroutine>
-  
-  pure subroutine transp_calcDualConvConst2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D
-!</description>
-    
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji
-!</output>
-!</subroutine>
-
-    k_ij = p_DvelocityX(j)*C_ij(1)+p_DvelocityY(j)*C_ij(2)
-    k_ji = p_DvelocityX(i)*C_ji(1)+p_DvelocityY(i)*C_ji(2)
-
-  end subroutine transp_calcDualConvConst2d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcPrimalConvConst3d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 3D
-!</description>
-    
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji
-!</output>
-!</subroutine>
-
-    k_ij = -p_DvelocityX(j)*C_ij(1)-p_DvelocityY(j)*C_ij(2)-p_DvelocityZ(j)*C_ij(3)
-    k_ji = -p_DvelocityX(i)*C_ji(1)-p_DvelocityY(i)*C_ji(2)-p_DvelocityZ(i)*C_ji(3)
-
-  end subroutine transp_calcPrimalConvConst3d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcDualConvConst3d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 3D
-!</description>
-    
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji
-!</output>
-!</subroutine>
-
-    k_ij = p_DvelocityX(j)*C_ij(1)+p_DvelocityY(j)*C_ij(2)+p_DvelocityZ(j)*C_ij(3)
-    k_ji = p_DvelocityX(i)*C_ji(1)+p_DvelocityY(i)*C_ji(2)+p_DvelocityZ(i)*C_ji(3)
-
-  end subroutine transp_calcDualConvConst3d
-
-  !*****************************************************************************
-    
-!<subroutine>
-
-  pure subroutine transp_calcConvectionBurgersSpT2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the 
-    ! one-dimensional Burgers equation $du/dt+df(u)/dx=0$, whereby
-    ! the flux function is given by $f(u)=0.5*u^2$.
-!</description>
-   
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji
-!</output>
-!</subroutine>
-
-    k_ij = -0.5_DP*(u_i+u_j)*C_ij(1)-C_ij(2)
-    k_ji = -0.5_DP*(u_i+u_j)*C_ji(1)-C_ji(2)
-
-  end subroutine transp_calcConvectionBurgersSpT2d
-
-  !*****************************************************************************
-  
-!<subroutine>
-
-  pure subroutine transp_calcConvectionBuckLevSpT2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the 
-    ! Buckley-Leverett equation $du/dt+df(u)/dx=0$, whereby the
-    ! flux function is given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
-    !
-    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
-    ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
-!</description>
-   
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij, k_ji
-!</output>
-!</subroutine>
-
-    ! local variables
-    real(DP) :: v_i,v_j
-    
-    v_i = 4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2
-    v_j = 4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2
-
-    k_ij = -v_j*C_ij(1)-C_ij(2)
-    k_ji = -v_i*C_ji(1)-C_ji(2)
-        
-  end subroutine transp_calcConvectionBuckLevSpT2d
-
-  !*****************************************************************************
-    
-!<subroutine>
-
-  pure subroutine transp_calcConvectionBurgers1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for Burgers' equation in 1D.
-!</description>
-   
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji
-!</output>
-!</subroutine>
-
-    k_ij = -0.5_DP*(u_i+u_j)*C_ij(1)
-    k_ji = -0.5_DP*(u_i+u_j)*C_ji(1)
-
-  end subroutine transp_calcConvectionBurgers1d
-
-  !*****************************************************************************
-    
-!<subroutine>
-
-  pure subroutine transp_calcConvectionBurgers2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for Burgers' equation in 2D.
-!</description>
-   
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji
-!</output>
-!</subroutine>
-
-    k_ij = -0.5_DP*(u_i+u_j)*(C_ij(1)+C_ij(2))
-    k_ji = -0.5_DP*(u_i+u_j)*(C_ji(1)+C_ji(2))
-
-  end subroutine transp_calcConvectionBurgers2d
-
-  !*****************************************************************************
-  
-!<subroutine>
-
-  pure subroutine transp_calcConvectionBuckLev1d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji)
-                                                
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for the Buckley-Leverett equation 
-    ! $du/dt+df(u)/dx=0$ in 1D, whereby the flux function is 
-    ! given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
-    !
-    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
-    ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
-!</description>
-   
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji
-!</output>
-!</subroutine>
-
-    k_ij = -(4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2)*C_ij(1)
-    k_ji = -(4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2)*C_ji(1)
-    
-  end subroutine transp_calcConvectionBuckLev1d
-  
   
 end module transport_callback
