@@ -1,0 +1,1263 @@
+#!/bin/sh
+#
+# The script sets up everything to perform FEAT2 benchmark tests
+# (e.g. dailytests, alltests). It is intent to be called
+# from a cron job every night to check for code regressions.
+#
+# Please note:
+# This script will
+# * do a SVN checkout of FEAT2 to the directory $HOME/nobackup (more
+#   precisely, to the directory given as $BASEDIR, currently set to
+#   $HOME/nobackup)
+# * remove any existing directory named $HOME/nobackup/Featflow2.previous
+# * rename any existing directory named $HOME/nobackup/Featflow2 to
+#   $HOME/nobackup/Featflow2.previous
+# So, please make sure you do not use any of these directories for
+# development!
+#
+# Usage: runregressiontest -t <test suite> [--master|--slave]
+#
+# For help and all other options see 'runregressiontest -h'
+#
+# Written by sven.buijssen@math.tu-dortmund.de
+
+
+#   Variables used throughout this script
+#   (Variables are written in capital letters if used globally)
+
+#
+# variables corresponding to input parameters to this script,
+# see fb_usage() for detailed documentation
+#
+#
+# perform subversion checkout (--checkout, "yes"|"no")
+CHECKOUT=
+#
+# clean up object files (--cleanup-feat2-object-files, "yes"|"no")
+CLEANUPOBJFILES=
+#
+# clone 'benchmark' directory to 'benchmark_host_mode' or - in case
+# '--id=*' is given to 'benchmark_host_buildID
+# (--clone-benchmark-directory, "yes"|"no")
+CLONEBENCHMARKDIR=
+#
+# diff $BASEDIR/Featflow2 and $BASEDIR/Featflow2.previous after checkout to
+# figure out if the benchmark can be skipped (--compare-feat2-checkouts,
+# "yes"|"no")
+COMPAREFEAT2CHECKOUTS=
+#
+# do not run any tests, perform compile-only test (--compile-only, "yes"|"no")
+COMPILEONLY=
+#
+# options passed to ./configure (depends on FORCEBUILDID, gets expanded
+# throughout the script
+CONFIGUREOPTIONS=
+#
+# force benchmark run even if COMPAREFEAT2CHECKOUTS resulted
+# in skipping it (--force, "yes"|"no")
+FORCEBENCHMARKRUN=
+#
+# overwrite default build ID as determined by bin/guess_id and
+# Makefile.inc (--id=BLABLABLA, stored as string)
+FORCEBUILDID=
+#
+# name of the fbconf file containing the tests to be performed
+# (--testsuite=BLABLABLA, stored as string)
+TESTSUITE=
+
+
+
+#
+# variables used to configure, compile, run and report, set in
+# fb_customise() depending on the host this script is executed on.
+#
+#
+# 'arch', better name is 'host class' (LiDO, NEC, fbmath)
+ARCH=
+#
+# name of the compiler (used for the mail subject line)
+COMPILERNAME=
+#
+# number of processes to compile with (corresponds to make -j XXX)
+COMPILEWITHPROCS=
+#
+# perform test if docu system can be compiled with LaTeX and its toolchain
+CREATEDOCU=
+#
+# SVNURL variable used to check out from the repository
+SVNURL=
+#
+# from-address (used for the mail subject line)
+FROMADDRESS=
+#
+# prefix for PBS queuing system script names
+# (only relevant for ARCH=LiDO)
+LIDOJOBNAMEPREFIX=
+#
+# command line tool (and parameters) to send emails
+MAILX=
+#
+# MPI environment to use (DigitalMPI, OpenMPI, MPICH2 etc)
+MPIENV=not-needed-as-feat2-is-serial-only
+
+#
+# set flag when all is done, intended to re-enable normal user login
+# (which is an additional functionality that needs to be
+# provided by an external (root-space) cronjob, as well as locking
+# other users out of the system prior to starting this script)
+SETFLAGWHENBENCHMARKDONE=
+#
+# environment set up via modules ("yes|no")
+USEMODULES=
+
+
+
+#
+# other variables
+#
+#
+# Base directory where FEAT2 should be checked out to
+BASEDIR=$HOME/nobackup
+#
+# full path to 'personalised' copy of benchmark directory, see CLONEBENCHMARKDIR
+BENCHMARKDIR=
+#
+# log files, used for output redirection and to incrementally fill email body
+AUXILIARYLOG=
+GLOBALLOG=
+#
+# hostname
+HOSTNAME="`hostname`"      # don't dare to add any options. this variable is most widely used!
+#
+# prefix of email subject
+MAILPREFIX="[FEAT2 Benchmark]"
+#
+# Enable debug mode
+DEBUG=0
+#
+# File flags indicating to slave runregressiontests whether to
+# do something or not. These names have to be unique throughout the entire filesystem,
+# and unique in the local filesystem's /tmp directory
+FLAGRUNBENCHMARK=$HOME/FEAT2_BENCHMARK_RUN_IT
+FLAGSKIPBENCHMARK=$HOME/FEAT2_BENCHMARK_DO_NOT_RUN
+FLAGBENCHMARKFINISHED=/tmp/FEAT2_BENCHMARK_FINISHED
+#
+# recipient of email error and report messages
+RECIPIENT=feat2users@math.tu-dortmund.de
+#RECIPIENT=buijssen@math.tu-dortmund.de
+
+
+
+
+
+
+
+#   Function: usage prints how to use this script
+fb_usage() {
+   echo ""
+   echo "Usage: $0 [-h] [-t test suite] [-m] [-s]"
+   echo ""
+   echo "  --checkout"
+   echo "      Check out current state of FEAT2 from Subversion to"
+   echo "      $BASEDIR, an existing copy is renamed to 'Featflow2.previous' while"
+   echo "      an existing penultimate FEAT2 copy ('Featflow2.previous') is removed."
+   echo "  --cleanup-feat2-object-files"
+   echo "      Object files from the last FEAT2 installation are removed."
+   echo "  --clone-benchmark-directory"
+   echo "      Create a copy of benchmark directory to be able to run"
+   echo "      several independent benchmarks within the same working copy"
+   echo "  --compare-feat2-checkouts"
+   echo "      Compare the contents of the last two checked out working"
+   echo "      copies of FEAT2. If there are changes, run the benchmark and"
+   echo "      set file flags for slave runregressiontests, i.e. invocations"
+   echo "      of this script that do not check out FEAT2 and compare"
+   echo "      working copies to save same time and network traffic."
+   echo "  --compily-only"
+   echo "      Do not run the benchmark, only compile the applications."
+   echo "      This option is useful for systems with limited CPU time."
+   echo "      The benchmark environment is then merely used to ensure"
+   echo "      compilability in phases where no active development takes"
+   echo "      place on such a system."
+   echo "  --force, -f"
+   echo "      run regression benchmark even if there are no changes between"
+   echo "      current and previously checked out working copy. Does not"
+   echo "      set file flags for slave runregressiontests (see"
+   echo "      --compare-feat2-checkouts)"
+   echo "  --help, -h"
+   echo "      prints this usage statement"
+   echo "  --id <build ID>"
+   echo "      Force a particular build ID to be used when running"
+   echo "      the benchmark. If not given, the default build ID"
+   echo "      as determined by guess_id script is used."
+   echo "  --master, -m"
+   echo "      same as --cleanup-feat2-object-files --checkout \ "
+   echo "      --compare-feat2-checkouts --clone-benchmark-directory"
+   echo "      --no-compile-only"
+   echo "  --testsuite <test suite>, -t <test suite>"
+   echo "      one of singletests, dailytests, quicktests, alltests etc.,"
+   echo "      simply all strings for which in folder 'benchmark' there"
+   echo "      exists a file with identical plus suffix '.fbconf'"
+   echo "  --slave, -s"
+   echo "      same as --no-checkout --no-compare-feat2-checkouts \ "
+   echo "      --clone-benchmark-directory --no-compile-only"
+   echo ""
+   echo "A master mode differs from in slave mode only in that it"
+   echo "removes remains of a previous run ('mv Featflow2 Featflow2.previous'),"
+   echo "creates a fresh Subversion checkout, whereas in slave mode the script"
+   echo "expects a Subversion checkout to have been successfully performed"
+   echo "already."
+   exit
+}
+
+
+#   Function: handle command line options
+fb_readargs() {
+    while : true
+    do
+	case "$1" in
+	    --checkout)
+		CHECKOUT="yes"
+		shift
+		;;
+
+	    --cleanup-feat2-object-files)
+		CLEANUPOBJFILES="yes"
+		shift
+		;;
+
+	    --clone-benchmark-directory)
+		CLONEBENCHMARKDIR="yes"
+		shift
+		;;
+
+	    --compare-feat2-checkouts)
+		COMPAREFEAT2CHECKOUTS="yes"
+		shift
+		;;
+
+	    --compile-only)
+		COMPILEONLY="yes"
+		shift
+		;;
+
+	    --force|-f*)
+		FORCEBENCHMARKRUN="yes"
+		shift
+		;;
+
+	    --help|-h*)    # help screen
+		fb_usage
+		exit
+		;;
+
+	    --id)
+		FORCEBUILDID="$2"
+		CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=$FORCEBUILDID"
+		shift
+		shift
+		;;
+
+	    --id=*)
+		FORCEBUILDID="`echo $1 | sed 's/^--id=//'`"
+		CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=$FORCEBUILDID"
+		shift
+		;;
+
+	    --master|-m*)
+		CHECKOUT="yes"
+		CLEANUPOBJFILES="yes"
+		CLONEBENCHMARKDIR="yes"
+		COMPAREFEAT2CHECKOUTS="yes"
+		COMPILEONLY="no"
+		shift
+		;;
+
+	    --slave|-s*)
+		CHECKOUT="no"
+		CLEANUPOBJFILES="no"
+		CLONEBENCHMARKDIR="yes"
+		COMPAREFEAT2CHECKOUTS="no"
+		COMPILEONLY="no"
+		shift
+		;;
+
+	    --testsuite|-t*)
+		TESTSUITE="$2"
+		shift
+		shift
+		;;
+
+	    -*)
+		echo "$0: Invalid flag -- '$1'\n"
+		fb_usage
+		exit
+		;;
+
+	    *)
+		# When debugging this function re-enable
+		# the following line.
+#		echo "$0: Unknown option -- '$1'\n"
+		break
+		;;
+	esac
+    done
+
+    if [ -z "$TESTSUITE" ]; then
+	echo "$0: Name of a testsuite must be given!"
+	fb_usage
+    fi
+
+    # Names of temporary logfile
+    # (Double double ticks are on purpose. To catch cases where a variable contains a newline
+    #  that otherwise would break the script with unpredictable side effects.)
+    AUXILIARYLOG=$HOME"/featflow2benchmark_auxiliarylog_""$HOSTNAME"
+    if [ -n "$FORCEBUILDID" ]; then
+        AUXILIARYLOG="$AUXILIARYLOG""_""$FORCEBUILDID"
+    fi
+}
+
+
+#   Function: initialise variables, load modules etc. depending on the
+#             host this script is run on. If at all possible, *all*
+#             special cases should be handled here and not distributed
+#             (again, i.e. as in previous versions of this script)
+#             all over the script.
+fb_customise() {
+    case "$HOSTNAME" in
+	# LiDO
+	lido-gw1|lido-gw2)
+	    # set various parameters
+	    ARCH=LiDO
+	    COMPILEWITHPROCS=4
+	    CREATEDOCU="no"
+	    # the script requires that an ssh tunnel is always open, bound to port 13690
+	    # (the default SVN port 3690 is not necessarily free and available)
+	    SVNURL=svn://localhost:13690/Featflow2
+	    MAILX="mailx"
+	    FROMADDRESS="featflow@lido-gw2"
+	    USEMODULES="yes"
+
+	    # As all benchmark tests are run in parallel on LiDO
+	    # via a queueing system, i.e. independent shells,
+	    # the appropriate modules need to be loaded within the
+	    # jobfile. Exactly those modules loaded here are hardcoded
+	    # into the jobfile by bin/lid_schedule_tests later on.
+	    case "$FORCEBUILDID" in
+		# GNU compiler suite
+		pc64-opteron-linux-gcc-*)
+		    modules=""
+		    modules="$modules gcc/4.3.2"
+		    LIDOJOBNAMEPREFIX=fb-gcc
+		    COMPILEWITHPROCS=2
+		    COMPILERNAME="GCC 4.3.2"
+		    ;;
+
+		# Pathscale compiler suite
+		pc64-opteron-linux-psc-*)
+		    modules=""
+		    modules="$modules pathscale"
+		    LIDOJOBNAMEPREFIX=fb-psc
+		    COMPILEWITHPROCS=2
+		    COMPILERNAME="Pathscale"
+		    ;;
+
+		# PGI compiler suite
+		pc64-opteron-linux-pgi-*)
+		    modules=""
+		    modules="$modules pgi"
+		    LIDOJOBNAMEPREFIX=fb-pgi
+		    COMPILERNAME="PGI"
+		    ;;
+
+		# Sun Studio compiler suite
+		pc64-opteron-linux-sunstudio-*)
+		    modules=""
+		    modules="$modules gcc sunstudio"
+		    LIDOJOBNAMEPREFIX=fb-sun
+		    COMPILERNAME="SunStudio"
+		    ;;
+
+		# default build ID (Intel compiler suite)
+		pc64-opteron-linux-intel-*|*)
+		    modules=""
+		    modules="$modules intel/cce/10.1.021 intel/fce/10.1.021"
+#		    modules="$modules intel/cce/9.1.051 intel/fce/9.1.051"
+		    LIDOJOBNAMEPREFIX=fb-intel
+		    COMPILERNAME="Intel 10.1"
+		    ;;
+	    esac
+
+	    modules="$modules goto-blas torque maui subversion"
+
+    	    # Make 'module' command and modulefiles available
+	    # But Modules Environment is dreadfully implemented, especially 
+	    # the versions 3.2.x randomly crash (typically with a 
+            #   *** glibc detected *** free(): invalid pointer: 0x00[...] ***
+	    # when trying to load/unload several modules at once. 
+	    # Workaround: Load them one by one.
+	    . /cvos/local/apps/environment-modules/*/init/sh && \
+	    module use /cvos/shared/modulefiles && \
+	    module unload gcc/3.4.6  > $AUXILIARYLOG 2>&1;
+	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
+
+	    # Different version of Modules Environment do or do not issue
+	    # warnings about duplicate symbols. Get rid of this stuff.
+	    sed -i -e '/Duplicate version symbol .* found/d;' $AUXILIARYLOG
+
+	    if [ -s $AUXILIARYLOG ]; then
+		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
+		fb_exit 1
+	    fi
+	    ;;
+
+	# NEC
+	a1)
+	    ARCH=NEC
+	    COMPILEWITHPROCS=2
+	    CREATEDOCU="no"
+	    # the script requires that an ssh tunnel is always open, bound to port 13690
+	    # (the default SVN port 3690 is not necessarily free and available)
+	    SVNURL=svn://localhost:13690/Featflow2
+	    MAILX="mailx"
+	    SETFLAGWHENBENCHMARKDONE="no"
+	    COMPILERNAME="NEC"
+	    USEMODULES="no"
+	    FROMADDRESS="buijssen@math.tu-dortmund.de"
+	    # 1) NEC compiler is a cross compiler, enforce using the correct build ID
+	    # 2) Store object files directly in scratch area where FEAT2 working copy
+	    #    resides anyway. Otherwise we get trouble because of the path length
+	    #    checks in benchmark/master.configure. The path in the scratch area
+	    #    has already excessive length.
+	    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=sx8-none-superux-f90-keisan --force-id --objdir-prefix=. --objdir-lib-prefix=../.."
+
+	    PATH=/usr/local/bin:/opt/gfsext/hlrsbin:/SX/usr/bin:/usr/psuite:/opt/NECmpi/bin:/usr/bin:/bin
+	    export PATH
+
+	    # Clean up temporary files whose presence might break compilation later
+	    rm -rf /tmp/ccom*.dir 2>/dev/null
+
+	    # No modules needed, everything is pre-set up for the users
+
+	    # Allocate disk space that is available on both the login node
+	    # *and* the compute nodes. (Last argument specifies life time in
+	    # days + 23 hours. 0 means 23 hours.)
+	    BASEDIR="`ws_allocate FEAT2_RegrBench-1 0`"
+
+	    # Usually, this disk space should be released after usage, but
+	    # it is only persistent for less than one day. It should be okay
+	    # to not issue a 'ws_release'.
+	    ;;
+
+	# Default is computers at Math department
+	*)
+	    ARCH=GENERIC
+	    # no ssh tunnel necessary at Math department
+	    SVNURL=svn://jerusalem/Featflow2
+	    # Not all Unix systems set $USER by default, Sun Solaris set $LOGNAME,
+	    # so try different variants and use "schorsch" if all else fails,
+	    # for historical reasons.
+	    test -z "$USER" && MYUSER="$USER"
+	    test -z "$MYUSER" && MYUSER="$LOGNAME"
+	    # If all fails then use "featflow"
+	    test -z "$MYUSER" && MYUSER="featflow"
+	    MAILX="mailx -r feat2users@math.tu-dortmund.de"
+	    FROMADDRESS="$MYUSER@math.tu-dortmund.de"
+	    # on these machines, several benchmark instances run in parallel without
+	    # any queuing system, so enable manual synchronisation via filesystem
+	    SETFLAGWHENBENCHMARKDONE="yes"
+
+	    # Load appropriate modules.
+            # We always load (modulo exceptions hard-coded below) the most recent version as
+            # determined by the module system installed on these machines.
+	    case "$FORCEBUILDID" in
+		pc64-opteron-linux-gcc-*)
+		    modules=""
+		    modules="$modules gcc/4.3.3"
+		    COMPILERNAME="gcc 4.3.3"
+		    ;;
+
+		pc64-opteron-linux-sunstudio-*)
+		    modules=""
+		    modules="$modules sunstudio"
+		    COMPILERNAME="SunStudio"
+		    ;;
+
+		pc64-opteron-linux-sunstudio-*)
+		    modules=""
+		    modules="$modules sunstudio"
+		    COMPILERNAME="SunStudio"
+		    ;;
+
+		# default build ID
+		pc64-opteron-linux-intel-*|*)
+		    modules=""
+		    modules="$modules intel/cce/10.1.021 intel/fce/10.1.021"
+#		    modules="$modules intel/cce/9.1.045 intel/fce/9.1.040"
+		    COMPILERNAME="Intel 10.1"
+		    ;;
+	    esac
+
+	    USEMODULES="yes"
+	    modules="$modules gotoblas tetex/3.0"
+
+	    # Make 'module' command and modulefiles available, grepping necessary due to
+	    # stupid non-default verbosity levels of different module installations
+	    . /usr/local/Modules/default/init/sh && \
+		module use /usr/local/Modules/modulefiles && \
+		module add $modules > $AUXILIARYLOG 2>&1
+	    #grep -v Duplicate $AUXILIARYLOG > $AUXILIARYLOG
+	    if [ -s $AUXILIARYLOG ]; then
+		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
+		fb_exit 1
+	    fi
+	    COMPILEWITHPROCS=2
+	    CREATEDOCU="yes"
+	    ;;
+    esac
+}
+
+
+#   Function: clean up any remains of a previous run of this script
+fb_cleanUpOldCheckout() {
+    cd $BASEDIR
+    if [ $? -ne 0 ]; then
+	MAILSUBJECT="$MAILPREFIX Cannot enter directory <$BASEDIR> ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+	fb_exit 1
+    fi
+
+    # A master process should clean up old FEAT2 working copies
+    # (The "x" is added to catch cases where the variable is unset.
+    #  Most implementations of 'test' (the binary behind '[') would
+    #  complain about 'binary operator expected' if one side is empty.)
+    if [ "$CHECKOUT""x" = "yesx" ]; then
+        # Remove backup of a FEAT2 working copy
+	test -r Featflow2.previous && \rm -rf Featflow2.previous
+    fi
+    if [ "$CLEANUPOBJFILES""x" = "yesx" ]; then
+        # Remove object files of a previous FEAT2 working copy
+	test -r feat2obj && \rm -rf feat2obj
+    fi
+
+
+    # Shutdown existing LAM/MPI daemon
+    # (before clean-up of last working copy in order to prevent
+    #  nfs lock files to ratten the clean-up. The penultimate FEAT2 working copy
+    #  has already been removed a few lines above, but that does not hurt
+    #  as there should be no running LAM/MPI daemon any more referencing
+    #  that working copy.)
+    if [ "$MPIENV""x" = "LAMMPIx" ]; then
+	echo "Shutting down any running LAM daemon..." >> $AUXILIARYLOG
+	lamhalt 1>> $AUXILIARYLOG 2>&1
+	sleep 2
+	echo "Done!" >> $AUXILIARYLOG
+
+	echo "Ensuring that there is really no LAM daemon running any more..." >> $AUXILIARYLOG
+	pids=`ps -aef | egrep "^$USER.*/bin/lamd" | grep -v grep | awk '{print $2}'`
+	test -n "$pids" && (echo "Trying to kill persistent LAM daemon"; kill $pids) >> $AUXILIARYLOG
+	sleep 1
+	pids=`ps -aef | egrep "^$USER.*/bin/lamd" | grep -v grep | awk '{print $2}'`
+	test -n "$pids" && (echo "Unsuccesful. Trying to terminate persistent LAM daemon"; kill -9 $pids) >> $AUXILIARYLOG
+	sleep 1
+	pids=`ps -aef | egrep "^$USER.*/bin/lamd" | grep -v grep | awk '{print $2}'`
+	test -n "$pids" && echo "There is still a running LAM daemon! Clean up of old FEAT2 installation might fail!" >> $AUXILIARYLOG
+    fi
+
+    # Shutdown existing MPICH2 daemon
+    # (before clean-up of last working copy in order to prevent
+    #  nfs lock files to ratten the clean-up. The penultimate FEAT2 working copy
+    #  has already been removed a few lines above, but that does not hurt
+    #  as there should be no running LAM/MPI daemon any more referencing
+    #  that working copy.)
+    if [ "$MPIENV""x" = "MPICH2x" ]; then
+	echo "Shutting down any running MPICH2 daemon..." >> $AUXILIARYLOG
+	mpdallexit 1>> $AUXILIARYLOG 2>&1
+	sleep 2
+	echo "Done!" >> $AUXILIARYLOG
+
+	echo "Ensuring that there is really no MPICH2 daemon running any more..." >> $AUXILIARYLOG
+	pids=`ps -aef | egrep "^$USER.*/bin/mpd.py" | grep -v grep | awk '{print $2}'`
+	test -n "$pids" && (echo "Trying to kill persistent MPICH2 daemon"; kill $pids) >> $AUXILIARYLOG
+	sleep 1
+	pids=`ps -aef | egrep "^$USER.*/bin/mpd.py" | grep -v grep | awk '{print $2}'`
+	test -n "$pids" && (echo "Unsuccesful. Trying to terminate persistent MPICH2 daemon"; kill -9 $pids) >> $AUXILIARYLOG
+	sleep 1
+	pids=`ps -aef | egrep "^$USER.*/bin/mpd.py" | grep -v grep | awk '{print $2}'`
+	test -n "$pids" && echo "There is still a running MPICH2 daemon! Clean up of old FEAT2 installation might fail!" >> $AUXILIARYLOG
+    fi
+
+
+    # A master process should rename previous FEAT2 working copy
+    # such that it can be compared against a current working copy
+    if [ "$CHECKOUT""x" = "yesx" ]; then
+
+        # If there exists already a FEAT2 installation,
+        # clean up files in there and backup it.
+	if [ -r Featflow2 ]; then
+	    # rename previous working copy
+	    mv Featflow2 Featflow2.previous >> $AUXILIARYLOG
+
+            # Check (within if block!!) whether an error occured
+	    if [ $? -ne 0 ]; then
+		MAILSUBJECT="$MAILPREFIX Clean up of old FEAT2 checkout had errors ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+		$MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
+		fb_exit 1
+	    fi
+	fi
+    fi
+}
+
+
+#   Function: Init mail message
+fb_initialiseGlobalLogFile() {
+    mode="$1"  # IN
+
+    # Double double ticks are on purpose. To catch cases where a variable contains a newline
+    # that otherwise would break the script with unpredictable side effects.
+    GLOBALLOG=$HOME"/featflow2benchmark_mainlog_""$HOSTNAME"
+    if [ -n "$FORCEBUILDID" ]; then
+	case "$mode" in
+	    parallel)
+		# Ensure build ID has 6 tokens, then take it.
+		# Otherwise append "_$mode"
+		suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_$mode/; }"`
+		GLOBALLOG=$GLOBALLOG"_""$suffix"
+		;;
+	    serial)
+		# Ensure build ID has at most 5 tokens, then take it.
+		# For more than 5 tokens, crop. For less than 5 tokens, append "$_mode"
+		suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_$mode/; }"`
+		GLOBALLOG=$GLOBALLOG"_""$suffix"
+		;;
+	    *)
+		GLOBALLOG=$GLOBALLOG"_""$mode"
+		;;
+	esac
+    else
+	GLOBALLOG=$GLOBALLOG"_""$mode"
+    fi
+    test -r $GLOBALLOG && \rm -f $GLOBALLOG
+
+    # Test whether logfiles can be written to
+    if ! touch $GLOBALLOG; then
+	MAILSUBJECT="$MAILPREFIX Cannot create logfile <$GLOBALLOG> ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+    fi
+
+    # Welcome message
+    (echo "=======================================";
+     echo "Results from FEAT2 regression benchmark";
+     echo "=======================================";
+     echo "";
+     echo "Test started at "`date`;
+     echo "Test started on $HOSTNAME") >> $GLOBALLOG
+}
+
+
+#   Function: clean up any remains of a previous run of this script
+fb_checkoutFromSVN() {
+    if [ "$CHECKOUT""x" = "yesx" ]; then
+	cd $BASEDIR
+
+	test $DEBUG -gt 0 && echo "# Checking out FEAT2 from CVS"
+
+	fb_banner "FETCH" >> $GLOBALLOG
+	fb_startTimer
+	export SVNURL
+	if ! svn co $SVNURL 1> $AUXILIARYLOG 2>&1; then
+            # error occured
+	    MAILSUBJECT="$MAILPREFIX SVN checkout failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+	    cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+	    fb_exit 1
+	fi
+	fb_stopTimer
+    fi
+}
+
+
+#   Function: check whether regression benchmarks needs to be run
+fb_checkWhetherToRun() {
+    # Respect the following cases:
+    # * --force given on command line
+    #   => Run benchmark unconditionally, do not set file flags for 'slave' runregressiontests
+    # * --compare-feat2-checkouts given on command line
+    #   => Compare and set file flags for 'slave' runregressiontests
+
+    if [ "$COMPAREFEAT2CHECKOUTS""x" = "yesx" ]; then
+	cd $BASEDIR
+
+	# Compare checkout with previous checkout (if any)
+        # (which was renamed to Featflow2.previous in function cleanUp)
+	if [ -r Featflow2.previous ]; then
+            # Recursive compare
+            # but ignore the following:
+	    # * .svn folder (as the order of files in .svn/entries may differ according to whether
+	    #   a working copy is a clean checkout or an updated working copy.)
+	    #   Reason: One might want to bypass a nightly regression benchmark run (because
+	    #   of some trivial changes) by manually SVN updating the according working copy.
+	    # * copies of benchmark directory
+	    # * unpacked tarballs in libraries directory
+            # * applications
+
+	    test $DEBUG -gt 0 && echo "# Check whether regression benchmark needs to be run"
+	    ignore=""
+	    for string in \
+		'benchmark_*' .svn AMD BLAS UFconfig UMFPACK \
+		applications area51 codefragments docs documentation \
+		incoming lapack-3.2
+	    do
+		ignore="${ignore} -x ${string}"
+	    done
+	    test $DEBUG -gt 0 && diff -r $ignore Featflow2 Featflow2.previous
+	    diff -r $ignore Featflow2 Featflow2.previous > /dev/null 2>&1
+            # Exit if there were no differences
+	    if [ $? -eq 0 ]; then
+		test $DEBUG -gt 0 && echo "# Regression benchmark skipped: No relevant changes to SVN repository since last check out."
+		touch $FLAGSKIPBENCHMARK
+
+		if [ "$FORCEBENCHMARKRUN""x" = "yesx" ]; then
+		    test $DEBUG -gt 0 && echo "# Regression benchmark is started: enforced by command line option."
+		else
+		    fb_banner "DIFFING" >> $GLOBALLOG
+		    (echo "It seems there have been no substantial commits to the SVN repository";
+		     echo "that would influence the benchmark results since the last time the";
+		     echo "benchmark was run. Benchmark skipped.";
+		     echo) >> $GLOBALLOG
+
+		    MAILSUBJECT="$MAILPREFIX Benchmark skipped ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+		    $MAILX -s "$MAILSUBJECT" $RECIPIENT < $GLOBALLOG
+		    fb_exit 0
+		fi
+	    else
+		# Run benchmark and tell any slave runregressiontest to run
+		# the benchmark as well.
+		test $DEBUG -gt 0 && echo "# Regression benchmark is started: Changes in SVN repository detected."
+		touch $FLAGRUNBENCHMARK
+	    fi
+	else
+	    test $DEBUG -gt 0 && echo "# Regression benchmark is started: No old FEAT2 working copy found to check for SVN changes."
+	    # Run benchmark and tell any slave runregressiontest to run
+	    # the benchmark as well.
+	    touch $FLAGRUNBENCHMARK
+	fi
+
+    else
+	# Do not compare two FEAT2 working copies. Rely either on
+	# another process having done this already and set a file flag
+	# or run it unconditionally if --force has been given on command line.
+	if [ "$FORCEBENCHMARKRUN""x" = "yesx" ]; then
+	    test $DEBUG -gt 0 && echo "# Regression benchmark is started: enforced by command line option."
+	else
+	    # Check if the go-ahead has been given (i.e. changes in working copies
+	    # detected, i.e. commits must have been made to CVS repository
+	    # since benchmark was performed last time).
+	    # If not, exit.
+	    # If neither file flag exists, wait 30 min. If then still not there, exit.
+	    if [ -r $FLAGSKIPBENCHMARK ]; then
+		test $DEBUG -gt 0 && echo "# Regression benchmark skipped: File flag says 'do not run'."
+		fb_exit 0
+	    fi
+	    if [ ! -r $FLAGSKIPBENCHMARK -a ! -r $FLAGRUNBENCHMARK ]; then
+		sleep 1800
+		if [ -r $FLAGRUNBENCHMARK ]; then
+		    test $DEBUG -gt 0 && echo "# Regression benchmark is started: File flag says 'do run'."
+		else
+		    test $DEBUG -gt 0 && echo "# Regression benchmark skipped: No file flags found."
+		    fb_exit 0
+		fi
+	    fi
+	fi
+    fi
+}
+
+
+#   Function: Restore symbolic links, clone benchmark directory to be able to run
+#             benchmark in parallel (i.e. for several build IDs) within *one* working copy
+fb_prepareForRun() {
+    mode="$1"  # IN
+
+    # Create copy of benchmark folder
+    if [ "$CLONEBENCHMARKDIR""x" = "yesx" ]; then
+	BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$mode"
+	if [ -n "$FORCEBUILDID" ]; then
+	    case "$mode" in
+		parallel)
+		    # Ensure build ID has 6 tokens, then take it.
+		    # Otherwise append "_$mode"
+		    suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_$mode/; }"`
+		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
+		    ;;
+		serial)
+		    # Ensure build ID has at most 5 tokens, then take it.
+		    # Fore more than 5 tokens, crop. For less than 5 tokens, append "$_mode"
+		    suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_$mode/; }"`
+		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
+		    ;;
+		*)
+		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$FORCEBUILDID""_""$mode"
+		    ;;
+	    esac
+	fi
+	mkdir $BENCHMARKDIR
+	if [ $? -ne 0 ]; then
+	    MAILSUBJECT="$MAILPREFIX Cannot create benchmark folder clone ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	    cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+	    fb_exit 1
+	fi
+	cd $BASEDIR/Featflow2/benchmark
+	test $DEBUG -gt 0 && echo "# Cloning benchmark directory to <$BENCHMARKDIR>"
+	tar -cf - . | ( cd $BENCHMARKDIR; tar -xpf - ) > $AUXILIARYLOG 2>&1
+	if [ $? -ne 0 ]; then
+	    MAILSUBJECT="$MAILPREFIX Copying benchmark folder failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	    cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+	    fb_exit 1
+	fi
+    else
+	BENCHMARKDIR="$BASEDIR/benchmark"
+	test $DEBUG -gt 0 && echo "# Using benchmark directory <$BENCHMARKDIR> directly for execution"
+    fi
+}
+
+
+
+#   Function: Configure all benchmark applications
+fb_configureBenchmark() {
+    mode="$1"  # IN
+
+    # print out some more details about envvars and module environment
+    fb_banner "CONFIGURATION DETAILS" >> $GLOBALLOG
+
+    (echo "Hostname          : $HOSTNAME";
+     echo "Compiler suite    : $COMPILERNAME";
+     echo "Test suite        : $TESTSUITE";
+     echo "Execution mode    : $mode";
+     echo "Benchmark dir     : $BENCHMARKDIR";
+     echo "") >> $GLOBALLOG
+
+    if [ "$USEMODULES""x" = "yesx" ]; then
+	module list 1>> $GLOBALLOG  2>&1
+    else
+	echo "Environment set up without modules on this machine." >> $GLOBALLOG
+    fi
+
+    # and do the real configuring
+    fb_banner "CONFIGURE" >> $GLOBALLOG
+
+    test $DEBUG -gt 0 && echo "# Configuring benchmark applications ($mode mode)"
+    if [ -z "$BENCHMARKDIR" ]; then
+	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+	fb_exit 1
+    fi
+    cd $BENCHMARKDIR
+    fb_startTimer
+    ./configure --no-monitor-compile-env --mode=$mode $CONFIGUREOPTIONS > $AUXILIARYLOG 2>&1
+
+    # Check whether an error occured
+    # Catch the special case where configure died with an error stating
+    # that coprocessor support is not available when using PGI, SunStudio
+    # or NEC compiler suites. In this case do not generate an e-mail
+    # notification (error code 15, randomly chosen in bin/configure).
+    if [ $? -ne 0  -a  $? -ne 15 ]; then
+	MAILSUBJECT="$MAILPREFIX Configuring benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+	fb_exit 1
+    fi
+
+    fb_stopTimer
+}
+
+
+#   Function: Compile all benchmark applications
+fb_compileBenchmark() {
+    mode="$1"  # IN
+
+    fb_banner "COMPILE" >> $GLOBALLOG
+
+    test $DEBUG -gt 0 && echo "# Compiling benchmark applications ($mode mode)"
+    if [ -z "$BENCHMARKDIR" ]; then
+	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+    fi
+    cd $BENCHMARKDIR
+    fb_startTimer
+    make benchmark -k -j $COMPILEWITHPROCS > $AUXILIARYLOG 2>&1
+
+    # Check whether an error occured
+    if [ $? -ne 0 ]; then
+	MAILSUBJECT="$MAILPREFIX Compiling benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+	# Do not exit here! Even if one application fails to build,
+	# others might not and can be regression tested.
+    fi
+
+    fb_stopTimer
+}
+
+
+#   Function: Create a script that actually runs the benchmark tests
+fb_createTestSuiteScript() {
+    MODE="$1"  # IN
+
+    fb_banner "CREATING TEST SUITE SCRIPT" >> $GLOBALLOG
+
+    test $DEBUG -gt 0 && echo "# Creating test suite script ($mode mode)"
+    cd $BENCHMARKDIR
+    fb_startTimer
+
+    # Explicitly specifying MODE=PARALLEL/SERIAL is optional.
+    # Benchmark applications have been configured for parallel/serial build.
+    # This information is stored in file 'config.status', so it even works
+    # as intended without specifying the mode
+    make $TESTSUITE > $AUXILIARYLOG 2>&1
+
+    # Check whether an error occured
+    if [ $? -ne 0 ]; then
+	MAILSUBJECT="$MAILPREFIX Creation of test suite script failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+	fb_exit 1
+    fi
+
+    fb_stopTimer
+}
+
+
+#   Function: Run benchmark tests on LiDO
+fb_runBenchmarkOnLiDO() {
+    MODE="$1"  # IN
+
+    # Only parallel tests of LiDO!
+#    if [ "$mode""x" != "parallelx" ]; then
+#	return
+#    fi
+
+    test $DEBUG -gt 0 && echo "# Submitting $MODE benchmark jobs to the queue on LiDO"
+
+    # LiDO has a queueing system, for every benchmarks test a job file
+    # needs to be created and submitted. Then this script needs to wait
+    # till all jobs have been run. From the output logfiles of all jobs
+    # a mail messages is distilled as if all benchmark tests were run
+    # one after another - like on non-queueing systems.
+
+    # For the queueing there is a separate script, used also
+    # interactively.
+    cd $BENCHMARKDIR
+    bin/lido_schedule_tests --prefix $LIDOJOBNAMEPREFIX $TESTSUITE.fbconf > $AUXILIARYLOG 2>&1
+
+    # Check whether an error occured
+    if [ $? -ne 0 ]; then
+	MAILSUBJECT="$MAILPREFIX Job scheduling failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+    fi
+
+    # Now wait till all jobs have finished
+    test $DEBUG -gt 0 && echo "# Waiting for the $mode benchmark jobs on LiDO to finish"
+    fb_banner "RUN" "`make idonly`" >> $GLOBALLOG
+
+    # time to wait (in seconds) between subsequent qstat calls
+    sleeptime=60
+    # how many cycles to wait till for all jobs to finish
+    maxwaitcycles=512
+    iteration=1
+    pbserrors=`mktemp`
+    while test $iteration -le $maxwaitcycles; do
+	runningsjobs=`qstat -u $USER 2>${pbserrors} | grep $LIDOJOBNAMEPREFIX | wc -l`
+	# PBS reported an error
+	if [ -s "${pbserrors}" ]; then
+	    (echo "$0: Error: Querying PBS seems not to work. We got the following error message:"; \
+	     cat ${pbserrors}; \
+	     echo "$0: Error: As it is unlikely that PBS miraculously recovers in time," ; \
+	     echo "$0: Error: giving up waiting for remaining jobs to finish."; ) > $AUXILIARYLOG
+	    MAILSUBJECT="$MAILPREFIX Querying PBS failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	    cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+	    break
+	fi
+	test $runningsjobs -eq 0 && break;
+	iteration=`expr $iteration + 1`
+	echo "Waiting for running jobs, iteration "$iteration" ..." 1>>$AUXILIARYLOG 2>&1
+	sleep $sleeptime
+    done
+    rm -f ${pbserrors}
+
+    # Add a remark to the logfile when we did not wait till
+    # the last job had finished.
+    if test $iteration -gt $maxwaitcycles; then
+	(echo "Giving up waiting for scheduled jobs to finish"; \
+	 echo "after "`expr $iteration \* $sleeptime / 60 / 60`" hours.") >> $GLOBALLOG
+    fi
+
+    # Create statistics at the end of the logfile about number of successful and
+    # failed tests. Implementation in perl - a lot faster than the previous one
+    # in shell.
+    perl include/gather_logfiles_to_mail.pl "logs/output" >> $GLOBALLOG
+
+    (echo; echo "Test ended at "`date`) >> $GLOBALLOG
+
+    fb_banner "Performance comparison" >> $GLOBALLOG
+    include/calc_perfstats.sh >> $GLOBALLOG 2>&1
+}
+
+
+#   Function: Run benchmark tests
+fb_runBenchmark() {
+    mode="$1"  # IN
+
+    test $DEBUG -gt 0 && echo "# Running $mode benchmark"
+
+    if [ "$ARCH""x" != "LiDOx" ]; then
+        # Create script that control and actually runs the benchmark tests
+	fb_createTestSuiteScript "$mode"
+
+    	fb_banner "RUN" "`make idonly`" >> $GLOBALLOG
+
+	# It would be great if we could directly access all variables
+	# defined within the 'runtests' script (i.e. number of successful
+	# tests, of failed ones etc.)
+	# But, 'runtests' is (still) written in tcsh and incompatible
+	# with /bin/sh.
+        # So, tell runtests script to export all information we need to files such
+        # we can access the information here and still have all output redirected to $globallog.
+	./runtests >> $GLOBALLOG 2>&1
+
+	(echo; echo "Test ended at "`date`) >> $GLOBALLOG
+    else
+	# Ensure that no files that are later on analysed for the statistics mail
+	# remain from a previous run (That earlier run might have used a different 
+	# test suite, so we can not sure that all existing files will be overwritten.)
+	rm -f logs/error.* logs/output.* > /dev/null
+	fb_runBenchmarkOnLiDO "$mode"
+    fi
+}
+
+
+#   Function: Compile documentation from sources
+fb_createDocumentation() {
+    if [ "$CREATEDOCU""x" = "yesx" ]; then
+
+	# clone docs directory
+	docsdir="$BASEDIR/docs_""$HOSTNAME"
+	mkdir $docsdir
+	cd $BASEDIR/docs
+	tar -cf - . | ( cd $docsdir; tar -xpf - )
+	cd $docsdir
+	# Tell GNU 'make' to keep going (-k') in case of errors.
+	# One documentation may fail, but build as much documentation as possible
+	make -k pdf LATEXFLAGS=-interaction=nonstopmode 1> $AUXILIARYLOG 2>&1
+
+        # Check whether an error occured
+	if [ $? -ne 0 ]; then
+	    MAILSUBJECT="$MAILPREFIX Documentation could not be created ($HOSTNAME)"
+	    $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
+	fi
+
+#        # Clean-up docu such that no generated document causes the next day's diffing
+#        # of a new checkout of FEAT2 against this FEAT2 checkout to fail.
+#	make purge > $AUXILIARYLOG 2>&1
+    fi
+}
+
+
+#   Function: Pretty print given strings, every argument on a separate line
+#
+# Warning: Be aware that when changing the output this function generates
+# you are likely to break include/link_failed_tests.pl. So, do not forget
+# to adapt that script (which is used to insert hypertexts between failed
+# tests in benchmark mails to be able to conveniently and fast jump through
+# all deviations and crashes of a nightly regression benchmark run).
+fb_banner() {
+    # One leading empty line
+    echo
+
+    # Loop through all arguments
+    # (multiple arguments for multiple lines, each argument
+    #  is pretty-printed on a single line)
+    totalchars=60
+    for arg in "$@"
+    do
+	numchars=`echo $arg | wc -m`
+	leadingchars=`expr $totalchars - $numchars`
+	# Subtract leading characters and number of whitespaces
+	# surrounding 'title'
+	leadingchars=`expr $leadingchars - 4`
+	leadingchars=`expr $leadingchars / 2 + 1`
+
+	# Leading string: "==========" of necessary length
+	string="  "
+	charssofar=2
+	while test $charssofar -lt $leadingchars; do
+	    string="$string""="
+	    charssofar=`expr $charssofar + 1`
+	done
+
+	# The string to be centred
+	string="$string $arg "
+	charssofar=`expr $charssofar + 4 + $numchars`
+
+	# Trailing string: "==========" of necessary length
+	while test $charssofar -lt $totalchars; do
+	    string="$string""="
+	    charssofar=`expr $charssofar + 1`
+	done
+
+	# Finally show the pretty-formatted string
+	echo $string
+    done
+
+    # One trailing empty line
+    echo
+}
+
+
+#   Function: starts global time measurement
+fb_startTimer() {
+    hour=`date +'%H'`
+    minute=`date +'%M'`
+    second=`date +'%S'`
+
+    starttime=`expr $second + 60 \* $minute + 3600 \* $hour`
+}
+
+
+#   Function: stops global time measurement and calculate global runtime
+fb_stopTimer() {
+    hour=`date +'%H'`
+    minute=`date +'%M'`
+    second=`date +'%S'`
+
+    stoptime=`expr $second + 60 \* $minute + 3600 \* $hour`
+
+    time=`expr $stoptime - $starttime`
+    hour=`expr $time / 3600`
+    time=`expr $time - $hour \* 3600`
+    minute=`expr $time / 60`
+    time=`expr $time - $minute \* 60`
+    second=$time
+
+    printf "Totaltime: %02d:%02d:%02d\n\n" $hour $minute $second 1>> $GLOBALLOG
+}
+
+
+#   Function: Normal and abnormal end of this script
+fb_exit() {
+    exitcode="$1"  # IN
+
+    # Clean up a running LAM/MPI daemon process
+    if [ "$MPIENV""x" = "LAMMPIx" ]; then
+	wipe 1>> $GLOBALLOG 2>&1
+    fi
+
+    # Set a (file)flag that benchmark has finished,
+    # such that login restrictions to current host can be removed
+    # (by another (root) cronjob).
+    if [ "$SETFLAGWHENBENCHMARKDONE""x" = "yesx" ]; then
+	touch $FLAGBENCHMARKFINISHED
+    fi
+
+    \rm -f $AUXILIARYLOG
+
+    exit $exitcode
+}
+
+
+
+
+
+# ================================================
+# = Here is where to script really gets executed =
+# ================================================
+
+
+test $DEBUG -gt 0 && \
+    (echo;
+     echo "# FEAT2 regression benchmark control script is run in debug mode";
+     echo)
+test $DEBUG -gt 0 && echo "# Parsing command line options"
+fb_readargs "$@"
+test $DEBUG -gt 0 && echo "# Command line options parsed"
+
+
+# Start with clean log file
+test -r $AUXILIARYLOG && \rm -f $AUXILIARYLOG
+touch $AUXILIARYLOG
+if [ $? -ne 0 ]; then
+        MAILSUBJECT="$MAILPREFIX Cannot create logfile <$AUXILIARYLOG> ($HOSTNAME)"
+	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+fi
+
+if [ "$COMPAREFEAT2CHECKOUTS""x" = "yesx" ]; then
+	# Remove flags that indicate to a slave process whether it
+	# should run a benchmark or not.
+	test -r $FLAGRUNBENCHMARK && \rm -f $FLAGRUNBENCHMARK
+	test -r $FLAGSKIPBENCHMARK  && \rm -f $FLAGSKIPBENCHMARK
+fi
+
+# Load modules, set variables depending on the host this script is run on and
+# which control what this script needs to do.
+test $DEBUG -gt 0 && echo "# Customising: Determining settings for $HOSTNAME"
+fb_customise
+
+# Remove remains of previous runs of this script,
+# rename previous working copy to Featflow2.previous
+test $DEBUG -gt 0 && echo "# Cleaning up files and directories from previous runs"
+fb_cleanUpOldCheckout
+
+# Create a new log file the content of which is send later on
+fb_initialiseGlobalLogFile "parallel"
+test $DEBUG -gt 0 && echo "# New logfile created"
+# (now GLOBALLOG is set and can be used)
+
+# Checkout FEAT2 from Subversion
+test $DEBUG -gt 0 && echo "# Checking out from subversion"
+fb_checkoutFromSVN
+
+# Compare current and previous working copy (if any) of FEAT2
+# If there are no changes and regression benchmark should not be run
+# unconditionally, end script
+test $DEBUG -gt 0 && echo "# Checking whether to run at all"
+fb_checkWhetherToRun
+
+
+
+# =========================================
+# ============= Serial builds =============
+# =========================================
+
+# Create a new log file the content of which is send later on
+fb_initialiseGlobalLogFile "serial"
+# (now GLOBALLOG is set and can be used)
+
+# Restore symbolic links, clone benchmark directory if necessary
+# (also sets BENCHMARKDIR, this call must not be simply commented out)
+fb_prepareForRun "serial"
+
+# Configure benchmark applications
+fb_configureBenchmark "serial"
+
+# Compile benchmark applications
+fb_compileBenchmark "serial"
+
+# If merely compilability of benchmark applications is to be tested
+# end script here.
+if [ "$COMPILEONLY""x" = "yesx" ]; then
+    fb_exit 0
+fi
+
+# Run serial benchmark tests
+fb_runBenchmark "serial"
+
+# Normal end. Send results to whomever it may concern
+# For convenience, we want HTML anchors to directly jump to any deviant or crashed test.
+# Let perl do the text transformation.
+# Usage:
+# perl '<path_to_perl_script>' "<subjectprefix>" "<subjectpostfix>" "<recipient>" "<logfile>"
+perl $BASEDIR/benchmark/include/link_failed_tests.pl "$FROMADDRESS" "$MAILPREFIX" "($HOSTNAME - $COMPILERNAME - $TESTSUITE - serial)" "$RECIPIENT" "$GLOBALLOG"
+
+
+# =========================================
+# ============ Auto-docu system ===========
+# =========================================
+fb_createDocumentation
+
+fb_exit 0
