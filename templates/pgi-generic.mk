@@ -48,7 +48,7 @@ CXXVERSION = $(CXX) -V | head -n 2
 # integers are 32-bit!!!
 # So, to get things running with compilers that do not default native integers
 # to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS: -i4. 
+# CFLAGSF77LIBS:. 
 # This also applies when changing the kind-values in kernel/fsystem.f90.
 
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
@@ -56,7 +56,7 @@ CXXVERSION = $(CXX) -V | head -n 2
 
 ifeq ($(call optimise), YES)
 # -Mcache_align is important when using ACML.
-CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -O4 -i4 -fastsse \
+CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -O4 -fastsse \
 		 -Mcray=pointer -Mcache_align -Minline=size:32 -Munroll=c:4 \
 		 -Mvect=assoc,cachesize:1048576,prefetch,sse
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
@@ -70,7 +70,7 @@ CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O4 -fastsse \
 		 -Mvect=assoc,cachesize:1048576,prefetch,sse
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -i4 -O0 -g -Mbounds
+CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -O0 -g -Mbounds
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 # PGI F90 Compiler (at least 6.1.x) needs 
 # * -g flag (even for -O0 optimisation level)

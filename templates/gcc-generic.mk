@@ -48,7 +48,7 @@ CXXVERSION = $(CXX) --version | head -n 1
 # integers are 32-bit!!!
 # So, to get things running with compilers that do not default native integers
 # to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS: -i4. 
+# CFLAGSF77LIBS:. 
 # This also applies when changing the kind-values in kernel/fsystem.f90.
 
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
@@ -59,7 +59,7 @@ GFORTRANVERSION  := $(shell eval $(F90VERSION) )
 
 # command line options for gfortran 4.3.x
 ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -i4
+CFLAGSF77LIBS := $(CFLAGSF77LIBS)
 endif
 
 # command line options for gfortran 4.4.x

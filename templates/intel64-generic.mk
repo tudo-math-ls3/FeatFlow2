@@ -68,7 +68,7 @@ endif
 # integers are 32-bit!!!
 # So, to get things running with compilers that do not default native integers
 # to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS: -i4. 
+# CFLAGSF77LIBS:. 
 # This also applies when changing the kind-values in kernel/fsystem.f90.
 
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
@@ -77,7 +77,7 @@ endif
 
 ifeq ($(call optimise), YES)
 # Don't specify -ipo here. IPO optimisation is enabled by the flag opt=expensive.
-CFLAGSF77LIBS := -DUSE_COMPILER_INTEL $(CFLAGSF77LIBS) -O3 -i4 \
+CFLAGSF77LIBS := -DUSE_COMPILER_INTEL $(CFLAGSF77LIBS) -O3 \
 		 -funroll-loops -ip -assume underscore \
 		 -fp-model precise \
 		 -pad
@@ -88,7 +88,7 @@ CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll -ip -fp-model preci
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) 
 else
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -DUSE_COMPILER_INTEL -O0 -i4 \
+CFLAGSF77LIBS := $(CFLAGSF77LIBS) -DUSE_COMPILER_INTEL -O0 \
 		 -g -fpe0 -assume underscore
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77LIBS) \

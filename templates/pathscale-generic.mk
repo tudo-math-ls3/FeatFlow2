@@ -48,7 +48,7 @@ CXXVERSION = $(CXX) -version 2>&1 | head -n 4
 # integers are 32-bit!!!
 # So, to get things running with compilers that do not default native integers
 # to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS: -i4. 
+# CFLAGSF77LIBS:. 
 # This also applies when changing the kind-values in kernel/fsystem.f90.
 
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
@@ -74,7 +74,7 @@ endif
 
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -DUSE_COMPILER_PATHSCALE $(CFLAGSF77LIBS) -O3 -OPT:Ofast \
-		 -fno-math-errno -i4 #-Wuninitialized
+		 -fno-math-errno #-Wuninitialized
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77) 
 CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) \
 		 $(CFLAGSF77LIBS) -module $(OBJDIR) 
@@ -82,7 +82,7 @@ CFLAGSC       := -DUSE_COMPILER_PATHSCALE $(CFLAGSC) -O3 -OPT:Ofast \
 		 -fno-math-errno 
 LDFLAGS       := $(LDFLAGS) 
 else
-CFLAGSF77LIBS := -DUSE_COMPILER_PATHSCALE $(CFLAGSF77LIBS) -g -i4 -Wuninitialized -ffortran-bounds-check
+CFLAGSF77LIBS := -DUSE_COMPILER_PATHSCALE $(CFLAGSF77LIBS) -g -Wuninitialized -ffortran-bounds-check
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) \
 		 $(CFLAGSF77LIBS) -module $(OBJDIR)

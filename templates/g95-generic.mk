@@ -48,7 +48,7 @@ CXXVERSION = $(CXX) --version | head -n 1
 # integers are 32-bit!!!
 # So, to get things running with compilers that do not default native integers
 # to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS: -i4. 
+# CFLAGSF77LIBS:. 
 # This also applies when changing the kind-values in kernel/fsystem.f90.
 
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
@@ -58,7 +58,7 @@ ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -DUSE_COMPILER_G95 $(CFLAGSF77LIBS) -O3 \
 		 -ffast-math -foptimize-register-move \
 		 -fprefetch-loop-arrays -funroll-loops -static \
-		 -fno-second-underscore -i4
+		 -fno-second-underscore
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH \
 	         $(CFLAGSF90) $(CFLAGSF77LIBS) -fmod=$(OBJDIR)
@@ -69,7 +69,7 @@ CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
 CFLAGSF77LIBS := -DUSE_COMPILER_G95 $(CFLAGSF77LIBS) -g -fno-second-underscore \
-		-i4 #-pg
+		#-pg
 # Don't include "-fbounds-check" in CFLAGSF77 as the SBBLAS routines
 # are peppered with out-of-bounds accesses (i[0] and i[n]). That's 
 # Turek-style code and nobody volunteered so far to fix it.

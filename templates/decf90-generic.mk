@@ -48,21 +48,21 @@ CXXVERSION = $(CXX) --version | head -n 1
 # integers are 32-bit!!!
 # So, to get things running with compilers that do not default native integers
 # to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS: -i4. 
+# CFLAGSF77LIBS:. 
 # This also applies when changing the kind-values in kernel/fsystem.f90.
 
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
 # pray that they default the 'int' type properly.
 
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -DUSE_COMPILER_DEC $(CFLAGSF77LIBS) -fast -O5 -i4
+CFLAGSF77LIBS := -DUSE_COMPILER_DEC $(CFLAGSF77LIBS) -fast -O5
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77LIBS) \
 	         -module $(OBJDIR)
 CFLAGSC       := -DUSE_COMPILER_DEC $(CFLAGSC) -fast -O5
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77LIBS := -DUSE_COMPILER_DEC $(CFLAGSF77LIBS) -O0 -recursive -i4
+CFLAGSF77LIBS := -DUSE_COMPILER_DEC $(CFLAGSF77LIBS) -O0 -recursive
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77LIBS) \
 	         -module $(OBJDIR)
