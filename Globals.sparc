@@ -41,7 +41,7 @@ CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer \
 -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -mcpu=v9 -m32 -pipe -fmod=$(MODDIR)
+FCFLAGS   = -mcpu=v9 -m32 -pipe -cpp -fmod=$(MODDIR)
 CCFLAGS   = -mcpu=v9 -m32 -fno-globals -Wno-globals -pipe
 BLASLIB   = 
 LAPACKLIB =

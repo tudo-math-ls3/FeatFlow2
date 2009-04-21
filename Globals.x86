@@ -12,7 +12,7 @@ CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations
 OPTFLAGSFDEBUG = -O0 -g
-FCFLAGS   = -pipe -fmod=$(MODDIR)
+FCFLAGS   = -pipe -cpp -fmod=$(MODDIR)
 CCFLAGS   = -pipe
 CPPFLAGS  = -pipe
 BLASLIB   = 
@@ -31,7 +31,7 @@ CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations
 OPTFLAGSFDEBUG = -O0 -g -Wall -fbounds-check -ftrace=full
-FCFLAGS   = -pipe -fmod=$(MODDIR)
+FCFLAGS   = -pipe -cpp -fmod=$(MODDIR)
 CCFLAGS   = -pipe
 CPPFLAGS  = -pipe
 BLASLIB   = 
@@ -213,7 +213,7 @@ CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
 OPTFLAGSFDEBUG = -O0 -g -Wall -fbounds-check -ftrace=full
-FCFLAGS   = -pipe -fmod=$(MODDIR)
+FCFLAGS   = -pipe -cpp -fmod=$(MODDIR)
 CCFLAGS   = -pipe
 CPPFLAGS   = -pipe
 BLASLIB   = 

@@ -80,7 +80,7 @@ FC=g95
 OPTFLAGS  = -mtune=G4 -mcpu=G4 -O3 -maltivec -mabi=altivec \
 -ffast-math -fexpensive-optimizations -fomit-frame-pointer \
 -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -pipe -fmod=$(MODDIR)
+FCFLAGS   = -pipe -cpp -fmod=$(MODDIR)
 CCFLAGS   = -pipe
 CPPFLAGS   = -pipe
 LDFLAGS   = 
