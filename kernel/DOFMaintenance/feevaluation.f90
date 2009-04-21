@@ -1812,7 +1812,8 @@ contains
 
     ! local variables
     real(DP), dimension(:), pointer :: p_Dvalues,p_Dvalues2
-    integer :: i,j,celement
+    integer :: i,j
+    integer(I32) :: celement
     logical :: bevaluate
 
     ! There are some special cases that we can handle directly.
