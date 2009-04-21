@@ -143,7 +143,7 @@ FLAGSKIPBENCHMARK=$HOME/FEAT2_BENCHMARK_DO_NOT_RUN
 FLAGBENCHMARKFINISHED=/tmp/FEAT2_BENCHMARK_FINISHED
 #
 # recipient of email error and report messages
-RECIPIENT=feat2users@math.tu-dortmund.de
+RECIPIENT=feat2users@math.tu-dortmund.de,buijssen@math.tu-dortmund.de
 #RECIPIENT=buijssen@math.tu-dortmund.de
 
 
@@ -334,7 +334,7 @@ fb_customise() {
 	    # (the default SVN port 3690 is not necessarily free and available)
 	    SVNURL=svn://localhost:13690/Featflow2
 	    MAILX="mailx"
-	    FROMADDRESS="featflow@lido-gw2"
+	    FROMADDRESS="featflow@lido-gw1"
 	    USEMODULES="yes"
 
 	    # As all benchmark tests are run in parallel on LiDO
@@ -706,7 +706,7 @@ fb_checkWhetherToRun() {
 	    for string in \
 		'benchmark_*' .svn AMD BLAS UFconfig UMFPACK \
 		applications area51 codefragments docs documentation \
-		incoming lapack-3.2
+		incoming lapack-3.2 splib
 	    do
 		ignore="${ignore} -x ${string}"
 	    done
@@ -1204,7 +1204,7 @@ test $DEBUG -gt 0 && echo "# Cleaning up files and directories from previous run
 fb_cleanUpOldCheckout
 
 # Create a new log file the content of which is send later on
-fb_initialiseGlobalLogFile "parallel"
+fb_initialiseGlobalLogFile "serial"
 test $DEBUG -gt 0 && echo "# New logfile created"
 # (now GLOBALLOG is set and can be used)
 
@@ -1223,10 +1223,6 @@ fb_checkWhetherToRun
 # =========================================
 # ============= Serial builds =============
 # =========================================
-
-# Create a new log file the content of which is send later on
-fb_initialiseGlobalLogFile "serial"
-# (now GLOBALLOG is set and can be used)
 
 # Restore symbolic links, clone benchmark directory if necessary
 # (also sets BENCHMARKDIR, this call must not be simply commented out)
