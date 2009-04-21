@@ -3241,7 +3241,7 @@ contains
         ! Retrieve value of environment variable
         ! (Do not forget to cut the dollar sign.)
         bfoundInEnv = &
-            parlst_getenv_string(trim(&
+            sys_getenv_string(trim(&
                 sresult(istartPos + 1 : istartPos + istopPosRelative - 1)), sauxEnv)
         if (bfoundInEnv) then
           ! Replace environment variable by its content
@@ -3267,75 +3267,6 @@ contains
     
   end subroutine
 
-  ! ***************************************************************************
-
-!<function>
-  logical function parlst_getenv_string(svar, sresult)
-
-  !<description>
-    ! This functions returns the string value of a given enviroment variable. The routine
-    ! returns .TRUE., if the variable exists, otherwise .FALSE. .
-  !</description>
-
-  !<input>
-    ! name of the enviroment variable
-    character(len=*), intent(in) :: svar
-  !</input>
-
-  !<output>
-    ! value of the enviroment variable
-    character(len=SYS_STRLEN), intent(out) :: sresult
-  !</output>
-
-  !<result>
-    ! exit status
-  !</result>
-
-  !<errors>
-    ! none
-  !</errors>
-!</function>
-
-    character(len=SYS_STRLEN) :: svalueInEnv
-
-    integer :: nstatus
-
-#if defined USE_COMPILER_NEC || defined USE_COMPILER_PGI_6_1 || defined USE_COMPILER_PGI_6_2 || defined USE_COMPILER_PGI_7_0
-    call getenv(trim(svar), svalueInEnv)
-    if (trim(svalueInEnv) .eq. "") then
-      nstatus = 1
-    else
-      nstatus = 0
-    endif
-#else
-    call get_environment_variable(trim(svar), svalueInEnv, status=nstatus)
-#endif
-
-    select case (nstatus)
-    case (0)
-      ! Copy string only up to first whitespace character
-!      read(svalueInEnv, '(A)') sresult
-
-      ! Copy complete string
-      sresult = svalueInEnv
-      parlst_getenv_string = .TRUE.
-
-    case (1)
-      ! Environment variable does not exist
-      sresult = ""
-      parlst_getenv_string = .FALSE.
-
-    case default
-      !  2: Processor does not support environment variables
-      ! >2: Some error occurred
-      ! -1: variable svalueInEnv too short to absorb environment variables` content
-      sresult = ""
-      parlst_getenv_string = .FALSE.
-
-    end select
-
-  end function parlst_getenv_string
-  
   ! ***************************************************************************
 
 !<subroutine>

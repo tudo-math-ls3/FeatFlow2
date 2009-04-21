@@ -85,6 +85,9 @@
 !#      -> String routines to convert long integers representing memory usage
 !#         to strings.
 !#
+!# 21.) sys_getenv_string
+!#      -> Retrieves an environment variable from the system
+!#
 !# </purpose>
 !##############################################################################
 
@@ -311,6 +314,32 @@ module fsystem
   ! respect this setting but do not explicitely use this variable.
   real(DP), save :: sys_dtimeMax = 0.0_DP
 
+  ! number of command line options
+  integer(I32) :: sys_ncommandLineArgs = 0
+
+  ! A list of command line options.
+  ! Command line options are either simple options, direct short options
+  ! or direct long options.
+  ! a) Simple option: "value"
+  !  Here, sys_scommandLineArgs(.,1) = "value" and
+  !        sys_scommandLineArgs(.,2) = "".
+  !  Can be used to store e.g. paths like "./data".
+  ! b) Short options: "-key" or "-key=value".
+  !  Here, sys_scommandLineArgs(.,1) = "key" and
+  !        sys_scommandLineArgs(.,2) = "value" or "" if no value is specified.
+  ! c) long options: "--key" or "--key=value".
+  !  Here, sys_scommandLineArgs(.,1) = "key" and
+  !        sys_scommandLineArgs(.,2) = "value" or "" if no value is specified.
+  character(len=SYS_STRLEN), dimension(:,:), pointer :: sys_scommandLineArgs => null()
+  
+  ! Defines the format of command line options.
+  ! A value 0 indicates a direct option.
+  ! A value 1 indicates that the command line parameter
+  ! is of short form ("-key" or "-key=value").
+  ! A value 2 indicates that the command line parameter
+  ! is of long form ("--key" or "--key=value").
+  integer, dimension(:), pointer ::  sys_bcommandLineFormat => null()
+
 !</globals>
 
 !************************************************************************
@@ -451,6 +480,8 @@ contains
     ! This subroutine initialises internal data structures.
     ! The value of the project name and directory are set according to the
     ! parameters.
+    ! The command line parameters are read and stored into
+    ! sys_scommandLineArgs.
 !</description>
 
 !<input>
@@ -484,6 +515,10 @@ contains
 
     ! Set value of Pi = 3.14..
     SYS_PI=asin(1.0_DP)*2.0_DP
+    
+    ! Get the command line parameters, store them
+    ! into sys_scommandLineArgs.
+    call sys_getCommandLine()
     
   end subroutine system_init_ext
 
@@ -913,9 +948,9 @@ contains
 !</input>
 !</subroutine>
 
-!#ifdef HAS_FLUSH
-!    call flush(iunit)
-!#endif
+#ifdef HAS_FLUSH
+    call flush(iunit)
+#endif
 
   end subroutine sys_flush
 
@@ -1980,5 +2015,142 @@ contains
     real(DP), intent(in) :: dvalue
     sys_s10E = trim(sys_sdEL(dvalue, 2))
   end function sys_s10E
+
+  ! ***************************************************************************
+
+!<function>
+  logical function sys_getenv_string(svar, sresult)
+
+  !<description>
+    ! This functions returns the string value of a given enviroment variable. The routine
+    ! returns .TRUE., if the variable exists, otherwise .FALSE. .
+  !</description>
+
+  !<input>
+    ! name of the enviroment variable
+    character(len=*), intent(in) :: svar
+  !</input>
+
+  !<output>
+    ! value of the enviroment variable
+    character(len=SYS_STRLEN), intent(out) :: sresult
+  !</output>
+
+  !<result>
+    ! exit status
+  !</result>
+
+  !<errors>
+    ! none
+  !</errors>
+!</function>
+
+    character(len=SYS_STRLEN) :: svalueInEnv
+
+    integer :: nstatus
+
+#if defined USE_COMPILER_NEC || defined USE_COMPILER_PGI_6_1 || defined USE_COMPILER_PGI_6_2 || defined USE_COMPILER_PGI_7_0
+    call getenv(trim(svar), svalueInEnv)
+    if (trim(svalueInEnv) .eq. "") then
+      nstatus = 1
+    else
+      nstatus = 0
+    endif
+#else
+    call get_environment_variable(trim(svar), svalueInEnv, status=nstatus)
+#endif
+
+    select case (nstatus)
+    case (0)
+      ! Copy string only up to first whitespace character
+!      read(svalueInEnv, '(A)') sresult
+
+      ! Copy complete string
+      sresult = svalueInEnv
+      sys_getenv_string = .TRUE.
+
+    case (1)
+      ! Environment variable does not exist
+      sresult = ""
+      sys_getenv_string = .FALSE.
+
+    case default
+      !  2: Processor does not support environment variables
+      ! >2: Some error occurred
+      ! -1: variable svalueInEnv too short to absorb environment variables` content
+      sresult = ""
+      sys_getenv_string = .FALSE.
+
+    end select
+
+  end function sys_getenv_string
+  
+! ****************************************************************************************
+
+!<subroutine>
+  subroutine sys_getCommandLine()
+
+  !<description>
+    ! This routine parses the given command line and transfer the key value pairs
+    ! into internal data structures
+  !</description>
+!</subroutine>
+
+    integer(I32) :: i,idx,istmplen
+    character(len=SYS_STRLEN) :: stmp
+
+#ifndef HAS_INTRINSIC_IARGC
+    ! Definition of iargc needed for
+    ! * Sun Fortran 95 8.1,
+    ! * Compaq Fortran Compiler X5.4A-1684-46B5P,
+    ! * Portland Group pgf90 6.0-5
+    integer(I32) :: iargc
+    external iargc ! generic Fortran routine to get the arguments from program call
+#endif
+
+    sys_ncommandLineArgs=iargc()
+
+    allocate(sys_scommandLineArgs(sys_ncommandLineArgs,2))
+    allocate(sys_bcommandLineFormat(sys_ncommandLineArgs))
+
+    do i = 1, sys_ncommandLineArgs
+
+      call getarg(i,stmp)
+
+      istmplen = len(stmp)
+
+      if (stmp(1:2).eq."--") then
+
+        idx=3
+        do while ((stmp(idx:idx).ne.'=').and.(idx.lt.istmplen))
+          idx=idx+1
+        enddo
+
+        sys_bcommandLineFormat(i)=2
+        sys_scommandLineArgs(i,1)=stmp(3:idx-1)
+        sys_scommandLineArgs(i,2)=stmp(idx+1:)
+
+      else if (stmp(1:1).eq."-") then
+
+        idx = 2
+        do while ((stmp(idx:idx).ne.'=').and.(idx .lt. istmplen))
+          idx = idx+1
+        enddo
+
+        sys_bcommandLineFormat(i)=1
+        sys_scommandLineArgs(i,1)=stmp(2:idx-1)
+        sys_scommandLineArgs(i,2)=stmp(idx+1:)
+
+      else
+
+        sys_bcommandLineFormat(i)=0
+        sys_scommandLineArgs(i,1)=stmp
+        sys_scommandLineArgs(i,2)=""
+
+      endif
+
+    enddo
+
+  end subroutine sys_getCommandLine
 
 end module fsystem
