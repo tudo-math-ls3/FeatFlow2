@@ -1212,7 +1212,8 @@ contains
     real(DP), dimension(NDIM3D) :: Dval
     integer :: IVE,NVE,NVEMax,IEL,JEL,KEL,IVT,IPATCH,NPATCH,PATCHset,PATCHmax
     integer :: icurrentElementDistr,ilastElementDistr,ilocalElementDistr
-    integer :: i,j,k,ipoint,idx,idx2,icoordSystem,idxsubgroup
+    integer :: i,j,k,ipoint,idx,idx2,idxsubgroup
+    integer(i32) :: icoordSystem
     logical :: bnonparTrial
 
 
