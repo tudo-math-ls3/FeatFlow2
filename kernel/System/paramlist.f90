@@ -183,10 +183,9 @@
 !#     -> Reads a single INI file without checking for subfiles.
 !#
 !# 2.) parlst_expandEnvVariables
-!#     -> expands all environment variables in the given
-!#        string sbuffer.
+!#     -> expands all environment variables in the parameter list
 !#
-!# 3.) parlst_expandsubvars
+!# 3.) parlst_expandSubvars
 !#     -> expands all subvariables in the parameter list
 !#
 !# </purpose>
@@ -1249,9 +1248,6 @@ contains
   ! Get the value
   call parlst_getvalue_string_indir (p_rsection, sparameter, svalue, sdefault,&
                                      isubstring)
-
-  ! Expand any environment variable
-  svalue = parlst_expandEnvVariables(svalue)
 
   end subroutine
   
@@ -2904,8 +2900,9 @@ contains
     ! Close the file.
     close (iunit)
 
-    ! Expand all subvariables to the actual values.
-    call parlst_expandsubvars(rparlist)
+    ! Expand all subvariables and environment variables to the actual values.
+    call parlst_expandEnvVariables(rparlist)
+    call parlst_expandSubvars(rparlist)
     
   end subroutine
   
@@ -3138,73 +3135,137 @@ contains
 
   ! ***************************************************************************
 
-!<function>
-  function parlst_expandEnvVariables(sbuffer) result(sresult)
+!<subroutine>
 
-  !<description>
-    ! This subroutine recursively expands all environment variables in the given
-    ! string sbuffer.
-  !</description>
+  subroutine parlst_expandEnvVariables(rparlist)
+  
+!<description>
+  ! This subroutine expands variables when referring to subvariables:
+  ! The value of a parameter may refer to another variable in the parameter
+  ! list. This can be specified by tokens of the form "%{NAME}" or "{SECTION.NAME}",
+  ! depending on whether it is part of the main section or not.
+  ! Example: "NLMIN = %{NLMAX}"; in this case, NLMIN is always set to
+  ! the same value as NLMAX.
+  !
+  ! The routine parses all variables in the DAT file to resolve such
+  ! references. Note that recursive definitions are not allowed!
+!</description>
+  
+!<inputoutput> 
+  ! The parameter list which is filled with data from the file
+  type(t_parlist), intent(INOUT) :: rparlist
+!</inputoutput>
 
-  !<input>
-    ! string
-    character(len=*), intent(in) :: sbuffer
-  !</input>
+!</subroutine>
 
-  !<result>
-    character(len=SYS_STRLEN) :: sresult
-  !</result>
+    integer :: isection,ivalue,ientry,icount
+    
+    if (rparlist%isectionCount .eq. 0) then
+      call output_line ('Parameter list not initialised', &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_expandEnvVariables')
+      call sys_halt()
+    end if
+  
+    ! Loop through all sections
+    do isection = 1,rparlist%isectionCount
+    
+      ! Loop through the values in the section
+      do ivalue = 1,rparlist%p_Rsections(isection)%iparamCount
+        
+        ! Do we have one or multiple entries to that parameter?
+        icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
+        if (icount .eq. 0) then
+          ! Expand the value if is refers to subvalues.
+          call expandEnvVariable(&
+              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry)
+        else
+          ! Loop through the subvalues.
+          do ientry = 1,icount
+            ! Expand the value if is refers to subvalues.
+            call expandEnvVariable(&
+                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_Sentry(ientry))
+          end do
+        end if
+      
+      end do ! ivalue
+    
+    end do ! isection
+      
+  contains
 
-  !<errors>
-    ! ERR_CONV_ENV_VAR_NOT_FOUND (critical)
-  !</errors>
-!</function>
+  !<function>
+  
+    subroutine expandEnvVariable(sbuffer) 
 
-    ! flag
-    logical :: bfoundInEnv
+    !<description>
+      ! This subroutine recursively expands all environment variables in the given
+      ! string sbuffer.
+    !</description>
 
-    ! start and end position of variable
-    integer(I32) :: istartPos, istopPosRelative
+    !<input>
+      ! string; all environment variables in here are replaced
+      character(len=*), intent(inout) :: sbuffer
+    !</input>
 
-    ! variable to expand environment variable on-the-fly to if found
-    character(len=SYS_STRLEN) :: sauxEnv
+    !<errors>
+      ! ERR_CONV_ENV_VAR_NOT_FOUND (critical)
+    !</errors>
+  !</function>
 
+      ! flag
+      logical :: bfoundInEnv
 
-    ! Initialise return value
-    sresult = trim(sbuffer)
+      ! start and end position of variable
+      integer(I32) :: istartPos, istopPosRelative
 
-    ! check for a $ character
-    istartPos = index(sresult, "$")
-    do while (istartPos .gt. 0)
-      ! Detect end of variable: a variable ends at the first character that
-      ! is neither in '[A-Z]', '[0-9]' nor '_'.
-      istopPosRelative = verify(sresult(istartPos+1:), &
-                          "abcdefghijklmnopqrstuvwxyz" // &
-                          "ABCDEFGHIJKLMNOPQRSTUVWXYZ" // &
-                          "0123456789_")
+      ! variable to expand environment variable on-the-fly to if found
+      character(len=SYS_STRLEN) :: sauxEnv
 
-      bfoundInEnv = .FALSE.
-      ! Retrieve value of environment variable
-      ! (Do not forget to cut the dollar sign.)
-      bfoundInEnv = &
-           parlst_getenv_string(trim(&
-               sresult(istartPos + 1 : istartPos + istopPosRelative - 1)), sauxEnv)
-      if (bfoundInEnv) then
-        ! Replace environment variable by its content
-        sresult = sresult(1:istartPos-1) // &
-                  trim(sauxEnv) // &
-                  trim(sresult(istartPos + istopPosRelative:))
-      else
-        call error_print(ERR_PARLST_ENV_VAR_NOT_FOUND, "parlst_expandEnvVariables", &
-                         ERR_CRITICAL, &
-                         sarg1=trim(sresult(istartPos + 1 : istartPos + istopPosRelative - 1)))
-      endif
+      ! Buffer for the result
+      character(len=SYS_STRLEN) :: sresult
 
-      ! check for next $ character
+      ! Initialise return value
+      sresult = trim(sbuffer)
+
+      ! check for a $ character
       istartPos = index(sresult, "$")
-    enddo
+      do while (istartPos .gt. 0)
+        ! Detect end of variable: a variable ends at the first character that
+        ! is neither in '[A-Z]', '[0-9]' nor '_'.
+        istopPosRelative = verify(sresult(istartPos+1:), &
+                            "abcdefghijklmnopqrstuvwxyz" // &
+                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" // &
+                            "0123456789_")
 
-  end function parlst_expandEnvVariables
+        bfoundInEnv = .FALSE.
+        ! Retrieve value of environment variable
+        ! (Do not forget to cut the dollar sign.)
+        bfoundInEnv = &
+            parlst_getenv_string(trim(&
+                sresult(istartPos + 1 : istartPos + istopPosRelative - 1)), sauxEnv)
+        if (bfoundInEnv) then
+          ! Replace environment variable by its content
+          sresult = sresult(1:istartPos-1) // &
+                    trim(sauxEnv) // &
+                    trim(sresult(istartPos + istopPosRelative:))
+        else
+          call output_line ('Environment variable <'//&
+              trim(sresult(istartPos + 1 : istartPos + istopPosRelative - 1))//&
+              '> not found!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'parlst_expandEnvVariables')
+          call sys_halt()
+        endif
+
+        ! check for next $ character
+        istartPos = index(sresult, "$")
+      enddo
+      
+      ! Replace by the result
+      sbuffer = sresult
+
+    end subroutine
+    
+  end subroutine
 
   ! ***************************************************************************
 
@@ -3279,7 +3340,7 @@ contains
 
 !<subroutine>
 
-  subroutine parlst_expandsubvars(rparlist)
+  subroutine parlst_expandSubvars(rparlist)
   
 !<description>
   ! This subroutine expands variables when referring to subvariables:
@@ -3304,7 +3365,7 @@ contains
     
     if (rparlist%isectionCount .eq. 0) then
       call output_line ('Parameter list not initialised', &
-          OU_CLASS_ERROR,OU_MODE_STD,'parlst_expandsubvars')
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_expandSubvars')
       call sys_halt()
     end if
   
