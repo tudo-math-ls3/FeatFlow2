@@ -33,7 +33,7 @@ ilevelUCD = 0
 # Filename for UCD output.
 # In a nonstationary simulation, a number '.0001','.0002',... is appended
 # to this.
-sfilenameUCD = 'gmv/u.gmv'
+sfilenameUCD = '%{spostdirectory}/u.gmv'
 
 # ------------------------------------------------------------------------
 # Nonstationary UCD output parameters
@@ -81,7 +81,7 @@ ilevelFilm = 0
 
 # Basic filename for Film output. A number '.0001','.0002',... is appended
 # to this.
-sfilenameFilm = 'ns/solution'
+sfilenameFilm = '%{ssolutiondirectory}/solution'
 
 # Start time for Film output.
 

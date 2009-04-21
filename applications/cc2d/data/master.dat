@@ -15,20 +15,44 @@
 # a standard set of data files.
 # -------------------------------------------------------------------
 
-# This defines a list of data files to read. The files may optionally
+# In the following we define some basic directories that can be used
+# in all sub-data-files as path specifications for input/output
+# files. This allows to run the application in a benchmark
+# environment with different settings
+
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data
+
+# Directory for log files
+slogdirectory = %{sappdirectory}/log
+
+# Directory for visualisation files
+spostdirectory = %{sappdirectory}/gmv
+
+# Directory containing/receiving plain solution files
+ssolutiondirectory = %{sappdirectory}/ns
+
+# Directory for preprocessing files
+spredirectory = %{sappdirectory}/pre
+
+# The following defines a list of data files to read. The files may optionally
 # contain a path specification. If no path os specified, the files
 # are searched for in the ./data subdirectory of the application.
+# By default, we specify the sdatadirectory variable here as path specifier.
 
 simportdatafiles(8) = 
-  "discretisation.dat"
-  "linsol_cc2d.dat"
-  "nonlinsol_cc2d.dat"
-  "output.dat"
-  "paramtriang.dat"
-  "bdconditions.dat"
-  "timediscr.dat"
-  "postprocessing.dat"
-
+  "%{sdatadirectory}/discretisation.dat"
+  "%{sdatadirectory}/linsol_cc2d.dat"
+  "%{sdatadirectory}/nonlinsol_cc2d.dat"
+  "%{sdatadirectory}/output.dat"
+  "%{sdatadirectory}/paramtriang.dat"
+  "%{sdatadirectory}/bdconditions.dat"
+  "%{sdatadirectory}/timediscr.dat"
+  "%{sdatadirectory}/postprocessing.dat"
+  
 # From this point on, it's possible to additionally define 'alternative'
 # parameter settings that overwrite settings in the DAT files. The
 # parameters here must be introduced by the corresponding section

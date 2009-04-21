@@ -17,7 +17,7 @@ MSHOW_Initialisation = 2
 MT_OutputLevel = 2
 
 # Log file for messages. ='': No log file output.
-smsgLog = 'log/output.log'
+smsgLog = '%{slogdirectory}/output.log'
 
 # Log file for error messages; usually coincides with smsgLog to print
 # errors into the same log file as standard messages.
