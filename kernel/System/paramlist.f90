@@ -2772,9 +2772,6 @@ contains
     ! Release memory, finish
     deallocate(p_Ssubfiles)
     
-    ! Expand all subvariables to the actual values.
-    call parlst_expandsubvars(rparlist)
-    
   end subroutine
   
   ! ***************************************************************************
@@ -2904,9 +2901,12 @@ contains
     
     end do
     
-    ! Close the file, finish.
+    ! Close the file.
     close (iunit)
 
+    ! Expand all subvariables to the actual values.
+    call parlst_expandsubvars(rparlist)
+    
   end subroutine
   
   ! ***************************************************************************
