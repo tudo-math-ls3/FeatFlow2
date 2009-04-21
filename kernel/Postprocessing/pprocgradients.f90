@@ -4368,7 +4368,7 @@ contains
       
       ! Allocate memory and get local references to it.
       ! We abuse the system of cubature points here for the evaluation.
-      call domint_initIntegration (rintSubset,nelementsPerBlock,nlocalDOFsDest,
+      call domint_initIntegration (rintSubset,nelementsPerBlock,nlocalDOFsDest,&
         icoordinatesystem,p_rtriangulation%ndim,NVE)
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
