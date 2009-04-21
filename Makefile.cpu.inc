@@ -707,6 +707,12 @@ endif
 endif
 
 
+ifeq ($(call match,$(ID),pc-coreduo-cygwin_nt.*-.*-blas.*),yes)
+# Use self-compiled local BLAS
+include $(TEMPLATESDIR)/blas-generic.mk
+endif
+
+
 ifeq ($(call match,$(ID),pc-coreduo-linux-g95-.*),yes)
 # invokes the GNU Fortran 77/90 compiler, local umfpack, local metis
 include $(TEMPLATESDIR)/pc-generic.mk
