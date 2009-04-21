@@ -73,13 +73,33 @@ contains
 !</subroutine>
 
     type(t_parlist) :: rparlist
-    character(LEN=SYS_STRLEN) :: sstring
+    character(LEN=SYS_STRLEN) :: sstring,smaster
+    logical :: bexists
 
     ! Init parameter list that accepts parameters for output files
     call parlst_init (rparlist)
+    
+    ! Check if a command line parameter specifies the master.dat file.
+    smaster = './data/master.dat'
+    if (sys_ncommandLineArgs .gt. 0) then
+      if (sys_bcommandLineFormat(1) .eq. 0) then
+        inquire(file=sys_scommandLineArgs(1,1), exist=bexists)
+        if (bexists) then
+          smaster = sys_scommandLineArgs(1,1)
+        end if
+      end if
+    end if
 
     ! Read parameters that configure the output
-    call parlst_readfromfile (rparlist, './data/output.dat')
+    inquire(file=smaster, exist=bexists)
+    
+    if (bexists) then
+      ! Read the master file. That either one contains all parameters or
+      ! contains references to subfiles with data.
+      call parlst_readfromfile (rparlist, smaster)
+    else
+      call parlst_readfromfile (rparlist, './data/output.dat')
+    end if
     
     ! Now the real initialisation of the output including log file stuff!
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
@@ -115,16 +135,28 @@ contains
 !</subroutine>
 
     logical :: bexists
+    character(LEN=SYS_STRLEN) :: smaster
     
+    ! Check if a command line parameter specifies the master.dat file.
+    smaster = './data/master.dat'
+    if (sys_ncommandLineArgs .gt. 0) then
+      if (sys_bcommandLineFormat(1) .eq. 0) then
+        inquire(file=sys_scommandLineArgs(1,1), exist=bexists)
+        if (bexists) then
+          smaster = sys_scommandLineArgs(1,1)
+        end if
+      end if
+    end if
+
     ! Read the file 'master.dat'.
     ! If that does not exist, try to manually read files with parameters from a
     ! couple of files.
-    inquire(file='./data/master.dat', exist=bexists)
+    inquire(file=smaster, exist=bexists)
     
     if (bexists) then
       ! Read the master file. That either one contains all parameters or
       ! contains references to subfiles with data.
-      call parlst_readfromfile (rparamList, './data/master.dat','./data')
+      call parlst_readfromfile (rparamList, smaster)
     else
       ! Each 'readfromfile' command adds the parameter of the specified file 
       ! to the parameter list.
