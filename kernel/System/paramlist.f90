@@ -54,6 +54,51 @@
 !# a line not enclosed by apostrophes, the rest of the line is
 !# ignored as a comment.
 !#
+!# The subvariables feature
+!# ========================
+!# The parameter list alwo allows to specify variables as subvariables
+!# of other variables. Take a look at the following example:
+!# 
+!# -------------------------snip------------------------------
+!# NLMIN=1
+!# ACOMPLEXXTRING=! %{NLMIN} ! %{imainelement} ! %{SECTION1.ilist:3}
+!# imainelement=%{SECTION1.ielement}
+!# 
+!# [SECTION1]
+!# ielement=5
+!# 
+!# ilist(4)=
+!#   abc
+!#   def
+!#   ghi
+!#   jkl
+!# -------------------------snip------------------------------
+!# When reading the file, the parameter "ACOMPLEXXTRING" is automatically
+!# expanded to the value "! 1 ! 5 ! ghi" by using other variables from
+!# the parameter file. The following syntax is allowed here to refer
+!# to other parameters:
+!#
+!#  %{NAME}               - A variable from the unnamed section
+!#  %{NAME:idx}           - Value number idx of variable NAME 
+!#                          from the unnamed section
+!#  %{NAME:idx}           - Variable NAME from section SECTION
+!#  %{SECTION.NAME:idx}   - Value number idx of variable NAME 
+!#                          from section SECTION
+!#
+!# The environment variable feature
+!# ================================
+!# DAT files may refer to environment variables. Example:
+!# -------------------------snip------------------------------
+!# NLMIN=1
+!# NLMAX=$NLMAXENV
+!# -------------------------snip------------------------------
+!# In this case, it's assumed that $NLMAXENV is an environment
+!# variable of the system where the program runs. So when NLMAX
+!# is requested, the value of the environment variable $NLMAXENV
+!# is returned.
+!#
+!# The subfile feature
+!# ===================
 !# An INI file may contain references to subfiles. Subfiles must
 !# be specified at the beginning of an INI file with the following 
 !# syntax:
@@ -136,6 +181,13 @@
 !#
 !# 1.) parlst_readfromsinglefile
 !#     -> Reads a single INI file without checking for subfiles.
+!#
+!# 2.) parlst_expandEnvVariables
+!#     -> expands all environment variables in the given
+!#        string sbuffer.
+!#
+!# 3.) parlst_expandsubvars
+!#     -> expands all subvariables in the parameter list
 !#
 !# </purpose>
 !##############################################################################
@@ -2720,6 +2772,9 @@ contains
     ! Release memory, finish
     deallocate(p_Ssubfiles)
     
+    ! Expand all subvariables to the actual values.
+    call parlst_expandsubvars(rparlist)
+    
   end subroutine
   
   ! ***************************************************************************
@@ -3219,5 +3274,244 @@ contains
     end select
 
   end function parlst_getenv_string
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine parlst_expandsubvars(rparlist)
+  
+!<description>
+  ! This subroutine expands variables when referring to subvariables:
+  ! The value of a parameter may refer to another variable in the parameter
+  ! list. This can be specified by tokens of the form "%{NAME}" or "{SECTION.NAME}",
+  ! depending on whether it is part of the main section or not.
+  ! Example: "NLMIN = %{NLMAX}"; in this case, NLMIN is always set to
+  ! the same value as NLMAX.
+  !
+  ! The routine parses all variables in the DAT file to resolve such
+  ! references. Note that recursive definitions are not allowed!
+!</description>
+  
+!<inputoutput> 
+  ! The parameter list which is filled with data from the file
+  type(t_parlist), intent(INOUT) :: rparlist
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: isection,ivalue,ientry,icount
+    
+    if (rparlist%isectionCount .eq. 0) then
+      call output_line ('Parameter list not initialised', &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_expandsubvars')
+      call sys_halt()
+    end if
+  
+    ! Loop through all sections
+    do isection = 1,rparlist%isectionCount
+    
+      ! Loop through the values in the section
+      do ivalue = 1,rparlist%p_Rsections(isection)%iparamCount
+        
+        ! Do we have one or multiple entries to that parameter?
+        icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
+        if (icount .eq. 0) then
+          ! Expand the value if is refers to subvalues.
+          call expandSubvariable(rparlist,&
+              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry)
+        else
+          ! Loop through the subvalues.
+          do ientry = 1,icount
+            ! Expand the value if is refers to subvalues.
+            call expandSubvariable(rparlist,&
+                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_Sentry(ientry))
+          end do
+        end if
+      
+      end do ! ivalue
+    
+    end do ! isection
+      
+  contains
+  
+    subroutine findSubvariable(sstring,istart,iend,ssection,sname,ivalue)
+    
+    ! Searchs in the string sstring for the first occurance of a subvariable.
+    ! A subvariable has the form "%{NAME}" or "{SECTION.NAME}"
+    ! or "%{NAME:INDEX}" or "%{SECTION.NAME:INDEX}"
+    ! depending on whether it is part of the main section or not.
+    
+    ! The string where a subvariable is searched.
+    character(len=*), intent(in) :: sstring
+    
+    ! Returns the start of the variable in the string or 0 if no subvariable
+    ! is found.
+    integer, intent(out) :: istart
+
+    ! Returns the end of the variable in the string or 0 if no subvariable
+    ! is found.
+    integer, intent(out) :: iend
+    
+    ! Returns the name of the section or "" if either no subvariable is found
+    ! or the unnamed section is referred to.
+    character(len=*), intent(out) :: ssection
+
+    ! Returns the name of the subvariable or "" if no subvariable is found.
+    character(len=*), intent(out) :: sname
+    
+    ! Returns the number/index INDEX of the subvalue or 0, if there is
+    ! no index or if no subvariable is found.
+    integer, intent(out) :: ivalue
+    
+    ! local variables
+    integer :: i,j,istrlen,idotpos,icolonpos
+    logical :: bstartfound
+    
+      ! Ok, this is a parser. We have the following rules:
+      ! "%%" means one "%" and is not interpreted as the begin of a
+      ! token.
+      ! "%{NAME}" is a token referring to a variable in the unnamed section.
+      ! "%{NAME:INDEX}" is a token referring to a subvariable
+      ! of variable NAME in section SECTION.
+      ! "%{SECTION.NAME}" is a token referring to a name in a named section
+      ! which must exist.
+      ! "%{SECTION.NAME:INDEX}" is a token referring to a subvariable
+      ! of variable NAME in section SECTION.
+      !
+      istart = 0
+      iend = 0
+      ivalue = 0
+      bstartfound = .false.
+      
+      ! Lets loop through the characters.
+      istrlen = LEN(sstring)
+      do i=1,istrlen
+        if (sstring(i:i) .eq. "%") then
+          ! Did we already found the "%"?
+          if (bstartfound) then
+            ! That's our escape sequence. Don't do anything, just
+            ! return to 'normal' mode.
+            bstartfound = .false.
+          else
+            ! That's probably the beginning of a token.
+            bstartfound = .true.
+          end if
+          
+          ! Go on.
+          cycle
+        end if
+        
+        ! The next things only execute if we are close to a token...
+        if (bstartfound) then
+          if (sstring(i:I) .eq. "{") then
+            ! Yes, that's a token.
+            istart = i-1
+            
+            ! Find the end of the token and probably the dot/colon
+            idotpos = 0
+            icolonpos = 0
+            do j=istart+1,istrlen
+              if (sstring(j:J) .eq. ".") then
+                ! Here is the dot.
+                idotpos = j
+              end if
+
+              if (sstring(j:J) .eq. ":") then
+                ! Here is the dot.
+                icolonpos = j
+              end if
+              
+              if (sstring(j:j) .eq. "}") then
+                ! Here, the token ends. 
+                iend = j
+                
+                ! Extract name and probably the section
+                if (idotpos .eq. 0) then
+                  ssection = ""
+                  if (icolonpos .eq. 0) then
+                    sname = sstring(istart+2:iend-1)
+                  else
+                    sname = sstring(istart+2:icolonpos-1)
+                    
+                    ! Get the value
+                    read(sstring(icolonpos+1:iend-1),*) ivalue
+                  end if
+                else
+                  ssection = sstring(istart+2:idotpos-1)
+                  if (icolonpos .eq. 0) then
+                    sname = sstring(idotpos+1:iend-1)
+                  else
+                    sname = sstring(idotpos+1:icolonpos-1)
+
+                    ! Get the value
+                    read(sstring(icolonpos+1:iend-1),*) ivalue
+                  end if
+                end if
+                
+                ! That's it.
+                return
+                
+              end if
+            end do
+          end if
+        end if
+      end do
+      
+      ! Nothing found.
+      ssection = ""
+      sname = ""
+      
+    end subroutine
+    
+    ! ---------------------------------------------------------------
+    
+    subroutine expandSubvariable(rparlist,sstring)
+    
+    ! Expands the subvariables in sstring to a fully qualified string.
+    
+    ! The parameter list containing the variables that can be used
+    ! as subvariables.
+    type(t_parlist), intent(in) :: rparlist
+    
+    ! The string to be expanded. Receives the expanded string upon return.
+    character(len=*), intent(inout) :: sstring
+    
+      ! local variables
+      integer :: istart,iend,ilen,ivalue
+      character(len=PARLST_MLSECTION) :: ssection
+      character(len=PARLST_MLNAME) :: sname
+      character(len=LEN(sstring)) :: sbuffer
+      character(len=PARLST_MLDATA) :: sdata
+      
+      ! Repeat until we found all subvariables
+      istart = 1
+      iend = 0
+      do while (istart .ne. 0)
+  
+        ! Find the first subvariable
+        call findSubvariable(sstring,istart,iend,ssection,sname,ivalue)
+        
+        if (istart .ne. 0) then
+          ! Copy the string to the buffer
+          sbuffer = sstring
+          
+          ! Now copy back and replace the variable by the stuff from the
+          ! parameter list.
+          if (ivalue .eq. 0) then
+            call parlst_getvalue_string (rparlist, ssection, sname, sdata)
+          else
+            call parlst_getvalue_string (rparlist, ssection, sname, sdata, &
+                isubstring=ivalue)
+          end if
+          sstring = sbuffer(1:istart-1)//TRIM(sdata)//sbuffer(iend+1:)
+          
+        end if
+      
+      end do
+    
+    end subroutine
+
+  end subroutine
   
 end module
