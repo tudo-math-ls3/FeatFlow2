@@ -610,6 +610,16 @@ fb_runAndEvalBenchmarkTest() {
 
     # add some class-specific information, add whatever you want to see for your applications
     case "${CLASS}" in
+	CC2D)
+	    echo "DATFILE   = "${DATFILE}
+	    echo "MGLEVELS  = "${MGLEVELS}
+	    if test "${FOOBAR+set}" = set ; then
+		echo "FOOBAR    = "${FOOBAR}
+	    elif test "${FOOBAZ+set}" = set ; then
+		echo "FOOBAZ    = "${FOOBAZ}
+	    fi
+	    ;;
+
 	# Matthias' apps:
 	FLAGSHIP)
 	    echo "DATFILE   = "${DATFILE}
@@ -856,6 +866,7 @@ fb_runAndEvalBenchmarkTest() {
 			which numactl 1> /dev/null 2>&1
 			if test $? -ne 0; then
 			    echo -n "Running "${currentmglevel}" (without NUMACTL).... "
+			    echo ${PWD}/${appname} ${DATFILE} ${outputredirect}
 			    eval ${PWD}/${appname} ${DATFILE} ${outputredirect}
 			else
 			    echo -n "Running "${currentmglevel}" (with NUMACTL).... "
@@ -972,6 +983,10 @@ fb_runAndEvalBenchmarkTest() {
 	        # test class one can add tailored instructions here, e.g. to provide
 		# a header for the table like program output.
 		case "${CLASS}" in
+		    CC2D)
+			TABLE_HEADER='TODO_MICHAEL_KOESTER'
+			;;
+
 		    FLAGSHIP)
 			TABLE_HEADER='TODO_MATTHIAS_MOELLER'
 			;;
