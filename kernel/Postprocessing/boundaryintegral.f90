@@ -204,7 +204,7 @@ contains
     real(DP), dimension(:,:), allocatable :: Dvalues
     real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcoord
     integer :: ncubp,ipoint
-    integer :: icoordSystem
+    integer(I32) :: icoordSystem
     real(DP) :: dlen,dpar1,dpar2
 
     real(DP), dimension(:,:), allocatable :: DpointPar

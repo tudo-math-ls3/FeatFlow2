@@ -141,7 +141,7 @@ contains
   ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
   ! the type of the coordinate system that is used for specifying the coordinates
   ! on the reference element.
-  integer, intent(IN) :: icoordSystem
+  integer(I32), intent(IN) :: icoordSystem
   
   ! Number of space dimensions. Either NDIM2D or NDIM3D for 2D or 3D, 
   ! respectively.
