@@ -2743,7 +2743,7 @@ contains
     real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcoord
     integer :: ncubp,ipoint
     integer(I32) :: celement
-    integer :: icoordSystem
+    integer(i32) :: icoordSystem
     real(DP) :: dlen,dpar1,dpar2
     
     ! Arrays for element distributions for every element
