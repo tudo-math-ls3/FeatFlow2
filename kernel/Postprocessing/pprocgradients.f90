@@ -4089,6 +4089,7 @@ contains
     ! local variables
     integer :: i,j,k,icurrentElementDistr,NVE,IELmax,IELset,idof
     logical :: bnonparTrial
+    integer(I32) :: icoordinatesystem
 
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
@@ -4361,11 +4362,14 @@ contains
         call sys_halt()
       end select
 
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there:
+      icoordinatesystem = elem_igetCoordSystem(p_relementDistribution%celement)
+      
       ! Allocate memory and get local references to it.
       ! We abuse the system of cubature points here for the evaluation.
       call domint_initIntegration (rintSubset,nelementsPerBlock,nlocalDOFsDest,
-        elem_igetCoordSystem(p_relementDistribution%celement),&
-        p_rtriangulation%ndim,NVE)
+        icoordinatesystem,p_rtriangulation%ndim,NVE)
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
