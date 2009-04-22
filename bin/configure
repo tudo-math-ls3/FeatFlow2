@@ -3323,6 +3323,14 @@ sub create_feastBenchmarkMakefile {
         "# Creating control scripts (for all tests, daily tests, single tests, in short\n" .
         "# for every *.fbconf file found in the current directory)\n" .
         "\n" .
+
+        "# Dynamic targets: all test IDs\n" .
+        ".PHONY: \$(shell grep -i ^testid tests/*.fbdef | cut -d= -f 2 | sed -e 's/ //g')\n" .
+        "\$(shell grep -i ^testid tests/*.fbdef | cut -d= -f 2 | sed -e 's/ //g'):\n" .
+        "\t\@echo \$\@ > _tmp_.fbconf\n" .
+        "\t\@\$(MAKE) TESTCASES=_tmp_.fbconf create-script\n" .
+        "\t\@-rm -f _tmp_.fbconf\n\n" .
+
         "# Create script which contains all the necessary information to run\n" .
         "# and validate all the test cases contained in a accordingly named\n" .
         "# *.fbconf file.\n" .
