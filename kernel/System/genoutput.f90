@@ -1009,7 +1009,7 @@ contains
       coMode = OU_MODE_LOG+OU_MODE_TERM
     end select
 
-    call output_separator (csepType, coMode, coutputClass, ssubroutine)
+    call output_separator (csepType, coutputClass, coMode, ssubroutine)
 
   end subroutine
   
