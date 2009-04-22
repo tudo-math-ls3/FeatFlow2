@@ -157,7 +157,7 @@ contains
   ! Unified edge oriented jump stabilisation.
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
-  ! $$< Ju,v > = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
   !            \int_E [grad u] [grad v] ds$$
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
@@ -924,7 +924,7 @@ contains
   ! hexahedron elements.
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
-  ! $$< Ju,v > = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
   !            \int_E [grad u] [grad v] ds$$
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
@@ -1317,7 +1317,7 @@ contains
   ! hexahedron elements.
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
-  ! $$< Ju,v > = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
   !            \int_E [grad u] [grad v] ds$$
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
@@ -1637,7 +1637,7 @@ contains
   ! Performs a matrix vector multiplication
   !   y := cx * J x + cy y
   ! with J being the stabilisation matrix of the operator
-  ! $$< Ju,v > = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
   !            \int_E [grad u] [grad v] ds.$$
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
