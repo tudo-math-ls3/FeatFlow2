@@ -331,7 +331,8 @@ contains
                          
       derrorVel = (0.5_DP*(Derr(1)**2+Derr(2)**2))
 
-      call output_line ('||u-reference||_H1 = '//trim(sys_sdEP(derrorVel,15,6)) )
+      call output_line ('||u-reference||_H1 = '//trim(sys_sdEP(derrorVel,15,6)),&
+          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
@@ -347,7 +348,8 @@ contains
                          
       denergy = 0.5_DP*(Derr(1)**2+Derr(2)**2)
 
-      call output_line ('||u||^2_L2         = '//trim(sys_sdEP(denergy,15,6)) )
+      call output_line ('||u||^2_L2         = '//trim(sys_sdEP(denergy,15,6)),&
+          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
@@ -555,10 +557,12 @@ contains
       call output_lbrk()
       call output_line ('Body forces')
       call output_line ('-----------')
-      call output_line ('Body forces real bd., bdc/horiz/vert')
+      call output_line ('Body forces real bd., bdc/horiz/vert',&
+          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
       call output_line (' '//trim(sys_siL(ibodyForcesBdComponent,10)) // ' / ' &
           //trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
-          //trim(sys_sdEP(Dforces(2),15,6)) )
+          //trim(sys_sdEP(Dforces(2),15,6)),&
+          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       
     end if
     
@@ -620,7 +624,8 @@ contains
         call output_line ('Divergence')
         call output_line ('----------')
         call output_line ('Divergence = ' &
-            //trim(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
+            //trim(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)),&
+          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
             
         call lsyssc_releaseVector (rtempVector)
       

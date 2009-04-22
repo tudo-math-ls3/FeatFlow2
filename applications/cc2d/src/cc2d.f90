@@ -24,7 +24,7 @@ program cc2d
   
   implicit none
   
-  character(LEN=SYS_STRLEN) :: slogfile,serrorfile
+  character(LEN=SYS_STRLEN) :: slogfile,serrorfile,sbenchlogfile
   
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
@@ -34,13 +34,13 @@ program cc2d
   call output_init ()
   
   ! Read the name of the message and error log file.
-  call cc_getLogFiles (slogfile,serrorfile)
+  call cc_getLogFiles (slogfile,serrorfile,sbenchlogfile)
   
   ! Release output stuff
   call output_done()
   
   ! Initialise log file for output.
-  call output_init (slogfile,serrorfile)
+  call output_init (slogfile,serrorfile,sbenchlogfile)
   
   ! Now we can really start!
   ! 

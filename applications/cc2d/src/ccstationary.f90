@@ -121,11 +121,14 @@ contains
     call cc_doneNonlinearLoop (rnonlinearIteration)
              
     call output_lbrk()
-    call output_line ('Nonlinear solver statistics')
-    call output_line ('---------------------------')
-    call output_line ('Initial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)))
-    call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)))
-    call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)))
+    call output_line ('Nonlinear solver statistics',coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('---------------------------',coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('Initial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)),&
+        coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)),&
+        coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)),&
+        coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
     
   end subroutine
 

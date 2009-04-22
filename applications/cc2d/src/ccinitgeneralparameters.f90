@@ -55,7 +55,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_getLogFiles (slogfile,serrorfile)
+  subroutine cc_getLogFiles (slogfile,serrorfile,sbenchlogfile)
   
 !<description>
   ! Temporarily reads the output DAT file to get the names of the output
@@ -68,6 +68,9 @@ contains
   
   ! Name of the error log file.
   character(LEN=*), intent(OUT) :: serrorfile
+
+  ! Name of the benchmark log file.
+  character(LEN=*), intent(OUT) :: sbenchlogfile
 !</output>
 
 !</subroutine>
@@ -103,12 +106,16 @@ contains
     
     ! Now the real initialisation of the output including log file stuff!
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'smsgLog',sstring,'')
+                                'smsgLog',sstring,'''''')
     read(sstring,*) slogfile
 
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'serrorLog',sstring,'')
+                                'serrorLog',sstring,'''''')
     read(sstring,*) serrorfile
+
+    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+                                'sbenchLog',sstring,'''''')
+    read(sstring,*) sbenchlogfile
     
     ! That temporary parameter list is not needed anymore.
     call parlst_done (rparlist)

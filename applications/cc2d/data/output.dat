@@ -23,3 +23,7 @@ smsgLog = '%{slogdirectory}/output.log'
 # errors into the same log file as standard messages.
 # ='': Use the same log file as smsgLog
 serrorLog = ''
+
+# Log file for messages used in regression test benchmarks.
+# ='': No benchmark output (standard)
+sbenchLog = ''

@@ -495,7 +495,7 @@ contains
 
   !<subroutine>
   
-    subroutine cc_getDefect (rproblem,rnonlinearIteration,ite,rx,rb,rd)
+    subroutine cc_getDefect (rproblem,rnonlinearIteration,rsolverNode,ite,rx,rb,rd)
   
     use linearsystemblock
     use collection
@@ -526,6 +526,9 @@ contains
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
     type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+
+    ! The nonlinear solver node that configures the solution process.
+    type(t_nlsolNode), intent(INOUT)              :: rsolverNode
 
     ! Defect vector b-A(x)x. This must be filled with data by the callback routine.
     type(t_vectorBlock), intent(INOUT)            :: rd
@@ -610,8 +613,8 @@ contains
 
   !<subroutine>
 
-    subroutine cc_getOptimalDamping (rproblem,rnonlinearIteration,rd,rx,rb,&
-        rtemp1,rtemp2,domega)
+    subroutine cc_getOptimalDamping (rproblem,rnonlinearIteration,rsolverNode,&
+        rd,rx,rb,rtemp1,rtemp2,domega)
   
   !<description>
     ! This subroutine is called inside of the nonlinear loop, to be precise,
@@ -650,6 +653,9 @@ contains
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
     type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+
+    ! The nonlinear solver node that configures the solution process.
+    type(t_nlsolNode), intent(INOUT)              :: rsolverNode
 
     ! A temporary vector in the structure of rx
     type(t_vectorBlock), intent(INOUT)            :: rtemp1
@@ -855,11 +861,11 @@ contains
       
       if (dskv2 .lt. 1.0E-40_DP) then
         call output_line ('dskv2 nearly zero. Optimal damping parameter singular.', &
-            OU_CLASS_ERROR,OU_MODE_STD,'cc_getOptimalDamping')
+            OU_CLASS_ERROR,rsolverNode%coutputMode,'cc_getOptimalDamping')
         call output_line ('Is the triangulation ok??? .tri-file destroyed?', &
-            OU_CLASS_ERROR,OU_MODE_STD,'cc_getOptimalDamping')
+            OU_CLASS_ERROR,rsolverNode%coutputMode,'cc_getOptimalDamping')
         call output_line ('Boundary conditions set up properly?', &
-            OU_CLASS_ERROR,OU_MODE_STD,'cc_getOptimalDamping')
+            OU_CLASS_ERROR,rsolverNode%coutputMode,'cc_getOptimalDamping')
         call sys_halt()
         stop
       end if
@@ -887,7 +893,7 @@ contains
 
   !<subroutine>
 
-    subroutine cc_precondDefect (rproblem,rnonlinearIteration,&
+    subroutine cc_precondDefect (rproblem,rnonlinearIteration,rsolverNode,&
         ite,rd,rx,rb,domega,bsuccess)
   
     use linearsystemblock
@@ -907,6 +913,9 @@ contains
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
     type(t_ccnonlinearIteration), intent(INOUT), target   :: rnonlinearIteration
+
+    ! The nonlinear solver node that configures the solution process.
+    type(t_nlsolNode), intent(INOUT)              :: rsolverNode
 
     ! Number of current iteration. 
     integer, intent(IN)                           :: ite
@@ -1185,7 +1194,7 @@ contains
         call lsysbl_enforceStructure (rb,rtemp2)
 
         ! Calculate the omega
-        call cc_getOptimalDamping (rproblem,rnonlinearIteration,&
+        call cc_getOptimalDamping (rproblem,rnonlinearIteration,rsolverNode,&
             rd,rx,rb,rtemp1,rtemp2,domega)
 
         ! Remember damping parameter for output
@@ -1452,7 +1461,7 @@ contains
 
   ! ***************************************************************************
 
-    subroutine cc_resNormCheck (rproblem,rnonlinearIteration,&
+    subroutine cc_resNormCheck (rproblem,rnonlinearIteration,rsolverNode,&
         ite,rx,rb,rd,bconvergence,bdivergence)
   
     use linearsystemblock
@@ -1472,6 +1481,9 @@ contains
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
     type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+
+    ! The nonlinear solver node that configures the solution process.
+    type(t_nlsolNode), intent(INOUT)              :: rsolverNode
 
     ! Number of current iteration. Is set to 0 when the callback routine
     ! is called the first time. In this situation, rd describes the initial
@@ -1514,15 +1526,16 @@ contains
       ! and save the norm of the initial residuum to the structure
       if (ite .eq. 0) then
       
-        call output_separator (OU_SEP_MINUS)     
+        call output_separator (OU_SEP_MINUS,coutputMode=rsolverNode%coutputMode)
         call output_line (' IT  RELU     RELP     DEF-U    DEF-DIV'// &
-                          '  DEF-TOT  RHONL    OMEGNL   RHOMG')
-        call output_separator (OU_SEP_MINUS)     
+                          '  DEF-TOT  RHONL    OMEGNL   RHOMG',&
+                          coutputMode=rsolverNode%coutputMode)
+        call output_separator (OU_SEP_MINUS,coutputMode=rsolverNode%coutputMode)     
         call output_line ('  0                   '// &
             trim(sys_sdEP(Dresiduals(1),9,2))//&
             trim(sys_sdEP(Dresiduals(2),9,2))//&
-            trim(sys_sdEP(Dresiduals(3),9,2)))
-        call output_separator (OU_SEP_MINUS)     
+            trim(sys_sdEP(Dresiduals(3),9,2)),coutputMode=rsolverNode%coutputMode)
+        call output_separator (OU_SEP_MINUS,coutputMode=rsolverNode%coutputMode)     
 
         rnonlinearIteration%DresidualInit (1:2) = Dresiduals(1:2)
         rnonlinearIteration%DresidualOld (1:2) = Dresiduals(1:2)
@@ -1629,8 +1642,8 @@ contains
             trim(sys_sdEP(dres,9,2))// &
             trim(sys_sdEP(drhoNL,9,2))// &
             trim(sys_sdEP(rnonlinearIteration%domegaNL,9,2))// &
-            trim(sys_sdEP(rnonlinearIteration%drhoLinearSolver,9,2)) &
-            )
+            trim(sys_sdEP(rnonlinearIteration%drhoLinearSolver,9,2)), &
+            coutputMode=rsolverNode%coutputMode)
         
       end if
       
@@ -1734,7 +1747,7 @@ contains
   ! A t_nlsolNode structure that contains the configuration of the nonlinear
   ! solver. The parameters are initialised according to the information
   ! in the section sname of the parameter list rparamList
-  type(t_nlsolNode) :: rnlSolver
+  type(t_nlsolNode), intent(inout) :: rnlSolver
 !</output>
 
 !</subroutine>
@@ -1783,6 +1796,10 @@ contains
     ! Initial damping parameter.
     call parlst_getvalue_double (p_rsection, 'domegaIni', &
                                  rnlSolver%domega, rnlSolver%domega)
+
+    ! We write out the data of the nonlinear solver to the benchmark
+    ! log file as well.
+    rnlSolver%coutputMode = OU_MODE_STD+OU_MODE_BENCHLOG
 
   end subroutine
 
@@ -1876,7 +1893,7 @@ contains
     rsolverNode%iresult = 0
     
     ! Calculate the initial nonlinear defect to rd:   d = b-A(x)x
-    call cc_getDefect (rproblem,rnonlinearIteration,0,rx,rb,rd)
+    call cc_getDefect (rproblem,rnonlinearIteration,rsolverNode,0,rx,rb,rd)
     
     ite = 0
     rsolverNode%icurrentIteration = ite
@@ -1886,7 +1903,7 @@ contains
     nblocks = min(rb%nblocks,NLSOL_MAXEQUATIONSERROR)
     
     ! Initial test for convergence/divergence.
-    call cc_resNormCheck (rproblem,rnonlinearIteration,&
+    call cc_resNormCheck (rproblem,rnonlinearIteration,rsolverNode,&
         ite,rx,rb,rd,bconvergence,bdivergence)
         
     ! Get the initial residuum; cc_resNormCheck saved that to DresidualOld.
@@ -1920,14 +1937,15 @@ contains
         ! The routine is allowed to change domega during the
         ! iteration if necessary. The nonlinear solver here does not touch
         ! domega anymore, so the callback routine is the only one changing it.
-        call cc_precondDefect (rproblem,rnonlinearIteration,&
+        call cc_precondDefect (rproblem,rnonlinearIteration,rsolverNode,&
             ite,rd,rx,rb,domega,bsuccess)
         
         ! If bsuccess=false, the preconditioner had an error.
         if (.not. bsuccess) then
           if (rsolverNode%ioutputLevel .ge. 0) then
             call output_line ('NLSOL: Iteration '//&
-                trim(sys_siL(ite,10))//' canceled as the preconditioner went down!')
+                trim(sys_siL(ite,10))//' canceled as the preconditioner went down!',&
+                coutputMode=rsolverNode%coutputMode)
           end if
           rsolverNode%iresult = 3
           exit
@@ -1940,7 +1958,8 @@ contains
         if (domega .eq. 0.0_DP) then
           if (rsolverNode%ioutputLevel .ge. 1) then
             call output_line ('NLSOL: Iteration '//&
-                trim(sys_siL(ite,10))//' canceled as there is no progress anymore!')
+                trim(sys_siL(ite,10))//' canceled as there is no progress anymore!',&
+                coutputMode=rsolverNode%coutputMode)
           end if
           exit
         else
@@ -1949,10 +1968,10 @@ contains
           call lsysbl_vectorLinearComb (rd,rx,domega,1.0_DP)
           
           ! Calculate the new nonlinear defect to rd:  d = b-A(x)x
-          call cc_getDefect (rproblem,rnonlinearIteration,ite,rx,rb,rd)
+          call cc_getDefect (rproblem,rnonlinearIteration,rsolverNode,ite,rx,rb,rd)
 
           ! Check the defect for convergence.
-          call cc_resNormCheck (rproblem,rnonlinearIteration,&
+          call cc_resNormCheck (rproblem,rnonlinearIteration,rsolverNode,&
               ite,rx,rb,rd,bconvergence,bdivergence)
               
           ! Get the new residual; cc_resNormCheck saved that to DresidualOld.
@@ -1969,7 +1988,8 @@ contains
           if (bdivergence) then
             if (rsolverNode%ioutputLevel .ge. 0) then
               call output_line ('NLSOL: Iteration '//&
-                  trim(sys_siL(ite,10))//' canceled, divergence detected!')
+                  trim(sys_siL(ite,10))//' canceled, divergence detected!',&
+                  coutputMode=rsolverNode%coutputMode)
             end if
             rsolverNode%iresult = 1
             exit
