@@ -96,7 +96,7 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 ######################################################
 # Finally, invoke the main workhorse:
 ../../bin/configure \
-	--appname=flagship \
+	--appname=cc2d \
 	--programfile=../../applications/cc2d/src/cc2d.f90 \
 	--srclist_app="`ls ../../applications/cc2d/src/*.f90`" \
 	--objdir-prefix=${OBJDIRPREFIX} \
