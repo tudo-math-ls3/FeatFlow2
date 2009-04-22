@@ -2771,7 +2771,7 @@ contains
       
       ! Search for name terminators
       do in=ib,lstr
-        if (scan(str(in:in),'+-*/%^),&|<>=! ') > 0) exit
+        if (scan(str(in:in),'*+-/%^),&|<>=! ') > 0) exit
       end do
       do j=1,size(Var)
         if (str(ib:in-1) == Var(j)) then
