@@ -83,10 +83,10 @@ module ccboundaryconditionparser
   ! Basic variables that are allowed in expressions.
   ! Variables that are not defined in the actual situation are set to 0.
   !
-  ! X,Y,Z - coordinate of a point (z=0 in 2D case), \\
-  ! L     - local parameter value in the range [0..1],\\
-  ! R     - parameter value of a boundary point, 0-1 parametrisation, \\
-  ! S     - parameter value of a boundary point, arc length parametrisation, \\
+  ! X,Y,Z - coordinate of a point (z=0 in 2D case), 
+  ! L     - local parameter value in the range [0..1],
+  ! R     - parameter value of a boundary point, 0-1 parametrisation, 
+  ! S     - parameter value of a boundary point, arc length parametrisation, 
   ! TIME  - current simulation time (=0 in stationary simulation)
   !
   ! Depending on the situation, this list may be extended by situation
