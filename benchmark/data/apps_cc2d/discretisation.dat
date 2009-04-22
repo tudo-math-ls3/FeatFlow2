@@ -34,21 +34,9 @@ ctypeInitialSolution = 0
 
 isolutionStart     = 0
 
-# TODO_MICHAEL_KOESTER: ssolutionStart/ssolutionWrite need a unique name in the benchmark.
-#                       Even naming the file according to '%y%m%d_%H%M', e.g.
-#                       ./....._20090412_1241
-#                       is not safe enough when executing several instances
-#                       of the program simulateneously, i.e. in a queueing
-#                       environment like LiDO. Every instance needs a
-#                       dedicated separate output location. 
-#
-#			It's probably best to define the log file in
-#                       this dat file and use an environment variable for the
-#                       path component like $LOGDIR to keep it variable.
-#                       The new parlst_expandEnvVariables() deals with it then.
-# Name of file with the initial solution
+# Name/path of file with the initial solution
 
-ssolutionStart     = 'data/apps_cc2d/DX4'
+ssolutionStart     = ''
 
 # Write final solution vector to a file. After a stationary simulation,
 # the stationary solution is written out. After a nonstationary simulation,
@@ -64,9 +52,9 @@ ssolutionStart     = 'data/apps_cc2d/DX4'
 
 iSolutionWrite     = 0
 
-# Name of file for writing the final solution
+# Name/path of file for writing the final solution
 
-sSolutionWrite     = 'data/apps_cc2d/DX4'
+sSolutionWrite     = ''
 
 # ------------------------------------------------------------------------
 

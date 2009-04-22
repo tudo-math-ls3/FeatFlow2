@@ -30,22 +30,10 @@ ioutputUCD = 1
 
 ilevelUCD = 0
 
-# TODO_MICHAEL_KOESTER: sfilenameUCD needs a unique name in the benchmark.
-#                       Even naming the file according to '%y%m%d_%H%M', e.g.
-#                       ./gmv/u.gmv_20090412_1241
-#                       is not safe enough when executing several instances
-#                       of the program simulateneously, i.e. in a queueing
-#                       environment like LiDO. Every instance needs a
-#                       dedicated separate output location. 
-#
-#			It's probably best to define the log file in
-#                       this dat file and use an environment variable for the
-#                       path component like $LOGDIR to keep it variable.
-#                       The new parlst_expandEnvVariables() deals with it then.
 # Filename for UCD output.
 # In a nonstationary simulation, a number '.0001','.0002',... is appended
 # to this.
-sfilenameUCD = 'data/apps_cc2d/u.gmv'
+sfilenameUCD = '%{spostdirectory}/u.gmv'
 
 # ------------------------------------------------------------------------
 # Nonstationary UCD output parameters
@@ -91,21 +79,9 @@ ioutputFilm = 1
 
 ilevelFilm = 0
 
-# TODO_MICHAEL_KOESTER: sfilenameFilm needs a unique name in the benchmark.
-#                       Even naming the file according to '%y%m%d_%H%M', e.g.
-#                       ./ns/solution_20090412_1241
-#                       is not safe enough when executing several instances
-#                       of the program simulateneously, i.e. in a queueing
-#                       environment like LiDO. Every instance needs a
-#                       dedicated separate output location. 
-#
-#			It's probably best to define the log file in
-#                       this dat file and use an environment variable for the
-#                       path component like $LOGDIR to keep it variable.
-#                       The new parlst_expandEnvVariables() deals with it then.
 # Basic filename for Film output. A number '.0001','.0002',... is appended
 # to this.
-sfilenameFilm = 'data/apps_cc2d/solution'
+sfilenameFilm = '%{ssolutiondirectory}/solution'
 
 # Start time for Film output.
 
