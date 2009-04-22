@@ -143,6 +143,7 @@ FLAGSKIPBENCHMARK=$HOME/FEAT2_BENCHMARK_DO_NOT_RUN
 FLAGBENCHMARKFINISHED=/tmp/FEAT2_BENCHMARK_FINISHED
 #
 # recipient of email error and report messages
+#RECIPIENT=feat2users@math.tu-dortmund.de
 RECIPIENT=mkoester@math.tu-dortmund.de,buijssen@math.tu-dortmund.de,mmoeller@math.tu-dortmund.de
 #RECIPIENT=buijssen@math.tu-dortmund.de
 
@@ -328,7 +329,8 @@ fb_customise() {
 	lido-gw1|lido-gw2)
 	    # set various parameters
 	    ARCH=LiDO
-	    COMPILEWITHPROCS=4
+#	    COMPILEWITHPROCS=4
+	    COMPILEWITHPROCS=1
 	    CREATEDOCU="no"
 	    # the script requires that an ssh tunnel is always open, bound to port 13690
 	    # (the default SVN port 3690 is not necessarily free and available)
@@ -343,12 +345,21 @@ fb_customise() {
 	    # jobfile. Exactly those modules loaded here are hardcoded
 	    # into the jobfile by bin/lid_schedule_tests later on.
 	    case "$FORCEBUILDID" in
+		# G95 compiler suite
+		pc64-opteron-linux-g95-*)
+		    modules=""
+		    modules="$modules g95/int32bit/0.9"
+		    LIDOJOBNAMEPREFIX=fb-g95
+		    # g95 only gives deterministic results if combined with gcc 4.0 or 4.1, nothing higher.
+		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --cc=gcc4"
+		    COMPILERNAME="G95 0.9"
+		    ;;
+
 		# GNU compiler suite
 		pc64-opteron-linux-gcc-*)
 		    modules=""
 		    modules="$modules gcc/4.3.2"
 		    LIDOJOBNAMEPREFIX=fb-gcc
-		    COMPILEWITHPROCS=2
 		    COMPILERNAME="GCC 4.3.2"
 		    ;;
 
@@ -357,7 +368,6 @@ fb_customise() {
 		    modules=""
 		    modules="$modules pathscale"
 		    LIDOJOBNAMEPREFIX=fb-psc
-		    COMPILEWITHPROCS=2
 		    COMPILERNAME="Pathscale"
 		    ;;
 
@@ -396,7 +406,7 @@ fb_customise() {
 	    # when trying to load/unload several modules at once. 
 	    # Workaround: Load them one by one.
 	    . /cvos/local/apps/environment-modules/*/init/sh && \
-	    module use /cvos/shared/modulefiles && \
+	    module use /cvos/shared/modulefiles /home/buijssen/Cluster-Config/modulefiles && \
 	    module unload gcc/3.4.6  > $AUXILIARYLOG 2>&1;
 	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
 
@@ -405,7 +415,7 @@ fb_customise() {
 	    sed -i -e '/Duplicate version symbol .* found/d;' $AUXILIARYLOG
 
 	    if [ -s $AUXILIARYLOG ]; then
-		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
 		fb_exit 1
 	    fi
@@ -508,7 +518,7 @@ fb_customise() {
 		module add $modules > $AUXILIARYLOG 2>&1
 	    #grep -v Duplicate $AUXILIARYLOG > $AUXILIARYLOG
 	    if [ -s $AUXILIARYLOG ]; then
-		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
 		fb_exit 1
 	    fi
@@ -523,7 +533,7 @@ fb_customise() {
 fb_cleanUpOldCheckout() {
     cd $BASEDIR
     if [ $? -ne 0 ]; then
-	MAILSUBJECT="$MAILPREFIX Cannot enter directory <$BASEDIR> ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+	MAILSUBJECT="$MAILPREFIX Cannot enter directory <$BASEDIR> ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	fb_exit 1
     fi
@@ -601,7 +611,7 @@ fb_cleanUpOldCheckout() {
 
             # Check (within if block!!) whether an error occured
 	    if [ $? -ne 0 ]; then
-		MAILSUBJECT="$MAILPREFIX Clean up of old FEAT2 checkout had errors ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+		MAILSUBJECT="$MAILPREFIX Clean up of old FEAT2 checkout had errors ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 		$MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
 		fb_exit 1
 	    fi
@@ -642,7 +652,7 @@ fb_initialiseGlobalLogFile() {
 
     # Test whether logfiles can be written to
     if ! touch $GLOBALLOG; then
-	MAILSUBJECT="$MAILPREFIX Cannot create logfile <$GLOBALLOG> ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	MAILSUBJECT="$MAILPREFIX Cannot create logfile <$GLOBALLOG> ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
     fi
 
@@ -668,7 +678,7 @@ fb_checkoutFromSVN() {
 	export SVNURL
 	if ! svn co $SVNURL 1> $AUXILIARYLOG 2>&1; then
             # error occured
-	    MAILSUBJECT="$MAILPREFIX SVN checkout failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+	    MAILSUBJECT="$MAILPREFIX SVN checkout failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	    cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	    fb_exit 1
 	fi
@@ -726,7 +736,7 @@ fb_checkWhetherToRun() {
 		     echo "benchmark was run. Benchmark skipped.";
 		     echo) >> $GLOBALLOG
 
-		    MAILSUBJECT="$MAILPREFIX Benchmark skipped ($HOSTNAME - $COMPILERNAME - $TESTSUITE)"
+		    MAILSUBJECT="$MAILPREFIX Benchmark skipped ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 		    $MAILX -s "$MAILSUBJECT" $RECIPIENT < $GLOBALLOG
 		    fb_exit 0
 		fi
@@ -802,7 +812,7 @@ fb_prepareForRun() {
 	fi
 	mkdir $BENCHMARKDIR
 	if [ $? -ne 0 ]; then
-	    MAILSUBJECT="$MAILPREFIX Cannot create benchmark folder clone ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	    MAILSUBJECT="$MAILPREFIX Cannot create benchmark folder clone ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	    cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	    fb_exit 1
 	fi
@@ -810,7 +820,7 @@ fb_prepareForRun() {
 	test $DEBUG -gt 0 && echo "# Cloning benchmark directory to <$BENCHMARKDIR>"
 	tar -cf - . | ( cd $BENCHMARKDIR; tar -xpf - ) > $AUXILIARYLOG 2>&1
 	if [ $? -ne 0 ]; then
-	    MAILSUBJECT="$MAILPREFIX Copying benchmark folder failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	    MAILSUBJECT="$MAILPREFIX Copying benchmark folder failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	    cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	    fb_exit 1
 	fi
@@ -847,7 +857,7 @@ fb_configureBenchmark() {
 
     test $DEBUG -gt 0 && echo "# Configuring benchmark applications ($mode mode)"
     if [ -z "$BENCHMARKDIR" ]; then
-	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	fb_exit 1
     fi
@@ -861,7 +871,7 @@ fb_configureBenchmark() {
     # or NEC compiler suites. In this case do not generate an e-mail
     # notification (error code 15, randomly chosen in bin/configure).
     if [ $? -ne 0  -a  $? -ne 15 ]; then
-	MAILSUBJECT="$MAILPREFIX Configuring benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	MAILSUBJECT="$MAILPREFIX Configuring benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	fb_exit 1
     fi
@@ -878,7 +888,7 @@ fb_compileBenchmark() {
 
     test $DEBUG -gt 0 && echo "# Compiling benchmark applications ($mode mode)"
     if [ -z "$BENCHMARKDIR" ]; then
-	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
     fi
     cd $BENCHMARKDIR
@@ -887,7 +897,7 @@ fb_compileBenchmark() {
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
-	MAILSUBJECT="$MAILPREFIX Compiling benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	MAILSUBJECT="$MAILPREFIX Compiling benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	# Do not exit here! Even if one application fails to build,
 	# others might not and can be regression tested.
@@ -915,7 +925,7 @@ fb_createTestSuiteScript() {
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
-	MAILSUBJECT="$MAILPREFIX Creation of test suite script failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	MAILSUBJECT="$MAILPREFIX Creation of test suite script failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	fb_exit 1
     fi
@@ -948,7 +958,7 @@ fb_runBenchmarkOnLiDO() {
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
-	MAILSUBJECT="$MAILPREFIX Job scheduling failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	MAILSUBJECT="$MAILPREFIX Job scheduling failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
     fi
 
@@ -970,7 +980,7 @@ fb_runBenchmarkOnLiDO() {
 	     cat ${pbserrors}; \
 	     echo "$0: Error: As it is unlikely that PBS miraculously recovers in time," ; \
 	     echo "$0: Error: giving up waiting for remaining jobs to finish."; ) > $AUXILIARYLOG
-	    MAILSUBJECT="$MAILPREFIX Querying PBS failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE - $mode)"
+	    MAILSUBJECT="$MAILPREFIX Querying PBS failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	    cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	    break
 	fi
@@ -994,9 +1004,6 @@ fb_runBenchmarkOnLiDO() {
     perl include/gather_logfiles_to_mail.pl "logs/output" >> $GLOBALLOG
 
     (echo; echo "Test ended at "`date`) >> $GLOBALLOG
-
-    fb_banner "Performance comparison" >> $GLOBALLOG
-    include/calc_perfstats.sh >> $GLOBALLOG 2>&1
 }
 
 
@@ -1248,7 +1255,7 @@ fb_runBenchmark "serial"
 # Let perl do the text transformation.
 # Usage:
 # perl '<path_to_perl_script>' "<subjectprefix>" "<subjectpostfix>" "<recipient>" "<logfile>"
-perl $BASEDIR/benchmark/include/link_failed_tests.pl "$FROMADDRESS" "$MAILPREFIX" "($HOSTNAME - $COMPILERNAME - $TESTSUITE - serial)" "$RECIPIENT" "$GLOBALLOG"
+perl $BASEDIR/Featflow2/benchmark/include/link_failed_tests.pl "$FROMADDRESS" "$MAILPREFIX" "($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)" "$RECIPIENT" "$GLOBALLOG"
 
 
 # =========================================
