@@ -56,7 +56,7 @@ simportdatafiles(8) =
 # We redefine the maximum level and the benchmark result file.
   
 [GENERALOUTPUT]
-sbenchLog = ''
+sbenchLog = '$LOGDIR/benchmarkresultfile'
 
 [CC-DISCRETISATION]
 NLMAX = $MGLEVEL
