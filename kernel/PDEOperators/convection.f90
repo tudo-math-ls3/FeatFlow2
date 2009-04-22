@@ -11022,12 +11022,12 @@ contains
         ! as it is always =0.0, so we save a little bit time.
         if ((inonlinComplexity .gt. 0) .and. present(rvelocity)) then
           if (NVE .eq. 3) then
-            call getLocalDeltaTri (rconfig%clocalh,&
+            call getLocalDeltaTriSim (rconfig%clocalh,&
                           Dvelocity,Dnu,duMaxR,&
                           rconfig%cstabiltype,rconfig%dupsam,&
                           p_IelementList(IELset:IELmax),p_rtriangulation,DlocalDelta)
           else
-            call getLocalDeltaQuad (rconfig%clocalh,&
+            call getLocalDeltaQuadSim (rconfig%clocalh,&
                           Dvelocity,Dnu,duMaxR,&
                           rconfig%cstabiltype,rconfig%dupsam,&
                           p_IelementList(IELset:IELmax),p_rtriangulation,DlocalDelta)
@@ -11791,65 +11791,194 @@ contains
     
     end do ! ielementDistr 
 
-  contains
+  end subroutine
+
+  ! ----------------------------------------------------------------------
+
+  subroutine getLocalDeltaTriSim (clocalh,&
+                      Dvelocity,Dnu,duMaxR,&
+                      cstabiltype,dupsam,Ielements,rtriangulation,Ddelta)
+
+  ! This routine calculates a local ddelta=DELTA_T for a set of finite 
+  ! elements. This can be used by the streamline diffusion 
+  ! stabilisation technique as a multiplier of the (local) bilinear form.
+  !
+  ! Triangular version
+  !
+  ! Method how to compute the local h.
+  ! =0: Use the root of the 2*area of the element as local H
+  integer, intent(in) :: clocalH 
   
-    ! ----------------------------------------------------------------------
+  ! Array with the values of the velocity field in all cubature points
+  ! on all the elements.
+  ! dimension(ndim2d, #cubature points per element, #elements)
+  real(DP), dimension(:,:,:), intent(IN) :: Dvelocity
+  
+  ! Reciprocal of the maximum norm of velocity in the domain:
+  ! 1/duMaxR = 1/||u||_Omega
+  real(DP), intent(IN) :: duMaxR
+  
+  ! Viscosity coefficient in all cubature points on all selement
+  real(DP), dimension(:,:), intent(in) :: Dnu
+  
+  ! Type of SD method to apply.
+  ! = 0: Use simple SD stabilisation: 
+  !      ddelta = dupsam * h_T.
+  ! = 1: Use Samarskji SD stabilisation; usually dupsam = 0.1 .. 2.
+  !      ddelta = dupsam * h_t/||u||_T * 2*Re_T/(1+Re_T)
+  integer :: cstabilType
+  
+  ! user defined parameter for configuring the streamline diffusion.
+  real(DP), intent(IN) :: dupsam
 
-    subroutine getLocalDeltaTri (clocalh,&
-                        Dvelocity,Dnu,duMaxR,&
-                        cstabiltype,dupsam,Ielements,rtriangulation,Ddelta)
+  ! List of elements where to calculate the local delta.
+  integer, dimension(:), intent(in) :: Ielements
 
-    ! This routine calculates a local ddelta=DELTA_T for a set of finite 
-    ! elements. This can be used by the streamline diffusion 
-    ! stabilisation technique as a multiplier of the (local) bilinear form.
-    !
-    ! Triangular version
-    !
-    ! Method how to compute the local h.
-    ! =0: Use the root of the 2*area of the element as local H
-    integer, intent(in) :: clocalH 
+  ! Triangulation that defines the mesh.
+  type(t_triangulation), intent(in) :: rtriangulation
+
+  ! Out: local Ddelta on all elements
+  real(DP), dimension(:), intent(OUT) :: Ddelta
+
+  ! local variables
+  real(DP) :: dlocalH,du1,du2,dunorm,dreLoc,dnuRec
+  integer :: iel,ielidx,icubp
+  integer :: idof
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  real(DP), dimension(:), pointer :: p_DelementVolume
+
+    ! Currently, we only support clocalh=0!
+
+    call storage_getbase_double (rtriangulation%h_DelementVolume,p_DelementVolume)
     
-    ! Array with the values of the velocity field in all cubature points
-    ! on all the elements.
-    ! dimension(ndim2d, #cubature points per element, #elements)
-    real(DP), dimension(:,:,:), intent(IN) :: Dvelocity
+    ! Loop through all elements
+    do ielidx = 1,size(Ielements)
     
-    ! Reciprocal of the maximum norm of velocity in the domain:
-    ! 1/duMaxR = 1/||u||_Omega
-    real(DP), intent(IN) :: duMaxR
+      ! Get the element number
+      iel = Ielements(ielidx)
     
-    ! Viscosity coefficient in all cubature points on all selement
-    real(DP), dimension(:,:), intent(in) :: Dnu
+      ! Loop through the cubature points on the current element
+      ! and calculate the mean velocity there.
+      du1 = 0.0_DP
+      du2 = 0.0_DP
+      dnuRec = 0.0_DP
+      do icubp = 1,ubound(Dvelocity,2)
+        du1 = du1 + Dvelocity(1,icubp,ielidx)
+        du2 = du2 + Dvelocity(2,icubp,ielidx)
+        dnuRec = dnuRec + Dnu(icubp,ielidx)
+      end do
     
-    ! Type of SD method to apply.
-    ! = 0: Use simple SD stabilisation: 
-    !      ddelta = dupsam * h_T.
-    ! = 1: Use Samarskji SD stabilisation; usually dupsam = 0.1 .. 2.
-    !      ddelta = dupsam * h_t/||u||_T * 2*Re_T/(1+Re_T)
-    integer :: cstabilType
+      ! Calculate the norm of that local velocity:
+      dunorm = sqrt(du1**2+du2**2) / real(ubound(Dvelocity,2),dp)
+      
+      ! Calculate the mean viscosity coefficient -- or more precisely,
+      ! its reciprocal.
+      dnuRec = real(ubound(Dvelocity,2),dp) / dnuRec
+      
+      ! Now we have:   dunorm = ||u||_T
+      ! and:           u_T = a1*u1_T + a2*u2_T
+
+      ! If the norm of the velocity is small, we choose ddelta = 0,
+      ! which results in central difference in the streamline diffusion
+      ! matrix assembling:
+
+      if (dunorm .le. 1E-8_DP) then
+      
+        Ddelta(ielidx) = 0.0_DP
+
+      else
+
+        ! Calculate the local h from the area of the element.
+        ! As the element is a tri, multiply the volume by 2.
+        dlocalH = sqrt(2.0_DP*p_DelementVolume(iel))
+
+        ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+
+        if (cstabiltype .eq. 0) then
+
+          ! For UPSAM<0, we use simple calculation of ddelta:        
+        
+          Ddelta(ielidx) = abs(dupsam)*dlocalH
+          
+        else
+        
+          ! For UPSAM >= 0, we use standard Samarskji-like calculation
+          ! of ddelta. At first calculate the local Reynolds number
+          ! RELOC = Re_T = ||u||_T * h_T / NU
+          
+          dreLoc = dunorm*dlocalH*dnuRec
+          
+          ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
+          
+          Ddelta(ielidx) = dupsam * dlocalH*duMaxR * 2.0_DP*(dreLoc/(1.0_DP+dreLoc))
+          
+        end if ! (UPSAM.LT.0.0)
+        
+      end if ! (dunorm.LE.1D-8)
+
+    end do      
+      
+  end subroutine
+
+  ! ----------------------------------------------------------------------
+
+  subroutine getLocalDeltaQuadSim (clocalh,&
+                      Dvelocity,Dnu,duMaxR,&
+                      cstabiltype,dupsam,Ielements,rtriangulation,Ddelta)
+
+  ! This routine calculates a local ddelta=DELTA_T for a set of finite 
+  ! elements. This can be used by the streamline diffusion 
+  ! stabilisation technique as a multiplier of the (local) bilinear form.
+  !
+  ! Method how to compute the local h.
+  ! =0: Use the root of the area of the element as local H
+  ! =1: Use the length of the way that a particle travels through
+  !     the element in direction of the flow
+  integer, intent(in) :: clocalH 
+  
+  ! Array with the values of the velocity field in all cubature points
+  ! on all the elements.
+  ! dimension(ndim2d, #cubature points per element, #elements)
+  real(DP), dimension(:,:,:), intent(IN) :: Dvelocity
+  
+  ! Reciprocal of the maximum norm of velocity in the domain:
+  ! 1/duMaxR = 1/||u||_Omega
+  real(DP), intent(IN) :: duMaxR
+  
+  ! Viscosity coefficient in all cubature points on all selement
+  real(DP), dimension(:,:), intent(in) :: Dnu
+  
+  ! Type of SD method to apply.
+  ! = 0: Use simple SD stabilisation: 
+  !      ddelta = dupsam * h_T.
+  ! = 1: Use Samarskji SD stabilisation; usually dupsam = 0.1 .. 2.
+  !      ddelta = dupsam * h_t/||u||_T * 2*Re_T/(1+Re_T)
+  integer :: cstabilType
+  
+  ! user defined parameter for configuring the streamline diffusion.
+  real(DP), intent(IN) :: dupsam
+
+  ! List of elements where to calculate the local delta.
+  integer, dimension(:), intent(in) :: Ielements
+
+  ! Triangulation that defines the mesh.
+  type(t_triangulation), intent(in) :: rtriangulation
+
+  ! Out: local Ddelta on all elements
+  real(DP), dimension(:), intent(OUT) :: Ddelta
+
+  ! local variables
+  real(DP) :: dlocalH,du1,du2,dunorm,dreLoc,dnuRec
+  integer :: iel,ielidx,icubp
+  integer :: idof
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  real(DP), dimension(:), pointer :: p_DelementVolume
+
+    ! Get some crucial data
+    if (clocalh .eq. 0) then
     
-    ! user defined parameter for configuring the streamline diffusion.
-    real(DP), intent(IN) :: dupsam
-
-    ! List of elements where to calculate the local delta.
-    integer, dimension(:), intent(in) :: Ielements
-
-    ! Triangulation that defines the mesh.
-    type(t_triangulation), intent(in) :: rtriangulation
-
-    ! Out: local Ddelta on all elements
-    real(DP), dimension(:), intent(OUT) :: Ddelta
-
-    ! local variables
-    real(DP) :: dlocalH,du1,du2,dunorm,dreLoc,dnuRec
-    integer :: iel,ielidx,icubp
-    integer :: idof
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_DelementVolume
-
-      ! Currently, we only support clocalh=0!
-
       call storage_getbase_double (rtriangulation%h_DelementVolume,p_DelementVolume)
       
       ! Loop through all elements
@@ -11889,9 +12018,8 @@ contains
 
         else
 
-          ! Calculate the local h from the area of the element.
-          ! As the element is a tri, multiply the volume by 2.
-          dlocalH = sqrt(2.0_DP*p_DelementVolume(iel))
+          ! Calculate the local h from the area of the element
+          dlocalH = sqrt(p_DelementVolume(iel))
 
           ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
 
@@ -11918,214 +12046,84 @@ contains
         end if ! (dunorm.LE.1D-8)
 
       end do      
-        
-    end subroutine
-
-    ! ----------------------------------------------------------------------
-
-    subroutine getLocalDeltaQuad (clocalh,&
-                        Dvelocity,Dnu,duMaxR,&
-                        cstabiltype,dupsam,Ielements,rtriangulation,Ddelta)
-
-    ! This routine calculates a local ddelta=DELTA_T for a set of finite 
-    ! elements. This can be used by the streamline diffusion 
-    ! stabilisation technique as a multiplier of the (local) bilinear form.
-    !
-    ! Method how to compute the local h.
-    ! =0: Use the root of the area of the element as local H
-    ! =1: Use the length of the way that a particle travels through
-    !     the element in direction of the flow
-    integer, intent(in) :: clocalH 
-    
-    ! Array with the values of the velocity field in all cubature points
-    ! on all the elements.
-    ! dimension(ndim2d, #cubature points per element, #elements)
-    real(DP), dimension(:,:,:), intent(IN) :: Dvelocity
-    
-    ! Reciprocal of the maximum norm of velocity in the domain:
-    ! 1/duMaxR = 1/||u||_Omega
-    real(DP), intent(IN) :: duMaxR
-    
-    ! Viscosity coefficient in all cubature points on all selement
-    real(DP), dimension(:,:), intent(in) :: Dnu
-    
-    ! Type of SD method to apply.
-    ! = 0: Use simple SD stabilisation: 
-    !      ddelta = dupsam * h_T.
-    ! = 1: Use Samarskji SD stabilisation; usually dupsam = 0.1 .. 2.
-    !      ddelta = dupsam * h_t/||u||_T * 2*Re_T/(1+Re_T)
-    integer :: cstabilType
-    
-    ! user defined parameter for configuring the streamline diffusion.
-    real(DP), intent(IN) :: dupsam
-
-    ! List of elements where to calculate the local delta.
-    integer, dimension(:), intent(in) :: Ielements
-
-    ! Triangulation that defines the mesh.
-    type(t_triangulation), intent(in) :: rtriangulation
-
-    ! Out: local Ddelta on all elements
-    real(DP), dimension(:), intent(OUT) :: Ddelta
-
-    ! local variables
-    real(DP) :: dlocalH,du1,du2,dunorm,dreLoc,dnuRec
-    integer :: iel,ielidx,icubp
-    integer :: idof
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_DelementVolume
-
-      ! Get some crucial data
-      if (clocalh .eq. 0) then
       
-        call storage_getbase_double (rtriangulation%h_DelementVolume,p_DelementVolume)
-        
-        ! Loop through all elements
-        do ielidx = 1,size(Ielements)
-        
-          ! Get the element number
-          iel = Ielements(ielidx)
-        
-          ! Loop through the cubature points on the current element
-          ! and calculate the mean velocity there.
-          du1 = 0.0_DP
-          du2 = 0.0_DP
-          dnuRec = 0.0_DP
-          do icubp = 1,ubound(Dvelocity,2)
-            du1 = du1 + Dvelocity(1,icubp,ielidx)
-            du2 = du2 + Dvelocity(2,icubp,ielidx)
-            dnuRec = dnuRec + Dnu(icubp,ielidx)
-          end do
-        
-          ! Calculate the norm of that local velocity:
-          dunorm = sqrt(du1**2+du2**2) / real(ubound(Dvelocity,2),dp)
-          
-          ! Calculate the mean viscosity coefficient -- or more precisely,
-          ! its reciprocal.
-          dnuRec = real(ubound(Dvelocity,2),dp) / dnuRec
-          
-          ! Now we have:   dunorm = ||u||_T
-          ! and:           u_T = a1*u1_T + a2*u2_T
+    else
+    
+      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
+      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
 
-          ! If the norm of the velocity is small, we choose ddelta = 0,
-          ! which results in central difference in the streamline diffusion
-          ! matrix assembling:
-
-          if (dunorm .le. 1E-8_DP) then
-          
-            Ddelta(ielidx) = 0.0_DP
-
-          else
-
-            ! Calculate the local h from the area of the element
-            dlocalH = sqrt(p_DelementVolume(iel))
-
-            ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
-
-            if (cstabiltype .eq. 0) then
-
-              ! For UPSAM<0, we use simple calculation of ddelta:        
-            
-              Ddelta(ielidx) = abs(dupsam)*dlocalH
-              
-            else
-            
-              ! For UPSAM >= 0, we use standard Samarskji-like calculation
-              ! of ddelta. At first calculate the local Reynolds number
-              ! RELOC = Re_T = ||u||_T * h_T / NU
-              
-              dreLoc = dunorm*dlocalH*dnuRec
-              
-              ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
-              
-              Ddelta(ielidx) = dupsam * dlocalH*duMaxR * 2.0_DP*(dreLoc/(1.0_DP+dreLoc))
-              
-            end if ! (UPSAM.LT.0.0)
-            
-          end if ! (dunorm.LE.1D-8)
-
-        end do      
-        
-      else
+      ! Loop through all elements
+      do ielidx = 1,size(Ielements)
       
-        call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
-        call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+        ! Get the element number
+        iel = Ielements(ielidx)
 
-        ! Loop through all elements
-        do ielidx = 1,size(Ielements)
-        
-          ! Get the element number
-          iel = Ielements(ielidx)
-
-          ! Loop through the cubature points on the current element
-          ! and calculate the mean velocity there.
-          du1 = 0.0_DP
-          du2 = 0.0_DP
-          dnuRec = 0.0_DP
-          do icubp = 1,ubound(Dvelocity,2)
-            du1 = du1 + Dvelocity(1,icubp,ielidx)
-            du2 = du2 + Dvelocity(2,icubp,ielidx)
-            dnuRec = dnuRec + Dnu(icubp,ielidx)
-          end do
-        
-          ! Calculate the norm of that local velocity:
-
-          dunorm = sqrt(du1**2+du2**2) / real(ubound(Dvelocity,2),dp)
-          
-          ! Calculate the mean viscosity coefficient -- or more precisely,
-          ! its reciprocal.
-          dnuRec = real(ubound(Dvelocity,2),dp) / dnuRec
-          
-          ! Now we have:   dunorm = ||u||_T
-          ! and:           u_T = a1*u1_T + a2*u2_T
-
-          ! If the norm of the velocity is small, we choose ddelta = 0,
-          ! which results in central difference in the streamline diffusion
-          ! matrix assembling:
-
-          if (dunorm .le. 1E-8_DP) then
-          
-            Ddelta(ielidx) = 0.0_DP
-
-          else
-
-            ! u_T defines the "slope" of the velocity through
-            ! the element T. At next, calculate the local mesh width
-            ! dlocalH = h = h_T on our element T=IEL:
-
-            call getLocalMeshWidthQuad (dlocalH,dunorm, du1, du2, iel, &
-                p_IverticesAtElement,p_DvertexCoords)
-
-            ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
-
-            if (cstabiltype .eq. 0) then
-
-              ! For UPSAM<0, we use simple calculation of ddelta:        
-            
-              Ddelta(ielidx) = abs(dupsam)*dlocalH
-              
-            else
-            
-              ! For UPSAM >= 0, we use standard Samarskji-like calculation
-              ! of ddelta. At first calculate the local Reynolds number
-              ! RELOC = Re_T = ||u||_T * h_T / NU
-              
-              dreLoc = dunorm*dlocalH*dnuRec
-              
-              ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
-              
-              Ddelta(ielidx) = dupsam * dlocalH*duMaxR * 2.0_DP*(dreLoc/(1.0_DP+dreLoc))
-              
-            end if ! (UPSAM.LT.0.0)
-            
-          end if ! (dunorm.LE.1D-8)
-
+        ! Loop through the cubature points on the current element
+        ! and calculate the mean velocity there.
+        du1 = 0.0_DP
+        du2 = 0.0_DP
+        dnuRec = 0.0_DP
+        do icubp = 1,ubound(Dvelocity,2)
+          du1 = du1 + Dvelocity(1,icubp,ielidx)
+          du2 = du2 + Dvelocity(2,icubp,ielidx)
+          dnuRec = dnuRec + Dnu(icubp,ielidx)
         end do
+      
+        ! Calculate the norm of that local velocity:
 
-      end if
+        dunorm = sqrt(du1**2+du2**2) / real(ubound(Dvelocity,2),dp)
+        
+        ! Calculate the mean viscosity coefficient -- or more precisely,
+        ! its reciprocal.
+        dnuRec = real(ubound(Dvelocity,2),dp) / dnuRec
+        
+        ! Now we have:   dunorm = ||u||_T
+        ! and:           u_T = a1*u1_T + a2*u2_T
 
-    end subroutine
+        ! If the norm of the velocity is small, we choose ddelta = 0,
+        ! which results in central difference in the streamline diffusion
+        ! matrix assembling:
+
+        if (dunorm .le. 1E-8_DP) then
+        
+          Ddelta(ielidx) = 0.0_DP
+
+        else
+
+          ! u_T defines the "slope" of the velocity through
+          ! the element T. At next, calculate the local mesh width
+          ! dlocalH = h = h_T on our element T=IEL:
+
+          call getLocalMeshWidthQuad (dlocalH,dunorm, du1, du2, iel, &
+              p_IverticesAtElement,p_DvertexCoords)
+
+          ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+
+          if (cstabiltype .eq. 0) then
+
+            ! For UPSAM<0, we use simple calculation of ddelta:        
+          
+            Ddelta(ielidx) = abs(dupsam)*dlocalH
+            
+          else
+          
+            ! For UPSAM >= 0, we use standard Samarskji-like calculation
+            ! of ddelta. At first calculate the local Reynolds number
+            ! RELOC = Re_T = ||u||_T * h_T / NU
+            
+            dreLoc = dunorm*dlocalH*dnuRec
+            
+            ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
+            
+            Ddelta(ielidx) = dupsam * dlocalH*duMaxR * 2.0_DP*(dreLoc/(1.0_DP+dreLoc))
+            
+          end if ! (UPSAM.LT.0.0)
+          
+        end if ! (dunorm.LE.1D-8)
+
+      end do
+
+    end if
 
   end subroutine
 
