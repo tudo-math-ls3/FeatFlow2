@@ -953,9 +953,9 @@ contains
     end select
 
     if (present(smsg)) then
-      call output_line_std (smsg, coMode, coutputClass, ssubroutine)
+      call output_line_std (smsg, coutputClass, coMode, ssubroutine)
     else
-      call output_line_std ('', coMode, coutputClass, ssubroutine)
+      call output_line_std ('', coutputClass, coMode, ssubroutine)
     end if
 
   end subroutine
