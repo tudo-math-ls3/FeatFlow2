@@ -26,16 +26,16 @@
 # Quiet or verbose benchmark execution mode.
 #
 # Possible values are:
-#  * 0
-#        don't redirect standard output and error. No RUNLOGFILE will be
-#        created. Useful for debugging.
-#  * 1   (default value)
+#  * 1|yes  (default value)
 #        redirect standard output and error to a file (see
 #        declaration of RUNLOGFILE). Display its content in case of error.
 #  * <SET_VIA_MAKEFILE>
 #        the value is set when invoking 'make *test'. The default value (1)
 #        may be overwritten by adding "SUPPRESSOUTPUT=<value>" on the command line,
 #        e.g.:         make singletests SUPPRESSOUTPUT=0
+#  * anything else
+#        don't redirect standard output and error. No RUNLOGFILE will be
+#        created. Useful for debugging.
 SUPPRESSOUTPUT=<SET_VIA_MAKEFILE>
 
 
@@ -79,10 +79,12 @@ DEBUGGER=<SET_VIA_MAKEFILE>
 ## Default:     empty
 #
 # Command line arguments when running valgrind.
-VALGRIND_ARGS="--leak-check=full"
-#VALGRIND_ARGS="--leak-check=full --gen-suppressions=all"
-#VALGRIND_ARGS="--leak-check=full --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-gcc-blas-ompi.supp"
-#VALGRIND_ARGS="--leak-check=full --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-intel-blas-ompi.supp"
+VALGRIND_ARGS=""
+#VALGRIND_ARGS="${VALGRIND_ARGS} --leak-check=full"
+#VALGRIND_ARGS="${VALGRIND_ARGS} --gen-suppressions=all"
+#VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-gcc-blas-ompi.supp"
+#VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-intel-blas-ompi.supp"
+#VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-opteronx2-linux64-gcc-blas-ompi.supp"
 
 
 ## Type:	string
@@ -217,7 +219,7 @@ fb_initialiseEnv() {
 			    MPISTOP='echo'
 			    ;;
 			*)
-			    echo "Script is not prepared to run on Alpha platforms with an MPI environment";
+			    echo "Script is not prepared to be run on Alpha platforms with an MPI environment";
 			    echo "named <${MPIENV}>. Benchmark not executed.";
 			    exit 1;
 		    esac
@@ -346,7 +348,7 @@ fb_initialiseEnv() {
 
 			# Unhandled case
 			*)
-			    echo "Script is not prepared to run on <${ARCH}> with an MPI environment";
+			    echo "Script is not prepared to be run on <${ARCH}> with an MPI environment";
 			    echo "named <${MPIENV}>. Benchmark not executed.";
 			    exit 1;
 			    ;;
@@ -436,8 +438,15 @@ fb_initialiseEnv() {
 #		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"MVAPICH2\""
 		    ;;
 
+		"not-needed-as-feat2-is-serial-only")
+		    MPIRC='echo "Feat2 is serial only"; exit 1; echo'
+		    MPICLEAN='echo'
+		    MPISTART='echo'
+		    MPISTOP='echo'
+		    ;;
+
 		*)
-		    echo "Script is not prepared to run on LiDO with an MPI environment";
+		    echo "Script is not prepared to be run on LiDO with an MPI environment";
 		    echo "named <${MPIENV}>. Benchmark not executed.";
 		    exit 1;
 		    ;;
@@ -464,9 +473,11 @@ fb_initialiseEnv() {
 	    NECSXMODE=true
 
 #	    F_PROGINF=DETAIL
-#	    MPIPROGINF=YES
+#	    export F_PROGINF
+	    MPIPROGINF=YES
+	    export MPIPROGINF
 #	    F_FILEINF=YES
-#	    export F_PROGINF MPIPROGINF F_FILEINF
+#	    export F_FILEINF
 	    ;;
 
 	# NEC SX with communication between several nodes (more than 8 cpus used)
@@ -489,14 +500,16 @@ fb_initialiseEnv() {
 	    NECSXMODE=true
 
 #	    F_PROGINF=DETAIL
-#	    MPIPROGINF=YES
+#	    export F_PROGINF
+	    MPIPROGINF=YES
+	    export MPIPROGINF
 #	    F_FILEINF=YES
-#	    export F_PROGINF MPIPROGINF F_FILEINF
+#	    export F_FILEINF
 	    ;;
 
 	# Unhandled case: Queueing system unknown
 	*)
-	    echo "Script is not prepared to run on a queueing system named";
+	    echo "Script is not prepared to be run on a queueing system named";
 	    echo "<${QUEUEINGSYSTEM}>. Benchmark not executed.";
 	    exit 1;
 	    ;;
@@ -643,7 +656,7 @@ fb_runAndEvalBenchmarkTest() {
     # #########################
     # non-verbose mode
     outputredirect=""
-    if test ${SUPPRESSOUTPUT} -eq 1; then
+    if test "${SUPPRESSOUTPUT}" = "1" -o "${SUPPRESSOUTPUT}" = "yes"; then
 	outputredirect=" >> ${EXECUTIONLOG}"
     fi
 
@@ -739,8 +752,9 @@ fb_runAndEvalBenchmarkTest() {
 
 		# #########################
 		# Explicitly export those environment variables FEAT2 uses in its dat file
-		if test "${NECSXMODE+set}" = set ; then
+		if test "${NECSXMODE:=set}" = "true" ; then
 		    MPIEXPORT="$vars2export"
+		    export MPIEXPORT
 		else
 		    if test "${MPIENV}" = "LAMMPI"; then
 			# LAM/MPI on LiDO
@@ -778,7 +792,7 @@ fb_runAndEvalBenchmarkTest() {
 			# Show problems if any occured
 			if test $? -ne 0; then
 			    execfailed=1
-			    if test ${SUPPRESSOUTPUT} -eq 1; then
+			    if test "${SUPPRESSOUTPUT}" = "1" -o "${SUPPRESSOUTPUT}" = "yes"; then
 				echo "Execution failed:"
 				cat ${EXECUTIONLOG}
 			    else
@@ -846,7 +860,7 @@ fb_runAndEvalBenchmarkTest() {
 			# Show problems if any occured
 			if test $? -ne 0; then
 			    execfailed=1
-			    if test ${SUPPRESSOUTPUT} -eq 1; then
+			    if test "${SUPPRESSOUTPUT}" = "1" -o "${SUPPRESSOUTPUT}" = "yes"; then
 				echo "Execution failed:"
 				cat ${EXECUTIONLOG}
 			    else
@@ -875,7 +889,7 @@ fb_runAndEvalBenchmarkTest() {
 			# Show problems if any occured
 			if test $? -ne 0; then
 			    execfailed=1
-			    if test ${SUPPRESSOUTPUT} -eq 1; then
+			    if test "${SUPPRESSOUTPUT}" = "1" -o "${SUPPRESSOUTPUT}" = "yes"; then
 				echo "Execution failed:"
 				cat ${EXECUTIONLOG}
 			    else
@@ -963,9 +977,14 @@ fb_runAndEvalBenchmarkTest() {
 			# Show problems if any occured
 			if test $? -ne 0; then
 			    execfailed=1
-			    if test ${SUPPRESSOUTPUT} -eq 1; then
+			    if test "${SUPPRESSOUTPUT}" = "1" -o "${SUPPRESSOUTPUT}" = "yes"; then
 				echo "Execution failed:"
 				cat ${EXECUTIONLOG}
+
+				\cp -p ${EXECUTIONLOG} ${EXECUTIONLOG}.${TESTID}.lev${MGLEVEL}
+				if test $? -ne 0; then
+				    echo "Error creating backup of ${EXECUTIONLOG}."
+				fi
 			    else
 				echo "Execution failed."
 			    fi
@@ -977,6 +996,13 @@ fb_runAndEvalBenchmarkTest() {
 		esac # serial/parallel
 
 
+		# Aggregate the content of the benchmark result file
+		# over all refinement levels.
+		if test ${execfailed} -ne 1 -a -s ${LOGDIR}/${RESULTFILE}; then
+		    cat ${LOGDIR}/${RESULTFILE} >> ${LOGDIR}/${RESULTFILE}.all-levels
+		fi
+
+
 		# Every application is supposed to output data that can be compared
 		# to previous results. Preferably line per program run.
 		# To provide utmost flexibility, based on either application name or
@@ -984,7 +1010,7 @@ fb_runAndEvalBenchmarkTest() {
 		# a header for the table like program output.
 		case "${CLASS}" in
 		    CC2D)
-			TABLE_HEADER='TODO_MICHAEL_KOESTER'
+			TABLE_HEADER=''
 			;;
 
 		    FLAGSHIP)
@@ -995,7 +1021,7 @@ fb_runAndEvalBenchmarkTest() {
 			TABLE_HEADER='unhandled application/test class'
 			;;
 		esac
-	    done # end loop over all multigrid levels
+	    done # end loop over all refinement levels
 
 
 	    # Determine filename for the results
@@ -1004,7 +1030,7 @@ fb_runAndEvalBenchmarkTest() {
 	    testall=`expr ${testall} + 1`
 
 	    # Execution error or missing results?
-	    if test ${execfailed} -eq 1 -o ! -s ${LOGDIR}/${RESULTFILE}; then
+	    if test ${execfailed} -eq 1 -o ! -s ${LOGDIR}/${RESULTFILE}.all-levels; then
 		echo "TEST FAILED"
 		testexecfailed=`expr ${testexecfailed} + 1`
 		listOfCrashedTests=`echo ${listOfCrashedTests} ${TESTID}`
@@ -1017,14 +1043,9 @@ fb_runAndEvalBenchmarkTest() {
 		else
 		    echo
 		    echo "No information on FEAT2 run available that can be compared against a"
-		    echo "reference solution due to missing log file <${LOGDIR}/${RESULTFILE}>."
+		    echo "reference solution due to missing or empty log file"
+		    echo "<${LOGDIR}/${RESULTFILE}.all-levels>."
 		    echo
-		fi
-		if test ${SUPPRESSOUTPUT} -eq 1; then
-		    \cp -p ${EXECUTIONLOG} ${EXECUTIONLOG}.${TESTID}.lev${MGLEVEL}
-		    if test $? -ne 0; then
-			echo "Error creating backup of ${EXECUTIONLOG}."
-		    fi
 		fi
 
 	    # Everything's fine, compare result with reference solution
