@@ -189,9 +189,10 @@ g) SUMMARY: The data flow for executing a benchmark application is
       -> Is a generic command that compiles all benchmark applications.        
 
 
-      make [testcase-file] run
+      make [testcase-file]         or        make [testID]
       
-      -> Starts the tests listed in the file 
+      -> Create benchmark run control script 'runtests' for all tests
+         listed in the file
            "Featflow2/benchmark/[testcase-file].fbconf"
            
          More precisely:
@@ -203,35 +204,63 @@ g) SUMMARY: The data flow for executing a benchmark application is
          associated to a specific application defined by the "appl ="
          parameter in the .fbconf file.
          
-         Example: The test id "CC2D_001" in "tests/cc2d.fbconf"
-           defines a test with the application "appl = cc2d".
+         Example: The test ID "CC2D_001" in "tests/cc2d.fbconf"
+                  defines a test to be run with help of the
+                  application "appl = cc2d".
            
       -> The file [testcase-file].fbconf contains a list of all
          test IDs that should be executed. Comment lines start
          with the hash character.
+         Alternatively, it is possible to directly specify the
+         test ID on the command line.
+
+
+      ./runtests                   or        make run
 
       -> The make target "run" is provided for convenience only and
-         does nothing more than started the benchmark exeuction by
+         does nothing more than started the benchmark execution by
          invoking the command './runtests'.
-         
-         Example: To start the testcase with id "CC2D_001", one can
-           use the following two commands:
 
-             echo CC2D_001 > cc2d_problem.fbconf
-             make cc2d_problem
-	     ./runtests
 
-           or
-           
-             echo CC2D_001 > cc2d_problem.fbconf
-             make cc2d_problem
-	     make run
+      In queueing environment like LiDO-1, LiDO-2, NEC SX-8/9 or on the 
+      D-GRID cluster (DGRZR) one most likely does *not* want to run the
+      simulations on the gateway node one is logged into. Instead, a
+      jobfile needs to be created per test ID and submitted to the queue.
+      Currently, Feat2 only has one of these automatic submission scripts:
+      
+      bin/lido_schedule_tests [testcase-file]         or
+      bin/lido_schedule_tests [testID]
 
-	   or even shorter
+      -> The script does basically the same as "make [testcase-file|testID]",
+         but beyond that also automagically determines the most
+	 appropriate queue based on 
+	 * configured settings for walltime (hardcoded in the header
+           of bin/lido_schedule_tests),
+	 * the necessary number of processes (which is trivially 1 given
+	   that Feat2 supports serial applications only) 
+         * the interconnect (trivial for Feat2 as well: ethernet)
+         Then, the script tries very hard to submit the job, in
+	 particular in case the queue is so full that no more jobs are
+	 accepted at first.
 
-             echo CC2D_001 > cc2d_problem.fbconf
-             make cc2d_problem run
-           
+
+   Summary to set up and run benchmark in non-queueing environments:
+     
+     cd Featflow2/benchmark
+     ./configure
+     make benchmark alltests run
+
+
+   Summary to set up and run on LiDO-1:
+
+     cd Featflow2/benchmark
+     ./configure
+     make benchmark
+     bin/lido_schedule_tests alltests
+
+
+   How is the benchmark run?
+          
            The test ID "CC2D_001" defines that the underlying
            application is "cc2d" because of "appl = cc2d". So, the
            binary "feat2benchmark-cc2d" is used. The application is
@@ -286,8 +315,8 @@ g) SUMMARY: The data flow for executing a benchmark application is
           new result files from "results/..." to "refsol/...".
           
 
-Automatically checking the repository
--------------------------------------
+Automatic regression test of the repository
+-------------------------------------------
 In the subdirectory ./bin there is a script called
 'runregressiontest_feat2'. This script is designed to be called in a
 cron job every night. It checks out the current repository, detect
