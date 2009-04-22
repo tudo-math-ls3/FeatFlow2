@@ -136,6 +136,37 @@
 !#
 !#     -> Closes the output channel(s).
 !#
+!# Logging benchmark data
+!# ----------------------
+!# The output library furthermore supports the (semi-)automatic output of
+!# deterministic data to a so callen 'benchmark log file'. This is typically
+!# used to write out data to a specific file which is compared to reference
+!# data in regression tests. Such data is meant to be deterministic,
+!# reproducable in every run and usually formatted in a 'nice' style that
+!# differences to reference results can easily be checked.
+!#
+!# To activate the benchmark log file, one has to specify an additional
+!# parameter in the call to output_init:
+!#
+!#    CALL output_init ('mylogfile.txt','myerrorlogfile.txt','benchmarkresultfile')
+!#
+!# This opens a file 'benchmarkresultfile' where benchmark data is written to.
+!# To write a string to this file, the application has to call output_line
+!# with an extended output-mode:
+!#
+!#   CALL output_line('A message only to the benchmark log.', &
+!#                    OU_CLASS_MSG,OU_MODE_BENCHLOG)
+!#
+!# This writes a message directly to the benchmark log file. It's also possible
+!# to write out data to the standard terminal plus the benchmark log file
+!# by combining the output mode constants:
+!#
+!#   CALL output_line('A message only to the benchmark log.', &
+!#                    OU_CLASS_MSG,OU_MODE_STD+OU_MODE_BENCHLOG)
+!#
+!# In all cases, the additional constant OU_MODE_BENCHLOG must be manually
+!# specified as logging to the benchmark log file is not done automatically.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -151,13 +182,16 @@ module genoutput
 
   ! Output mode: Write to main log file / error log file (depending on whether
   ! a message is considered as an error or not by OU_CLASS_ERROR/OU_CLASS_WARNING)
-  integer, parameter :: OU_MODE_LOG      = 2**0
+  integer(I32), parameter :: OU_MODE_LOG      = 2**0
   
   ! Output mode: Write to terminal
-  integer, parameter :: OU_MODE_TERM     = 2**1
+  integer(I32), parameter :: OU_MODE_TERM     = 2**1
+  
+  ! Output mode: Write to benchmark log file
+  integer(I32), parameter :: OU_MODE_BENCHLOG = 2**2
 
   ! Output mode: Write to both, log file and terminal
-  integer, parameter :: OU_MODE_STD      = OU_MODE_LOG+OU_MODE_TERM
+  integer(I32), parameter :: OU_MODE_STD      = OU_MODE_LOG+OU_MODE_TERM
   
 !</constantblock>
   
@@ -244,6 +278,11 @@ module genoutput
   ! in output_init and usually coincides with OU_LOG.
   ! <=0: write error messages to standard log file.
   integer :: OU_ERRORLOG            = 0
+
+  ! Global device number for benchmark log file. The error log file is opened 
+  ! in output_init and usually coincides with OU_LOG.
+  ! <=0: write error messages to standard log file.
+  integer :: OU_BENCHLOG            = 0
 
 !</constantblock>
 
@@ -364,7 +403,7 @@ contains
 
 !<subroutine>
 
-  subroutine output_init_standard (slogFilename,serrorFilename)
+  subroutine output_init_standard (slogFilename,serrorFilename,sbenchLogfile)
 
 !<description>
   ! Initialises the output system. 
@@ -387,45 +426,37 @@ contains
   ! is specified, errors are written to the standard log file. The name of 
   ! the file may also coincide with slogFilename.
   character(LEN=*), intent(IN) :: serrorFilename
+
+  ! OPTIONAL: Name of an log file for deterministic benchmark messages. If 
+  ! not present or set to "", benchmark messages are not written out. The 
+  ! name of the file may also coincide with slogFilename.
+  character(LEN=*), intent(IN), OPTIONAL :: sbenchLogfile
   
 !</input>
 
 !</subroutine>
 
-  ! Both filenames given?
-  if ((slogFilename .ne. "") .and. (serrorFilename .ne. "")) then
-  
-    ! Both filenames the same=
-    if (slogFilename .eq. serrorFilename) then
-    
-      ! Only open one log file for both.
-      call output_openLogfile(slogFilename, OU_LOG)
-      OU_ERRORLOG = OU_LOG
-    
-    else
-    
-      ! Open two separate log files
-      call output_openLogfile(slogFilename, OU_LOG)
-      call output_openLogfile(serrorFilename, OU_ERRORLOG)
-    
-    end if
-  
-  else 
-  
     ! Close previously opened log files.
     call output_done ()    
     
+    ! Name of the standard logfile given?
     if (slogFilename .ne. "") then
     
       ! Open a log file
       call output_openLogfile(slogFilename, OU_LOG)
     
     end if
-  
+
+    ! Name of the error logfile given?
     if (serrorFilename .ne. "") then
     
-      ! Open an error log file
-      call output_openLogfile(serrorFilename, OU_ERRORLOG)
+      ! Both filenames the same?
+      if (slogFilename .eq. serrorFilename) then
+        OU_ERRORLOG = OU_LOG
+      else
+        ! Open an error log file
+        call output_openLogfile(serrorFilename, OU_ERRORLOG)
+      end if
       
     else
     
@@ -433,9 +464,33 @@ contains
       OU_ERRORLOG = OU_LOG
     
     end if
-  
-  end if
-  
+
+    ! Name of the benchmark logfile given?
+    if (present(sbenchLogfile)) then
+      if (sbenchLogfile .ne. "") then
+      
+        ! Both filenames the same?
+        if (slogFilename .eq. serrorFilename) then
+          OU_BENCHLOG = OU_LOG
+        else
+          ! Open a benchmark log file
+          call output_openLogfile(sbenchLogfile, OU_BENCHLOG)
+        end if
+        
+      else
+      
+        ! No benchmark output
+        OU_BENCHLOG = 0
+      
+      end if
+      
+    else
+
+      ! No benchmark output
+      OU_BENCHLOG = 0
+
+    end if
+
   end subroutine
 
 !************************************************************************************
@@ -453,6 +508,7 @@ contains
     ! Close all open channels.
     if (OU_LOG .gt. 0) close(OU_LOG)
     if (OU_ERRORLOG .gt. 0) close(OU_ERRORLOG)
+    if (OU_BENCHLOG .gt. 0) close(OU_BENCHLOG)
     
   end subroutine
 
@@ -564,7 +620,7 @@ contains
   
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
   ! OU_MODE_STD is assumed.
-  integer, intent(IN), optional :: coutputMode
+  integer(I32), intent(IN), optional :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
@@ -587,10 +643,10 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: coMode, coClass, iofChannel, iotChannel
+  integer(I32) :: coMode
+  integer :: coClass, iofChannel, iotChannel
   logical :: bntrim, bnnewline
   character(LEN=len(smessage)+20+SYS_NAMELEN) :: smsg
-  character(LEN=OU_LINE_LENGTH) :: smsgadjusted
   
     ! Get the actual parameters.
     
@@ -635,6 +691,15 @@ contains
           write (iofChannel,'(A)') smessage
         end if
       end if
+
+      ! Output to the benchmark log file?
+      if ((iand(coMode,OU_MODE_BENCHLOG) .ne. 0) .and. (OU_BENCHLOG .gt. 0)) then
+        if (bnnewline) then
+          write (OU_BENCHLOG,'(A)',ADVANCE='NO') smessage
+        else
+          write (OU_BENCHLOG,'(A)') smessage
+        end if
+      end if
       
     else
     
@@ -656,6 +721,15 @@ contains
           write (iofChannel,'(A)',ADVANCE='NO') trim(smsg)
         else
           write (iofChannel,'(A)') trim(smsg)
+        end if
+      end if
+
+      ! Output to benchmark log file?
+      if ((iand(coMode,OU_MODE_BENCHLOG) .ne. 0) .and. (OU_BENCHLOG .gt. 0)) then
+        if (bnnewline) then
+          write (OU_BENCHLOG,'(A)',ADVANCE='NO') trim(smsg)
+        else
+          write (OU_BENCHLOG,'(A)') trim(smsg)
         end if
       end if
     end if
@@ -723,7 +797,7 @@ contains
 !<input>
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
   ! OU_MODE_STD is assumed.
-  integer, intent(IN), optional :: coutputMode
+  integer(I32), intent(IN), optional :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
@@ -778,7 +852,7 @@ contains
 
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
   ! OU_MODE_STD is assumed.
-  integer, intent(IN), optional :: coutputMode
+  integer(I32), intent(IN), optional :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.

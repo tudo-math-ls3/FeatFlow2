@@ -263,6 +263,11 @@ module nonlinearsolver
     ! This determines the output level of the solver.
     ! =0: no output, =1: basic output, =2, extended output
     integer                    :: ioutputLevel = 0
+    
+    ! INPUT PARAMETER: Output mode. Used for printing messages.
+    ! =OU_MODE_STD: Print messages to the terminal and probably to a log 
+    ! file (if a log file is opened).
+    integer(I32)               :: coutputmode = OU_MODE_STD
 
     ! INPUT PARAMETER:
     ! Type of preconditioner to use. One of the NLSOL_PREC_xxxx constants.
@@ -869,9 +874,11 @@ contains
       
       if (rsolverNode%ioutputLevel .ge. 2) then
         call output_line ('NLSOL: Iteration '//&
-             trim(sys_siL(ite,10))//', !!RES!! =',bnolinebreak=.true.)
+             trim(sys_siL(ite,10))//', !!RES!! =',bnolinebreak=.true.,&
+             coutputMode=rsolverNode%coutputMode)
         do i=1,nblocks
-          call output_line (' '//trim(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.true.)
+          call output_line (' '//trim(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.true.,&
+              coutputMode=rsolverNode%coutputMode)
         end do
         call output_lbrk()
       end if
@@ -930,7 +937,8 @@ contains
         ! If bsuccess=false, the preconditioner had an error.
         if (.not. bsuccess) then
           call output_line ('NLSOL: Iteration '//&
-              trim(sys_siL(ite,10))//' canceled as the preconditioner went down!')
+              trim(sys_siL(ite,10))//' canceled as the preconditioner went down!',&
+              coutputMode=rsolverNode%coutputMode)
           rsolverNode%iresult = 3
           exit
         end if
@@ -941,7 +949,8 @@ contains
         ! So in this case, there's nothing to do, we can stop the iteration.
         if (domega .eq. 0.0_DP) then
           call output_line ('NLSOL: Iteration '//&
-              trim(sys_siL(ite,10))//' canceled as there is no progress anymore!')
+              trim(sys_siL(ite,10))//' canceled as there is no progress anymore!',&
+              coutputMode=rsolverNode%coutputMode)
           exit
         else
           ! Add the correction vector in rd to rx;
@@ -968,9 +977,11 @@ contains
 
             if (rsolverNode%ioutputLevel .ge. 2) then
               call output_line ('NLSOL: Iteration '//&
-                  trim(sys_siL(ite,10))//', !!RES!! =',bnolinebreak=.true.)
+                  trim(sys_siL(ite,10))//', !!RES!! =',bnolinebreak=.true.,&
+                  coutputMode=rsolverNode%coutputMode)
               do i=1,nblocks
-                call output_line (' '//trim(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.true.)
+                call output_line (' '//trim(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.true.,&
+                coutputMode=rsolverNode%coutputMode)
               end do
               call output_lbrk()
             end if
