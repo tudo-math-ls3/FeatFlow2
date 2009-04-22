@@ -1,21 +1,26 @@
 The basic regression test suite -- short introduction for dummys
 ----------------------------------------------------------------
-The FEAT regression test suite allows to do a couple of benchmarks
-to the code every night to ensure everything compiles and runs
-correctly. The basic concept is that a couple of test applications
-run on a couple of machines producing some output which is compared
-to reference values. EMails are generated when some tests fail so that
-the user responsible for an improper checkin can be blamed.
+The FEAT regression test suite allows to run a couple of benchmarks,
+interactively and non-interactively via a cronjob at night to validate
+the code, i.e. to ensure that everything compiles and runs
+correctly. The basic concept is that a couple of test applications run
+on a couple of machines producing some output which is compared
+against reference solutions. E-mails are generated in case
+applications fail to compile or tests fail to reproduce the reference
+solution. Given that the number of commits per day is reasonably small
+it is easy to pinpoint the user whose improper checkin is to blame.
 
 General structure of the benchmarks - Quick Start Guide
 -----------------------------------------------------------
-a) Benchmark applications are compiled in the directory of the
-   benchmark application, e.g.
-     "Featflow2/benchmark/apps_cc2d". 
+a) Every benchmark application has its own subdirectory, e.g.
+     "Featflow2/benchmark/apps_cc2d"
+   that may contain source files, but needs at least a configure
+   script in order to be able to generate a Makefile.
     
-b) The actual applications on the other hand are always started
-   in the main benchmark directory, i.e.
-     "Featflow2/benchmark". 
+b) The benchmark applications are, in contrast to the standard
+   behaviour, all stored directly in the main benchmark directory,
+   i.e.  
+     "Featflow2/benchmark".
      
 c) The subdirectory
      "Featflow2/benchmark/data"
@@ -23,19 +28,19 @@ c) The subdirectory
    the data files of the corresponding test(s). The data files for the
    standard cc2d test can be found e.g. in the directory
      "Featflow2/benchmark/data/apps_cc2d"
-   This is in slight contrast to the standard directory structure
-   of a usual application where the "data/" subdirectory contains
-   the actual data.
+   This slightly differs from the standard directory structure of a
+   FEAT application that stores its data in a "data/" subdirectory.
 
 d) For every benchmark application, the directory
      "Featflow2/benchmark/tests"
-   contains a file that configures the test definitions that should
-   be performed with an application. The test definitions for the
-   standard cc2d application can be found e.g. in the file
+   contains one or more files that contains test definitions for a
+   given application. The test definitions for the standard cc2d
+   application can be found, e.g., in the file
       "Featflow2/benchmark/tests/cc2d.fbdef"
    Each test starts with a parameter "testid=..." that defines the
-   ID of the test. The parameter "appl =..." defines the name of the
-   application. It should coincide with the name of the .fbconf file.
+   test ID. The parameter "appl =..." defines the name of the
+   application. The name of the .fbconf file should coincide with it
+   or at least contain it.
 
 e) When an application is started, the following data is passed to it:
 
@@ -43,7 +48,7 @@ e) When an application is started, the following data is passed to it:
      parameter in the sections of the corresponding .fbdef file
      is passed as 1st command line parameter.
 
-     For the cc2d application with test-id CC2D_001 e.g., the "datfile"
+     For the cc2d application with test ID CC2D_001, e.g., the "datfile"
      parameter is defined as
        "datfile  = ./data/apps_cc2d/master.dat"
      which points to the master file that controls the application
@@ -52,15 +57,15 @@ e) When an application is started, the following data is passed to it:
        "feat2Benchmark-cc2d ./data/apps_cc2d/master.dat"
        
    - The parameter "mglevels = x,x,x,..." defines a list of one or
-     multiple levels. For every value in the list, a separate benchmark
-     is started. The current level is then passed as environment
-     variable
+     several refinement levels. For every value in the list, a
+     separate benchmark is started. The current level is then passed
+     as environment variable
        $MGLEVEL = ...
      to the application.
      
-   - Below each test-id, the user can specify an arbitrary number
-     of variables which are passed as environment variables to the
-     application.
+   - Below each test ID, the user can specify an arbitrary number
+     of variables of arbitrary name which are passed as environment
+     variables to the application.
      
      Example for cc2d.conf:
        testid   = CC2D_001
@@ -69,15 +74,18 @@ e) When an application is started, the following data is passed to it:
        element  = 11
        eps      = 1E-10
        
-     Defines test case "CC2D_001". The benchmark defines the environment
-     variables
+     Defines test case "CC2D_001". The three variables 'testid',
+     'datfile', 'mglevels' have a special meaning that have already
+     been explained. The remaining ones are defined as environment
+     variables in the benchmark control script 'runtests'
        $ELEMENT = 11
        $EPS     = 1E-10
-     and calls the application two times with the environment variable
-     $MGLEVEL set to $MGLEVEL=4 and $MGLEVEL=5.
+     This script, when run, calls the application two times with the
+     environment variable $MGLEVEL set to $MGLEVEL=4 and $MGLEVEL=5.
      
-   - Parameters defined in one test id are inherited by the next one
-     until redefinition.
+   - For convenience, parameters defined in one test id are inherited
+     by the next one until redefinition. This to avoid having to
+     retype the same settings over and over again.
      
      Example for cc2d.conf:
      
@@ -111,14 +119,21 @@ e) When an application is started, the following data is passed to it:
 
 f) During the execution, the following variables in the environment
    are automatically set:
-     $LOGDIR = Directory, where the application must write log files to.
-   The application must write a file named
+     $LOGDIR = directory to application is supposed to write its log
+               files to
+   $LOGDIR is set to 'logs/' + 'testid'. The directory is automatically
+   created along with the 'runtests' script. Having a unique name
+   (because obviously all test IDs are unique), several tests can be
+   run simultaneously, e.g. in a queueing environment, with
+   interference, i.e. it won't happen that two instances of the same
+   application try to write to the same files. 
+   Every benchmark application is supposed to create a file named
      "$LOGDIR/benchmarkresultfile"
-   to this directory that contains deterministic benchmark results
-   that should be compared to reference results. Timing results
-   and similar nondeterministic results should not be written to this
-   file as the file is later on diff'ed to a file with reference
-   results.
+   that contains deterministic benchmark results that allow comparison
+   of this program run to previous runs by means of reference
+   results. Obviously, timing results and similar nondeterministic
+   results should not be written to this file as the file is later on
+   diff'ed to a file with reference results.
    
 g) SUMMARY: The data flow for executing a benchmark application is
    as follows:
@@ -128,23 +143,33 @@ g) SUMMARY: The data flow for executing a benchmark application is
      cd Featflow2/benchmark
      ./configure
      
-     -> The configure script list all directories
-        "kernel_*", "apps_*" and "area51_*" and extract the application
-        name from the "*".
-     -> Let's assume, we have the following subdirectories:
-          "apps_cc2d"
-          "apps_pp2d"
-          "kernel_triatest"
-        Then this results in three applications:
-          "cc2d"
-          "pp2d"
-          "triatest"
-        Application names must be unique without the
-        kernel_ / apps_ / area51_ -qualifier in front;
-        therefore, "apps_cc2d" + "area51_cc2d" are not allowed!
-     -> In every application subdirectory, a GNUmakefile is created
-        for that particular application by calling the application
-        specific "configure" script in that directory.
+     -> The configure script walks through all directories matching
+        "kernel_*", "apps_*" and "area51_*" and creates a Makefile in
+        every one of them (invoking the "configure" script in that
+        subdirectory) in order to be able to build the application.
+     -> Benchmark application names are built according to the
+        following rules:
+        - They have a common prefix 'feat2Benchmark-'
+        - The suffix is the part matching '*' of the respective
+          subdirectory names:
+          Example: Let's assume, we have the following subdirectories:
+             "apps_cc2d"
+             "apps_pp2d"
+             "kernel_triatest"
+          Then this results in three applications:
+             "cc2d"
+             "pp2d"
+             "triatest"
+          which results in the following binaries being created:
+             "feat2Benchmark-cc2d"
+             "feat2Benchmark-pp2d"
+             "feat2Benchmark-triatest"
+
+        - Obviously, it is mandatory that application names are
+          unique, i.e.  having two subdirectories named "apps_cc2d"
+          and "area51_cc2d" is not allowed as you'd get a conflict in
+          the binary names.
+
         
      make feat2Benchmark-[application-name]
      
@@ -157,7 +182,13 @@ g) SUMMARY: The data flow for executing a benchmark application is
         Compiles the application "cc2d" in the subdirectory
         apps_cc2d. The result is the executable
           "Featflow2/bechmark/feat2benchmark-cc2d"
-        
+
+ 
+      make benchmark
+
+      -> Is a generic command that compiles all benchmark applications.        
+
+
       make [testcase-file] run
       
       -> Starts the tests listed in the file 
@@ -165,31 +196,46 @@ g) SUMMARY: The data flow for executing a benchmark application is
            
          More precisely:
          
-      -> At first, all files
+      -> At first, all files matching
            "Featflow2/benchmark/tests/*.fbconf"
          are parsed to find all testcases.
-         Each testcase has a unique id "test-id" and is associated to a
-         specific application defined by the "appl =" parameter
-         in the .fbconf file.
+         Each testcase has a unique test ID named "testid" and is
+         associated to a specific application defined by the "appl ="
+         parameter in the .fbconf file.
          
          Example: The test id "CC2D_001" in "tests/cc2d.fbconf"
            defines a test with the application "appl = cc2d".
            
       -> The file [testcase-file].fbconf contains a list of all
-         test-id's that should be executed. The "run" parameter 
-         instructs the make command to start all these test cases.
+         test IDs that should be executed. Comment lines start
+         with the hash character.
+
+      -> The make target "run" is provided for convenience only and
+         does nothing more than started the benchmark exeuction by
+         invoking the command './runtests'.
          
          Example: To start the testcase with id "CC2D_001", one can
            use the following two commands:
+
+             echo CC2D_001 > cc2d_problem.fbconf
+             make cc2d_problem
+	     ./runtests
+
+           or
            
+             echo CC2D_001 > cc2d_problem.fbconf
+             make cc2d_problem
+	     make run
+
+	   or even shorter
+
              echo CC2D_001 > cc2d_problem.fbconf
              make cc2d_problem run
            
-           The test id "CC2D_001" defines that the underlying
-           application is "cc2d" because of "appl = cc2d". Its 
-           executable is therefore named "feat2benchmark-cc2d". The 
-           application is started in the benchmark folder by the
-           following command:
+           The test ID "CC2D_001" defines that the underlying
+           application is "cc2d" because of "appl = cc2d". So, the
+           binary "feat2benchmark-cc2d" is used. The application is
+           started in the benchmark folder by the following command:
            
              "./feat2benchmark-cc2d ./data/apps_cc2d/master.dat"
              
@@ -202,25 +248,32 @@ g) SUMMARY: The data flow for executing a benchmark application is
             "$LOGDIR/benchmarkresultfile"
           must be manually created by the application containing 
           deterministic values associated to this test case (on the 
-          current architecture with the current build target). The file 
+          current architecture with the current build ID). The file 
           must contain exactly those results that should be compared to
           reference results.
           
-       -> The result file
+       -> The content of the result file
             "$LOGDIR/benchmarkresultfile"
-          is copied to the result directory and named
-            "results/[build-target]/test[test-id].results".
+          is appended to the file
+            "$LOGDIR/benchmarkresultfile.all-level". 
+          After looping over all refinement levels given in $MGLEVELS
+          the resulting file is stored to the result directory and
+          named:
+            "results/[buildID]/test[testID].results".
 
-          For example, the "CC2D_001" testcase on architecture
-          "cc2d-opteron-linux" generates the file
+          For example, the "CC2D_001" test ID on architecture
+          "cc2d-opteron-linux" run exactly one time on level 4 and
+          generates the file
             "$LOGDIR/benchmarkresultfile"
-          which is copied to to
+          which is copied to
+            "$LOGDIR/benchmarkresultfile.all-level"
+          and subsequently stored under
             "results/cc2d-opteron-linux/testCC2D_001.results".
 
        -> In a last step, the result files of all test cases in
-            "results/[build-target]/*".
+            "results/[buildID]/*".
           are diff'ed to the reference results in
-            "refsol/[build-target]/*"
+            "refsol/[buildID]/*"
           to find differences.
           
           For example, in the "CC2D_001" testcase the files
@@ -235,32 +288,33 @@ g) SUMMARY: The data flow for executing a benchmark application is
 
 Automatically checking the repository
 -------------------------------------
-In the subdirectory ./bin there is a script called 
+In the subdirectory ./bin there is a script called
 'runregressiontest_feat2'. This script is designed to be called in a
-cron job every night. It checks out the current repository, compiles
-the benchmark applications, compares the results and notifies the
-users whether the tests run successfully. There are a couple of
-options available in this script to configure its behaviour.
+cron job every night. It checks out the current repository, detect
+whether (relevant) changes have been made since the last time a
+working copy has been made, compiles the benchmark applications,
+compares the results and notifies the users whether the tests run
+successfully. There are a couple of options available in this script
+to configure its behaviour.
 
-When the scrip is started by
+When the script is started by
 
-  "runregressiontest_feat2 -t [testcase-file]",
+  "runregressiontest_feat2 --checkout --compare-feat2-checkouts -t [testcase-file]",
   
 it does basically the following:
 
 a) It retrieves a clean checkout of the repository
 b) It switches to the benchmark directory
      "Featflow2/benchmark"
-c) It lists all possible build-id's on that machine
-d) For every build-id, the corresponding commands are executed to start
-   the benchmark:
+c) It determines the default build ID for the current host and runs
+   the benchmark for it:
    
-     ./configure --id=[currentid]
+     ./configure
        -> Set up the makefiles
        
      make benchmark  
        -> Builds all applications
-       
+     
      make [testcase-file] run
        -> Runs all testcases; these are defined as a list of id's
           in the file "[testcase-file].fbconf"
@@ -274,3 +328,18 @@ d) For every build-id, the corresponding commands are executed to start
      Instead of "alltests", one could also specify another set
      of tests like "dailytests". For every test set, a corresponding
      .fbconf file must exist (e.g. "dailytests.fbconf").
+
+     On queueing systems like LiDO a separate script is invoked.
+     'bin/lido_schedule_tests' generates a jobfile for every test ID
+     and submits it to the appropriate queue.
+
+     The script then waits till all jobs have finished (which is
+     trivial in case of sequential execution, a bit less in case a
+     queueing environment is being used), processes the output, adds
+     hyperlinks between deviated tests and sends this result via
+     e-mail to the configured recipients.
+
+d) The benchmark can be run at night for non-default build IDs by
+   passing a distinct build ID. Example
+
+    "runregressiontest_feat2 --checkout --compare-feat2-checkouts -t [testcase-file] --id=pc64-opteron-linux-gcc-goto"
