@@ -58,13 +58,11 @@
 appl = cc2d
 class = CC2D
 
-
-
-
 # Test 1
+
 testid   = CC2D_001
-descr    = TODO_MICHAEL_KOESTER: solving whatever equations under whatever conditions worth mentioning here
+descr    = standard DFG benchmark, CC2D, stationary
 datfile  = ./data/apps_cc2d/master.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
-mglevels = 1,2
+mglevels = 4
