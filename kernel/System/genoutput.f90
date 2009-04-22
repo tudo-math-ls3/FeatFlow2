@@ -941,7 +941,7 @@ contains
 
 !</subroutine>
 
-  integer :: coMode
+  integer(I32) :: coMode
   
     select case (ioutputLevel)
     case (:0)
@@ -998,7 +998,7 @@ contains
 
 !</subroutine>
 
-  integer :: coMode
+  integer(I32) :: coMode
   
     select case (ioutputLevel)
     case (:0)
