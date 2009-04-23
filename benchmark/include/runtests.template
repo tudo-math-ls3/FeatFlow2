@@ -54,6 +54,8 @@ RUNLOGFILE=runlog
 # validate a program run.
 RESULTFILE=benchmarkresultfile
 
+export RESULTFILE
+
 
 ## Type:	boolean integer
 ## Default:     <SET_VIA_MAKEFILE>, therein set to 0
@@ -623,7 +625,10 @@ fb_runAndEvalBenchmarkTest() {
 
     # add some class-specific information, add whatever you want to see for your applications
     case "${CLASS}" in
-	CC2D)
+    
+    # Standard applications. They have a DAT file and some MG-Levels.
+    
+	DEFAULT)
 	    echo "DATFILE   = "${DATFILE}
 	    echo "MGLEVELS  = "${MGLEVELS}
 	    if test "${FOOBAR+set}" = set ; then

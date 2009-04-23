@@ -56,7 +56,7 @@
 #============================================================
 
 appl = poisson
-class = POISSON
+class = DEFAULT
 
 # Test 1
 

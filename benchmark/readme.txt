@@ -203,11 +203,23 @@ g) SUMMARY: The data flow for executing a benchmark application is
          are parsed to find all testcases.
          Each testcase has a unique test ID named "testid" and is
          associated to a specific application defined by the "appl ="
-         parameter in the .fbconf file.
+         parameter in the .fbconf file, and to an application class
+         defined by the "class =" parameter in the .fbconf file.
          
          Example: The test ID "CC2D_001" in "tests/cc2d.fbconf"
                   defines a test to be run with help of the
-                  application "appl = cc2d".
+                  application "appl = cc2d". The associated test class
+                  is "DEFAULT".
+         
+         The subroutine "fb_runAndEvalBenchmarkTest()" in the file
+         "runtests.template" defines the different test classes.
+         The test class "DEFAULT" is the most popular.
+         
+         Other test classes may be added here to support an extended
+         verification of solutions, e.g. the calculation of error
+         reduction rates or similar. The DEFAULT implementation
+         just executes the application for a couple of levels
+         and a specific configuration file.
            
       -> The file [testcase-file].fbconf contains a list of all
          test IDs that should be executed. Comment lines start
