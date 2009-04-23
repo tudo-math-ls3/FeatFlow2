@@ -65,3 +65,4 @@ descr    = Poisson standard benchmark
 mglevels = 1
 datfile  = -
 ucddir   = $LOGDIR
+predir   = ../applications/poisson/pre
