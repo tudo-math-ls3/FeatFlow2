@@ -816,7 +816,7 @@ fb_prepareForRun() {
 	if [ $? -ne 0 ]; then
 	    MAILSUBJECT="$MAILPREFIX Cannot create benchmark folder clone ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	    cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-	    fb_exit 1
+	    # Don't exit right now, it may be the directory already existed.
 	fi
 	cd $BASEDIR/Featflow2/benchmark
 	test $DEBUG -gt 0 && echo "# Cloning benchmark directory to <$BENCHMARKDIR>"
