@@ -64,16 +64,16 @@ PROGRAM poisson
 
   ! Call the problem to solve. Poisson 2D method 1 - simple:
   CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 0 - simple')
-  CALL output_line ('-----------------------------------------------------')
+  CALL output_line ('Calculating Performance-test MatVec')
+  CALL output_line ('-----------------------------------')
   CALL renum2d_matvec_mfloptest
   
   !!!!!!! poisson2d_0_simple = Solver test vor different renumbering strategies  !!!!!!!!
   
   ! Call the problem to solve. Poisson 2D method 1 - multigrid:
   CALL output_lbrk ()
-  CALL output_line ('Calculating Poisson-2D-Problem with method 1 - multigrid')
-  CALL output_line ('--------------------------------------------------------')
+  CALL output_line ('Calculating Performance-test SolverTest')
+  CALL output_line ('---------------------------------------')
   CALL renum2d_solvertest
 
   ! Print out heap statistics - just to check if everything
