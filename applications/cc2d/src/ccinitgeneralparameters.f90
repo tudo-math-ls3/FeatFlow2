@@ -83,15 +83,7 @@ contains
     call parlst_init (rparlist)
     
     ! Check if a command line parameter specifies the master.dat file.
-    smaster = './data/master.dat'
-    if (sys_ncommandLineArgs .gt. 0) then
-      if (sys_bcommandLineFormat(1) .eq. 0) then
-        inquire(file=sys_scommandLineArgs(1,1), exist=bexists)
-        if (bexists) then
-          smaster = sys_scommandLineArgs(1,1)
-        end if
-      end if
-    end if
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
 
     ! Read parameters that configure the output
     inquire(file=smaster, exist=bexists)
@@ -145,15 +137,7 @@ contains
     character(LEN=SYS_STRLEN) :: smaster
     
     ! Check if a command line parameter specifies the master.dat file.
-    smaster = './data/master.dat'
-    if (sys_ncommandLineArgs .gt. 0) then
-      if (sys_bcommandLineFormat(1) .eq. 0) then
-        inquire(file=sys_scommandLineArgs(1,1), exist=bexists)
-        if (bexists) then
-          smaster = sys_scommandLineArgs(1,1)
-        end if
-      end if
-    end if
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
 
     ! Read the file 'master.dat'.
     ! If that does not exist, try to manually read files with parameters from a

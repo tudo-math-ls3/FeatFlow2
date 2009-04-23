@@ -314,32 +314,6 @@ module fsystem
   ! respect this setting but do not explicitely use this variable.
   real(DP), save :: sys_dtimeMax = 0.0_DP
 
-  ! number of command line options
-  integer(I32) :: sys_ncommandLineArgs = 0
-
-  ! A list of command line options.
-  ! Command line options are either simple options, direct short options
-  ! or direct long options.
-  ! a) Simple option: "value"
-  !  Here, sys_scommandLineArgs(.,1) = "value" and
-  !        sys_scommandLineArgs(.,2) = "".
-  !  Can be used to store e.g. paths like "./data".
-  ! b) Short options: "-key" or "-key=value".
-  !  Here, sys_scommandLineArgs(.,1) = "key" and
-  !        sys_scommandLineArgs(.,2) = "value" or "" if no value is specified.
-  ! c) long options: "--key" or "--key=value".
-  !  Here, sys_scommandLineArgs(.,1) = "key" and
-  !        sys_scommandLineArgs(.,2) = "value" or "" if no value is specified.
-  character(len=SYS_STRLEN), dimension(:,:), pointer :: sys_scommandLineArgs => null()
-  
-  ! Defines the format of command line options.
-  ! A value 0 indicates a direct option.
-  ! A value 1 indicates that the command line parameter
-  ! is of short form ("-key" or "-key=value").
-  ! A value 2 indicates that the command line parameter
-  ! is of long form ("--key" or "--key=value").
-  integer, dimension(:), pointer ::  sys_bcommandLineFormat => null()
-
 !</globals>
 
 !************************************************************************
@@ -515,10 +489,6 @@ contains
 
     ! Set value of Pi = 3.14..
     SYS_PI=asin(1.0_DP)*2.0_DP
-    
-    ! Get the command line parameters, store them
-    ! into sys_scommandLineArgs.
-    call sys_getCommandLine()
     
   end subroutine system_init_ext
 
@@ -2088,16 +2058,12 @@ contains
 ! ****************************************************************************************
 
 !<subroutine>
-  subroutine sys_getCommandLine()
+  integer function sys_ncommandLineArgs()
 
   !<description>
-    ! This routine parses the given command line and transfer the key value pairs
-    ! into internal data structures
+    ! Calculates the number of command line arguments.
   !</description>
 !</subroutine>
-
-    integer(I32) :: i,idx,istmplen
-    character(len=SYS_STRLEN) :: stmp
 
 #ifndef HAS_INTRINSIC_IARGC
     ! Definition of iargc needed for
@@ -2110,47 +2076,113 @@ contains
 
     sys_ncommandLineArgs=iargc()
 
-    allocate(sys_scommandLineArgs(sys_ncommandLineArgs,2))
-    allocate(sys_bcommandLineFormat(sys_ncommandLineArgs))
+  end function
+  
+! ****************************************************************************************
 
-    do i = 1, sys_ncommandLineArgs
+!<subroutine>
+  subroutine sys_getcommandLineArg(iarg,soption,svalue,iformat,sdefault)
 
-      call getarg(i,stmp)
+  !<description>
+    ! Fetches command line argument iarg from the command line.
+    !
+    ! The return value of this function depends on the format of the command line
+    ! argument. There are three cases:
+    ! a) Simple option: "option", or svalue not specified
+    !  Here, soption = "option" and
+    !        svalue  = "".
+    !        iformat = 0.
+    !  Can be used to store e.g. paths like "./data".
+    ! b) Short options: "-option" or "-option=value".
+    !  Here, soption = "option" and
+    !        svalue  = "value" or "" if no value is specified.
+    !        iformat = 1.
+    ! c) long options: "--option" or "--option=value".
+    !  Here, soption = "option" and
+    !        svalue  = "value" or "" if no value is specified.
+    !        iformat = 2.
+  !</description>
+  
+  !<input>
+    ! Index of the command line argument. Must be in the range 1..sys_ncommandLineArgs().
+    integer, intent(in) :: iarg
 
-      istmplen = len(stmp)
+    ! OPTIONAL: A default value for the command line argument the iarg command
+    ! line parameter does not exist.
+    character(len=*), intent(in), optional :: sdefault
+  !</input>
+  
+  !<output>
+    ! The command line argument.
+    character(len=*), intent(out) :: soption
+    
+    ! OPTIONAL: Value of the option
+    character(len=*), intent(out), optional :: svalue
 
-      if (stmp(1:2).eq."--") then
+    ! OPTIONAL: Type of the command line argument. 
+    ! A value -1 indicates that the command line arguzment does not exist and no sdefault
+    ! is specified.
+    ! A value 0 indicates a direct option.
+    ! A value 1 indicates that the command line parameter
+    ! is of short form ("-key" or "-key=value").
+    ! A value 2 indicates that the command line parameter
+    ! is of long form ("--key" or "--key=value").
+    integer, intent(out), optional :: iformat
+  !</output>
+  
+!</subroutine>
 
-        idx=3
-        do while ((stmp(idx:idx).ne.'=').and.(idx.lt.istmplen))
-          idx=idx+1
-        enddo
+    ! local variables
+    character(len=SYS_STRLEN) :: stmp
+    integer :: istmplen,idx
 
-        sys_bcommandLineFormat(i)=2
-        sys_scommandLineArgs(i,1)=stmp(3:idx-1)
-        sys_scommandLineArgs(i,2)=stmp(idx+1:)
-
-      else if (stmp(1:1).eq."-") then
-
-        idx = 2
-        do while ((stmp(idx:idx).ne.'=').and.(idx .lt. istmplen))
-          idx = idx+1
-        enddo
-
-        sys_bcommandLineFormat(i)=1
-        sys_scommandLineArgs(i,1)=stmp(2:idx-1)
-        sys_scommandLineArgs(i,2)=stmp(idx+1:)
-
+    if ((iarg .lt. 1) .or. (iarg .gt. sys_ncommandLineArgs())) then
+      ! Return the default or an empty string.
+      if (present(sdefault)) then
+        stmp = sdefault
       else
+        soption = ''
+        if (present(iformat)) iformat = -1
+        if (present(svalue)) svalue = ''
+        return
+      end if
+    else
+      ! Get the option -- at first to stmp.
+      call getarg(iarg,stmp)
+    end if
 
-        sys_bcommandLineFormat(i)=0
-        sys_scommandLineArgs(i,1)=stmp
-        sys_scommandLineArgs(i,2)=""
+    istmplen = len(stmp)
 
-      endif
+    if (stmp(1:2).eq."--") then
 
-    enddo
+      idx=3
+      do while ((stmp(idx:idx).ne.'=').and.(idx.lt.istmplen))
+        idx=idx+1
+      enddo
+  
+      soption = stmp(3:idx-1)
+      if (present(svalue)) svalue = stmp(idx+1:)
+      if (present(iformat)) iformat = 2
 
-  end subroutine sys_getCommandLine
+    else if (stmp(1:1).eq."-") then
+
+      idx = 2
+      do while ((stmp(idx:idx).ne.'=').and.(idx .lt. istmplen))
+        idx = idx+1
+      enddo
+
+      soption = stmp(2:idx-1)
+      if (present(svalue)) svalue = stmp(idx+1:)
+      if (present(iformat)) iformat = 1
+
+    else
+
+      soption = stmp
+      if (present(svalue)) svalue = ""
+      if (present(iformat)) iformat = 0
+
+    endif
+
+  end subroutine
 
 end module fsystem
