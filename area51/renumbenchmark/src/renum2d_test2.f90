@@ -251,19 +251,31 @@ CONTAINS
     character(len=SYS_STRLEN) :: sconfig
     type(t_solverConfig) :: rsolverConfig
     integer :: ilevel, iperform
+    logical :: bexists
+    character(len=SYS_STRLEN) :: sprmfile,strifile,sdatafile
 
     ! Ok, let's start. Get the data from the DAT file.
     call parlst_init(rparlist)
-    call parlst_readfromfile (rparlist, './data/renum.dat')
+
+    ! Get the configuration
+    sdatafile = './data/renum.dat'
+    if (sys_ncommandLineArgs .gt. 0) then
+      inquire(file=sys_scommandLineArgs(1,1),exist=bexists)
+      if (bexists) sdatafile = sys_scommandLineArgs(1,1)
+    end if
+    call parlst_readfromfile (rparlist, sdatafile)
     
     ! Start the tests?
     call parlst_getvalue_int (rparlist, 'PERFORMANCETESTS', 'iperform', iperform)
     
     if (iperform .ne. 0) then
     
+      call parlst_getvalue_string (rparlist, 'MFLOPTESTS', 'PRMFILE', sprmfile,'./pre/heat_v77.prm')
+      call parlst_getvalue_string (rparlist, 'MFLOPTESTS', 'TRIFILE', strifile,'./pre/heat_v77.tri')
+    
       ! Read in the parametrisation of the boundary and save
       ! it to rboundary.
-      CALL boundary_read_prm(rboundary, './pre/heat_v77.prm')
+      CALL boundary_read_prm(rboundary, sprmfile)
       !CALL boundary_read_prm(rboundary, './pre/QUAD.prm')
           
       ! Loop through all solver configurations
@@ -290,7 +302,7 @@ CONTAINS
           
           ! Now read in the basic triangulation into our coarse level.
           CALL tria_readTriFile2D (Rlevels(rsolverConfig%NLCOARSE)%rtriangulation, &
-                                  './pre/heat_v77.tri', rboundary)
+                                  strifile, rboundary)
           !CALL tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
           !                        './pre/QUAD.tri', rboundary)
           

@@ -119,6 +119,8 @@ CONTAINS
     
     TYPE(t_timer) :: rtimerSolver
     
+    character(len=SYS_STRLEN) :: sprmfile,strifile,sdatafile
+    logical :: bexists
     TYPE(t_triangulation) :: rtriangulation
 
     type(t_parlist) :: rparlist
@@ -126,7 +128,14 @@ CONTAINS
 
     ! Ok, let's start. Get the data from the DAT file.
     call parlst_init(rparlist)
-    call parlst_readfromfile (rparlist, './data/renum.dat')
+
+    ! Get the configuration
+    sdatafile = './data/renum.dat'
+    if (sys_ncommandLineArgs .gt. 0) then
+      inquire(file=sys_scommandLineArgs(1,1),exist=bexists)
+      if (bexists) sdatafile = sys_scommandLineArgs(1,1)
+    end if
+    call parlst_readfromfile (rparlist, sdatafile)
     
     ! Start the tests?
     call parlst_getvalue_int (rparlist, 'MFLOPTESTS', 'iperform', iperform)
@@ -139,7 +148,10 @@ CONTAINS
 
       ! At first, read in the parametrisation of the boundary and save
       ! it to rboundary.
-      CALL boundary_read_prm(rboundary, './pre/heat_v77.prm')
+      call parlst_getvalue_string (rparlist, 'MFLOPTESTS', 'PRMFILE', sprmfile,'./pre/heat_v77.prm')
+      call parlst_getvalue_string (rparlist, 'MFLOPTESTS', 'TRIFILE', strifile,'./pre/heat_v77.tri')
+      
+      CALL boundary_read_prm(rboundary, sprmfile)
           
       ! Ok, let's start. 
       
@@ -164,8 +176,7 @@ CONTAINS
             
             IF (imesh .EQ. 0) THEN
               ! Now read in the basic triangulation into our coarse level.
-              CALL tria_readTriFile2D (rtriangulation, &
-                                      './pre/heat_v77.tri', rboundary)
+              CALL tria_readTriFile2D (rtriangulation, strifile, rboundary)
                                       
               ! Only macro 1
               CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
@@ -178,7 +189,7 @@ CONTAINS
             ELSE
      
               CALL tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
-                                      './pre/heat_v77.tri', rboundary)
+                                      strifile, rboundary)
             END IF
                                     
             ! Refine it.
@@ -489,10 +500,11 @@ CONTAINS
               CALL spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
             END DO
             
-            WRITE (*,'(A,I3,A,I3,A,E18.10,A,E18.10,A,F18.10)') &
+            WRITE (*,'(A,I3,A,I3,A,I3,A,E18.10,A,E18.10,A,F18.10)') &
               'Level ',NLMAX,&
-              ' Strategy ',isortStrategy,&
-              ': Time=',rtimerSolver%delapsedReal,&
+              ', Strategy ',isortStrategy,&
+              ', imesh ',imesh,&
+              ', Time=',rtimerSolver%delapsedReal,&
               ', MFLOPS= ',dmflops
             
             ! Release the triangulation. 
@@ -509,10 +521,10 @@ CONTAINS
 
         END DO
         
-        ! Finally release the domain, that's it.
-        CALL boundary_release (rboundary)
-
       END DO
+
+      ! Finally release the domain, that's it.
+      CALL boundary_release (rboundary)
 
     end if
 

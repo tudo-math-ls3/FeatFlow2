@@ -5,12 +5,16 @@
 iperform = 1
 
 # Minimum level of the test
-NLMIN = 6
+NLMIN = 4
 
 # Maximum level of the test
-NLMAX = 11
+NLMAX = 10
 
-# Meshes to test. 0=heat_v77 with only 1 macro. 1=full heat_v77
+# Domain and mesh
+PRMFILE = ./pre/heat_v77.prm
+TRIFILE = ./pre/heat_v77.tri
+
+# Meshes to test. 0=only 1st macro. 1=full mesh
 imesh(2) =
  0
  1
@@ -29,6 +33,10 @@ isortStrategy(5)=
 # Whether to perform Performance-Tests or not
 
 iperform = 1
+
+# Domain and mesh
+prmfile = ./pre/heat_v77.prm
+trifile = ./pre/heat_v77.tri
 
 # List of subsections with test parameters
 configurations(30)=
@@ -67,7 +75,7 @@ configurations(30)=
 NLMIN = 4
 
 # Maximum level of the test
-NLMAX = 11
+NLMAX = 7
 
 # Minimum level in multigrid
 NLCOARSE = 1
