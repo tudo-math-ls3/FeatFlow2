@@ -49,10 +49,11 @@ PROGRAM poisson
   CALL storage_init(999, 100)
   
   ! Print the configuration
-  sdatafile = './data/renum.dat'
-  if (sys_ncommandLineArgs .gt. 0) then
-    inquire(file=sys_scommandLineArgs(1,1),exist=bexists)
-    if (bexists) sdatafile = sys_scommandLineArgs(1,1)
+  call sys_getcommandLineArg(1,sdatafile,sdefault='./data/renum.dat')
+  inquire(file=sdatafile,exist=bexists)
+  if (.not. bexists) then
+    call output_line ('Data file not found: '//TRIM(sdatafile), OU_CLASS_ERROR)
+    call sys_halt()
   end if
   
   call parlst_init(rparlist)

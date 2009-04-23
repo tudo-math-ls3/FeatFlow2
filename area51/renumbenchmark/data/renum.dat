@@ -15,9 +15,9 @@ PRMFILE = ./pre/heat_v77.prm
 TRIFILE = ./pre/heat_v77.tri
 
 # Meshes to test. 0=only 1st macro. 1=full mesh
-imesh(2) =
+imesh(1) =
  0
- 1
+# 1
 
 # Sort strategies to test.
 # 0=none (2-level), 1=CM, 2=XYZ, 3=stochastical, 4=hierarchical
@@ -32,7 +32,7 @@ isortStrategy(5)=
 
 # Whether to perform Performance-Tests or not
 
-iperform = 1
+iperform = 0
 
 # Domain and mesh
 prmfile = ./pre/heat_v77.prm
@@ -759,5 +759,4 @@ ipreconditioner = 1
 
 # Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
 ifillILU = 0
-
 

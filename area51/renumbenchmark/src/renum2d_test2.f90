@@ -258,11 +258,7 @@ CONTAINS
     call parlst_init(rparlist)
 
     ! Get the configuration
-    sdatafile = './data/renum.dat'
-    if (sys_ncommandLineArgs .gt. 0) then
-      inquire(file=sys_scommandLineArgs(1,1),exist=bexists)
-      if (bexists) sdatafile = sys_scommandLineArgs(1,1)
-    end if
+    call sys_getcommandLineArg(1,sdatafile,sdefault='./data/renum.dat')
     call parlst_readfromfile (rparlist, sdatafile)
     
     ! Start the tests?
