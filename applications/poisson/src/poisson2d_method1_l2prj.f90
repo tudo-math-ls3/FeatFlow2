@@ -669,6 +669,10 @@ contains
     ! L2-projection of solution into Q1 space done
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    ! Get the path for writing postprocessing files from the environment variable
+    ! $UCDDIR. If that does not exist, write to the directory "./gmv".
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
         Rlevels(NLMAX)%rtriangulation,TRIM(sucddir)//'/u2d_1_l2prj.gmv')
