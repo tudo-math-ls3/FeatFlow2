@@ -85,7 +85,7 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An array of problem levels for the multigrid solver
-    TYPE(t_level), DIMENSION(:), TARGET, pointer, target :: Rlevels
+    TYPE(t_level), DIMENSION(:), pointer :: Rlevels
 
     ! An object for saving the domain:
     TYPE(t_boundary) :: rboundary
