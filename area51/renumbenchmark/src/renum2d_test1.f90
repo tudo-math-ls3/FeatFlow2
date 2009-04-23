@@ -114,7 +114,7 @@ CONTAINS
     ! Sorting strategy counter
     INTEGER :: isortStrategy, imesh, isortStrategyidx, imeshidx
     INTEGER(I32), DIMENSION(:), POINTER :: p_Ipermutation
-    TYPE(t_spatialDiscretisation), DIMENSION(:), ALLOCATABLE :: Rdiscretisation
+    TYPE(t_spatialDiscretisation), DIMENSION(:), POINTER :: Rdiscretisation
     TYPE(t_matrixScalar), POINTER :: p_rmatrix
     
     TYPE(t_timer) :: rtimerSolver
