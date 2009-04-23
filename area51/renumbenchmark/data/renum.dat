@@ -1,0 +1,755 @@
+[MFLOPTESTS]
+
+# Whether to perform MFLOP-Tests or not
+
+iperform = 1
+
+# Minimum level of the test
+NLMIN = 6
+
+# Maximum level of the test
+NLMAX = 11
+
+# Meshes to test. 0=heat_v77 with only 1 macro. 1=full heat_v77
+imesh(2) =
+ 0
+ 1
+
+# Sort strategies to test.
+# 0=none (2-level), 1=CM, 2=XYZ, 3=stochastical, 4=hierarchical
+isortStrategy(5)=
+ 0
+ 1
+ 2
+ 3
+ 4
+
+[PERFORMANCETESTS]
+
+# Whether to perform Performance-Tests or not
+
+iperform = 1
+
+# List of subsections with test parameters
+configurations(30)=
+  PERFORMANCETEST-MG-JAC-SORT0
+  PERFORMANCETEST-MG-JAC-SORT1
+  PERFORMANCETEST-MG-JAC-SORT2
+  PERFORMANCETEST-MG-JAC-SORT3
+  PERFORMANCETEST-MG-JAC-SORT4
+  PERFORMANCETEST-MG-ILU0-SORT0
+  PERFORMANCETEST-MG-ILU0-SORT1
+  PERFORMANCETEST-MG-ILU0-SORT2
+  PERFORMANCETEST-MG-ILU0-SORT3
+  PERFORMANCETEST-MG-ILU0-SORT4
+  PERFORMANCETEST-CG-JAC-SORT0
+  PERFORMANCETEST-CG-JAC-SORT1
+  PERFORMANCETEST-CG-JAC-SORT2
+  PERFORMANCETEST-CG-JAC-SORT3
+  PERFORMANCETEST-CG-JAC-SORT4
+  PERFORMANCETEST-CG-ILU0-SORT0
+  PERFORMANCETEST-CG-ILU0-SORT1
+  PERFORMANCETEST-CG-ILU0-SORT2
+  PERFORMANCETEST-CG-ILU0-SORT3
+  PERFORMANCETEST-CG-ILU0-SORT4
+  PERFORMANCETEST-BICGSTAB-JAC-SORT0
+  PERFORMANCETEST-BICGSTAB-JAC-SORT1
+  PERFORMANCETEST-BICGSTAB-JAC-SORT2
+  PERFORMANCETEST-BICGSTAB-JAC-SORT3
+  PERFORMANCETEST-BICGSTAB-JAC-SORT4
+  PERFORMANCETEST-BICGSTAB-ILU0-SORT0
+  PERFORMANCETEST-BICGSTAB-ILU0-SORT1
+  PERFORMANCETEST-BICGSTAB-ILU0-SORT2
+  PERFORMANCETEST-BICGSTAB-ILU0-SORT3
+  PERFORMANCETEST-BICGSTAB-ILU0-SORT4
+
+# Minimum level of the test
+NLMIN = 4
+
+# Maximum level of the test
+NLMAX = 11
+
+# Minimum level in multigrid
+NLCOARSE = 1
+
+# Output-level of the solver. 
+ioutputLevel = 2
+
+# Element type for the discretisation. =11: Q1, =1: P1
+ielementType = 11
+
+# Maximum number of iterations
+nmaxIterations = 10000
+
+# Relative stopping criterion
+depsRel = 1E-8
+
+# Type of norm to use for checking the residual. =0: Euclidian, =2: L2
+iresNorm = 0
+
+# Cycle in multigrid. =0: F, =1: V, =2: W
+icycle = 0
+
+# Write a GMV file after solving
+iwriteGMV = 0
+
+# -----------------------------------------------------------------------------
+# MG solver, JAC preconditioner
+# -----------------------------------------------------------------------------
+
+[PERFORMANCETEST-MG-JAC-SORT0]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 0
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 0
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Type of smoother in multigrid.
+# =0: JAC, =1: ILU(s)
+ismoother = 0
+
+# Damping parameter for the smoother.
+domega = 0.7
+
+# Number of pre- and postsmoothing-steps
+nsm = 4
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-MG-JAC-SORT1]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 1
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 0
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Type of smoother in multigrid.
+# =0: JAC, =1: ILU(s)
+ismoother = 0
+
+# Damping parameter for the smoother.
+domega = 0.7
+
+# Number of pre- and postsmoothing-steps
+nsm = 4
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+
+[PERFORMANCETEST-MG-JAC-SORT2]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 2
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 0
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Type of smoother in multigrid.
+# =0: JAC, =1: ILU(s)
+ismoother = 0
+
+# Damping parameter for the smoother.
+domega = 0.7
+
+# Number of pre- and postsmoothing-steps
+nsm = 4
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+
+[PERFORMANCETEST-MG-JAC-SORT3]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 0
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 0
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Type of smoother in multigrid.
+# =0: JAC, =1: ILU(s)
+ismoother = 0
+
+# Damping parameter for the smoother.
+domega = 0.7
+
+# Number of pre- and postsmoothing-steps
+nsm = 4
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+
+[PERFORMANCETEST-MG-JAC-SORT4]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 4
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 0
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Type of smoother in multigrid.
+# =0: JAC, =1: ILU(s)
+ismoother = 0
+
+# Damping parameter for the smoother.
+domega = 0.7
+
+# Number of pre- and postsmoothing-steps
+nsm = 4
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+# -----------------------------------------------------------------------------
+# MG solver, ILU preconditioner
+# -----------------------------------------------------------------------------
+
+[PERFORMANCETEST-MG-ILU0-SORT0]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 0
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 0
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Type of smoother in multigrid.
+# =0: JAC, =1: ILU(s)
+ismoother = 0
+
+# Damping parameter for the smoother.
+domega = 0.9
+
+# Number of pre- and postsmoothing-steps
+nsm = 2
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+# Cycle
+icycle=0
+
+
+
+[PERFORMANCETEST-MG-ILU0-SORT1]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 1
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 0
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Type of smoother in multigrid.
+# =0: JAC, =1: ILU(s)
+ismoother = 0
+
+# Damping parameter for the smoother.
+domega = 0.9
+
+# Number of pre- and postsmoothing-steps
+nsm = 2
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+# Cycle
+icycle=0
+
+
+
+[PERFORMANCETEST-MG-ILU0-SORT2]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 2
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 0
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Type of smoother in multigrid.
+# =0: JAC, =1: ILU(s)
+ismoother = 0
+
+# Damping parameter for the smoother.
+domega = 0.9
+
+# Number of pre- and postsmoothing-steps
+nsm = 2
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+# Cycle
+icycle=0
+
+
+
+[PERFORMANCETEST-MG-ILU0-SORT3]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 0
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 0
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Type of smoother in multigrid.
+# =0: JAC, =1: ILU(s)
+ismoother = 0
+
+# Damping parameter for the smoother.
+domega = 0.9
+
+# Number of pre- and postsmoothing-steps
+nsm = 2
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+# Cycle
+icycle=0
+
+
+
+[PERFORMANCETEST-MG-ILU0-SORT4]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 4
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 0
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Type of smoother in multigrid.
+# =0: JAC, =1: ILU(s)
+ismoother = 0
+
+# Damping parameter for the smoother.
+domega = 0.9
+
+# Number of pre- and postsmoothing-steps
+nsm = 2
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+# Cycle
+icycle=0
+
+
+# -----------------------------------------------------------------------------
+# CG solver, JAC preconditioner
+# -----------------------------------------------------------------------------
+
+[PERFORMANCETEST-CG-JAC-SORT0]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 0
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 1
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+
+[PERFORMANCETEST-CG-JAC-SORT1]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 1
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 1
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-CG-JAC-SORT2]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 2
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 1
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-CG-JAC-SORT3]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 3
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 1
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-CG-JAC-SORT4]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 4
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 1
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+# -----------------------------------------------------------------------------
+# CG solver, ILU-0 preconditioner
+# -----------------------------------------------------------------------------
+
+[PERFORMANCETEST-CG-ILU0-SORT0]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 0
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 1
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+
+[PERFORMANCETEST-CG-ILU0-SORT1]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 1
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 1
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-CG-ILU0-SORT2]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 2
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 1
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-CG-ILU0-SORT3]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 3
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 1
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-CG-ILU0-SORT4]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 4
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 1
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+# -----------------------------------------------------------------------------
+# BiCGStab solver, JAC preconditioner
+# -----------------------------------------------------------------------------
+
+[PERFORMANCETEST-BICGSTAB-JAC-SORT0]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 0
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 2
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+
+[PERFORMANCETEST-BICGSTAB-JAC-SORT1]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 1
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 2
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-BICGSTAB-JAC-SORT2]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 2
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 2
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-BICGSTAB-JAC-SORT3]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 3
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 2
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-BICGSTAB-JAC-SORT4]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 4
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 2
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 0
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+# -----------------------------------------------------------------------------
+# BiCGStab solver, ILU-0 preconditioner
+# -----------------------------------------------------------------------------
+
+[PERFORMANCETEST-BICGSTAB-ILU0-SORT0]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 0
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 2
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+
+[PERFORMANCETEST-BICGSTAB-ILU0-SORT1]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 1
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 2
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-BICGSTAB-ILU0-SORT2]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 2
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 2
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-BICGSTAB-ILU0-SORT3]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 3
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 2
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
+[PERFORMANCETEST-BICGSTAB-ILU0-SORT4]
+
+# Type of sorting strategy.
+# =0: 2-lv, =1: CM, =2: XYZ, =3: Stochastic, =4: Hierarchical
+isortStrategy = 4
+
+# Solver. =0: mg, =1: cg, =2: BiCGStab
+isolver = 2
+
+# Type of preconditioner for CG/BiCGStab.
+# =0: JAC, =1: ILU(s)
+ipreconditioner = 1
+
+# Fill-in-level for ILU(s). =0: ILU(0), =1: ILU(1),...
+ifillILU = 0
+
+
