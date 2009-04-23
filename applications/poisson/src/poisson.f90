@@ -65,7 +65,7 @@ program poisson
   ! regression tests to compare results to reference results.
   if (sys_getenv_string('LOGDIR',slogdir) .and. &
       sys_getenv_string('RESULTFILE',slogfile)) then
-    call output_init (trim(slogdir)//trim(slogfile))
+    call output_init (trim(slogdir)//'/'//trim(slogfile))
   else
     call output_init ('./log/output.txt')
   end if
