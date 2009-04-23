@@ -116,6 +116,9 @@ contains
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
     
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
     type(t_linearForm) :: rlinform
@@ -184,13 +187,17 @@ contains
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
     
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
         
     ! Now read in the basic triangulation into our coarse level.
     call tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
-                             './pre/QUAD.tri', rboundary)
+                             trim(spredir)//'/QUAD.tri', rboundary)
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMIN-1,&

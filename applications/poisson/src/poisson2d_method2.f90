@@ -120,17 +120,24 @@ contains
 
   ! local variables
   
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+
     ! Initialise the level in the problem structure
     rproblem%NLMAX = ilv
+
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
     ! Set rboundary to NULL() to create a new structure.
-    call boundary_read_prm(rproblem%rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(rproblem%rboundary, trim(spredir)//'/QUAD.prm')
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (rproblem%RlevelInfo(1)%rtriangulation, &
-        './pre/QUAD.tri', rproblem%rboundary)
+        trim(spredir)//'/QUAD.tri', rproblem%rboundary)
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (rproblem%NLMAX-1, &

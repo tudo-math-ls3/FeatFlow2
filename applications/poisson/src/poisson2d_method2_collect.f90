@@ -72,14 +72,21 @@ contains
     ! An object for saving the triangulation on the domain
     type(t_triangulation), pointer :: p_rtriangulation
 
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+
     ! At first, read in the parametrisation of the boundary and save
     ! it to p_rboundary.
     allocate(p_rboundary)
-    call boundary_read_prm(p_rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(p_rboundary, trim(spredir)//'/QUAD.prm')
 
     ! Now read in the basic triangulation.
     allocate(p_rtriangulation)
-    call tria_readTriFile2D (p_rtriangulation, './pre/QUAD.tri', p_rboundary)
+    call tria_readTriFile2D (p_rtriangulation, trim(spredir)//'/QUAD.tri', p_rboundary)
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (ilv-1,p_rtriangulation,p_rboundary)

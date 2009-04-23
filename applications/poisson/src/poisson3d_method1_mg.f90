@@ -96,6 +96,9 @@ contains
     ! An object for saving the boundary mesh region
     type(t_meshregion) :: rmeshRegion
     
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
     type(t_linearForm) :: rlinform
@@ -155,9 +158,13 @@ contains
     ! Set the element type. 
     celement = EL_Q1_3D
 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+
     ! At first, read in the basic triangulation.
     ! As we cannot refine a 3D grid yet, read in a cube grid.
-    call tria_readTriFile3D (Rlevels(NLMIN)%rtriangulation, './pre/CUBE.tri')
+    call tria_readTriFile3D (Rlevels(NLMIN)%rtriangulation, trim(spredir)//'/CUBE.tri')
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMIN-1,Rlevels(NLMIN)%rtriangulation)

@@ -72,6 +72,9 @@ contains
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
 
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
     type(t_blockDiscretisation) :: rdiscretisation
@@ -145,13 +148,17 @@ contains
     ! | BOUNDARY AND TRIANGULATION
     ! +------------------------------------------------------------------------
 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
     ! Set rboundary to NULL to create a new structure on the heap.
-    call boundary_read_prm(rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
     
     ! Refine it to get the coarse mesh.
     call tria_quickRefine2LevelOrdering (NLMIN-1,rtriangulation,rboundary)

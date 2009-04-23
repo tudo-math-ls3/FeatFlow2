@@ -71,6 +71,9 @@ contains
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
 
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+
     ! An object for saving the boundary mesh region
     type(t_meshregion) :: rmeshRegion
 
@@ -132,8 +135,12 @@ contains
     ! We want to solve our Poisson problem on level...
     NLMAX = 4
     
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+
     ! At first, read in the basic triangulation.
-    call tria_readTriFile3D (rtriangulation, './pre/CUBE.tri')
+    call tria_readTriFile3D (rtriangulation, trim(spredir)//'/CUBE.tri')
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation)
