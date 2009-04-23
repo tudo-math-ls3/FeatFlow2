@@ -240,7 +240,7 @@ CONTAINS
     
     
     ! Sorting strategy counter
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Ipermutation
+    INTEGER, DIMENSION(:), POINTER :: p_Ipermutation
     TYPE(t_spatialDiscretisation), DIMENSION(:), ALLOCATABLE :: Rdiscretisation
     
     TYPE(t_timer) :: rtimerSolver,rtimerRef,rtimerSort,rtimerMatGen
