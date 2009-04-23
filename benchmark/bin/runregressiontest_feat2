@@ -338,6 +338,7 @@ fb_customise() {
 	    MAILX="mailx"
 	    FROMADDRESS="featflow@lido-gw1"
 	    USEMODULES="yes"
+	    EXTRAMODULEFILESDIRECTORY=""
 
 	    # As all benchmark tests are run in parallel on LiDO
 	    # via a queueing system, i.e. independent shells,
@@ -353,6 +354,7 @@ fb_customise() {
 		    # g95 only gives deterministic results if combined with gcc 4.0 or 4.1, nothing higher.
 		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --cc=gcc4"
 		    COMPILERNAME="G95 0.9"
+		    EXTRAMODULEFILESDIRECTORY="/home/buijssen/Cluster-Config/modulefiles"
 		    ;;
 
 		# GNU compiler suite
@@ -406,7 +408,7 @@ fb_customise() {
 	    # when trying to load/unload several modules at once. 
 	    # Workaround: Load them one by one.
 	    . /cvos/local/apps/environment-modules/*/init/sh && \
-	    module use /cvos/shared/modulefiles /home/buijssen/Cluster-Config/modulefiles && \
+	    module use /cvos/shared/modulefiles $EXTRAMODULEFILESDIRECTORY && \
 	    module unload gcc/3.4.6  > $AUXILIARYLOG 2>&1;
 	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
 
