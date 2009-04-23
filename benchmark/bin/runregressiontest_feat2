@@ -812,7 +812,7 @@ fb_prepareForRun() {
 		    ;;
 	    esac
 	fi
-	mkdir $BENCHMARKDIR
+	mkdir $BENCHMARKDIR > $AUXILIARYLOG 2>&1
 	if [ $? -ne 0 ]; then
 	    MAILSUBJECT="$MAILPREFIX Cannot create benchmark folder clone ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	    cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
