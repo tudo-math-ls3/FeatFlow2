@@ -64,3 +64,4 @@ testid   = POISSON_001
 descr    = Poisson standard benchmark
 mglevels = 1
 datfile  = -
+ucddir   = $LOGDIR
