@@ -3192,7 +3192,7 @@ sub create_feastBenchmarkMakefile {
         "SCRIPT   = runtests\n" .
         "\n" .
         "# Basename of all FEAT2 benchmark applications\n" .
-        "APPBASE  = feat2Benchmark\n" .
+        "APPBASE  = feat2benchmark\n" .
         "\n" .
         "# List of all application's source directories\n" .
         "SRCDIRS  = \$(patsubst %/, %, \$(dir \$(wildcard \\\n" .
