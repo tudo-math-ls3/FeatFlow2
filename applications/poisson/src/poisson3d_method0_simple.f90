@@ -115,6 +115,7 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
+    character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
     
     ! Ok, let's start. 
@@ -295,9 +296,14 @@ contains
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
 
+    !
+    ! Get the path for writing postprocessing files from the environment variable
+    ! $UCDDIR. If that does not exist, write to the directory "./gmv".
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       'gmv/u3d_0_simple.gmv')
+                       TRIM(sucddir)//'/u3d_0_simple.gmv')
     
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

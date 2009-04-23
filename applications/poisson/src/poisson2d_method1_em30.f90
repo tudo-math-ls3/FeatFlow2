@@ -120,6 +120,7 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
+    character(len=SYS_STRLEN) :: sucddir
 
     ! Error of FE function to reference function
     real(DP) :: derror
@@ -401,9 +402,14 @@ contains
     ! We can now start the postprocessing. 
       
     ! Call the GMV library to write out a GMV file for our solution.
+    !
+    ! Get the path for writing postprocessing files from the environment variable
+    ! $UCDDIR. If that does not exist, write to the directory "./gmv".
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                      'gmv/u2d_1_em30.gmv')
+                      TRIM(sucddir)//'/u2d_1_em30.gmv')
     
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

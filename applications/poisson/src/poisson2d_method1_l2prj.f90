@@ -169,6 +169,7 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
+    character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
 
     ! A simple counter variable
@@ -663,7 +664,7 @@ contains
 
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,'gmv/u2d_1_l2prj.gmv')
+        Rlevels(NLMAX)%rtriangulation,TRIM(sucddir)//'/u2d_1_l2prj.gmv')
     
     ! Add our Q1-solution to the UCD exporter:
     call lsyssc_getbase_double (rvecSolQ1,p_Ddata)
