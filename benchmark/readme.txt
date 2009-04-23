@@ -121,6 +121,7 @@ f) During the execution, the following variables in the environment
    are automatically set:
      $LOGDIR = directory to application is supposed to write its log
                files to
+     $RESULTFILE = Name of the result file for benchmark data.
    $LOGDIR is set to 'logs/' + 'testid'. The directory is automatically
    created along with the 'runtests' script. Having a unique name
    (because obviously all test IDs are unique), several tests can be
@@ -128,7 +129,7 @@ f) During the execution, the following variables in the environment
    interference, i.e. it won't happen that two instances of the same
    application try to write to the same files. 
    Every benchmark application is supposed to create a file named
-     "$LOGDIR/benchmarkresultfile"
+     $LOGDIR/$RESULTFILE = "$LOGDIR/benchmarkresultfile"
    that contains deterministic benchmark results that allow comparison
    of this program run to previous runs by means of reference
    results. Obviously, timing results and similar nondeterministic
