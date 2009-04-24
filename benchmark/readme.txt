@@ -54,7 +54,7 @@ e) When an application is started, the following data is passed to it:
      which points to the master file that controls the application
      relative to the benchmark directory.
      The application is then executed by calling
-       "feat2Benchmark-cc2d ./data/apps_cc2d/master.dat"
+       "feat2benchmark-cc2d ./data/apps_cc2d/master.dat"
        
    - The parameter "mglevels = x,x,x,..." defines a list of one or
      several refinement levels. For every value in the list, a
@@ -150,7 +150,7 @@ g) SUMMARY: The data flow for executing a benchmark application is
         subdirectory) in order to be able to build the application.
      -> Benchmark application names are built according to the
         following rules:
-        - They have a common prefix 'feat2Benchmark-'
+        - They have a common prefix 'feat2benchmark-'
         - The suffix is the part matching '*' of the respective
           subdirectory names:
           Example: Let's assume, we have the following subdirectories:
@@ -162,9 +162,9 @@ g) SUMMARY: The data flow for executing a benchmark application is
              "pp2d"
              "triatest"
           which results in the following binaries being created:
-             "feat2Benchmark-cc2d"
-             "feat2Benchmark-pp2d"
-             "feat2Benchmark-triatest"
+             "feat2benchmark-cc2d"
+             "feat2benchmark-pp2d"
+             "feat2benchmark-triatest"
 
         - Obviously, it is mandatory that application names are
           unique, i.e.  having two subdirectories named "apps_cc2d"
@@ -172,7 +172,7 @@ g) SUMMARY: The data flow for executing a benchmark application is
           the binary names.
 
         
-     make feat2Benchmark-[application-name]
+     make feat2benchmark-[application-name]
      
      -> This command starts compiling the application 
         [application-name]. It generates an executable
@@ -187,7 +187,8 @@ g) SUMMARY: The data flow for executing a benchmark application is
  
       make benchmark
 
-      -> Is a generic command that compiles all benchmark applications.        
+      -> Is a generic command that compiles all benchmark applications
+         "feat2benchmark-*".        
 
 
       make [testcase-file]         or        make [testID]
