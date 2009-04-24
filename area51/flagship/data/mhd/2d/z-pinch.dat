@@ -35,10 +35,10 @@ algorithm = transient_primal
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = bin/dummy.prm #grids/2d/z-pinch_structured.prm
+prmfile = bin/dummy.prm
 
 # file which contains the triangulation
-trifile = bin/dummy.tri #grids/2d/z-pinch_structured.tri
+trifile = bin/dummy.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -338,10 +338,10 @@ iformatUCD = 1
 dstepUCD = 0.05
 
 # file for UCD output of solution
-ucdsolution = out/loworder
+ucdsolution = out/zpinch_AMR4
 
 # file for UCD output of error
-ucderror = out/z-pinch_error
+ucderror = out/
 
 
 ################################################################################
@@ -380,16 +380,16 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1e-3
+dfinalTime = 0.9
 
 # initial time step size
-dinitialStep = 1e-3
+dinitialStep = 2.5e-5
 
 # lower bound for the admissible time step
-dminStep = 1e-3
+dminStep = 2.5e-5
 
 # upper bound for the admissible time step
-dmaxStep = 1e-3
+dmaxStep = 2.5e-5
 
 # adaptive time stepping algorithm
 iadaptTimestep = 1
@@ -573,7 +573,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-6
+depsRel = 1e-8
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -743,7 +743,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 2
+npreadapt = 4
 
 # number of adaptation steps
 nadapt = 0
@@ -755,17 +755,17 @@ dtimeadapt = 0.0
 dstepadapt = 1e-3
 
 # maximum number of refinement levels
-nsubdividemax = 2
+nsubdividemax = 4
 
 # adaptation strategy
 # 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.3
+drefinementTolerance = 1e4
 
 # coarsening tolerance
-dcoarseningTolerance = 0.0
+dcoarseningTolerance = 1e3
 
 
 ################################################################################
