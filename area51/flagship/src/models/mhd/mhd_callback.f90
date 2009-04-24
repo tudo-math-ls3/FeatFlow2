@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> mhd_callback </name>
+!# <name> zpinch_callback </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,30 +9,30 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) mhd_nlsolverCallback
+!# 1.) zpinch_nlsolverCallback
 !#     -> Callback routine for the nonlinear solver
 !#
-!# 2.) mhd_calcVelocityField
+!# 2.) zpinch_calcVelocityField
 !#     -> Calculates the velocity field for the scalar transport model
 !#
-!# 3.) mhd_calcSourceTerm
+!# 3.) zpinch_calcSourceTerm
 !#     -> Calculates the source term
 !#
-!# 4.) mhd_calcLinearizedFCT
+!# 4.) zpinch_calcLinearizedFCT
 !#     -> Calculates the linearized FCT correction
 !#
-!# 5.) mhd_hadaptCallbackScalar2d
+!# 5.) zpinch_hadaptCallbackScalar2d
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in interleave format
 !#
-!# 6.) mhd_hadaptCallbackBlock2d
+!# 6.) zpinch_hadaptCallbackBlock2d
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in block format
 !#
 !# </purpose>
 !##############################################################################
 
-module mhd_callback
+module zpinch_callback
 
   use boundaryfilter
   use collection
@@ -56,12 +56,12 @@ module mhd_callback
   implicit none
 
   private
-  public :: mhd_calcVelocityField
-  public :: mhd_calcSourceTerm
-  public :: mhd_calcTracerIndicator
-  public :: mhd_calcLinearizedFCT
-  public :: mhd_hadaptCallbackScalar2d
-  public :: mhd_hadaptCallbackBlock2d
+  public :: zpinch_calcVelocityField
+  public :: zpinch_calcSourceTerm
+  public :: zpinch_calcTracerIndicator
+  public :: zpinch_calcLinearizedFCT
+  public :: zpinch_hadaptCallbackScalar2d
+  public :: zpinch_hadaptCallbackBlock2d
 
 contains
 
@@ -69,7 +69,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
+  subroutine zpinch_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
                                   rsolution, rsolutionInitial,&
                                   rrhs, rres, istep, ioperationSpec,&
                                   rcollection, istatus, rb)
@@ -189,7 +189,7 @@ contains
 
         case DEFAULT
           call output_line('Invalid system format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'mhd_nlsolverCallback')
+                           OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
           call sys_halt()
         end select
 
@@ -273,13 +273,13 @@ contains
 
     end subroutine calcSourceTermInterleaveFormat
     
-  end subroutine mhd_nlsolverCallback
+  end subroutine zpinch_nlsolverCallback
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_calcVelocityField(rproblemLevel, rsolution, rcollection, nlminOpt)
+  subroutine zpinch_calcVelocityField(rproblemLevel, rsolution, rcollection, nlminOpt)
 
 !<description>
     ! This subroutine calculates the velocity field from the solution
@@ -340,13 +340,13 @@ contains
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
                                      PROBLEV_MSPEC_UPDATE)
 
-  end subroutine mhd_calcVelocityField
+  end subroutine zpinch_calcVelocityField
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_calcSourceTerm(rproblemLevel, rtimestep,&
+  subroutine zpinch_calcSourceTerm(rproblemLevel, rtimestep,&
                                 rsolutionTransport, rsolutionEuler, rcollection)
 
 !<description>
@@ -409,7 +409,7 @@ contains
                                           p_DdataTransport, p_DdataEuler)
     case DEFAULT
       call output_line('Invalid system format!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcSourceTerm')
+                       OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcSourceTerm')
       call sys_halt()
     end select
     
@@ -507,13 +507,13 @@ contains
 
     end subroutine calcSourceTermInterleaveFormat
 
-  end subroutine mhd_calcSourceTerm
+  end subroutine zpinch_calcSourceTerm
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_calcTracerIndicator(rvector, rerror)
+  subroutine zpinch_calcTracerIndicator(rvector, rerror)
 
 !<description>
     ! This subroutine computes the error indicator based on the
@@ -594,13 +594,13 @@ contains
 
     deallocate(p_BisActiveElement)
     
-  end subroutine mhd_calcTracerIndicator
+  end subroutine zpinch_calcTracerIndicator
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, rproblemLevel,&
+  subroutine zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, rproblemLevel,&
                                    rtimestep, rsolutionEuler, rsolutionTransport, rcollection)
 
 !<description>
@@ -1322,13 +1322,13 @@ contains
       end if
     end function minmod
 
-  end subroutine mhd_calcLinearizedFCT
+  end subroutine zpinch_calcLinearizedFCT
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_hadaptCallbackScalar2d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine zpinch_hadaptCallbackScalar2d(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -1378,7 +1378,7 @@ contains
       ! Check if solution is stored in interleave format
       if (rsolutionEuler%nblocks .ne. 1) then
         call output_line('Vector is not in interleave format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_hadaptCallbackScalar2d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'zpinch_hadaptCallbackScalar2d')
         call sys_halt()
       end if
 
@@ -1498,13 +1498,13 @@ contains
 
     end select
     
-  end subroutine mhd_hadaptCallbackScalar2d
+  end subroutine zpinch_hadaptCallbackScalar2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_hadaptCallbackBlock2d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine zpinch_hadaptCallbackBlock2d(rcollection, iOperation, Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -1554,7 +1554,7 @@ contains
       ! Check if solution is stored in interleave format
       if (rsolutionEuler%nblocks .ne. NVAR2D) then
         call output_line('Vector is not in block format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_hadaptCallbackBlock2d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'zpinch_hadaptCallbackBlock2d')
         call sys_halt()
       end if
 
@@ -1677,6 +1677,6 @@ contains
 
     end select
     
-  end subroutine mhd_hadaptCallbackBlock2d
+  end subroutine zpinch_hadaptCallbackBlock2d
 
-end module mhd_callback
+end module zpinch_callback

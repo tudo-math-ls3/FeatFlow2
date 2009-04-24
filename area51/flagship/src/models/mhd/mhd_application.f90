@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> mhd_application </name>
+!# <name> zpinch_application </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -20,30 +20,30 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) mhd_simple
+!# 1.) zpinch_simple
 !#     -> The application's main routine called from the main problem
 !#
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) mhd_parseCmdlArguments
+!# 1.) zpinch_parseCmdlArguments
 !#     -> Parses the list of commandline arguments and overwrites
 !#        parameter values from the parameter files
 !#
-!# 2.) mhd_initProblem
+!# 2.) zpinch_initProblem
 !#     -> Initializes the global problem structure based on the
 !#        parameter settings given by the parameter list
 !#
-!# 3.) mhd_outputSolution
+!# 3.) zpinch_outputSolution
 !#     -> Outputs the solution vector to file in UCD format
 !#
-!# 4.) mhd_solveTransientPrimal
+!# 4.) zpinch_solveTransientPrimal
 !#     -> Solves the primal formulation of the time-dependent 
 !#        simplified MHD equations
 !# </purpose>
 !##############################################################################
 
-module mhd_application
+module zpinch_application
 
   use afcstabilisation
   use boundaryfilter
@@ -62,8 +62,8 @@ module mhd_application
   use hadaptivity
   use linearsystemblock
   use linearsystemscalar
-  use mhd_basic
-  use mhd_callback
+  use zpinch_basic
+  use zpinch_callback
   use paramlist
   use problem
   use solveraux
@@ -82,7 +82,7 @@ module mhd_application
   implicit none
 
   private
-  public :: mhd_simple_app
+  public :: zpinch_app
 
 contains
 
@@ -90,7 +90,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_simple_app(rparlist)
+  subroutine zpinch_app(rparlist)
 
 !<description>
     ! This is the main application for the simplified MHD equations. It
@@ -155,7 +155,7 @@ contains
     
     ! Overwrite global configuration from command line arguments. After
     ! this subroutine has been called, the parameter list remains unchanged.
-    call mhd_parseCmdlArguments(rparlist)
+    call zpinch_parseCmdlArguments(rparlist)
     
     call parlst_getvalue_string(rparlist, 'MHDsimple', 'application_euler', ssectionNameEuler)
     call parlst_getvalue_string(rparlist, 'MHDsimple', 'application_transport', ssectionNameTransport)
@@ -186,7 +186,7 @@ contains
     nlmax = max(solver_getMaximumMultigridlevel(rsolverEuler),&
                 solver_getMaximumMultigridlevel(rsolverTransport))
 
-    call mhd_initProblem(rparlist, 'MHDsimple', nlmin, nlmax,&
+    call zpinch_initProblem(rparlist, 'MHDsimple', nlmin, nlmax,&
                          rproblem, rcollectionEuler, rcollectionTransport)
 
     ! Initialize the individual problem levels
@@ -236,7 +236,7 @@ contains
       !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       ! Solve the primal formulation for the time-dependent problem
       !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      call mhd_solveTransientPrimal(rappDescrEuler, rappDescrTransport, rparlist,&
+      call zpinch_solveTransientPrimal(rappDescrEuler, rappDescrTransport, rparlist,&
                                     ssectionNameEuler, ssectionNameTransport,&
                                     rbdrCondEuler, rbdrCondTransport, rproblem,&
                                     rtimestepEuler, rsolverEuler,&
@@ -244,12 +244,12 @@ contains
                                     rsolutionEuler, rsolutionTransport,&
                                     rcollectionEuler, rcollectionTransport)
 
-      call mhd_outputSolution(rparlist, 'MHDsimple', rproblem%p_rproblemLevelMax,&
+      call zpinch_outputSolution(rparlist, 'MHDsimple', rproblem%p_rproblemLevelMax,&
                               rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
       
     case DEFAULT
       call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'mhd_simple_app')
+                       OU_CLASS_ERROR,OU_MODE_STD,'zpinch_app')
       call sys_halt()
     end select
 
@@ -326,13 +326,13 @@ contains
     call output_line('Scalar transport model')       
     call transp_outputStatistics(rappDescrTransport, rtimerTotal)
 
-  end subroutine mhd_simple_app
+  end subroutine zpinch_app
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_initProblem(rparlist, ssectionName, nlmin, nlmax, rproblem,&
+  subroutine zpinch_initProblem(rparlist, ssectionName, nlmin, nlmax, rproblem,&
                              rcollectionEuler, rcollectionTransport)
 
 !<description>
@@ -436,13 +436,13 @@ contains
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
 
-  end subroutine mhd_initProblem
+  end subroutine zpinch_initProblem
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_outputSolution(rparlist, ssectionName, rproblemLevel,&
+  subroutine zpinch_outputSolution(rparlist, ssectionName, rproblemLevel,&
                                 rsolutionEuler, rsolutionTransport, dtime)
 
 !<description>
@@ -685,13 +685,13 @@ contains
     call ucd_write  (rexport)
     call ucd_release(rexport)
 
-  end subroutine mhd_outputSolution
+  end subroutine zpinch_outputSolution
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_adaptTriangulation(rhadapt, rtriangulationSrc, rindicator,&
+  subroutine zpinch_adaptTriangulation(rhadapt, rtriangulationSrc, rindicator,&
                                     rcollection, rtriangulationDest)
 
 !<description>
@@ -746,29 +746,29 @@ contains
     case (SYSTEM_INTERLEAVEFORMAT)
 
       if (rtriangulationSrc%ndim .eq. NDIM2D) then
-        call mhd_hadaptCallbackScalar2D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
-        call hadapt_performAdaptation(rhadapt, rindicator, rcollection, mhd_hadaptCallbackScalar2D)
+        call zpinch_hadaptCallbackScalar2D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call hadapt_performAdaptation(rhadapt, rindicator, rcollection, zpinch_hadaptCallbackScalar2D)
       else
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_adaptTriangulation')
+                         OU_CLASS_ERROR,OU_MODE_STD,'zpinch_adaptTriangulation')
         call sys_halt()
       end if
 
     case (SYSTEM_BLOCKFORMAT)
 
       if (rtriangulationSrc%ndim .eq. NDIM2D) then
-        call mhd_hadaptCallbackBlock2D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
-        call hadapt_performAdaptation(rhadapt, rindicator, rcollection, mhd_hadaptCallbackBlock2D)
+        call zpinch_hadaptCallbackBlock2D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call hadapt_performAdaptation(rhadapt, rindicator, rcollection, zpinch_hadaptCallbackBlock2D)
       else
         call output_line('Invalid spatial dimension!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_adaptTriangulation')
+                         OU_CLASS_ERROR,OU_MODE_STD,'zpinch_adaptTriangulation')
         call sys_halt()
       end if
       
     case DEFAULT
 
       call output_line('Invalid type of system format!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_adaptTriangulation')
+                         OU_CLASS_ERROR,OU_MODE_STD,'zpinch_adaptTriangulation')
       call sys_halt()
     end select
 
@@ -784,13 +784,13 @@ contains
     ! Generate raw mesh from adaptation structure
     call hadapt_generateRawMesh(rhadapt, p_rtriangulation)
 
-  end subroutine mhd_adaptTriangulation
+  end subroutine zpinch_adaptTriangulation
 
   !*****************************************************************************
 
 !<subroutine>
 
-    subroutine mhd_solveTransientPrimal(rappDescrEuler, rappDescrTransport, rparlist,&
+    subroutine zpinch_solveTransientPrimal(rappDescrEuler, rappDescrTransport, rparlist,&
                                         ssectionNameEuler, ssectionNameTransport,&
                                         rbdrCondEuler, rbdrCondTransport, rproblem,&
                                         rtimestepEuler, rsolverEuler,&
@@ -1012,10 +1012,10 @@ contains
           do ipreadapt = 1, npreadapt
             
             ! Compute the error estimator based on the tracer
-            call mhd_calcTracerIndicator(rsolutionTransport, relementError)
+            call zpinch_calcTracerIndicator(rsolutionTransport, relementError)
 
             ! Perform h-adaptation and update the triangulation structure
-            call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
+            call zpinch_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
                                         relementError, rcollection)
             
             ! Release element-wise error distribution
@@ -1101,7 +1101,7 @@ contains
       
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
-          call mhd_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
+          call zpinch_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
                                   rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
 
       !-------------------------------------------------------------------------
@@ -1131,7 +1131,7 @@ contains
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
+                         OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
         call sys_halt()
       end select
 
@@ -1147,7 +1147,7 @@ contains
       call stat_startTimer(rappDescrTransport%rtimerSolution, STAT_TIMERSHORT)
 
       ! Set velocity field v^{n+1} for scalar model problem
-      call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)
+      call zpinch_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)
 
       ! What time-stepping scheme should be used?
       select case(rtimestepTransport%ctimestepType)
@@ -1166,7 +1166,7 @@ contains
           
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
+                         OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
         call sys_halt()
       end select
       
@@ -1175,7 +1175,7 @@ contains
 
       
       ! Perform conservative FCT postprocessing
-      call mhd_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, p_rproblemLevel,&
+      call zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, p_rproblemLevel,&
                                  rtimestepEuler, rsolutionEuler, rsolutionTransport, rcollectionEuler)
 
 
@@ -1188,7 +1188,7 @@ contains
       ! Start time measurement for solution procedure
       call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
 
-      call mhd_calcSourceTerm(p_rproblemLevel, rtimestepTransport,&
+      call zpinch_calcSourceTerm(p_rproblemLevel, rtimestepTransport,&
                               rsolutionTransport, rsolutionEuler, rcollectionEuler)
 
       ! Stop time measurement for solution procedure
@@ -1214,7 +1214,7 @@ contains
         call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
         
         ! Export the intermediate solution
-        call mhd_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
+        call zpinch_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
                                 rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)        
 
         ! Stop time measurement for post-processing
@@ -1240,7 +1240,7 @@ contains
         call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
         
         ! Compute the error indicator based on the tracer
-        call mhd_calcTracerIndicator(rsolutionTransport, relementError)
+        call zpinch_calcTracerIndicator(rsolutionTransport, relementError)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
@@ -1263,7 +1263,7 @@ contains
           call collct_setvalue_vec(rcollection, 'solutionvectorTransport', rsolutionTransport, .true.)
         
         ! Perform h-adaptation and update the triangulation structure
-        call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
+        call zpinch_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
                                     relementError, rcollection)
         
         ! Release element-wise error distribution
@@ -1330,7 +1330,7 @@ contains
       call grph_releaseGraph(rgraph)
     end if
 
-  end subroutine mhd_solveTransientPrimal
+  end subroutine zpinch_solveTransientPrimal
 
   !*****************************************************************************
   ! AUXILIARY ROUTINES
@@ -1338,7 +1338,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_parseCmdlArguments(rparlist)
+  subroutine zpinch_parseCmdlArguments(rparlist)
 
 !<description>
     ! This subroutine parses the commandline arguments and modifies the
@@ -1418,6 +1418,6 @@ contains
       end select
     end do cmdarg
 
-  end subroutine mhd_parseCmdlArguments
+  end subroutine zpinch_parseCmdlArguments
   
-end module mhd_application
+end module zpinch_application

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> mhd_basic </name>
+!# <name> zpinch_basic </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -10,7 +10,7 @@
 !# </purpose>
 !##############################################################################
 
-module mhd_basic
+module zpinch_basic
 
   use transport_basic
   use euler_basic
@@ -18,7 +18,7 @@ module mhd_basic
   implicit none
 
   private
-  public :: t_mhdSimple
+  public :: t_zpinch
 
 
 !<types>
@@ -27,7 +27,7 @@ module mhd_basic
 
   ! This structure contains all required data to describe an instance
   ! of the simplified magneto hydrodynamic flow benchmark application
-  type t_mhdSimple
+  type t_zpinch
 
     ! Application descriptor for the compressible Euler model
     type(t_euler) :: rappDescrEuler
@@ -35,10 +35,10 @@ module mhd_basic
     ! Application descriptor for the scalar transport model
     type(t_transport) :: rappDescrTransport
     
-  end type t_mhdSimple
+  end type t_zpinch
 
 !</typeblock>
 
 !</types>
 
-end module mhd_basic
+end module zpinch_basic

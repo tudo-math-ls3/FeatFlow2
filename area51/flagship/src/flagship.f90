@@ -13,7 +13,7 @@ program flagship
   use euler_application
   use fparser
   use genoutput
-  use mhd_application
+  use zpinch_application
   use paramlist
   use signal
   use storage
@@ -107,8 +107,8 @@ program flagship
   case('euler')
     call euler_app(rparlist)
 
-  case('mhdsimple')
-    call mhd_simple_app(rparlist)
+  case('zpinch')
+    call zpinch_app(rparlist)
 
   case DEFAULT
     call output_line('Invalid application name!',&
