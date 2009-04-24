@@ -93,6 +93,7 @@ case ${id} in
 			9|13) cpu="pentiumm" core="banias";;
 			14) cpu="coresolo" core="banias";;
 			15) cpu="coreduo" core="core2";;
+			23) cpu="penryn";;
 		    esac
 		    ;;
 		7) 
