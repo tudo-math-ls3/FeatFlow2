@@ -247,8 +247,8 @@ g) SUMMARY: The data flow for executing a benchmark application is
 
       -> The script does basically the same as "make [testcase-file|testID]",
          but beyond that also automagically determines the most
-	 appropriate queue based on 
-	 * configured settings for walltime (hardcoded in the header
+         appropriate queue based on 
+         * configured settings for walltime (hardcoded in the header
            of bin/lido_schedule_tests),
 	 * the necessary number of processes (which is trivially 1 given
 	   that Feat2 supports serial applications only) 
