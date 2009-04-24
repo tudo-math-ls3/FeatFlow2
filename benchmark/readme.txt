@@ -285,20 +285,20 @@ g) SUMMARY: The data flow for executing a benchmark application is
            where "./data/apps_cc2d/master.dat" comes from the 
            "datfile  =" parameter associated to "CC2D_001".
            
-       -> During the execution, the environment variable $LOGFILE
+       -> During the execution, the environment variable $LOGDIR
           points to a unique directory that must receive logfiles.
-          A file named 
-            "$LOGDIR/benchmarkresultfile"
-          must be manually created by the application containing 
-          deterministic values associated to this test case (on the 
-          current architecture with the current build ID). The file 
-          must contain exactly those results that should be compared to
-          reference results.
+          The environment variable $RESULTFILE defines the name of the
+          benchmark log file where the application must write
+          log data to, which is later compared to reference results.
+          So, the application has to write all crucial, deterministic 
+          values associated to this test case (on the current 
+          architecture with the current build ID) to a file named 
+            "$LOGDIR/$RESULTFILE" ( = "$LOGDIR/benchmarkresultfile" )
           
        -> The content of the result file
-            "$LOGDIR/benchmarkresultfile"
+            "$LOGDIR/$RESULTFILE"
           is appended to the file
-            "$LOGDIR/benchmarkresultfile.all-level". 
+            "$LOGDIR/$RESULTFILE.all-level". 
           After looping over all refinement levels given in $MGLEVELS
           the resulting file is stored to the result directory and
           named:
@@ -307,9 +307,9 @@ g) SUMMARY: The data flow for executing a benchmark application is
           For example, the "CC2D_001" test ID on architecture
           "cc2d-opteron-linux" run exactly one time on level 4 and
           generates the file
-            "$LOGDIR/benchmarkresultfile"
+            "$LOGDIR/$RESULTFILE"
           which is copied to
-            "$LOGDIR/benchmarkresultfile.all-level"
+            "$LOGDIR/$RESULTFILE.all-level"
           and subsequently stored under
             "results/cc2d-opteron-linux/testCC2D_001.results".
 
