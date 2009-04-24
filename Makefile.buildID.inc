@@ -107,6 +107,10 @@ ifeq ($(strip $(ID)), pc-opteronx2-linux)
 ID:=$(strip $(ID))-intel-goto
 endif
 
+ifeq ($(strip $(ID)), pc64-penryn-linux)
+ID:=$(strip $(ID))-intel-goto
+endif
+
 ifeq ($(strip $(ID)), pc-pentium3-linux)
 ID:=$(strip $(ID))-gcc-blas
 endif
