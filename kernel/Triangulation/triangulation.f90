@@ -839,7 +839,7 @@ module triangulation
     ! Bit 28: ItwistIndexEdges +
     !         ItwistIndexFaces       is a copy of another structure
     ! Bit 29: ImacroNodalProperty    is a copy of another structure
-    integer(I32)             :: iduplicationFlag
+    integer(I32)             :: iduplicationFlag = 0
   
     ! Dimension of the triangulation.
     ! NDIM1D=1D triangulation, NDIM2D=2D triangulation
