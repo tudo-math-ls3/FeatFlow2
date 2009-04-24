@@ -140,6 +140,8 @@ module euler_callback2d
   public :: euler_hadaptCallbackScalar2d
   public :: euler_hadaptCallbackBlock2d
 
+  public :: euler_calcMatrixRusanovDEBUG2d
+
 contains
   
   !*****************************************************************************
@@ -2817,5 +2819,92 @@ contains
     end select
     
   end subroutine euler_hadaptCallbackBlock2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcMatrixRusanovDEBUG2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+
+!<description>
+    ! This subroutine computes the diagonal of the Galerkin matrices
+    ! and applies the Rusanov artificial viscosities in 2D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(IN) :: U_i,U_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+
+    ! scaling parameter
+    real(DP), intent(IN) :: dscale
+
+    ! node numbers
+    integer, intent(IN) :: i, j
+!</input>
+
+!<output>
+    ! local Roe matrices
+    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP) :: aux,hi,hj,ui,uj,vi,vj,ci,cj,Ei,Ej,mi,mj,pi,pj
+    
+    
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
+    uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
+
+    ! Compute Galerkin coefficient K_ij
+    K_ij(1) = 0.0_DP
+    K_ij(2) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
+    K_ij(3) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
+    K_ij(4) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
+
+    ! Compute Galerkin coefficient K_ji
+    K_ji(1) = 0.0_DP
+    K_ji(2) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
+    K_ji(3) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
+    K_ji(4) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+
+!!$    mi = U_i(2)*C_ji(1)+U_i(3)*C_ji(2)
+!!$    mj = U_j(2)*C_ij(1)+U_j(3)*C_ij(2)
+!!$
+!!$    if (mi*mj > 1e-8) then
+
+!!$      ! Compute auxiliary quantities
+!!$      hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+!!$      hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+      
+      ci = (GAMMA-1)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi))
+      cj = (GAMMA-1)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj))
+
+      if (ci < 0 .or. cj < 0) then
+        
+        D_ij = 0
+
+      else
+
+        ci = sqrt(ci); cj = sqrt(cj)
+
+        ! Compute dissipation tensor D_ij
+        aux = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
+                   abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
+
+        D_ij = aux*dscale
+
+      end if
+
+!!$    else
+!!$
+!!$      D_ij = 0
+!!$
+!!$    end if
+
+  end subroutine euler_calcMatrixRusanovDEBUG2d
  
 end module euler_callback2d
