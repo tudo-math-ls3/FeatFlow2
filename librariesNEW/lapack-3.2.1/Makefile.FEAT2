@@ -182,9 +182,9 @@ $(LAST_FILE_FROM_LAPACK_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_LAPACK_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_LAPACK_TARBALL):
 	@$(call UNPACK)
-#	@echo "# Patching LAPACK 3.2 sources to get rid of non-Fortran 77 'exit' occurrences..."
-#	patch -p1 < ../lapack-3.2_pgi-6.x-8.x.patch
-#	@echo "# Sources patched."
+	@echo "# Patching LAPACK 3.2.1 sources to get rid of non-Fortran 77 'exit' occurrences..."
+	patch -p1 < ../lapack-3.2.1_pgi-6.x-8.x.patch
+	@echo "# Sources patched."
 
 
 
