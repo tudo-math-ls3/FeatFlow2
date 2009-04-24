@@ -249,7 +249,7 @@ contains
       
     case DEFAULT
       call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'zpinch_simple_app')
+                       OU_CLASS_ERROR,OU_MODE_STD,'zpinch_app')
       call sys_halt()
     end select
 
@@ -326,7 +326,7 @@ contains
     call output_line('Scalar transport model')       
     call transp_outputStatistics(rappDescrTransport, rtimerTotal)
 
-  end subroutine zpinch_simple_app
+  end subroutine zpinch_app
   
   !*****************************************************************************
 
