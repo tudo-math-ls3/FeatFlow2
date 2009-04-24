@@ -7,13 +7,13 @@
 ################################################################################
 
 simportdatafiles(3) =
-  'data/mhd/default.dat'
+  'data/zpinch/default.dat'
   'data/solverdefault.dat'
-  'data/mhd/solverdefault.dat'
+  'data/zpinch/solverdefault.dat'
 
 ################################################################################
 
-application = mhdsimple
+application = zpinch
 
 
 ################################################################################
@@ -52,7 +52,7 @@ output = Output
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/mhd/2d/z-pinch.indat
+indatfile = data/zpinch/2d/z-pinch.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_euler_primal
@@ -170,7 +170,7 @@ istabilisation = 1
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/mhd/2d/z-pinch.indat
+indatfile = data/zpinch/2d/z-pinch.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_transport_primal
