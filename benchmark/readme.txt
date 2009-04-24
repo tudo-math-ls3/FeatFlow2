@@ -250,12 +250,12 @@ g) SUMMARY: The data flow for executing a benchmark application is
          appropriate queue based on 
          * configured settings for walltime (hardcoded in the header
            of bin/lido_schedule_tests),
-	 * the necessary number of processes (which is trivially 1 given
-	   that Feat2 supports serial applications only) 
+         * the necessary number of processes (which is trivially 1 given
+           that Feat2 supports serial applications only) 
          * the interconnect (trivial for Feat2 as well: ethernet)
          Then, the script tries very hard to submit the job, in
-	 particular in case the queue is so full that no more jobs are
-	 accepted at first.
+         particular in case the queue is so full that no more jobs are
+         accepted at first.
 
 
    Summary to set up and run benchmark in non-queueing environments:
