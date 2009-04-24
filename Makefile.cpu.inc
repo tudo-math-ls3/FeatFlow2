@@ -1820,6 +1820,40 @@ endif
 
 
 
+######################### Penryn 64 bit (Xeon E5450) #########################
+
+ifeq ($(call match,$(ID),pc64-penryn-linux-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifneq (,$(findstring 10.1.,$(INTELVERSION)))
+CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
+CFLAGSF77     := -xT $(CFLAGSF77)
+CFLAGSF90     := -xT $(CFLAGSF90)
+CFLAGSC       := -xT $(CFLAGSC)
+CFLAGSCXX     := -xT $(CFLAGSCXX)
+LDFLAGS       := -xT $(LDFLAGS)
+endif
+ifneq (,$(findstring 11.0.0,$(INTELVERSION)))
+CFLAGSF77LIBS := -xSSE4.1 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE4.1 $(CFLAGSF77)
+CFLAGSF90     := -xSSE4.1 $(CFLAGSF90)
+CFLAGSC       := -xSSE4.1 $(CFLAGSC)
+CFLAGSCXX     := -xSSE4.1 $(CFLAGSCXX)
+LDFLAGS       := -xSSE4.1 $(LDFLAGS)
+endif
+endif
+endif
+
+
+ifeq ($(call match,$(ID),pc64-penryn-linux-.*-goto.*),yes)
+# Use Goto BLAS
+include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+
+
 ############################### Sun Ultrasparc v8 #############################
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-g95-blas.*),yes)
