@@ -2,7 +2,7 @@
 
 ################################################################################
 #                                                                              #
-#             Default parameters for simplified MHD application                #
+#             Default parameters for Z-pinch application                       #
 #                                                                              #
 ################################################################################
 
@@ -102,7 +102,7 @@ dintegralexponent = 0.175
 dderivativeexponent = 0.01
 
 ################################################################################
-[zpinch]
+[Zpinch]
 ################################################################################
 
 # Position of the discretisation in the array of discretisations
