@@ -9,8 +9,8 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) transp_setVelocityField2d
-!#     -> Sets the velocity field internally
+!# 1.) transp_setVariable1d
+!#     -> Sets global variables for external data, e.g., velocity fields in 2D
 !#
 !# 2.) transp_calcPrimalConvConst2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
@@ -46,7 +46,7 @@ module transport_callback2d
   implicit none
 
   private
-  public :: transp_setVelocityField2d
+  public :: transp_setVariable2d
   public :: transp_calcMatrixPrimalConst2d
   public :: transp_calcMatrixDualConst2d
   public :: transp_calcMatrixPrimalBurgersSpT2d
@@ -57,14 +57,17 @@ module transport_callback2d
 !<globals>
 
   !*****************************************************************
-  ! Pointers to the ACTIVE velocity field.
+  ! Pointers to external data vectors.
   !
-  ! This global variable is not good programming style but it is the
+  ! Using global variables is not good programming style but it is the
   ! only way to allow for an efficient access to the velocity data
   ! from within the callback routines which are called repeatedly
 
-  real(DP), dimension(:), pointer, save :: p_DvelocityX => null()
-  real(DP), dimension(:), pointer, save :: p_DvelocityY => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable1 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable2 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable3 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable4 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable5 => null()
 
 !</globals>
 
@@ -74,33 +77,39 @@ contains
 
 !<subroutine>
 
-  subroutine transp_setVelocityField2d(rvector)
+  subroutine transp_setVariable2d(rvector, ivariable)
 
 !<description>
-    ! This subroutine sets the global pointer to the velocity vector
-    ! on the given problem level structure. Note that this subroutine
-    ! will not work of multiple convection-diffusion-reaction problems
-    ! are solved in parallel since there is only one global pointer.
+    ! This subroutine sets one of the the global pointers to the given vector.
 !</description>
 
 !<input>
-    ! velocity field
-    type(t_vectorBlock), intent(IN) :: rvector
+    ! scalar vector
+    type(t_vectorScalar), intent(IN) :: rvector
+
+    ! variable number
+    integer, intent(IN) :: ivariable
 !</input>
 !</subroutine>
 
-    
-    if (rvector%nblocks .lt. 2) then
-      call output_line('Vectors is not a valid velocity field',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_setVelocityField2d')
+    select case(ivariable)
+    case (1)
+      call lsyssc_getbase_double(rvector, p_Dvariable1)
+    case (2)
+      call lsyssc_getbase_double(rvector, p_Dvariable2)
+    case (3)
+      call lsyssc_getbase_double(rvector, p_Dvariable3)
+    case (4)
+      call lsyssc_getbase_double(rvector, p_Dvariable4)
+    case (5)
+      call lsyssc_getbase_double(rvector, p_Dvariable5)
+    case DEFAULT
+      call output_line('Invalid variable number!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable2d')
       call sys_halt()
-    end if
-
-    ! Set x- and y-components of velocity vields
-    call lsyssc_getbase_double(rvector%RvectorBlock(1), p_DvelocityX)
-    call lsyssc_getbase_double(rvector%RvectorBlock(2), p_DvelocityY)
-
-  end subroutine transp_setVelocityField2d
+    end select
+    
+  end subroutine transp_setVariable2d
 
   !*****************************************************************************
   
@@ -111,7 +120,7 @@ contains
 !<description>
     ! This subroutine computes the convective matrix coefficients
     ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 1D.
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
     
@@ -133,8 +142,8 @@ contains
 !</subroutine>
 
     ! Compute convective coefficients
-    k_ij = -p_DvelocityX(j)*C_ij(1)-p_DvelocityY(j)*C_ij(2)
-    k_ji = -p_DvelocityX(i)*C_ji(1)-p_DvelocityY(i)*C_ji(2)
+    k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
+    k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
 
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
@@ -150,7 +159,7 @@ contains
 !<description>
     ! This subroutine computes the convective matrix coefficients
     ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 1D.
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
     
@@ -172,8 +181,8 @@ contains
 !</subroutine>
 
     ! Compute convective coefficients
-    k_ij = p_DvelocityX(j)*C_ij(1)+p_DvelocityY(j)*C_ij(2)
-    k_ji = p_DvelocityX(i)*C_ji(1)+p_DvelocityY(i)*C_ji(2)
+    k_ij = p_Dvariable1(j)*C_ij(1)+p_Dvariable2(j)*C_ij(2)
+    k_ji = p_Dvariable1(i)*C_ji(1)+p_Dvariable2(i)*C_ji(2)
 
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
@@ -304,8 +313,74 @@ contains
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
     
   end subroutine transp_calcMatrixPrimalBurgers2d
+  
+  !*****************************************************************************
 
+!<subroutine>
 
+  pure subroutine transp_calcMatrixZPinchInterleave2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for the externally prescribed velocity field resulting from the a constant velocity vector of the 
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+    
+!<input>
+    ! solution vector
+    real(DP), intent(IN) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(IN) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(OUT) :: k_ij,k_ji,d_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    integer :: idx,jdx
+
+    ! Compute convective coefficients
+    k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
+    k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
+
+    ! TEST CODE >>>
+    
+    ! Compute index positions
+    idx = 4*(i-1)
+    jdx = 4*(j-1)
+
+    ! Compute velocities and energy
+    ui = p_Dvariable1(idx+2)/p_Dvariable1(idx+1)
+    vi = p_Dvariable1(idx+3)/p_Dvariable1(idx+1)
+    Ei = p_Dvariable1(idx+4)/p_Dvariable1(idx+1)
+
+    uj = p_Dvariable1(jdx+2)/p_Dvariable1(jdx+1)
+    vj = p_Dvariable1(jdx+3)/p_Dvariable1(jdx+1)
+    Ej = p_Dvariable1(jdx+4)/p_Dvariable1(jdx+1)
+
+    ! Compute enthalpy
+    hi = 1.4*Ei + (1-1.4)*0.5*(ui*ui+vi*vi)
+    hj = 1.4*Ej + (1-1.4)*0.5*(uj*uj+vj*vj)
+
+    ! Compute speed of sound
+    ci = sqrt(max((1.4-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max((1.4-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+
+    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))*cj,&
+                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)*C_ji(1)+C_ji(2)*C_ji(2))*ci )
+
+    ! TEST CODE <<<
+
+  end subroutine transp_calcMatrixZPinchInterleave2d
   
   !*****************************************************************************
 

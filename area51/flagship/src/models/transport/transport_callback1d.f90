@@ -9,8 +9,8 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) transp_setVelocityField1d
-!#     -> Sets the velocity field internally
+!# 1.) transp_setVariable1d
+!#     -> Sets global variables for external data, e.g., velocity fields in 1D
 !#
 !# 2.) transp_calcMatrixPrimalConst1d
 !#     -> Calculates the transport coefficients for linear convection in 1D
@@ -42,7 +42,7 @@ module transport_callback1d
   implicit none
 
   private
-  public :: transp_setVelocityField1d
+  public :: transp_setVariable1d
   public :: transp_calcMatrixPrimalConst1d
   public :: transp_calcMatrixDualConst1d
   public :: transp_calcMatrixPrimalBurgers1d
@@ -52,13 +52,17 @@ module transport_callback1d
 !<globals>
 
   !*****************************************************************
-  ! Pointers to the ACTIVE velocity field.
+  ! Pointers to external data vectors.
   !
-  ! This global variable is not good programming style but it is the
+  ! Using global variables is not good programming style but it is the
   ! only way to allow for an efficient access to the velocity data
   ! from within the callback routines which are called repeatedly
 
-  real(DP), dimension(:), pointer, save :: p_DvelocityX => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable1 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable2 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable3 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable4 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable5 => null()
 
 !</globals>
 
@@ -68,25 +72,39 @@ contains
 
 !<subroutine>
 
-  subroutine transp_setVelocityField1d(rvector)
+  subroutine transp_setVariable1d(rvector, ivariable)
 
 !<description>
-    ! This subroutine sets the global pointer to the velocity vector
-    ! on the given problem level structure. Note that this subroutine
-    ! will not work of multiple convection-diffusion-reaction problems
-    ! are solved in parallel since there is only one global pointer.
+    ! This subroutine sets one of the the global pointers to the given vector.
 !</description>
 
 !<input>
-    ! velocity field
-    type(t_vectorBlock), intent(IN) :: rvector
+    ! scalar vector
+    type(t_vectorScalar), intent(IN) :: rvector
+
+    ! variable number
+    integer, intent(IN) :: ivariable
 !</input>
 !</subroutine>
 
-    ! Set x-component of velocity vields
-    call lsyssc_getbase_double(rvector%RvectorBlock(1), p_DvelocityX)
-
-  end subroutine transp_setVelocityField1d
+    select case(ivariable)
+    case (1)
+      call lsyssc_getbase_double(rvector, p_Dvariable1)
+    case (2)
+      call lsyssc_getbase_double(rvector, p_Dvariable2)
+    case (3)
+      call lsyssc_getbase_double(rvector, p_Dvariable3)
+    case (4)
+      call lsyssc_getbase_double(rvector, p_Dvariable4)
+    case (5)
+      call lsyssc_getbase_double(rvector, p_Dvariable5)
+    case DEFAULT
+      call output_line('Invalid variable number!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable1d')
+      call sys_halt()
+    end select
+    
+  end subroutine transp_setVariable1d
 
   !*****************************************************************************
   
@@ -119,8 +137,8 @@ contains
 !</subroutine>
 
     ! Compute convective coefficients
-    k_ij = -p_DvelocityX(j)*C_ij(1)
-    k_ji = -p_DvelocityX(i)*C_ji(1)
+    k_ij = -p_Dvariable1(j)*C_ij(1)
+    k_ji = -p_Dvariable1(i)*C_ji(1)
 
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
@@ -158,8 +176,8 @@ contains
 !</subroutine>
 
     ! Compute convective coefficients
-    k_ij = p_DvelocityX(j)*C_ij(1)
-    k_ji = p_DvelocityX(i)*C_ji(1)
+    k_ij = p_Dvariable1(j)*C_ij(1)
+    k_ji = p_Dvariable1(i)*C_ji(1)
 
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)

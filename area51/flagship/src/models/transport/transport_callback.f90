@@ -56,13 +56,10 @@ module transport_callback
   use boundaryfilter
   use collection
   use flagship_basic
-!  use flagship_callback
   use fparser
   use fsystem
   use genoutput
-!  use graph
   use groupfemscalar
-!  use hadaptaux
   use linearsystemblock
   use linearsystemscalar
   use problem
@@ -2381,13 +2378,16 @@ contains
     ! What spatial dimension are we?
     select case(rvector%nblocks)
     case (NDIM1D)
-      call transp_setVelocityField1d(rvector)
+      call transp_setVariable1d(rvector%RvectorBlock(1), 1)
 
     case (NDIM2D)
-      call transp_setVelocityField2d(rvector)
+      call transp_setVariable2d(rvector%RvectorBlock(1), 1)
+      call transp_setVariable2d(rvector%RvectorBlock(2), 2)
 
     case (NDIM3D)
-      call transp_setVelocityField3d(rvector)
+      call transp_setVariable3d(rvector%RvectorBlock(1), 1)
+      call transp_setVariable3d(rvector%RvectorBlock(2), 2)
+      call transp_setVariable3d(rvector%RvectorBlock(3), 3)
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
