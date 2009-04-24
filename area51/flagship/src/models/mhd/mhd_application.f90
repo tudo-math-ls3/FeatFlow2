@@ -14,9 +14,8 @@
 !# two-level theta-scheme is employed, whereby $\theta\in(0,1]$.
 !#
 !# Dynamic mesh adaptation is based on the red-green strategy, whereby
-!# mixed triangulations are supported. Error estimation can either be
-!# accomplished using gradient-recovery techniques or following goal-
-!# oriented strategies.
+!# mixed triangulations are supported. Error estimation is based on the
+!# scalar tracer quantity required for evaluating the source term.
 !#
 !#
 !# The following routines are available:
@@ -413,8 +412,8 @@ contains
 
     ! Initialize problem structure
     call problem_initProblem(rproblemDescriptor, rproblem)
-
     
+
     ! Initialize the stabilisation structure
     convectionAFC = collct_getvalue_int(rcollectionTransport, 'convectionAFC')
     inviscidAFC   = collct_getvalue_int(rcollectionEuler, 'inviscidAFC')
@@ -1012,15 +1011,8 @@ contains
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
             
-!!$            ! Compute the error estimator using recovery techniques
-!!$            call transp_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-!!$                                              rsolutionTransport, rtimestepEuler%dinitialTime,&
-!!$                                              relementError, derror)
-
-            ! Compute the error estimator using recovery techniques
-            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
-                                             relementError, derror)
+            ! Compute the error estimator based on the tracer
+            call mhd_calcTracerIndicator(rsolutionTransport, relementError)
 
             ! Perform h-adaptation and update the triangulation structure
             call mhd_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
@@ -1156,7 +1148,6 @@ contains
 
       ! Set velocity field v^{n+1} for scalar model problem
       call mhd_calcVelocityField(p_rproblemLevel, rsolutionEuler, rcollectionTransport)
-      call transp_setVariable2d(rsolutionEuler)
 
       ! What time-stepping scheme should be used?
       select case(rtimestepTransport%ctimestepType)
@@ -1183,7 +1174,7 @@ contains
       call stat_stopTimer(rappDescrTransport%rtimerSolution)
 
       
-      ! Perform characteristic FCT postprocessing
+      ! Perform conservative FCT postprocessing
       call mhd_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, p_rproblemLevel,&
                                  rtimestepEuler, rsolutionEuler, rsolutionTransport, rcollectionEuler)
 
@@ -1242,32 +1233,18 @@ contains
         dtimeAdapt = dtimeAdapt + dstepAdapt
 
         !-----------------------------------------------------------------------
-        ! Perform recovery-based error estimation
+        ! Perform error indication
         !-----------------------------------------------------------------------
         
-!!$        ! Start time measurement for error estimation
-!!$        call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
-!!$        
-!!$        ! Compute the error estimator using recovery techniques
-!!$        call transp_estimateRecoveryError(rparlist, ssectionnameTransport, p_rproblemLevel,&
-!!$                                          rsolutionTransport, rtimestepTransport%dTime,&
-!!$                                          relementError, derror)
-!!$        
-!!$        ! Stop time measurement for error estimation
-!!$        call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
-
-
         ! Start time measurement for error estimation
-        call stat_startTimer(rappDescrEuler%rtimerErrorEstimation, STAT_TIMERSHORT)
+        call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
         
-        ! Compute the error estimator using recovery techniques
-        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-                                         rsolutionEuler, rtimestepEuler%dTime,&
-                                         relementError, derror)
+        ! Compute the error indicator based on the tracer
+        call mhd_calcTracerIndicator(rsolutionTransport, relementError)
         
         ! Stop time measurement for error estimation
-        call stat_stopTimer(rappDescrEuler%rtimerErrorEstimation)
-
+        call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
+        
         !-------------------------------------------------------------------------
         ! Perform h-adaptation
         !-------------------------------------------------------------------------
