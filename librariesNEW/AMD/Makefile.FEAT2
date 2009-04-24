@@ -120,8 +120,8 @@ $(OBJDIR)/libamdf77.a: $(AMDF77)
 # standard FEAT2 lock file mechanism.
 include ../create_library.mk
 $(OBJDIR)/libamd.a:  LOCKFILE = ../LOCK.creating.libamd.a
-$(OBJDIR)/libamd.a:  WAITTIME = 2
-$(OBJDIR)/libamd.a:  RETRIES  = 10
+$(OBJDIR)/libamd.a:  WAITTIME = 10
+$(OBJDIR)/libamd.a:  RETRIES  = 24
 $(OBJDIR)/libamd.a: $(OBJDIR)/amd_global.o $(AMDI) $(AMDL)
 	@$(CREATE_LIB)
 
@@ -192,8 +192,8 @@ $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
 $(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2 sources"
 $(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = ../AMD-2.2.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.tar.gz
-$(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 3
-$(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 10
+$(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 10
+$(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_AMD_TARBALL):
 	@$(call UNPACK)
 
@@ -214,8 +214,8 @@ SRC_UFCONFIG = $(UFCONFIG)
 $(UFCONFIG):  NAME     = "UFconfig 3.1.0 sources"
 $(UFCONFIG):  TARBALL  = ../UFconfig-3.1.0.tar.gz
 $(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.1.0.tar.gz
-$(UFCONFIG):  WAITTIME = 1
-$(UFCONFIG):  RETRIES  = 10
+$(UFCONFIG):  WAITTIME = 10
+$(UFCONFIG):  RETRIES  = 24
 $(UFCONFIG):
 	@$(call UNPACK)
 	

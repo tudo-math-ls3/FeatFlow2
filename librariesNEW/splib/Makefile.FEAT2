@@ -37,8 +37,8 @@ OBJS = $(patsubst %.f, $(OBJDIR)/%.o, $(notdir $(SRCLIST)))
 # standard FEAT2 lock file mechanism.
 include ../create_library.mk
 $(OBJDIR)/libsplib.a:  LOCKFILE = ../LOCK.creating.libsplib.a
-$(OBJDIR)/libsplib.a:  WAITTIME = 2
-$(OBJDIR)/libsplib.a:  RETRIES  = 10
+$(OBJDIR)/libsplib.a:  WAITTIME = 10
+$(OBJDIR)/libsplib.a:  RETRIES  = 24
 $(OBJDIR)/libsplib.a: $(OBJS)
 	@$(CREATE_LIB)
 
@@ -112,8 +112,8 @@ $(SRC_SPLIB): $(LAST_FILE_FROM_SPLIB_TARBALL)
 $(LAST_FILE_FROM_SPLIB_TARBALL):  NAME     = "SPLIB sources"
 $(LAST_FILE_FROM_SPLIB_TARBALL):  TARBALL  = ../splib.tar.gz
 $(LAST_FILE_FROM_SPLIB_TARBALL):  LOCKFILE = ../LOCK.unpack.splib.tar.gz
-$(LAST_FILE_FROM_SPLIB_TARBALL):  WAITTIME = 3
-$(LAST_FILE_FROM_SPLIB_TARBALL):  RETRIES  = 10
+$(LAST_FILE_FROM_SPLIB_TARBALL):  WAITTIME = 10
+$(LAST_FILE_FROM_SPLIB_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_SPLIB_TARBALL):
 	@$(call UNPACK)
 	@echo "# Patching SPLIB sources to get rid of an unused variable declaration causing a"
