@@ -58,6 +58,7 @@ module mhd_callback
   private
   public :: mhd_calcVelocityField
   public :: mhd_calcSourceTerm
+  public :: mhd_calcTracerIndicator
   public :: mhd_calcLinearizedFCT
   public :: mhd_hadaptCallbackScalar2d
   public :: mhd_hadaptCallbackBlock2d
@@ -323,7 +324,6 @@ contains
       call lsysbl_resizeVectorBlock(&
           rproblemLevel%rvectorBlock(velocityfield), neq, .true.)
     end if
-
     
     ! Set x-velocity
     call euler_getVariable(rsolution, 'velocity_x',&
@@ -332,6 +332,9 @@ contains
     ! Set y-velocity
     call euler_getVariable(rsolution, 'velocity_y',&
         rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
+
+    ! Set global solution vector as external vector for the transport model
+    call transp_setVariable2d(rsolution%RvectorBlock(1), 3)
 
     ! Set update notification in problem level structure
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
@@ -510,6 +513,93 @@ contains
 
 !<subroutine>
 
+  subroutine mhd_calcTracerIndicator(rvector, rerror)
+
+!<description>
+    ! This subroutine computes the error indicator based on the
+    ! magnitude of the tracer quantity
+!</description>
+
+!<input>
+    ! solution vector
+    type(t_vectorBlock), intent(IN) :: rvector
+!</input>
+      
+!<inputoutput>
+    ! local error distribution
+    type(t_vectorScalar), intent(INOUT) :: rerror
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_Ddata, p_Derror
+    integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
+    logical, dimension(:), pointer :: p_BisActiveElement
+    integer :: iel,jel,ive,ivt,iprotectLayer
+    
+    ! Set pointer to the underlying triangulation
+    p_rtriangulation => rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
+    
+    ! Create empty error
+    call lsyssc_createVector(rerror, p_rtriangulation%NEL, .true.)
+    
+    ! Set pointers
+    call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
+    call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int2D(p_rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+    call lsysbl_getbase_double(rvector, p_Ddata)
+    call lsyssc_getbase_double(rerror, p_Derror)
+    
+    ! Compute the mean value in each elements
+    do iel = 1, p_rtriangulation%NEL
+      do ive = 1, tria_getNVE(p_IverticesAtElement, iel)
+        ivt = p_IverticesAtElement(ive, iel)
+        p_Derror(iel) = p_Derror(iel) + p_Ddata(ivt)
+      end do
+    end do
+
+    ! Scale by the number of vertices
+    do iel = 1, p_rtriangulation%NEL
+      p_Derror(iel) = p_Derror(iel) / tria_getNVE(p_IverticesAtElement, iel)
+    end do
+
+    ! Add protection layers
+    allocate(p_BisActiveElement(p_rtriangulation%NEL))
+    
+    do iprotectLayer = 1, 10
+
+      p_BisActiveElement = .false.
+
+      do iel = 1, p_rtriangulation%NEL
+
+        if (p_BisactiveElement(iel)) cycle
+        if (p_Derror(iel) .le. 1e4) cycle
+
+        do ive = 1, tria_getNVE(p_IverticesAtElement, iel)
+          jel = p_IneighboursAtElement(ive, iel)
+          if (jel .eq. 0) cycle
+          if (p_BisactiveElement(jel)) then
+            p_Derror(jel) = max(p_Derror(jel), p_Derror(iel))
+          else
+            if (p_Derror(jel) .lt. 1e4) then
+              p_Derror(jel) = max(p_Derror(jel), p_Derror(iel))
+              p_BisactiveElement(jel) = .true.
+            end if
+          end if
+        end do
+      end do
+    end do
+
+    deallocate(p_BisActiveElement)
+    
+  end subroutine mhd_calcTracerIndicator
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine mhd_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, rproblemLevel,&
                                    rtimestep, rsolutionEuler, rsolutionTransport, rcollection)
 
@@ -614,7 +704,6 @@ contains
                              NVAR2D, nedge, p_ML, p_fluxEuler, p_fluxEuler0, 1, p_alpha, p_solEuler)
     call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
                              NVAR2D, nedge, p_ML, p_fluxEuler, p_fluxEuler0, 4, p_alpha, p_solEuler)
-
     call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
                              1, nedge, p_ML, p_fluxTransport, p_fluxTransport0, 1, p_alpha, p_solTransport)
 
@@ -633,53 +722,6 @@ contains
     call bdrf_filterVectorExplicit(rbdrCondTransport, rproblemLevel%rtriangulation,&
                                    rsolutionTransport, rtimestep%dTime,&
                                    rproblemLevel%p_rproblem%rboundary)
-
-!!$    ! >>> NON_SYNCHRONIZED IMPLEMENTATION <<<
-!!$
-!!$    ! Initialize alpha with ones
-!!$    p_alpha = 1.0_DP
-!!$      
-!!$    ! Build the fluxes
-!!$    call buildFluxCons2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-!!$                         NVAR2D, nedge, p_solEuler, rtimestep%dStep,&
-!!$                         p_MC, p_ML, p_Cx, p_Cy, p_DataEuler, p_fluxEuler, p_fluxEuler0)
-!!$
-!!$    ! Build the correction factors
-!!$    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-!!$                             NVAR2D, nedge, p_ML, p_fluxEuler, p_fluxEuler0, 1, p_alpha, p_solEuler)
-!!$    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-!!$                             NVAR2D, nedge, p_ML, p_fluxEuler, p_fluxEuler0, 4, p_alpha, p_solEuler)
-!!$
-!!$    ! Apply correction to low-order solutions
-!!$    call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-!!$                         NVAR2D, nedge, p_ML, p_fluxEuler, p_alpha, p_DataEuler, p_solEuler)
-!!$
-!!$    ! Set boundary conditions explicitly
-!!$    call bdrf_filterVectorExplicit(rbdrCondEuler, rproblemLevel%rtriangulation,&
-!!$                                   rsolutionEuler, rtimestep%dTime,&
-!!$                                   rproblemLevel%p_rproblem%rboundary,&
-!!$                                   euler_calcBoundaryvalues2d)
-!!$
-!!$    ! Initialize alpha with ones
-!!$    p_alpha = 1.0_DP
-!!$
-!!$    ! Build the fluxes
-!!$    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-!!$                     nedge, p_solTransport, rtimestep%dStep,&
-!!$                     p_MC, p_ML, p_Cx, p_Cy, p_DataTransport, p_fluxTransport, p_fluxTransport0)
-!!$
-!!$    ! Build the correction factors
-!!$    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-!!$                             1, nedge, p_ML, p_fluxTransport, p_fluxTransport0, 1, p_alpha, p_solTransport)
-!!$
-!!$    ! Apply correction to low-order solutions
-!!$    call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-!!$                         1, nedge, p_ML, p_fluxTransport, p_alpha, p_DataTransport, p_solTransport)
-!!$
-!!$    ! Set boundary conditions explicitly
-!!$    call bdrf_filterVectorExplicit(rbdrCondTransport, rproblemLevel%rtriangulation,&
-!!$                                   rsolutionTransport, rtimestep%dTime,&
-!!$                                   rproblemLevel%p_rproblem%rboundary)
     
     ! Release flux vectors
     call storage_free(h_Ksep)
@@ -900,7 +942,8 @@ contains
       
       ! local variables
       real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
-      real(DP) :: f_ij,f0_ij,diff,aux,u_ij,v_ij,p
+      real(DP), dimension(NVAR) :: Cdiff
+      real(DP) :: f_ij,f0_ij,diff,diff_ij,diff_ji,aux,p_ij,p_ji,p0_ij,p0_ji,u_i,u_j,v_i,v_j,r_i,r_j
       integer :: ij,ji,i,j,iedge
 
       allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
@@ -924,32 +967,22 @@ contains
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
           
-          select case(ivar)
-          case default
-            
-            f_ij = flux(ivar,iedge)
-            diff = u(ivar,j)-u(ivar,i)
-            
-          case (4)
-            
-            u_ij = (u(2,i)+u(2,j)) / (u(1,i)+u(1,j))
-            v_ij = (u(3,i)+u(3,j)) / (u(1,i)+u(1,j))
-
-!!$            u_ij = 0.5_DP * (u(2,i)/u(1,i)+u(2,j)/u(1,j))
-!!$            v_ij = 0.5_DP * (u(3,i)/u(1,i)+u(3,j)/u(1,j))
-
-            f_ij = (GAMMA-1) * (flux(4, iedge) + &
-                                0.5*(u_ij*u_ij + v_ij*v_ij)*flux(1, iedge) -&
-                                u_ij*flux(2, iedge) - v_ij*flux(3, iedge))
-
-            diff = (GAMMA-1) * ((u(4,j)-u(4,i)) + &
-                                0.5*(u_ij*u_ij + v_ij*v_ij)*(u(1,j)-u(1,i)) -&
-                                u_ij*(u(2,j)-u(2,i)) - v_ij*(u(3,j)-u(3,i)))
-          end select
+          ! Flux correction in conservative variables
+          f_ij  = flux(ivar,iedge)
+          f0_ij = flux0(ivar,iedge)
+          diff  = u(ivar,j)-u(ivar,i)
           
-          ! Prelimit antidiffusive fluxes
-          if (f_ij * diff .ge. 0) then
-            alpha(iedge) = 0.0_DP; f_ij = 0.0_DP
+          ! MinMod prelimiting of antidiffusive fluxes
+          if (f_ij > SYS_EPSREAL .and. f0_ij > SYS_EPSREAL) then
+            aux = min(f_ij, 2*f0_ij)
+            alpha(iedge) = min(alpha(iedge), aux/f_ij)
+            f_ij = aux
+          elseif (f_ij < - SYS_EPSREAL .and. f0_ij < -SYS_EPSREAL) then
+            aux = max(f_ij, 2*f0_ij)
+            alpha(iedge) = min(alpha(iedge), aux/f_ij)
+            f_ij = aux
+          else
+            f_ij = 0.0; alpha(iedge) = 0.0
           end if
           
           ! Sums of raw antidiffusive fluxes
@@ -963,14 +996,174 @@ contains
           qp(j) = max(qp(j), -diff)
           qm(i) = min(qm(i),  diff)
           qm(j) = min(qm(j), -diff)
-
+          
+!!$          ! Flux correction in primitive variables
+!!$          select case(ivar)
+!!$          case default
+!!$            
+!!$            ! Conservative variables
+!!$            p_ij =  flux(ivar,iedge)
+!!$            p_ji = -flux(ivar,iedge)
+!!$
+!!$            p0_ij =  flux0(ivar,iedge)
+!!$            p0_ji = -flux0(ivar,iedge)
+!!$
+!!$            diff_ij = u(ivar,j)-u(ivar,i)
+!!$            diff_ji = u(ivar,i)-u(ivar,j)
+!!$
+!!$            ! MinMod prelimiting of antidiffusive fluxes
+!!$            if ((p_ij >  SYS_EPSREAL .and. p0_ij >  SYS_EPSREAL) .or.&
+!!$                (p_ij < -SYS_EPSREAL .and. p0_ij < -SYS_EPSREAL)) then
+!!$              aux = min(p_ij, 2*p0_ij)
+!!$              alpha(iedge) = min(alpha(iedge), aux/p_ij)
+!!$              p_ij = aux
+!!$            else
+!!$              p_ij = 0.0; alpha(iedge) = 0.0
+!!$            end if
+!!$
+!!$            if ((p_ji >  SYS_EPSREAL .and. p0_ji >  SYS_EPSREAL) .or.&
+!!$                (p_ji < -SYS_EPSREAL .and. p0_ji < -SYS_EPSREAL)) then
+!!$              aux = min(p_ji, 2*p0_ji)
+!!$              alpha(iedge) = min(alpha(iedge), aux/p_ji)
+!!$              p_ji = aux
+!!$            else
+!!$              p_ji = 0.0; alpha(iedge) = 0.0
+!!$            end if
+!!$            
+!!$            ! Sums of raw antidiffusive fluxes
+!!$            pp(i) = pp(i) + max(0.0_DP, p_ij)
+!!$            pp(j) = pp(j) + max(0.0_DP, p_ji)
+!!$            pm(i) = pm(i) + min(0.0_DP, p_ij)
+!!$            pm(j) = pm(j) + min(0.0_DP, p_ji)
+!!$            
+!!$            ! Sums of admissible edge contributions
+!!$            qp(i) = max(qp(i), diff_ij)
+!!$            qp(j) = max(qp(j), diff_ji)
+!!$            qm(i) = min(qm(i), diff_ij)
+!!$            qm(j) = min(qm(j), diff_ji)
+!!$
+!!$          case default
+!!$            
+!!$            ! Conservative variables
+!!$            f_ij  = flux(ivar,iedge)
+!!$            f0_ij = flux0(ivar,iedge)
+!!$            diff  = u(ivar,j)-u(ivar,i)
+!!$
+!!$            ! MinMod prelimiting of antidiffusive fluxes
+!!$            if (f_ij > SYS_EPSREAL .and. f0_ij > SYS_EPSREAL) then
+!!$              aux = min(f_ij, 2*f0_ij)
+!!$              alpha(iedge) = min(alpha(iedge), aux/f_ij)
+!!$              f_ij = aux
+!!$            elseif (f_ij < - SYS_EPSREAL .and. f0_ij < -SYS_EPSREAL) then
+!!$              aux = max(f_ij, 2*f0_ij)
+!!$              alpha(iedge) = min(alpha(iedge), aux/f_ij)
+!!$              f_ij = aux
+!!$            else
+!!$              f_ij = 0.0; alpha(iedge) = 0.0
+!!$            end if
+!!$            
+!!$            ! Sums of raw antidiffusive fluxes
+!!$            pp(i) = pp(i) + max(0.0_DP,  f_ij)
+!!$            pp(j) = pp(j) + max(0.0_DP, -f_ij)
+!!$            pm(i) = pm(i) + min(0.0_DP,  f_ij)
+!!$            pm(j) = pm(j) + min(0.0_DP, -f_ij)
+!!$            
+!!$            ! Sums of admissible edge contributions
+!!$            qp(i) = max(qp(i),  diff)
+!!$            qp(j) = max(qp(j), -diff)
+!!$            qm(i) = min(qm(i),  diff)
+!!$            qm(j) = min(qm(j), -diff)
+!!$            
+!!$          case (4)
+!!$            
+!!$            ! Velocities
+!!$            u_i = u(2,i)/u(1,i);   v_i = u(3,i)/u(1,i)
+!!$            u_j = u(2,j)/u(1,j);   v_j = u(3,j)/u(1,j)
+!!$
+!!$            ! Pressure variables
+!!$            p_ij = (GAMMA-1) * (flux(4, iedge) + &
+!!$                         0.5 * (u_i*u_i + v_i*v_i)*flux(1, iedge) -&
+!!$                                u_i*flux(2, iedge) - v_i*flux(3, iedge) )
+!!$            p_ji = -(GAMMA-1) * (flux(4, iedge) + &
+!!$                          0.5 * (u_j*u_j + v_j*v_j)*flux(1, iedge) -&
+!!$                                 u_j*flux(2, iedge) - v_j*flux(3, iedge) )
+!!$            p0_ij = (GAMMA-1) * (flux0(4, iedge) + &
+!!$                          0.5 * (u_i*u_i + v_i*v_i)*flux0(1, iedge) -&
+!!$                                 u_i*flux0(2, iedge) - v_i*flux0(3, iedge) )
+!!$            p0_ji = -(GAMMA-1) * (flux0(4, iedge) + &
+!!$                           0.5 * (u_j*u_j + v_j*v_j)*flux0(1, iedge) -&
+!!$                                  u_j*flux0(2, iedge) - v_j*flux0(3, iedge) )
+!!$
+!!$            Cdiff = u(:,j)-u(:,i)
+!!#
+!!$            diff_ij = (GAMMA-1) * (Cdiff(4) + &
+!!$                            0.5 * (u_i*u_i + v_i*v_i)*Cdiff(1) -&
+!!$                                   u_i*Cdiff(2) - v_i*Cdiff(3) )
+!!$
+!!$            diff_ji = -(GAMMA-1) * (Cdiff(4) + &
+!!$                             0.5 * (u_j*u_j + v_j*v_j)*Cdiff(1) -&
+!!$                                    u_j*Cdiff(2) - v_j*Cdiff(3) )
+!!$
+!!$            ! Pressure variables
+!!$            p_ij =   (GAMMA-1) * ( u(4,i)*flux(1,iedge) - u(2,i)*flux(2,iedge) &
+!!$                                  -u(3,i)*flux(3,iedge) + u(1,i)*flux(4,iedge) )
+!!$            p_ji =  -(GAMMA-1) * ( u(4,j)*flux(1,iedge) - u(2,j)*flux(2,iedge) &
+!!$                                  -u(3,j)*flux(3,iedge) + u(1,j)*flux(4,iedge) )
+!!$            p0_ij =  (GAMMA-1) * ( u(4,i)*flux0(1,iedge) - u(2,i)*flux0(2,iedge) &
+!!$                                  -u(3,i)*flux0(3,iedge) + u(1,i)*flux0(4,iedge) )
+!!$            p0_ji = -(GAMMA-1) * ( u(4,j)*flux0(1,iedge) - u(2,j)*flux0(2,iedge) &
+!!$                                  -u(3,j)*flux0(3,iedge) + u(1,j)*flux0(4,iedge) )
+!!$
+!!$            ! Solution differences
+!!$            Cdiff = u(:,j)-u(:,i)
+!!$
+!!$            diff_ij =  (GAMMA-1) * ( u(4,i)*Cdiff(1) - u(2,i)*Cdiff(2) &
+!!$                                    -u(3,i)*Cdiff(3) + u(1,i)*Cdiff(4) )
+!!$            diff_ji = -(GAMMA-1) * ( u(4,j)*Cdiff(1) - u(2,j)*Cdiff(2) &
+!!$                                    -u(3,j)*Cdiff(3) + u(1,j)*Cdiff(4) )
+!!$            
+!!$            ! MinMod prelimiting of antidiffusive fluxes
+!!$            if ((p_ij >  SYS_EPSREAL .and. p0_ij >  SYS_EPSREAL) .or.&
+!!$                (p_ij < -SYS_EPSREAL .and. p0_ij < -SYS_EPSREAL)) then
+!!$              aux = min(p_ij, 2*p0_ij)
+!!$              alpha(iedge) = min(alpha(iedge), aux/p_ij)
+!!$              p_ij = aux
+!!$            else
+!!$              p_ij = 0.0; alpha(iedge) = 0.0
+!!$            end if
+!!$
+!!$            if ((p_ji >  SYS_EPSREAL .and. p0_ji >  SYS_EPSREAL) .or.&
+!!$                (p_ji < -SYS_EPSREAL .and. p0_ji < -SYS_EPSREAL)) then
+!!$              aux = min(p_ji, 2*p0_ji)
+!!$              alpha(iedge) = min(alpha(iedge), aux/p_ji)
+!!$              p_ji = aux
+!!$            else
+!!$              p_ji = 0.0; alpha(iedge) = 0.0
+!!$            end if
+!!$            
+!!$            ! Sums of raw antidiffusive fluxes
+!!$            pp(i) = pp(i) + max(0.0_DP, p_ij)
+!!$            pp(j) = pp(j) + max(0.0_DP, p_ji)
+!!$            pm(i) = pm(i) + min(0.0_DP, p_ij)
+!!$            pm(j) = pm(j) + min(0.0_DP, p_ji)
+!!$            
+!!$            ! Sums of admissible edge contributions
+!!$            qp(i) = max(qp(i), diff_ij)
+!!$            qp(j) = max(qp(j), diff_ji)
+!!$            qm(i) = min(qm(i), diff_ij)
+!!$            qm(j) = min(qm(j), diff_ji)
+!!$          end select
+            
         end do
       end do
 
       ! Compute nodal correction factors
       do i = 1, NEQ
-        if (pp(i) >  SYS_EPSREAL) rp(i) = min(1.0_DP, ML(i)*qp(i)/pp(i))
-        if (pm(i) < -SYS_EPSREAL) rm(i) = min(1.0_DP, ML(i)*qm(i)/pm(i))
+        qp(i) = qp(i)*ML(i)
+        qm(i) = qm(i)*ML(i)
+
+        if (pp(i) > qp(i) + SYS_EPSREAL) rp(i) = qp(i)/pp(i)
+        if (pm(i) < qm(i) - SYS_EPSREAL) rm(i) = qm(i)/pm(i)
       end do
       
       ! Loop over all rows (backward)
@@ -984,30 +1177,73 @@ contains
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
 
-          select case(ivar)
-          case default
-            
-            f_ij = flux(ivar,iedge)
-            
-          case (4)
-            
-            u_ij = (u(2,i)+u(2,j)) / (u(1,i)+u(1,j))
-            v_ij = (u(3,i)+u(3,j)) / (u(1,i)+u(1,j))
-
-!!$            u_ij = 0.5_DP * (u(2,i)/u(1,i)+u(2,j)/u(1,j))
-!!$            v_ij = 0.5_DP * (u(3,i)/u(1,i)+u(3,j)/u(1,j))
-
-            f_ij = (GAMMA-1) * (flux(4, iedge) + &
-                                0.5*(u_ij*u_ij + v_ij*v_ij)*flux(1, iedge) -&
-                                u_ij*flux(2, iedge) - v_ij*flux(3, iedge))
-          end select
+          ! Flux correction in conservative variables
+          f_ij = flux(ivar,iedge)
 
           ! Limit conservative fluxes
-          if (f_ij > 0.0_DP) then
+          if (f_ij > SYS_EPSREAL) then
             alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
-          elseif (f_ij < 0.0_DP) then
+          elseif (f_ij < -SYS_EPSREAL) then
             alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
           end if
+
+!!$          ! Flux correction in primitive variables
+!!$          select case(ivar)
+!!$          case default
+!!$            
+!!$            ! Flux correction in conservative variables
+!!$            f_ij = flux(ivar,iedge)
+!!$            
+!!$            ! Limit conservative fluxes
+!!$            if (f_ij > SYS_EPSREAL) then
+!!$              alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
+!!$            elseif (f_ij < -SYS_EPSREAL) then
+!!$              alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
+!!$            end if
+!!$            
+!!$            p_ij =  flux(ivar,iedge)
+!!$            p_ji = -flux(ivar,iedge)
+!!$
+!!$          case (4)
+!!$            
+!!$            ! Velocities
+!!$            u_i = u(2,i)/u(1,i);   v_i = u(3,i)/u(1,i)
+!!$            u_j = u(2,j)/u(1,j);   v_j = u(3,j)/u(1,j)
+!!$
+!!$            ! Pressure variables
+!!$            p_ij = (GAMMA-1) * (flux(4, iedge) + &
+!!$                         0.5 * (u_i*u_i + v_i*v_i)*flux(1, iedge) -&
+!!$                                u_i*flux(2, iedge) - v_i*flux(3, iedge) )
+!!$            p_ji = -(GAMMA-1) * (flux(4, iedge) + &
+!!$                          0.5 * (u_j*u_j + v_j*v_j)*flux(1, iedge) -&
+!!$                                 u_j*flux(2, iedge) - v_j*flux(3, iedge) )
+!!$
+!!$            ! Pressure variables
+!!$            p_ij = (GAMMA-1) * ( u(4,i)*flux(1,iedge) - u(2,i)*flux(2,iedge) &
+!!$                                -u(3,i)*flux(3,iedge) + u(1,i)*flux(4,iedge) )
+!!$            
+!!$            p_ji = -(GAMMA-1) * ( u(4,j)*flux(1,iedge) - u(2,j)*flux(2,iedge) &
+!!$                                 -u(3,j)*flux(3,iedge) + u(1,j)*flux(4,iedge) )
+!!$
+!!$            if (p_ij > SYS_EPSREAL) then
+!!$              r_i = rp(i)
+!!$            elseif (p_ij < -SYS_EPSREAL) then
+!!$              r_i = rm(i)
+!!$            else
+!!$              r_i = 1.0
+!!$            end if
+!!$
+!!$            if (p_ji > SYS_EPSREAL) then
+!!$              r_j = rp(j)
+!!$            elseif (p_ji < -SYS_EPSREAL) then
+!!$              r_j = rm(j)
+!!$            else
+!!$              r_j = 1.0
+!!$            end if
+!!$
+!!$            alpha(iedge) = min(alpha(iedge), r_i, r_j)
+!!$
+!!$          end select
           
           ! Update edge counter
           iedge = iedge-1
@@ -1142,7 +1378,7 @@ contains
       ! Check if solution is stored in interleave format
       if (rsolutionEuler%nblocks .ne. 1) then
         call output_line('Vector is not in interleave format!',&
-                         OU_CLASS_WARNING,OU_MODE_STD,'mhd_hadaptCallbackScalar2d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_hadaptCallbackScalar2d')
         call sys_halt()
       end if
 
@@ -1318,7 +1554,7 @@ contains
       ! Check if solution is stored in interleave format
       if (rsolutionEuler%nblocks .ne. NVAR2D) then
         call output_line('Vector is not in block format!',&
-                         OU_CLASS_WARNING,OU_MODE_STD,'mhd_hadaptCallbackBlock2d')
+                         OU_CLASS_ERROR,OU_MODE_STD,'mhd_hadaptCallbackBlock2d')
         call sys_halt()
       end if
 
