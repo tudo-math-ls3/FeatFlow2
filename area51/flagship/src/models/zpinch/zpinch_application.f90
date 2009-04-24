@@ -20,7 +20,7 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) zpinch_simple
+!# 1.) zpinch_app
 !#     -> The application's main routine called from the main problem
 !#
 !#
@@ -82,7 +82,7 @@ module zpinch_application
   implicit none
 
   private
-  public :: zpinch_simple_app
+  public :: zpinch_app
 
 contains
 
@@ -90,7 +90,7 @@ contains
 
 !<subroutine>
 
-  subroutine zpinch_simple_app(rparlist)
+  subroutine zpinch_app(rparlist)
 
 !<description>
     ! This is the main application for the simplified MHD equations. It
@@ -157,8 +157,8 @@ contains
     ! this subroutine has been called, the parameter list remains unchanged.
     call zpinch_parseCmdlArguments(rparlist)
     
-    call parlst_getvalue_string(rparlist, 'MHDsimple', 'application_euler', ssectionNameEuler)
-    call parlst_getvalue_string(rparlist, 'MHDsimple', 'application_transport', ssectionNameTransport)
+    call parlst_getvalue_string(rparlist, 'Zpinch', 'application_euler', ssectionNameEuler)
+    call parlst_getvalue_string(rparlist, 'Zpinch', 'application_transport', ssectionNameTransport)
 
     ! Initialize global collection structures
     call collct_init(rcollectionEuler)
@@ -186,7 +186,7 @@ contains
     nlmax = max(solver_getMaximumMultigridlevel(rsolverEuler),&
                 solver_getMaximumMultigridlevel(rsolverTransport))
 
-    call zpinch_initProblem(rparlist, 'MHDsimple', nlmin, nlmax,&
+    call zpinch_initProblem(rparlist, 'Zpinch', nlmin, nlmax,&
                          rproblem, rcollectionEuler, rcollectionTransport)
 
     ! Initialize the individual problem levels
@@ -214,7 +214,7 @@ contains
     ! Solution algorithm
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_string(rparlist, 'MHDsimple', 'algorithm', algorithm)
+    call parlst_getvalue_string(rparlist, 'Zpinch', 'algorithm', algorithm)
     
     ! Initialize the boundary condition for the Euler model
     call parlst_getvalue_string(rparlist, ssectionNameEuler, 'sprimalbdrcondname', sbdrcondName)
@@ -244,7 +244,7 @@ contains
                                     rsolutionEuler, rsolutionTransport,&
                                     rcollectionEuler, rcollectionTransport)
 
-      call zpinch_outputSolution(rparlist, 'MHDsimple', rproblem%p_rproblemLevelMax,&
+      call zpinch_outputSolution(rparlist, 'Zpinch', rproblem%p_rproblemLevelMax,&
                               rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
       
     case DEFAULT
@@ -914,7 +914,7 @@ contains
     
     ! Initialize timer for intermediate UCD exporter
     dtimeUCD = rtimestepEuler%dinitialTime
-    call parlst_getvalue_string(rparlist, 'MHDsimple', 'output', soutputName)
+    call parlst_getvalue_string(rparlist, 'Zpinch', 'output', soutputName)
     call parlst_getvalue_double(rparlist, trim(soutputName), 'dstepUCD', dstepUCD, 0.0_DP)
 
     ! Attach the boundary condition to the solver structure
@@ -1101,7 +1101,7 @@ contains
       
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
-          call zpinch_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
+          call zpinch_outputSolution(rparlist, 'Zpinch', p_rproblemLevel,&
                                   rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
 
       !-------------------------------------------------------------------------
@@ -1214,7 +1214,7 @@ contains
         call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
         
         ! Export the intermediate solution
-        call zpinch_outputSolution(rparlist, 'MHDsimple', p_rproblemLevel,&
+        call zpinch_outputSolution(rparlist, 'Zpinch', p_rproblemLevel,&
                                 rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)        
 
         ! Stop time measurement for post-processing
