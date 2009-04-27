@@ -63,11 +63,11 @@ CXXVERSION = sxc++ -V 2>&1 | head -n 3
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -DUSE_COMPILER_NEC $(CFLAGSF77LIBS) -C hopt -pi auto
+CFLAGSF77LIBS := -DUSE_COMPILER_NEC $(CFLAGSF77LIBS) -NE -C hopt -pi auto
 #CFLAGSF77LIBS = -C debug -e C
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DENABLE_CPPMACRO_FOR_STORAGEGETBASE -DDISABLE_ERRORCONTROL \
-		 $(CFLAGSF90) $(CFLAGSF77LIBS)  \
+		 $(CFLAGSF90) $(filter-out -NE, $(CFLAGSF77LIBS)) \
 		 -pi line=512 #-pi nest=4 -ftrace
 CFLAGSC       := -DUSE_COMPILER_NEC $(CFLAGSC) -C hopt # -ftrace
 LDFLAGS       := $(LDFLAGS) # -ftrace
