@@ -9,6 +9,7 @@
 #-------------------------------------------------------------------------------
 
 #FEAST# default: ../Lib/libumfpack.a
+.PHONY:	default
 default: $(OBJDIR)/libumfpack.a
 
 #FEAST# include ../UFconfig/UFconfig.mk
@@ -417,6 +418,7 @@ $(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = ../AMD-2.2.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
+$(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD = echo
 $(LAST_FILE_FROM_AMD_TARBALL):
 	@$(call UNPACK)
 
@@ -436,6 +438,7 @@ $(UFCONFIG):  TARBALL  = ../UFconfig-3.1.0.tar.gz
 $(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.1.0.tar.gz
 $(UFCONFIG):  WAITTIME = 10
 $(UFCONFIG):  RETRIES  = 24
+$(UFCONFIG):  PATCHCMD = echo
 $(UFCONFIG):
 	@$(call UNPACK)
 
@@ -471,14 +474,15 @@ $(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = ../UMFPACK-5.2.tar.gz
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.2.tar.gz
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
+ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*),yes)
+# Fortunately, sed on NEC's gateway is a sed that supports in place editing.
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = sed -i.orig -e "s/\#pragma ivdep/\#pragma cdir nodep/; s/\#pragma novector/\#pragma cdir novector/;" Source/*.c
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.2 sources for NEC..."
+else
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = echo
+endif
 $(LAST_FILE_FROM_UMFPACK_TARBALL):
 	@$(call UNPACK)
-ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*-.*),yes)
-	@echo "# Patching UMFPACK 5.2 sources for NEC..."
-# Fortunately, sed on NEC's gateway is a sed that supports in place editing.
-	sed -i.orig -e 's/#pragma ivdep/#pragma cdir nodep/; s/#pragma novector/#pragma cdir novector/;' Source/*.c
-	@echo "# Sources patched."
-endif
 
 
 
@@ -492,6 +496,7 @@ define remove_file
 
 endef
 
+.PHONY:	clean
 clean:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/libumfpack.a
 clean:
 #	-rm $(OBJ) $(OBJDIR)/libamd.a # *.il work.*
@@ -500,6 +505,7 @@ clean:
 	-$(foreach file, $(FILES), $(remove_file))
 	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
 
+.PHONY:	purge
 purge:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/libumfpack.a
 purge:
         # Delete every file separately to prevent errors of kind: 
@@ -507,4 +513,5 @@ purge:
 	-$(foreach file, $(FILES), $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
 	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source Tcov
+	-rm -rf ../UFconfig/UFconfig.h ../UFconfig/README.txt ../UFconfig/xerbla ../UFconfig/UFconfig.mk
 
