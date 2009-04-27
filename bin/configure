@@ -3217,6 +3217,9 @@ sub create_feastBenchmarkMakefile {
         "# All possible test sets\n" .
         "TESTSETS = \$(FBCONF:%.fbconf=%)\n" .
         "\n" .
+        "# All possible test IDs\n" .
+        "TESTIDS  = \$(shell grep -i ^testid \$(FBDEF) | cut -d= -f 2 | sed -e 's/ //g')\n" .
+        "\n" .
         "# Some targets only safely work if not called directly, but recursively\n" .
         "# from this Makefile\n" .
         "ifneq (\$(MAKELEVEL),0)\n" .
@@ -3325,8 +3328,8 @@ sub create_feastBenchmarkMakefile {
         "\n" .
 
         "# Dynamic targets: all test IDs\n" .
-        ".PHONY: \$(shell grep -i ^testid tests/*.fbdef | cut -d= -f 2 | sed -e 's/ //g')\n" .
-        "\$(shell grep -i ^testid tests/*.fbdef | cut -d= -f 2 | sed -e 's/ //g'):\n" .
+	".PHONY: \$(TESTIDS)\n" .
+        "\$(TESTIDS):\n" .
         "\t\@echo \$\@ > _tmp_.fbconf\n" .
         "\t\@\$(MAKE) TESTCASES=_tmp_.fbconf create-script\n" .
         "\t\@-rm -f _tmp_.fbconf\n\n" .
@@ -3340,12 +3343,17 @@ sub create_feastBenchmarkMakefile {
         "\n" .
         "# Create a sh script which contains all the necessary information to run\n" .
         "# and validate all the test cases contained in tests/\$(TESTCASES).\n" .
-        "create-script:  SUPPRESSOUTPUT=1\n" .
-        "create-script:  DEBUGGER=0\n" .
-        "create-script:  MPIENV=\n" .
-        "create-script:\tinclude/runtests.template\n" .
-        "\t\@echo \"# Creating script to perform test whose IDs are coded in <\$(TESTCASES)>\"\n" .
+	".PHONY: create-script\n" .
+	"create-script:\n" .
+	"	\@echo \"# Creating script to perform test whose IDs are coded in <\$(TESTCASES)>\"\n" .
+	"	\@\$(MAKE) create-script-header\n" .
+	"	\@\$(MAKE) create-script-body\n" .
         "\n" .
+	".PHONY: create-script-header\n" .
+	"create-script-header:  SUPPRESSOUTPUT=1\n" .
+	"create-script-header:  DEBUGGER=0\n" .
+	"create-script-header:  MPIENV=\n" .
+	"create-script-header:	include/runtests.template\n" .
         "        # Include script template, applying defaults settings or overriding\n" .
         "        # them with command line given settings:\n" .
         "        # If SUPPRESSOUTPUT is specified on command line, its value is used,\n" .
@@ -3370,6 +3378,8 @@ sub create_feastBenchmarkMakefile {
 	"        # Define <APPL_BASENAME>\n" .
         "\t\@(echo \"APPL_BASENAME=\"\$(APPBASE); echo) >> \$(SCRIPT)\n" .
         "\n" .
+	".PHONY: create-script-body\n" .
+	"create-script-body:\n" .
         "        # Create detailed instructions for each test in \$(TESTCASES)\n" .
         "\t\@MODE=\$(MODE) ID=\$(LIBID) include/create_script.pl \$(TESTCASES) >> \$(SCRIPT)\n" .
         "\n" .
