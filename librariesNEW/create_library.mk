@@ -2,8 +2,7 @@
 
 # Function to create a static library - as a serialised operation
 # using a locking mechanism
-CREATE_LIB=trap "rm -f $(LOCKFILE)" 2 3 9; \
-	if test -f $(LOCKFILE); then \
+CREATE_LIB=if test -f $(LOCKFILE); then \
 	    loop=0; \
 	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
 		echo; \
@@ -34,6 +33,7 @@ CREATE_LIB=trap "rm -f $(LOCKFILE)" 2 3 9; \
 	    echo; \
 	    exit 1; \
 	else \
+	    trap "rm -f $(LOCKFILE)" 2 3 9; \
 	    touch $(LOCKFILE); \
 	    echo $(ARCH) $@ $^; \
 	    $(ARCH) $@ $^ && \
