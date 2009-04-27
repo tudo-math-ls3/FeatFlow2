@@ -211,3 +211,7 @@ LIBID:=$(shell echo "$(ID)" | LC_ALL=C perl -pe 's/^([^-]+-[^-]+-[^-]+-[^-]+-[^-
 .PHONY: .libidonly
 .libidonly:
 	@echo $(LIBID)
+
+.PHONY: .mode
+.mode:
+	@echo $(MODE)
