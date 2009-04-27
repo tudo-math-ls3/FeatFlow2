@@ -2,8 +2,7 @@
 
 # Function to unpack a tarball - as a serialised operation
 # using a locking mechanism
-UNPACK=trap "rm -f $(LOCKFILE)" 2 3 9; \
-	if test -f $(LOCKFILE); then \
+UNPACK=if test -f $(LOCKFILE); then \
 	    loop=0; \
 	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
 		echo; \
@@ -32,9 +31,18 @@ UNPACK=trap "rm -f $(LOCKFILE)" 2 3 9; \
 		exit 1; \
 	    fi; \
 	else \
+	    trap "rm -f $(LOCKFILE)" 2 3 9; \
 	    touch $(LOCKFILE); \
 	    echo "\# Extracting $(NAME)..."; \
 	    gzip -dc $(TARBALL) | ( cd ..; tar -xvf - ); \
+	    if test "echoX" != '$(PATCHCMD)X'; then \
+		test -n '$(PATCHTEXT1)' && echo $(PATCHTEXT1); \
+		test -n '$(PATCHTEXT2)' && echo $(PATCHTEXT2); \
+		test -n '$(PATCHTEXT3)' && echo $(PATCHTEXT3); \
+		echo $(PATCHCMD); \
+		$(PATCHCMD); \
+		echo "\# Sources patched."; \
+	    fi; \
 	    rm -f $(LOCKFILE); \
 	fi; \
 	trap - 2 3 9;
