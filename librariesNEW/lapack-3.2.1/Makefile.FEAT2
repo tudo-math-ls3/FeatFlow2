@@ -60,12 +60,17 @@ define remove_file
 
 endef
 
+.PHONY:	default
+default: $(LAPACKLIB)
+
+.PHONY:	clean
 clean:
         # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(OBJ) $(LAPACKLIB), $(remove_file))
 	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
 
+.PHONY:	purge
 purge:
         # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
@@ -80,7 +85,7 @@ purge:
 # An order-only prerequisite shall not be put on the same line as a prerequisite
 # of an implicit rule. Otherwise the target defined in this implicit rule is
 # rebuilt every time you invoke make!
-$(OBJDIR)/%.o: | $(OBJDIR)
+$(OBJ): | $(OBJDIR)
 
 $(OBJDIR)/%.o: SRC/%.f
 	$(F77) $(OPTS) -c $< -o $@
@@ -101,9 +106,6 @@ $(OBJDIR)/%.o: INSTALL/%.f
 
 $(OBJDIR):
 	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
-
-# Phony targets
-.PHONY:	clean purge
 
 
 #-------------------------------------------------------------------------------
@@ -175,16 +177,16 @@ $(SRC_LAPACK): $(LAST_FILE_FROM_LAPACK_TARBALL)
 # try to build the LAPACK library (e.g. parallel make of the 
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
-$(LAST_FILE_FROM_LAPACK_TARBALL):  NAME     = "LAPACK 3.2.1 reference implementation sources"
-$(LAST_FILE_FROM_LAPACK_TARBALL):  TARBALL  = ../lapack-3.2.1.tgz
-$(LAST_FILE_FROM_LAPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.lapack-3.2.1.tar.gz
-$(LAST_FILE_FROM_LAPACK_TARBALL):  WAITTIME = 10
-$(LAST_FILE_FROM_LAPACK_TARBALL):  RETRIES  = 24
+$(LAST_FILE_FROM_LAPACK_TARBALL):  NAME       = "LAPACK 3.2.1 reference implementation sources"
+$(LAST_FILE_FROM_LAPACK_TARBALL):  TARBALL    = ../lapack-3.2.1.tgz
+$(LAST_FILE_FROM_LAPACK_TARBALL):  LOCKFILE   = ../LOCK.unpack.lapack-3.2.1.tar.gz
+$(LAST_FILE_FROM_LAPACK_TARBALL):  WAITTIME   = 10
+$(LAST_FILE_FROM_LAPACK_TARBALL):  RETRIES    = 24
+$(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHCMD   = cat ../lapack-3.2.1_pgi-6.x-8.x.patch | patch -p1
+$(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHTEXT1 = "\# Patching LAPACK 3.2.1 sources to get rid of non-Fortran 77 'exit' occurrences..."
+$(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHTEXT2 = "\# This prevents compile problems with PGI 6.x-8.x."
 $(LAST_FILE_FROM_LAPACK_TARBALL):
 	@$(call UNPACK)
-	@echo "# Patching LAPACK 3.2.1 sources to get rid of non-Fortran 77 'exit' occurrences..."
-	patch -p1 < ../lapack-3.2.1_pgi-6.x-8.x.patch
-	@echo "# Sources patched."
 
 
 
