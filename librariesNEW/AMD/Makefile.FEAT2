@@ -9,6 +9,7 @@
 #-------------------------------------------------------------------------------
 
 #FEAST# default: ../Lib/libamd.a
+.PHONY:	default
 default: $(OBJDIR)/libamd.a
 
 #FEAST# include ../../UFconfig/UFconfig.mk
@@ -68,6 +69,7 @@ $(OBJDIR)/amd_l_%.o: Source/amd_%.c $(INC)
 #-------------------------------------------------------------------------------
 
 #FEAST# fortran: ../Lib/libamdf77.a
+.PHONY:	fortran
 fortran: $(OBJDIR)/libamdf77.a
 
 #FEAST# AMDF77 = amd.o amdbar.o
@@ -134,7 +136,7 @@ $(OBJDIR)/libamd.a: $(OBJDIR)/amd_global.o $(AMDI) $(AMDL)
 # An order-only prerequisite shall not be put on the same line as a prerequisite
 # of an implicit rule. Otherwise the target defined in this implicit rule is
 # rebuilt every time you invoke make!
-$(OBJDIR)/%.o: | $(OBJDIR)
+$(OBJDIR)/amd_global.o $(AMDI) $(AMDL): | $(OBJDIR)
 
 $(OBJDIR):
 	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
@@ -194,6 +196,7 @@ $(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = ../AMD-2.2.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
+$(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD = echo
 $(LAST_FILE_FROM_AMD_TARBALL):
 	@$(call UNPACK)
 
@@ -216,9 +219,10 @@ $(UFCONFIG):  TARBALL  = ../UFconfig-3.1.0.tar.gz
 $(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.1.0.tar.gz
 $(UFCONFIG):  WAITTIME = 10
 $(UFCONFIG):  RETRIES  = 24
+$(UFCONFIG):  PATCHCMD = echo
 $(UFCONFIG):
 	@$(call UNPACK)
-	
+
 
 #-------------------------------------------------------------------------------
 # Clean up targets
@@ -230,6 +234,7 @@ define remove_file
 
 endef
 
+.PHONY:	clean
 clean:
 #	-rm $(OBJ) $(OBJDIR)/libamd.a # *.il work.*
         # Delete every file separately to prevent errors of kind: 
@@ -237,6 +242,7 @@ clean:
 	-$(foreach file, $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
 	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
 
+.PHONY:	purge
 purge:
         # Delete every file separately to prevent errors of kind: 
         # execvp: rm: Arg list too long
