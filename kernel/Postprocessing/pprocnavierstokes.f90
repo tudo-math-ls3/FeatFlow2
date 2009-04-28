@@ -1416,6 +1416,10 @@ contains
     ! Dvalues(:,:,6) = dpf1
     allocate(Dvalues(ncubp,nelementsInRegion,NDIM2D*2+1+1))
 
+    ! We assemble the integral contributions separately
+    DintU = 0.0_DP
+    DintP = 0.0_DP
+
     ! Loop over the element distributions of the velocity vectors
     p_rdiscr => rvector%p_rblockDiscr%RspatialDiscr(1)
     do ieldistr = 1,p_rdiscr%inumFESpaces
