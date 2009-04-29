@@ -12,10 +12,10 @@
 !# 1.) transp_setVariable1d
 !#     -> Sets global variables for external data, e.g., velocity fields in 2D
 !#
-!# 2.) transp_calcPrimalConvConst2d
+!# 2.) transp_calcMatrixPrimalConst2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
 !#
-!# 3.) transp_calcDualConvConst2d
+!# 3.) transp_calcMatrixDualConst2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
 !#
 !# 4.) transp_calcMatrixPrimalBurgersSpT2d
@@ -141,12 +141,40 @@ contains
 !</output>
 !</subroutine>
 
+    ! local variables
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    integer :: idx,jdx
+
     ! Compute convective coefficients
     k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
     k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
 
-    ! Compute artificial diffusion coefficient
-    d_ij = max(-k_ij, 0.0_DP, -k_ji)
+!!$    ! Compute artificial diffusion coefficient
+!!$    d_ij = max(-k_ij, 0.0_DP, -k_ji)
+
+    ! Compute index positions
+    idx = 4*(i-1)
+    jdx = 4*(j-1)
+
+    ! Compute velocities and energy
+    ui = p_Dvariable3(idx+2)/p_Dvariable3(idx+1)
+    vi = p_Dvariable3(idx+3)/p_Dvariable3(idx+1)
+    Ei = p_Dvariable3(idx+4)/p_Dvariable3(idx+1)
+
+    uj = p_Dvariable3(jdx+2)/p_Dvariable3(jdx+1)
+    vj = p_Dvariable3(jdx+3)/p_Dvariable3(jdx+1)
+    Ej = p_Dvariable3(jdx+4)/p_Dvariable3(jdx+1)
+
+    ! Compute enthalpy
+    hi = 1.4*Ei + (1-1.4)*0.5*(ui*ui+vi*vi)
+    hj = 1.4*Ej + (1-1.4)*0.5*(uj*uj+vj*vj)
+
+    ! Compute speed of sound
+    ci = sqrt(max((1.4-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max((1.4-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+
+    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))*cj,&
+                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)*C_ji(1)+C_ji(2)*C_ji(2))*ci )
 
   end subroutine transp_calcMatrixPrimalConst2d
 
