@@ -187,7 +187,7 @@ contains
                 solver_getMaximumMultigridlevel(rsolverTransport))
 
     call zpinch_initProblem(rparlist, 'Zpinch', nlmin, nlmax,&
-                         rproblem, rcollectionEuler, rcollectionTransport)
+                            rproblem, rcollectionEuler, rcollectionTransport)
 
     ! Initialize the individual problem levels
     call euler_initAllProblemLevels(rappDescrEuler, rproblem, rcollectionEuler)
@@ -237,15 +237,15 @@ contains
       ! Solve the primal formulation for the time-dependent problem
       !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       call zpinch_solveTransientPrimal(rappDescrEuler, rappDescrTransport, rparlist,&
-                                    ssectionNameEuler, ssectionNameTransport,&
-                                    rbdrCondEuler, rbdrCondTransport, rproblem,&
-                                    rtimestepEuler, rsolverEuler,&
-                                    rtimestepTransport, rsolverTransport,&
-                                    rsolutionEuler, rsolutionTransport,&
-                                    rcollectionEuler, rcollectionTransport)
+                                       ssectionNameEuler, ssectionNameTransport,&
+                                       rbdrCondEuler, rbdrCondTransport, rproblem,&
+                                       rtimestepEuler, rsolverEuler,&
+                                       rtimestepTransport, rsolverTransport,&
+                                       rsolutionEuler, rsolutionTransport,&
+                                       rcollectionEuler, rcollectionTransport)
 
       call zpinch_outputSolution(rparlist, 'Zpinch', rproblem%p_rproblemLevelMax,&
-                              rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
+                                 rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
       
     case DEFAULT
       call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -333,7 +333,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_initProblem(rparlist, ssectionName, nlmin, nlmax, rproblem,&
-                             rcollectionEuler, rcollectionTransport)
+                                rcollectionEuler, rcollectionTransport)
 
 !<description>
     ! This subroutine initializes the abstract problem structure 
@@ -443,7 +443,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_outputSolution(rparlist, ssectionName, rproblemLevel,&
-                                rsolutionEuler, rsolutionTransport, dtime)
+                                   rsolutionEuler, rsolutionTransport, dtime)
 
 !<description>
     ! This subroutine exports the solution vector to file in UCD format
@@ -791,12 +791,12 @@ contains
 !<subroutine>
 
     subroutine zpinch_solveTransientPrimal(rappDescrEuler, rappDescrTransport, rparlist,&
-                                        ssectionNameEuler, ssectionNameTransport,&
-                                        rbdrCondEuler, rbdrCondTransport, rproblem,&
-                                        rtimestepEuler, rsolverEuler,&
-                                        rtimestepTransport, rsolverTransport,&
-                                        rsolutionEuler, rsolutionTransport,&
-                                        rcollectionEuler, rcollectionTransport)
+                                           ssectionNameEuler, ssectionNameTransport,&
+                                           rbdrCondEuler, rbdrCondTransport, rproblem,&
+                                           rtimestepEuler, rsolverEuler,&
+                                           rtimestepTransport, rsolverTransport,&
+                                           rsolutionEuler, rsolutionTransport,&
+                                           rcollectionEuler, rcollectionTransport)
 
 !<description>
       ! This subroutine solves the transient primal simplified MHD problem.
@@ -1011,12 +1011,17 @@ contains
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
             
-            ! Compute the error estimator based on the tracer
-            call zpinch_calcTracerIndicator(rsolutionTransport, relementError)
+            ! Compute the error estimator using recovery techniques
+            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                             relementError, derror)
+
+!!$            ! Compute the error estimator based on the tracer
+!!$            call zpinch_calcTracerIndicator(rsolutionTransport, relementError)
 
             ! Perform h-adaptation and update the triangulation structure
             call zpinch_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                        relementError, rcollection)
+                                           relementError, rcollection)
             
             ! Release element-wise error distribution
             call lsyssc_releaseVector(relementError)
@@ -1102,7 +1107,7 @@ contains
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
           call zpinch_outputSolution(rparlist, 'Zpinch', p_rproblemLevel,&
-                                  rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
+                                     rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)
 
       !-------------------------------------------------------------------------
       ! Compute Euler model for full time step: U^n -> U^{n+1}
@@ -1176,8 +1181,8 @@ contains
       
       ! Perform conservative FCT postprocessing
       call zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, p_rproblemLevel,&
-                                 rtimestepEuler, rsolutionEuler, rsolutionTransport, rcollectionEuler)
-
+                                    rtimestepEuler, rsolutionEuler, rsolutionTransport, rcollectionEuler)
+      
 
       !-------------------------------------------------------------------------
       ! Compute source term for full time step
@@ -1189,7 +1194,7 @@ contains
       call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
 
       call zpinch_calcSourceTerm(p_rproblemLevel, rtimestepTransport,&
-                              rsolutionTransport, rsolutionEuler, rcollectionEuler)
+                                 rsolutionTransport, rsolutionEuler, rcollectionEuler)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(rappDescrEuler%rtimerSolution)
@@ -1215,7 +1220,7 @@ contains
         
         ! Export the intermediate solution
         call zpinch_outputSolution(rparlist, 'Zpinch', p_rproblemLevel,&
-                                rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)        
+                                   rsolutionEuler, rsolutionTransport, rtimestepEuler%dTime)        
 
         ! Stop time measurement for post-processing
         call stat_stopTimer(rappDescrEuler%rtimerPrepostProcess)
@@ -1238,9 +1243,14 @@ contains
         
         ! Start time measurement for error estimation
         call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
-        
-        ! Compute the error indicator based on the tracer
-        call zpinch_calcTracerIndicator(rsolutionTransport, relementError)
+
+        ! Compute the error estimator using recovery techniques
+        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+                                         rsolutionEuler, rtimestepEuler%dinitialTime,&
+                                         relementError, derror)
+
+!!$        ! Compute the error indicator based on the tracer
+!!$        call zpinch_calcTracerIndicator(rsolutionTransport, relementError)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
@@ -1264,7 +1274,7 @@ contains
         
         ! Perform h-adaptation and update the triangulation structure
         call zpinch_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                    relementError, rcollection)
+                                       relementError, rcollection)
         
         ! Release element-wise error distribution
         call lsyssc_releaseVector(relementError)
