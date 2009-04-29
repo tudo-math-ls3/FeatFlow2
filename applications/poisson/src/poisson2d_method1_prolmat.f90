@@ -404,11 +404,6 @@ contains
     ! The coarse grid in multigrid is always grid 1!
     call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
     call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
-    
-    ! Set up a coarse grid solver.
-    ! The coarse grid in multigrid is always grid 1!
-    call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
-    call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
 
     ! Now set up the other levels...
     do i = NLMIN+1, NLMAX
