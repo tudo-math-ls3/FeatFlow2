@@ -70,9 +70,9 @@ contains
 !<subroutine>
 
   subroutine zpinch_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                  rsolution, rsolutionInitial,&
-                                  rrhs, rres, istep, ioperationSpec,&
-                                  rcollection, istatus, rb)
+                                     rsolution, rsolutionInitial,&
+                                     rrhs, rres, istep, ioperationSpec,&
+                                     rcollection, istatus, rb)
 
 !<description>
     ! This subroutine is called by the nonlinear solver and it is responsible
@@ -347,7 +347,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcSourceTerm(rproblemLevel, rtimestep,&
-                                rsolutionTransport, rsolutionEuler, rcollection)
+                                   rsolutionTransport, rsolutionEuler, rcollection)
 
 !<description>
     ! Apply the source term and update the solution from the Euler system
@@ -601,7 +601,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport, rproblemLevel,&
-                                   rtimestep, rsolutionEuler, rsolutionTransport, rcollection)
+                                      rtimestep, rsolutionEuler, rsolutionTransport, rcollection)
 
 !<description>
     ! This subroutine calculates the linearized FCT correction for the
@@ -942,8 +942,7 @@ contains
       
       ! local variables
       real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NVAR) :: Cdiff
-      real(DP) :: f_ij,f0_ij,diff,diff_ij,diff_ji,aux,p_ij,p_ji,p0_ij,p0_ji,u_i,u_j,v_i,v_j,r_i,r_j
+      real(DP) :: f_ij,f0_ij,diff,aux,p_ij,p_ji,p0_ij,p0_ji,u_i,u_j,v_i,v_j,r_i,r_j
       integer :: ij,ji,i,j,iedge
 
       allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
@@ -967,115 +966,42 @@ contains
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
           
-          ! Flux correction in conservative variables
-          f_ij  = flux(ivar,iedge)
-          f0_ij = flux0(ivar,iedge)
-          diff  = u(ivar,j)-u(ivar,i)
-          
-          ! MinMod prelimiting of antidiffusive fluxes
-          if (f_ij > SYS_EPSREAL .and. f0_ij > SYS_EPSREAL) then
-            aux = min(f_ij, 2*f0_ij)
-            alpha(iedge) = min(alpha(iedge), aux/f_ij)
-            f_ij = aux
-          elseif (f_ij < - SYS_EPSREAL .and. f0_ij < -SYS_EPSREAL) then
-            aux = max(f_ij, 2*f0_ij)
-            alpha(iedge) = min(alpha(iedge), aux/f_ij)
-            f_ij = aux
-          else
-            f_ij = 0.0; alpha(iedge) = 0.0
-          end if
-          
-          ! Sums of raw antidiffusive fluxes
-          pp(i) = pp(i) + max(0.0_DP,  f_ij)
-          pp(j) = pp(j) + max(0.0_DP, -f_ij)
-          pm(i) = pm(i) + min(0.0_DP,  f_ij)
-          pm(j) = pm(j) + min(0.0_DP, -f_ij)
-
-          ! Sums of admissible edge contributions
-          qp(i) = max(qp(i),  diff)
-          qp(j) = max(qp(j), -diff)
-          qm(i) = min(qm(i),  diff)
-          qm(j) = min(qm(j), -diff)
-          
 !!$          ! Flux correction in primitive variables
 !!$          select case(ivar)
 !!$          case default
-!!$            
-!!$            ! Conservative variables
-!!$            p_ij =  flux(ivar,iedge)
-!!$            p_ji = -flux(ivar,iedge)
-!!$
-!!$            p0_ij =  flux0(ivar,iedge)
-!!$            p0_ji = -flux0(ivar,iedge)
-!!$
-!!$            diff_ij = u(ivar,j)-u(ivar,i)
-!!$            diff_ji = u(ivar,i)-u(ivar,j)
-!!$
-!!$            ! MinMod prelimiting of antidiffusive fluxes
-!!$            if ((p_ij >  SYS_EPSREAL .and. p0_ij >  SYS_EPSREAL) .or.&
-!!$                (p_ij < -SYS_EPSREAL .and. p0_ij < -SYS_EPSREAL)) then
-!!$              aux = min(p_ij, 2*p0_ij)
-!!$              alpha(iedge) = min(alpha(iedge), aux/p_ij)
-!!$              p_ij = aux
-!!$            else
-!!$              p_ij = 0.0; alpha(iedge) = 0.0
-!!$            end if
-!!$
-!!$            if ((p_ji >  SYS_EPSREAL .and. p0_ji >  SYS_EPSREAL) .or.&
-!!$                (p_ji < -SYS_EPSREAL .and. p0_ji < -SYS_EPSREAL)) then
-!!$              aux = min(p_ji, 2*p0_ji)
-!!$              alpha(iedge) = min(alpha(iedge), aux/p_ji)
-!!$              p_ji = aux
-!!$            else
-!!$              p_ji = 0.0; alpha(iedge) = 0.0
-!!$            end if
-!!$            
-!!$            ! Sums of raw antidiffusive fluxes
-!!$            pp(i) = pp(i) + max(0.0_DP, p_ij)
-!!$            pp(j) = pp(j) + max(0.0_DP, p_ji)
-!!$            pm(i) = pm(i) + min(0.0_DP, p_ij)
-!!$            pm(j) = pm(j) + min(0.0_DP, p_ji)
-!!$            
-!!$            ! Sums of admissible edge contributions
-!!$            qp(i) = max(qp(i), diff_ij)
-!!$            qp(j) = max(qp(j), diff_ji)
-!!$            qm(i) = min(qm(i), diff_ij)
-!!$            qm(j) = min(qm(j), diff_ji)
-!!$
-!!$          case default
-!!$            
-!!$            ! Conservative variables
-!!$            f_ij  = flux(ivar,iedge)
-!!$            f0_ij = flux0(ivar,iedge)
-!!$            diff  = u(ivar,j)-u(ivar,i)
-!!$
-!!$            ! MinMod prelimiting of antidiffusive fluxes
-!!$            if (f_ij > SYS_EPSREAL .and. f0_ij > SYS_EPSREAL) then
-!!$              aux = min(f_ij, 2*f0_ij)
-!!$              alpha(iedge) = min(alpha(iedge), aux/f_ij)
-!!$              f_ij = aux
-!!$            elseif (f_ij < - SYS_EPSREAL .and. f0_ij < -SYS_EPSREAL) then
-!!$              aux = max(f_ij, 2*f0_ij)
-!!$              alpha(iedge) = min(alpha(iedge), aux/f_ij)
-!!$              f_ij = aux
-!!$            else
-!!$              f_ij = 0.0; alpha(iedge) = 0.0
-!!$            end if
-!!$            
-!!$            ! Sums of raw antidiffusive fluxes
-!!$            pp(i) = pp(i) + max(0.0_DP,  f_ij)
-!!$            pp(j) = pp(j) + max(0.0_DP, -f_ij)
-!!$            pm(i) = pm(i) + min(0.0_DP,  f_ij)
-!!$            pm(j) = pm(j) + min(0.0_DP, -f_ij)
-!!$            
-!!$            ! Sums of admissible edge contributions
-!!$            qp(i) = max(qp(i),  diff)
-!!$            qp(j) = max(qp(j), -diff)
-!!$            qm(i) = min(qm(i),  diff)
-!!$            qm(j) = min(qm(j), -diff)
-!!$            
+
+            ! Flux correction in conservative variables
+            f_ij  = flux(ivar,iedge)
+            f0_ij = flux0(ivar,iedge)
+            diff  = u(ivar,j)-u(ivar,i)
+            
+            ! MinMod prelimiting of antidiffusive fluxes
+            if (f_ij > SYS_EPSREAL .and. f0_ij > SYS_EPSREAL) then
+              aux = min(f_ij, 2*f0_ij)
+              alpha(iedge) = min(alpha(iedge), aux/f_ij)
+              f_ij = aux
+            elseif (f_ij < - SYS_EPSREAL .and. f0_ij < -SYS_EPSREAL) then
+              aux = max(f_ij, 2*f0_ij)
+              alpha(iedge) = min(alpha(iedge), aux/f_ij)
+              f_ij = aux
+            else
+              f_ij = 0.0; alpha(iedge) = 0.0
+            end if
+            
+            ! Sums of raw antidiffusive fluxes
+            pp(i) = pp(i) + max(0.0_DP,  f_ij)
+            pp(j) = pp(j) + max(0.0_DP, -f_ij)
+            pm(i) = pm(i) + min(0.0_DP,  f_ij)
+            pm(j) = pm(j) + min(0.0_DP, -f_ij)
+            
+            ! Sums of admissible edge contributions
+            qp(i) = max(qp(i),  diff)
+            qp(j) = max(qp(j), -diff)
+            qm(i) = min(qm(i),  diff)
+            qm(j) = min(qm(j), -diff)
+          
+            
 !!$          case (4)
-!!$            
 !!$            ! Velocities
 !!$            u_i = u(2,i)/u(1,i);   v_i = u(3,i)/u(1,i)
 !!$            u_j = u(2,j)/u(1,j);   v_j = u(3,j)/u(1,j)
@@ -1094,15 +1020,13 @@ contains
 !!$                           0.5 * (u_j*u_j + v_j*v_j)*flux0(1, iedge) -&
 !!$                                  u_j*flux0(2, iedge) - v_j*flux0(3, iedge) )
 !!$
-!!$            Cdiff = u(:,j)-u(:,i)
-!!#
-!!$            diff_ij = (GAMMA-1) * (Cdiff(4) + &
-!!$                            0.5 * (u_i*u_i + v_i*v_i)*Cdiff(1) -&
-!!$                                   u_i*Cdiff(2) - v_i*Cdiff(3) )
-!!$
-!!$            diff_ji = -(GAMMA-1) * (Cdiff(4) + &
-!!$                             0.5 * (u_j*u_j + v_j*v_j)*Cdiff(1) -&
-!!$                                    u_j*Cdiff(2) - v_j*Cdiff(3) )
+!!$            ! Solution differences
+!!$            diff = (GAMMA-1) * (u(4,j) + &
+!!$                         0.5 * (u_j*u_j + v_j*v_j)*u(1,j) -&
+!!$                                u_j*u(2,j) - v_j*u(3,j) )&
+!!$                 - (GAMMA-1) * (u(4,i) + &
+!!$                         0.5 * (u_i*u_i + v_i*v_i)*u(1,i) -&
+!!$                                u_i*u(2,i) - v_i*u(3,i) )
 !!$
 !!$            ! Pressure variables
 !!$            p_ij =   (GAMMA-1) * ( u(4,i)*flux(1,iedge) - u(2,i)*flux(2,iedge) &
@@ -1115,12 +1039,10 @@ contains
 !!$                                  -u(3,j)*flux0(3,iedge) + u(1,j)*flux0(4,iedge) )
 !!$
 !!$            ! Solution differences
-!!$            Cdiff = u(:,j)-u(:,i)
-!!$
-!!$            diff_ij =  (GAMMA-1) * ( u(4,i)*Cdiff(1) - u(2,i)*Cdiff(2) &
-!!$                                    -u(3,i)*Cdiff(3) + u(1,i)*Cdiff(4) )
-!!$            diff_ji = -(GAMMA-1) * ( u(4,j)*Cdiff(1) - u(2,j)*Cdiff(2) &
-!!$                                    -u(3,j)*Cdiff(3) + u(1,j)*Cdiff(4) )
+!!$            diff =  (GAMMA-1) * ( u(4,j)*u(1,j) - u(2,j)*u(2,j) &
+!!$                                 -u(3,j)*u(3,j) + u(1,j)*u(4,j) )&
+!!$                   -(GAMMA-1) * ( u(4,i)*u(1,i) - u(2,i)*u(2,i) &
+!!$                                 -u(3,i)*u(3,i) + u(1,i)*u(4,i) )
 !!$            
 !!$            ! MinMod prelimiting of antidiffusive fluxes
 !!$            if ((p_ij >  SYS_EPSREAL .and. p0_ij >  SYS_EPSREAL) .or.&
@@ -1148,10 +1070,10 @@ contains
 !!$            pm(j) = pm(j) + min(0.0_DP, p_ji)
 !!$            
 !!$            ! Sums of admissible edge contributions
-!!$            qp(i) = max(qp(i), diff_ij)
-!!$            qp(j) = max(qp(j), diff_ji)
-!!$            qm(i) = min(qm(i), diff_ij)
-!!$            qm(j) = min(qm(j), diff_ji)
+!!$            qp(i) = max(qp(i),  diff)
+!!$            qp(j) = max(qp(j), -diff)
+!!$            qm(i) = min(qm(i),  diff)
+!!$            qm(j) = min(qm(j), -diff)
 !!$          end select
             
         end do
@@ -1177,34 +1099,23 @@ contains
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
 
-          ! Flux correction in conservative variables
-          f_ij = flux(ivar,iedge)
-
-          ! Limit conservative fluxes
-          if (f_ij > SYS_EPSREAL) then
-            alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
-          elseif (f_ij < -SYS_EPSREAL) then
-            alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
-          end if
-
 !!$          ! Flux correction in primitive variables
 !!$          select case(ivar)
 !!$          case default
-!!$            
-!!$            ! Flux correction in conservative variables
-!!$            f_ij = flux(ivar,iedge)
-!!$            
-!!$            ! Limit conservative fluxes
-!!$            if (f_ij > SYS_EPSREAL) then
-!!$              alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
-!!$            elseif (f_ij < -SYS_EPSREAL) then
-!!$              alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
-!!$            end if
-!!$            
-!!$            p_ij =  flux(ivar,iedge)
-!!$            p_ji = -flux(ivar,iedge)
-!!$
+            
+            ! Flux correction in conservative variables
+            f_ij = flux(ivar,iedge)
+            
+            ! Limit conservative fluxes
+            if (f_ij > SYS_EPSREAL) then
+              alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
+            elseif (f_ij < -SYS_EPSREAL) then
+              alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
+            end if
+
 !!$          case (4)
+!!$            
+!!$            ! Flux correction in primitive variables
 !!$            
 !!$            ! Velocities
 !!$            u_i = u(2,i)/u(1,i);   v_i = u(3,i)/u(1,i)
@@ -1242,7 +1153,7 @@ contains
 !!$            end if
 !!$
 !!$            alpha(iedge) = min(alpha(iedge), r_i, r_j)
-!!$
+!!$            
 !!$          end select
           
           ! Update edge counter
