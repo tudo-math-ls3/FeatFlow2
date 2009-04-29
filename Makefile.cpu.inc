@@ -1338,6 +1338,11 @@ CFLAGSF90     := $(CFLAGSF90) -tp=k8-64
 CFLAGSC       := $(CFLAGSC) -tp=k8-64
 LDFLAGS       := $(LDFLAGS) -tp=k8-64
 endif
+# Probably activate 64 bit integer support
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -i8
+CFLAGSF90     := $(CFLAGSF90) -i8
+endif
 endif
 
 
@@ -1357,6 +1362,11 @@ CFLAGSF90     := $(CFLAGSF90) -mtune=opteron -mcpu=opteron -march=opteron
 CFLAGSC       := $(CFLAGSC) -mtune=opteron -mcpu=opteron -march=opteron
 LDFLAGS       := $(LDFLAGS) -mtune=opteron -mcpu=opteron -march=opteron
 endif
+# Probably activate 64 bit integer support
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -i8
+CFLAGSF90     := $(CFLAGSF90) -i8
+endif
 endif
 
 
@@ -1369,6 +1379,15 @@ include $(TEMPLATESDIR)/sunstudio-generic.mk
 # DOM: sunstudio seems to do this automatically.
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
 #CFLAGSC       := $(CFLAGSC) -xc99
+CFLAGSF77     := $(CFLAGSF77) -m64 -xmodel=medium
+CFLAGSF90     := $(CFLAGSF90) -m64 -xmodel=medium
+CFLAGSC       := $(CFLAGSC) -m64 -xmodel=medium
+LDFLAGS       := $(LDFLAGS) -m64 -xmodel=medium
+# Probably activate 64 bit integer support
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -xtypemap=integer:64
+CFLAGSF90     := $(CFLAGSF90) -xtypemap=integer:64
+endif
 endif
 
 
@@ -2244,6 +2263,7 @@ endif
 	@echo '  MODEXTENSION =' $(MODEXTENSION)
 	@echo '  MOVEMOD      =' $(MOVEMOD)
 	@echo '  INC          =' $(INC)
+	@echo '  INTSIZE      =' $(INTSIZE)
 	@echo '  SRCEXTRA     =' $(SRCEXTRA)
 	@echo '  BUILDLIB     =' $(BUILDLIB)
 	@echo '  LIBDIR       =' $(LIBDIR)
