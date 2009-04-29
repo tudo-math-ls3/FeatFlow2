@@ -13,11 +13,11 @@ program flagship
   use euler_application
   use fparser
   use genoutput
-  use zpinch_application
   use paramlist
   use signal
   use storage
   use transport_application
+  use zpinch_application
   
   implicit none
   
