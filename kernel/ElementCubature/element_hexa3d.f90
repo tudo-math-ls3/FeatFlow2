@@ -634,7 +634,7 @@ contains
   !if x-or y-derivatives are desired
 !  IF ((Bder(DER_DERIV3D_X)) .OR. (Bder(DER_DERIV3D_Y)) .OR.&
 !      (Bder(DER_DERIV3D_Z))) THEN
-    Dxj = 0.125E0_DP / Ddetj
+    Dxj(1:ubound(Ddetj,1)) = 0.125E0_DP / Ddetj
     
     !x-, y- and z-derivatives on reference element
     do i=1,npoints
@@ -885,7 +885,7 @@ contains
   
     !$omp parallel do default(shared) private(i,Dxj,Dhelp,djx,djy,djz)
     do j=1,nelements
-      Dxj = 0.125_DP / Ddetj(:,j)
+      Dxj(1:ubound(Ddetj,1)) = 0.125_DP / Ddetj(:,j)
       
       !x-, y- and z-derivatives on reference element
       do i=1,npoints
@@ -1320,7 +1320,7 @@ contains
   !if x-or y-derivatives are desired
 !  IF ((Bder(DER_DERIV3D_X)) .OR. (Bder(DER_DERIV3D_Y)) .OR.&
 !      (Bder(DER_DERIV3D_Z))) THEN
-    Dxj = 1.0_DP / Ddetj
+    Dxj(1:ubound(Ddetj,1)) = 1.0_DP / Ddetj
     
     !x-, y- and z-derivatives on reference element
     do i=1,npoints
@@ -1555,7 +1555,7 @@ contains
   
     !$omp parallel do default(shared) private(i,dx,dy,dz,djx,djy,djz,Dhelp,dxj)
     do j=1,nelements
-      Dxj = 1.0_DP / Ddetj(:,j)
+      Dxj(1:ubound(Ddetj,1)) = 1.0_DP / Ddetj(:,j)
       
       !x-, y- and z-derivatives on reference element
       do i=1,npoints
@@ -1982,7 +1982,7 @@ contains
   !if x-or y-derivatives are desired
 !  IF ((Bder(DER_DERIV3D_X)) .OR. (Bder(DER_DERIV3D_Y)) .OR.&
 !      (Bder(DER_DERIV3D_Z))) THEN
-    Dxj = 1.0_DP / Ddetj
+    Dxj(1:ubound(Ddetj,1)) = 1.0_DP / Ddetj
     
     !x-, y- and z-derivatives on reference element
     do i=1,npoints
@@ -2219,7 +2219,7 @@ contains
   
     !$omp parallel do default(shared) private(i,dx,dy,dz,djx,djy,djz,Dhelp,Dxj)
     do j=1,nelements
-      Dxj = 1.0_DP / Ddetj(:,j)
+      Dxj(1:ubound(Ddetj,1)) = 1.0_DP / Ddetj(:,j)
       
       !x-, y- and z-derivatives on reference element
       do i=1,npoints

@@ -705,7 +705,7 @@ contains
   
     !$omp parallel do default(shared) private(i,dxj)
     do j=1,nelements
-      dxj = 1E0_DP / Ddetj(:,j)
+      Dxj(1:ubound(Ddetj,1)) = 1E0_DP / Ddetj(:,j)
       
       !x-derivatives on current element
 !      IF (Bder(DER_DERIV_X)) THEN
@@ -961,7 +961,7 @@ contains
   
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
-    Dxj = 1E0_DP / Ddetj
+    Dxj(1:ubound(Ddetj,1)) = 1E0_DP / Ddetj
     do i=1,npoints
       Dp1(i)=(1.0_DP-4.0_DP*Dpoints(1,i))*Dxj(i)
       Dp2(i)=(4.0_DP*Dpoints(2,i)-1.0_DP)*Dxj(i)
@@ -1132,7 +1132,7 @@ contains
   
     !$omp parallel do default(shared) private(i,dxj,dp1,dp2,dp3)
     do j=1,nelements
-      dxj = 1E0_DP / Ddetj(:,j)
+      Dxj(1:ubound(Ddetj,1)) = 1E0_DP / Ddetj(:,j)
       
       do i=1,npoints
         Dp1(i)=(1.0_DP-4.0_DP*Dpoints(1,i,j))*Dxj(i)
@@ -1398,7 +1398,7 @@ contains
   
   !if x-or y-derivatives are desired
 !  IF ((Bder(DER_DERIV_X)) .OR. (Bder(DER_DERIV_Y))) THEN
-    dxj = 1E0_DP / Ddetj
+    Dxj(1:ubound(Ddetj,1)) = 1E0_DP / Ddetj
     
     !x-derivatives on current element
 !    IF (Bder(DER_DERIV_X)) THEN
@@ -1537,7 +1537,7 @@ contains
   
     !$omp parallel do default(shared) private(i,dxj)
     do j=1,nelements
-      dxj = 1E0_DP / Ddetj(:,j)
+      Dxj(1:ubound(Ddetj,1)) = 1E0_DP / Ddetj(:,j)
       
       !x-derivatives on current element
 !      IF (Bder(DER_DERIV_X)) THEN
