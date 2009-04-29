@@ -1922,7 +1922,7 @@ contains
     ! local variables
     integer :: i,k,icurrentElementDistr, ICUBP, NVE
     integer(I32) :: IEL, IELmax, IELset
-    real(DP) :: OM, DN1, DN2, DN3,dpp
+    real(DP) :: OM, DN1, DN2, DN3,dpp,xtorque,ytorque,atq,atqy
     real(DP) :: ah1,ah2,du1x,du1y,du2x,du2y,Dfx2,Dfy2,dalx,daly
     
     ! Cubature point coordinates on the reference element
@@ -1992,17 +1992,23 @@ contains
     ! the elements.
     integer(I32) :: cevaluationTag
     
-    real(dp) :: dpf1,dpf2
+    real(dp) :: dpf1,dpf2,dcenterx,dcentery
     
     ! 
     real(dp), dimension(:), pointer :: p_DforceX
-    real(dp), dimension(:), pointer :: p_DforceY    
+    real(dp), dimension(:), pointer :: p_DforceY  
+    type(t_geometryObject), pointer :: p_rgeometryObject  
     
     ! Prepare the weighting coefficients
     dpf1 = 1.0_DP
     dpf2 = 2.0_DP
     if (present(df1)) dpf1 = df1
     if (present(df2)) dpf2 = df2    
+
+    p_rgeometryObject => collct_getvalue_geom(rproblem%rcollection,'mini')
+
+    dcenterx = p_rgeometryObject%rcoord2D%Dorigin(1)
+    dcentery = p_rgeometryObject%rcoord2D%Dorigin(2)
 
     !
     call lsyssc_getbase_double (rpostprocessing%rResForceX,p_DforceX)
@@ -2093,6 +2099,8 @@ contains
                       
       ! Make sure that we have determinants.
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
+      
+      cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
 
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that combination of trial functions
@@ -2107,10 +2115,12 @@ contains
       Dfy = 0.0_dp
       Dfx2 = 0.0_dp
       Dfy2 = 0.0_dp
-      p_DforceX(1)= 0.0_dp
-      p_DforceX(4)= 0.0_dp
-      p_DforceY(1)= 0.0_dp
-      p_DforceY(4)= 0.0_dp
+      p_DforceX(1)=  0.0_dp
+      p_DforceX(4)=  0.0_dp
+      p_DforceY(1)=  0.0_dp
+      p_DforceY(4)=  0.0_dp
+      rproblem%DTrqForceX(1)= 0.0_dp
+      rproblem%DTrqForceY(1)= 0.0_dp
       
           
       ! Prepare the call to the evaluation routine of the analytic function.    
@@ -2243,6 +2253,13 @@ contains
             
             p_DforceX(4) = p_DforceX(4) + ah1 * om
             p_DforceY(4) = p_DforceY(4) + ah2 * om
+            
+            xtorque = rintSubset%p_DpointsReal(1,icubp,iel) - dcenterx
+            ytorque = rintSubset%p_DpointsReal(2,icubp,iel) - dcentery
+            
+            atq = xtorque * ah1 + ytorque * ah2
+            
+            rproblem%DTrqForceX(1)=rproblem%DTrqForceX(1)+atq
 
           end do ! ICUBP 
 
@@ -2250,16 +2267,19 @@ contains
         
       END DO ! IELset
       
+      ! assign the forces
       p_DforceX(1) = Dfx
       p_DforceY(1) = Dfy
       
+      ! assign the forces
       rproblem%DResForceX(1) = Dfx
       rproblem%DResForceY(1) = Dfy
       
-      
+      ! calculate also the drag and lift coefficients
       Dfx = Dfx * 2.0_dp/dpf2
       Dfy = Dfy * 2.0_dp/dpf2
       
+      ! save the coefficients
       rproblem%dCoefficientDrag = Dfx 
       rproblem%dCoefficientLift = Dfy
       
