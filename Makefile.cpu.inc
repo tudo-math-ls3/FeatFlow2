@@ -1276,6 +1276,11 @@ CFLAGSF77     := $(CFLAGSF77) -march=opteron
 CFLAGSF90     := $(CFLAGSF90) -march=opteron
 CFLAGSC       := $(CFLAGSC) -march=opteron
 endif
+# Probably activate 64 bit integer support
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -i8
+CFLAGSF90     := $(CFLAGSF90) -i8
+endif
 endif
 
 
@@ -1295,6 +1300,11 @@ CFLAGSF77     := $(CFLAGSF77) -march=opteron
 CFLAGSF90     := $(CFLAGSF90) -march=opteron
 CFLAGSC       := $(CFLAGSC) -march=opteron
 endif
+# Probably activate 64 bit integer support
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -fdefault-integer-8
+CFLAGSF90     := $(CFLAGSF90) -fdefault-integer-8
+endif
 endif
 
 
@@ -1308,6 +1318,11 @@ CFLAGSF77     := $(CFLAGSF77) -xW     #-tpp7
 CFLAGSF90     := $(CFLAGSF90) -xW     #-tpp7
 CFLAGSC       := $(CFLAGSC) -xW       #-tpp7
 LDFLAGS       := $(LDFLAGS) -xW       #-tpp7
+endif
+# Probably activate 64 bit integer support
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -integer_size 64 
+CFLAGSF90     := $(CFLAGSF90) -integer_size 64 
 endif
 endif
 
@@ -1444,8 +1459,10 @@ ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*),yes)
 # Add preprocessor flag to enable 64bit UMFPACK support. 
 # UMFPACK documentation states to also add -DLP64, but there is no 
 # reference to it in the UMFPACK 5.2 sources.
+ifeq ($(strip $(INTSIZE)), LARGE)
 CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
 CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
+endif
 endif
 
 
