@@ -468,7 +468,7 @@ contains
       rintSubset%celement = p_elementDistribution%celement
       
       call fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
-                IELmax-IELset+1,ncubp,revalElementSet%p_DpointsReal, &
+                IELmax-IELset+1,ncubp,revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1), &
                 IdofsTest,rintSubset, &
                 Dcoefficients(:,:,1:IELmax-IELset+1),rcollection)
       

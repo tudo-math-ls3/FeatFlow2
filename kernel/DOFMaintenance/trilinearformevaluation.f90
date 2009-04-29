@@ -878,8 +878,9 @@ contains
         
         call fcoeff_buildTrilMatrixSc_sim (p_rdiscrTest,p_rdiscrTrial,rform, &
                   IELmax-IELset+1,ncubp,&
-                  rintSubset%p_revalElementSet%p_DpointsReal,&
-                  p_IdofsTrial,IdofsTest,rintSubset, Dcoefficients,rcollection)
+                  rintSubset%p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                  p_IdofsTrial,IdofsTest,rintSubset, &
+                  Dcoefficients(:,:,1:IELmax-IELset+1),rcollection)
         call domint_doneIntegration(rintSubset)
       end if
       

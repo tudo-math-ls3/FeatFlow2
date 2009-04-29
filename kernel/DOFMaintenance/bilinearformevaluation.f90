@@ -4258,8 +4258,9 @@ contains
         rintSubset%celement = p_relementDistrTrial%celement
         call fcoeff_buildMatrixSc_sim (p_rdiscrTest,p_rdiscrTrial,rform, &
                   IELmax-IELset+1,ncubp,&
-                  revalElementSet%p_DpointsReal,&
-                  p_IdofsTrial,IdofsTest,rintSubset, Dcoefficients,rcollection)
+                  revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                  p_IdofsTrial,IdofsTest,rintSubset, &
+                  Dcoefficients(:,:,1:IELmax-IELset+1),rcollection)
         call domint_doneIntegration (rintSubset)
       end if
       
