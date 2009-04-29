@@ -1468,15 +1468,15 @@ sub create_feastAppMakefile {
                 "# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
                 "ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
                 "MESSAGE  := \$(MESSAGE) \\\n" .
-                "            echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
-                "            echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
+                "\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
+                "\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
                 "else\n" .
                 "APPONLYFLAGS := -DHAS_CUDA10 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
                 "endif\n" .
                 "ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
                 "MESSAGE  := \$(MESSAGE) \\\n" .
-                "            echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
-                "            echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
+                "\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
+                "\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
                 "else\n" .
                 "LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
                 "endif\n";
@@ -1486,15 +1486,15 @@ sub create_feastAppMakefile {
                 "# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
                 "ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
                 "MESSAGE  := \$(MESSAGE) \\\n" .
-                "            echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
-                "            echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
+                "\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
+                "\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
                 "else\n" .
                 "APPONLYFLAGS := -DHAS_CUDA11 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
                 "endif\n" .
                 "ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
                 "MESSAGE  := \$(MESSAGE) \\\n" .
-                "            echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
-                "            echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
+                "\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
+                "\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
                 "else\n" .
                 "LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
                 "endif\n";
@@ -1504,15 +1504,15 @@ sub create_feastAppMakefile {
                 "# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
                 "ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
                 "MESSAGE  := \$(MESSAGE) \\\n" .
-                "            echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
-                "            echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
+                "\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
+                "\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
                 "else\n" .
                 "APPONLYFLAGS := -DHAS_CUDA13 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
                 "endif\n" .
                 "ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
                 "MESSAGE  := \$(MESSAGE) \\\n" .
-                "            echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
-                "            echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
+                "\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
+                "\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
                 "else\n" .
                 "LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
                 "endif\n";
@@ -1524,15 +1524,15 @@ sub create_feastAppMakefile {
                 "# OPENGL is among the list of coprocessors, so link against X11, GL and GLEW and add appropriate includes.\n" .
                 "ifeq (\$(strip \$(GLEW_INC_PATH)),)\n" .
                 "MESSAGE  := \$(MESSAGE) \\\n" .
-                "            echo '*** Warning: GLEW_INC_PATH unset. Only standard include paths will'; \\\n" .
-                "            echo '*** Warning: be searched for the file <GL/glew.h>.';\n" .
+                "\t    echo '*** Warning: GLEW_INC_PATH unset. Only standard include paths will'; \\\n" .
+                "\t    echo '*** Warning: be searched for the file <GL/glew.h>.';\n" .
                 "else\n" .
                 "APPONLYFLAGS := -DHAS_OPENGL \$(APPONLYFLAGS) -I\$(GLEW_INC_PATH)\n" .
                 "endif\n" .
                 "ifeq (\$(strip \$(GLEW_LIB_PATH)),)\n" .
                 "MESSAGE  := \$(MESSAGE) \\\n" .
-                "            echo '*** Warning: GLEW_LIB_PATH unset. Only standard library paths will'; \\\n" .
-                "            echo '*** Warning: be searched for the library <libGLEW.{a,so}>.';\n" .
+                "\t    echo '*** Warning: GLEW_LIB_PATH unset. Only standard library paths will'; \\\n" .
+                "\t    echo '*** Warning: be searched for the library <libGLEW.{a,so}>.';\n" .
                 "else\n" .
                 "LDFLAGS      := \$(LDFLAGS) -L\$(GLEW_LIB_PATH) -lGLEW -lGL -lGLU -lX11\n" .
                 "endif\n";
@@ -2192,11 +2192,11 @@ sub create_feastAppMakefile {
         "# (But be utmost restrictive by only removing files created by a (recent) FEAT2 Makefile.)\n" .
         "purge-app: PURGEDIR = \$(dir \$(OBJDIR))\n" .
         "purge-app:\n" .
-        "        # Go to the directories that contain the architecture-specific\n" .
-        "        # object sub-directories and delete in those sub-directories\n" .
-        "        # * all object files in those where made from FEAT2 source files.\n" .
-        "        # * all module information files in those where made from FEAT2\n" .
-        "        #   Fortran 90 source files.\n" .
+        "\t# Go to the directories that contain the architecture-specific\n" .
+        "\t# object sub-directories and delete in those sub-directories\n" .
+        "\t# * all object files in those where made from FEAT2 source files.\n" .
+        "\t# * all module information files in those where made from FEAT2\n" .
+        "\t#   Fortran 90 source files.\n" .
         "\t\@echo\n" .
         "\t\@echo \"# Cleaning up in FEAT2 object directory:\"\n" .
         "\t\@echo \"# Removing wrapped source files, object files and\"\n" .
@@ -2228,9 +2228,9 @@ sub create_feastAppMakefile {
         "purge-libs: PURGEDIR = \$(dir \$(OBJDIR_LIB))\n" .
         "# Ensure that all libraries are removed that have possibly been compiled\n" .
         "purge-libs: \$(ALLLIB:%=purge-%)\n" .
-        "        # Go to the directories that contain the architecture-specific\n" .
-        "        # object sub-directories and delete in those sub-directories\n" .
-        "        # * all libraries shipped with FEAT2.\n" .
+        "\t# Go to the directories that contain the architecture-specific\n" .
+        "\t# object sub-directories and delete in those sub-directories\n" .
+        "\t# * all libraries shipped with FEAT2.\n" .
         "\t\@echo \"# Removing \$(ALLLIB) libraries\"\n" .
         "\t\@echo \"# for all build IDs\"\n" .
         "\t-\$(foreach file, \\\n" .
@@ -2580,42 +2580,42 @@ sub create_feastAppMakefile {
         ".PHONY:    check-settings-objdir\n" .
         "check-settings-objdir: DIR = \$(OBJDIR)\n" .
         "check-settings-objdir: \$(OBJDIR)\n" .
-        "        # What exactly is done here?\n" .
-        "        # In total, 9 files are created in the current object directory.\n" .
-        "        # 2 per compiler, 1 for the compiler command line settings. These\n" .
-        "        # settings are compared to previously stored ones.\n" .
-        "        # For every compiler the output of 'ls -lLd <absolute_path_to_compiler>'\n" .
-        "        # is stored in one file. To a separate file, the output of '<compiler>\n" .
-        "        # <get-version-info>' is stored. As the syntax to retrieve the compiler\n" .
-        "        # version is different for most compilers, the variables F77VERSION,\n" .
-        "        # F90VERSION, CCVERSION and CXXVERSION are evaluated. They are defined\n" .
-        "        # in one of kernel/arch/templates/*.mk files. These 8 files should catch\n" .
-        "        # all cases where a compiler has been updated, swapped for another and\n" .
-        "        # similar. In general, it is not recommended to mix object files created\n" .
-        "        # by different compiler or compiler versions.\n" .
-        "        # Compiler command line settings are stored as well. This is done to\n" .
-        "        # catch altered preprocessor macros: '-DFOO -DBAR' is used the first\n" .
-        "        # time an application is compiled while for the second compilation\n" .
-        "        # settings have been changed to '-DBAZ'. Ordinary Makefile don't detect\n" .
-        "        # this despite the change possibly having a big impact on which code\n" .
-        "        # is compiled. The same holds true for different kind of optimisation\n" .
-        "        # flags. The mechanism ensures that all object files have been compiled\n" .
-        "        # with the very same settings when it comes to linking. The settings\n" .
-        "        # stored are:\n" .
-        "        # CFLAGSF77LIBS = [...]\n" .
-        "        # CFLAGSF77     = [...]\n" .
-        "        # CFLAGSF90     = [...]\n" .
-        "        # CFLAGSC       = [...]\n" .
-        "        # CFLAGSCXX     = [...]\n" .
-        "        # APPONLYFLAGS  = [...]\n" .
-        "        # INC           = [...]\n" .
-        "        # The output is similar to the corresponding lines of 'make id' output.\n" .
-        "        # Path information, however, needs to be removed from these settings.\n" .
-        "        # Otherwise, it would not be possible to share libraries among FEAT2\n" .
-        "        # applications as the settings above often contain absolute paths to\n" .
-        "        # object directories which would lead to conflicts, e.g.:\n" .
-        "        # CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_disk/object\n" .
-        "        # CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_poisson/object\n" .
+        "\t# What exactly is done here?\n" .
+        "\t# In total, 9 files are created in the current object directory.\n" .
+        "\t# 2 per compiler, 1 for the compiler command line settings. These\n" .
+        "\t# settings are compared to previously stored ones.\n" .
+        "\t# For every compiler the output of 'ls -lLd <absolute_path_to_compiler>'\n" .
+        "\t# is stored in one file. To a separate file, the output of '<compiler>\n" .
+        "\t# <get-version-info>' is stored. As the syntax to retrieve the compiler\n" .
+        "\t# version is different for most compilers, the variables F77VERSION,\n" .
+        "\t# F90VERSION, CCVERSION and CXXVERSION are evaluated. They are defined\n" .
+        "\t# in one of kernel/arch/templates/*.mk files. These 8 files should catch\n" .
+        "\t# all cases where a compiler has been updated, swapped for another and\n" .
+        "\t# similar. In general, it is not recommended to mix object files created\n" .
+        "\t# by different compiler or compiler versions.\n" .
+        "\t# Compiler command line settings are stored as well. This is done to\n" .
+        "\t# catch altered preprocessor macros: '-DFOO -DBAR' is used the first\n" .
+        "\t# time an application is compiled while for the second compilation\n" .
+        "\t# settings have been changed to '-DBAZ'. Ordinary Makefile don't detect\n" .
+        "\t# this despite the change possibly having a big impact on which code\n" .
+        "\t# is compiled. The same holds true for different kind of optimisation\n" .
+        "\t# flags. The mechanism ensures that all object files have been compiled\n" .
+        "\t# with the very same settings when it comes to linking. The settings\n" .
+        "\t# stored are:\n" .
+        "\t# CFLAGSF77LIBS = [...]\n" .
+        "\t# CFLAGSF77     = [...]\n" .
+        "\t# CFLAGSF90     = [...]\n" .
+        "\t# CFLAGSC       = [...]\n" .
+        "\t# CFLAGSCXX     = [...]\n" .
+        "\t# APPONLYFLAGS  = [...]\n" .
+        "\t# INC           = [...]\n" .
+        "\t# The output is similar to the corresponding lines of 'make id' output.\n" .
+        "\t# Path information, however, needs to be removed from these settings.\n" .
+        "\t# Otherwise, it would not be possible to share libraries among FEAT2\n" .
+        "\t# applications as the settings above often contain absolute paths to\n" .
+        "\t# object directories which would lead to conflicts, e.g.:\n" .
+        "\t# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_disk/object\n" .
+        "\t# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_poisson/object\n" .
         "\t\@+\\\n" .
         "\techo \"# Checking whether compiler or compiler command line settings\"; \\\n" .
         "\techo \"# used to build the application have changed since last time\"; \\\n" .
@@ -2694,7 +2694,7 @@ sub create_feastAppMakefile {
         "check-settings-objdir_lib: DIR = \$(OBJDIR_LIB)\n" .
         "check-settings-objdir_lib: \$(OBJDIR_LIB)\n" .
         "ifneq (\$(OBJDIR_LIB), \$(OBJDIR))\n" .
-        "        # What exactly is done here? See comment in target check-settings-objdir.\n" .
+        "\t# What exactly is done here? See comment in target check-settings-objdir.\n" .
         "\t\@+\\\n" .
         "\techo \"# Checking whether compiler or compiler command line settings\"; \\\n" .
         "\techo \"# used to build the libraries have changed since last time\"; \\\n" .
@@ -3385,48 +3385,48 @@ sub create_feastBenchmarkMakefile {
         "# and validate all the test cases contained in tests/\$(TESTCASES).\n" .
         ".PHONY: create-script\n" .
         "create-script:\n" .
-        "        \@echo \"# Creating script to perform test whose IDs are coded in <\$(TESTCASES)>\"\n" .
-        "        \@\$(MAKE) create-script-header\n" .
-        "        \@\$(MAKE) create-script-body\n" .
+        "\t\@echo \"# Creating script to perform test whose IDs are coded in <\$(TESTCASES)>\"\n" .
+        "\t\@\$(MAKE) create-script-header\n" .
+        "\t\@\$(MAKE) create-script-body\n" .
         "\n" .
         ".PHONY: create-script-header\n" .
         "create-script-header:  SUPPRESSOUTPUT=1\n" .
         "create-script-header:  DEBUGGER=0\n" .
         "create-script-header:  MPIENV=\n" .
         "create-script-header:        include/runtests.template\n" .
-        "        # Include script template, applying defaults settings or overriding\n" .
-        "        # them with command line given settings:\n" .
-        "        # If SUPPRESSOUTPUT is specified on command line, its value is used,\n" .
-        "        # otherwise SUPPRESSOUTPUT keeps default value defined in this Makefile\n" .
-        "        # target's variable definition section.\n" .
-        "        # The same mechanism applies to DEBUGGER and MPIENV.\n" .
+        "\t# Include script template, applying defaults settings or overriding\n" .
+        "\t# them with command line given settings:\n" .
+        "\t# If SUPPRESSOUTPUT is specified on command line, its value is used,\n" .
+        "\t# otherwise SUPPRESSOUTPUT keeps default value defined in this Makefile\n" .
+        "\t# target's variable definition section.\n" .
+        "\t# The same mechanism applies to DEBUGGER and MPIENV.\n" .
         "\t\@cat include/runtests.template | \\\n" .
         "\t\t sed -e \"s/^SUPPRESSOUTPUT=<SET_VIA_MAKEFILE>/SUPPRESSOUTPUT=\$(SUPPRESSOUTPUT)/; \\\n" .
         "\t\t\ts/^DEBUGGER=<SET_VIA_MAKEFILE>/DEBUGGER=\$(DEBUGGER)/; \\\n" .
         "\t\t\ts/^MPIENV=<SET_VIA_MAKEFILE>/MPIENV=\$(MPIENV)/;\" > \$(SCRIPT)\n".
         "\n" .
-        "        # Determine build ID\n" .
+        "\t# Determine build ID\n" .
         "\t\@echo \"BUILDID=\$(LIBID)\" >> \$(SCRIPT);\n" .
         "\t\@echo >> \$(SCRIPT);\n" .
         "\n" .
-        "        # Applications are named according the scheme:\n" .
-        "        #   <APPL_BASENAME>-<application>\n" .
-        "        # where <application> is both found \n" .
-        "        # * in {kernel,apps,area51}_<application> and \n" .
-        "        # * as value of the keyword 'appl' in a *.fbdef file in subdirectory 'tests'.\n" .
-        "        #\n" .
-        "        # Define <APPL_BASENAME>\n" .
+        "\t# Applications are named according the scheme:\n" .
+        "\t#   <APPL_BASENAME>-<application>\n" .
+        "\t# where <application> is both found \n" .
+        "\t# * in {kernel,apps,area51}_<application> and \n" .
+        "\t# * as value of the keyword 'appl' in a *.fbdef file in subdirectory 'tests'.\n" .
+        "\t#\n" .
+        "\t# Define <APPL_BASENAME>\n" .
         "\t\@(echo \"APPL_BASENAME=\"\$(APPBASE); echo) >> \$(SCRIPT)\n" .
         "\n" .
         ".PHONY: create-script-body\n" .
         "create-script-body:\n" .
-        "        # Create detailed instructions for each test in \$(TESTCASES)\n" .
+        "\t# Create detailed instructions for each test in \$(TESTCASES)\n" .
         "\t\@MODE=\$(MODE) ID=\$(LIBID) include/create_script.pl \$(TESTCASES) >> \$(SCRIPT)\n" .
         "\n" .
-        "        # Call footer function\n" .
+        "\t# Call footer function\n" .
         "\t\@( echo; echo fb_footer; echo; ) >> \$(SCRIPT)\n" .
         "\n" .
-        "        # Give script executable permissions\n" .
+        "\t# Give script executable permissions\n" .
         "\t\@chmod a+x \$(SCRIPT)\n" .
         "\t\@echo \"# Script named <\$(SCRIPT)> has been created.\"\n" .
         "\n" .
@@ -3452,8 +3452,8 @@ sub create_feastBenchmarkMakefile {
         "clean:\n" .
         "\t-rm -f \$(APPS)\n" .
         "\t-rm -f \$(SCRIPT)\n" .
-        "         # the following removes binaries created by test-compile (simultaneous \n" .
-        "         # compilation in one checkout with several build IDs) \n" .
+        "\t # the following removes binaries created by test-compile (simultaneous \n" .
+        "\t # compilation in one checkout with several build IDs) \n" .
         "\t-rm -f \$(patsubst kernel_%, \$(ID)-\$(APPBASE)-%, \$(filter kernel_%, \$(SRCDIRS))) \\\n" .
         "\t       \$(patsubst apps_%,   \$(ID)-\$(APPBASE)-%, \$(filter apps_%,   \$(SRCDIRS))) \\\n" .
         "\t       \$(patsubst area51_%, \$(ID)-\$(APPBASE)-%, \$(filter area51_%, \$(SRCDIRS)))\n" .
