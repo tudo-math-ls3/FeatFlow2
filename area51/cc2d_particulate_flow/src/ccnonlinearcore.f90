@@ -1066,7 +1066,9 @@ contains
             dres    = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
                           rnonlinearIteration%DresidualOld(2)**2)
             
-            dtempdef = dres / dresInit
+            if(dres .ne. 0.0_dp) then
+              dtempdef = dres / dresInit
+            end if
             
             if (bassembleNewton) then
               p_rsolverNode%depsAbs = &

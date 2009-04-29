@@ -770,6 +770,8 @@ contains
     ! Release the auxiliary vector
     call lsysbl_releaseVector (rprjVector)
     
+    call storage_free(ipolyHandle)
+    
     ! Release the discretisation structure.
     call spdiscr_releaseBlockDiscr (rprjDiscretisation)
     
@@ -1084,6 +1086,9 @@ contains
       call lsyssc_releaseVector (rpostprocessing%rResForceY)
     if (rpostprocessing%rvectorScalarFBQ1%NEQ .ne. 0) &
       call lsyssc_releaseVector (rpostprocessing%rvectorScalarFBQ1)
+    if (rpostprocessing%rvectorScalarFB%NEQ .ne. 0) &
+      call lsyssc_releaseVector (rpostprocessing%rvectorScalarFB)
+      
       
 
   end subroutine
@@ -1255,7 +1260,7 @@ contains
   call output_line ('Q1 Vector recalculated ')
   call output_separator(OU_SEP_EQUAL)   
   
-  call cc_forcesIntegrationNonStat(rvector,rpostprocessing,&
+  call cc_forcesIntegrationNonStat(rproblem,rvector,rpostprocessing,&
        rpostprocessing%rvectorScalarFB, DResForceX, &
        DResForceY,0.001_dp,rvectorAlpha,0.001_dp,0.1_dp*0.2_dp**2)
   
@@ -1446,20 +1451,27 @@ contains
   
 !</subroutine>
   ! local variables
-  real :: dCenterX,dCenterY,dRadius
+  real :: dCenterX,dCenterY,dRadius,ddist
   integer :: i,j
+  type(t_geometryObject), pointer :: p_rgeometryObject
+
+  p_rgeometryObject => collct_getvalue_geom(rcollection,'mini')
 
   select case (cderivative)
   case (DER_FUNC)
-  ! 
   
-  dCenterX = rcollection%Dquickaccess(7)
-  dCenterY = rcollection%Dquickaccess(8)
+  ! get the neccessary from the geometry structure
+  dCenterX = p_rgeometryObject%rcoord2D%Dorigin(1)
+  dCenterY = p_rgeometryObject%rcoord2D%Dorigin(2)
+  
+  dRadius = p_rgeometryObject%rcircle%dradius
 
+  ! loop over all elements and calculate the
+  ! values in the cubature points
   do i=1,nelements
     do j=1,npointsPerElement
-        dRadius = sqrt((Dpoints(1,j,i) - dCenterX)**2 + (Dpoints(2,j,i) -dCenterY)**2)
-      if(dRadius < 0.05_DP)then
+        ddist = sqrt((Dpoints(1,j,i) - dCenterX)**2 + (Dpoints(2,j,i) -dCenterY)**2)
+      if(ddist < dRadius)then
         Dvalues(j,i) =  1.0_DP 
       else
         Dvalues(j,i) = 0.0_DP
@@ -1861,7 +1873,7 @@ contains
 ! ***************************************************************************  
 
 !<subroutine>
-  subroutine cc_forcesIntegrationNonStat(rvectorSol,rpostprocessing,&
+  subroutine cc_forcesIntegrationNonStat(rproblem,rvectorSol,rpostprocessing,&
              rvectorAlpha,Dfx,Dfy,dnu,Dalpha,df1,df2)
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -1893,10 +1905,11 @@ contains
   ! If neglected, df2=2.0 is assumed.
   real(DP), intent(IN), optional      :: df2
   
-  
 !</input>
 
   type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
+
+  type(t_problem) :: rproblem
 
 !<output>
   ! Array receiving the calculated error.
@@ -2240,8 +2253,15 @@ contains
       p_DforceX(1) = Dfx
       p_DforceY(1) = Dfy
       
+      rproblem%DResForceX(1) = Dfx
+      rproblem%DResForceY(1) = Dfy
+      
+      
       Dfx = Dfx * 2.0_dp/dpf2
       Dfy = Dfy * 2.0_dp/dpf2
+      
+      rproblem%dCoefficientDrag = Dfx 
+      rproblem%dCoefficientLift = Dfy
       
       ! Release memory
       call elprep_releaseElementSet(rintSubset)
@@ -2481,22 +2501,23 @@ contains
     real(dp), dimension(:), pointer :: p_DforceX
     real(dp), dimension(:), pointer :: p_DforceY
     
+    ! get the geometry object
     p_rgeometryObject => collct_getvalue_geom (rproblem%rcollection, 'mini')    
     
-    !
+    ! get the arrays from the pointers
     call lsyssc_getbase_double (rpostprocessing%rResForceX,p_DforceX)
     call lsyssc_getbase_double (rpostprocessing%rResForceY,p_DforceY)
-        
+    
     ! position
-    dCenterX=rproblem%rcollection%DQuickaccess(7)
-    dCenterY=rproblem%rcollection%DQuickaccess(8)
+    dCenterX=p_rgeometryObject%rcoord2D%Dorigin(1)
+    dCenterY=p_rgeometryObject%rcoord2D%Dorigin(2)
     
     ! old position
-    dCenterXold=rproblem%rcollection%DQuickaccess(7)
-    dCenterYold=rproblem%rcollection%DQuickaccess(8)
+    dCenterXold=p_rgeometryObject%rcoord2D%Dorigin(1)
+    dCenterYold=p_rgeometryObject%rcoord2D%Dorigin(2)
     
     ! some physical parameters
-    dvolume  = (0.05_dp)**2 * 3.14159265_dp
+    dvolume  = (0.05_dp)**2 * SYS_PI
     dmasssl  = 10.1_dp * dvolume 
     ddmasssl = 9.1_dp * dvolume 
     
@@ -2517,23 +2538,22 @@ contains
     
     print *,"dmasssl: ",dmasssl
  
- 
     ! save the old forces for the next time step
     p_DforceX(5) = p_DforceX(4)
     p_DforceY(5) = p_DforceY(4)
     
-    ! Update the position
-!    dCenterX=dCenterX+dtime*p_DforceX(4)+0.5_dp*dvelx+0.025_dp !gravity
-!    dCenterY=dCenterY+dtime*p_DforceY(4)+0.5_dp*dvely
-!    dCenterZ=dCenterZ+dtime*p_DforceZ(4)+0.5_dp*dvelz
-
-    dCenterX=dCenterX+dtimestep*(p_DforceX(6)+0.5_dp*dvelx)
+    ! save the old forces for the next time step
+    rproblem%DResForceX(2) = rproblem%DResForceX(1)
+    rproblem%DResForceY(2) = rproblem%DResForceY(1)
+    
+    ! update the position of the center
+    !
+    dCenterX=dCenterX+dtimestep*(p_DforceX(6)+0.5_dp*dvelx) 
     dCenterY=dCenterY+dtimestep*(p_DforceY(6)+0.5_dp*dvely)
     
+    ! update the position of the geometry object
     p_rgeometryObject%rcoord2D%Dorigin(1)=dCenterX
     p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
-    
-
     
     print *,"New Position X: ",dCenterX
     
@@ -2545,30 +2565,28 @@ contains
     p_DforceX(6) = p_DforceX(6) + dvelx
     p_DforceY(6) = p_DforceY(6) + dvely
 
-!    p_DforceX(6) = dvelx
-!    p_DforceY(6) = dvely
+    ! save the current velocity
+    rproblem%DVelX(1)=p_DforceX(6)
+    rproblem%DVelY(1)=p_DforceY(6)
 
-    
     ! write back new position
+    ! we need to write it to the collection so we can
+    ! access it in the callback routine
     rproblem%rcollection%DQuickaccess(7)=dCenterX
     rproblem%rcollection%DQuickaccess(8)=dCenterY
     
-    ! hier ist das problem, diese Velocity ist nicht
-    ! sowas wie der VelocityVector...
+    ! We need the velocity in the callback routine
+    ! for the right hand side, so we save it to
+    ! the collection here, so it will be available
+    ! for the callback routine
     rproblem%rcollection%DQuickaccess(10)= p_DforceX(6)
     rproblem%rcollection%DQuickaccess(11)= p_DforceY(6)
-
-!    rproblem%rcollection%DQuickaccess(10)=(dCenterX-dCenterXold)/dtimestep
-!    rproblem%rcollection%DQuickaccess(11)=(dCenterY-dCenterYold)/dtimestep
-!    rproblem%rcollection%DQuickaccess(12)=(dCenterZ-dCenterZold)/dtimestep
-
-!    rproblem%rcollection%DQuickaccess(10)=(dCenterX-dCenterXold)
-!    rproblem%rcollection%DQuickaccess(11)=(dCenterY-dCenterYold)
     
+    
+
     print *,"--------------------------"
     
     print *,"accumulated velocity: ",p_DforceX(6)
-    
     
     print *,"--------------------------"
     
@@ -2577,7 +2595,5 @@ contains
   end subroutine
 
 ! ***************************************************************************
-  
-  
 
 end module

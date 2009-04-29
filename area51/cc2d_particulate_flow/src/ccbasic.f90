@@ -297,6 +297,26 @@ module ccbasic
     ! A statistics structure gathering statistical data about the
     ! simulation.
     type(t_cc_statistics)                 :: rstatistics
+    
+    real(dp),dimension(2) :: DResForceX
+    
+    real(dp),dimension(2) :: DResForceY
+
+    real(dp),dimension(2) :: DTrqForceX
+    
+    real(dp),dimension(2) :: DTrqForceY
+    
+    real(dp),dimension(2) :: DVelX
+
+    real(dp),dimension(2) :: DVelY    
+    
+    real(dp),dimension(2) :: DAngVelX
+
+    real(dp),dimension(2) :: DAngVelY    
+
+    real(dp) :: dCoefficientDrag
+
+    real(dp) :: dCoefficientLift
 
   end type
 

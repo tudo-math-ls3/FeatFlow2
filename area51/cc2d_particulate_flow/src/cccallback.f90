@@ -121,7 +121,7 @@ module cccallback
   use vectorfilters
   use bcassembly
   use mprimitives
-  
+  use geometry
   use ccbasic
   
   implicit none
@@ -1449,14 +1449,12 @@ contains
   ! Values in a fictitious boundary component:
 
 !<subroutine>
-
   subroutine getBoundaryValuesFBC2(Icomponents,rdiscretisation,&
                                    Revaluation, rcollection)
     
     use collection
     use spatialdiscretisation
     use discretefbc
-    
   !<description>
     ! This subroutine is called during the discretisation of boundary
     ! conditions on fictitious boundary components. It calculates a special quantity 
@@ -1531,6 +1529,7 @@ contains
     integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtEdge
     type(t_triangulation), pointer :: p_rtriangulation
     integer :: ipoint,idx
+    type(t_geometryObject), pointer :: p_rgeometryObject
     
     ! Get the triangulation array for the point coordinates
     p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
@@ -1541,13 +1540,14 @@ contains
     call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
                                 p_IverticesAtEdge)
 
+    ! get the data out of the geometry structure
+    p_rgeometryObject => collct_getvalue_geom(rcollection,'mini')
+
+    dxcenter = p_rgeometryObject%rcoord2D%Dorigin(1)
+    dycenter = p_rgeometryObject%rcoord2D%Dorigin(2)
+
     ! Definition of the circle
-    dradius  = 0.05
-    
-    dxcenter = rcollection%Dquickaccess(7)
-    
-    dycenter = rcollection%Dquickaccess(8)
-    
+    dradius  = p_rgeometryObject%rcircle%dradius
     
     ! Loop through the points where to evaluate:
     do idx = 1,Revaluation(1)%nvalues
@@ -1573,10 +1573,7 @@ contains
         Revaluation(1)%p_Iinside (idx) = 1
         Revaluation(2)%p_Iinside (idx) = 1
         
-        ! We prescribe 0.0 as Dirichlet value here - for x- and y-velocity
-!        Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
-!        Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
-        
+        ! We prescribe our values as Dirichlet value here - for x- and y-velocity
         Revaluation(1)%p_Dvalues (idx,1) = rcollection%Dquickaccess(10)
         Revaluation(2)%p_Dvalues (idx,1) = rcollection%Dquickaccess(11)
         

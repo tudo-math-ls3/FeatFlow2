@@ -125,26 +125,13 @@ contains
     call collct_init (p_rproblem%rcollection)
     
     rgeometryObject%ndimension = NDIM2D
+  
+    ! define our particle    
+    CALL geom_init_circle(rgeometryObject,0.05_dp,(/0.2_dp,0.2_dp/))
     
-    CALL geom_init_circle(rgeometryObject,0.05_dp,(/0.2_dp,0.1_dp/))
-    
-!  subroutine geom_init_circle_direct(rgeomObject, dradius, Dorigin, &
-!                                     drotation, dscalingFactor, binverted)
-    
-    
+    ! we put the geometry object into the collection
+    ! to make it easily accessible
     CALL collct_setvalue_geom(p_rproblem%rcollection, 'mini', rgeometryObject,.true.)
-    
-!    so holt man es wieder aus der collection raus    
-!    TYPE(t_geometryObject), POINTER :: p_rgeometryObject    
-!    
-!    p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')    
-    
-    
-    
-    ! initial x-position
-    p_rproblem%rcollection%Dquickaccess(7)=0.2_dp
-    ! initial y-position
-    p_rproblem%rcollection%Dquickaccess(8)=0.1_dp
     
     ! Initialise the parameter list object. This creates an empty parameter list.
     call parlst_init (p_rproblem%rparamList)
@@ -345,6 +332,8 @@ contains
 
     ! Release the parameter list
     call parlst_done (p_rproblem%rparamList)
+    
+    call collct_deletevalue (p_rproblem%rcollection, 'mini')
     
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()
