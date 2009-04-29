@@ -121,7 +121,7 @@ module cccallback
   use vectorfilters
   use bcassembly
   use mprimitives
-  
+  use geometry
   use ccbasic
   
   implicit none
@@ -453,7 +453,10 @@ contains
     
   !</subroutine>
   
-    real(DP) :: dtime
+    real(DP) :: dtime,drho1,drho2
+    integer :: iel,icup,iin
+    type(t_geometryObject), pointer :: p_rgeometryObject
+
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -461,9 +464,28 @@ contains
       dtime = rcollection%Dquickaccess(1)
     else
       dtime = 0.0_DP
+      stop
+      print *,"keine collection"
     end if
     
-    Dcoefficients(:,:,:) = 0.0_DP
+    drho1    = rcollection%Dquickaccess(5)
+    drho2    = rcollection%Dquickaccess(6)
+    
+    ! get a pointer to the geometry object
+    p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')       
+    
+    ! loop over the elements and cubature points
+    ! and assign the coefficients 
+    do iel=1,nelements
+      do icup=1,npointsPerElement
+        call geom_isInGeometry (p_rgeometryObject, Dpoints(:,icup,iel), iin)
+        if(iin .eq. 1)then 
+          Dcoefficients(1,icup,iel) = drho2 * 0.09807_dp
+        else
+          Dcoefficients(1,icup,iel) = drho1 * 0.09807_dp
+        end if
+      end do
+    end do
 
   end subroutine
 

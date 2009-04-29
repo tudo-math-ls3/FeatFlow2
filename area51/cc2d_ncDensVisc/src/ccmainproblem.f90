@@ -154,6 +154,9 @@ contains
     
     call collct_setvalue_geom(p_rproblem%rcollection, 'mini', rgeometryObject,.true.)
     
+    p_rproblem%rcollection%Dquickaccess(5) = p_rproblem%drho1    
+    p_rproblem%rcollection%Dquickaccess(6) = p_rproblem%drho2    
+    
     ! So now the different steps - one after the other.
     !
     ! Initialisation

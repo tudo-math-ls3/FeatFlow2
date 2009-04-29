@@ -104,6 +104,8 @@ module ccmatvecassembly
   ! Bypass memory allocation for matrices.
   integer(I32), parameter :: CMASM_QUICKREFERENCES        = 4
   
+
+  
 !</constantblock>
 
 !<constantblock description="Identifiers for the IUPWIND parameter that specifies how to set up the nonlinearity or stabilisation.">
@@ -2326,16 +2328,12 @@ contains
     ! here we store the values of u and rho
     real(dp), dimension(:,:,:), allocatable :: Dvalues
     real(dp) :: dxcenter, dycenter, dradius, ddist,drho,drho1,drho2
-    type(t_triangulation), pointer :: p_rtriangulation
     
     type(t_geometryObject), pointer :: p_rgeometryObject
     
     ! get a pointer to the geometry object
     p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')       
     
-    ! Get the triangulation array for the point coordinates
-    p_rtriangulation => rdiscretisationTrial%p_rtriangulation
-
     ! Definition of the circle
 !    dxcenter = 0.5
 !    dycenter = 0.5
@@ -2343,7 +2341,6 @@ contains
     
     drho1    = rcollection%Dquickaccess(5)
     drho2    = rcollection%Dquickaccess(6)
-
 
     ! get the pointers form the collection
     p_rvectorScalarUx => rcollection%p_rvectorQuickAccess1%RvectorBlock(1)
@@ -2462,16 +2459,12 @@ contains
     real(dp), dimension(:,:,:), allocatable :: Dvalues
     real(dp) :: dxcenter, dycenter, dradius, ddist,drho,drho1,drho2
     real(dp), dimension(:), allocatable :: DrhoElement
-    type(t_triangulation), pointer :: p_rtriangulation
     
     type(t_geometryObject), pointer :: p_rgeometryObject
     
     ! get a pointer to the geometry object
     p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')       
     
-    ! Get the triangulation array for the point coordinates
-    p_rtriangulation => rdiscretisationTrial%p_rtriangulation
-
     drho1    = rcollection%Dquickaccess(5)
     drho2    = rcollection%Dquickaccess(6)
 
@@ -2499,5 +2492,8 @@ contains
   end subroutine
 
   ! ***************************************************************************
+  
+
+  !****************************************************************************
 
 end module

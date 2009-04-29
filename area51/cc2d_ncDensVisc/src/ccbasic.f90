@@ -256,6 +256,13 @@ module ccbasic
     real(DP) :: drho1
     real(DP) :: drho2
     
+    real(DP) :: duold1 = 0.0_dp
+    real(DP) :: duold2 = 0.0_dp
+
+    real(DP) :: du1 = 0.0_dp
+    real(DP) :: du2 = 0.0_dp
+
+    
     ! Type of problem.
     ! =0: Stokes.
     ! =1: Navier-Stokes.
