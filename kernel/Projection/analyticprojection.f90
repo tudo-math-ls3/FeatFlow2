@@ -642,9 +642,9 @@ contains
         ! function values in the cubature points:  u(x,y)
         call ffunctionReference (DER_FUNC,p_rdiscretisation, &
                     int(IELmax-IELset+1),ncubp,&
-                    revalElementSet%p_DpointsReal,&
+                    revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                     IdofsTrial,rintSubset,&
-                    Dcoefficients(:,1:IELmax-IELset+1_I32),rcollection)
+                    Dcoefficients(:,1:IELmax-IELset+1),rcollection)
 
         ! Another element dependent part: evaluation of the functional.
         select case (p_relementDistribution%celement)

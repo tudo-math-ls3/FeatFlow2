@@ -1138,7 +1138,7 @@ contains
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC1D, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp, &
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset, &
                         Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
           else
@@ -1225,7 +1225,7 @@ contains
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC1D, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
           else
@@ -1312,7 +1312,7 @@ contains
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_DERIV1D_X, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
                         
@@ -1684,7 +1684,7 @@ contains
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
           else
@@ -1771,7 +1771,7 @@ contains
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
           else
@@ -1850,7 +1850,7 @@ contains
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_DERIV_X, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
                         
@@ -1858,7 +1858,7 @@ contains
 
             call ffunctionReference (DER_DERIV_Y,rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1,2), rcollection)
           else
@@ -2236,7 +2236,7 @@ contains
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC3D, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
           else
@@ -2323,7 +2323,7 @@ contains
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC3D, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
           else
@@ -2410,21 +2410,21 @@ contains
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_DERIV3D_X, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
                         
             ! Calculate the Y-derivative to Dcoefficients(:,:,2)
             call ffunctionReference (DER_DERIV3D_Y, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset,&
                         Dcoefficients(:,1:IELmax-IELset+1,2), rcollection)
 
             ! Calculate the Z-derivative to Dcoefficients(:,:,3)
             call ffunctionReference (DER_DERIV3D_Z, rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
-                        revalElementSet%p_DpointsReal,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
                         IdofsTrial, rintSubset, &
                         Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
           else
