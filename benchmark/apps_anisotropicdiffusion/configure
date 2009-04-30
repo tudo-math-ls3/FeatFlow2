@@ -97,8 +97,8 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 # Finally, invoke the main workhorse:
 ../../bin/configure \
 	--appname=anisotropicdiffusion \
-	--programfile=../../applications/anisotropicdiffusion\src/src/anisotropicdiffusion.f90 \
-	--srclist_app="`ls ../../applications/anisotropicdiffusion\src/src/*.f90`" \
+	--programfile=../../applications/anisotropicdiffusion/src/anisotropicdiffusion.f90 \
+	--srclist_app="`ls ../../applications/anisotropicdiffusion/src/*.f90`" \
 	--objdir-prefix=${OBJDIRPREFIX} \
 	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
 	$@
