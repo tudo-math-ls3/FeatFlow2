@@ -12,6 +12,15 @@ NLMIN = 3
 # Level where to solve. >= NLMIN !
 NLMAX = 6
 
+# Path where to write output files to
+sucddir = './gmv'
+
+# Path to the parametrisation
+sprmfile = './pre/QUAD.prm'
+
+# Path to the triangulation
+strifile = './pre/QUAD.tri'
+
 #------------------------------------------------------------------------------
 # The 'equation' section configures the different constants in the equation.
 #

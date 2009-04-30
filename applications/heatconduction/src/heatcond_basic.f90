@@ -110,6 +110,12 @@ module heatcond_basic
 
     ! A parameter block for everything that controls the time dependence.
     type(t_problem_nonst) :: rtimedependence
+    
+    ! Directory for output files
+    character(len=SYS_STRLEN) :: sucddir
+    
+    ! File to the parametrisation and triangulation
+    character(len=SYS_STRLEN) :: sprmfile,strifile
 
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently

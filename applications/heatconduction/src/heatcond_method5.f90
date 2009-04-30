@@ -84,6 +84,76 @@ contains
 
 !<subroutine>
 
+  subroutine hc5_initparameters (rparams,rproblem)
+  
+!<description>
+  ! Reads the DAT file from disc into the parameter list rparams and
+  ! initialises basic variables (number of levels, time stepping technique)
+  ! in rproblem according to these settings.
+!</description>
+
+!<inputoutput>
+  ! A parameter list structure accepting the parameters from the DAT file.
+  type(t_parlist), intent(INOUT) :: rparams
+
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(INOUT), target :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  integer :: cscheme,niterations
+  real(DP) :: dtheta,dtstep,dtimemin,dtimemax
+  character(len=SYS_STRLEN) :: smaster,sstring
+
+    ! Read the parameters from disc and put a reference to it
+    ! to the collection
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/heatcond.dat')
+    call parlst_readfromfile (rparams, smaster)
+
+    ! We want to solve our Laplace problem on level...
+    call parlst_getvalue_int (rparams, 'GENERAL', 'NLMIN', rproblem%ilvmin, 7)
+    call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', rproblem%ilvmax, 7)
+    
+    ! Get the parameters for the time stepping scheme from the parameter list
+    call parlst_getvalue_int (rparams, 'TIMESTEPPING', 'CSCHEME', cscheme, 0)
+    call parlst_getvalue_int (rparams, 'TIMESTEPPING', 'NITERATIONS', niterations, 1000)
+    call parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTHETA', dtheta, 1.0_DP)
+    call parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTSTEP', dtstep, 0.1_DP)
+    call parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTIMEMIN', dtimemin, 0.0_DP)
+    call parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTIMEMAX', dtimemax, 1.0_DP)
+    
+    ! Get the path where to write gmv's to.
+    call parlst_getvalue_string (rparams, 'GENERAL', &
+                                 'sucddir', sstring,'''./pre/QUAD.prm''')
+    read(sstring,*) rproblem%sucddir
+    
+    ! Get the path of the prm/tri files.
+    call parlst_getvalue_string (rparams, 'GENERAL', &
+                                 'sprmfile', sstring,'''./pre/QUAD.prm''')
+    read(sstring,*) rproblem%sprmfile
+
+    call parlst_getvalue_string (rparams, 'GENERAL', &
+                                 'strifile', sstring,'''./pre/QUAD.tri''')
+    read(sstring,*) rproblem%strifile
+
+    ! Initialise the time stepping in the problem structure
+    call timstp_init (rproblem%rtimedependence%rtimestepping, &
+                      cscheme, dtimemin, dtstep, dtheta)
+                     
+    rproblem%rtimedependence%niterations = niterations
+    
+    rproblem%rtimedependence%dtimemin = dtimemin
+    rproblem%rtimedependence%dtime = dtimemin
+    rproblem%rtimedependence%dtimemax = dtimemax
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine heatcond5
   
 !<description>

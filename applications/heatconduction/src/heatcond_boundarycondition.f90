@@ -234,8 +234,8 @@ contains
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
     p_rdiscreteBC => rproblem%RlevelInfo(rproblem%ilvmax)%p_rdiscreteBC
-    call vecfil_discreteBCrhs (rrhs,dtimeWeight,p_rdiscreteBC)
-    call vecfil_discreteBCsol (rvector,dtimeWeight,p_rdiscreteBC)
+    call vecfil_discreteBCrhs (rrhs,p_rdiscreteBC)
+    call vecfil_discreteBCsol (rvector,p_rdiscreteBC)
 
     ! Implement discrete boundary conditions into the matrices on all 
     ! levels, too. Call the appropriate matrix filter to modify

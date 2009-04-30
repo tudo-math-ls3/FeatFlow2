@@ -90,6 +90,9 @@ contains
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
 
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
     type(t_blockDiscretisation) :: rdiscretisation
@@ -142,6 +145,7 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
+    character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
 
     ! Ok, let's start. 
@@ -156,12 +160,16 @@ contains
     ! We start at time 0.0.
     dtime = 0.0_DP
     
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
@@ -472,9 +480,14 @@ contains
       
       ! That's it, rvectorBlock now contains our solution. We can now
       ! start the postprocessing. 
+      !
+      ! Get the path for writing postprocessing files from the environment variable
+      ! $UCDDIR. If that does not exist, write to the directory "./gmv".
+      if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+
       ! Start UCD export to GMV file:
       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                        'gmv/u2.gmv.'//trim(sys_si0L(itimestep,5)))
+                        trim(sucddir)//'/u2.gmv.'//trim(sys_si0L(itimestep,5)))
       
       call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
       call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

@@ -89,11 +89,11 @@ contains
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rproblem%rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(rproblem%rboundary, rproblem%sprmfile)
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation, &
-        './pre/QUAD.tri', rproblem%rboundary)
+        rproblem%strifile, rproblem%rboundary)
     
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering(rproblem%ilvmin-1,&
