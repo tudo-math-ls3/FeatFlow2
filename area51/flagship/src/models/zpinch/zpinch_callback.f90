@@ -9,23 +9,20 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) zpinch_nlsolverCallback
-!#     -> Callback routine for the nonlinear solver
-!#
-!# 2.) zpinch_calcVelocityField
+!# 1.) zpinch_calcVelocityField
 !#     -> Calculates the velocity field for the scalar transport model
 !#
-!# 3.) zpinch_calcSourceTerm
+!# 2.) zpinch_calcSourceTerm
 !#     -> Calculates the source term
 !#
-!# 4.) zpinch_calcLinearizedFCT
+!# 3.) zpinch_calcLinearizedFCT
 !#     -> Calculates the linearized FCT correction
 !#
-!# 5.) zpinch_hadaptCallbackScalar2d
+!# 4.) zpinch_hadaptCallbackScalar2d
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in interleave format
 !#
-!# 6.) zpinch_hadaptCallbackBlock2d
+!# 5.) zpinch_hadaptCallbackBlock2d
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in block format
 !#
@@ -64,222 +61,12 @@ module zpinch_callback
   public :: zpinch_hadaptCallbackBlock2d
 
 contains
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                     rsolution, rsolutionInitial,&
-                                     rrhs, rres, istep, ioperationSpec,&
-                                     rcollection, istatus, rb)
-
-!<description>
-    ! This subroutine is called by the nonlinear solver and it is responsible
-    ! to assemble preconditioner, right-hand side vector, residual vector, etc.
-!</description>
-
-!<input>
-    ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
-    
-    ! number of solver step
-    integer, intent(IN) :: istep
-    
-    ! specifier for operations
-    integer(I32), intent(IN) :: ioperationSpec
-    
-    ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(IN), optional :: rb
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
-    
-    ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
-    
-    ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
-    
-    ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
-    
-    ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
-
-    ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
-        
-    ! collection structure
-    type(t_collection), intent(INOUT) :: rcollection
-!</inputoutput>
-
-!<output>
-    ! status flag
-    integer, intent(OUT) :: istatus
-!</output>
-!</subroutine>
-    
-    ! local variable
-    type(t_vectorBlock) :: rvector
-    type(t_vectorBlock), pointer :: p_rsolutionTransport
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataEuler, p_Ddata, p_MC, p_ML
-    integer, dimension(:), pointer :: p_Kld, p_Kcol
-    integer :: neq, nvar, isystemFormat, lumpedMassMatrix, consistentMassMatrix
-
-    print *, "NOT USED ANY MORE"
-    stop
-      
-    ! Do we have to calculate the preconditioner?
-    ! --------------------------------------------------------------------------
-    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) .or.&
-        (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0)) then
-      
-      call euler_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, rcollection)
-    end if
-    
-    ! Do we have to calculate the residual and the constant right-hand side
-    ! --------------------------------------------------------------------------
-    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
-      
-      call euler_calcResidual(rproblemLevel, rtimestep, rsolver,&
-                              rsolution, rsolutionInitial,&
-                              rrhs, rres, istep, rcollection)
-      
-      ! In the zeroth iteration the explicit source term is applied to
-      ! right-hand side vector and the residual vector
-      if (istep .eq. 0) then
-
-        ! Get solution from scalar transport model
-        p_rsolutionTransport => rcollection%p_rvectorQuickAccess1
-        call lsysbl_getbase_double(p_rsolutionTransport, p_DdataTransport)
-        
-        ! Set pointer to global solution vector
-        call lsysbl_getbase_double(rsolution, p_DdataEuler)
-        call lsysbl_createVectorBlock(rsolution, rvector, .true., ST_DOUBLE)
-        call lsysbl_getbase_double(rvector, p_Ddata)
-        
-        ! Get mass matrices
-        lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
-        consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
-        call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
-        call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
-
-        call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(consistentMassMatrix), p_Kld)
-        call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(consistentMassMatrix), p_Kcol)
-
-        ! Set pointer to the vertex coordinates
-        call storage_getbase_double2D(&
-            rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-    
-        ! Set dimensions
-        neq  = p_rsolutionTransport%NEQ
-        nvar = euler_getNVAR(rproblemLevel)
-        
-        isystemFormat = collct_getvalue_int(rcollection, 'isystemformat')
-        select case(isystemFormat)
-        case (SYSTEM_INTERLEAVEFORMAT)
-          call calcSourceTermInterleaveFormat(rtimestep%dTime, rtimestep%dStep, neq, nvar,&
-                                              p_DvertexCoords, p_Kld, p_Kcol, p_MC,&
-                                              p_DdataTransport, p_DdataEuler, p_Ddata)
-
-        case DEFAULT
-          call output_line('Invalid system format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
-          call sys_halt()
-        end select
-
-        ! Apply source term to constant right-hand side and defect vector
-        call lsysbl_vectorLinearComb(rvector, rrhs, 1.0_DP, 1.0_DP)
-        call lsysbl_vectorLinearComb(rvector, rres, 1.0_DP, 1.0_DP)
-      end if
-    end if
-
-    
-    ! Do we have to impose boundary conditions?
-    ! --------------------------------------------------------------------------
-    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
-      
-      call euler_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                             rsolution, rsolutionInitial, rres, rcollection)
-    end if
-
-    ! Set status flag
-    istatus = 0
-    
-  contains
-    
-    ! Here, the real working routines follow
-    
-    !**************************************************************
-    
-    subroutine calcSourceTermInterleaveFormat(dtime, dstep, neq, nvar, DvertexCoords,&
-                                              Kld, Kcol, MC, DdataTransport, DdataEuler, Ddata)
-
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
-      real(DP), dimension(:), intent(IN) :: MC,DdataTransport
-      real(DP), dimension(nvar,neq), intent(IN) :: DdataEuler
-      real(DP), intent(IN) :: dtime, dstep
-      integer, dimension(:), intent(IN) :: Kld, Kcol
-      integer, intent(IN) :: neq, nvar
-      
-      real(DP), dimension(nvar,neq), intent(OUT) :: Ddata
-      
-      ! local variables
-      real(DP) :: drad, dang, daux, dscale, x1, x2, p, rq
-      integer :: i,j,ij
-
-      ! Compute the scaling parameter
-      dscale = -dstep * 12.0 * (1.0-dtime**4) * dtime**2
-!!$      dscale = -dstep * 12.0 * dtime*dtime
-
-      Ddata = 0.0_DP
-
-      ! Loop over all rows
-      do i = 1, neq
-
-        ! Loop over all columns
-        do ij = Kld(i), Kld(i+1)-1
-
-          ! Get columns number
-          j = Kcol(ij)
-        
-          ! Get coodrinates at node j
-          x1 = DvertexCoords(1, j)
-          x2 = DvertexCoords(2, j)
-          
-          ! Compute polar coordinates
-          drad = sqrt(x1*x1 + x2*x2)
-          dang = atan2(x2, x1)
-          
-          ! Compute unit vector into origin
-          x1 = cos(dang)
-          x2 = sin(dang)
-          
-          ! Compute source term 
-          daux = dscale * MC(ij) * max(DdataTransport(j)*DdataEuler(1, j), 0.0_DP) / max(drad, 1.0e-4_DP)
-                    
-          ! Impose source values
-          Ddata(2, i) = Ddata(2, i) + daux * x1
-          Ddata(3, i) = Ddata(3, i) + daux * x2
-          Ddata(4, i) = Ddata(4, i) + daux * ( x1 * DdataEuler(2, j) + x2 * DdataEuler(3, j)) / DdataEuler(1, j)
-
-        end do
-      end do
-
-    end subroutine calcSourceTermInterleaveFormat
-    
-  end subroutine zpinch_nlsolverCallback
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine zpinch_calcVelocityField(rproblemLevel, rsolution, rcollection, nlminOpt)
+  subroutine zpinch_calcVelocityField(rproblemLevel, rsolution, rcollection)
 
 !<description>
     ! This subroutine calculates the velocity field from the solution
@@ -290,9 +77,6 @@ contains
 !<input>
     ! solution vector of compressible Euler model
     type(t_vectorBlock), intent(IN) :: rsolution
-
-    ! OPTIONAL: minimum problem level
-    integer, intent(IN), optional :: nlminOpt
 !</input>
 
 !<inputoutput>
@@ -308,7 +92,7 @@ contains
     integer :: velocityfield
     integer :: neq, ndim
     
-
+    
     ! Get parameter from collection
     velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
 
@@ -324,7 +108,7 @@ contains
       call lsysbl_resizeVectorBlock(&
           rproblemLevel%rvectorBlock(velocityfield), neq, .true.)
     end if
-    
+
     ! Set x-velocity
     call euler_getVariable(rsolution, 'velocity_x',&
         rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
