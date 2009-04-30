@@ -1115,10 +1115,7 @@ contains
 
       ! Start time measurement for solution procedure
       call stat_startTimer(rappDescrEuler%rtimerSolution, STAT_TIMERSHORT)
-
-      ! Attach solution u^n from scalar model to collection
-      rcollectionEuler%p_rvectorQuickAccess1 => rsolutionTransport
-
+      
       ! What time-stepping scheme should be used?
       select case(rtimestepEuler%ctimestepType)
         
