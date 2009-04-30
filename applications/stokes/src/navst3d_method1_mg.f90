@@ -167,6 +167,7 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
+    character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Du1,p_Du2,p_Du3,p_Dp
 
     ! A counter variable
@@ -187,6 +188,9 @@ contains
     ! Damping parameter
     real(DP) :: dnlDamping
 
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+    
     ! We want to solve our (Navier-)Stokes problem on level...
     NLMIN = 1
     NLMAX = 3
@@ -215,9 +219,13 @@ contains
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+
     ! At first read in the basic triangulation.
     call tria_readTriFile3D (Rlevels(NLMIN)%rtriangulation, &
-                             './pre/C3D0.tri')
+                             trim(spredir)//'/C3D0.tri')
 
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
@@ -864,9 +872,13 @@ contains
     call spdp_projectToVertices(Rlevels(NLMAX)%rvecSol%RvectorBlock(3),p_Du3)
     call spdp_projectToCells(Rlevels(NLMAX)%rvecSol%RvectorBlock(4),p_Dp)
 
+    ! Get the path for writing postprocessing files from the environment variable
+    ! $UCDDIR. If that does not exist, write to the directory "./gmv".
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,'gmv/u3d_navst_mg.gmv')
+        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u3d_navst_mg.gmv')
 
     ! Write velocity field
     call ucd_addVarVertBasedVec(rexport,'velocity',p_Du1,p_Du2,p_Du3)

@@ -115,7 +115,11 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
+    character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2,p_Ddata3
+    
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
     
     ! Ok, let's start. 
     !
@@ -127,8 +131,12 @@ contains
     ! Viscosity parameter:
     dnu = 1.0_DP
 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+
     ! At first, read in the basic triangulation.
-    call tria_readTriFile3D (rtriangulation, './pre/CUBE.tri')
+    call tria_readTriFile3D (rtriangulation, trim(spredir)//'/CUBE.tri')
     
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering(NLMAX-1,rtriangulation)
@@ -521,11 +529,15 @@ contains
     ! conditions.
     call vecfil_discreteBCsol (rprjVector)
     
+    ! Get the path for writing postprocessing files from the environment variable
+    ! $UCDDIR. If that does not exist, write to the directory "./gmv".
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+
     ! Now we have a Q1/Q1/Q1/Q0 solution in rprjVector.
     ! We can now start the postprocessing. 
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-        'gmv/u3d_0_simple.gmv')
+        trim(sucddir)//'/u3d_0_simple.gmv')
 
     ! Write velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)

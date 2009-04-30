@@ -149,11 +149,15 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
+    character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
 
     ! A counter variable
     integer :: i
 
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+    
     ! Ok, let's start. 
     !
     ! We want to solve our Stokes problem on level...
@@ -166,13 +170,17 @@ contains
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
-                             './pre/QUAD.tri', rboundary)
+                             trim(spredir)//'/QUAD.tri', rboundary)
     
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering (NLMIN-1,&
@@ -709,11 +717,15 @@ contains
     ! conditions.
     call vecfil_discreteBCsol (rprjVector)
     
+    ! Get the path for writing postprocessing files from the environment variable
+    ! $UCDDIR. If that does not exist, write to the directory "./gmv".
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     ! We can now start the postprocessing. 
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,'gmv/u2d_1_mg.gmv')
+        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_1_mg.gmv')
 
     ! Write velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
