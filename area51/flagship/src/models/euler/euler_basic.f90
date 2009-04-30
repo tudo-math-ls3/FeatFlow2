@@ -425,6 +425,27 @@ contains
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(1, ieq)
       end do
+
+    case ('VELOCITY_MAGNITUDE')
+      select case(nvar)
+      case (NVAR1D)
+        do ieq = 1, neq
+          Dvalue(ieq) = abs(Ddata(2, ieq))/Ddata(1, ieq)
+        end do
+
+      case (NVAR2D)
+        do ieq = 1, neq
+          Dvalue(ieq) = sqrt(Ddata(2, ieq)**2 +&
+                             Ddata(3, ieq)**2)/Ddata(1, ieq)
+        end do
+
+      case (NVAR3D)
+        do ieq = 1, neq
+          Dvalue(ieq) = sqrt(Ddata(2, ieq)**2 +&
+                             Ddata(3, ieq)**2 +&
+                             Ddata(4, ieq)**2)/Ddata(1, ieq)
+        end do
+      end select
       
     case ('VELOCITY_X')
       do ieq = 1, neq
@@ -570,6 +591,27 @@ contains
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 1)
       end do
+
+    case ('VELOCITY_MAGNITUDE')
+      select case(nvar)
+      case (NVAR1D)
+        do ieq = 1, neq
+          Dvalue(ieq) = abs(Ddata(ieq, 2))/Ddata(ieq, 1)
+        end do
+
+      case (NVAR2D)
+        do ieq = 1, neq
+          Dvalue(ieq) = sqrt(Ddata(ieq, 2)**2 +&
+                             Ddata(ieq, 3)**2)/Ddata(ieq, 1)
+        end do
+
+      case (NVAR3D)
+        do ieq = 1, neq
+          Dvalue(ieq) = sqrt(Ddata(ieq, 2)**2 +&
+                             Ddata(ieq, 3)**2 +&
+                             Ddata(ieq, 4)**2)/Ddata(ieq, 1)
+        end do
+      end select
       
     case ('VELOCITY_X')
       do ieq = 1, neq
