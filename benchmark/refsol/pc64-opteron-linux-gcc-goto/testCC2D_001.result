@@ -19,6 +19,6 @@ Initial defect: 1.303749422094035E-02
 Final defect:  3.137604668723159E-06
 #Iterations:   10
 Body forces real bd., bdc/horiz/vert
- 2 /    6.061155E+00 /             NaN
+ 2 /    6.061155E+00 /    7.007919E-03
 Divergence =    1.445435E-12
 ||u||^2_L2         =    2.178044E-02
