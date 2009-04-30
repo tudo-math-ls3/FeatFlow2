@@ -152,7 +152,7 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
-    character(len=SYS_STRLEN) :: sucddir
+    character(len=SYS_STRLEN) :: sucddir,smaster
     real(DP), dimension(:), pointer :: p_Ddata,p_DdataQ1
     type(t_discreteBC), target :: rdiscreteBCPostProc
     type(t_vectorScalar) :: rvectorPostProc
@@ -173,7 +173,10 @@ contains
     !
     ! Initialise the parameter structure and read the DAT file.
     call parlst_init(rparams)
-    call parlst_readfromfile (rparams, './dat/anisotropicdiffusion.dat')
+ 
+    ! Get the data file.
+    call sys_getcommandLineArg(1,smaster,sdefault='./dat/anisotropicdiffusion.dat')
+    call parlst_readfromfile (rparams, smaster)
     
     ! Get the parameters...
     !
