@@ -1889,7 +1889,7 @@ contains
     !
     ! In the course of element marking, some green elements may have to be 
     ! converted into regularly refined ones. In the worst case, i.e.
-    ! Quad2Quad-refinement, each green element gives rise to 1.5 vertices 
+    ! Quad2Quad-refinement, each green element gives rise to 2.5 vertices 
     ! and 2 new elements. Hence, the nodal arrays p_IvertexAge and 
     ! p_InodalProperty as well as the element arrays p_IverticesAtElement,
     ! p_IneighboursAtElement, p_ImidneighboursAtElement and p_Imarker are
@@ -1898,8 +1898,8 @@ contains
     if (rhadapt%nGreenElements .gt. 0) then
 
       ! Predict new dimensions for the worst case
-      nvt = ceiling(rhadapt%NVT0 + 1.5*rhadapt%nGreenElements)
-      nel = rhadapt%NEL0 + 2*rhadapt%nGreenElements
+      nvt = rhadapt%NVT0 + ceiling(5*rhadapt%nGreenElements/2._DP)
+      nel = rhadapt%NEL0 + rhadapt%nGreenElements
 
       ! Adjust nodal/elemental arrays
       call storage_realloc('hadapt_markRedgreenRefinement2D', nvt,&
@@ -2125,6 +2125,9 @@ contains
               ! Physically convert the four triangles into four quadrilaterals
               call convert_Quad4Tria(rhadapt, kel, iel, lel, jel,&
                                      rcollection, fcb_hadaptCallback)
+
+              ! Reduce the number of green elements by four
+              rhadapt%nGreenElements = rhadapt%nGreenElements-4
               
               ! We modified some elements in this iteration
               bisModified = .true.
@@ -2193,6 +2196,9 @@ contains
               ! Physically convert the four triangles into four quadrilaterals
               call convert_Quad4Tria(rhadapt, kel, jel, lel, iel,&
                                      rcollection, fcb_hadaptCallback)
+
+              ! Reduce the number of green elements by four
+              rhadapt%nGreenElements = rhadapt%nGreenElements-4
               
               ! We modified some elements in this iteration
               bisModified = .true.
@@ -2284,6 +2290,9 @@ contains
           call convert_Quad2Quad(rhadapt, iel, jel,&
                                  rcollection, fcb_hadaptCallback)
 
+          ! Reduce the number of green elements by two
+          rhadapt%nGreenElements = rhadapt%nGreenElements-2
+
           ! We modified some elements in this iteration
           bisModified = .true.
 
@@ -2365,6 +2374,9 @@ contains
           call convert_Quad3Tria(rhadapt, jel, kel, iel,&
                                  rcollection, fcb_hadaptCallback)
 
+          ! Reduce the number of green elements by three
+          rhadapt%nGreenElements = rhadapt%nGreenElements-3
+
           ! We modified some elements in this iteration
           bisModified = .true.
           
@@ -2437,6 +2449,9 @@ contains
             call convert_Tria2Tria(rhadapt, iel, jel,&
                                    rcollection, fcb_hadaptCallback)
 
+            ! Reduce the number of green elements by two
+            rhadapt%nGreenElements = rhadapt%nGreenElements-2
+
             ! We modified some elements in this iteration
             bisModified = .true.
          
@@ -2499,6 +2514,9 @@ contains
             call convert_Quad3Tria(rhadapt, iel, kel, jel,&
                                    rcollection, fcb_hadaptCallback)
 
+            ! Reduce the number of green elements by three
+            rhadapt%nGreenElements = rhadapt%nGreenElements-3
+
             ! We modified some elements in this iteration
             bisModified = .true.
             
@@ -2560,6 +2578,9 @@ contains
             ! Physically convert the four triangles into four quadrilaterals
             call convert_Quad4Tria(rhadapt, iel, kel, lel, jel,&
                                    rcollection, fcb_hadaptCallback)
+
+            ! Reduce the number of green elements by four
+            rhadapt%nGreenElements = rhadapt%nGreenElements-4
             
             ! We modified some elements in this iteration
             bisModified = .true.
@@ -2647,6 +2668,9 @@ contains
             ! Physically convert the two elements IEL and JEL into four similar triangles
             call convert_Tria2Tria(rhadapt, jel, iel,&
                                    rcollection, fcb_hadaptCallback)
+
+            ! Reduce the number of green elements by two
+            rhadapt%nGreenElements = rhadapt%nGreenElements-2
             
             ! We modified some elements in this iteration
             bisModified = .true.
@@ -2706,6 +2730,9 @@ contains
             ! into four similar quadrilaterals
             call convert_Quad3Tria(rhadapt, kel, iel, jel,&
                                    rcollection, fcb_hadaptCallback)
+
+            ! Reduce the number of green elements by three
+            rhadapt%nGreenElements = rhadapt%nGreenElements-3
             
             ! We modified some elements in this iteration
             bisModified = .true.
@@ -2768,6 +2795,9 @@ contains
             ! Physically convert the four triangles into four quadrilaterals
             call convert_Quad4Tria(rhadapt, lel, kel, iel, jel,&
                                    rcollection, fcb_hadaptCallback)
+
+            ! Reduce the number of green elements by four
+            rhadapt%nGreenElements = rhadapt%nGreenElements-4
 
             ! We modified some elements in this iteration
             bisModified = .true.
@@ -3306,7 +3336,8 @@ contains
       case(MARK_CRS_2TRIA1TRIA)
         call coarsen_2Tria1Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
-        p_Imarker(iel) = MARK_ASIS
+        rhadapt%nGreenElements = rhadapt%nGreenElements-2
+        p_Imarker(iel)         = MARK_ASIS
         
       case(MARK_CRS_4TRIA1TRIA)
         call coarsen_4Tria1Tria(rhadapt, p_Imarker, iel,&
@@ -3318,33 +3349,39 @@ contains
            MARK_CRS_4TRIA2TRIA_3)
         call coarsen_4Tria2Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
-        p_Imarker(iel) = MARK_ASIS
+        rhadapt%nGreenElements = rhadapt%nGreenElements+2
+        p_Imarker(iel)         = MARK_ASIS
 
       case(MARK_CRS_3TRIA1QUAD)
         call coarsen_3Tria1Quad(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
-        p_Imarker(iel) = MARK_ASIS
+        rhadapt%nGreenElements = rhadapt%nGreenElements-3
+        p_Imarker(iel)         = MARK_ASIS
 
       case(MARK_CRS_4TRIA1QUAD)
         call coarsen_4Tria1Quad(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
-        p_Imarker(iel) = MARK_ASIS
+        rhadapt%nGreenElements = rhadapt%nGreenElements-4
+        p_Imarker(iel)         = MARK_ASIS
         
       case(MARK_CRS_4TRIA3TRIA_LEFT,&
            MARK_CRS_4TRIA3TRIA_RIGHT)
         call coarsen_4Tria3Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
-        p_Imarker(iel) = MARK_ASIS
+        rhadapt%nGreenElements = rhadapt%nGreenElements-1
+        p_Imarker(iel)         = MARK_ASIS
 
       case(MARK_CRS_2QUAD1QUAD)
         call coarsen_2Quad1Quad(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
-        p_Imarker(iel) = MARK_ASIS
+        rhadapt%nGreenElements = rhadapt%nGreenElements-2
+        p_Imarker(iel)         = MARK_ASIS
 
       case(MARK_CRS_2QUAD3TRIA)
         call coarsen_2Quad3Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
-        p_Imarker(iel) = MARK_ASIS
+        rhadapt%nGreenElements = rhadapt%nGreenElements+1
+        p_Imarker(iel)         = MARK_ASIS
         
       case(MARK_CRS_4QUAD1QUAD)
         call coarsen_4Quad1Quad(rhadapt, p_Imarker, iel,&
@@ -3354,17 +3391,20 @@ contains
       case(MARK_CRS_4QUAD2QUAD)
         call coarsen_4Quad2Quad(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
-        p_Imarker(iel) = MARK_ASIS
+        rhadapt%nGreenElements = rhadapt%nGreenElements+2
+        p_Imarker(iel)         = MARK_ASIS
 
       case(MARK_CRS_4QUAD3TRIA)
         call coarsen_4Quad3Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
-        p_Imarker(iel) = MARK_ASIS
+        rhadapt%nGreenElements = rhadapt%nGreenElements+3
+        p_Imarker(iel)         = MARK_ASIS
         
       case(MARK_CRS_4QUAD4TRIA)
         call coarsen_4Quad4Tria(rhadapt, p_Imarker, iel,&
                                 rcollection, fcb_hadaptCallback)
-        p_Imarker(iel) = MARK_ASIS
+        rhadapt%nGreenElements = rhadapt%nGreenElements+4
+        p_Imarker(iel)         = MARK_ASIS
 
       case DEFAULT
         call output_line('Invalid recoarsening marker!',&
