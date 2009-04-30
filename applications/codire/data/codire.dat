@@ -9,6 +9,10 @@
 # Level where to solve:
 NLMAX = 7
 
+# Path where to write output files to
+
+sucddir = './gmv'
+
 #------------------------------------------------------------------------------
 # The 'equation' section configures the different constants in the equation.
 

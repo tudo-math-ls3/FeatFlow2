@@ -3,24 +3,24 @@
 	<Platforms>
 		<Platform Name="Win32"/></Platforms>
 	<Configurations>
-		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" CommandArguments="#data\cc2d.dat" WorkingDirectory="$(ProjectDir)\..">
+		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" WorkingDirectory="$(ProjectDir)\..">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtSingleThreadedDebug" CompileOnly="true"/>
 				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtSingleThreadedDebug" CompileOnly="true"/>
 				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/wincodire.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/wincodire.pdb" SubSystem="subSystemConsole" AdditionalDependencies=""/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
-				<Tool Name="VFPreLinkEventTool"/></Configuration>
+				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/wincodire.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/wincodire.pdb" SubSystem="subSystemConsole"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration>
 		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" WorkingDirectory="$(ProjectDir)\..">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" InlineFunctionExpansion="expandAnySuitable" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" CompileOnly="true"/>
 				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" InlineFunctionExpansion="expandAnySuitable" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" CompileOnly="true"/>
 				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFLinkerTool" MustRebuild="true" OutputFile="$(OUTDIR)/wincodire.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)\.." SubSystem="subSystemConsole" AdditionalDependencies=""/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
-				<Tool Name="VFPreLinkEventTool"/></Configuration></Configurations>
+				<Tool Name="VFLinkerTool" MustRebuild="true" OutputFile="$(OUTDIR)/wincodire.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)\.." SubSystem="subSystemConsole"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="f90">
@@ -28,28 +28,7 @@
 		<File RelativePath="..\src\codire_callback.f90"/>
 		<File RelativePath="..\src\codire_method3.f90"/>
 		<File RelativePath="..\src\codire_method5.f90"/></Filter></Filter>
-		<Filter Name="Header Files" Filter="fi;fd">
-		<File RelativePath="..\include\arnbmat.inc"/>
-		<File RelativePath="..\include\arnmassmat.inc"/>
-		<File RelativePath="..\include\arnstokes.inc"/>
-		<File RelativePath="..\include\cbasicelem.inc"/>
-		<File RelativePath="..\include\cbasicmg.inc"/>
-		<File RelativePath="..\include\cbasictria.inc"/>
-		<File RelativePath="..\include\ccub.inc"/>
-		<File RelativePath="..\include\cdiscretization.inc"/>
-		<File RelativePath="..\include\celem.inc"/>
-		<File RelativePath="..\include\cerr.inc"/>
-		<File RelativePath="..\include\cfileout.inc"/>
-		<File RelativePath="..\include\clinsol_cc2d.inc"/>
-		<File RelativePath="..\include\cmem.inc"/>
-		<File RelativePath="..\include\cmem2.inc"/>
-		<File RelativePath="..\include\cnonlinsol_cc2d.inc"/>
-		<File RelativePath="..\include\cout.inc"/>
-		<File RelativePath="..\include\cparametrization.inc"/>
-		<File RelativePath="..\include\cparqdata.inc"/>
-		<File RelativePath="..\include\cpostproc.inc"/>
-		<File RelativePath="..\include\ctimediscr.inc"/>
-		<File RelativePath="..\include\ctria.inc"/></Filter>
+		<Filter Name="Header Files" Filter="fi;fd"/>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		<File RelativePath="..\data\codire.dat"/></Filter>
 		<File RelativePath="notes.txt"/></Files>

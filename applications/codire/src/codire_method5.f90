@@ -117,11 +117,6 @@ contains
 
   subroutine cdrm5_initParamTriang (ilvmin,ilvmax,rproblem)
   
-    include 'cout.inc'
-    include 'cerr.inc'
-    include 'cmem.inc'
-    include 'cparametrization.inc'
-
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
   ! domain. The corresponding .prm/.tri files are read from disc and
@@ -796,7 +791,7 @@ contains
 
 !<subroutine>
 
-  subroutine cdrm5_postprocessing (rproblem)
+  subroutine cdrm5_postprocessing (rproblem,sucddir)
   
 !<description>
   ! Writes the solution into a GMV file.
@@ -805,6 +800,9 @@ contains
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(INOUT), target :: rproblem
+
+  ! Path where to write output data to
+  character(len=*), intent(in) :: sucddir
 !</inputoutput>
 
 !</subroutine>
@@ -830,8 +828,10 @@ contains
     
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing. 
+
     ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u5.gmv')
+    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+        trim(sucddir)//'/u5.gmv')
     
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
@@ -980,8 +980,6 @@ contains
 
   subroutine codire5
   
-  include 'cmem.inc'
-  
 !<description>
   ! This is a 'separated' CoDiRe solver for solving a convection-diffusion-
   ! reaction problem. The different tasks of the problem are separated into
@@ -1017,6 +1015,9 @@ contains
     ! A problem structure for our problem
     type(t_problem), target :: rproblem
     
+    ! Strings that get data about the output directories for pre/postprocessing files
+    character(len=SYS_STRLEN) :: sucddir,sstring,smaster
+    
     integer :: i
     
     ! Ok, let's start. 
@@ -1028,7 +1029,8 @@ contains
     
     ! Read the parameters from disc and put a reference to it
     ! to the collection
-    call parlst_readfromfile(rparams, 'data/codire.dat')
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/codire.dat')
+    call parlst_readfromfile (rparams, smaster)
 
     ! We want to solve our Laplace problem on level...
     call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
@@ -1041,6 +1043,11 @@ contains
 
     call collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .true.)
     
+    ! Get the path where to write gmv's to.
+    call parlst_getvalue_string (rparams, '', &
+                                 'sucddir', sstring)
+    read(sstring,*) sucddir
+
     ! So now the different steps - one after the other.
     !
     ! Initialisation
@@ -1056,7 +1063,7 @@ contains
     call cdrm5_solve (rproblem)
     
     ! Postprocessing
-    call cdrm5_postprocessing (rproblem)
+    call cdrm5_postprocessing (rproblem,sucddir)
     
     ! Cleanup
     call cdrm5_doneMatVec (rproblem)

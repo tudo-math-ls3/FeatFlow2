@@ -636,7 +636,7 @@ contains
 
 !<subroutine>
 
-  subroutine pm2_postprocessing (rproblem)
+  subroutine pm2_postprocessing (rproblem,sucddir)
   
 !<description>
   ! Writes the solution into a GMV file.
@@ -645,6 +645,9 @@ contains
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(INOUT), target :: rproblem
+  
+  ! Path where to write output data to
+  character(len=*), intent(in) :: sucddir
 !</inputoutput>
 
 !</subroutine>
@@ -670,8 +673,10 @@ contains
     
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing. 
+
     ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u3.gmv')
+    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+        trim(sucddir)//'/u3.gmv')
     
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
@@ -824,6 +829,9 @@ contains
     ! A problem structure for our problem
     type(t_problem), target :: rproblem
     
+    ! Strings that get data about the output directories for pre/postprocessing files
+    character(len=SYS_STRLEN) :: sucddir,sstring,smaster
+    
     ! Ok, let's start. 
     ! Initialise the collection.
     call collct_init (rproblem%rcollection)
@@ -833,11 +841,17 @@ contains
     
     ! Read the parameters from disc and put a reference to it
     ! to the collection
-    call parlst_readfromfile(rparams, 'data/codire.dat')
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/codire.dat')
+    call parlst_readfromfile (rparams, smaster)
     call collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .true.)
 
     ! We want to solve our Laplace problem on level...
     call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
+    
+    ! Get the path where to write gmv's to.
+    call parlst_getvalue_string (rparams, '', &
+                                 'sucddir', sstring)
+    read(sstring,*) sucddir
     
     ! So now the different steps - one after the other.
     !
@@ -854,7 +868,7 @@ contains
     call pm2_solve (rproblem)
     
     ! Postprocessing
-    call pm2_postprocessing (rproblem)
+    call pm2_postprocessing (rproblem,sucddir)
     
     ! Cleanup
     call pm2_doneMatVec (rproblem)
