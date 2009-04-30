@@ -1,11 +1,11 @@
 
 # PRM-file of the domain
 
-sfilePRM = './data/apps_anisotropicdiffusion/QUAD.prm'
+sfilePRM = './data/apps_anisotropicdiffusion/quad2d.prm'
 
 # TRI-file of the mesh
 
-sfileTRI = './data/apps_anisotropicdiffusion/QUAD.tri'
+sfileTRI = './data/apps_anisotropicdiffusion/quad2d.tri'
 
 # Path where to write output files to
 
