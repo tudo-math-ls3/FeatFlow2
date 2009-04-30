@@ -552,14 +552,17 @@ contains
 !</subroutine>
 
     ! local variables;
-    type(t_spatialDiscretisation), dimension(max(rmatrix%nblocksPerRow,1)) :: Rdiscr
+    ! type(t_spatialDiscretisation), dimension(max(rmatrix%nblocksPerRow,1)) :: Rdiscr
+    type(t_spatialDiscretisation), dimension(:), pointer :: p_Rdiscr
     integer :: i,j
 
-    if (rmatrix%nblocksPerRow .eq. 0) then
+    if (rmatrix%nblocksPerRow .le. 0) then
       call output_line ('No discretisation!', &
           OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initProjectionMat')
       call sys_halt()
     end if
+    
+    allocate(p_Rdiscr(rmatrix%nblocksPerRow))
 
     ! Set up an array of discretisation structures for all the equations.
     ! In every 'column' of the block matrix, search for the first existing
@@ -567,7 +570,7 @@ contains
     do i=1,rmatrix%nblocksPerRow
       do j=1,rmatrix%nblocksPerCol
         if (rmatrix%RmatrixBlock(j,i)%NEQ .ne. 0) then
-          Rdiscr(i) = &
+          p_Rdiscr(i) = &
             rmatrix%RmatrixBlock(j,i)%p_rspatialDiscrTrial
           exit
         end if
@@ -575,7 +578,9 @@ contains
     end do
 
     ! Call the standard initialisation routine
-    call mlprj_initProjectionDirect (rprojection,Rdiscr)
+    call mlprj_initProjectionDirect (rprojection,p_Rdiscr)
+    
+    deallocate(p_Rdiscr)
 
   end subroutine
 
@@ -965,15 +970,20 @@ contains
 !</function>
 
   ! local variables; 
-  type(t_spatialDiscretisation), dimension(max(rmatrixCoarse%nblocksPerRow,1)) :: RdiscrCoarse
-  type(t_spatialDiscretisation), dimension(max(rmatrixFine%nBlocksPerRow,1)) :: RdiscrFine
+  ! type(t_spatialDiscretisation), dimension(max(rmatrixCoarse%nblocksPerRow,1)) :: RdiscrCoarse
+  ! type(t_spatialDiscretisation), dimension(max(rmatrixFine%nBlocksPerRow,1)) :: RdiscrFine
+  type(t_spatialDiscretisation), dimension(:), pointer :: p_RdiscrCoarse
+  type(t_spatialDiscretisation), dimension(:), pointer :: p_RdiscrFine
   integer :: i,j
 
-    if ((rmatrixCoarse%nblocksPerRow .eq. 0) .or. (rmatrixFine%nblocksPerRow .eq. 0)) then
+    if ((rmatrixCoarse%nblocksPerRow .le. 0) .or. (rmatrixFine%nblocksPerRow .le. 0)) then
       call output_line ('No discretisation!', &
           OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryMat')
       call sys_halt()
     end if
+    
+    allocate(p_RdiscrCoarse(rmatrixCoarse%nblocksPerRow))
+    allocate(p_RdiscrFine(rmatrixFine%nblocksPerRow))
 
     ! Set up an array of discretisation structures for all the equations
     do i=1,rmatrixCoarse%nblocksPerRow
@@ -986,7 +996,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryMat')
             call sys_halt()
           end if
-          RdiscrCoarse(i) = &
+          p_RdiscrCoarse(i) = &
             rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscrTrial
           exit
         end if
@@ -1003,7 +1013,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryMat')
             call sys_halt()
           end if
-          RdiscrFine(i) = &
+          p_RdiscrFine(i) = &
             rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscrTrial
         end if
       end do
@@ -1011,7 +1021,10 @@ contains
       
     ! Call the standard getTempMemory routine
     mlprj_getTempMemoryMat = &
-      mlprj_getTempMemoryDirect (rprojection, RdiscrCoarse,RdiscrFine)
+      mlprj_getTempMemoryDirect (rprojection, p_RdiscrCoarse,p_RdiscrFine)
+
+    deallocate(p_RdiscrCoarse)
+    deallocate(p_RdiscrFine)
 
   end function
 

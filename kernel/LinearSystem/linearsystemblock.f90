@@ -1171,10 +1171,12 @@ contains
 !</subroutine>
 
   integer :: cdata,i
-  integer, dimension(max(1,rblockDiscretisation%ncomponents)) :: Isize
+  integer, dimension(:), allocatable :: Isize
   
   cdata = ST_DOUBLE
   if (present(cdataType)) cdata = cdataType
+  
+  allocate(Isize(max(1,rblockDiscretisation%ncomponents)))
   
   ! Loop to the blocks in the block discretisation. Calculate size (#DOF's)
   ! of all the subblocks.
@@ -1194,6 +1196,8 @@ contains
     rx%RvectorBlock(i)%p_rspatialDiscr=> &
       rblockDiscretisation%RspatialDiscr(i)
   end do
+  
+  deallocate(Isize)
 
   end subroutine
   
@@ -1236,21 +1240,24 @@ contains
 
   integer :: i
   integer :: NEQ,NCOLS
-  integer, dimension(max(1,rblockDiscretisationTrial%ncomponents)) :: Isize,Isize2
+  integer, dimension(:), pointer :: p_Isize,p_Isize2
+  
+  allocate(p_Isize(max(1,rblockDiscretisationTrial%ncomponents))) 
+  allocate(p_Isize2(max(1,rblockDiscretisationTrial%ncomponents))) 
   
   ! Loop to the blocks in the block discretisation. Calculate size (#DOF's)
   ! of all the subblocks.
-  Isize(1) = 0             ! Initialisation in case ncomponents=0
+  p_Isize(1) = 0             ! Initialisation in case ncomponents=0
   do i=1,rblockDiscretisationTrial%ncomponents
-    Isize(i) = dof_igetNDofGlob(rblockDiscretisationTrial%RspatialDiscr(i))
+    p_Isize(i) = dof_igetNDofGlob(rblockDiscretisationTrial%RspatialDiscr(i))
   end do
-  NCOLS = sum(Isize(:))
+  NCOLS = sum(p_Isize(:))
   if(present(rblockDiscretisationTest)) then
-    Isize2(1) = 0
+    p_Isize2(1) = 0
     do i = 1, rblockDiscretisationTest%ncomponents
-      Isize(i) = dof_igetNDofGlob(rblockDiscretisationTest%RspatialDiscr(i))
+      p_Isize(i) = dof_igetNDofGlob(rblockDiscretisationTest%RspatialDiscr(i))
     end do
-    NEQ = sum(Isize(:))
+    NEQ = sum(p_Isize(:))
   else
     NEQ = NCOLS
   end if
@@ -1287,6 +1294,9 @@ contains
       (rmatrix%nblocksPerRow .eq. 1)) then
     rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
   end if
+  
+  deallocate(p_Isize2)
+  deallocate(p_Isize)
   
   end subroutine
   
@@ -4262,7 +4272,7 @@ contains
     ! local variables
     integer :: ifirst, ilast, ncount, i, idupflag,n
     logical :: bshareContent
-    integer, dimension(max(rvectorSrc%nblocks,1)) :: Isize
+    integer, dimension(:), allocatable :: Isize
     
     ! Evaluate the optional parameters
     ifirst = 1
@@ -4281,6 +4291,8 @@ contains
       bshareContent = bshare
     end if
     
+    allocate(Isize(max(rvectorSrc%nblocks,1)))
+
     ! Let's start. At first, create a new vector based on the old, which contains
     ! only those subvectors specified in ifirst..ilast.
     ncount = ilast-ifirst+1
@@ -4310,6 +4322,8 @@ contains
         rvectorDest%RvectorBlock(i)%h_Ddata = ST_NOHANDLE
       end if
     end do
+    
+    deallocate(Isize)
     
     rvectorDest%NEQ = n-1
     rvectorDest%nblocks = ncount

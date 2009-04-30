@@ -82,8 +82,8 @@ contains
     logical :: balloc
     type(t_matrixBlock) :: rlocalMatrix
     type(t_matrixScalar) :: rlocalMatrixScalar
-    integer, dimension(max(rsourceMatrix%nblocksPerCol,1)+1) :: Irows
-    integer, dimension(max(rsourceMatrix%nblocksPerRow,1)+1) :: Icolumns
+    integer, dimension(:), allocatable :: Irows
+    integer, dimension(:), allocatable :: Icolumns
     integer, dimension(:), pointer :: p_Kdiagonal,p_Kld
     integer, dimension(:), pointer :: p_Kcol
     integer :: isize
@@ -180,6 +180,8 @@ contains
   end do
   
   ! Ok, rlocalMatrix is now a transposed-free source matrix.
+  allocate(Irows(max(rsourceMatrix%nblocksPerCol,1)+1))
+  allocate(Icolumns(max(rsourceMatrix%nblocksPerRow,1)+1))
   
   if (bstructure .and. bcontent) then
     
@@ -423,6 +425,9 @@ contains
   ! Note that only those submatrices are released from the heap that we
   ! created by transposing them above!
   call lsysbl_releaseMatrix(rlocalMatrix)
+  
+  deallocate(Irows)
+  deallocate(Icolumns)
   
   end subroutine glsys_assembleGlobal
 

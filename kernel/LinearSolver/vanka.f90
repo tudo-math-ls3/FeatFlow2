@@ -1266,10 +1266,10 @@ contains
   ! Offset position of the blocks in the vector.
   ! Block i starts at position IblockOffset(i)+1 in Dvector / Drhs.
   ! IblockOffset(nblocks+1) gives the number of equations in Dvector/Drhs.
-  integer, dimension(max(nblocks,1)+1), intent(IN) :: IblockOffset
+  integer, dimension(:), intent(IN) :: IblockOffset
   
   ! Number of local DOF's in each block.
-  integer, dimension(nblocks), intent(IN)   :: InDofsLocal
+  integer, dimension(:), intent(IN)   :: InDofsLocal
   
   ! Total number of local DOF's per element
   integer, intent(IN)                                    :: ndofsPerElement
