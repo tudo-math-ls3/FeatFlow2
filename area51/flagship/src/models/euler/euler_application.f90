@@ -1698,6 +1698,14 @@ contains
       end select
 
       
+      ! Compute the root-mean square value
+      call lsyssc_getbase_double(rvectorTmp, p_Ddata)
+      dvalue = sqrt(sum(p_Ddata**2)/real(rvectorTmp%NEQ, DP))
+      if (abs(dvalue) .gt. SYS_EPSREAL) then
+        dvalue = 1.0_DP/dvalue
+        call lsyssc_scaleVector(rvectorTmp, dvalue)
+      end if
+      
       ! Compute the global and element-wise error
       if (ierrorVariable .eq. 1) then
 
@@ -1721,26 +1729,11 @@ contains
     end do
     
     ! Scale the global and element-wise error by the number of error variables
-    dvalue = 1.0_DP/real(nerrorVariables, DP)
-    derror = derror*dvalue
-    call lsyssc_scaleVector(rerror, dvalue)
-
-
-    !---------------------------------------------------------------------------
-    ! Compute the effectivity index
-    !---------------------------------------------------------------------------
-    
-    call output_lbrk()
-    call output_line('Error Analysis')
-    call output_line('--------------')
-    call output_line('estimated H1-error: '//trim(sys_sdEP(derror,15,6)))
-    
-
-    !---------------------------------------------------------------------------
-    ! Apply the adaptation strategy
-    !---------------------------------------------------------------------------
-
-    ! Well at the moment we use the estimator 'as is'
+    if (nerrorVariables .gt. 1) then
+      dvalue = 1.0_DP/real(nerrorVariables, DP)
+      derror = derror*dvalue
+      call lsyssc_scaleVector(rerror, dvalue)
+    end if
 
     
     !---------------------------------------------------------------------------
