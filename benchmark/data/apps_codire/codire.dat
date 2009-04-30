@@ -1,0 +1,42 @@
+# This is the data file for the scalar convection-diffusion-reaction
+# equation of the problem CODIRE.
+#
+#------------------------------------------------------------------------------
+# General section
+
+[GENERAL]
+
+# Level where to solve:
+NLMAX = 7
+
+# Path where to write output files to
+
+sucddir = '$LOGDIR'
+
+#------------------------------------------------------------------------------
+# The 'equation' section configures the different constants in the equation.
+
+[EQUATION]
+
+# The equation reads as follows:
+#
+#     - div ( alpha*grad(u) )  +  beta*grad(u)  +  gamma*u  =  f
+#
+# with
+#  alpha = ( alpha11 alpha12 )
+#          ( alpha21 alpha22 )
+#
+#  beta  = ( beta1 )
+#          ( beta2 )
+#
+#  and the scalar parameter gamma.
+
+alpha11 = 1.0
+alpha12 = 2.0
+alpha21 = 0.0
+alpha22 = 1.0
+
+beta1 = 5.0
+beta2 = 5.0
+
+gamma = 10.0
