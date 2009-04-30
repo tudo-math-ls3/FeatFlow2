@@ -7,6 +7,10 @@ sfilePRM = './pre/quad2d.prm'
 
 sfileTRI = './pre/quad2d.tri'
 
+# Path where to write output files to
+
+sucddir = './gmv'
+
 # Convert quad mesh to triangle mesh
 
 iconvertToTriangleMesh = 0

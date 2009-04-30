@@ -152,6 +152,7 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
+    character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata,p_DdataQ1
     type(t_discreteBC), target :: rdiscreteBCPostProc
     type(t_vectorScalar) :: rvectorPostProc
@@ -491,7 +492,12 @@ contains
     ! +------------------------------------------------------------------------
     ! | POSTPROCESSING
     ! +------------------------------------------------------------------------
-    !
+    
+    ! Get the path where to write gmv's to.
+    call parlst_getvalue_string (rparams, '', &
+                                 'sucddir', sstring)
+    read(sstring,*) sucddir
+    
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
 
@@ -502,29 +508,29 @@ contains
     ! Start UCD export to GMV file:
     select case (ieltype)
     case (-1,1,11)
-      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u1.gmv')
+      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,trim(sucddir)//'/u1.gmv')
       call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     case (2)
-      call ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u1.gmv')
+      call ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,trim(sucddir)//'/u1.gmv')
       call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
           p_Ddata(1:rtriangulation%NVT),&
           p_Ddata(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT))
     case (-2)
-      call ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u2.gmv')
+      call ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,trim(sucddir)//'/u1.gmv')
       call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
           p_Ddata(1:rtriangulation%NVT),&
           p_Ddata(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT),&
           p_Ddata(rtriangulation%NVT+rtriangulation%NMT+1:))
     case (13)
-      call ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,'gmv/u1.gmv')
+      call ucd_startGMV (rexport,UCD_FLAG_ONCEREFINED,rtriangulation,trim(sucddir)//'/u1.gmv')
       call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
           p_Ddata(1:rtriangulation%NVT),&
           p_Ddata(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT),&
           p_Ddata(rtriangulation%NVT+rtriangulation%NMT+1:&
             rtriangulation%NVT+rtriangulation%NMT+rtriangulation%NEL))
     case (-30)
-      !CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u1.gmv')
-      call ucd_startGMV (rexport,UCD_FLAG_BULBQUADRATIC,rtriangulation,'gmv/u1.gmv')
+      !CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,trim(sucddir)//'/u1.gmv')
+      call ucd_startGMV (rexport,UCD_FLAG_BULBQUADRATIC,rtriangulation,trim(sucddir)//'/u1.gmv')
       
       ! Project the solution to P1/Q1 -> rvectorPostProc
       call spdiscr_initBlockDiscr (rdiscretisationPostProc,1,&
@@ -541,7 +547,7 @@ contains
 
       ! Implement the discrete BC into the projected solution vector.
       call lsysbl_createVecFromScalar(rvectorPostProc,rvectorPostProcBlock)
-      call vecfil_discreteBCsol (rvectorPostProcBlock,1.0_DP,rdiscreteBCPostProc)
+      call vecfil_discreteBCsol (rvectorPostProcBlock,rdiscreteBCPostProc)
       call bcasm_releaseDiscreteBC (rdiscreteBCPostProc)
           
       ! Put the vector to the postprocessing file
