@@ -9,7 +9,7 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) transp_setVariable1d
+!# 1.) transp_setVariable2d
 !#     -> Sets global variables for external data, e.g., velocity fields in 2D
 !#
 !# 2.) transp_calcMatrixPrimalConst2d
@@ -341,75 +341,7 @@ contains
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
     
   end subroutine transp_calcMatrixPrimalBurgers2d
-  
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatrixZPinchInterleave2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for the externally prescribed velocity field resulting from the a constant velocity vector of the 
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
-    ! Moreover, scalar artificial diffusion is applied.
-!</description>
     
-!<input>
-    ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(IN) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji,d_ij
-!</output>
-!</subroutine>
-
-    ! local variables
-    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
-    integer :: idx,jdx
-
-    ! Compute convective coefficients
-    k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
-    k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
-
-    ! TEST CODE >>>
-    
-    ! Compute index positions
-    idx = 4*(i-1)
-    jdx = 4*(j-1)
-
-    ! Compute velocities and energy
-    ui = p_Dvariable1(idx+2)/p_Dvariable1(idx+1)
-    vi = p_Dvariable1(idx+3)/p_Dvariable1(idx+1)
-    Ei = p_Dvariable1(idx+4)/p_Dvariable1(idx+1)
-
-    uj = p_Dvariable1(jdx+2)/p_Dvariable1(jdx+1)
-    vj = p_Dvariable1(jdx+3)/p_Dvariable1(jdx+1)
-    Ej = p_Dvariable1(jdx+4)/p_Dvariable1(jdx+1)
-
-    ! Compute enthalpy
-    hi = 1.4*Ei + (1-1.4)*0.5*(ui*ui+vi*vi)
-    hj = 1.4*Ej + (1-1.4)*0.5*(uj*uj+vj*vj)
-
-    ! Compute speed of sound
-    ci = sqrt(max((1.4-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-    cj = sqrt(max((1.4-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
-
-    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))*cj,&
-                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)*C_ji(1)+C_ji(2)*C_ji(2))*ci )
-
-    ! TEST CODE <<<
-
-  end subroutine transp_calcMatrixZPinchInterleave2d
-  
   !*****************************************************************************
 
 !<subroutine>
