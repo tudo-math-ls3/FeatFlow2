@@ -76,6 +76,7 @@ program anisotropicdiffusion
   call storage_info(.true.)
   
   ! Clean up the storage management, finish
+  call output_done()
   call storage_done()
   
 end program

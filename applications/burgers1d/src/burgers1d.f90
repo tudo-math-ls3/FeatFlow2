@@ -62,10 +62,11 @@ program burgers1d
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  print *
+  call output_lbrk();
   call storage_info(.true.)
   
   ! Clean up the storage management, finish
+  call output_done()
   call storage_done()
   
 end program
