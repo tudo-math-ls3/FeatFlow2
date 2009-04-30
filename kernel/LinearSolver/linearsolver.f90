@@ -1043,37 +1043,37 @@ module linearsolver
     ! The result of the solution process.
     ! =0: success. =1: iteration broke down, diverging, =2: error in the parameters,
     ! <0: algorithm-specific error
-    integer                    :: iresult
+    integer                    :: iresult = 0
     
     ! OUTPUT: Number of performed iterations, if the solver
     ! is of iterative nature.
     ! Is to 1 by the solver if not used (indicating at least 1 performed 
     ! iteration, which is always the case).
-    integer                    :: iiterations
+    integer                    :: iiterations = 0
     
     ! OUTPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
     ! Norm of initial residuum
-    real(DP)                        :: dinitialDefect
+    real(DP)                        :: dinitialDefect = 0.0_DP
 
     ! OUTPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
     ! Norm of final residuum
-    real(DP)                        :: dfinalDefect
+    real(DP)                        :: dfinalDefect = 0.0_DP
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS WITH RESIDUAL CHECK: 
     ! Convergence rate
-    real(DP)                        :: dconvergenceRate
+    real(DP)                        :: dconvergenceRate = 0.0_DP
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS WITH RESIDUAL CHECK: 
     ! Asymptotic convergence rate
-    real(DP)                        :: dasymptoticConvergenceRate
+    real(DP)                        :: dasymptoticConvergenceRate = 0.0_DP
 
     ! OUTPUT PARAMETER:
     ! Total time for solver
-    real(DP)                        :: dtimeTotal
+    real(DP)                        :: dtimeTotal = 0.0_DP
 
     ! OUTPUT PARAMETER FOR SOLVERS THAT SUPPORT FILTERING:
     ! Total time for filtering
-    real(DP)                        :: dtimeFiltering
+    real(DP)                        :: dtimeFiltering = 0.0_DP
     
     ! INPUT PARAMETER:
     ! Damping parameter for preconditioner. The t_linsolNode structure
@@ -3650,6 +3650,11 @@ contains
 
     ! Status reset
     rsolverNode%iresult = 0
+    rsolverNode%icurrentIteration = 0
+    rsolverNode%dinitialDefect = 0.0_DP
+    rsolverNode%dfinalDefect = 0.0_DP
+    rsolverNode%dconvergenceRate = 0.0_DP
+    rsolverNode%dasymptoticConvergenceRate = 0.0_DP
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeDefCorr
@@ -4104,6 +4109,9 @@ contains
     real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
     real(SP), dimension(:), pointer :: p_Fvector, p_Fmatrix
     
+      ! Status reset
+      rsolverNode%iresult = 0
+
       ! Loop through all blocks. Each block corresponds to one
       ! diagonal block in the matrix.
       do iblock = 1, rd%nblocks
@@ -4454,6 +4462,9 @@ contains
   integer, dimension(:), pointer :: p_Kdiagonal
   real(DP) :: domega, drelax
   
+    ! Status reset
+    rsolverNode%iresult = 0
+
     ! Okay, get omega and the relaxation parameter
     domega = rsolverNode%domega
     drelax = rsolverNode%p_rsubnodeSOR%drelax
@@ -4831,6 +4842,9 @@ contains
   integer, dimension(:), pointer :: p_Kdiagonal
   real(DP) :: domega, drelax
     
+    ! Status reset
+    rsolverNode%iresult = 0
+
     ! Get bscale from the solver structure
     bscale = rsolverNode%p_rsubnodeSSOR%bscale
     
@@ -6831,6 +6845,9 @@ contains
       call sys_halt()
     end if
     
+    ! Status reset
+    rsolverNode%iresult = 0
+
     ! Get the data array of rd
     call lsysbl_getbase_double (rd,p_Dd)
     
