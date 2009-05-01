@@ -62,7 +62,7 @@ class = DEFAULT
 
 testid   = ANISODIFF_001
 descr    = Anisotropic diffusion benchmark
-mglevels = 1
+mglevels = 3
 datfile  = ./data/apps_anisotropicdiffusion/anisotropicdiffusion.dat
 ucddir   = $LOGDIR
 predir   = ../applications/anisotropicdiffusion/pre

@@ -37,7 +37,7 @@ dgamma = 0.01
 
 # Maximum level of the discretisation
 
-NLMAX = 3
+NLMAX = $MGLEVEL
 
 # Maximum number of refinement steps
 MAXhRefinementSteps = 6

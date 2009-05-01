@@ -10,7 +10,7 @@
 NLMIN = 3
 
 # Level where to solve. >= NLMIN !
-NLMAX = 6
+NLMAX = $MGLEVEL
 
 # Path where to write output files to
 sucddir = '$LOGDIR'

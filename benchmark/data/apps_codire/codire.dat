@@ -7,7 +7,7 @@
 [GENERAL]
 
 # Level where to solve:
-NLMAX = 7
+NLMAX = $MGLEVEL
 
 # Path where to write output files to
 

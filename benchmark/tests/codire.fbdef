@@ -62,7 +62,7 @@ class = DEFAULT
 
 testid   = CODIRE_001
 descr    = Convection-diffusion-reaction benchmark
-mglevels = 1
+mglevels = 7
 datfile  = ./data/apps_codire/codire.dat
 ucddir   = $LOGDIR
 predir   = ../applications/codire/pre
