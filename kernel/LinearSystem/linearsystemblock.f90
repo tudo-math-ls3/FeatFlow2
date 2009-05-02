@@ -418,7 +418,7 @@ module linearsystemblock
     module procedure lsysbl_resizeVecBlockDirectDims
     module procedure lsysbl_resizeVecBlockIndirect
   end interface
-
+  
 contains
 
   ! ***************************************************************************
@@ -2715,7 +2715,7 @@ contains
   !****************************************************************************
 !<subroutine>
   
-  function lsysbl_vectorNormBlock (rx,Cnorms,IposMax) result (Dnorms)
+  subroutine lsysbl_vectorNormBlock (rx,Cnorms,Dnorms,IposMax) 
   
 !<description>
   ! Calculates the norms of all subvectors in a given block vector.
@@ -2746,7 +2746,7 @@ contains
 !<result>
   ! An array of norms for each subvector.
   ! An entry might be < 0, if an error occurred (unknown norm).
-  real(DP), dimension(size(Cnorms)) :: Dnorms
+  real(DP), dimension(:), intent(out) :: Dnorms
 !</result>
 
 !</subroutine>
@@ -2768,7 +2768,7 @@ contains
     end if
   end do
   
-  end function
+  end subroutine
 
   ! ***************************************************************************
   

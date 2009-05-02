@@ -366,7 +366,8 @@ contains
     ! Calculate the norm of the vector or take the one given
     ! as parameter
     if (present(rdef)) then
-      DvecNorm = lsysbl_vectorNormBlock (rdef,rsolverNode%IresNorm)
+      call lsysbl_vectorNormBlock (rdef,rsolverNode%IresNorm(1:nblocks),&
+          DvecNorm(1:nblocks))
       where (.not.((DvecNorm .ge. 1D-99) .and. (DvecNorm .le. 1D99))) 
         DvecNorm = 0.0_DP
       end where
@@ -507,7 +508,8 @@ contains
   ! Calculate the norm of the vector if not given
   ! as parameter
   if (present(rdef)) then
-    DvecNorm = lsysbl_vectorNormBlock (rdef,rsolverNode%IresNorm)
+    call lsysbl_vectorNormBlock (rdef,rsolverNode%IresNorm(1:nblocks),&
+        DvecNorm(1:nblocks))
     where (.not.((DvecNorm .ge. 1D-99) .and. (DvecNorm .le. 1D99))) 
       DvecNorm = 0.0_DP
     end where
@@ -862,7 +864,8 @@ contains
     else
       ! Calculate the norm of the defect:
       DvecNorm = 0.0_DP
-      DvecNorm(1:nblocks) = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm(1:nblocks))
+      call lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm(1:nblocks),&
+          DvecNorm(1:nblocks))
       where (.not.((DvecNorm .ge. 1D-99) .and. (DvecNorm .le. 1D99))) 
         DvecNorm = 0.0_DP
       end where
@@ -966,7 +969,8 @@ contains
             call fcb_resNormCheck (ite,rx,rb,rd,bconvergence,bdivergence,p_rcollection)
           else
             ! Calculate the norm of the defect:
-            DvecNorm(1:nblocks) = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm)
+            call lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm(1:nblocks),&
+                DvecNorm(1:nblocks))
             where (.not.((DvecNorm .ge. 1E-99_DP) .and. (DvecNorm .le. 1E99_DP))) 
               DvecNorm = 0.0_DP
             end where
