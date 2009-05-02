@@ -156,7 +156,7 @@ contains
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rproblem%rboundary, './pre/QUAD.prm')
+    call boundary_read_prm(rproblem%rboundary, trim(spredir)//'QUAD.prm')
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation, &
