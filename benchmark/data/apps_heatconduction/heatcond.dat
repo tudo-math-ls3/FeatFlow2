@@ -16,10 +16,10 @@ NLMAX = $MGLEVEL
 sucddir = '$LOGDIR'
 
 # Path to the parametrisation
-sprmfile = './data/apps_heatconducion/QUAD.prm'
+sprmfile = './data/apps_heatconduction/QUAD.prm'
 
 # Path to the triangulation
-strifile = './data/apps_heatconducion/QUAD.tri'
+strifile = './data/apps_heatconduction/QUAD.tri'
 
 #------------------------------------------------------------------------------
 # The 'equation' section configures the different constants in the equation.
