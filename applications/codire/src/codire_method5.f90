@@ -115,7 +115,7 @@ contains
 
 !<subroutine>
 
-  subroutine cdrm5_initParamTriang (ilvmin,ilvmax,rproblem)
+  subroutine cdrm5_initParamTriang (ilvmin,ilvmax,rproblem,sPRMfile,sTRIfile)
   
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
@@ -129,6 +129,9 @@ contains
   
   ! Maximum refinement level
   integer, intent(IN) :: ilvmax
+
+  ! the PRM and TRI file of the mesh
+  character(len=*), intent(in) :: sPRMfile,sTRIfile
 !</input>
 
 !<inputoutput>
@@ -141,24 +144,17 @@ contains
   ! local variables
   integer :: i
   
-  ! Path to the mesh
-  character(len=SYS_STRLEN) :: spredir
-
     ! Initialise the level in the problem structure
     rproblem%ilvmin = ilvmin
     rproblem%ilvmax = ilvmax
 
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
-    ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
-
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rproblem%rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rproblem%rboundary, sPRMfile)
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation, &
-        trim(spredir)//'/QUAD.tri', rproblem%rboundary)
+        sTRIfile, rproblem%rboundary)
     
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering(rproblem%ilvmin-1,&
@@ -1019,6 +1015,9 @@ contains
     ! NLMAX receives the level where we want to solve
     integer :: NLMIN, NLMAX
     
+    ! PRM/TRI file
+    character(LEN=SYS_STRLEN) :: sfilePRM,sfileTRI
+
     ! A problem structure for our problem
     type(t_problem), target :: rproblem
     
@@ -1042,6 +1041,16 @@ contains
     ! We want to solve our Laplace problem on level...
     call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
 
+    ! PRM file
+    call parlst_getvalue_string (rparams, 'GENERAL', &
+                                 'sfilePRM', sstring)
+    read(sstring,*) sfilePRM
+                                 
+    ! TRI file
+    call parlst_getvalue_string (rparams, 'GENERAL', &
+                                 'sfileTRI', sstring)
+    read(sstring,*) sfileTRI
+
     ! Initialise the collection.
     call collct_init (rproblem%rcollection)
     do i=1,NLMAX
@@ -1058,7 +1067,7 @@ contains
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    call cdrm5_initParamTriang (NLMIN,NLMAX,rproblem)
+    call cdrm5_initParamTriang (NLMIN,NLMAX,rproblem,sfilePRM,sfileTRI)
     call cdrm5_initDiscretisation (rproblem)    
     call cdrm5_initMatVec (rproblem,rparams)    
     call cdrm5_initDiscreteBC (rproblem)

@@ -9,6 +9,14 @@
 # Level where to solve:
 NLMAX = 7
 
+# PRM-file of the domain
+
+sfilePRM = './pre/QUAD.prm'
+
+# TRI-file of the mesh
+
+sfileTRI = './pre/QUAD.tri'
+
 # Path where to write output files to
 
 sucddir = './gmv'

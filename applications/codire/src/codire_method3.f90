@@ -103,7 +103,7 @@ contains
 
 !<subroutine>
 
-  subroutine pm2_initParamTriang (ilv,rproblem)
+  subroutine pm2_initParamTriang (ilv,rproblem,sPRMfile,sTRIfile)
   
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
@@ -119,29 +119,25 @@ contains
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(INOUT) :: rproblem
+
+  ! the PRM and TRI file of the mesh
+  character(len=*), intent(in) :: sPRMfile,sTRIfile
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
 
-  ! Path to the mesh
-  character(len=SYS_STRLEN) :: spredir
-  
     ! Initialise the level in the problem structure
     rproblem%NLMAX = ilv
 
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
-    ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
-
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rproblem%rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rproblem%rboundary, sPRMfile)
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (rproblem%RlevelInfo(1)%rtriangulation, &
-        trim(spredir)//'/QUAD.tri', rproblem%rboundary)
+        sTRIfile, rproblem%rboundary)
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (rproblem%NLMAX-1, &
@@ -839,6 +835,9 @@ contains
     ! Strings that get data about the output directories for pre/postprocessing files
     character(len=SYS_STRLEN) :: sucddir,sstring,smaster
     
+    ! PRM/TRI file
+    character(LEN=SYS_STRLEN) :: sfilePRM,sfileTRI
+
     ! Ok, let's start. 
     ! Initialise the collection.
     call collct_init (rproblem%rcollection)
@@ -855,6 +854,18 @@ contains
     ! We want to solve our Laplace problem on level...
     call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
     
+    ! Get the parameters...
+    !
+    ! PRM file
+    call parlst_getvalue_string (rparams, 'GENERAL', &
+                                 'sfilePRM', sstring)
+    read(sstring,*) sfilePRM
+                                 
+    ! TRI file
+    call parlst_getvalue_string (rparams, 'GENERAL', &
+                                 'sfileTRI', sstring)
+    read(sstring,*) sfileTRI
+
     ! Get the path where to write gmv's to.
     call parlst_getvalue_string (rparams, 'GENERAL', &
                                  'sucddir', sstring)
@@ -863,7 +874,7 @@ contains
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    call pm2_initParamTriang (NLMAX,rproblem)
+    call pm2_initParamTriang (NLMAX,rproblem,sfilePRM,sfileTRI)
     call pm2_initDiscretisation (rproblem)    
     call pm2_initMatVec (rproblem,rparams)    
     call pm2_initDiscreteBC (rproblem)
