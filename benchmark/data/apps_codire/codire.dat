@@ -13,6 +13,14 @@ NLMAX = $MGLEVEL
 
 sucddir = '$LOGDIR'
 
+# PRM-file of the domain
+
+sfilePRM = './data/apps_codire/QUAD.prm'
+
+# TRI-file of the mesh
+
+sfileTRI = './data/apps_codire/QUAD.tri'
+
 #------------------------------------------------------------------------------
 # The 'equation' section configures the different constants in the equation.
 
