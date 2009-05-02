@@ -1044,7 +1044,7 @@ contains
     call collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .true.)
     
     ! Get the path where to write gmv's to.
-    call parlst_getvalue_string (rparams, '', &
+    call parlst_getvalue_string (rparams, 'GENERAL', &
                                  'sucddir', sstring)
     read(sstring,*) sucddir
 

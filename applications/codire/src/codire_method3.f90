@@ -849,7 +849,7 @@ contains
     call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
     
     ! Get the path where to write gmv's to.
-    call parlst_getvalue_string (rparams, '', &
+    call parlst_getvalue_string (rparams, 'GENERAL', &
                                  'sucddir', sstring)
     read(sstring,*) sucddir
     
