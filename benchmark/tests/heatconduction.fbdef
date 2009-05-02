@@ -63,6 +63,6 @@ class = DEFAULT
 testid   = HEATCOND_001
 descr    = Heat conduction benchmark
 mglevels = 6
-datfile  = ./data/apps_heatconduction/heatconduction.dat
+datfile  = ./data/apps_heatconduction/heatcond.dat
 ucddir   = $LOGDIR
 predir   = ../applications/heatconduction/pre
