@@ -1194,7 +1194,7 @@ contains
       ! Calculate the max-norm of the correction vector.
       ! This is used for the stopping criterium in cc_resNormCheck!
       Cnorms(:) = LINALG_NORMMAX
-      rnonlinearIteration%DresidualCorr(:) = lsysbl_vectorNormBlock(rd,Cnorms)
+      call lsysbl_vectorNormBlock(rd,Cnorms,rnonlinearIteration%DresidualCorr)
       
       if ((.not. bsuccess) .and. (domega .ge. 0.001_DP)) then
         ! The preconditioner did actually not work, but the solution is not
@@ -1560,7 +1560,7 @@ contains
         ! The other MAX-norms have to be calculated from U...
         
         Cnorms(:) = LINALG_NORMMAX
-        Dresiduals(:) = lsysbl_vectorNormBlock (rx,Cnorms)
+        call lsysbl_vectorNormBlock (rx,Cnorms,Dresiduals)
 
         dtmp = max(Dresiduals(1),Dresiduals(2))
         if (dtmp .lt. 1.0E-8_DP) dtmp = 1.0_DP
@@ -1669,7 +1669,7 @@ contains
 
     ! RESF := max ( ||F1||_E , ||F2||_E )
 
-    DresTmp = lsysbl_vectorNormBlock (rrhs,Cnorms)
+    call lsysbl_vectorNormBlock (rrhs,Cnorms,DresTmp)
     dresF = max(DresTmp(1),DresTmp(2))
     if (dresF .lt. 1.0E-8_DP) dresF = 1.0_DP
 
@@ -1677,12 +1677,12 @@ contains
     ! RESU = -----------------------------
     !        max ( ||F1||_E , ||F2||_E )
 
-    DresTmp = lsysbl_vectorNormBlock (rdefect,Cnorms)
+    CALL lsysbl_vectorNormBlock (rdefect,Cnorms,DresTmp)
     Dresiduals(1) = sqrt(DresTmp(1)**2+DresTmp(2)**2)/dresF
 
     ! DNORMU = || (U1,U2) ||_l2 
 
-    DresTmp = lsysbl_vectorNormBlock (rvector,Cnorms)
+    call lsysbl_vectorNormBlock (rvector,Cnorms,DresTmp)
     dnormU = sqrt(DresTmp(1)**2+DresTmp(2)**2)
     if (dnormU .lt. 1.0E-8_DP) dnormU = 1.0_DP
 

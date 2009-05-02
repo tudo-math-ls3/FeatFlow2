@@ -189,8 +189,8 @@ contains
     !
     ! ||d||_l2
     Cnorms = LINALG_NORML2
-    Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
-    Dnorms2 = lsysbl_vectorNormBlock (rsolution,Cnorms)
+    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
+    call lsysbl_vectorNormBlock (rsolution,Cnorms,Dnorms2)
 
     ! Compatibility note: For full compatibility to the old CC2D version, one must
     ! test (dtmp .LE. 1.0_DP) everywhere here instead of (dtmp .EQ. 0.0_DP) !
@@ -206,8 +206,8 @@ contains
     
     ! ||d||_max
     Cnorms = LINALG_NORMMAX
-    Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
-    Dnorms2 = lsysbl_vectorNormBlock (rsolution,Cnorms)
+    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
+    call lsysbl_vectorNormBlock (rsolution,Cnorms,Dnorms2)
 
     dtmp = max(Dnorms2(1),Dnorms2(2),Dnorms2(3))
     if (dtmp .eq. 0.0_DP) dtmp=1.0_DP
@@ -322,7 +322,7 @@ contains
     !
     ! ||d||_l2 / dtstep
     Cnorms = LINALG_NORML2
-    Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
+    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
     
     p_rtimeNorm%drelUL2 = sqrt( 0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2+Dnorms1(3)**2) ) &
         / (sqrt(real(nequ,DP)) * dtstep)
