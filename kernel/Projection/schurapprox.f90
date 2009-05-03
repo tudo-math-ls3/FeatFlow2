@@ -95,9 +95,7 @@ module schurapprox
 
 use fsystem
 use genoutput
-!use spatialdiscretisation
 use linearsystemscalar
-use linearsystemblock
 
 implicit none
 
@@ -129,18 +127,35 @@ public :: schur_assembleApprox2D
 
   type t_schurApprox
   
-    ! A pointer to a 2x2 (3x3 in 3D) block matrix containing the A sub-matrix.
-    type(t_matrixBlock), pointer :: p_rmatrixA => null()
+    ! A pointer to a scalar matrix containing A11.
+    type(t_matrixScalar), pointer :: p_rmatrixA11 => null()
   
-    ! A pointer to a 2x1 (3x1 in 3D) block matrix containing the B sub-matrix.
-    type(t_matrixBlock), pointer :: p_rmatrixB => null()
+    ! A pointer to a scalar matrix containing A22.
+    type(t_matrixScalar), pointer :: p_rmatrixA22 => null()
   
-    ! A pointer to a 1x2 (1x3 in 3D) block matrix containing the D sub-matrix.
-    type(t_matrixBlock), pointer :: p_rmatrixD => null()
+    ! A pointer to a scalar matrix containing A33 (3D only).
+    type(t_matrixScalar), pointer :: p_rmatrixA33 => null()
   
-    ! A pointer to a 1x1 block matrix that recieves the approximation of the
-    ! Schur-complement matrix S := -D * A^-1 * B.
-    type(t_matrixBlock), pointer :: p_rmatrixS => null()
+    ! A pointer to a scalar matrix containing B1.
+    type(t_matrixScalar), pointer :: p_rmatrixB1 => null()
+  
+    ! A pointer to a scalar matrix containing B2.
+    type(t_matrixScalar), pointer :: p_rmatrixB2 => null()
+  
+    ! A pointer to a scalar matrix containing B3 (3D only).
+    type(t_matrixScalar), pointer :: p_rmatrixB3 => null()
+  
+    ! A pointer to a scalar matrix containing D1.
+    type(t_matrixScalar), pointer :: p_rmatrixD1 => null()
+  
+    ! A pointer to a scalar matrix containing D2.
+    type(t_matrixScalar), pointer :: p_rmatrixD2 => null()
+  
+    ! A pointer to a scalar matrix containing D3 (3D only).
+    type(t_matrixScalar), pointer :: p_rmatrixD3 => null()
+  
+    ! A pointer to a scalar matrix containing S.
+    type(t_matrixScalar), pointer :: p_rmatrixS => null()
     
     ! A factor that the approximation of S is to be multiplied by when adding
     ! it onto the content of S.
@@ -166,7 +181,7 @@ contains
 
 !<subroutine>
 
-  subroutine schur_assembleApprox2D(rschurApprox)
+  subroutine schur_assembleApprox2D(rschur)
 
 !<description>
   ! TODO
@@ -175,13 +190,10 @@ contains
 !<inputoutput>
   ! A t_schurApprox structure that contains the information of how the
   ! Schur-complement matrix approximation is to be assembled.
-  type(t_schurApprox), intent(INOUT) :: rschurApprox
+  type(t_schurApprox), intent(INOUT) :: rschur
 !</inputoutput>
 
 !</subroutine>
-
-  ! Some pointers to the matrices for quicker access
-  type(t_matrixBlock), pointer :: p_rA, p_rB, p_rD, p_rS
   
   ! The scaling factor for the approximation.
   real(DP) :: dtheta
@@ -200,129 +212,180 @@ contains
   ! The assembly type
   integer :: ctype
   
-  ! A spatial discretisation structure
-  !type(t_spatialDiscretisation), pointer :: p_rdiscrVelo, p_rdiscrPres
-  
-  ! The element identifiers for the velocity and pressure.
-  !integer(I32) :: celemVelo, celemPres
-  
   ! The degree of D
-  integer :: ndegree
+  integer :: ndegree, neq
   
-    ! First of all, let's make sure that all matrices are present and that
-    ! they have the correct dimensions.
-    p_rA => rschurApprox%p_rmatrixA
-    p_rB => rschurApprox%p_rmatrixB
-    p_rD => rschurApprox%p_rmatrixD
-    p_rS => rschurApprox%p_rmatrixS
-    
-    if(.not. associated(p_rA)) then
-      call output_line ('Submatrix A is missing!', &
+    ! First of all, let's make sure that all necessary matrices are present.
+    if(.not. associated(rschur%p_rmatrixA11)) then
+      call output_line ('Submatrix A11 is missing!', &
                         OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
       call sys_halt()
     end if
-    
-    if((p_rA%nblocksPerRow .ne. 2) .or. (p_rA%nblocksPerCol .ne. 2)) then
-      call output_line ('A must be a 2x2 matrix!', &
+    if(.not. associated(rschur%p_rmatrixA22)) then
+      call output_line ('Submatrix A22 is missing!', &
                         OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
       call sys_halt()
     end if
-    
-    if(.not. associated(p_rB)) then
-      call output_line ('Submatrix B is missing!', &
+    if(.not. associated(rschur%p_rmatrixB1)) then
+      call output_line ('Submatrix B1 is missing!', &
                         OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
       call sys_halt()
     end if
-    
-    if((p_rB%nblocksPerCol .ne. 2) .or. (p_rB%nblocksPerRow .ne. 1)) then
-      call output_line ('B must be a 2x1 matrix!', &
+    if(.not. associated(rschur%p_rmatrixB2)) then
+      call output_line ('Submatrix B2 is missing!', &
                         OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
       call sys_halt()
     end if
-    
-    if(.not. associated(p_rD)) then
-      call output_line ('Submatrix D is missing!', &
+    if(.not. associated(rschur%p_rmatrixD1)) then
+      call output_line ('Submatrix D1 is missing!', &
                         OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
       call sys_halt()
     end if
-    
-    if((p_rD%nblocksPerCol .ne. 1) .or. (p_rD%nblocksPerRow .ne. 2)) then
-      call output_line ('D must be a 1x2 matrix!', &
+    if(.not. associated(rschur%p_rmatrixD2)) then
+      call output_line ('Submatrix D2 is missing!', &
                         OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
       call sys_halt()
     end if
-    
-    if(.not. associated(p_rS)) then
+    if(.not. associated(rschur%p_rmatrixS)) then
       call output_line ('Matrix S is missing!', &
                         OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
       call sys_halt()
     end if
-    
-    if((p_rS%nblocksPerCol .ne. 1) .or. (p_rS%nblocksPerRow .ne. 1)) then
-      call output_line ('S must be a 1x1 matrix!', &
+
+    ! Make sure A11 and A22 are compatible
+    if(.not. lsyssc_isMatrixStructureShared(rschur%p_rmatrixA11, &
+                                            rschur%p_rmatrixA22)) then
+      call output_line ('Submatrices A11 and A22 must have the same structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
+      call sys_halt()
+    end if
+    if((iand(rschur%p_rmatrixA11%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
+       (iand(rschur%p_rmatrixA22%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
+      call output_line ('A11 and A22 must not be transposed!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
+      call sys_halt()
+    end if
+
+    ! Make sure B1 and B2 are compatible
+    if(.not. lsyssc_isMatrixStructureShared(rschur%p_rmatrixB1, &
+                                            rschur%p_rmatrixB2)) then
+      call output_line ('Submatrices B1 and B2 must have the same structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
+      call sys_halt()
+    end if
+    if((iand(rschur%p_rmatrixB1%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
+       (iand(rschur%p_rmatrixB2%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
+      call output_line ('B1 and B2 must not be transposed!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
+      call sys_halt()
+    end if
+
+    ! Make sure D1 and D2 are compatible
+    if(.not. lsyssc_isMatrixStructureShared(rschur%p_rmatrixD1, &
+                                            rschur%p_rmatrixD2)) then
+      call output_line ('Submatrices D1 and D2 must have the same structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
+      call sys_halt()
+    end if
+    if((iand(rschur%p_rmatrixD1%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
+       (iand(rschur%p_rmatrixD2%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
+      call output_line ('D1 and D2 must not be transposed!', &
                         OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
       call sys_halt()
     end if
     
-    ! TODO: Add more checks for the matrices...
+    ! Make sure A, B and D are compatible
+    if(rschur%p_rmatrixA11%NEQ .ne. rschur%p_rmatrixB1%NEQ) then
+      call output_line ('B1/B2 submatrices are incompatible to A11/A22!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
+      call sys_halt()
+    end if
+    if(rschur%p_rmatrixA11%NCOLS .ne. rschur%p_rmatrixD1%NCOLS) then
+      call output_line ('D1/D2 submatrices are incompatible to A11/A22!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
+      call sys_halt()
+    end if
+    if(rschur%p_rmatrixD1%NEQ .ne. rschur%p_rmatrixB1%NCOLS) then
+      call output_line ('D1/D2 submatrices are incompatible to B1/B2!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
+      call sys_halt()
+    end if
     
+    ! Make sure S is valid
+    if(iand(rschur%p_rmatrixS%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+      call output_line ('S must not be transposed!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
+      call sys_halt()
+    end if
+
+    ! Make sure S is compatible to A, B and D
+    if((rschur%p_rmatrixS%NEQ   .ne. rschur%p_rmatrixD1%NEQ) .or. &
+       (rschur%p_rmatrixS%NCOLS .ne. rschur%p_rmatrixB1%NCOLS)) then
+      call output_line ('S is incompatible to saddle point system!', &
+                        OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
+      call sys_halt()
+    end if
+
     ! Okay, the matrices are given and seem to be valid.
     
     ! Do we need to clear S?
-    if(rschurApprox%bclearS) call lsysbl_clearMatrix(p_rS)
+    if(rschur%bclearS) call lsysbl_clearMatrix(rschur%p_rmatrixS)
     
     ! If theta is zero, then we have nothing more to do...
-    dtheta = rschurApprox%dtheta
+    dtheta = rschur%dtheta
     if(dtheta .eq. 0.0_DP) return
     
     ! Okay, let's calculate the scaling factors for the diagonal assembly
     ! types.
-    dsf1 = dtheta * (p_rD%RmatrixBlock(1,1)%dscaleFactor * &
-                     p_rB%RmatrixBlock(1,1)%dscaleFactor) / &
-                    (p_rA%RmatrixBlock(1,1)%dscaleFactor * &
-                     p_rS%RmatrixBlock(1,1)%dscaleFactor)
-    dsf2 = dtheta * (p_rD%RmatrixBlock(1,2)%dscaleFactor * &
-                     p_rB%RmatrixBlock(2,1)%dscaleFactor) / &
-                    (p_rA%RmatrixBlock(2,2)%dscaleFactor * &
-                     p_rS%RmatrixBlock(1,1)%dscaleFactor)
-    
+    dsf1 = dtheta * (rschur%p_rmatrixD1%dscaleFactor * &
+                     rschur%p_rmatrixB1%dscaleFactor) / &
+                    (rschur%p_rmatrixA11%dscaleFactor * &
+                     rschur%p_rmatrixS%dscaleFactor)
+    dsf2 = dtheta * (rschur%p_rmatrixD2%dscaleFactor * &
+                     rschur%p_rmatrixB2%dscaleFactor) / &
+                    (rschur%p_rmatrixA22%dscaleFactor * &
+                     rschur%p_rmatrixS%dscaleFactor)
+
     ! Fetch the arrays of the necessary matrices
-    call lsyssc_getbase_Kld (p_rA%RmatrixBlock(1,1), p_IrowA)
-    call lsyssc_getbase_Kcol(p_rA%RmatrixBlock(1,1), p_IcolA)
-    call lsyssc_getbase_Kdiagonal(p_rA%RmatrixBlock(1,1), p_IdiagA)
-    call lsyssc_getbase_double(p_rA%RmatrixBlock(1,1), p_DA11)
-    call lsyssc_getbase_double(p_rA%RmatrixBlock(2,2), p_DA22)
+    call lsyssc_getbase_Kld (rschur%p_rmatrixA11, p_IrowA)
+    call lsyssc_getbase_Kcol(rschur%p_rmatrixA11, p_IcolA)
+    call lsyssc_getbase_Kdiagonal(rschur%p_rmatrixA11, p_IdiagA)
+    call lsyssc_getbase_double(rschur%p_rmatrixA11, p_DA11)
+    call lsyssc_getbase_double(rschur%p_rmatrixA22, p_DA22)
 
-    call lsyssc_getbase_Kld (p_rB%RmatrixBlock(1,1), p_IrowB)
-    call lsyssc_getbase_Kcol(p_rB%RmatrixBlock(1,1), p_IcolB)
-    call lsyssc_getbase_double(p_rB%RmatrixBlock(1,1), p_DB1)
-    call lsyssc_getbase_double(p_rB%RmatrixBlock(2,1), p_DB2)
+    call lsyssc_getbase_Kld (rschur%p_rmatrixB1, p_IrowB)
+    call lsyssc_getbase_Kcol(rschur%p_rmatrixB1, p_IcolB)
+    call lsyssc_getbase_double(rschur%p_rmatrixB1, p_DB1)
+    call lsyssc_getbase_double(rschur%p_rmatrixB2, p_DB2)
 
-    call lsyssc_getbase_Kld (p_rD%RmatrixBlock(1,1), p_IrowD)
-    call lsyssc_getbase_Kcol(p_rD%RmatrixBlock(1,1), p_IcolD)
-    call lsyssc_getbase_double(p_rD%RmatrixBlock(1,1), p_DD1)
-    call lsyssc_getbase_double(p_rD%RmatrixBlock(1,2), p_DD2)
+    call lsyssc_getbase_Kld (rschur%p_rmatrixD1, p_IrowD)
+    call lsyssc_getbase_Kcol(rschur%p_rmatrixD1, p_IcolD)
+    call lsyssc_getbase_double(rschur%p_rmatrixD1, p_DD1)
+    call lsyssc_getbase_double(rschur%p_rmatrixD2, p_DD2)
 
-    call lsyssc_getbase_Kld (p_rS%RmatrixBlock(1,1), p_IrowS)
-    call lsyssc_getbase_Kcol(p_rS%RmatrixBlock(1,1), p_IcolS)
-    call lsyssc_getbase_double(p_rS%RmatrixBlock(1,1), p_DS)
+    call lsyssc_getbase_Kld (rschur%p_rmatrixS, p_IrowS)
+    call lsyssc_getbase_Kcol(rschur%p_rmatrixS, p_IcolS)
+    call lsyssc_getbase_double(rschur%p_rmatrixS, p_DS)
+    
+    ! Fetch the number of equations in S
+    neq = rschur%p_rmatrixS%NEQ
     
     ! Fetch the assembly type
-    ctype = rschurApprox%ctype
+    ctype = rschur%ctype
     
     ! Okay, now what are we going to assemble?
     select case(ctype)
     case(SCHUR_TYPE_MAIN_DIAGONAL)
     
       ! This one is easy.
-      call schur_mainDiagonal2D(p_rS%NEQ, p_IdiagA, p_DA11, p_DA22, p_IrowB, &
+      call schur_mainDiagonal2D(neq, p_IdiagA, p_DA11, p_DA22, p_IrowB, &
           p_IcolB, p_DB1, p_DB2, p_IrowD, p_IcolD, p_DD1, p_DD2, p_IrowS, &
           p_IcolS, p_DS, dsf1, dsf2)
     
     case(SCHUR_TYPE_LUMP_DIAGONAL)
     
       ! This one is also easy.
-      call schur_lumpDiagonal2D(p_rS%NEQ, p_IrowA, p_DA11, p_DA22, p_IrowB, &
+      call schur_lumpDiagonal2D(neq, p_IrowA, p_DA11, p_DA22, p_IrowB, &
           p_IcolB, p_DB1, p_DB2, p_IrowD, p_IcolD, p_DD1, p_DD2, p_IrowS, &
           p_IcolS, p_DS, dsf1, dsf2)
     
@@ -369,7 +432,7 @@ contains
         ndegree = schur_aux_calcDegree(p_IrowD)
         
         ! And call the routine
-        call schur_localInverse2D(p_rS%NEQ, ndegree, p_IrowA, p_IcolA, &
+        call schur_localInverse2D(neq, ndegree, p_IrowA, p_IcolA, &
             p_DA11, p_DA22, p_IrowB, p_IcolB, p_DB1, p_DB2, p_IrowD, p_IcolD, &
             p_DD1, p_DD2, p_IrowS, p_IcolS, p_DS, dsf1, dsf2)
         
