@@ -1314,7 +1314,7 @@ contains
   ! discretisation structure in the background.
   !
   ! The caller can manually fill in scalar matrices in rmatrix%RmatrixBlock
-  ! as necessary. Afterwards, lsysbl_updateMatrixStruc can be used to
+  ! as necessary. Afterwards, lsysbl_updateMatStrucInfo can be used to
   ! calculate the actual matrix dimensions (NEQ,NCOLS,...).
 !</description>
 
@@ -1709,7 +1709,8 @@ contains
   
 !<description>
   ! Assigns given discretisation structures for trial/test spaces to a
-  ! matrix.
+  ! matrix. If necessary, corrects NEQ/NCOLS in the matrix according to
+  ! the discretisation structure(s).
   !
   ! Usually used after a lsysbl_deriveSubmatrix to set the correct
   ! block discretisation structure.
@@ -1732,7 +1733,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,j
+    integer :: i,j,nactcols,nactrows
 
     ! Modify all pointers of all submatrices.
     do j=1,rmatrix%nblocksPerRow
@@ -1751,10 +1752,22 @@ contains
       end do
     end do
     
-    if (rmatrix%NCOLS .ne. dof_igetNDofGlobBlock(rdiscrTrial)) then
+    ! Check the number of columns/rows.
+    ! If the number of columns/rows in the matrix are smaller than indicated
+    ! by dof_igetNDofGlobBlock, we have to update that information as it may
+    ! stem from zero block rows/columns.
+    ! If it's larger, there's something wrong.
+    
+    nactcols = dof_igetNDofGlobBlock(rdiscrTrial)
+    
+    if (rmatrix%NCOLS .gt. nactcols) then
       call output_line ('Discretisation invalid for the matrix!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscrDirectMat')
       call sys_halt()
+    else
+      if (rmatrix%NCOLS .lt. nactcols) then
+        rmatrix%NCOLS = nactcols
+      end if
     end if
 
     ! Set the block discretisation of the block matrix
@@ -1766,20 +1779,34 @@ contains
     
     if (present(rdiscrTest)) then
       
-      if (rmatrix%NEQ .ne. dof_igetNDofGlobBlock(rdiscrTest)) then
+      nactrows = dof_igetNDofGlobBlock(rdiscrTest)
+      
+      if (rmatrix%NEQ .gt. nactrows) then
         call output_line ('Discretisation invalid for the matrix!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscrDirectMat')
         call sys_halt()
+      else
+        if (rmatrix%NEQ .lt. nactrows) then
+          rmatrix%NEQ = nactrows
+        end if
       end if
 
       ! Set the block discretisation of the block matrix
       rmatrix%p_rblockDiscrTest => rdiscrTest
+
     else
       ! Trial and test functions coincide
-      if (rmatrix%NEQ .ne. dof_igetNDofGlobBlock(rdiscrTrial)) then
+      
+      nactrows = dof_igetNDofGlobBlock(rdiscrTrial)
+      
+      if (rmatrix%NEQ .gt. nactrows) then
         call output_line ('Discretisation invalid for the matrix!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscrDirectMat')
         call sys_halt()
+      else
+        if (rmatrix%NEQ .lt. nactrows) then
+          rmatrix%NEQ = nactrows
+        end if
       end if
 
       ! Set the block discretisation of the block matrix
@@ -4621,9 +4648,9 @@ contains
     end do
     
     ! Update the structural information of the block matrix for completeness.
-    call lsysbl_updateMatStrucInfo(rdestMatrix)
     nullify(rdestMatrix%p_rblockDiscrTrial)
     nullify(rdestMatrix%p_rblockDiscrTest)
+    call lsysbl_updateMatStrucInfo(rdestMatrix)
     
   end subroutine
     
