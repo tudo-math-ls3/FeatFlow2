@@ -55,11 +55,11 @@
 !# 13.) lsysbl_enforceStructureDiscr
 !#      -> Enforces a subvector structure according to a given discretisation
 !#
-!# 14.) lsysbl_assignDiscretIndirect
+!# 14.) lsysbl_assignDiscrIndirect
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!# 15.) lsysbl_assignDiscretIndirectMat
+!# 15.) lsysbl_assignDiscrIndirectMat
 !#      -> Assign discretisation related information of a matrix
 !#         to a vector to make it compatible.
 !#
@@ -175,10 +175,10 @@
 !# 50.) lsysbl_insertSubmatrix
 !#      -> Insert a block matrix into another block matrix
 !#
-!# 51.) lsysbl_assignDiscretDirectMat
+!# 51.) lsysbl_assignDiscrDirectMat
 !#      -> Assign a block discretisation to a matrix
 !#
-!# 52.) lsysbl_assignDiscretDirectVec
+!# 52.) lsysbl_assignDiscrDirectVec
 !#      -> Assign a block discretisation to a vector
 !#
 !# 53.) lsysbl_createFpdbObjectVec
@@ -1552,7 +1552,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_assignDiscretIndirect (rtemplate,rx)
+  subroutine lsysbl_assignDiscrIndirect (rtemplate,rx)
   
 !<description>
   ! Assigns discretisation-related information (spatial discretisation, 
@@ -1596,7 +1596,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_assignDiscretIndirectMat (rtemplateMat,rx,btransposed)
+  subroutine lsysbl_assignDiscrIndirectMat (rtemplateMat,rx,btransposed)
   
 !<description>
   ! Assigns discretisation-related information (spatial discretisation, 
@@ -1656,7 +1656,7 @@ contains
     ! There must be at least some compatibility between the matrix
     ! and the vector!
     if ((NCOLS .ne. rx%NEQ) .or. (nbpr .ne. rx%nblocks)) then
-      print *,'lsysbl_assignDiscretIndirectMat error: Matrix/Vector incompatible!'
+      print *,'lsysbl_assignDiscrIndirectMat error: Matrix/Vector incompatible!'
       call sys_halt()
     end if
 
@@ -1705,11 +1705,14 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_assignDiscretDirectMat (rmatrix,rdiscrTrial,rdiscrTest)
+  subroutine lsysbl_assignDiscrDirectMat (rmatrix,rdiscrTrial,rdiscrTest)
   
 !<description>
   ! Assigns given discretisation structures for trial/test spaces to a
   ! matrix.
+  !
+  ! Usually used after a lsysbl_deriveSubmatrix to set the correct
+  ! block discretisation structure.
 !</description>
   
 !<input>
@@ -1750,7 +1753,7 @@ contains
     
     if (rmatrix%NCOLS .ne. dof_igetNDofGlobBlock(rdiscrTrial)) then
       call output_line ('Discretisation invalid for the matrix!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscretDirectMat')
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscrDirectMat')
       call sys_halt()
     end if
 
@@ -1765,7 +1768,7 @@ contains
       
       if (rmatrix%NEQ .ne. dof_igetNDofGlobBlock(rdiscrTest)) then
         call output_line ('Discretisation invalid for the matrix!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscretDirectMat')
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscrDirectMat')
         call sys_halt()
       end if
 
@@ -1775,7 +1778,7 @@ contains
       ! Trial and test functions coincide
       if (rmatrix%NEQ .ne. dof_igetNDofGlobBlock(rdiscrTrial)) then
         call output_line ('Discretisation invalid for the matrix!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscretDirectMat')
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscrDirectMat')
         call sys_halt()
       end if
 
@@ -1789,11 +1792,14 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_assignDiscretDirectVec (rvector,rblockdiscr)
+  subroutine lsysbl_assignDiscrDirectVec (rvector,rblockdiscr)
   
 !<description>
   ! Assigns given discretisation structures for trial/test spaces to a
   ! vector.
+  !
+  ! Usually used after a lsysbl_deriveSubmatrix to set the correct
+  ! block discretisation structure.
 !</description>
   
 !<input>
@@ -1817,7 +1823,7 @@ contains
       if (rvector%RvectorBlock(j)%NEQ .ne. &
           dof_igetNDofGlob(rblockDiscr%RspatialDiscr(j))) then
         call output_line ('Discretisation invalid for the vector!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscretDirectVec')
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscrDirectVec')
         call sys_halt()
       end if
 
@@ -1826,7 +1832,7 @@ contains
     
     if (rvector%NEQ .ne. dof_igetNDofGlobBlock(rblockDiscr)) then
       call output_line ('Discretisation invalid for the matrix!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscretDirectMat')
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscrDirectMat')
       call sys_halt()
     end if
 
@@ -4239,6 +4245,9 @@ contains
     !
     ! The newly created block vector will not have any block discretisation 
     ! structure attached!
+    ! The caller may therefore want to use lsysbl_assignDiscrDirectVec
+    ! to specify the correct discretisation structure after
+    ! creating the vector.
 !</description>
 
 !<input>
@@ -4391,6 +4400,9 @@ contains
   !
   ! The newly created block matrix will not have any block discretisation 
   ! structure attached!
+  ! The caller may therefore want to use lsysbl_assignDiscrDirectMat
+  ! to specify the correct discretisation structure after
+  ! creating the matrix.
   !
   ! Duplicating a matrix does not necessarily mean that new memory is
   ! allocated and the matrix entries are copied to that. The two flags
@@ -4610,6 +4622,8 @@ contains
     
     ! Update the structural information of the block matrix for completeness.
     call lsysbl_updateMatStrucInfo(rdestMatrix)
+    nullify(rdestMatrix%p_rblockDiscrTrial)
+    nullify(rdestMatrix%p_rblockDiscrTest)
     
   end subroutine
     

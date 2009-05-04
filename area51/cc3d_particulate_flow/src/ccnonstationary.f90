@@ -362,7 +362,7 @@ contains
     ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
     ! boundary conditions of rrhs to that vector so that rtempVectorRhs
     ! acts as a RHS vector.
-    call lsysbl_assignDiscretIndirect(rrhs,rtempVectorRhs)
+    call lsysbl_assignDiscrIndirect(rrhs,rtempVectorRhs)
     
     ! We have an equation of the type
     !

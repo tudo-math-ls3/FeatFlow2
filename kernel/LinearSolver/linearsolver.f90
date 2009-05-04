@@ -441,7 +441,7 @@
 !#      produce a compatible vector.
 !#      Inside of the solver, you can also transfer properties of the 
 !#      vector to your local temporary vectors using 
-!#      lsysbl_assignDiscretIndirect.
+!#      lsysbl_assignDiscrIndirect.
 !#
 !#  7.) I want to use sorted vectors/matrices. Should I plug them into
 !#      the solver sorted or not?
@@ -3707,8 +3707,8 @@ contains
     ! The vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
-    call lsysbl_assignDiscretIndirect (rd,p_rx)
-    call lsysbl_assignDiscretIndirect (rd,p_rdef)
+    call lsysbl_assignDiscrIndirect (rd,p_rx)
+    call lsysbl_assignDiscrIndirect (rd,p_rdef)
   
     ! rd is our RHS. p_rx points to a new vector which will be our
     ! iteration vector. At the end of this routine, we replace
@@ -5746,7 +5746,7 @@ contains
       ! The vector shares the same boundary conditions as rd!
       ! So assign now all discretisation-related information (boundary
       ! conditions,...) to the temporary vector.
-      call lsysbl_assignDiscretIndirect (rd,p_rvector)
+      call lsysbl_assignDiscrIndirect (rd,p_rvector)
     
       ! Clear our solution vector
       call lsysbl_clearVector (p_rvector)
@@ -6411,7 +6411,7 @@ contains
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
-    call lsysbl_assignDiscretIndirect (rd,p_rb)
+    call lsysbl_assignDiscrIndirect (rd,p_rb)
     
     ! Copy the RHS rd to the temp vector; it will be overwritten
     ! by the solution vector
@@ -7451,10 +7451,10 @@ contains
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
-    call lsysbl_assignDiscretIndirect (rd,p_DR)
-    call lsysbl_assignDiscretIndirect (rd,p_DP)
-    call lsysbl_assignDiscretIndirect (rd,p_DD)
-    call lsysbl_assignDiscretIndirect (rd,p_rx)
+    call lsysbl_assignDiscrIndirect (rd,p_DR)
+    call lsysbl_assignDiscrIndirect (rd,p_DP)
+    call lsysbl_assignDiscrIndirect (rd,p_DD)
+    call lsysbl_assignDiscrIndirect (rd,p_rx)
     
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
@@ -8347,12 +8347,12 @@ contains
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
-    call lsysbl_assignDiscretIndirect (rd,p_DR )
-    call lsysbl_assignDiscretIndirect (rd,p_DR0)
-    call lsysbl_assignDiscretIndirect (rd,p_DP )
-    call lsysbl_assignDiscretIndirect (rd,p_DPA)
-    call lsysbl_assignDiscretIndirect (rd,p_DSA)
-    call lsysbl_assignDiscretIndirect (rd,p_rx)
+    call lsysbl_assignDiscrIndirect (rd,p_DR )
+    call lsysbl_assignDiscrIndirect (rd,p_DR0)
+    call lsysbl_assignDiscrIndirect (rd,p_DP )
+    call lsysbl_assignDiscrIndirect (rd,p_DPA)
+    call lsysbl_assignDiscrIndirect (rd,p_DSA)
+    call lsysbl_assignDiscrIndirect (rd,p_rx)
     
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
@@ -9363,12 +9363,12 @@ contains
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
     do i=1, idim+1
-      call lsysbl_assignDiscretIndirect (rd,p_rv(i))
+      call lsysbl_assignDiscrIndirect (rd,p_rv(i))
     end do
     do i=1, idim
-      call lsysbl_assignDiscretIndirect (rd,p_rz(i))
+      call lsysbl_assignDiscrIndirect (rd,p_rz(i))
     end do
-    call lsysbl_assignDiscretIndirect (rd,p_rx)
+    call lsysbl_assignDiscrIndirect (rd,p_rx)
     
     ! Set pointers to the 1D/2D arrays
     p_Dh => p_rsubnode%Dh
@@ -9383,12 +9383,12 @@ contains
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
-    call lsysbl_assignDiscretIndirect (rd, p_rx)
+    call lsysbl_assignDiscrIndirect (rd, p_rx)
     do i=1,idim
-      call lsysbl_assignDiscretIndirect (rd, p_rz(i))
+      call lsysbl_assignDiscrIndirect (rd, p_rz(i))
     end do
     do i=1,idim+1
-      call lsysbl_assignDiscretIndirect (rd, p_rv(i))
+      call lsysbl_assignDiscrIndirect (rd, p_rv(i))
     end do
     
     if (bprec) then
