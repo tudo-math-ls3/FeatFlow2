@@ -1741,7 +1741,7 @@ contains
 
           if (.not. present(rdiscrTest)) then
             call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(i,j),&
-                rdiscrTrial%RspatialDiscr(j))
+                rdiscrTrial%RspatialDiscr(j),rdiscrTrial%RspatialDiscr(i))
           else
             call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(i,j),&
                 rdiscrTrial%RspatialDiscr(j),rdiscrTest%RspatialDiscr(i))
