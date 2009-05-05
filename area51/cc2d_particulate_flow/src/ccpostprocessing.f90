@@ -1242,6 +1242,9 @@ contains
   
   !mytime = dtime
  
+  if (rpostprocessing%rvectorScalarFB%NEQ .ne. 0) &
+    call lsyssc_releaseVector (rpostprocessing%rvectorScalarFB)
+ 
   call lsyssc_createVecByDiscr(rvector%RvectorBlock(1)%p_rspatialDiscr, &
   rpostprocessing%rvectorScalarFB,.true.)
   
