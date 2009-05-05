@@ -10707,11 +10707,10 @@ contains
     if ((inonlinComplexity .eq. 1) .and. .not. bsimpleAij) &
       inonlinComplexity = 2
     
-    if (rconfig%dnewton .ne. 0.0_DP) &
-      inonlinComplexity = 3
+    ! inonlinComplexity = 3 does not happen up to now.
 
     if ((rconfig%ddeltaT .ne. 0.0_DP) .or. (rconfig%dnewtonT .ne. 0.0_DP) .or. &
-        (rconfig%dbetaT .ne. 0.0_DP)) &
+        (rconfig%dnewton .ne. 0.0_DP) .or. (rconfig%dbetaT .ne. 0.0_DP)) &
       inonlinComplexity = 4
                                 
     ! Get the maximum velocity -- if we have a nonlinearity
