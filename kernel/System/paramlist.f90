@@ -3271,7 +3271,7 @@ contains
                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" // &
                             "0123456789_")
 
-        bfoundInEnv = .FALSE.
+        bfoundInEnv = .false.
         ! Retrieve value of environment variable
         ! (Do not forget to cut the dollar sign.)
         bfoundInEnv = &
@@ -3411,7 +3411,7 @@ contains
       bstartfound = .false.
       
       ! Lets loop through the characters.
-      istrlen = LEN(sstring)
+      istrlen = len(sstring)
       do i=1,istrlen
         if (sstring(i:i) .eq. "%") then
           ! Did we already found the "%"?
@@ -3507,7 +3507,7 @@ contains
       integer :: istart,iend,ilen,ivalue
       character(len=PARLST_MLSECTION) :: ssection
       character(len=PARLST_MLNAME) :: sname
-      character(len=LEN(sstring)) :: sbuffer
+      character(len=len(sstring)) :: sbuffer
       character(len=PARLST_MLDATA) :: sdata
       
       ! Repeat until we found all subvariables
@@ -3530,7 +3530,7 @@ contains
             call parlst_getvalue_string (rparlist, ssection, sname, sdata, &
                 isubstring=ivalue)
           end if
-          sstring = sbuffer(1:istart-1)//TRIM(sdata)//sbuffer(iend+1:)
+          sstring = sbuffer(1:istart-1)//trim(sdata)//sbuffer(iend+1:)
           
         end if
       
